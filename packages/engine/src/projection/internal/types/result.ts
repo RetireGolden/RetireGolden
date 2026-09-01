@@ -82,6 +82,18 @@ export interface YearResult {
    */
   ownedNonRothIraBalancesBeforeGrowth?:
     Readonly<Record<string, number>>
+  /** Physical pre-growth owned-IRA rows used to validate positional events. */
+  ownedNonRothIraPhysicalBalancesBeforeGrowth?: readonly Readonly<{
+    sourceAccountId: string
+    balanceIndex: number
+    balancePlanDollars: number
+  }>[]
+  /** Physical owned-IRA openings, including rows newly entering via S2. */
+  ownedNonRothIraPhysicalOpeningBalances?: readonly Readonly<{
+    sourceAccountId: string
+    balanceIndex: number
+    balancePlanDollars: number
+  }>[]
   /**
    * Per-owner owned Roth-IRA pool assumed-basis consequential verdicts this
    * year. Published fact from the ledger's own execution — the

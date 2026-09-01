@@ -5,7 +5,7 @@
  * every eligible row overwrites the multiplier, so equal-age phases retain
  * plan order and the last eligible row wins. The caller's array is not sorted
  * in place. ABW likewise preserves the original balance-order, left-associated
- * opening-portfolio fold, including duplicate account ids.
+ * opening-portfolio fold, including each duplicate physical row once.
  */
 import type { ExpensePlan } from '../../model/plan.js'
 import { abwAnnualPayment } from '../../spending/abw.js'
@@ -31,7 +31,8 @@ export interface AnnualLifestyleLayersInput {
   readonly abwHorizonYear: number
   readonly year: number
   readonly balances: readonly AnnualLifestyleBalance[]
-  readonly startOfYearBalance: ReadonlyMap<string, number>
+  /** One opening value per physical balance row, in matching order. */
+  readonly startOfYearBalances: readonly number[]
 }
 
 /** Build one eager, fresh lifestyle result without mutating any input. */
@@ -51,8 +52,12 @@ export function annualLifestyleLayers(
     abwHorizonYear,
     year,
     balances,
-    startOfYearBalance,
+    startOfYearBalances,
   } = input
+
+  if (startOfYearBalances.length !== balances.length) {
+    throw new Error('ABW opening balances lost positional cardinality')
+  }
 
   let phaseMultiplier = 1
   for (const phase of [...expenses.phases].sort((a, b) => a.fromAge - b.fromAge)) {
@@ -76,8 +81,8 @@ export function annualLifestyleLayers(
 
   if (abwActive) {
     let startPortfolio = 0
-    for (const balance of balances) {
-      startPortfolio += startOfYearBalance.get(balance.account.id) ?? 0
+    for (const [index] of balances.entries()) {
+      startPortfolio += startOfYearBalances[index]!
     }
     scaledTargetLifestyle = anyAlive
       ? abwAnnualPayment(

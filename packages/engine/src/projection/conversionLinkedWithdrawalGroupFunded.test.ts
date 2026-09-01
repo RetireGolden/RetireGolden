@@ -400,6 +400,7 @@ describe('the conversion-linked withdrawal group that funds itself', () => {
       ownerPersonId: 'p1',
       accountBalances: [{
         sourceAccountId: 'ira-a',
+        balanceIndex: 1,
         balancePlanDollars: IRA_OPENING_DOLLARS - CONVERSION_CENTS / 100,
       }],
       // Line 6's other half, empty because this household bought no annuity

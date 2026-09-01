@@ -3,7 +3,7 @@
  * Scenario diffing generalizes in V4; this covers the headline question.
  */
 
-import type { Account, Plan } from '../model/plan.js'
+import { selectedLogicalBalanceAccounts, type Account, type Plan } from '../model/plan.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { ProjectionResult } from './types.js'
 
@@ -98,7 +98,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   const endingByCategory = { cash: 0, taxable: 0, traditional: 0, roth: 0, hsa: 0 }
   const last = result.years[result.years.length - 1]
   if (last) {
-    for (const account of plan.accounts) {
+    for (const account of selectedLogicalBalanceAccounts(plan.accounts)) {
       if (account.type in endingByCategory) {
         endingByCategory[account.type as keyof typeof endingByCategory] += last.balances[account.id] ?? 0
       }
@@ -129,7 +129,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   const basisTotal = Math.min(result.endingNondeductibleIraBasis, endingByCategory.traditional)
   const estateBreakdown: EstateAccountBreakdown[] = []
   if (last) {
-    for (const account of plan.accounts) {
+    for (const account of selectedLogicalBalanceAccounts(plan.accounts)) {
       // Equity comp is stepped-up at death like a taxable account, and it is part
       // of ending net worth, so it must appear in the breakdown (and honor a
       // charity destination) to keep endingAfterTaxEstate consistent — otherwise

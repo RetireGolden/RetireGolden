@@ -7,33 +7,69 @@
       "id": "M.helper.openingBalances",
       "label": "ordinary source selection and opening-balance snapshots",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
-      "lines": [104, 123],
+      "lines": [
+        104,
+        123
+      ],
       "anchors": [
-        { "line": 104, "text": "let execution: ExecuteOrdinaryWithdrawalsResult | undefined" },
-        { "line": 111, "text": "if (input.executionRequests.length > 0) {" },
-        { "line": 117, "text": "let openingBalances = [...input.balances]" }
+        {
+          "line": 104,
+          "text": "let execution: ExecuteOrdinaryWithdrawalsResult | undefined"
+        },
+        {
+          "line": 111,
+          "text": "if (input.executionRequests.length > 0) {"
+        },
+        {
+          "line": 117,
+          "text": "let openingBalances = [...input.balances]"
+        }
       ]
     },
     {
       "id": "M.helper.openingBalanceAdapter",
       "label": "lossless opening-balance adaptation and omission",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
-      "lines": [126, 137],
+      "lines": [
+        126,
+        137
+      ],
       "anchors": [
-        { "line": 126, "text": ".flatMap((state) => {" },
-        { "line": 130, "text": "openingBalance: planDollarsToLedgerCents(state.balance)," },
-        { "line": 136, "text": "return []" }
+        {
+          "line": 126,
+          "text": ".flatMap((state) => {"
+        },
+        {
+          "line": 130,
+          "text": "openingBalance: planDollarsToLedgerCents(state.balance),"
+        },
+        {
+          "line": 136,
+          "text": "return []"
+        }
       ]
     },
     {
       "id": "M.helper.taxableSelection",
       "label": "taxable source and tax-unit selection",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
-      "lines": [157, 167],
+      "lines": [
+        157,
+        167
+      ],
       "anchors": [
-        { "line": 157, "text": ": [...input.balances]" },
-        { "line": 164, "text": "ordinarySourceAccountIds.has(state.account.id) &&" },
-        { "line": 166, "text": "state.account.ownerPersonId !== null," }
+        {
+          "line": 157,
+          "text": ": [...input.balances]"
+        },
+        {
+          "line": 164,
+          "text": "ordinarySourceAccountIds.has(state.account.id) &&"
+        },
+        {
+          "line": 166,
+          "text": "state.account.ownerPersonId !== null,"
+        }
       ],
       "note": "The tax-unit validation and null ternary on lines 139-156 are excluded: validated annual simulation constructs a complete tax unit whenever individually owned taxable evidence can be published, while focused helper tests cover both structural null input and fail-loud malformed runtime evidence. Lines 168-174 are the multiline comparator operands; block M reaches deterministic sorting with distinct ids, and their exclusion avoids misreporting formatting branches as cold production statements."
     },
@@ -41,12 +77,27 @@
       "id": "M.helper.taxableEvidence",
       "label": "taxable opening-basis, ownership, tax-unit, and person evidence",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
-      "lines": [175, 240],
+      "lines": [
+        175,
+        240
+      ],
       "anchors": [
-        { "line": 175, "text": ".flatMap((state) => {" },
-        { "line": 182, "text": "openingCostBasis: planDollarsToLedgerCents(state.costBasis)," },
-        { "line": 223, "text": "const personAliveEvidence = input.executionRequests.flatMap(" },
-        { "line": 234, "text": "return [input.actionPersonAliveEvidence(" }
+        {
+          "line": 175,
+          "text": ".flatMap((state) => {"
+        },
+        {
+          "line": 182,
+          "text": "openingCostBasis: planDollarsToLedgerCents(state.costBasis),"
+        },
+        {
+          "line": 223,
+          "text": "const personAliveEvidence = input.executionRequests.flatMap("
+        },
+        {
+          "line": 234,
+          "text": "return [input.actionPersonAliveEvidence("
+        }
       ],
       "note": "Block M reaches valid taxable evidence, invalid opening-basis omission, ordinary person evidence, and the legacy aggregate no-person arm. V8 reports the non-member owner and QCD-donor operands as cold sub-line regions: the annual call gives this helper ordinary/legacy execution requests, while owner-membership failure is a supported defensive structural input covered by helper tests."
     },
@@ -54,12 +105,27 @@
       "id": "M.helper.executeRetry",
       "label": "exact-cent execution, aggregate totals, and fact-removal retries",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
-      "lines": [242, 303],
+      "lines": [
+        242,
+        303
+      ],
       "anchors": [
-        { "line": 242, "text": "while (true) {" },
-        { "line": 243, "text": "execution = executeOrdinaryWithdrawals({" },
-        { "line": 255, "text": "const boundary = assessOrdinaryWithdrawalPlanBoundary(execution)" },
-        { "line": 288, "text": "const unavailableBalanceAccountIds = new Set([" }
+        {
+          "line": 242,
+          "text": "while (true) {"
+        },
+        {
+          "line": 243,
+          "text": "execution = executeOrdinaryWithdrawals({"
+        },
+        {
+          "line": 255,
+          "text": "const boundary = assessOrdinaryWithdrawalPlanBoundary(execution)"
+        },
+        {
+          "line": 288,
+          "text": "const unavailableBalanceAccountIds = new Set(["
+        }
       ],
       "note": "Block M reaches normal execution, every nonzero total class, aggregate Plan-boundary failure, unrepresentable closing balance, unrepresentable closing basis, and both opening-balance and taxable-basis filtering on retry."
     },
@@ -67,22 +133,46 @@
       "id": "M.helper.taxableClosingMap",
       "label": "committed closing-balance and taxable-basis maps",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
-      "lines": [306, 318],
+      "lines": [
+        306,
+        318
+      ],
       "anchors": [
-        { "line": 306, "text": "const committedBalances = execution?.committed ? execution.balances : []" },
-        { "line": 308, "text": "const closingCentsByAccountId = new Map(" },
-        { "line": 313, "text": "const closingTaxableBasisCentsByAccountId = new Map(" }
+        {
+          "line": 306,
+          "text": "const committedBalances = execution?.committed ? execution.balances : []"
+        },
+        {
+          "line": 308,
+          "text": "const closingCentsByAccountId = new Map("
+        },
+        {
+          "line": 313,
+          "text": "const closingTaxableBasisCentsByAccountId = new Map("
+        }
       ]
     },
     {
       "id": "M.helper.operations",
       "label": "positional none/write operation derivation",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
-      "lines": [319, 328],
+      "lines": [
+        319,
+        328
+      ],
       "anchors": [
-        { "line": 319, "text": "const balanceOperations = input.balances.map(" },
-        { "line": 322, "text": "if (closingCents === undefined) return { kind: 'none' }" },
-        { "line": 326, "text": "if (state.account.type === 'taxable') {" }
+        {
+          "line": 319,
+          "text": "const balanceOperations = input.balances.map("
+        },
+        {
+          "line": 322,
+          "text": "if (closingCents === undefined) return { kind: 'none' }"
+        },
+        {
+          "line": 326,
+          "text": "if (state.account.type === 'taxable') {"
+        }
       ],
       "note": "The paired-basis throw on lines 329-331 is excluded because executeOrdinaryWithdrawals emits a taxable basis record for every committed taxable balance movement; the invariant is covered directly by focused tests."
     },
@@ -90,24 +180,54 @@
       "id": "M.helper.operationsAndReturn",
       "label": "taxable/equity basis writes and complete boundary result",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
-      "lines": [332, 360],
+      "lines": [
+        332,
+        360
+      ],
       "anchors": [
-        { "line": 332, "text": "closingCostBasis = ledgerCentsToPlanDollars(closingBasisCents)" },
-        { "line": 333, "text": "} else if (state.account.type === 'equityComp' && state.balance > 0) {" },
-        { "line": 341, "text": "return {" },
-        { "line": 350, "text": "return {" }
+        {
+          "line": 332,
+          "text": "closingCostBasis = ledgerCentsToPlanDollars(closingBasisCents)"
+        },
+        {
+          "line": 333,
+          "text": "} else if (state.account.type === 'equityComp' && state.balance > 0) {"
+        },
+        {
+          "line": 341,
+          "text": "return {"
+        },
+        {
+          "line": 350,
+          "text": "return {"
+        }
       ]
     },
     {
       "id": "M.callsite.invoke",
       "label": "no-action defaults, guarded boundary invocation, and scalar consumption",
       "file": "projection/simulate.ts",
-      "lines": [5989, 6016],
+      "lines": [
+        6032,
+        6059
+      ],
       "anchors": [
-        { "line": 5989, "text": "let retirementActionExecution:" },
-        { "line": 5996, "text": "if (currentYearOrdinaryExecutionActions.length > 0) {" },
-        { "line": 5997, "text": "const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({" },
-        { "line": 6016, "text": "if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {" }
+        {
+          "line": 6032,
+          "text": "let retirementActionExecution:"
+        },
+        {
+          "line": 6039,
+          "text": "if (currentYearOrdinaryExecutionActions.length > 0) {"
+        },
+        {
+          "line": 6040,
+          "text": "const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({"
+        },
+        {
+          "line": 6059,
+          "text": "if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {"
+        }
       ],
       "note": "The range includes the dominant no-action defaults and outer guard. The cardinality guard and throw on lines 6016-6018 are excluded: the helper maps the exact supplied balances array to one operation per element; focused delegation tests pin both the invariant and zero helper calls for an empty annual request set."
     },
@@ -115,11 +235,23 @@
       "id": "M.callsite.selectOperation",
       "label": "ordinary-withdrawal positional operation selection",
       "file": "projection/simulate.ts",
-      "lines": [6019, 6023],
+      "lines": [
+        6062,
+        6066
+      ],
       "anchors": [
-        { "line": 6019, "text": "for (const [index, operation] of" },
-        { "line": 6021, "text": "if (operation.kind === 'none') continue" },
-        { "line": 6023, "text": "if (state === undefined || state.account.id !== operation.accountId) {" }
+        {
+          "line": 6062,
+          "text": "for (const [index, operation] of"
+        },
+        {
+          "line": 6064,
+          "text": "if (operation.kind === 'none') continue"
+        },
+        {
+          "line": 6066,
+          "text": "if (state === undefined || state.account.id !== operation.accountId) {"
+        }
       ],
       "note": "The position-mismatch guard and throw on lines 6023-6025 are excluded: the helper emits operations by mapping the same balance positions and copies each source account id; focused delegation tests pin the invariant."
     },
@@ -127,11 +259,23 @@
       "id": "M.callsite.apply",
       "label": "ordinary-withdrawal basis and balance mutation",
       "file": "projection/simulate.ts",
-      "lines": [6026, 6029],
+      "lines": [
+        6069,
+        6072
+      ],
       "anchors": [
-        { "line": 6026, "text": "if (operation.closingCostBasis !== null) {" },
-        { "line": 6027, "text": "state.costBasis = operation.closingCostBasis" },
-        { "line": 6029, "text": "state.balance = operation.closingBalance" }
+        {
+          "line": 6069,
+          "text": "if (operation.closingCostBasis !== null) {"
+        },
+        {
+          "line": 6070,
+          "text": "state.costBasis = operation.closingCostBasis"
+        },
+        {
+          "line": 6072,
+          "text": "state.balance = operation.closingBalance"
+        }
       ]
     }
   ],

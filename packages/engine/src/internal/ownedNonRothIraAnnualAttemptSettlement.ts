@@ -519,20 +519,23 @@ function attemptStateMatchesYear(
     return false
   }
 
-  const expectedBalanceIds = new Set(plan.accounts.flatMap((account) =>
+  const expectedBalanceAccounts = plan.accounts.flatMap((account) =>
     account.type === 'cash' || account.type === 'taxable' ||
       account.type === 'equityComp' || account.type === 'traditional' ||
       account.type === 'roth' || account.type === 'hsa'
       ? [account.id]
-      : []))
-  if (state.balances.length !== expectedBalanceIds.size) return false
-  const seenBalanceIds = new Set<string>()
-  for (const record of state.balances) {
+      : [])
+  if (state.balances.length !== expectedBalanceAccounts.length) return false
+  const aggregateBalances = new Map<string, number>()
+  for (let index = 0; index < state.balances.length; index += 1) {
+    const record = state.balances[index]!
     const accountId = record.account.id
-    if (!expectedBalanceIds.has(accountId) || seenBalanceIds.has(accountId) ||
-        !Object.hasOwn(year.balances, accountId) ||
-        !Object.is(record.balance, year.balances[accountId])) return false
-    seenBalanceIds.add(accountId)
+    if (expectedBalanceAccounts[index] !== accountId) return false
+    aggregateBalances.set(accountId, (aggregateBalances.get(accountId) ?? 0) + record.balance)
+  }
+  for (const [accountId, balance] of aggregateBalances) {
+    if (!Object.hasOwn(year.balances, accountId) ||
+        !Object.is(balance, year.balances[accountId])) return false
   }
   return true
 }

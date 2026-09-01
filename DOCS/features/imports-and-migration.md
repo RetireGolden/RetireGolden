@@ -43,6 +43,34 @@ The checklist is the honesty mechanism (nothing imports silently). Every item is
   planner screen.
 - **Skipped** — unreadable/junk rows, each named.
 
+### Duplicate IDs on decision-bearing accounts
+
+Current Plan validation refuses a duplicate account ID when row order could select a persisted
+decision or forced-distribution schedule. This includes retirement-action sources and destinations,
+pension lump-sum offers or elections, annuity purchases, and duplicate IRA rows whose inherited or
+SEPP facts disagree. Older backups and third-party data may therefore require repair before import.
+
+Give each real account a unique ID, keep the decision on the actual account row, and update every
+reference to that ID. Do not delete a genuine account merely to satisfy validation. Unreferenced
+duplicate balance rows with compatible tax, owner, estate-destination, and forced-distribution facts remain loadable for
+compatibility. They form one logical account: facts come from the last row, ID order comes from the
+first, and ID-keyed RMD, QCD, need-based withdrawal, aggregate Roth-conversion, Form 8606, and
+optimizer consumers use the rows' aggregate capacity and basis. One logical debit or credit is
+allocated pro rata across the positive physical rows (with an exact final residual), and the public
+`balances[id]` value is the aggregate closing balance.
+
+The physical rows still matter. Contributions, allocation drift/rebalancing, distributed yield,
+annual growth, reinvestment, and investable totals visit every row, so different row-level assumptions
+remain visible in wealth. Contribution runtime identity and the owned-IRA pre-growth/post-growth
+evidence sources include the balance-row index; exact replay validates those physical contribution
+chains before aggregating the ID once for Form 8606. The guardrail opening signal counts each balance row
+once while retaining its historical exclusion of unassigned cash. The logical mutation layer makes
+all that positional wealth reachable through ID-keyed operations; it is a compatibility model, not a
+reason to create aliases. The only supported mixed balance/non-balance alias is the exact historical
+one-cash/one-property pair; additional rows in that channel fail closed. Pure non-balance duplicates
+retain their historical last-row publication semantics when no decision references the ID. Imported
+real accounts should always receive unique IDs.
+
 ## Sources
 
 ### Broker positions CSV (Schwab, Fidelity, Vanguard) — `brokerCsv.ts`

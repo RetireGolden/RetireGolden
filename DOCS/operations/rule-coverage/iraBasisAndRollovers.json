@@ -159,7 +159,7 @@
           "functions": [
             {
               "name": "buildAnnualRetirementPhysicalEventInventory",
-              "line": 1323
+              "line": 1352
             }
           ]
         },
@@ -188,12 +188,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.test.ts",
-          "line": 319,
+          "line": 320,
           "note": "ordinary distribution and Roth conversion use separate annual lines",
           "tests": [
             {
               "title": "stages a conversion onto line 8 rather than folding it into line 7",
-              "line": 327
+              "line": 328
             }
           ]
         }
@@ -245,7 +245,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2465
+              "line": 2704
             }
           ]
         },
@@ -380,7 +380,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2465
+              "line": 2704
             }
           ]
         },
@@ -601,7 +601,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2465
+              "line": 2704
             }
           ]
         },
@@ -705,7 +705,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2465
+              "line": 2704
             }
           ]
         },
@@ -826,7 +826,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2465
+              "line": 2704
             }
           ]
         },
@@ -1046,7 +1046,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2465
+              "line": 2704
             }
           ]
         },
@@ -1064,7 +1064,7 @@
           "functions": [
             {
               "name": "promoteOneYear",
-              "line": 525
+              "line": 533
             }
           ]
         },
@@ -1190,7 +1190,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2465
+              "line": 2704
             }
           ]
         },

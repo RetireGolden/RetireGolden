@@ -4,15 +4,16 @@
  *
  * The helper returns exactly one row per balance state, in balance order. It
  * deliberately does not fold income totals, update the last-wins
- * `distributedYieldByAccountId` map, reinvest anything, or publish ledger
+ * distributed-yield maps, reinvest anything, or publish ledger
  * entries. Those effects remain in the caller and are applied one row at a
  * time, preserving both IEEE-754 addition order and duplicate-account-id
  * behavior.
  *
- * `startOfYearBalance` and `allocationTrack` are supplied by the caller rather
- * than reconstructed here. Both are last-wins maps when account ids are
- * duplicated, while the balance loop still prices every duplicate state. A
- * row is therefore keyed by position, never reconciled by account id.
+ * `startOfYearBalances` and `allocationTrack` are supplied by the caller rather
+ * than reconstructed here. Opening balances are positional so duplicate IDs
+ * retain each physical row's own economic principal; allocation policy remains
+ * positional too. A row is keyed by position, never
+ * reconciled by account ID.
  */
 import {
   blendedTaxableYield,
@@ -35,9 +36,9 @@ export interface DistributedTaxableYieldAllocationTrack {
 export interface DistributedTaxableYieldInput {
   /** Full `balances` array; output remains positional and has the same length. */
   readonly states: readonly DistributedTaxableYieldState[]
-  /** Start-of-year values keyed by account id, with the caller's last-wins semantics. */
-  readonly startOfYearBalance: ReadonlyMap<string, number>
-  /** Allocation tracks keyed by account id, also last-wins. */
+  /** One start-of-year value per physical state, in the same order. */
+  readonly startOfYearBalances: readonly number[]
+  /** Allocation tracks keyed by physical balance index. */
   readonly allocationTrack: ReadonlyMap<string, DistributedTaxableYieldAllocationTrack>
   /** Resolved class parameters for this projection. */
   readonly classParams: Record<AssetClassId, AssetClassParams>
@@ -58,6 +59,7 @@ export interface NoDistributedTaxableYieldRow {
  */
 export interface DistributedTaxableYieldRow {
   readonly kind: 'yield'
+  readonly balanceIndex: number
   readonly accountId: string
   readonly interest: number
   readonly ordinaryDividends: number
@@ -78,17 +80,20 @@ export type DistributedTaxableYieldResultRow =
 export function distributedTaxableYieldRows(
   input: DistributedTaxableYieldInput,
 ): readonly DistributedTaxableYieldResultRow[] {
-  const { states, startOfYearBalance, allocationTrack, classParams } = input
+  const { states, startOfYearBalances, allocationTrack, classParams } = input
+  if (startOfYearBalances.length !== states.length) {
+    throw new Error('distributed-yield opening balances lost positional cardinality')
+  }
   const rows: DistributedTaxableYieldResultRow[] = []
 
-  for (const state of states) {
+  for (const [stateIndex, state] of states.entries()) {
     if (state.account.type !== 'taxable') {
       rows.push({ kind: 'none' })
       continue
     }
 
     const account = state.account
-    const startBalance = Math.max(0, startOfYearBalance.get(account.id) ?? state.balance)
+    const startBalance = Math.max(0, startOfYearBalances[stateIndex]!)
     if (startBalance <= 0) {
       rows.push({ kind: 'none' })
       continue
@@ -96,7 +101,7 @@ export function distributedTaxableYieldRows(
 
     // An allocated brokerage account derives its yield fields from the class
     // blend; explicit account-level fields still override that blend.
-    const track = allocationTrack.get(account.id)
+    const track = allocationTrack.get(String(stateIndex))
     const blendedYield = track ? blendedTaxableYield(track.weights, classParams) : null
     const interestYieldPct = Math.max(0, account.interestYieldPct ?? blendedYield?.interestYieldPct ?? 0)
     const dividendYieldPct = Math.max(0, account.dividendYieldPct ?? blendedYield?.dividendYieldPct ?? 0)
@@ -128,6 +133,7 @@ export function distributedTaxableYieldRows(
 
     rows.push({
       kind: 'yield',
+      balanceIndex: stateIndex,
       accountId: account.id,
       interest,
       ordinaryDividends,

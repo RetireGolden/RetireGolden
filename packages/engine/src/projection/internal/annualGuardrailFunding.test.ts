@@ -36,7 +36,7 @@ describe('annualGuardrailFundingPlan', () => {
       inflFactor: 1,
       anyAlive: true,
       balances: [{ account }, { account }],
-      startOfYearBalance: new Map([['same-id', 100]]),
+      startOfYearBalances: [100, 100],
       requiredLifestyle: 20,
       targetLifestyle: 30,
       idealLifestyle: 10,
@@ -77,7 +77,7 @@ describe('annualGuardrailFundingPlan', () => {
       inflFactor: 2,
       anyAlive: true,
       balances: [{ account }],
-      startOfYearBalance: new Map([['cash', 200]]),
+      startOfYearBalances: [200],
       requiredLifestyle: 0,
       targetLifestyle: 0,
       idealLifestyle: 0,
@@ -109,11 +109,7 @@ describe('annualGuardrailFundingPlan', () => {
       inflFactor: 1,
       anyAlive: true,
       balances: accounts.map((account) => ({ account })),
-      startOfYearBalance: new Map([
-        ['large', 1e16],
-        ['small-1', 1],
-        ['small-2', 2],
-      ]),
+      startOfYearBalances: [1e16, 1, 2],
       requiredLifestyle: 1,
       targetLifestyle: 0,
       idealLifestyle: 0,
@@ -127,5 +123,30 @@ describe('annualGuardrailFundingPlan', () => {
     expect(result.startingWithdrawalRate).toBe(
       1 / 10_000_000_000_000_002,
     )
+  })
+
+  it('fails closed when positional opening balances lose cardinality', () => {
+    const account = cashAccount('cash', 0)
+    expect(() => annualGuardrailFundingPlan({
+      guardrailsActive: true,
+      riskBasedGuardrails: false,
+      allowRaisesAboveTarget: undefined,
+      guardrailPolicy: { mode: 'withdrawal-rate' },
+      oneTimeGoals: [],
+      isGoalResolved: () => false,
+      year: 2026,
+      inflFactor: 1,
+      anyAlive: true,
+      balances: [{ account }],
+      startOfYearBalances: [],
+      requiredLifestyle: 0,
+      targetLifestyle: 0,
+      idealLifestyle: 0,
+      excessLifestyle: 0,
+      systemRequired: 0,
+      discretionaryMultiplier: 1,
+      startingWithdrawalRate: null,
+      startingRealPortfolio: null,
+    })).toThrow('Guardrail opening balances lost positional alignment')
   })
 })

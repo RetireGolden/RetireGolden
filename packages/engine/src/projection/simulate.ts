@@ -70,6 +70,10 @@ import {
 } from './internal/annualOrdinaryWithdrawalBoundary.js'
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
+import {
+  AnnualLogicalBalanceLedger,
+  type PhysicalBalanceState,
+} from './internal/annualLogicalBalanceLedger.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { annualAnnuityPurchaseFunding } from './internal/annualAnnuityPurchaseFunding.js'
 import { annualPermanentLifeTransitions } from './internal/annualPermanentLifeTransitions.js'
@@ -544,11 +548,7 @@ function canonicalRuntimeOccurrenceOrder(
 const MAX_TAX_ITERATIONS = 8
 const MAX_ACA_FIXED_POINT_EVALUATIONS = 160
 
-interface BalanceState {
-  account: Extract<Account, { type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa' }>
-  balance: number
-  costBasis: number // meaningful for taxable only
-}
+type BalanceState = PhysicalBalanceState
 
 interface WithdrawalPlanResult {
   byCategory: YearWithdrawals
@@ -1099,10 +1099,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // dollars) is exact under that assumption. Accounts without an allocation are
   // untouched (feature-off is unchanged).
   const classParams = resolveAssetClassParams(plan.assumptions.assetClassParams)
+  // Allocation state belongs to the physical balance row. Compatible duplicate
+  // IDs may still carry different principal, and sharing one mutable track
+  // would drift/rebalance that track once per alias.
   const allocationTrack = new Map<string, { policy: AssetAllocationPolicy; weights: number[] }>()
-  for (const state of balances) {
+  for (const [balanceIndex, state] of balances.entries()) {
     const policy = accountAllocation(state.account)
-    if (policy) allocationTrack.set(state.account.id, { policy, weights: targetWeightsAt(policy, startYear) })
+    if (policy) allocationTrack.set(String(balanceIndex), { policy, weights: targetWeightsAt(policy, startYear) })
   }
   // Permanent-life cash values, grown/interpolated each year; an asset on the
   // balance sheet but held out of withdrawals (no surrender/loan in v1).
@@ -1198,6 +1201,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * spouse treat-as-own IRAs that join the owned pool mid-horizon are covered.
    */
   const ownersWithOmittedNondeductibleBasis = new Set<string>()
+  // Compatible duplicate IRA rows are physical members of one logical ID.
+  // Their basis is therefore an aggregate numerator, just like their grouped
+  // balance is the Form 8606 denominator.
   for (const account of plan.accounts) {
     if (!isAggregatedIra(account)) continue
     const ownerId = account.ownerPersonId ?? primary.id
@@ -1697,7 +1703,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }[] = []
 
     // Prior Dec 31 balances (RMD base) — captured before this year's flows.
-    const startOfYearBalance = new Map(balances.map((b) => [b.account.id, b.balance]))
+    // Physical rows remain positional. ID-keyed phases share live aggregate
+    // states whose facts come from the last row and whose order comes from the
+    // first; writes are committed pro rata back to every physical member.
+    const annualLogicalBalanceLedger = new AnnualLogicalBalanceLedger(balances)
+    const annualIdKeyedBalances = annualLogicalBalanceLedger.liveStates()
+    const annualBalanceByAccountId = new Map(
+      annualIdKeyedBalances.map((state) => [state.account.id, state] as const),
+    )
+    const startOfYearPositionalBalances = balances.map((state) => state.balance)
+    const startOfYearBalance = new Map(
+      annualIdKeyedBalances.map((state) => [state.account.id, state.balance]),
+    )
     /**
      * The contract-value channel as this year opened, captured beside those
      * balances and for the same consumer.
@@ -1736,7 +1753,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         yearSites?.recordRebalancingGain(row.record)
         balances[i]!.costBasis = row.closingCostBasis
       }
-      allocationTrack.get(row.accountId)!.weights = row.targetWeights
+      allocationTrack.get(String(i))!.weights = row.targetWeights
     }
 
     /** Contract-value credits, held back so the phase runs contiguously. */
@@ -2192,7 +2209,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const incomeSetup = annualIncomeSetup({
       distributedYield: {
         states: balances,
-        startOfYearBalance,
+        startOfYearBalances: startOfYearPositionalBalances,
         allocationTrack,
         classParams,
       },
@@ -2215,6 +2232,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes,
       taxableYieldReinvested,
       distributedYieldByAccountId,
+      distributedYieldByBalanceIndex,
       wagesByPerson,
     } = incomeSetup
     let ordinaryIncome = incomeSetup.ordinaryIncome
@@ -2543,7 +2561,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       abwHorizonYear,
       year,
       balances,
-      startOfYearBalance,
+      startOfYearBalances: startOfYearPositionalBalances,
     })
     let debtService = 0
     for (const row of annualDebtServiceRows({
@@ -2688,7 +2706,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       inflFactor,
       anyAlive,
       balances,
-      startOfYearBalance,
+      startOfYearBalances: startOfYearPositionalBalances,
       requiredLifestyle,
       targetLifestyle,
       idealLifestyle,
@@ -2896,8 +2914,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ? pack.contributionLimits.catchUp50 * limitGrowth
           : 0
 
-    const desiredByAccountId = new Map<string, number>()
-    for (const state of balances) {
+    // Contribution rows are positional even when their public account ids are
+    // duplicated. Never use an id-keyed map to decide what a balance row
+    // requested or received.
+    const desiredByBalanceIndex = new Map<number, number>()
+    const employerRowKey = (balanceIndex: number): string => String(balanceIndex)
+    for (const [balanceIndex, state] of balances.entries()) {
       const account = state.account
       const hasSchedule = 'contributionSchedule' in account && account.contributionSchedule && account.contributionSchedule.length > 0
       // A Roth employer account with a zero schedule still has to sit in the
@@ -2937,23 +2959,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           desired = account.annualContribution * inflFactor
         }
       }
-      desiredByAccountId.set(account.id, desired)
+      desiredByBalanceIndex.set(balanceIndex, desired)
     }
 
     const employerAllocated = new Map<string, number>()
     const employerAllocationByOwner = new Map<string, EmployerElectiveAllocation>()
     const employerRequestsByOwner = new Map<string, EmployerElectiveRequest[]>()
-    const employeeLandedByAccountId = new Map<string, number>()
-    for (const state of balances) {
+    const employeeLandedByEmployerRowKey = new Map<string, number>()
+    for (const [balanceIndex, state] of balances.entries()) {
       const account = state.account
-      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
+      if (!isEmployerPlanAccount(account) || !desiredByBalanceIndex.has(balanceIndex)) continue
       if (account.type !== 'traditional' && account.type !== 'roth') continue
       const ownerId = account.ownerPersonId ?? primary.id
       const list = employerRequestsByOwner.get(ownerId) ?? []
       list.push({
-        accountId: account.id,
+        // The allocator's map keys are private. A positional key prevents two
+        // accepted Plan rows with the same public id from overwriting each
+        // other's request, allocation, catch-up, or match basis.
+        accountId: employerRowKey(balanceIndex),
         type: account.type,
-        desired: desiredByAccountId.get(account.id) ?? 0,
+        desired: desiredByBalanceIndex.get(balanceIndex) ?? 0,
         priorCalendarYearFicaWages: account.priorCalendarYearFicaWages ?? 0,
       })
       employerRequestsByOwner.set(ownerId, list)
@@ -2986,13 +3011,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
-    for (const state of balances) {
+    for (const [balanceIndex, state] of balances.entries()) {
       const account = state.account
-      if (!desiredByAccountId.has(account.id)) continue
+      if (!desiredByBalanceIndex.has(balanceIndex)) continue
       const ownerId = account.ownerPersonId ?? primary.id
       const ownerState = stateOf(ownerId)
-      const desired = desiredByAccountId.get(account.id) ?? 0
+      const desired = desiredByBalanceIndex.get(balanceIndex) ?? 0
       const isEmployerAccount = isEmployerPlanAccount(account)
+      const rowKey = employerRowKey(balanceIndex)
       if (desired <= 0 && !isEmployerAccount) continue
 
       let allowed = desired
@@ -3002,7 +3028,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const age = ownerState.ageAttained
       if (isEmployerAccount) {
         groupKey = `${ownerId}:employer`
-        allowed = employerAllocated.get(account.id) ?? 0
+        allowed = employerAllocated.get(rowKey) ?? 0
       } else if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'ira') {
         // One group for traditional and Roth together: IRC 408A(c)(2) makes the
         // Roth limit the 219(b)(1) amount reduced by traditional contributions,
@@ -3068,7 +3094,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const used415c = addition415cUsed.get(ownerId) ?? 0
       let countableEmployee = 0
       if (isEmployerAccount) {
-        const catchUp = employerAllocationByOwner.get(ownerId)?.catchUpByAccount.get(account.id) ?? 0
+        const catchUp = employerAllocationByOwner.get(ownerId)?.catchUpByAccount.get(rowKey) ?? 0
         const countable = Math.max(0, allowed - catchUp)
         const limit415c = Math.min(
           pack.contributionLimits.section415cLimit * limitGrowth,
@@ -3098,9 +3124,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
       }
       const catchUpAllocation = employerAllocationByOwner.get(ownerId)
-      const redirectedFromHere = catchUpAllocation?.redirectedCatchUpBySource.get(account.id) ?? 0
+      const redirectedFromHere = catchUpAllocation?.redirectedCatchUpBySource.get(rowKey) ?? 0
       const redirectedOntoHere =
-        catchUpAllocation !== undefined && catchUpAllocation.catchUpRothAccountId === account.id
+        catchUpAllocation !== undefined && catchUpAllocation.catchUpRothAccountId === rowKey
           ? [...catchUpAllocation.redirectedCatchUpBySource.values()].reduce((sum, amount) => sum + amount, 0)
           : 0
       const postRoutingRequested = Math.max(0, desired - redirectedFromHere) + redirectedOntoHere
@@ -3131,6 +3157,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const producerOccurrenceKey = runtimeOccurrenceKey(
           contributionKind,
           account.id,
+          balanceIndex,
         )
         recordAnnualRetirementRuntimeOccurrence({
           producerOccurrenceKey,
@@ -3149,6 +3176,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             simulatorPhase: 'employeeContribution',
             ownerPersonId: account.ownerPersonId,
             sourceAccountId: account.id,
+            balanceIndex,
             sourceBalanceBeforePlanDollars: contributionBalanceBefore,
             creditedAmountPlanDollars: allowed,
             sourceBalanceAfterPlanDollars: state.balance,
@@ -3178,7 +3206,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (account.type === 'traditional') traditionalInflow += allowed
       else otherInflow += allowed
       if (account.type === 'taxable' || account.type === 'equityComp') taxableInflow += allowed
-      if (isEmployerAccount) employeeLandedByAccountId.set(account.id, allowed)
+      if (isEmployerAccount) employeeLandedByEmployerRowKey.set(rowKey, allowed)
       yearSites?.recordContribution({
         destinationAccountId: account.id,
         ownerPersonId: contributionOwnerPersonId,
@@ -3192,7 +3220,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let landedTotal = 0
       for (const request of requests) {
         desiredTotal += request.desired
-        landedTotal += employeeLandedByAccountId.get(request.accountId) ?? 0
+        landedTotal += employeeLandedByEmployerRowKey.get(request.accountId) ?? 0
       }
       if (landedTotal < desiredTotal - EPSILON) {
         warnings.add('Some contributions were reduced to stay within IRS annual limits.')
@@ -3203,20 +3231,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // redirected catch-up. Regular elective still lands before match so it
     // consumes §415(c) first; 414(v)(3)(A) keeps the catch-up slice out of
     // that limit, so match takes leftover room after the §402(g) base only.
-    for (const state of balances) {
+    for (const [balanceIndex, state] of balances.entries()) {
       const account = state.account
-      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
+      if (!isEmployerPlanAccount(account) || !desiredByBalanceIndex.has(balanceIndex)) continue
       if (!('employerMatch' in account) || !account.employerMatch) continue
       const ownerId = account.ownerPersonId ?? primary.id
+      const rowKey = employerRowKey(balanceIndex)
       const matchInfo = account.employerMatch
       const ownerWages = wagesByPerson.get(ownerId) ?? 0
       if (ownerWages <= 0) continue
       const allocation = employerAllocationByOwner.get(ownerId)
       const electiveForMatch = allocation === undefined
-        ? (employeeLandedByAccountId.get(account.id) ?? 0)
+        ? (employeeLandedByEmployerRowKey.get(rowKey) ?? 0)
         : employerMatchElectiveBase({
-          accountId: account.id,
-          employeeLandedByAccountId,
+          accountId: rowKey,
+          employeeLandedByAccountId: employeeLandedByEmployerRowKey,
           allocatedByAccountId: employerAllocated,
           redirectedCatchUpBySource: allocation.redirectedCatchUpBySource,
           catchUpRothAccountId: allocation.catchUpRothAccountId,
@@ -3247,7 +3276,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         if (account.type === 'traditional') {
           const kind = 'employerPlanEmployerMatch' as const
           recordAnnualRetirementRuntimeOccurrence({
-            producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id),
+            // Public account ids may be duplicated on accepted, unreferenced
+            // Plan rows. Bind the mutation's balance-row position as well so
+            // employee and match occurrences retain the same row identity as
+            // contribution allocation instead of collapsing downstream.
+            producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id, balanceIndex),
             kind,
             grossAmountPlanDollars: matchVal,
             ownerPersonId: account.ownerPersonId,
@@ -3620,16 +3653,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (year === account.inherited.ownerDeathYear) return false
       return true
     }
+    // ID-keyed forced-distribution, IRA-character, and optimizer evidence all
+    // observe one aggregate live state per compatible logical account ID. The
+    // selected facts come from the last physical row and ID order from the
+    // first, while positional phases such as contributions retain every row.
+    const rmdBalanceByAccountId = annualBalanceByAccountId
+    const rmdBalances = annualIdKeyedBalances
     // Year-scoped omitted-basis owners: same aggregation membership the
     // Form 8606 settlement uses this year (includes post-election treat-as-own).
     ownersWithOmittedNondeductibleBasis.clear()
-    for (const account of plan.accounts) {
+    for (const { account } of balances) {
       if (!isAggregatedIraThisYear(account)) continue
       // isAggregatedIraThisYear is not a type predicate (S2 post-flip accounts
       // stay TraditionalAccount with inherited set); re-narrow for basis field.
       if (account.type !== 'traditional' || account.kind !== 'ira') continue
-      if (account.nondeductibleBasis !== undefined) continue
-      ownersWithOmittedNondeductibleBasis.add(account.ownerPersonId ?? primary.id)
+      const ownerPersonId = account.ownerPersonId ?? primary.id
+      if (account.nondeductibleBasis === undefined) {
+        ownersWithOmittedNondeductibleBasis.add(ownerPersonId)
+      }
     }
     const followsOwnerRmdsThisYear = (account: Account): boolean => {
       if (account.type !== 'traditional') return false
@@ -3639,7 +3680,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       return true
     }
     const preDistributionAggregateIraBalance = new Map<string, number>()
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (!isAggregatedIraThisYear(state.account)) continue
       const ownerId = state.account.ownerPersonId ?? primary.id
       preDistributionAggregateIraBalance.set(
@@ -3734,7 +3775,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * ceiling. It is not corrected here.
      */
     const preDistributionOwnedIraBalance = new Map<string, number>()
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (!isAggregatedIraThisYear(state.account)) continue
       preDistributionOwnedIraBalance.set(state.account.id, state.balance)
     }
@@ -3810,7 +3851,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     for (const [planKey, deferred] of deferredFirstRmdByApplicablePlan) {
       if (deferred.dueYear !== year) continue
       let distributedByDeadline = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (distributedByDeadline >= deferred.requiredAmount - EPSILON) break
         if (state.account.type !== 'traditional') continue
         if (!followsOwnerRmdsThisYear(state.account)) continue
@@ -3845,7 +3886,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       applicablePlanByKey.set(planKey, deferred.applicablePlan)
       deferredFirstRmdByApplicablePlan.delete(planKey)
     }
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (state.account.type !== 'traditional') continue
       if (!followsOwnerRmdsThisYear(state.account)) continue // inherited (pre-S2) follows the beneficiary schedule below
       const ownerId = state.account.ownerPersonId ?? primary.id
@@ -3930,7 +3971,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     for (const [applicablePlanKey, unmet] of unmetAggregableRmdByApplicablePlan) {
       const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
       let remaining = unmet
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (remaining <= EPSILON) break
         if (state.account.type !== 'traditional') continue
         if (!followsOwnerRmdsThisYear(state.account)) continue
@@ -3977,7 +4018,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           currentRmdDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
       })
     }
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       // Only traditional accounts were ever entered above; the guard is here
       // so the account narrows for `kind` rather than being asserted.
       if (state.account.type !== 'traditional') continue
@@ -4063,7 +4104,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // need-based withdrawal flow, so it never attracts the early-withdrawal
     // penalty — and is taxable ordinary income that also supplies spending cash.
     const seppPlan = annualSeppDistributions({
-      balances,
+      balances: rmdBalances,
       year,
       primaryPersonId: primary.id,
       resolveOwnerState: stateOf,
@@ -4080,7 +4121,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         continue
       }
 
-      const state = balances[operation.balanceIndex]!
+      const state = rmdBalances[operation.balanceIndex]!
       state.balance = operation.sourceBalanceAfter
       const kind = 'automaticSeppDistribution' as const
       const producerOccurrenceKey = runtimeOccurrenceKey(kind, operation.accountId)
@@ -4147,7 +4188,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     /** Roth-character forced amount (Roth withdrawals only; never ordinary income). */
     let inheritedRothForced = 0
     const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] = []
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (state.account.type !== 'traditional' && state.account.type !== 'roth') continue
       if (state.account.inherited === undefined) continue
       const cache = inheritedClassCache.get(state.account.id)
@@ -4499,7 +4540,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     >()
     for (const evidence of inheritedYearEvidenceDraft) {
       if (evidence.requiredAmount <= 0 || evidence.noticeWaived === true) continue
-      const account = plan.accounts.find((candidate) => candidate.id === evidence.accountId)
+      const account = rmdBalanceByAccountId.get(evidence.accountId)?.account
       if (
         account === undefined ||
         (account.type !== 'traditional' && account.type !== 'roth') ||
@@ -4747,7 +4788,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
         const beyondRmd = requested - qcdFromRmd
         if (beyondRmd > 0) {
-          const sources = balances.filter((state) =>
+          const sources = rmdBalances.filter((state) =>
             isAggregatedIra(state.account) && state.balance > 0 &&
             donorIds.has(state.account.ownerPersonId ?? primary.id))
           const available = sources.reduce((sum, state) => sum + state.balance, 0)
@@ -5476,7 +5517,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         )
       }
       for (const [accountId, requested] of requestedBySourceAccountId) {
-        const state = balances.find((entry) => entry.account.id === accountId)
+        const state = annualBalanceByAccountId.get(accountId)
         if (state === undefined) return false
         try {
           if (planDollarsToFlooredLedgerCents(state.balance) < requested) {
@@ -5705,7 +5746,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // not there and drive the balance negative -- permanently, since nothing
       // downstream rebuilds it. Truncating makes the overdraw unreachable
       // instead of detecting it afterwards.
-      const openingBalances = balances
+      const openingBalances = rmdBalances
         .filter((state) => qcdSourceIds.has(state.account.id))
         .map((state) => ({
           accountId: asAccountId(state.account.id),
@@ -5720,7 +5761,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const remaining = planDollarsToLedgerCents(
           Math.min(iraRmdUnsatisfiedByOwner.get(donorId) ?? 0, iraRmdRequiredByOwner.get(donorId) ?? 0),
         )
-        const sourceAccountIds = plan.accounts
+        const sourceAccountIds = rmdBalances
+          .map((state) => state.account)
           .filter((account) => isAggregatedIra(account) &&
             (account.ownerPersonId ?? primary.id) === donorId)
           .map((account) => asAccountId(account.id))
@@ -5781,7 +5823,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // that invariant sum and the basis numerator, never these two components.
       const poolCapacityInputs: ClassifyOwnedNonRothIraAnnualWithdrawalsInput[] =
         qcdDonorIds.map((donorId) => {
-          const poolAccounts = plan.accounts
+          const poolAccounts = rmdBalances
+            .map((state) => state.account)
             .filter((account) => isAggregatedIra(account) &&
               (account.ownerPersonId ?? primary.id) === donorId)
             .sort((left, right) => compareUtf16CodeUnits(left.id, right.id))
@@ -6533,7 +6576,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const conversionTaxableAmountForGross = (grossTarget: number): number => {
       let remainingGross = Math.max(0, grossTarget)
       let taxable = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (!yearConvertibleToRoth(state.account) || remainingGross <= 0) continue
         const gross = Math.min(state.balance, remainingGross)
         const fraction = isAggregatedIra(state.account)
@@ -6551,7 +6594,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     ): number => {
       let remainingTaxable = Math.max(0, taxableTarget)
       let gross = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (!yearConvertibleToRoth(state.account)) continue
         const fraction = isAggregatedIra(state.account)
           ? ownedIraConversionTaxableFraction(
@@ -6760,7 +6803,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // shared policy module -- the same one the optimizer's promotion
         // chooser reads, so a promoted schedule cannot allocate by a different
         // rule than the ledger executes. The snapshot it weights owners by is
-        // the planner's private shadow of `balances`, after reserving any
+        // the planner's private shadow of the aggregate ID-keyed balances,
+        // after reserving any
         // deferred first-year RMD (Treas. Reg. 1.408A-4 A-6(b) requires that
         // amount to precede the conversion) and before anything below reduces
         // live `state.balance`.
@@ -6774,14 +6818,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // only way the two can be the same numbers rather than two numbers
         // that agree today.
         //
-        // The Plan order this walks in is how the entries are built and not
-        // something the published field promises: a plain object enumerates
-        // integer-like keys first whatever order they went in, so a consumer
-        // recovers Plan order by joining on `plan.accounts`. Stated on the
-        // field itself.
+        // Each selected ID retains its first Plan insertion position; that is
+        // how this snapshot is built, but plain-object enumeration does not
+        // promise that order for integer-like keys. Promotion reconstructs the
+        // same selected-facts-per-ID view before joining. Consumers must not
+        // join the raw Plan array, which can still contain physical aliases.
         aggregateRothConversionAllocationDesired = desired
         const plannedAllocation = annualAggregateRothConversionPlan({
-          balances,
+          balances: annualIdKeyedBalances,
           iraRmdUnsatisfiedByOwner,
           desiredPlanDollars: desired,
           primaryPersonId: primary.id,
@@ -6980,7 +7024,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // the no-balance case clears the threshold and speaks.
           if (rothConversion < allocation.convertibleTargetPlanDollars - 0.01) {
             const gatedEmployerOwners = new Set<string>()
-            for (const state of balances) {
+            for (const state of rmdBalances) {
               const account = state.account
               if (
                 account.type !== 'traditional'
@@ -7117,7 +7161,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         assumed: { basisReturn: number; ordinaryIncome: number } | null
       }>>()
       let predictedOrdinal = nextRetirementRuntimeMutationOrdinal
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (!isAggregatedIraThisYear(state.account)) continue
         const grossAmount = byAccountId.get(state.account.id) ?? 0
         if (grossAmount <= 0) continue
@@ -7184,7 +7228,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       iraCharacter = needBasedOwnedIraCharacter(byAccountId),
     ): number => {
       let total = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         const taken = byAccountId.get(state.account.id) ?? 0
         if (taken <= 0) continue
         const ownerId = state.account.ownerPersonId ?? primary.id
@@ -7227,7 +7271,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // (basis migration after the flip is a documented residual).
     const rothPoolWithdrawals = (byAccountId: Map<string, number>): Map<string, { taken: number; age: number }> => {
       const byPool = new Map<string, { taken: number; age: number }>()
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (state.account.type !== 'roth') continue
         if (isInheritedRothOutsideOwnedPool(state.account)) continue
         const taken = byAccountId.get(state.account.id) ?? 0
@@ -7272,7 +7316,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let qualified = 0
       let nonQualified = 0
       let capLeft = qualifiedCap
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (state.account.type !== 'hsa') continue
         const taken = byAccountId.get(state.account.id) ?? 0
         if (taken <= 0) continue
@@ -7312,7 +7356,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let acaEvaluationCount = 0
     const evaluateWithdrawalNeed = (need: number, forceGrossAca = false) => {
       acaEvaluationCount++
-      const withdrawalPlan = planWithdrawals(need, balances, withdrawalStrategy, year, floorReserveNominal)
+      const withdrawalPlan = planWithdrawals(
+        need,
+        rmdBalances,
+        withdrawalStrategy,
+        year,
+        floorReserveNominal,
+      )
       const rothEffect = rothEarlyEffect(withdrawalPlan.byAccountId)
       const iraCharacterProbe = needBasedOwnedIraCharacter(
         withdrawalPlan.byAccountId,
@@ -7767,7 +7817,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     if (publishCashFlow) {
       // Pass-local penalty snapshot at committed finals. Assemble does not
       // re-walk penaltiesFor / rothEarlyEffect / hsaEffect.
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
         if (taken <= 0) continue
         const ownerId = state.account.ownerPersonId ?? primary.id
@@ -7797,7 +7847,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       let hsaCapLeft = hsaQualifiedCap
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (state.account.type !== 'hsa') continue
         const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
         if (taken <= 0) continue
@@ -8098,7 +8148,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // consistent floors; YearResult.rmd / inherited* fields are unchanged.
       let startTraditional = 0
       let startInheritedTraditional = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (state.account.type !== 'traditional') continue
         const opening = startOfYearBalance.get(state.account.id) ?? 0
         if (!state.account.inherited) {
@@ -8117,7 +8167,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let s2FlipOwnerRmdObligationRemapNontaxable = 0
       const ownerRmdNontaxableFraction =
         rmdTotal > 0 ? rmdNontaxable / rmdTotal : 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (state.account.type !== 'traditional') continue
         if (!hasSpouseTreatAsOwnElection(state.account)) continue
         if (!isTreatAsOwnEffective(state.account, year)) continue
@@ -8262,7 +8312,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const optimizerCapitalGainsBase =
         Math.max(0, preWithdrawalCapitalResult) + incomes.qualifiedDividends
       let optimizerOwnerTraditionalWithdrawal = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (state.account.type !== 'traditional') continue
         // S2 post-election is owner-side; pre-transition inherited stays out.
         if (
@@ -8280,7 +8330,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let remainingTraditionalGross = 0
       let remainingTraditionalTaxable = 0
       let remainingConvertibleGross = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (
           state.account.type === 'traditional' &&
           (!state.account.inherited || isTreatAsOwnEffective(state.account, year))
@@ -8667,7 +8717,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // once per year so evidence rows do not scan every balance.
     const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({
       year,
-      balances,
+      balances: annualIdKeyedBalances,
       inheritedEvidence: inheritedYearEvidenceDraft,
       withdrawnByAccountId: withdrawalPlan.byAccountId,
       taxableSales: withdrawalPlan.taxableSales,
@@ -8683,12 +8733,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       evidence.voluntaryAmount = write.voluntaryAmount
     }
     for (const operation of withdrawalApplyFlowPlan.balanceOperations) {
-      const state = balances[operation.balanceIndex]
+      const state = annualIdKeyedBalances[operation.balanceIndex]
+      const group = annualLogicalBalanceLedger.groups[operation.balanceIndex]
       // Planning and commit are intentionally adjacent. Fail before applying a
-      // stale operation if a future change breaks that state-identity boundary.
+      // stale operation if a future change breaks the logical group boundary.
       if (
         state === undefined ||
+        group === undefined ||
         state.account.id !== operation.accountId ||
+        group.id !== operation.accountId ||
         state.balance !== operation.sourceBalanceBefore
       ) {
         throw new Error(
@@ -8727,10 +8780,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (operation.taxableSaleMissing) {
         throw new Error('Planned taxable sale disappeared before commit')
       }
-      if (operation.costBasisAfter !== null) {
-        state.costBasis = operation.costBasisAfter
-      }
-      state.balance = operation.sourceBalanceAfter
+      group.applyClosingSnapshot({
+        balance: operation.sourceBalanceAfter,
+        ...(operation.costBasisAfter === null
+          ? {}
+          : { costBasis: operation.costBasisAfter }),
+      })
       if (ownedIraProducerOccurrenceKey !== null) {
         recordAnnualRetirementRuntimeApplication({
           applicationKind: 'debit',
@@ -8884,7 +8939,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // the same pro-rata state the year's forced draws already opened.
     {
       const needBasedTakenByOwner = new Map<string, number>()
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (!isAggregatedIraThisYear(state.account)) continue
         const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
         if (taken <= 0) continue
@@ -8896,7 +8951,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       for (const [ownerId, taken] of needBasedTakenByOwner) {
         let executedTaxable = 0
-        for (const state of balances) {
+        for (const state of rmdBalances) {
           if (!isAggregatedIraThisYear(state.account)) continue
           if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
           const accountTaken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
@@ -9003,23 +9058,32 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       insuranceCashValues.set(transition.policyId, transition.cashValue)
     }
 
-    const ownedNonRothIraBalanceBeforeGrowthByState =
-      new Map<BalanceState, number>()
-    for (const state of balances) {
-      // S2 post-election joins owner-side post-growth / application sources.
-      if (isAggregatedIraThisYear(state.account)) {
-        ownedNonRothIraBalanceBeforeGrowthByState.set(state, state.balance)
-      }
-    }
     const ownedNonRothIraBalancesBeforeGrowth = Object.freeze(
       Object.fromEntries(
-        balances
+        annualIdKeyedBalances
           .filter((state) => isAggregatedIraThisYear(state.account))
-          .map((state) => [
-            state.account.id,
-            ownedNonRothIraBalanceBeforeGrowthByState.get(state)!,
-          ]),
+          .map((state) => [state.account.id, state.balance]),
       ),
+    )
+    const ownedNonRothIraPhysicalBalancesBeforeGrowth = Object.freeze(
+      balances.flatMap((state, balanceIndex) =>
+        isAggregatedIraThisYear(state.account)
+          ? [Object.freeze({
+              sourceAccountId: state.account.id,
+              balanceIndex,
+              balancePlanDollars: state.balance,
+            })]
+          : []),
+    )
+    const ownedNonRothIraPhysicalOpeningBalances = Object.freeze(
+      balances.flatMap((state, balanceIndex) =>
+        isAggregatedIraThisYear(state.account)
+          ? [Object.freeze({
+              sourceAccountId: state.account.id,
+              balanceIndex,
+              balancePlanDollars: startOfYearPositionalBalances[balanceIndex]!,
+            })]
+          : []),
     )
 
     const shockPct = returnShockAt(year)
@@ -9029,9 +9093,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // is the realized portfolio return, not the raw additive shock.
     let returnWeightedSum = 0
     let returnWeightBase = 0
-    for (const state of balances) {
-      const distributedYieldPct = state.account.type === 'taxable' ? (distributedYieldByAccountId.get(state.account.id)?.distributedYieldPct ?? 0) : 0
-      const track = allocationTrack.get(state.account.id)
+    for (const [balanceIndex, state] of balances.entries()) {
+      const distributedYieldPct = state.account.type === 'taxable' ? (distributedYieldByBalanceIndex.get(balanceIndex)?.distributedYieldPct ?? 0) : 0
+      const track = allocationTrack.get(String(balanceIndex))
       if (track) {
         // Allocated account: growth is the class blend at this year's weights
         // (superseding annualReturnPct); distributed yield is carved
@@ -9054,8 +9118,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       state.balance *= Math.max(0, 1 + ratePct / 100)
     }
     priorYearPortfolioReturnPct = returnWeightBase > 0 ? returnWeightedSum / returnWeightBase : 0
-    for (const state of balances) {
-      const distributedYield = distributedYieldByAccountId.get(state.account.id)
+    for (const [balanceIndex, state] of balances.entries()) {
+      const distributedYield = distributedYieldByBalanceIndex.get(balanceIndex)
       if (!distributedYield?.reinvest || distributedYield.gross <= 0) continue
       state.balance += distributedYield.gross
       if (state.account.type === 'taxable') state.costBasis += distributedYield.gross
@@ -9063,9 +9127,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const ownedNonRothIraBalancesByOwner = new Map<
       string | null,
-      Array<{ sourceAccountId: string; balancePlanDollars: number }>
+      Array<{ sourceAccountId: string; balanceIndex: number; balancePlanDollars: number }>
     >()
-    for (const state of balances) {
+    for (const [balanceIndex, state] of balances.entries()) {
       if (!isAggregatedIraThisYear(state.account)) continue
       // A validated Plan always supplies an owner here. Preserve null on a
       // malformed direct simulatePlan call so this raw, not-yet-validated
@@ -9074,6 +9138,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const accountBalances = ownedNonRothIraBalancesByOwner.get(ownerPersonId) ?? []
       accountBalances.push({
         sourceAccountId: state.account.id,
+        balanceIndex,
         balancePlanDollars: state.balance,
       })
       ownedNonRothIraBalancesByOwner.set(ownerPersonId, accountBalances)
@@ -9127,7 +9192,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                   compareUtf16CodeUnits(
                     left.sourceAccountId,
                     right.sourceAccountId,
-                  ) || left.balancePlanDollars - right.balancePlanDollars,
+                  ) || left.balanceIndex - right.balanceIndex,
                 )
                 .map((balance) => Object.freeze({ ...balance })),
             ),
@@ -9153,6 +9218,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       insuranceCashValueTotal,
     } = annualSnapshot({
       balances,
+      publishedBalances: annualIdKeyedBalances,
       unassignedCash,
       propertyValues,
       debtBalances,
@@ -9521,6 +9587,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       contributions,
       ownedNonRothIraContributions,
       ownedNonRothIraBalancesBeforeGrowth,
+      ownedNonRothIraPhysicalBalancesBeforeGrowth,
+      ownedNonRothIraPhysicalOpeningBalances,
       ownedRothIraPoolActivity,
       employerRothAccountActivity,
       ownedTraditionalIraAggregateActivity,
@@ -9669,7 +9737,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 ]),
               ),
               employerAllocationByOwner,
-              desiredByAccountId,
               yearTaxExemptInterest,
               generatedTaxExemptInterest,
               acaForeignExclusionAddback,
@@ -9916,6 +9983,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     const basisSeededOwners = new Set<string>()
+    const settlementOpeningByAccount = new Map<Account, number>(
+      balances.map((state, balanceIndex) => [
+        state.account,
+        startOfYearPositionalBalances[balanceIndex]!,
+      ]),
+    )
     // Seed nondeductible basis with the same year-aware aggregation the ledger
     // uses inside the pass (`isAggregatedIraThisYear`), so an S2-flipped
     // account is in the settlement pool the same way it is in the live
@@ -9934,7 +10007,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const annualSettlementPlan: Plan = {
       ...plan,
       accounts: plan.accounts.map((account): Account => {
-        const openingBalance = startOfYearBalance.get(account.id)
+        const openingBalance = settlementOpeningByAccount.get(account)
         const annualAccount = openingBalance === undefined
           ? account
           : { ...account, balance: openingBalance }
@@ -9997,12 +10070,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               ] as const
             }),
           )
+          const optimizerEvidenceAccountById = new Map(
+            plan.accounts.map((account) => [account.id, account] as const),
+          )
           const weightedTaxableFraction = (
             eligible: (account: Account) => boolean,
           ): number | null => {
             let gross = 0
             let taxable = 0
-            for (const account of plan.accounts) {
+            for (const account of optimizerEvidenceAccountById.values()) {
               if (!eligible(account)) continue
               const balance = Math.max(
                 0,

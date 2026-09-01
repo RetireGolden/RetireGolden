@@ -37,6 +37,25 @@
   regulation permits, chosen for determinism. Only IRAs held **as owner** aggregate: an inherited IRA, a spouse's
   IRA, and an employer plan each stand outside the sum and must distribute their own amount
   (`treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum`).
+- **Duplicate account IDs use a grouped physical-row ledger, not a global Plan rewrite.** Unreferenced
+  duplicate IDs remain loadable for backward compatibility. Compatible rows form one logical account whose facts come
+  from the last row and whose first Plan position controls ID order. Consumers that publish or plan by account ID—owner
+  and inherited RMDs, SEPP, aggregate QCD and Roth conversion, need-based withdrawal
+  planning/character/penalty/commit, Form 8606 pool evidence and ending basis, and optimizer evidence—use aggregate
+  balance and basis. A logical debit or credit is applied once, allocated pro rata across the group's positive physical
+  rows with an exact final residual, and published once as an aggregate `balances[id]` value. No physical wealth is
+  hidden from an ID-keyed withdrawal. Positional economics remain explicit: every row contributes, owns an independent
+  allocation track, derives and reinvests its own distributed yield, and grows; annual investable totals see every row.
+  Contribution occurrence/application keys include the physical balance-row index. Exact owned-IRA replay validates
+  physical opening, contribution, pre-growth, and post-growth rows before folding one aggregate Form 8606 member per ID.
+  The guardrail opening signal counts each row once while retaining its historical exclusion of unassigned cash. Duplicate
+  retirement rows whose account type, retirement kind, owner, estate destination, inherited, SEPP, or other
+  forced-distribution facts disagree, and decision-bearing
+  retirement actions, pension lump sums, and annuity purchases, reject duplicate IDs as ambiguous. This convention
+  admits only the exact historical one-cash/one-property mixed-ID pair and does not change the positional property/HECM
+  or annuity-payout first-qualifying-row behavior; imported data should
+  still use unique IDs.
+  The regression suite is [`simulate.ownerRmdDuplicateAccountId.test.ts`](../../../packages/engine/src/projection/simulate.ownerRmdDuplicateAccountId.test.ts).
 - **QCD:** direct IRA-to-charity from age 70½, excluded from income, counting toward an RMD when one is due; 2026
   limit $111,000, and that figure is one donor's. A QCD is **not** conditional on an RMD — 408(d)(8) turns on the donor's age and nothing in it
   references section 401(a)(9) — and the ledger now models that. The pre-RMD window from 70½ to the applicable age

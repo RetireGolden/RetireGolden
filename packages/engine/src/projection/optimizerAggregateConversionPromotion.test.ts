@@ -120,7 +120,9 @@ const EXAMPLE_COUPLE_ACCOUNTS = (): Account[] => [
 function openingBalances(plan: Plan, year: number): AggregateConversionPromotionYearBalances {
   const balances: Record<string, number> = {}
   for (const account of plan.accounts) {
-    if ('balance' in account) balances[account.id] = account.balance
+    if ('balance' in account) {
+      balances[account.id] = (balances[account.id] ?? 0) + account.balance
+    }
   }
   return { year, balances }
 }
@@ -218,6 +220,40 @@ describe('the ledger and the chooser allocate the same year the same way', () =>
     expect(ledger.converted).toBeCloseTo(72_566.37, 10)
     expect(intent.requestedAmount).toBe(7_256_637)
     expect(ledger.balances['sam-ira']).toBe(310_000)
+  })
+
+  it('replays the ledger aggregate view for duplicate source and destination IDs', () => {
+    const supersededSource = traditionalIra('duplicate-source', 300_000, ALEX)
+    supersededSource.name = 'Superseded source row'
+    const selectedSource = traditionalIra('duplicate-source', 30_000, ALEX)
+    selectedSource.name = 'Selected source row'
+    const supersededDestination = rothIra('duplicate-roth', 10_000, ALEX)
+    supersededDestination.name = 'Superseded destination row'
+    const selectedDestination = rothIra('duplicate-roth', 2_000, ALEX)
+    selectedDestination.name = 'Selected destination row'
+    const plan = exampleCoupleHousehold([
+      supersededSource,
+      selectedSource,
+      supersededDestination,
+      selectedDestination,
+    ])
+
+    const ledger = runLedger(plan, 50_000)
+    const choice = chosen(chooseFor(plan, 50_000))
+    expect(ledger.converted).toBe(50_000)
+    expect(choice.intents).toEqual([expect.objectContaining({
+      personId: ALEX,
+      destinationRothAccountId: 'duplicate-roth',
+      requestedAmount: 5_000_000,
+      sourceAllocations: [{
+        sourceAccountId: 'duplicate-source',
+        requestedAmount: 5_000_000,
+      }],
+    })])
+    expect(ledger.balances).toMatchObject({
+      'duplicate-source': 280_000,
+      'duplicate-roth': 62_000,
+    })
   })
 
   it('reports the trim the ledger warns about, for the same person and the same reason', () => {

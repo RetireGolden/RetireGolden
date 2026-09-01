@@ -1296,6 +1296,105 @@ export const accountSchema = accountUnionSchema.superRefine((account, ctx) => {
 })
 export type Account = z.infer<typeof accountSchema>
 export type AccountType = Account['type']
+export type LogicalBalanceAccount = Extract<
+  Account,
+  { type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa' }
+>
+
+export type DuplicateAccountIdentityFact = string | number | boolean | null
+
+/**
+ * Schedule- and tax-character facts that must agree before duplicate physical
+ * rows can represent one logical account ID. Evidence provenance is excluded:
+ * it can differ without changing the modeled schedule.
+ */
+export function duplicateAccountIdentityFacts(
+  account: Account,
+): readonly DuplicateAccountIdentityFact[] {
+  const inherited =
+    account.type === 'traditional' || account.type === 'roth'
+      ? account.inherited
+      : undefined
+  const beneficiary = inherited?.beneficiary
+  const sepp = account.type === 'traditional' ? account.sepp : undefined
+  const estateBeneficiary = account.estateBeneficiary
+  const estateDestination = estateBeneficiary?.destination ?? (
+    account.type === 'traditional'
+      ? 'nonSpouse'
+      : account.type === 'hsa' && account.beneficiary === 'nonSpouse'
+        ? 'nonSpouse'
+        : 'spouse'
+  )
+  const isRetirementAccount =
+    account.type === 'traditional' || account.type === 'roth'
+  // Cash/property duplicates are the one legacy cross-channel pair that never
+  // becomes two BalanceState rows. Every balance-bearing account type keeps
+  // its own identity so row order cannot choose tax character.
+  const accountIdentityClass = isRetirementAccount
+    ? account.type
+    : account.type === 'cash' || account.type === 'property'
+      ? 'legacy-cash-property'
+      : account.type
+  return [
+    accountIdentityClass,
+    isRetirementAccount ? account.kind : null,
+    account.ownerPersonId ?? null,
+    account.type === 'traditional' ? account.employerPlanType ?? null : null,
+    account.type === 'traditional' ? account.spouseSoleBeneficiary ?? false : null,
+    sepp?.startAge ?? null,
+    sepp?.method ?? null,
+    inherited !== undefined,
+    inherited?.decedentId ?? null,
+    inherited?.ownerDeathYear ?? null,
+    inherited?.decedentHadStartedRmds ?? null,
+    beneficiary !== undefined,
+    beneficiary?.beneficiaryClass ?? null,
+    beneficiary?.edbCategory ?? 'none',
+    beneficiary?.beneficiaryBirthYear ?? null,
+    beneficiary?.soleBeneficiary ?? false,
+    beneficiary?.election ?? 'none',
+    beneficiary?.treatAsOwnElectionYear ?? null,
+    beneficiary?.spouseUnlimitedWithdrawalRight ?? false,
+    beneficiary?.ownerBirthYear ?? null,
+    beneficiary?.ownerBirthMonth ?? null,
+    beneficiary?.ownerBirthDay ?? null,
+    beneficiary?.ownerYearOfDeathRmdSatisfied ?? false,
+    beneficiary?.roth5YearStartYear ?? null,
+    account.type === 'equityComp' ? account.vestingMode : null,
+    account.type === 'equityComp' ? account.vestDate : null,
+    account.type === 'hsa' ? account.withdrawalTreatment ?? null : null,
+    account.type === 'hsa' ? account.reimburseLater ?? false : null,
+    estateDestination,
+    estateDestination === 'charity' ? estateBeneficiary?.charityPct ?? 0 : 0,
+  ]
+}
+
+/** Whether an account becomes a physical BalanceState row in the simulator. */
+export function isLogicalBalanceAccount(
+  account: Account,
+): account is LogicalBalanceAccount {
+  return account.type === 'cash' || account.type === 'taxable' ||
+    account.type === 'equityComp' || account.type === 'traditional' ||
+    account.type === 'roth' || account.type === 'hsa'
+}
+
+/** Last facts and first insertion order for every Plan account ID. */
+export function selectedLogicalAccounts(accounts: readonly Account[]): Account[] {
+  const selected = new Map<string, Account>()
+  for (const account of accounts) selected.set(account.id, account)
+  return [...selected.values()]
+}
+
+/** Last facts and first insertion order for each balance-bearing logical ID. */
+export function selectedLogicalBalanceAccounts(
+  accounts: readonly Account[],
+): LogicalBalanceAccount[] {
+  const selected = new Map<string, LogicalBalanceAccount>()
+  for (const account of accounts) {
+    if (isLogicalBalanceAccount(account)) selected.set(account.id, account)
+  }
+  return [...selected.values()]
+}
 
 // ---------------------------------------------------------------------------
 // Insurance (discriminated union on `kind`) — roadmap V6
@@ -2218,16 +2317,21 @@ export const planSchema = z
         actionReferencedAccountIds.add(action.destinationRothAccountId)
       }
     })
-    // A lump-sum rollover target and a qualified annuity's funding source get
-    // the same ambiguity protection as action-referenced accounts: their
-    // ownership validations resolve the id through a map (last duplicate wins)
-    // while the simulator resolves balances first-match-wins, so a duplicated
-    // id could pass validation against one record and move money in another.
+    // Decision-bearing pension/annuity rows and their referenced accounts get
+    // the same ambiguity protection as retirement actions. Otherwise a duplicate
+    // source id could silently select whether a persisted decision executes,
+    // while a duplicate target id could select where its dollars land.
     plan.accounts.forEach((account) => {
-      if (account.type === 'pension' && account.lumpSumElection !== undefined && account.lumpSumOffer !== undefined) {
-        actionReferencedAccountIds.add(account.lumpSumElection.rolloverAccountId)
+      if (account.type === 'pension') {
+        if (account.lumpSumOffer !== undefined || account.lumpSumElection !== undefined) {
+          actionReferencedAccountIds.add(account.id)
+        }
+        if (account.lumpSumElection !== undefined) {
+          actionReferencedAccountIds.add(account.lumpSumElection.rolloverAccountId)
+        }
       }
       if (account.type === 'annuity' && account.purchase !== undefined) {
+        actionReferencedAccountIds.add(account.id)
         actionReferencedAccountIds.add(account.purchase.fundingAccountId)
       }
     })
@@ -2255,10 +2359,37 @@ export const planSchema = z
       if (indexes === undefined) accountIndexesById.set(account.id, [index])
       else indexes.push(index)
     })
-    let hasAmbiguousActionAccountIds = false
+    let hasAmbiguousAccountIds = false
     for (const [accountId, indexes] of accountIndexesById) {
-      if (indexes.length < 2 || !actionReferencedAccountIds.has(accountId)) continue
-      hasAmbiguousActionAccountIds = true
+      if (indexes.length < 2) continue
+      const duplicateAccounts = indexes.map((index) => plan.accounts[index]!)
+      // Only multiple physical BalanceState rows enter the grouped ledger.
+      // Non-balance aliases retain their historical last-row publication
+      // semantics unless an explicit action references the ambiguous ID.
+      const duplicateBalanceAccounts = duplicateAccounts.filter(isLogicalBalanceAccount)
+      const isLegacyCashPropertyPair = duplicateAccounts.length === 2 &&
+        duplicateAccounts.filter((account) => account.type === 'cash').length === 1 &&
+        duplicateAccounts.filter((account) => account.type === 'property').length === 1
+      const hasUnsupportedMixedAccountChannel =
+        duplicateBalanceAccounts.length > 0 &&
+        duplicateBalanceAccounts.length < duplicateAccounts.length &&
+        !isLegacyCashPropertyPair
+      const firstForcedDistributionFacts = duplicateBalanceAccounts[0] === undefined
+        ? null
+        : duplicateAccountIdentityFacts(duplicateBalanceAccounts[0])
+      const hasConflictingForcedDistributionFacts =
+        hasUnsupportedMixedAccountChannel ||
+        (duplicateBalanceAccounts.length > 1 && firstForcedDistributionFacts !== null &&
+        duplicateBalanceAccounts.slice(1).some((account) => {
+          const facts = duplicateAccountIdentityFacts(account)
+          return facts.length !== firstForcedDistributionFacts.length ||
+            facts.some((fact, factIndex) => fact !== firstForcedDistributionFacts[factIndex])
+        }))
+      if (
+        !actionReferencedAccountIds.has(accountId) &&
+        !hasConflictingForcedDistributionFacts
+      ) continue
+      hasAmbiguousAccountIds = true
       indexes.forEach((index) => {
         ctx.addIssue({
           code: 'custom',
@@ -2613,7 +2744,7 @@ export const planSchema = z
     if (
       !hasDuplicateActionIds &&
       !hasAmbiguousActionPersonIds &&
-      !hasAmbiguousActionAccountIds
+      !hasAmbiguousAccountIds
     ) {
       const validateOwnedAccount = (
         actionIndex: number,

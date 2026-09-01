@@ -194,6 +194,10 @@ function withMovingQcd(
   const preGrowth = year.ownedNonRothIraBalancesBeforeGrowth as
     Record<string, number>
   preGrowth[sourceAccountId] -= amount
+  for (const balance of year.ownedNonRothIraPhysicalBalancesBeforeGrowth ?? []) {
+    if (balance.sourceAccountId !== sourceAccountId) continue
+    ;(balance as { balancePlanDollars: number }).balancePlanDollars -= amount
+  }
   ;(year.balances as Record<string, number>)[sourceAccountId] -= amount
   for (const pool of year.ownedNonRothIraPostGrowthSource!.ownerPools) {
     for (const balance of pool.accountBalances) {

@@ -120,7 +120,7 @@ describe('simulatePlan delegates recurring lifestyle layers', () => {
       expect(phase.input.inflFactor).toBe(1)
       expect(phase.input.abwActive).toBe(false)
       expect(phase.input.balances).toEqual([])
-      expect([...phase.input.startOfYearBalance]).toEqual([])
+      expect(phase.input.startOfYearBalances).toEqual([])
       expect(phase.natural).toEqual({
         requiredLifestyle: 42.00000000000001,
         discretionaryLifestyle: 18,
@@ -171,13 +171,13 @@ describe('simulatePlan delegates recurring lifestyle layers', () => {
     for (const phase of phases) {
       openingByYear.set(
         phase.input.year,
-        phase.input.startOfYearBalance.get('duplicate') ?? 0,
+        phase.input.startOfYearBalances.reduce((sum, balance) => sum + balance, 0),
       )
     }
     expect([...openingByYear]).toEqual([
-      [2026, 200],
-      [2027, 135],
-      [2028, 60],
+      [2026, 300],
+      [2027, 235],
+      [2028, 160],
     ])
 
     // Year-ordinal sentinels prove that each year's fresh return remains

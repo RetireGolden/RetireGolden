@@ -55,20 +55,20 @@
       "label": "annual balance snapshot",
       "file": "projection/internal/annualSnapshot.ts",
       "lines": [
-        68,
-        113
+        70,
+        119
       ],
       "anchors": [
         {
-          "line": 68,
+          "line": 70,
           "text": "const {"
         },
         {
-          "line": 90,
+          "line": 95,
           "text": "balanceEntries.push([id, value])"
         },
         {
-          "line": 113,
+          "line": 119,
           "text": "}"
         }
       ]
@@ -156,24 +156,44 @@
       ]
     },
     {
-      "id": "D",
-      "label": "distributed taxable-yield row production",
+      "id": "D.input",
+      "label": "distributed taxable-yield input selection and positional cardinality guard",
       "file": "projection/internal/distributedTaxableYieldRows.ts",
       "lines": [
-        81,
-        145
+        83,
+        84
       ],
       "anchors": [
         {
-          "line": 81,
-          "text": "const { states, startOfYearBalance, allocationTrack, classParams } = input"
+          "line": 83,
+          "text": "const { states, startOfYearBalances, allocationTrack, classParams } = input"
         },
         {
-          "line": 114,
+          "line": 84,
+          "text": "if (startOfYearBalances.length !== states.length) {"
+        }
+      ],
+      "note": "The mismatch throw on lines 85-86 is excluded: annualIncomeSetup supplies one opening value per physical balance, while focused producer tests pin fail-closed cardinality drift."
+    },
+    {
+      "id": "D.rows",
+      "label": "distributed taxable-yield positional row production",
+      "file": "projection/internal/distributedTaxableYieldRows.ts",
+      "lines": [
+        87,
+        151
+      ],
+      "anchors": [
+        {
+          "line": 87,
+          "text": "const rows: DistributedTaxableYieldResultRow[] = []"
+        },
+        {
+          "line": 119,
           "text": "const qualified = dividends * Math.min(1, Math.max(0, account.qualifiedRatio ?? blendedYield?.qualifiedRatio ?? 0.85))"
         },
         {
-          "line": 145,
+          "line": 151,
           "text": "}"
         }
       ]

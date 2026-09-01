@@ -446,6 +446,29 @@ describe('simulator owned non-Roth IRA annual observation', () => {
     })
   })
 
+  it('registers non-balance account IDs against cross-role reuse', () => {
+    const value = input()
+    ;(value.plan as Plan).accounts.push({
+      type: 'property',
+      id: 'property-collision',
+      name: 'Property',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    })
+    value.ledgerRunId = 'property-collision'
+
+    expect(buildSimulatorOwnedNonRothIraAnnualObservation(value)).toMatchObject({
+      status: 'annualObservationBlocked',
+      issues: [{
+        kind: 'identifierCollision',
+        identifier: 'property-collision',
+      }],
+    })
+  })
+
   it('rejects cross-role Plan identity collisions before emitting evidence', () => {
     const value = input()
     ;(value.plan as Plan).id = 'ira-requested'
@@ -459,7 +482,7 @@ describe('simulator owned non-Roth IRA annual observation', () => {
     })
   })
 
-  it('rejects ambiguous unrequested sibling account identities', () => {
+  it('observes compatible duplicate sibling rows as one logical account', () => {
     const value = input()
     ;(value.plan as Plan).accounts.push(
       traditionalAccount('ira-zero-sibling', 300, 'p1'),
@@ -470,11 +493,8 @@ describe('simulator owned non-Roth IRA annual observation', () => {
     ]
 
     expect(buildSimulatorOwnedNonRothIraAnnualObservation(value)).toMatchObject({
-      status: 'annualObservationBlocked',
-      issues: [{
-        kind: 'identifierCollision',
-        identifier: 'ira-zero-sibling',
-      }],
+      status: 'annualObservationBuilt',
+      issues: [],
     })
   })
 

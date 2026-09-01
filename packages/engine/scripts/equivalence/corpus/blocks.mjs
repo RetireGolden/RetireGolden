@@ -1483,26 +1483,39 @@ function blockK() {
   }
 
   {
-    // Duplicate ids are valid when no retirement action references them. The
-    // opening-balance map takes the later sub-cent row, so the earlier large
-    // row seeds a sub-cent amortization amount into the shared id cache. The
-    // later row then grows 999% annually: by year three, recomputing from its
-    // current opening balance would produce a ledger-visible payment, while
-    // the correctly reused first-year cache remains sub-cent. Reversing row
-    // order or dropping the cache therefore changes complete output.
+    // Duplicate ids are valid when no retirement action references them and
+    // their forced-distribution facts agree. The grouped ledger aggregates the
+    // two physical balances into one SEPP capacity while preserving each row's
+    // own return. The shared amortization cache is seeded once from that logical
+    // opening and reused while the high-return physical member changes its
+    // later-year share; regrouping, recomputing, or collapsing the physical
+    // rows therefore changes complete output.
+    const firstDuplicate = qualified('traditional', 'sepp-shared-cache', 750_000, {
+      sepp: { startAge: 56, method: 'amortization' },
+    })
+    const secondDuplicate = {
+      ...qualified('traditional', 'sepp-shared-cache', 0.004, {
+        annualReturnPct: 999,
+        sepp: { startAge: 56, method: 'amortization' },
+      }),
+      name: 'sepp-shared-cache-subcent',
+    }
+    const sameForcedDistributionFacts =
+      firstDuplicate.type === secondDuplicate.type &&
+      firstDuplicate.kind === secondDuplicate.kind &&
+      firstDuplicate.ownerPersonId === secondDuplicate.ownerPersonId &&
+      JSON.stringify(firstDuplicate.inherited ?? null) ===
+        JSON.stringify(secondDuplicate.inherited ?? null) &&
+      JSON.stringify(firstDuplicate.sepp ?? null) ===
+        JSON.stringify(secondDuplicate.sepp ?? null)
+    if (!sameForcedDistributionFacts) {
+      throw new Error('K4 duplicate rows must retain identical forced-distribution facts')
+    }
     const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
     plan.accounts = [
       cash('sepp-subcent-cash', 1_000_000),
-      qualified('traditional', 'sepp-shared-cache', 750_000, {
-        sepp: { startAge: 56, method: 'amortization' },
-      }),
-      {
-        ...qualified('traditional', 'sepp-shared-cache', 0.004, {
-          annualReturnPct: 999,
-          sepp: { startAge: 56, method: 'amortization' },
-        }),
-        name: 'sepp-shared-cache-subcent',
-      },
+      firstDuplicate,
+      secondDuplicate,
     ]
     // Keep the cash-flow capture channel nonempty while every SEPP occurrence
     // remains suppressed by the exact-cent gate.
@@ -1510,7 +1523,7 @@ function blockK() {
     out.push(
       member(
         'k4-subCentDuplicateAmortCacheOrder',
-        'K: sub-cent first-year cache remains suppressed after duplicate-id opening balance grows past a recomputed ledger cent; order/cache alias is observable',
+        'K: compatible duplicate rows share aggregate SEPP capacity and one first-year amortization cache while retaining positional growth',
         plan,
         { horizonEndYear: START_YEAR + 2 },
       ),
@@ -3091,16 +3104,12 @@ function blockW() {
   }
 
   {
-    // Duplicate ids are legal without named retirement actions. Evidence
-    // resolution uses the LAST balance row: the post-election S2 inherited IRA
-    // suppresses its inherited voluntary write even though the first row with
-    // the same id is cash. Changing the Map to first-wins changes the dump.
+    // Compatible duplicate physical rows form one logical inherited IRA. Both
+    // carry the same post-election S2 facts, so inherited voluntary evidence is
+    // suppressed while the grouped balance remains one ID-keyed apply target.
     const plan = singlePersonPlan({ dob: '1970-06-15', planningAge: 75 })
     plan.assumptions.defaultReturnPct = 0
-    plan.accounts = [
-      cash('w2-duplicate', 10, { annualReturnPct: 0 }),
-      {
-        ...qualified('traditional', 'w2-duplicate', 100, {
+    const postFlip = qualified('traditional', 'w2-duplicate', 100, {
           annualReturnPct: 0,
           inherited: {
             ownerDeathYear: 2024,
@@ -3121,15 +3130,16 @@ function blockW() {
               },
             },
           },
-        }),
-        name: 'w2-duplicate-post-flip-ira',
-      },
+        })
+    plan.accounts = [
+      { ...postFlip, balance: 10, name: 'w2-duplicate-post-flip-first' },
+      { ...postFlip, name: 'w2-duplicate-post-flip-selected' },
     ]
     plan.expenses.baseAnnual = 4
     out.push(
       member(
-        'w2-lastWinsPostFlipEvidence',
-        'W: duplicate-id last-wins balance identity suppresses a post-election spouse treat-as-own inherited voluntary write while preserving ordered balance application',
+        'w2-groupedPostFlipEvidence',
+        'W: compatible duplicate inherited rows suppress post-election spouse treat-as-own voluntary evidence and commit one grouped logical balance application',
         plan,
         { horizonEndYear: START_YEAR },
       ),

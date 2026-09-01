@@ -1,6 +1,7 @@
 import type { Detector, InsightCard } from '../types.js'
 import { computeFederalTax } from '../../tax/federalTax.js'
 import { LATEST_PACK_YEAR } from '../../params/index.js'
+import { selectedLogicalBalanceAccounts } from '../../model/plan.js'
 
 /**
  * The widow's-penalty lever (extended by survivor-widowhood-and-irmaa-relief,
@@ -30,7 +31,7 @@ export const widowsPenalty: Detector = {
     if (!firstYear) {
       return null
     }
-    const tradBalance = ctx.plan.accounts
+    const tradBalance = selectedLogicalBalanceAccounts(ctx.plan.accounts)
       .filter((a) => a.type === 'traditional')
       .reduce((sum, a) => sum + (firstYear.balances[a.id] ?? 0), 0)
 

@@ -164,7 +164,7 @@ export interface AggregateConversionPromotionWinner {
  * that assembles its own from the Plan's opening balances or from a year's
  * closing ones is answering with weights the projection never used.
  *
- * THE EXACT SET THAT MUST BE PRESENT: every Plan account for which
+ * THE EXACT SET THAT MUST BE PRESENT: every logical Plan account ID for which
  * `participatesInAggregateRothConversionAllocation` holds — an owned,
  * non-inherited traditional account, employer plans included, and every account
  * of `type: 'roth'`, of BOTH kinds. Everything else may be omitted: cash,
@@ -185,11 +185,12 @@ export interface AggregateConversionPromotionWinner {
  * than resolved.
  *
  * THE KEY ORDER IS NOT READ, and a caller must not arrange one hoping it will
- * be. `promotionBalancesForYear` joins these balances onto `plan.accounts` and
- * takes Plan order from there, because Plan order decides the owner slices, the
- * destination search and the order sources are drawn from — and a plain object
- * cannot carry it anyway, since JavaScript enumerates integer-like keys first
- * however they were inserted.
+ * be. `promotionBalancesForYear` joins these aggregate balances onto the
+ * selected last-row facts for each ID in `plan.accounts`, retaining each ID's
+ * first Plan insertion position.
+ * That order decides the owner slices, the destination search and the order
+ * sources are drawn from — and a plain object cannot carry it anyway, since
+ * JavaScript enumerates integer-like keys first however they were inserted.
  */
 export interface AggregateConversionPromotionYearBalances {
   readonly year: number
@@ -422,7 +423,14 @@ function promotionBalancesForYear(
   snapshot: IndexedYearBalances,
 ): PromotionBalance[] | AggregateConversionPromotionIssue {
   const states: PromotionBalance[] = []
-  for (const account of plan.accounts) {
+  // The simulator publishes one aggregate state per logical account ID. Map
+  // replacement selects the same last-row facts while retaining the ID's first
+  // Plan insertion position, so promotion cannot duplicate one published
+  // balance merely because the Plan carries multiple physical members.
+  const accountById = new Map(
+    plan.accounts.map((account) => [account.id, account] as const),
+  )
+  for (const account of accountById.values()) {
     if (!participatesInAggregateRothConversionAllocation(account)) continue
     const balance = snapshot.balances[account.id]
     if (typeof balance !== 'number' || !Number.isFinite(balance) || balance < 0) {

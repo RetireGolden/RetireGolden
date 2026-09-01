@@ -1,5 +1,6 @@
 import { rmdStartAgeForBirthYear } from '../../params/index.js'
 import type { Detector } from '../types.js'
+import { selectedLogicalBalanceAccounts } from '../../model/plan.js'
 
 export const rothBridgeHeadroom: Detector = {
   id: 'roth-bridge-headroom',
@@ -13,7 +14,8 @@ export const rothBridgeHeadroom: Detector = {
     // Check if the plan has owner-convertible traditional balance. Inherited
     // traditional accounts follow beneficiary distribution rules and cannot be
     // converted into the beneficiary's Roth IRA.
-    const tradBalance = ctx.plan.accounts
+    const logicalAccounts = selectedLogicalBalanceAccounts(ctx.plan.accounts)
+    const tradBalance = logicalAccounts
       .filter((a) => a.type === 'traditional' && !a.inherited)
       .reduce((sum, a) => sum + (ctx.projection.result.years[0]?.balances[a.id] ?? 0), 0)
 
@@ -33,7 +35,7 @@ export const rothBridgeHeadroom: Detector = {
       const anyPreRmd = y.people.some(
         (p) => p.alive && p.ageAttained < rmdStartAgeForBirthYear(y.year - p.ageAttained),
       )
-      const hasTradFunds = ctx.plan.accounts
+      const hasTradFunds = logicalAccounts
         .filter((a) => a.type === 'traditional' && !a.inherited)
         .reduce((sum, a) => sum + (y.balances[a.id] ?? 0), 0) > 10000
 

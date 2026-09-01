@@ -203,7 +203,7 @@ describe('simulate annual owned-IRA runtime application source', () => {
       expect.objectContaining({
         applicationKind: 'credit',
         producerOccurrenceKey: JSON.stringify([
-          'ownedIraContribution', 'contribution-ira',
+          'ownedIraContribution', 'contribution-ira', 0,
         ]),
         sourceBalanceBeforePlanDollars: 0,
         creditedAmountPlanDollars: 5_000,
@@ -394,7 +394,7 @@ describe('simulate annual owned-IRA runtime application source', () => {
     expect(sourceOf(year).applications).toEqual([])
   })
 
-  it('preserves null ownership and duplicate occurrence keys with distinct commit ordinals', () => {
+  it('preserves null ownership and gives duplicate account rows unique occurrence keys', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'runtime-app-raw-duplicates'
     plan.incomes = [{
@@ -415,9 +415,11 @@ describe('simulate annual owned-IRA runtime application source', () => {
       .toEqual(['duplicate-ira', 'duplicate-ira'])
     expect(applications.map((application) => application.producerOccurrenceKey))
       .toEqual([
-        JSON.stringify(['ownedIraContribution', 'duplicate-ira']),
-        JSON.stringify(['ownedIraContribution', 'duplicate-ira']),
+        JSON.stringify(['ownedIraContribution', 'duplicate-ira', 0]),
+        JSON.stringify(['ownedIraContribution', 'duplicate-ira', 1]),
       ])
+    expect(new Set(applications.map((application) => application.producerOccurrenceKey)).size)
+      .toBe(2)
     expect(applications.map((application) => application.mutationOrdinal))
       .toEqual([1, 2])
   })

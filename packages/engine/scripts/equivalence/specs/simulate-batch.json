@@ -8,21 +8,21 @@
       "label": "annual rebalance to target (start-of-year trade)",
       "file": "projection/internal/annualRebalanceToTarget.ts",
       "lines": [
-        178,
-        212
+        155,
+        187
       ],
       "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
       "anchors": [
         {
-          "line": 178,
-          "text": "for (const state of states) {"
+          "line": 155,
+          "text": "for (const [balanceIndex, state] of states.entries()) {"
         },
         {
-          "line": 195,
+          "line": 170,
           "text": "openingCostBasis: state.costBasis,"
         },
         {
-          "line": 212,
+          "line": 187,
           "text": "}"
         }
       ]
@@ -32,20 +32,20 @@
       "label": "A: taxable sale through aggregateBasisSale (turnover > 1e-9, taxable, balance > 0)",
       "file": "projection/internal/annualRebalanceToTarget.ts",
       "lines": [
-        189,
-        210
+        164,
+        185
       ],
       "anchors": [
         {
-          "line": 189,
+          "line": 164,
           "text": "if (turnover > 1e-9 && state.account.type === 'taxable' && state.balance > 0) {"
         },
         {
-          "line": 199,
+          "line": 174,
           "text": "kind: 'sale',"
         },
         {
-          "line": 210,
+          "line": 185,
           "text": "}"
         }
       ]
@@ -55,21 +55,21 @@
       "label": "A: the rebalancing-gain ledger payload the caller publishes",
       "file": "projection/internal/annualRebalanceToTarget.ts",
       "lines": [
-        204,
-        207
+        179,
+        182
       ],
       "note": "SHAPE CHANGED WITH THE EXTRACTION: inlined, this literal was an argument to an optional-chained recorder call and was built on cashFlow modes ONLY. The row owns it now, so it is built on every sale row in every mode. A count here is therefore no longer evidence that a cashFlow mode ran.",
       "anchors": [
         {
-          "line": 204,
+          "line": 179,
           "text": "record: {"
         },
         {
-          "line": 205,
+          "line": 180,
           "text": "accountId,"
         },
         {
-          "line": 207,
+          "line": 182,
           "text": "},"
         }
       ]
@@ -79,12 +79,12 @@
       "label": "A: the non-taxable / no-trade retarget row",
       "file": "projection/internal/annualRebalanceToTarget.ts",
       "lines": [
-        211,
-        211
+        186,
+        186
       ],
       "anchors": [
         {
-          "line": 211,
+          "line": 186,
           "text": "rows.push({ kind: 'retarget', accountId, targetWeights: target })"
         }
       ]
@@ -166,20 +166,20 @@
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        1929,
-        1939
+        1946,
+        1956
       ],
       "anchors": [
         {
-          "line": 1929,
+          "line": 1946,
           "text": "if (row.runtime.creditsAggregatedIra) {"
         },
         {
-          "line": 1930,
+          "line": 1947,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1939,
+          "line": 1956,
           "text": "})"
         }
       ],

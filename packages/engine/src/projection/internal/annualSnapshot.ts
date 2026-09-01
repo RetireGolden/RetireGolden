@@ -7,10 +7,10 @@
  * remains at the publication site.
  *
  * ORDER IS PART OF THE CONTRACT. The balance record is assembled from
- * investable balances, then property values, then ordinary debts, then
+ * logical published balances, then property values, then ordinary debts, then
  * permanent-life cash values. `Object.fromEntries` therefore preserves the
- * original last-write behavior for duplicate ids (without treating
- * `__proto__` specially), while each economic total still counts every row in
+ * original later-channel overwrite behavior (without treating `__proto__`
+ * specially), while each economic total still counts every physical row in
  * its own source. Each `+=` is also intentionally left in its original loop:
  * regrouping these floating-point additions can change a result.
  *
@@ -37,6 +37,8 @@ export interface AnnualSnapshotHecmLine {
 export interface AnnualSnapshotInput {
   /** Investable accounts in simulator balance order. */
   readonly balances: readonly AnnualSnapshotBalance[]
+  /** One aggregate publication row per logical account ID. Defaults to balances. */
+  readonly publishedBalances?: readonly AnnualSnapshotBalance[]
   /** Cash not assigned to a modeled account. This opens the investable fold. */
   readonly unassignedCash: number
   /** Property values in insertion order. */
@@ -51,7 +53,7 @@ export interface AnnualSnapshotInput {
 
 /** The values formerly produced by the inline snapshot block. */
 export interface AnnualSnapshot {
-  /** Fresh every call; duplicate ids retain their last value. */
+  /** Fresh every call; one aggregate value per logical investable ID. */
   readonly balanceRecord: Record<string, number>
   readonly investableTotal: number
   readonly propertyTotal: number
@@ -67,6 +69,7 @@ export interface AnnualSnapshot {
 export function annualSnapshot(input: AnnualSnapshotInput): AnnualSnapshot {
   const {
     balances,
+    publishedBalances = balances,
     unassignedCash,
     propertyValues,
     debtBalances,
@@ -76,8 +79,10 @@ export function annualSnapshot(input: AnnualSnapshotInput): AnnualSnapshot {
 
   const balanceEntries: [string, number][] = []
   let investableTotal = unassignedCash
-  for (const state of balances) {
+  for (const state of publishedBalances) {
     balanceEntries.push([state.account.id, state.balance])
+  }
+  for (const state of balances) {
     investableTotal += state.balance
   }
   let propertyTotal = 0

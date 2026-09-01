@@ -11,6 +11,7 @@ import {
   stateForYear,
   stateResidencySegmentsForYear,
   traditionalAccountSchema,
+  type Account,
   type InheritedAccount,
   type Plan,
 } from './plan.js'
@@ -812,6 +813,30 @@ describe('guaranteed-income and estate-depth fields', () => {
     expect(parsePlan(planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'a2', taxQualification: 'qualified', qlac: true })).ok).toBe(true)
   })
 
+  it('rejects duplicate annuity rows when one carries a purchase decision', () => {
+    const plan = planWithAnnuity({
+      year: 2030,
+      premium: 100_000,
+      fundingAccountId: 'a1',
+      taxQualification: 'nonQualified',
+    })
+    const annuity = plan.accounts.find(
+      (account): account is Extract<Account, { type: 'annuity' }> =>
+        account.type === 'annuity' && account.id === 'ann1',
+    )!
+    plan.accounts.push({
+      ...annuity,
+      name: 'Duplicate unpurchased annuity',
+      purchase: undefined,
+    })
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "ann1"',
+    )
+  })
+
   it('rejects a qualified purchase funded from a taxable account', () => {
     expect(parsePlan(planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'a1', taxQualification: 'qualified' })).ok).toBe(false)
   })
@@ -1073,17 +1098,30 @@ describe('pension lump-sum election', () => {
   })
 
   it('refuses a duplicated account id once a rollover election references it', () => {
-    // The ownership validation resolves the target through a map where the last
-    // duplicate wins, while the simulator moves balances first-match-wins. A
-    // duplicated id could therefore validate against one record and move money
-    // in the other, so a referenced duplicate is ambiguous and refused — the
-    // same protection action-referenced accounts already have.
+    // A persisted rollover must identify one actual receiving account rather
+    // than depend on map/array row-selection conventions.
     const plan = planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')
     const owned = plan.accounts.find((a) => a.id === 'a2')!
     plan.accounts.push({ ...owned, name: 'Duplicate of a2' })
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(false)
     expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "a2"')
+  })
+
+  it('refuses duplicate pension rows when one carries the lump-sum decision', () => {
+    const plan = planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')
+    const pension = plan.accounts.find((account) => account.id === 'pen1')!
+    if (pension.type !== 'pension') throw new Error('fixture built no pension')
+    const pensionWithoutDecision = { ...pension }
+    delete pensionWithoutDecision.lumpSumOffer
+    delete pensionWithoutDecision.lumpSumElection
+    plan.accounts.push({
+      ...pensionWithoutDecision,
+      name: 'Duplicate pension without a decision',
+    })
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "pen1"')
   })
 
   it('refuses an inherited IRA as the rollover target', () => {
@@ -1384,6 +1422,390 @@ describe('Plan retirement-action persistence', () => {
         )
       }
     }
+  })
+
+  it('rejects duplicate account IDs whose SEPP facts disagree', () => {
+    const plan = validCouplePlan()
+    const traditional = plan.accounts.find((account) => account.id === 'a2')!
+    if (traditional.type !== 'traditional') {
+      throw new Error('fixture built no traditional account')
+    }
+    plan.accounts.push({
+      ...traditional,
+      name: 'Duplicate with SEPP facts',
+      sepp: { startAge: 56, method: 'rmd' },
+    })
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "a2"',
+    )
+  })
+
+  it('rejects duplicate account IDs whose inherited facts disagree', () => {
+    const plan = validCouplePlan()
+    const traditional = plan.accounts.find((account) => account.id === 'a2')!
+    if (traditional.type !== 'traditional') {
+      throw new Error('fixture built no traditional account')
+    }
+    plan.accounts.push({
+      ...traditional,
+      name: 'Duplicate with inherited facts',
+      inherited: {
+        ownerDeathYear: 2022,
+        decedentHadStartedRmds: true,
+      },
+    })
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "a2"',
+    )
+  })
+
+  it('rejects duplicate retirement IDs whose schedule-driving identity disagrees', () => {
+    const typeConflict = validCouplePlan()
+    typeConflict.accounts.push({
+      type: 'roth',
+      id: 'a2',
+      name: 'Same ID, Roth IRA',
+      ownerPersonId: 'p1',
+      annualReturnPct: 6,
+      kind: 'ira',
+      balance: 90_000,
+      annualContribution: 0,
+    })
+
+    const kindConflict = validCouplePlan()
+    const employer = kindConflict.accounts.find((account) => account.id === 'a2')!
+    if (employer.type !== 'traditional') throw new Error('fixture built no traditional account')
+    kindConflict.accounts.push({ ...employer, name: 'Same ID, IRA', kind: 'ira' })
+
+    const ownerConflict = validCouplePlan()
+    ownerConflict.accounts.push({ ...employer, ownerPersonId: 'p2' })
+
+    const employerClassConflict = validCouplePlan()
+    employerClassConflict.accounts.push({ ...employer, employerPlanType: '403b' })
+
+    const divisorConflict = validCouplePlan()
+    divisorConflict.accounts.push({ ...employer, spouseSoleBeneficiary: true })
+
+    for (const plan of [
+      typeConflict,
+      kindConflict,
+      ownerConflict,
+      employerClassConflict,
+      divisorConflict,
+    ]) {
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(false)
+      expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+        'duplicate account id "a2"',
+      )
+    }
+  })
+
+  it('accepts duplicate inherited schedules with reordered keys, different provenance, and explicit defaults', () => {
+    const plan = validCouplePlan()
+    const inheritedBase = {
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'estate' as const,
+        ownerBirthYear: 1940,
+        provenance: { source: 'first custodian', asOf: '2026-01-01' },
+      },
+    }
+    const first = traditionalAccount('duplicate-inherited', 100_000, 'p1', 'ira')
+    const second = traditionalAccount('duplicate-inherited', 50_000, 'p1', 'ira')
+    if (first.type !== 'traditional' || second.type !== 'traditional') {
+      throw new Error('fixture built no traditional account')
+    }
+    first.inherited = inheritedBase
+    second.inherited = {
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        provenance: { asOf: '2026-02-02', source: 'second custodian' },
+        ownerYearOfDeathRmdSatisfied: false,
+        spouseUnlimitedWithdrawalRight: false,
+        election: 'none',
+        soleBeneficiary: false,
+        edbCategory: 'none',
+        ownerBirthYear: 1940,
+        beneficiaryClass: 'estate',
+      },
+      ownerDeathYear: 2022,
+    }
+    plan.accounts = [plan.accounts[0]!, first, second]
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('preserves unreferenced cross-type duplicates outside retirement identity', () => {
+    const plan = validCouplePlan()
+    plan.accounts.push({
+      type: 'cash',
+      id: 'legacy-position',
+      name: 'Legacy cash row',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+    }, {
+      type: 'property',
+      id: 'legacy-position',
+      name: 'Legacy property row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    })
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects a cash/property channel that aliases two physical cash rows', () => {
+    const plan = validCouplePlan()
+    plan.accounts = [{
+      type: 'cash',
+      id: 'ambiguous-cash-property',
+      name: 'First cash row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+    }, {
+      type: 'cash',
+      id: 'ambiguous-cash-property',
+      name: 'Second cash row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 20_000,
+      annualContribution: 0,
+    }, {
+      type: 'property',
+      id: 'ambiguous-cash-property',
+      name: 'Property row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "ambiguous-cash-property"',
+    )
+  })
+
+  it('rejects a cash/property channel with more than the exact legacy pair', () => {
+    const plan = validCouplePlan()
+    const cash = {
+      type: 'cash' as const,
+      id: 'legacy-position',
+      name: 'Legacy cash row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+    }
+    const property = {
+      type: 'property' as const,
+      id: 'legacy-position',
+      name: 'Legacy property row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }
+    plan.accounts = [cash, property, { ...property, name: 'Second property row' }]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "legacy-position"',
+    )
+  })
+
+  it('rejects duplicate balance rows whose estate destinations disagree in either order', () => {
+    const plan = validCouplePlan()
+    const account = plan.accounts.find((candidate) => candidate.id === 'a2')!
+    const spouse = { ...account, estateBeneficiary: { destination: 'spouse' as const } }
+    const charity = {
+      ...account,
+      estateBeneficiary: { destination: 'charity' as const, charityPct: 40 },
+    }
+
+    for (const accounts of [[spouse, charity], [charity, spouse]]) {
+      plan.accounts = accounts
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(false)
+      expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+        'duplicate account id "a2"',
+      )
+    }
+  })
+
+  it('normalizes an omitted estate destination to the account-class default', () => {
+    const plan = validCouplePlan()
+    const implicitNonSpouse = plan.accounts.find((candidate) => candidate.id === 'a2')!
+    const explicitNonSpouse = {
+      ...implicitNonSpouse,
+      estateBeneficiary: { destination: 'nonSpouse' as const },
+    }
+    plan.accounts = [implicitNonSpouse, explicitNonSpouse]
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('preserves last-row publication for unreferenced non-balance duplicates', () => {
+    const plan = validCouplePlan()
+    const property = {
+      type: 'property' as const,
+      id: 'duplicate-property',
+      name: 'First property row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }
+    plan.accounts = [property, {
+      ...property,
+      name: 'Selected property row',
+      ownerPersonId: 'p2',
+      value: 200_000,
+    }]
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects duplicate equity-comp IDs whose vesting facts disagree', () => {
+    const plan = validCouplePlan()
+    const base = {
+      type: 'equityComp' as const,
+      id: 'duplicate-equity',
+      name: 'Equity row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      costBasis: 5_000,
+      annualContribution: 0,
+      vestingMode: 'final' as const,
+      vestDate: null,
+    }
+    plan.accounts = [base, {
+      ...base,
+      name: 'Conflicting cliff row',
+      vestingMode: 'cliff',
+      vestDate: '2028-01-01',
+    }]
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "duplicate-equity"')
+  })
+
+  it('rejects duplicate HSA IDs whose withdrawal or estate tax facts disagree', () => {
+    const plan = validCouplePlan()
+    const base = {
+      type: 'hsa' as const,
+      id: 'duplicate-hsa',
+      name: 'HSA row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+      withdrawalTreatment: 'assumeAllQualified' as const,
+      beneficiary: 'spouse' as const,
+    }
+    plan.accounts = [base, {
+      ...base,
+      name: 'Conflicting HSA row',
+      withdrawalTreatment: 'capByMedicalExpenses',
+      reimburseLater: true,
+      beneficiary: 'nonSpouse',
+    }]
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "duplicate-hsa"')
+  })
+
+  it('compares HSA beneficiaries through their effective estate destination', () => {
+    const plan = validCouplePlan()
+    const base = {
+      type: 'hsa' as const,
+      id: 'duplicate-hsa',
+      name: 'HSA row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+      withdrawalTreatment: 'assumeAllQualified' as const,
+      beneficiary: 'nonSpouse' as const,
+    }
+    plan.accounts = [base, {
+      ...base,
+      name: 'Explicit equivalent HSA row',
+      beneficiary: 'spouse',
+      estateBeneficiary: { destination: 'nonSpouse' },
+    }]
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects cross-type duplicate IDs when both rows become financial balances', () => {
+    const plan = validCouplePlan()
+    plan.accounts.push({
+      type: 'cash',
+      id: 'ambiguous-balance',
+      name: 'Cash interpretation',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+    }, {
+      type: 'taxable',
+      id: 'ambiguous-balance',
+      name: 'Taxable interpretation',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 10_000,
+      costBasis: 5_000,
+      annualContribution: 0,
+    })
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "ambiguous-balance"',
+    )
+  })
+
+  it('rejects duplicate financial balances owned by different people', () => {
+    const plan = validCouplePlan()
+    const taxable = (ownerPersonId: 'p1' | 'p2') => ({
+      type: 'taxable' as const,
+      id: 'ambiguous-owner',
+      name: `Taxable for ${ownerPersonId}`,
+      ownerPersonId,
+      annualReturnPct: 0,
+      balance: 10_000,
+      costBasis: 5_000,
+      annualContribution: 0,
+    })
+    plan.accounts.push(taxable('p1'), taxable('p2'))
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "ambiguous-owner"',
+    )
   })
 
   it('rejects duplicate person IDs before action references can depend on array order', () => {

@@ -31,7 +31,7 @@ export function annualGuardrailFundingPlan(input: {
   readonly inflFactor: number
   readonly anyAlive: boolean
   readonly balances: readonly { readonly account: Account }[]
-  readonly startOfYearBalance: ReadonlyMap<string, number>
+  readonly startOfYearBalances: readonly number[]
   readonly requiredLifestyle: number
   readonly targetLifestyle: number
   readonly idealLifestyle: number
@@ -73,9 +73,12 @@ export function annualGuardrailFundingPlan(input: {
       : 1
 
   if (input.guardrailsActive && input.anyAlive) {
+    if (input.startOfYearBalances.length !== input.balances.length) {
+      throw new Error('Guardrail opening balances lost positional alignment')
+    }
     let startPortfolio = 0
-    for (const balance of input.balances) {
-      startPortfolio += input.startOfYearBalance.get(balance.account.id) ?? 0
+    for (let balanceIndex = 0; balanceIndex < input.balances.length; balanceIndex++) {
+      startPortfolio += input.startOfYearBalances[balanceIndex]!
     }
     if (input.riskBasedGuardrails) {
       // Risk-based guardrails compare the real start balance with the stable

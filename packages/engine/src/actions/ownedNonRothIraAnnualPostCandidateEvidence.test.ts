@@ -648,6 +648,7 @@ describe('buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput', () =>
       origin: kind === 'ownedIraRmd' ? 'rmdEngine' : 'contributionLedger',
       ownerPersonId: owner,
       sourceAccountId: requestedIra,
+      ...(kind === 'ownedIraContribution' ? { sourceBalanceIndex: 0 } : {}),
       grossAmount: asPositiveUsdCents(1),
       executionDate: '2030-02-01',
       executionSequence: 1,
@@ -873,6 +874,24 @@ describe('buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput', () =>
       value.postYearContributionWindow.evidenceId = collisionTarget
       expect(status(value)).toBe('identifierCollision')
     }
+  })
+
+  it('registers non-balance account IDs against evidence reuse', () => {
+    const value = clone()
+    ;(value.inventoryInput.plan as Plan).accounts.push({
+      type: 'property',
+      id: 'property-collision',
+      name: 'Property',
+      ownerPersonId: owner,
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    })
+    refreshInventoryAndCandidate(value)
+    value.postYearContributionWindow.evidenceId = 'property-collision'
+
+    expect(status(value)).toBe('identifierCollision')
   })
 
   it('registers the annual ledger run and every rebuilt inventory event against cross-role reuse', () => {

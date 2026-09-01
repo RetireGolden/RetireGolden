@@ -46,6 +46,7 @@ export type OwnedNonRothIraReplayOccurrenceKind =
    */
   | 'namedRothConversion'
   | 'ownedIraContribution'
+  | 'ownedIraEmployerContribution'
   | 'rolloverInflow'
 
 export interface OwnedNonRothIraReplayAllocationIdentityInput {

@@ -75,7 +75,7 @@
     },
     {
       "id": "D.snapshot-policy",
-      "label": "duplicate-id last-write snapshot and shared allocation invocation",
+      "label": "grouped logical snapshot and shared allocation invocation",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
       "lines": [
         202,
@@ -217,36 +217,36 @@
       "label": "caller invocation, exact snapshot publication and subtract/add replay",
       "file": "projection/simulate.ts",
       "lines": [
-        6777,
-        6801
+        6821,
+        6845
       ],
       "anchors": [
         {
-          "line": 6777,
-          "text": "// The Plan order this walks in is how the entries are built and not"
+          "line": 6821,
+          "text": "// Each selected ID retains its first Plan insertion position; that is"
         },
         {
-          "line": 6782,
+          "line": 6826,
           "text": "aggregateRothConversionAllocationDesired = desired"
         },
         {
-          "line": 6783,
+          "line": 6827,
           "text": "const plannedAllocation = annualAggregateRothConversionPlan({"
         },
         {
-          "line": 6790,
+          "line": 6834,
           "text": "})"
         },
         {
-          "line": 6797,
+          "line": 6841,
           "text": "const allocation = withAnnualAggregateRothConversionReservations("
         },
         {
-          "line": 6800,
+          "line": 6844,
           "text": ")"
         },
         {
-          "line": 6801,
+          "line": 6845,
           "text": "if (allocation.status === 'refused') {"
         }
       ],

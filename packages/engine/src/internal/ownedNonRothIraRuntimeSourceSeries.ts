@@ -74,6 +74,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'namedQcd'
     | 'namedRothConversion'
     | 'ownedIraContribution'
+    | 'ownedIraEmployerContribution'
     | 'rolloverInflow'
   readonly applicationKind: 'debit' | 'credit'
   readonly simulatorPhase:
@@ -720,7 +721,7 @@ function ownedPools(
   plan: Plan,
   taxYear?: number,
 ): Map<PersonId, Extract<Account, { type: 'traditional' }>[]> {
-  const pools = new Map<PersonId, Extract<Account, { type: 'traditional' }>[]>()
+  const pools = new Map<PersonId, Map<string, Extract<Account, { type: 'traditional' }>>>()
   for (const account of plan.accounts) {
     // The S2-effective arm only ever admits traditional IRAs: the flip makes
     // an inherited traditional IRA the spouse's own aggregated IRA for the
@@ -734,12 +735,92 @@ function ownedPools(
     if (!isAggregatedIra(account) && !s2Effective) continue
     if (account.type !== 'traditional') continue
     const owner = account.ownerPersonId as PersonId
-    pools.set(owner, [...(pools.get(owner) ?? []), account])
+    const accounts = pools.get(owner) ?? new Map()
+    // Duplicate physical rows form one logical source-series account. Facts
+    // come from the selected last row; its opening/closing value is aggregate.
+    accounts.set(account.id, account)
+    pools.set(owner, accounts)
   }
   return new Map([...pools]
     .sort(([left], [right]) => compareUtf16CodeUnits(left, right))
-    .map(([owner, accounts]) => [owner, accounts.sort((left, right) =>
+    .map(([owner, accountsById]) => [owner, [...accountsById.values()].sort((left, right) =>
       compareUtf16CodeUnits(left.id, right.id))]))
+}
+
+function aggregateOwnedOpeningBalance(
+  plan: Plan,
+  accountId: string,
+  taxYear?: number,
+): number {
+  return plan.accounts.reduce((sum, account) => {
+    const s2Effective =
+      taxYear !== undefined &&
+      account.type === 'traditional' &&
+      account.kind === 'ira' &&
+      isTreatAsOwnEffective(account, taxYear)
+    return account.type === 'traditional' && account.id === accountId &&
+      (isAggregatedIra(account) || s2Effective)
+      ? sum + account.balance
+      : sum
+  }, 0)
+}
+
+function physicalBalanceKey(accountId: string, balanceIndex: number): string {
+  return JSON.stringify([accountId, balanceIndex])
+}
+
+function balanceBearingAccounts(plan: Plan): Array<{ account: Account; balanceIndex: number }> {
+  return plan.accounts
+    .filter((account) =>
+      account.type === 'cash' || account.type === 'taxable' ||
+      account.type === 'equityComp' || account.type === 'traditional' ||
+      account.type === 'roth' || account.type === 'hsa')
+    .map((account, balanceIndex) => ({ account, balanceIndex }))
+}
+
+function ownedPhysicalRows(
+  plan: Plan,
+  taxYear?: number,
+): Array<{ account: Extract<Account, { type: 'traditional' }>; balanceIndex: number }> {
+  return balanceBearingAccounts(plan).flatMap(({ account, balanceIndex }) => {
+    const s2Effective = taxYear !== undefined && account.type === 'traditional' &&
+      account.kind === 'ira' && isTreatAsOwnEffective(account, taxYear)
+    return account.type === 'traditional' && (isAggregatedIra(account) || s2Effective)
+      ? [{ account, balanceIndex }]
+      : []
+  })
+}
+
+function applyPhysicalGroupClosing(
+  physicalRawBalances: Map<string, number>,
+  rows: readonly { account: Extract<Account, { type: 'traditional' }>; balanceIndex: number }[],
+  accountId: string,
+  target: number,
+): void {
+  const members = rows.filter((row) => row.account.id === accountId)
+  if (members.length === 0) return
+  const opening = members.reduce((sum, row) =>
+    sum + (physicalRawBalances.get(physicalBalanceKey(accountId, row.balanceIndex)) ?? 0), 0)
+  let assigned = 0
+  let residualIndex = members.length - 1
+  for (let index = members.length - 1; index >= 0; index -= 1) {
+    if ((physicalRawBalances.get(physicalBalanceKey(accountId, members[index]!.balanceIndex)) ?? 0) > 0) {
+      residualIndex = index
+      break
+    }
+  }
+  for (let index = 0; index < members.length; index += 1) {
+    if (index === residualIndex) continue
+    const row = members[index]!
+    const key = physicalBalanceKey(accountId, row.balanceIndex)
+    const value = opening === 0 ? 0 : target * ((physicalRawBalances.get(key) ?? 0) / opening)
+    physicalRawBalances.set(key, value)
+    assigned += value
+  }
+  physicalRawBalances.set(
+    physicalBalanceKey(accountId, members[residualIndex]!.balanceIndex),
+    target - assigned,
+  )
 }
 
 function applicationShape(
@@ -773,6 +854,7 @@ function applicationShape(
     case 'rolloverInflow':
       return { applicationKind: 'credit', simulatorPhase: 'pensionLumpSumRollover', form8606Line: null }
     case 'ownedIraContribution':
+    case 'ownedIraEmployerContribution':
       return { applicationKind: 'credit', simulatorPhase: 'employeeContribution', form8606Line: null }
     case 'ownedIraRmd':
       return { applicationKind: 'debit', simulatorPhase: 'ownerRmdDistribution', form8606Line: 'line7' }
@@ -954,12 +1036,36 @@ function occurrenceOrderAccountId(
   const simpleKinds = new Set([
     'ownedIraRmd', 'employerPlanRmd', 'inheritedIraRmd',
     'automaticSeppDistribution', 'legacyNeedBasedWithdrawal', 'legacyQcd',
-    'ownedIraContribution', 'ownedIraEmployerContribution',
-    'employerPlanEmployeeContribution', 'employerPlanEmployerMatch',
   ])
   if (simpleKinds.has(occurrence.kind)) {
     if (key.length !== 2 || key[0] !== occurrence.kind || key[1] !== sourceId) {
       fail('sourceIdentityInvalid', 'Runtime producer key must exact-bind its kind and source account', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      })
+    }
+    return sourceId!
+  }
+  const positionalContributionKinds = new Set([
+    'ownedIraContribution',
+    'ownedIraEmployerContribution',
+    'employerPlanEmployeeContribution',
+    'employerPlanEmployerMatch',
+  ])
+  if (positionalContributionKinds.has(occurrence.kind)) {
+    const balanceIndex = key[2]
+    // The producer iterates the simulator's investable `balances`, not every
+    // Plan account. Reconstruct that exact row space: pensions, annuities,
+    // property, debt, insurance, and HECM rows do not consume an index.
+    const balanceAccounts = plan.accounts.filter((candidate) =>
+      candidate.type === 'cash' || candidate.type === 'taxable' ||
+      candidate.type === 'equityComp' || candidate.type === 'traditional' ||
+      candidate.type === 'roth' || candidate.type === 'hsa')
+    const account = typeof balanceIndex === 'number' && Number.isSafeInteger(balanceIndex)
+      ? balanceAccounts[balanceIndex]
+      : undefined
+    if (key.length !== 3 || key[0] !== occurrence.kind || key[1] !== sourceId ||
+        account?.id !== sourceId) {
+      fail('sourceIdentityInvalid', 'Contribution producer key must exact-bind its kind, source account, and Plan row', {
         taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
       })
     }
@@ -1102,10 +1208,9 @@ function aggregateRothCredits(
     fail('aggregateRothCreditInvalid', 'Owned-IRA conversions require an aggregate Roth credit', context)
   }
   const bySource = new Map(conversions.map((entry) => [entry.sourceAccountId, entry]))
-  const ordered = plan.accounts.flatMap((account) => {
-    const occurrence = bySource.get(account.id)
-    return occurrence === undefined ? [] : [occurrence]
-  })
+  const ordered = [...bySource.values()].sort((left, right) =>
+    (accountOrder.get(left.sourceAccountId ?? '') ?? Number.MAX_SAFE_INTEGER) -
+      (accountOrder.get(right.sourceAccountId ?? '') ?? Number.MAX_SAFE_INTEGER))
   if (ordered.length !== conversions.length || bySource.size !== conversions.length) {
     fail('aggregateRothCreditInvalid', 'Conversion occurrences must map uniquely to Plan account order', context)
   }
@@ -1370,27 +1475,29 @@ function validateUnchecked(
   }
 
   const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
-  const accountOrder = new Map(plan.accounts.map((account, index) => [account.id, index]))
+  const accountOrder = new Map<string, number>()
+  for (const [index, account] of plan.accounts.entries()) {
+    if (!accountOrder.has(account.id)) accountOrder.set(account.id, index)
+  }
   const pools = ownedPools(plan)
   const ownedAccounts = [...pools.values()].flat()
-  const ownedAccountIds = new Set<string>()
-  for (const account of ownedAccounts) {
-    if (ownedAccountIds.has(account.id)) {
-      fail(
-        'sourceIdentityInvalid',
-        'Owned non-Roth IRA account IDs must be unique before source replay',
-        { sourceAccountId: account.id },
-      )
-    }
-    ownedAccountIds.add(account.id)
-  }
   const personIds = new Set(plan.household.people.map((person) => person.id))
   let openingBalances = new Map<AccountId, UsdCents>(ownedAccounts.map((account) => [
-    asAccountId(account.id), cents(account.balance, 'Plan opening IRA balance', { sourceAccountId: account.id }),
+    asAccountId(account.id), cents(
+      aggregateOwnedOpeningBalance(plan, account.id),
+      'Plan opening IRA balance',
+      { sourceAccountId: account.id },
+    ),
   ]))
   let openingRawBalances = new Map<AccountId, number>(ownedAccounts.map((account) => [
-    asAccountId(account.id), account.balance,
+    asAccountId(account.id), aggregateOwnedOpeningBalance(plan, account.id),
   ]))
+  let openingPhysicalRawBalances = new Map(
+    ownedPhysicalRows(plan).map(({ account, balanceIndex }) => [
+      physicalBalanceKey(account.id, balanceIndex),
+      account.balance,
+    ]),
+  )
   /**
    * The contract-value channel, carried year to year exactly as the account
    * balances beside it are.
@@ -1444,16 +1551,45 @@ function validateUnchecked(
     // holding the projection-start inventory static across that identity flip.
     const pools = ownedPools(plan, taxYear)
     const ownedAccounts = [...pools.values()].flat()
+    const physicalOwnedRows = ownedPhysicalRows(plan, taxYear)
     const occurrenceSource = yearResult.retirementRuntimeSource
     const applicationSource = yearResult.retirementRuntimeApplicationSource
     const balanceSource = yearResult.ownedNonRothIraPostGrowthSource
     const publishedBalancesBeforeGrowth =
       yearResult.ownedNonRothIraBalancesBeforeGrowth
+    const publishedPhysicalBalancesBeforeGrowth =
+      yearResult.ownedNonRothIraPhysicalBalancesBeforeGrowth
+    const publishedPhysicalOpeningBalances =
+      yearResult.ownedNonRothIraPhysicalOpeningBalances
     if (!occurrenceSource || !applicationSource || !balanceSource ||
         !publishedBalancesBeforeGrowth ||
         typeof publishedBalancesBeforeGrowth !== 'object' ||
         Array.isArray(publishedBalancesBeforeGrowth)) {
       fail('sourceMissing', 'Each year requires occurrences, applications, pre-growth balances, and post-growth balances', { taxYear })
+    }
+    if (publishedPhysicalOpeningBalances !== undefined) {
+      if (publishedPhysicalOpeningBalances.length !== physicalOwnedRows.length) {
+        fail('sourceCoverageInvalid', 'Physical opening balances must contain every owned IRA balance row', { taxYear })
+      }
+      for (let index = 0; index < physicalOwnedRows.length; index += 1) {
+        const expected = physicalOwnedRows[index]!
+        const published = publishedPhysicalOpeningBalances[index]!
+        const key = physicalBalanceKey(expected.account.id, expected.balanceIndex)
+        if (published.sourceAccountId !== expected.account.id ||
+            published.balanceIndex !== expected.balanceIndex ||
+            (openingPhysicalRawBalances.has(key) &&
+              openingPhysicalRawBalances.get(key) !== published.balancePlanDollars)) {
+          fail('balanceChainInvalid', 'Physical opening balances must continue row identity and prior close', {
+            taxYear, sourceAccountId: published.sourceAccountId,
+          })
+        }
+        cents(published.balancePlanDollars, 'Physical opening IRA balance', {
+          taxYear, sourceAccountId: published.sourceAccountId,
+        })
+        openingPhysicalRawBalances.set(key, published.balancePlanDollars)
+      }
+    } else if (physicalOwnedRows.length !== ownedAccounts.length) {
+      fail('sourceMissing', 'Duplicate owned IRA rows require physical opening balances', { taxYear })
     }
     if (occurrenceSource.status !== 'runtimeOccurrenceSourcesCaptured' ||
         occurrenceSource.captureBoundary !== 'legacyAnnualPassCommittedBeforeYearResultPublication' ||
@@ -1693,8 +1829,10 @@ function validateUnchecked(
     }
     const postGrowthBalances = new Map<AccountId, UsdCents>()
     const postGrowthRawBalances = new Map<AccountId, number>()
+    const postGrowthPhysicalRawBalances = new Map<string, number>()
     const preGrowthBalances = new Map<AccountId, UsdCents>()
     const preGrowthRawBalances = new Map<AccountId, number>()
+    const preGrowthPhysicalRawBalances = new Map<string, number>()
     const ownerBalances = new Map<PersonId, NormalizedOwnedNonRothIraYearEndBalance[]>()
     const publishedBalances = yearResult.balances
     if (Object.keys(publishedBalancesBeforeGrowth).length !==
@@ -1737,31 +1875,79 @@ function validateUnchecked(
         ),
       )
     }
+    if (publishedPhysicalBalancesBeforeGrowth !== undefined) {
+      if (publishedPhysicalBalancesBeforeGrowth.length !== physicalOwnedRows.length) {
+        fail('sourceCoverageInvalid', 'Physical pre-growth balances must contain every owned IRA balance row', { taxYear })
+      }
+      for (let index = 0; index < physicalOwnedRows.length; index += 1) {
+        const expected = physicalOwnedRows[index]!
+        const published = publishedPhysicalBalancesBeforeGrowth[index]!
+        if (published.sourceAccountId !== expected.account.id ||
+            published.balanceIndex !== expected.balanceIndex) {
+          fail('sourceCoverageInvalid', 'Physical pre-growth balances must retain balance-row order and identity', {
+            taxYear, sourceAccountId: published.sourceAccountId,
+          })
+        }
+        cents(published.balancePlanDollars, 'Physical pre-growth IRA balance', {
+          taxYear, sourceAccountId: published.sourceAccountId,
+        })
+        preGrowthPhysicalRawBalances.set(
+          physicalBalanceKey(published.sourceAccountId, published.balanceIndex),
+          published.balancePlanDollars,
+        )
+      }
+    } else if (physicalOwnedRows.length !== ownedAccounts.length) {
+      fail('sourceMissing', 'Duplicate owned IRA rows require physical pre-growth balances', { taxYear })
+    } else {
+      for (const row of physicalOwnedRows) {
+        preGrowthPhysicalRawBalances.set(
+          physicalBalanceKey(row.account.id, row.balanceIndex),
+          publishedBalancesBeforeGrowth[row.account.id]!,
+        )
+      }
+    }
     for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
       const owner = expectedOwners[ownerIndex]!
       const rawPool = balanceSource.ownerPools[ownerIndex]!
       const accounts = pools.get(owner)!
-      if (rawPool.ownerPersonId !== owner || rawPool.accountBalances.length !== accounts.length) {
+      const physicalAccounts = physicalOwnedRows
+        .filter((row) => row.account.ownerPersonId === owner)
+        .sort((left, right) =>
+          compareUtf16CodeUnits(left.account.id, right.account.id) ||
+          left.balanceIndex - right.balanceIndex)
+      if (rawPool.ownerPersonId !== owner || rawPool.accountBalances.length !== physicalAccounts.length) {
         fail('postGrowthPoolInvalid', 'Post-growth pools must retain canonical owner order and membership', { taxYear, ownerPersonId: owner })
       }
-      const normalizedBalances = rawPool.accountBalances.map((raw, accountIndex) => {
-        const account = accounts[accountIndex]!
+      const aggregateRawById = new Map<string, number>()
+      rawPool.accountBalances.forEach((raw, accountIndex) => {
+        const { account, balanceIndex } = physicalAccounts[accountIndex]!
         const rawSourceAccountId = raw.sourceAccountId
         const rawBalancePlanDollars = raw.balancePlanDollars
-        if (rawSourceAccountId !== account.id) {
+        if (rawSourceAccountId !== account.id ||
+            (raw.balanceIndex !== undefined && raw.balanceIndex !== balanceIndex)) {
           fail('postGrowthPoolInvalid', 'Post-growth balances must retain canonical account order including zero siblings', {
             taxYear, ownerPersonId: owner, sourceAccountId: rawSourceAccountId,
           })
         }
+        cents(rawBalancePlanDollars, 'Post-growth IRA balance', {
+          taxYear, ownerPersonId: owner, sourceAccountId: account.id,
+        })
+        postGrowthPhysicalRawBalances.set(
+          physicalBalanceKey(account.id, balanceIndex), rawBalancePlanDollars,
+        )
+        aggregateRawById.set(account.id, (aggregateRawById.get(account.id) ?? 0) + rawBalancePlanDollars)
+      })
+      const normalizedBalances = accounts.map((account) => {
+        const rawBalancePlanDollars = aggregateRawById.get(account.id) ?? 0
         const publishedBalancePlanDollars = publishedBalances[account.id]
         if (!Object.hasOwn(publishedBalances, account.id) ||
             publishedBalancePlanDollars !== rawBalancePlanDollars) {
-          fail('postGrowthPoolInvalid', 'Post-growth balances must exact-rejoin the published account balance', {
-            taxYear, ownerPersonId: owner, sourceAccountId: rawSourceAccountId,
+          fail('postGrowthPoolInvalid', 'Aggregated post-growth physical balances must exact-rejoin the published account balance', {
+            taxYear, ownerPersonId: owner, sourceAccountId: account.id,
           })
         }
         const sourceAccountId = asAccountId(account.id)
-        const balanceAmount = cents(rawBalancePlanDollars, 'Post-growth IRA balance', {
+        const balanceAmount = cents(rawBalancePlanDollars, 'Aggregated post-growth IRA balance', {
           taxYear, ownerPersonId: owner, sourceAccountId,
         })
         postGrowthBalances.set(sourceAccountId, balanceAmount)
@@ -2046,10 +2232,35 @@ function validateUnchecked(
       const rawAmount = application.applicationKind === 'debit'
         ? application.appliedAmountPlanDollars : application.creditedAmountPlanDollars
       cents(rawAmount, 'Application amount', context)
-      const before = cents(application.sourceBalanceBeforePlanDollars, 'Application opening balance', context)
-      const after = cents(application.sourceBalanceAfterPlanDollars, 'Application closing balance', context)
       const occurrenceAmount = cents(occurrence.grossAmountPlanDollars, 'Occurrence amount', context)
       const sourceAccountId = asAccountId(occurrence.sourceAccountId!)
+      const positionalContribution =
+        occurrence.kind === 'ownedIraContribution' ||
+        occurrence.kind === 'ownedIraEmployerContribution'
+      const keyTuple = positionalContribution
+        ? parseKey(occurrence.producerOccurrenceKey, taxYear)
+        : null
+      const balanceIndex = positionalContribution ? keyTuple![2] : undefined
+      const physicalKey = typeof balanceIndex === 'number'
+        ? physicalBalanceKey(occurrence.sourceAccountId!, balanceIndex)
+        : null
+      const logicalRawBefore = openingRawBalances.get(sourceAccountId)
+      const logicalRawAfter = logicalRawBefore === undefined
+        ? undefined
+        : application.applicationKind === 'debit'
+          ? logicalRawBefore - rawAmount
+          : logicalRawBefore + rawAmount
+      const normalizedRawBefore = positionalContribution
+        ? logicalRawBefore
+        : application.sourceBalanceBeforePlanDollars
+      const normalizedRawAfter = positionalContribution
+        ? logicalRawAfter
+        : application.sourceBalanceAfterPlanDollars
+      if (normalizedRawBefore === undefined || normalizedRawAfter === undefined) {
+        fail('balanceChainInvalid', 'Application requires a complete logical opening balance', context)
+      }
+      const before = cents(normalizedRawBefore, 'Application opening balance', context)
+      const after = cents(normalizedRawAfter, 'Application closing balance', context)
       const rawExpectedAfter = application.applicationKind === 'debit'
         ? application.sourceBalanceBeforePlanDollars - rawAmount
         : application.sourceBalanceBeforePlanDollars + rawAmount
@@ -2060,8 +2271,10 @@ function validateUnchecked(
       if (rawAmount !== occurrence.grossAmountPlanDollars ||
           occurrenceAmount === 0 ||
           rawExpectedAfter !== application.sourceBalanceAfterPlanDollars ||
-          openingRawBalances.get(sourceAccountId) !==
-            application.sourceBalanceBeforePlanDollars ||
+          (positionalContribution
+            ? application.balanceIndex !== balanceIndex || physicalKey === null ||
+              openingPhysicalRawBalances.get(physicalKey) !== application.sourceBalanceBeforePlanDollars
+            : openingRawBalances.get(sourceAccountId) !== application.sourceBalanceBeforePlanDollars) ||
           openingBalances.get(sourceAccountId) !== before ||
           sourceBalanceRoundingResidual < -2n ||
           sourceBalanceRoundingResidual > 2n) {
@@ -2070,8 +2283,21 @@ function validateUnchecked(
       openingBalances.set(sourceAccountId, after)
       openingRawBalances.set(
         sourceAccountId,
-        application.sourceBalanceAfterPlanDollars,
+        normalizedRawAfter,
       )
+      if (physicalKey !== null) {
+        openingPhysicalRawBalances.set(
+          physicalKey,
+          application.sourceBalanceAfterPlanDollars,
+        )
+      } else {
+        applyPhysicalGroupClosing(
+          openingPhysicalRawBalances,
+          physicalOwnedRows,
+          occurrence.sourceAccountId!,
+          normalizedRawAfter,
+        )
+      }
       if (occurrence.kind === 'annuityFundingTransfer') {
         // The debit is whole and the balance chain has taken it. It contributes
         // no normalized application because it contributes nothing to either
@@ -2116,6 +2342,18 @@ function validateUnchecked(
         fail('sourceCoverageInvalid', 'Every owned-IRA occurrence must have one supported application', {
           taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
         })
+      }
+    }
+    if (publishedPhysicalBalancesBeforeGrowth !== undefined) {
+      for (const { account, balanceIndex } of physicalOwnedRows) {
+        const key = physicalBalanceKey(account.id, balanceIndex)
+        if (openingPhysicalRawBalances.get(key) !== preGrowthPhysicalRawBalances.get(key)) {
+          fail('balanceChainInvalid', 'The completed physical application chain must exact-rejoin its pre-growth balance row', {
+            taxYear,
+            ownerPersonId: account.ownerPersonId!,
+            sourceAccountId: account.id,
+          })
+        }
       }
     }
     for (const account of ownedAccounts) {
@@ -2442,6 +2680,7 @@ function validateUnchecked(
     }))
     openingBalances = postGrowthBalances
     openingRawBalances = postGrowthRawBalances
+    openingPhysicalRawBalances = postGrowthPhysicalRawBalances
     openingContractRawValues = contractRawValues
   }
 

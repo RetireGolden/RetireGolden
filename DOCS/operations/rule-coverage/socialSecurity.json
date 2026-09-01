@@ -117,7 +117,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         },
@@ -180,7 +180,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         },
@@ -266,7 +266,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         },
@@ -349,7 +349,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         }
@@ -576,11 +576,11 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             },
             {
               "name": "wagesIncomeSchema",
-              "line": 1431
+              "line": 1530
             }
           ]
         },
@@ -664,7 +664,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         }
@@ -959,7 +959,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         }
@@ -1427,7 +1427,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         }
@@ -1506,7 +1506,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         }
@@ -1563,7 +1563,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         }
@@ -1722,7 +1722,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         }
@@ -1928,7 +1928,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         },
@@ -2018,7 +2018,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         },
@@ -2889,7 +2889,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         },
@@ -3137,7 +3137,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1480
+              "line": 1579
             }
           ]
         },

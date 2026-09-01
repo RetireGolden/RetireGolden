@@ -2,7 +2,7 @@
  * Contract tests for the annual rebalance-to-target phase.
  *
  * These pin the helper in isolation: selection, the per-row arithmetic operand
- * for operand, the retarget-as-you-go rule, and the structural promises the
+ * for operand, positional retargeting, and the structural promises the
  * delegation test's positional attribution rests on. What they CANNOT see is
  * whether `simulatePlan` actually calls this function — a byte-identical
  * differential dump passes an orphaned helper, and so do these. That is
@@ -54,7 +54,7 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
   it('returns exactly one row per state, in states order', () => {
     const rows = annualRebalanceToTarget({
       states: [state('a', 'taxable', 200_000, 100_000), state('b', 'traditional', 50_000, 0), state('c', 'cash', 10_000, 0)],
-      allocationTrack: trackMap(['a', driftedTrack()], ['b', driftedTrack()]),
+      allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()]),
       year: YEAR,
       startYear: START_YEAR,
     })
@@ -65,7 +65,7 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
   it('returns all-none rows in the start year, and the gate is the year, not the tracks', () => {
     const input = {
       states: [state('a', 'taxable', 200_000, 100_000), state('b', 'traditional', 50_000, 0)],
-      allocationTrack: trackMap(['a', driftedTrack()], ['b', driftedTrack()]),
+      allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()]),
       startYear: START_YEAR,
     }
     expect(annualRebalanceToTarget({ ...input, year: START_YEAR }).map((r) => r.kind)).toEqual(['none', 'none'])
@@ -77,7 +77,7 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
   it('skips a state with no track and a track that opts out with rebalancing: none', () => {
     const rows = annualRebalanceToTarget({
       states: [state('untracked', 'taxable', 200_000, 100_000), state('optout', 'taxable', 200_000, 100_000)],
-      allocationTrack: trackMap(['optout', driftedTrack(staticPolicy('none'))]),
+      allocationTrack: trackMap(['1', driftedTrack(staticPolicy('none'))]),
       year: YEAR,
       startYear: START_YEAR,
     })
@@ -91,7 +91,7 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
         state('roth', 'roth', 200_000, 0),
         state('hsa', 'hsa', 200_000, 0),
       ],
-      allocationTrack: trackMap(['trad', driftedTrack()], ['roth', driftedTrack()], ['hsa', driftedTrack()]),
+      allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()], ['2', driftedTrack()]),
       year: YEAR,
       startYear: START_YEAR,
     })
@@ -105,7 +105,7 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
   it('retargets without selling when the taxable balance is not positive', () => {
     const rows = annualRebalanceToTarget({
       states: [state('a', 'taxable', 0, 0), state('b', 'taxable', -5, 0)],
-      allocationTrack: trackMap(['a', driftedTrack()], ['b', driftedTrack()]),
+      allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()]),
       year: YEAR,
       startYear: START_YEAR,
     })
@@ -140,7 +140,7 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
         state('b', 'taxable', 200_000, 100_000),
         state('c', 'taxable', 200_000, 100_000),
       ],
-      allocationTrack: trackMap(['a', atTarget], ['b', barelyDrifted], ['c', justOverTheGate]),
+      allocationTrack: trackMap(['0', atTarget], ['1', barelyDrifted], ['2', justOverTheGate]),
       year: YEAR,
       startYear: START_YEAR,
     })
@@ -150,7 +150,7 @@ describe('annualRebalanceToTarget — selection and row shape', () => {
 
 describe('annualRebalanceToTarget — the sale arithmetic', () => {
   const SALE_STATES = [state('brok', 'taxable', 211_000, 100_000)]
-  const SALE_TRACK = trackMap(['brok', driftedTrack()])
+  const SALE_TRACK = trackMap(['0', driftedTrack()])
 
   it('prices the sale through aggregateBasisSale on the clamped sell amount', () => {
     const [row] = annualRebalanceToTarget({
@@ -195,7 +195,7 @@ describe('annualRebalanceToTarget — the sale arithmetic', () => {
     }
     const [row] = annualRebalanceToTarget({
       states: [state('brok', 'taxable', 200_000, 50_000)],
-      allocationTrack: trackMap(['brok', noisy]),
+      allocationTrack: trackMap(['0', noisy]),
       year: YEAR,
       startYear: START_YEAR,
     })
@@ -222,51 +222,45 @@ describe('annualRebalanceToTarget — the sale arithmetic', () => {
   })
 })
 
-describe('annualRebalanceToTarget — the retarget-as-you-go rule', () => {
-  it('gives a second state sharing an account id the FIRST one’s retarget', () => {
-    // `model/plan.ts` raises `duplicate account id` only when a retirement
-    // action references the id, so two taxable accounts may legally share one
-    // and both BalanceStates then resolve to the SAME track object. The inlined
-    // phase snapped that track's weights inside its own loop, so the second
-    // account measured turnover against the target and sold nothing.
-    const shared = driftedTrack()
+describe('annualRebalanceToTarget — positional duplicate tracks', () => {
+  it('does not adopt a different row’s positional track through a numeric account ID', () => {
     const rows = annualRebalanceToTarget({
-      states: [state('dup', 'taxable', 211_000, 100_000), state('dup', 'taxable', 211_000, 100_000)],
-      allocationTrack: trackMap(['dup', shared]),
+      states: [
+        state('1', 'taxable', 211_000, 100_000),
+        state('tracked', 'taxable', 211_000, 100_000),
+      ],
+      allocationTrack: trackMap(['1', driftedTrack()]),
       year: YEAR,
       startYear: START_YEAR,
     })
-    expect(rows.map((r) => r.kind)).toEqual(['sale', 'retarget'])
-    // Distinct ids on the same inputs give TWO sales, so the assertion above is
-    // about the shared track rather than about a fixture that only ever sells once.
-    const distinct = annualRebalanceToTarget({
-      states: [state('one', 'taxable', 211_000, 100_000), state('two', 'taxable', 211_000, 100_000)],
-      allocationTrack: trackMap(['one', driftedTrack()], ['two', driftedTrack()]),
-      year: YEAR,
-      startYear: START_YEAR,
-    })
-    expect(distinct.map((r) => r.kind)).toEqual(['sale', 'sale'])
+    expect(rows.map((row) => row.kind)).toEqual(['none', 'sale'])
   })
 
-  it('records the retarget for a NON-taxable first row too, not just for sales', () => {
-    // The inlined phase wrote `track.weights = target` on EVERY non-skipped
-    // row, sale or not, so a traditional account ahead of a taxable one sharing
-    // its id must still suppress the taxable sale.
-    const shared = driftedTrack()
+  it('rebalances both physical states sharing an account id independently', () => {
     const rows = annualRebalanceToTarget({
-      states: [state('dup', 'traditional', 211_000, 0), state('dup', 'taxable', 211_000, 100_000)],
-      allocationTrack: trackMap(['dup', shared]),
+      states: [state('dup', 'taxable', 211_000, 100_000), state('dup', 'taxable', 211_000, 100_000)],
+      allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()]),
       year: YEAR,
       startYear: START_YEAR,
     })
-    expect(rows.map((r) => r.kind)).toEqual(['retarget', 'retarget'])
+    expect(rows.map((r) => r.kind)).toEqual(['sale', 'sale'])
+  })
+
+  it('does not let a non-taxable alias suppress a taxable row’s sale', () => {
+    const rows = annualRebalanceToTarget({
+      states: [state('dup', 'traditional', 211_000, 0), state('dup', 'taxable', 211_000, 100_000)],
+      allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()]),
+      year: YEAR,
+      startYear: START_YEAR,
+    })
+    expect(rows.map((r) => r.kind)).toEqual(['retarget', 'sale'])
   })
 })
 
 describe('annualRebalanceToTarget — purity and structure', () => {
   const INPUT = {
     states: [state('brok', 'taxable', 211_000, 100_000), state('trad', 'traditional', 50_000, 0)],
-    allocationTrack: trackMap(['brok', driftedTrack()], ['trad', driftedTrack()]),
+    allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()]),
     year: YEAR,
     startYear: START_YEAR,
   }
@@ -281,8 +275,8 @@ describe('annualRebalanceToTarget — purity and structure', () => {
     const first = annualRebalanceToTarget(INPUT)
     const second = annualRebalanceToTarget(INPUT)
     expect(second).toEqual(first)
-    // Not the same objects: the retarget overlay is per-call, so a second call
-    // against the same drifted tracks sells again rather than seeing itself.
+    // Not the same objects: the helper is pure, so a second call against the
+    // same unchanged positional tracks produces fresh equivalent rows.
     expect(second[0]).not.toBe(first[0])
   })
 
@@ -292,7 +286,7 @@ describe('annualRebalanceToTarget — purity and structure', () => {
     const s = state('brok', 'taxable', 211_000, 100_000)
     annualRebalanceToTarget({
       states: [s],
-      allocationTrack: trackMap(['brok', track]),
+      allocationTrack: trackMap(['0', track]),
       year: YEAR,
       startYear: START_YEAR,
     })
@@ -308,8 +302,8 @@ describe('annualRebalanceToTarget — purity and structure', () => {
     const rows = annualRebalanceToTarget({
       states: [state('a', 'traditional', 100_000, 0), state('b', 'roth', 100_000, 0)],
       allocationTrack: trackMap(
-        ['a', { policy, weights: weightsToVector(W(60, 0, 40, 0)) }],
-        ['b', { policy, weights: weightsToVector(W(60, 0, 40, 0)) }],
+        ['0', { policy, weights: weightsToVector(W(60, 0, 40, 0)) }],
+        ['1', { policy, weights: weightsToVector(W(60, 0, 40, 0)) }],
       ),
       year: YEAR,
       startYear: START_YEAR,

@@ -38,6 +38,7 @@ import { annualIncomeSetup } from './annualIncomeSetup.js'
 
 function yieldRow(input: {
   accountId: string
+  balanceIndex?: number
   interest?: number
   ordinaryDividends?: number
   qualified?: number
@@ -62,6 +63,7 @@ function yieldRow(input: {
   }
   return {
     kind: 'yield',
+    balanceIndex: input.balanceIndex ?? 0,
     ...input,
     interest,
     ordinaryDividends,
@@ -259,6 +261,7 @@ describe('annualIncomeSetup', () => {
   it('folds yield then wages in source order and preserves producer identity', () => {
     const first = yieldRow({
       accountId: 'duplicate',
+      balanceIndex: 0,
       interest: 10_000_000_000_000_000,
       ordinaryDividends: 0.25,
       qualified: 2,
@@ -269,6 +272,7 @@ describe('annualIncomeSetup', () => {
     })
     const lastDuplicate = yieldRow({
       accountId: 'duplicate',
+      balanceIndex: 1,
       ordinaryDividends: 0.5,
       gross: 1,
       distributedYieldPct: 5,
@@ -276,6 +280,7 @@ describe('annualIncomeSetup', () => {
     })
     const secondAccount = yieldRow({
       accountId: 'second',
+      balanceIndex: 2,
       interest: 0.5,
       gross: 1,
       distributedYieldPct: 6,
@@ -376,8 +381,27 @@ describe('annualIncomeSetup', () => {
       total: 0,
     })
     expect([...result.distributedYieldByAccountId]).toEqual([
-      ['duplicate', { gross: 1, distributedYieldPct: 5, reinvest: false }],
+      [
+        'duplicate',
+        {
+          gross: 10_000_000_000_000_004,
+          distributedYieldPct: 5,
+          reinvest: true,
+        },
+      ],
       ['second', { gross: 1, distributedYieldPct: 6, reinvest: true }],
+    ])
+    expect([...result.distributedYieldByBalanceIndex]).toEqual([
+      [
+        0,
+        {
+          gross: 10_000_000_000_000_004,
+          distributedYieldPct: 4,
+          reinvest: true,
+        },
+      ],
+      [1, { gross: 1, distributedYieldPct: 5, reinvest: false }],
+      [2, { gross: 1, distributedYieldPct: 6, reinvest: true }],
     ])
     expect([...result.wagesByPerson]).toEqual([['p2', 3], ['p1', 1]])
     expect(result.taxableYieldReinvested).toBe(
@@ -405,6 +429,9 @@ describe('annualIncomeSetup', () => {
     expect(first.incomes).not.toBe(second.incomes)
     expect(first.distributedYieldByAccountId).not.toBe(
       second.distributedYieldByAccountId,
+    )
+    expect(first.distributedYieldByBalanceIndex).not.toBe(
+      second.distributedYieldByBalanceIndex,
     )
     expect(first.wagesByPerson).not.toBe(second.wagesByPerson)
     expect(first.distributedYieldRows).toBe(seam.yieldRows)

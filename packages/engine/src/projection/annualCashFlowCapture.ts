@@ -237,7 +237,6 @@ export interface AssembleYearCashFlowInput {
 
   /** Employer Roth-catch-up routing (pre-pass, survives). */
   readonly employerAllocationByOwner: ReadonlyMap<string, EmployerElectiveAllocation>
-  readonly desiredByAccountId: ReadonlyMap<string, number>
 
   readonly yearTaxExemptInterest: number
   readonly generatedTaxExemptInterest: number
@@ -989,7 +988,9 @@ function collectUseLines(
     lines: attributionInput,
     shortfallAfterHecm: input.shortfallAfterHecm,
   })
-  const fundingById = new Map(attributed.lines.map((row) => [row.id, row]))
+  if (attributed.lines.length !== pending.length) {
+    throw new Error('Cash-flow shortfall attribution lost positional cardinality')
+  }
   if (attributed.remainingUnattributed > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS) {
     // An unattributed shortfall is an incomplete use inventory, not funding
     // fixed-point residue. Fail closed even when the hole is below half a cent.
@@ -1000,9 +1001,11 @@ function collectUseLines(
   // half-cent budget and fails closed outside it.
 
   const useLines: YearCashFlowUseLine[] = []
-  for (const row of pending) {
-    const funding = fundingById.get(row.id)
-    if (funding === undefined) continue
+  // Attribution preserves input cardinality and order. Zip by position rather
+  // than public line id: duplicate ids deliberately survive to the report so
+  // reconciliation can flag them, but must not overwrite each other's amounts.
+  for (const [index, row] of pending.entries()) {
+    const funding = attributed.lines[index]!
     if (funding.requestedPlanDollars <= 0 && funding.fundedPlanDollars <= 0) continue
     useLines.push({
       id: row.id,
@@ -1014,6 +1017,9 @@ function collectUseLines(
       identities: row.identities,
     })
   }
+  // ECMAScript specifies a stable Array sort. That stability is load-bearing:
+  // duplicate contribution ids retain their positional emission order so the
+  // ordinal zip in collectTransferLines pairs each transfer with its own use.
   useLines.sort((a, b) => compareCashFlowLineId(a.id, b.id))
   return useLines
 }
@@ -1024,7 +1030,14 @@ function collectTransferLines(
 ): YearCashFlowTransferLine[] {
   const lines: YearCashFlowTransferLine[] = []
   const { yearSites, passLocals } = input
-  const useById = new Map(useLines.map((line) => [line.id, line]))
+  const contributionUsesById = new Map<YearCashFlowLineId, YearCashFlowUseLine[]>()
+  for (const line of useLines) {
+    if (line.kind !== 'contribution') continue
+    const uses = contributionUsesById.get(line.id) ?? []
+    uses.push(line)
+    contributionUsesById.set(line.id, uses)
+  }
+  const contributionUseOrdinalById = new Map<YearCashFlowLineId, number>()
 
   const push = (line: YearCashFlowTransferLine): void => {
     if (line.debitPlanDollars <= 0 && line.creditPlanDollars <= 0) return
@@ -1032,9 +1045,15 @@ function collectTransferLines(
   }
 
   for (const row of yearSites.contributions) {
-    if (row.credited <= 0) continue
     const useId = cashFlowLineIds.useContribution(row.destinationAccountId)
-    const useLine = useById.get(useId)
+    const ordinal = contributionUseOrdinalById.get(useId) ?? 0
+    // collectUseLines emits a contribution use exactly when requested > 0.
+    // Advance the duplicate-id ordinal under the same predicate; a defensive
+    // credited-only row has no use to consume and must not shift later lineage.
+    const hasUseLine = row.requested > 0
+    const useLine = hasUseLine ? contributionUsesById.get(useId)?.[ordinal] : undefined
+    if (hasUseLine) contributionUseOrdinalById.set(useId, ordinal + 1)
+    if (row.credited <= 0) continue
     // Residual attribution, not statutory-cap rejection: committed-credit
     // lineage only when the transfer actually exceeds the funded use.
     const funded = useLine?.fundedPlanDollars ?? 0
@@ -1336,9 +1355,27 @@ function collectTransferLines(
     }
   }
 
-  const distributedYieldSitesByAccountId = new Map(
-    yearSites.distributedYield.map((row) => [row.accountId, row]),
-  )
+  const distributedYieldSitesByAccountId = new Map<string, {
+    interest: number
+    ordinaryDividends: number
+    qualified: number
+    exempt: number
+  }>()
+  for (const row of yearSites.distributedYield) {
+    if (!row.reinvest) continue
+    const prior = distributedYieldSitesByAccountId.get(row.accountId) ?? {
+      interest: 0,
+      ordinaryDividends: 0,
+      qualified: 0,
+      exempt: 0,
+    }
+    distributedYieldSitesByAccountId.set(row.accountId, {
+      interest: prior.interest + row.interest,
+      ordinaryDividends: prior.ordinaryDividends + row.ordinaryDividends,
+      qualified: prior.qualified + row.qualified,
+      exempt: prior.exempt + row.exempt,
+    })
+  }
   for (const [accountId, row] of input.distributedYieldByAccountId) {
     if (!row.reinvest || row.gross <= 0) continue
     const site = distributedYieldSitesByAccountId.get(accountId)
