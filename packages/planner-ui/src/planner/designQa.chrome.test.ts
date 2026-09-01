@@ -310,6 +310,30 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(page.slice(overview)).toMatch(/className="btn-ghost btn-ghost-danger"/)
   })
 
+  it('wide-table wraps show a scroll cue, take focus, and can opt out of the height cap (#468, #480, #483)', () => {
+    const wrap = rule('.year-table-wrap')
+    // Two cover layers that scroll with the content and two shadow layers that stay put.
+    expect(wrap).toMatch(/background-attachment:\s*local, local, scroll, scroll/)
+    expect(wrap).toMatch(/color-mix\(in srgb, var\(--fg\) 18%, transparent\)/)
+    // Token colors only (comments stripped: the rule's own comment cites issue numbers).
+    expect(wrap.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/#[0-9a-f]{3,6}\b/i)
+    expect(rule('.year-table-wrap:focus-visible')).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(rule('.year-table-wrap--grow')).toMatch(/max-height:\s*none/)
+    // The three tables the findings named are ScrollRegions, and the Results
+    // year table prints $0 in the columns that used to go blank at zero.
+    const survivor: string = readFileSync(fileURLToPath(new URL('./SurvivorTransitionPage.tsx', import.meta.url)), 'utf8')
+    expect(survivor).toMatch(/<ScrollRegion label=\{`Death-timing scenarios for \$\{personName\}`\} grow/)
+    const scenarios: string = readFileSync(fileURLToPath(new URL('./ScenariosPage.tsx', import.meta.url)), 'utf8')
+    expect(scenarios).toMatch(/<ScrollRegion label="Scenario overview table"/)
+    const results: string = readFileSync(fileURLToPath(new URL('./ResultsPage.tsx', import.meta.url)), 'utf8')
+    expect(results).toMatch(/<ScrollRegion label="Year-by-year table">/)
+    for (const field of ['contributions', 'employerMatch', 'shortfall']) {
+      expect(results, `${field} cell prints a formatted zero`).toMatch(new RegExp(`fmtMoney\\(adj\\(y\\.year, y\\.${field}\\)\\)`))
+      // The row-depleted class toggle keeps its threshold; only the cell shape is banned.
+      expect(results, `${field} cell no longer blanks at zero`).not.toMatch(new RegExp(`y\\.${field} > 0\\.005 \\? fmtMoney`))
+    }
+  })
+
   it('text, select, and affixed inputs share one height token', () => {
     const affix = rule('.input-affix')
     expect(affix).toMatch(/min-height:\s*var\(--control-height\)/)

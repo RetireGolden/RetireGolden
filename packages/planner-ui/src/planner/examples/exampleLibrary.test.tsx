@@ -62,6 +62,37 @@ describe('example library page', () => {
     expect(browse!.getAttribute('aria-controls')).toBeNull()
   })
 
+  it('renders cards as a labelled list with headings and per-example action names (#478)', async () => {
+    await renderExamples()
+    const grid = container.querySelector('ul.plan-grid[aria-label="Featured examples"]')!
+    expect(grid).not.toBeNull()
+    const cards = [...grid.querySelectorAll(':scope > li.example-card')]
+    expect(cards).toHaveLength(3)
+    const titles = cards.map((c) => c.querySelector('h2.plan-card-name')?.textContent)
+    expect(titles.every(Boolean)).toBe(true)
+    // Every action names its example, so no two cards share an accessible name.
+    const names = cards.flatMap((c) =>
+      [...c.querySelectorAll('button, a')].map((el) => el.getAttribute('aria-label')),
+    )
+    expect(names.every(Boolean)).toBe(true)
+    expect(new Set(names).size).toBe(names.length)
+    expect(names).toContain(`Open ${titles[0]}`)
+    expect(names).toContain(`Save ${titles[0]} to my plans`)
+    expect(names).toContain(`Learn about ${titles[0]}`)
+    // Expanding announces the change to assistive tech.
+    const status = container.querySelector('[role="status"][aria-live="polite"]')!
+    expect(status.textContent).toBe('Showing 3 featured examples.')
+    const browse = Array.from(container.querySelectorAll('button')).find((b) =>
+      /Show all \d+ examples/.test(b.textContent ?? ''),
+    )!
+    await act(async () => {
+      browse.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(status.textContent).toMatch(/^Showing all \d+ examples\.$/)
+    expect(container.querySelector('ul#examples-full-grid[aria-label="All other examples"]')).not.toBeNull()
+  })
+
   it('keeps the toggle after the rows it controls and keeps focus on it across a collapse (#445)', async () => {
     await renderExamples()
     const browse = Array.from(container.querySelectorAll('button')).find((b) =>

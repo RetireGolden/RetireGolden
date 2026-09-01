@@ -26,6 +26,7 @@ import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { EditableFieldset } from './EditableFieldset'
 import { MoneyField, NumberField, PercentField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
+import { ScrollRegion } from './ScrollRegion'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
@@ -997,7 +998,7 @@ function ComparableScenariosPage() {
         ) : overview === null ? (
           <div className="skeleton" style={{ height: '10rem' }} aria-label="Comparing scenarios" />
         ) : (
-          <div className="year-table-wrap" style={{ border: 'none' }}>
+          <ScrollRegion label="Scenario overview table" style={{ border: 'none' }}>
             <table className="compare-table scenarios-table">
               <caption>Deterministic overview (nominal dollars)</caption>
               <thead>
@@ -1064,7 +1065,7 @@ function ComparableScenariosPage() {
                   ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </div>
 

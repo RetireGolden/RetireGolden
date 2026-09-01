@@ -114,22 +114,42 @@ function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (m
 
   const learnHook = { slug: example.learnSlug, label: 'Learn about this example' }
 
+  // A list item with a heading (#478): assistive tech navigates card by card,
+  // and every action names its example so twenty-nine "Open" buttons are not
+  // one identical name.
   return (
-    <div className="plan-card example-card">
-      <span className="plan-card-name">{example.title}</span>
+    <li className="plan-card example-card">
+      <h2 className="plan-card-name">{example.title}</h2>
       <span className="plan-card-meta">{householdFacts(example)}</span>
       <p className="example-card-teaches">{example.teaches}</p>
       <span className="plan-card-actions">
-        <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => void openDemo()}>
+        <button
+          type="button"
+          className="btn btn-primary btn-small"
+          disabled={busy}
+          aria-label={`Open ${example.title}`}
+          onClick={() => void openDemo()}
+        >
           Open
         </button>
-        <button type="button" className="btn btn-secondary btn-small" disabled={busy} onClick={() => void handleSave()}>
+        <button
+          type="button"
+          className="btn btn-secondary btn-small"
+          disabled={busy}
+          aria-label={`Save ${example.title} to my plans`}
+          onClick={() => void handleSave()}
+        >
           Save to my plans
         </button>
-        <LearnLink {...learnHook} variant="button" className="btn btn-ghost btn-small" />
+        <LearnLink
+          {...learnHook}
+          variant="button"
+          className="btn btn-ghost btn-small"
+          ariaLabel={`Learn about ${example.title}`}
+        />
       </span>
       {dialogs}
-    </div>
+    </li>
   )
 }
 
@@ -173,19 +193,24 @@ export function ExampleLibrary({
         Explore curated households in the full planner. Examples stay out of {homeLabel} until you save one. Edit
         freely and refresh without cluttering your own list.
       </p>
-      <div className="plan-grid">
+      <ul className="plan-grid" aria-label="Featured examples">
         {FEATURED.map((example) => (
           <ExampleCard key={example.id} example={example} onNotice={onNotice} />
         ))}
-      </div>
+      </ul>
 
       {expanded ? (
-        <div className="plan-grid" id="examples-full-grid">
+        <ul className="plan-grid" id="examples-full-grid" aria-label="All other examples">
           {REST.map((example) => (
             <ExampleCard key={example.id} example={example} onNotice={onNotice} />
           ))}
-        </div>
+        </ul>
       ) : null}
+      {/* The toggle changes 3 cards to 29 (and back) without moving focus;
+          announce it so a screen-reader user hears what happened (#478). */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {expanded ? `Showing all ${EXAMPLE_PLANS.length} examples.` : `Showing ${FEATURED.length} featured examples.`}
+      </p>
 
       {/* One control, one vocabulary, after the rows it controls (#445): the
           expanded state used to leave it stranded between the two grids. */}

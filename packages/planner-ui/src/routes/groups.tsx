@@ -28,6 +28,7 @@ import { Navigate, type RouteObject } from 'react-router'
 
 import { PlanPickerPage } from '../planner/PlanPickerPage'
 import { DisclaimerPage } from '../planner/DisclaimerPage'
+import { NotFoundPage } from '../planner/NotFoundPage'
 import { RouteErrorBoundary } from '../RouteErrorBoundary'
 import { RouteFallback } from './RouteFallback'
 import { ComparePlansPage, ExamplesPage, HowTestedPage, ImportPage, LearnRoutes, PlanRoutes } from './lazyPages'
@@ -69,6 +70,9 @@ export const plannerContentRoutes: RouteObject[] = [
   { path: 'learn/*', element: suspended(<LearnRoutes />) },
   { path: 'disclaimer', element: <DisclaimerPage /> },
   { path: 'how-tested', element: suspended(<HowTestedPage />) },
+  // Catch-all: an unmatched URL gets not-found chrome instead of a blank main
+  // (#442). Ranked last by the router whatever order the host mounts groups in.
+  { path: '*', element: <NotFoundPage /> },
 ]
 
 /**
