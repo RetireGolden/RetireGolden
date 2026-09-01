@@ -47,9 +47,25 @@ pnpm + Corepack. Run `corepack enable` before the first `pnpm` command.
 ## Pull requests
 
 - Ready for review, never drafts.
-- One PR per repo per phase. Follow-ups on the same branch.
+- Prefer one PR per repo per phase when the changes belong together. Multiple
+  PRs in the same repo are allowed when they form an explicit stack: base each
+  child PR on the preceding branch, describe the stack and merge order in every
+  PR, and merge the stack from the bottom up. Follow-up work for an open PR
+  stays on that PR's branch.
+- Opening or updating a PR starts the automated code-review action. Wait for it
+  to finish, inspect its findings, and follow the `/needful` skill to triage and
+  address them. Commit and push valid fixes to the same PR branch; the review
+  action will run again for the new commit. Repeat until the newest review
+  reports **Verdict:** `clean`.
+- In this repo, add the exact `run-ci` label only after the PR has a clean
+  review. Watch the gated CI pipelines to completion and fix any failures. A
+  later fix invalidates the prior result: require both a clean review of the
+  latest commit and green CI for the latest commit before merging.
+- Merge completed PRs with `gh pr merge --squash --admin`. For a stacked PR,
+  after its parent merges, rebase or retarget the child onto the updated base
+  and repeat the review and `run-ci` validation before merging it. The admin
+  override may bypass the agent-authored CLA restriction; never use it to skip
+  a pending or failing review or CI check.
 - No publish, release, or tag unless the user asked for that activation step.
-- Do not merge unless the user said to. They admin-override CLA on their own
-  agent PRs.
 - Never add `cursoragent` to the CLA allowlist. Do not modify
   `.github/workflows/cla.yml` to allowlist shared Cursor accounts.
