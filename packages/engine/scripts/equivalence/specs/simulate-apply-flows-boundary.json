@@ -196,24 +196,24 @@
       "label": "apply-flow invocation and evidence-operation selection",
       "file": "projection/simulate.ts",
       "lines": [
-        8248,
-        8258
+        8169,
+        8179
       ],
       "anchors": [
         {
-          "line": 8248,
+          "line": 8169,
           "text": "const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({"
         },
         {
-          "line": 8255,
+          "line": 8176,
           "text": "})"
         },
         {
-          "line": 8256,
+          "line": 8177,
           "text": "for (const write of withdrawalApplyFlowPlan.evidenceWrites) {"
         },
         {
-          "line": 8258,
+          "line": 8179,
           "text": "if (evidence === undefined || evidence.accountId !== write.accountId) {"
         }
       ],
@@ -224,16 +224,16 @@
       "label": "caller-owned inherited voluntary-amount replacement",
       "file": "projection/simulate.ts",
       "lines": [
-        8263,
-        8266
+        8184,
+        8187
       ],
       "anchors": [
         {
-          "line": 8263,
+          "line": 8184,
           "text": "inheritedYearEvidenceDraft[write.evidenceIndex] = Object.freeze({"
         },
         {
-          "line": 8266,
+          "line": 8187,
           "text": "})"
         }
       ]
@@ -243,28 +243,28 @@
       "label": "balance-operation iteration and logical-group lookup",
       "file": "projection/simulate.ts",
       "lines": [
-        8268,
-        8273
+        8189,
+        8195
       ],
       "anchors": [
         {
-          "line": 8268,
+          "line": 8189,
           "text": "for (const operation of withdrawalApplyFlowPlan.balanceOperations) {"
         },
         {
-          "line": 8269,
+          "line": 8190,
           "text": "const state = annualIdKeyedBalances[operation.balanceIndex]"
         },
         {
-          "line": 8270,
+          "line": 8191,
           "text": "const group = annualLogicalBalanceLedger.groups[operation.balanceIndex]"
         },
         {
-          "line": 8271,
+          "line": 8192,
           "text": "// Planning and commit are intentionally adjacent. Fail before applying a"
         },
         {
-          "line": 8273,
+          "line": 8194,
           "text": "if ("
         }
       ],
@@ -275,28 +275,28 @@
       "label": "traditional runtime occurrence and owned-IRA application selection",
       "file": "projection/simulate.ts",
       "lines": [
-        8284,
-        8312
+        8205,
+        8234
       ],
       "anchors": [
         {
-          "line": 8284,
+          "line": 8205,
           "text": "const taken = operation.taken"
         },
         {
-          "line": 8294,
+          "line": 8215,
           "text": "if (operation.recordsTraditionalRuntimeOccurrence) {"
         },
         {
-          "line": 8299,
+          "line": 8220,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 8309,
+          "line": 8230,
           "text": "if (operation.recordsOwnedIraApplication) {"
         },
         {
-          "line": 8312,
+          "line": 8233,
           "text": "}"
         }
       ]
@@ -306,12 +306,12 @@
       "label": "taxable-sale completeness check",
       "file": "projection/simulate.ts",
       "lines": [
-        8313,
-        8313
+        8234,
+        8234
       ],
       "anchors": [
         {
-          "line": 8313,
+          "line": 8234,
           "text": "if (operation.taxableSaleMissing) {"
         }
       ],
@@ -322,20 +322,20 @@
       "label": "transactional grouped basis and balance mutation",
       "file": "projection/simulate.ts",
       "lines": [
-        8316,
-        8320
+        8237,
+        8241
       ],
       "anchors": [
         {
-          "line": 8316,
+          "line": 8237,
           "text": "group.applyClosingSnapshot({"
         },
         {
-          "line": 8317,
+          "line": 8238,
           "text": "balance: operation.sourceBalanceAfter,"
         },
         {
-          "line": 8320,
+          "line": 8241,
           "text": ": { costBasis: operation.costBasisAfter }),"
         }
       ]
@@ -345,24 +345,24 @@
       "label": "owned-IRA runtime debit application",
       "file": "projection/simulate.ts",
       "lines": [
-        8322,
-        8334
+        8243,
+        8255
       ],
       "anchors": [
         {
-          "line": 8322,
+          "line": 8243,
           "text": "if (ownedIraProducerOccurrenceKey !== null) {"
         },
         {
-          "line": 8323,
+          "line": 8244,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 8332,
+          "line": 8253,
           "text": "})"
         },
         {
-          "line": 8334,
+          "line": 8255,
           "text": "}"
         }
       ]
