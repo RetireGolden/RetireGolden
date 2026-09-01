@@ -21,6 +21,7 @@
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *   T  aggregate Roth-conversion planning
  *   V  annual purchased-annuity funding
+ *   W  annual voluntary-withdrawal apply-flow boundary
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -30,7 +31,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through N, P, T and V each have a phase-specific reach spec beside the
+ * Blocks J through N, P, T, V and W each have a phase-specific reach spec beside the
  * earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -45,8 +46,9 @@
  * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json`,
  * `scripts/equivalence/specs/simulate-hecm-coordinated-boundary.json`,
  * `scripts/equivalence/specs/simulate-income-setup-boundary.json`,
- * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`, and
- * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`
+ * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`,
+ * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`, and
+ * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
@@ -2573,6 +2575,177 @@ function blockV() {
       plan,
       { horizonEndYear: START_YEAR },
     ))
+// W — annual voluntary-withdrawal apply-flow boundary
+// ---------------------------------------------------------------------------
+
+function blockW() {
+  const out = []
+
+  {
+    // The funding need exhausts every positive balance class in category
+    // order. This makes taxable-sale and equity-basis writes observable beside
+    // ordinary subtraction rows, emits traditional occurrences for both the
+    // inherited and owned IRA, and emits an owned-IRA application for only the
+    // latter. The zero cash row pins the no-operation continue.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('w1-zero-cash', 0, { annualReturnPct: 0 }),
+      cash('w1-cash', 10, { annualReturnPct: 0 }),
+      taxable('w1-taxable', 10, 4, { annualReturnPct: 0 }),
+      equityComp('w1-equity', 10, 4, { annualReturnPct: 0 }),
+      qualified('traditional', 'w1-inherited', 10, {
+        annualReturnPct: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+        },
+      }),
+      qualified('traditional', 'w1-owned', 10, { annualReturnPct: 0 }),
+      qualified('roth', 'w1-roth', 10, { annualReturnPct: 0 }),
+      qualified('hsa', 'w1-hsa', 10, { annualReturnPct: 0 }),
+    ]
+    plan.expenses.baseAnnual = 100
+    out.push(
+      member(
+        'w1-allApplyFlowShapes',
+        'W: zero and positive withdrawal rows across cash, taxable, equity compensation, inherited/owned traditional, Roth and HSA; basis writes plus runtime occurrence/application split',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // Duplicate ids are legal without named retirement actions. Evidence
+    // resolution uses the LAST balance row: the post-election S2 inherited IRA
+    // suppresses its inherited voluntary write even though the first row with
+    // the same id is cash. Changing the Map to first-wins changes the dump.
+    const plan = singlePersonPlan({ dob: '1970-06-15', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('w2-duplicate', 10, { annualReturnPct: 0 }),
+      {
+        ...qualified('traditional', 'w2-duplicate', 100, {
+          annualReturnPct: 0,
+          inherited: {
+            ownerDeathYear: 2024,
+            decedentHadStartedRmds: true,
+            beneficiary: {
+              beneficiaryClass: 'designated-individual',
+              edbCategory: 'surviving-spouse',
+              beneficiaryBirthYear: 1970,
+              soleBeneficiary: true,
+              ownerBirthYear: 1945,
+              election: 'treat-as-own',
+              spouseUnlimitedWithdrawalRight: true,
+              treatAsOwnElectionYear: START_YEAR,
+              ownerYearOfDeathRmdSatisfied: true,
+              provenance: {
+                source: 'equivalence corpus',
+                asOf: '2026-08-31',
+              },
+            },
+          },
+        }),
+        name: 'w2-duplicate-post-flip-ira',
+      },
+    ]
+    plan.expenses.baseAnnual = 4
+    out.push(
+      member(
+        'w2-lastWinsPostFlipEvidence',
+        'W: duplicate-id last-wins balance identity suppresses a post-election spouse treat-as-own inherited voluntary write while preserving ordered balance application',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // A partial equity-compensation sale leaves a fractional basis residue in
+    // year one; the following-year goal then realizes the remainder. Keeping
+    // the deliberately awkward binary fractions makes the original
+    // `basis - taken * basisRatio` association observable in the dump.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      equityComp(
+        'w3-equity-fp',
+        172.80726018133362,
+        169.69896122121477,
+        { annualReturnPct: 0 },
+      ),
+    ]
+    plan.expenses.baseAnnual = 0
+    plan.expenses.oneTimeGoals = [
+      {
+        id: 'w3-partial-sale-one',
+        label: 'create fractional equity basis residue',
+        year: START_YEAR,
+        amount: 104.49241361525306,
+        classification: 'required',
+      },
+      {
+        id: 'w3-partial-sale-two',
+        label: 'observe the fractional residue next year',
+        year: START_YEAR + 1,
+        amount: 40.4551714204251,
+        classification: 'required',
+      },
+    ]
+    out.push(
+      member(
+        'w3-equityBasisAssociation',
+        'W: partial equity-compensation sale followed by liquidation preserves the exact basis-minus-taken-times-ratio association',
+        plan,
+        { horizonEndYear: START_YEAR + 1 },
+      ),
+    )
+  }
+
+  {
+    // The empty inherited row is still evidence-bearing but has no voluntary
+    // amount, so it reaches the explicit zero fallback. The Roth row carries
+    // the funding need and forces the other side of the qualified-account
+    // evidence type test without relying on a traditional short circuit.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      qualified('traditional', 'w4-empty-inherited', 0, {
+        annualReturnPct: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: true,
+        },
+      }),
+      qualified('roth', 'w4-roth', 1, {
+        annualReturnPct: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'none',
+            beneficiaryBirthYear: 1970,
+            soleBeneficiary: true,
+            provenance: {
+              source: 'equivalence corpus',
+              asOf: '2026-08-31',
+            },
+          },
+        },
+      }),
+    ]
+    plan.expenses.baseAnnual = 0.5
+    out.push(
+      member(
+        'w4-rothAndMissingInheritedAmount',
+        'W: Roth voluntary evidence plus a zero-balance inherited IRA proves the qualified-type branch and explicit zero fallback',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
   }
 
   return out
@@ -2665,5 +2838,6 @@ export async function blockMembers() {
     ...blockS(),
     ...blockT(),
     ...blockV(),
+    ...blockW(),
   ]
 }

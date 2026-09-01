@@ -77,6 +77,7 @@ import { annualPropertyCarryingCosts } from './internal/annualPropertyCarryingCo
 import { annualSeppDistributions } from './internal/annualSeppDistributions.js'
 import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
 import { annualSnapshot } from './internal/annualSnapshot.js'
+import { annualWithdrawalApplyFlowPlan } from './internal/annualWithdrawalApplyFlowPlan.js'
 import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
 import {
   annualAggregateRothConversionPlan,
@@ -8991,23 +8992,35 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // S2 POST-FLIP rows keep voluntaryAmount 0: owner-side draws are not
     // inherited voluntary draws (the flip already moved the account out of
     // the inherited schedule). Map built once per year — avoid per-row find.
-    const balanceStateByAccountId = new Map(
-      balances.map((state) => [state.account.id, state] as const),
-    )
-    for (const row of inheritedYearEvidenceDraft) {
-      const evidenceState = balanceStateByAccountId.get(row.accountId)
-      // Only traditional/roth accounts carry an inherited block; narrowing here
-      // keeps the helper's structural parameter honest for the full union.
-      const evidenceAccount = evidenceState?.account
-      if (
-        evidenceAccount !== undefined &&
-        (evidenceAccount.type === 'traditional' || evidenceAccount.type === 'roth') &&
-        isTreatAsOwnEffective(evidenceAccount, year)
-      ) continue
-      row.voluntaryAmount = withdrawalPlan.byAccountId.get(row.accountId) ?? 0
+    const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({
+      year,
+      balances,
+      inheritedEvidence: inheritedYearEvidenceDraft,
+      withdrawnByAccountId: withdrawalPlan.byAccountId,
+      taxableSales: withdrawalPlan.taxableSales,
+      recordsOwnedIraApplicationFor: isAggregatedIraThisYear,
+    })
+    for (const write of withdrawalApplyFlowPlan.evidenceWrites) {
+      const evidence = inheritedYearEvidenceDraft[write.evidenceIndex]
+      if (evidence === undefined || evidence.accountId !== write.accountId) {
+        throw new Error(
+          'Withdrawal apply-flow evidence operation lost its row position',
+        )
+      }
+      evidence.voluntaryAmount = write.voluntaryAmount
     }
-    for (const state of balances) {
-      const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
+    for (const operation of withdrawalApplyFlowPlan.balanceOperations) {
+      const state = balances[operation.balanceIndex]
+      if (
+        state === undefined ||
+        state.account.id !== operation.accountId ||
+        state.balance !== operation.sourceBalanceBefore
+      ) {
+        throw new Error(
+          'Withdrawal apply-flow operation lost its balance position',
+        )
+      }
+      const taken = operation.taken
       // No sub-cent discharge here. A traditional draw the exact-cent ledger
       // records as zero never reaches this loop: `planWithdrawals` refuses to
       // allocate one, so the year's published traditional total, its ordinary
@@ -9015,10 +9028,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // disagree about whether the draw happened. Discharging here instead
       // would move the balance and leave the total claiming a withdrawal with
       // no occurrence to explain it.
-      if (taken <= 0) continue
       const sourceBalanceBefore = state.balance
       let ownedIraProducerOccurrenceKey: string | null = null
-      if (state.account.type === 'traditional') {
+      if (operation.recordsTraditionalRuntimeOccurrence) {
         // Voluntary inherited traditional draws use this kind — distinct from
         // forced `inheritedIraRmd` (required / final-sweep) recorded above.
         const kind = 'legacyNeedBasedWithdrawal' as const
@@ -9033,24 +9045,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           executionSequence: null,
           movementAuthorityId: null,
         })
-        if (isAggregatedIraThisYear(state.account)) {
+        if (operation.recordsOwnedIraApplication) {
           ownedIraProducerOccurrenceKey = producerOccurrenceKey
         }
       }
-      if (state.account.type === 'taxable') {
-        const sale = withdrawalPlan.taxableSales.get(state.account.id)
-        if (sale === undefined) {
-          throw new Error('Planned taxable sale disappeared before commit')
-        }
-        state.costBasis = sale.remainingCostBasis
-        state.balance = sale.remainingFairMarketValue
-      } else if (state.account.type === 'equityComp' && state.balance > 0) {
-        const basisRatio = Math.min(1, state.costBasis / state.balance)
-        state.costBasis = Math.max(0, state.costBasis - taken * basisRatio)
-        state.balance -= taken
-      } else {
-        state.balance -= taken
+      if (operation.taxableSaleMissing) {
+        throw new Error('Planned taxable sale disappeared before commit')
       }
+      if (operation.costBasisAfter !== null) {
+        state.costBasis = operation.costBasisAfter
+      }
+      state.balance = operation.sourceBalanceAfter
       if (ownedIraProducerOccurrenceKey !== null) {
         recordAnnualRetirementRuntimeApplication({
           applicationKind: 'debit',
