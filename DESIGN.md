@@ -230,11 +230,14 @@ transitions, restrained hover states that shift a border or tint a background by
   background 6% Ink.
 - **Danger:** secondary shape with Bad Red text; hover tints background 10% red. Ghost variants
   (`.btn-ghost`) drop the border for inline row actions.
-- **States:** disabled swaps to the flat disabled treatment — `--surface-2` fill, `--muted`
-  label, `--border` edge, not-allowed — rather than dimming the live fill with opacity, which
-  composited the gold primary to ~2.8:1 in dark and failed AA. Focus is always `outline: 2px solid
-  var(--accent); outline-offset: 2px` — the app-wide focus signature, and no ancestor may clip it
-  (a container that needs a clip pads for the ring or rounds its end children instead).
+- **States:** a disabled *filled* button (`.btn`, primary/secondary/danger) swaps to the flat
+  disabled treatment — `--surface-2` fill, `--muted` label, `--border` edge, not-allowed —
+  rather than dimming the live fill with opacity, which composited the gold primary to ~2.8:1 in
+  dark and failed AA. Ghost buttons are the carve-out: with no fill to composite against they keep
+  the faded `opacity: 0.45` treatment. Focus is the 2px gold outline signature, `outline: 2px
+  solid var(--accent)`, normally at `outline-offset: 2px`; a few compact controls (the plan-name
+  input, ghost buttons) sit it at 1px. No ancestor may clip the ring: a container that needs a clip
+  pads for it or rounds its end children instead.
 
 ### Chips
 - **Trust chips** (pill, 999px): 0.85rem muted text on faintly Ink-tinted surface with border;
@@ -251,7 +254,8 @@ transitions, restrained hover states that shift a border or tint a background by
   side-stripe.
 - **Empty states** (`.empty-state`): a bounded well — 1px dashed border, page radius, and a 3% ink
   tint — so an empty list reads as a deliberate placeholder instead of a gap where content failed
-  to render. The plan picker's landing empty state opts out of the well and stays flush left.
+  to render. An element that is itself a card (`.card.empty-state`: the plan-load error card, the
+  Insights no-results card) keeps its card chrome; the well is for placeholders inside a card.
 
 ### Inputs / Fields
 - **Style:** 1px Slate Border, 6px radius, page-background fill, Ink text, 1rem size; labels

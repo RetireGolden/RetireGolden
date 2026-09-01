@@ -95,15 +95,20 @@ describe('Design-QA chrome pins', () => {
 describe('Design-QA chrome pins: theme and focus tokens', () => {
   it('the theme switcher does not clip its segment focus rings (#436)', () => {
     const switcher = rule('.theme-switcher', indexCss)
-    expect(switcher).not.toMatch(/overflow:\s*hidden/)
+    // Any clipping overflow would cut the ring; only visible (the default) is allowed.
+    expect(switcher).not.toMatch(/overflow(-x|-y)?:\s*(hidden|clip|auto|scroll)/)
     expect(switcher).toMatch(/border-radius:\s*999px/)
     // The end segments carry the pill shape instead of the container clipping it.
     expect(rule('.theme-switcher-button:first-child', indexCss)).toMatch(/border-radius:\s*999px 0 0 999px/)
     expect(rule('.theme-switcher-button:last-child', indexCss)).toMatch(/border-radius:\s*0 999px 999px 0/)
     // The ring itself is unchanged: the app-wide 2px gold signature, which is
     // what the removed clip was cutting into a sliver.
-    const sharedFocus = indexCss.slice(indexCss.indexOf('.theme-switcher-button:focus-visible'))
-    expect(sharedFocus.slice(0, 200)).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    const sharedFocus = rule(
+      '.nav-link:focus-visible,\n.brand:focus-visible,\n.theme-switcher-button:focus-visible',
+      indexCss,
+    )
+    expect(sharedFocus).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(sharedFocus).toMatch(/outline-offset:\s*2px/)
   })
 
   it('the plan breadcrumb link uses the shared focus ring, not the UA default (#437)', () => {
@@ -117,19 +122,25 @@ describe('Design-QA chrome pins: theme and focus tokens', () => {
     expect(body).toMatch(/border:\s*1px dashed var\(--border\)/)
     expect(body).toMatch(/border-radius:\s*var\(--radius\)/)
     expect(body).toMatch(/background:\s*color-mix/)
-    const picker = rule('.picker-page .empty-state')
-    expect(picker).toMatch(/border:\s*0/)
-    expect(picker).toMatch(/background:\s*none/)
+    // An element that is itself a card keeps its card chrome (#463 review).
+    const cardEmpty = rule('.card.empty-state')
+    expect(cardEmpty).toMatch(/border:\s*1px solid var\(--border\)/)
+    expect(cardEmpty).toMatch(/background:\s*var\(--surface-1\)/)
   })
 
   it('disabled buttons use the flat token treatment, not opacity on a live fill (#441)', () => {
     const body = rule('.btn:disabled', indexCss)
-    expect(body).not.toMatch(/opacity/)
+    // Explicitly opaque: no dimming value, and nothing left for a UA sheet to fade.
+    expect(body).not.toMatch(/opacity:\s*0?\.\d/)
+    expect(body).toMatch(/opacity:\s*1\b/)
     expect(body).toMatch(/background:\s*var\(--surface-2\)/)
     expect(body).toMatch(/color:\s*var\(--muted\)/)
     expect(body).toMatch(/cursor:\s*not-allowed/)
     // Ghost buttons have no fill to composite against and keep the faded
     // treatment the plan-card Delete pin (#312) relies on.
-    expect(rule('.btn-ghost:disabled')).toMatch(/opacity:\s*0\.45/)
+    const ghost = rule('.btn-ghost:disabled,\n.btn.btn-ghost:disabled')
+    expect(ghost).toMatch(/opacity:\s*0\.45/)
+    // A ghost that also carries .btn must not pick up the filled treatment.
+    expect(ghost).toMatch(/background:\s*transparent/)
   })
 })
