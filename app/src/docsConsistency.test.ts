@@ -21,6 +21,10 @@ import plannerUiPackageJson from '../../packages/planner-ui/package.json?raw'
 import repoPackageJson from '../../package.json?raw'
 import fedInvestClient from '../../packages/planner-ui/src/data/fedInvestClient.ts?raw'
 import incomeFloorSection from '../../packages/planner-ui/src/planner/sections/IncomeFloorSection.tsx?raw'
+import owlParityWorkflow from '../../.github/workflows/owl-parity.yml?raw'
+import publishEngineWorkflow from '../../.github/workflows/publish-engine.yml?raw'
+import publishPlannerUiWorkflow from '../../.github/workflows/publish-planner-ui.yml?raw'
+import resolveGateWorkflow from '../../.github/workflows/resolve-gate.yml?raw'
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
 import { V2_BACKUP_VERSION } from '@retiregolden/planner-ui/data/v2Backup'
 import { COMPLETE_EXPORT_FORMAT_VERSION } from '../../packages/planner-ui/src/data/completeExport'
@@ -35,6 +39,13 @@ const packageNodeFloors = [appPackageJson, enginePackageJson, plannerUiPackageJs
   (manifest) => (JSON.parse(manifest) as { engines: { node: string } }).engines.node,
 )
 const ciNodeVersion = swaWorkflow.match(/node-version: '(\d+)'/)?.[1]
+const nodePinnedWorkflows = [
+  swaWorkflow,
+  owlParityWorkflow,
+  publishEngineWorkflow,
+  publishPlannerUiWorkflow,
+  resolveGateWorkflow,
+]
 
 describe('docs consistency', () => {
   it('code-map.md states the current Learning Center article count', () => {
@@ -65,6 +76,9 @@ describe('docs consistency', () => {
   it('documentation states the repository Node.js floor and CI version', () => {
     expect(ciNodeVersion).toBeDefined()
     expect(nodeFloor).toBe(`>=${ciNodeVersion}`)
+    for (const workflow of nodePinnedWorkflows) {
+      expect([...workflow.matchAll(/node-version: '(\d+)'/g)].map((match) => match[1])).toContain(ciNodeVersion)
+    }
     expect(codeMap).toContain(`Node.js ${nodeFloor}`)
     expect(codeMap).toContain(`engines: node ${nodeFloor}`)
     expect(readme).toContain(`Node **${ciNodeVersion}** in CI`)
