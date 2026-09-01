@@ -10123,9 +10123,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // every write, applied per row in the same statement order the inlined
     // phase used (close the line, deposit, publish, write the value back, then
     // compound what is left open). `plan.accounts` order is load-bearing three
-    // ways at once — deposit order, value compounding and line compounding —
-    // and the helper carries a private numeric shadow of both maps so a second
-    // property account sharing an id sees exactly what it saw inline.
+    // ways at once — deposit order, value compounding, and whether a same-id
+    // line accrues before a later row closes it. The helper carries a private
+    // numeric shadow of both maps, plus an accrued-id set so each actual HECM
+    // line receives its annual multiplier exactly once.
     for (const row of propertyEventsAndGrowth({
       accounts: plan.accounts,
       year,

@@ -114,8 +114,8 @@
       "label": "property events + growth",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        197,
-        233
+        199,
+        235
       ],
       "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
     },
@@ -124,8 +124,8 @@
       "label": "E: the planned-sale-year branch (post-growth value above zero)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        207,
-        223
+        209,
+        225
       ]
     },
     {
@@ -133,8 +133,8 @@
       "label": "E: the legacy tax-free expectedNetProceeds path (no cost basis)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        208,
-        221
+        210,
+        223
       ]
     },
     {
@@ -142,8 +142,8 @@
       "label": "E: the legacy-sale ledger payload (cashFlow modes only)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        218,
-        220
+        220,
+        222
       ],
       "note": "unlike A.ledger, this one is STILL cashFlow-only: the payload is gated on a non-null surplusDestination, and the call site passes that field only when the ledger array the payload feeds is itself non-null - the same condition the inlined phase gated its object literal on."
     },
@@ -152,8 +152,8 @@
       "label": "E: an open line compounding at its own growth rate",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        227,
-        231
+        229,
+        233
       ]
     }
   ],

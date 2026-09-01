@@ -17,7 +17,7 @@
  *
  * CALIBRATION — every guard below was proved to discriminate by injecting the
  * defect it exists for and recording WHICH named tests failed. Measured over
- * this file and the helper's own unit tests together (6 + 22 = 28 tests):
+ * this file and the helper's own unit tests together (7 + 22 = 29 tests):
  *
  *   orphan (call site re-inlined from the pristine   5 fail — G1, G2a, G2b, G4,
  *   block, helper present and never called)          G5. All 22 helper unit
@@ -63,8 +63,9 @@
  * arithmetic is per-row multiplicative in place plus `deposit()` calls. So no
  * fold guard is written here and none is claimed. The order sensitivity that a
  * fold guard would normally protect is real, and lives instead in the three
- * read-after-write channels the helper's numeric shadow reproduces — pinned by
- * the helper's own unit tests and, end to end, by G4 below.
+ * read-after-write channels the helper's numeric shadow reproduces, together
+ * with the once-per-line-id accrual guard — pinned by the helper's own unit
+ * tests and the duplicate-id regression below.
  *
  * WHOLE-LOG ACCOUNTING, and where it does NOT apply. `legacyPropertySaleDeposits`
  * is safe to attribute wholesale: this phase is its only producer. `deposit` is
@@ -148,7 +149,7 @@ vi.mock('./annualCashFlowCapture.js', async (importOriginal) => {
   }
 })
 
-import type { Account, Plan } from '../model/plan.js'
+import { parsePlan, type Account, type Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { singlePersonPlan, traditionalAccount, validatePlan } from '../testing/planFixtures.js'
 import { cashFlowLineIds } from './annualCashFlowIds.js'
@@ -268,6 +269,74 @@ function noDrawsHappened(result: ProjectionResult): void {
 }
 
 describe('simulatePlan delegates property events and growth', () => {
+  it('advances one parse-valid duplicate-id HECM line exactly once per year', () => {
+    /**
+     * Repository model contract: `hecmStates` stores exactly one mutable line
+     * per property-account id, with one principal limit and one loan balance.
+     * Duplicate property rows can legally alias that state when no retirement
+     * action references the id, but an alias does not create a second contract
+     * or a second annual accrual. The helper unit suite separately pins that the
+     * first qualifying duplicate row supplies the shared state's annual rate.
+     *
+     * Independent worksheet for one 2026 accrual:
+     *   principal limit = $400,000 x 40% x 1.075 = $172,000
+     *   loan balance    = $400,000 x  2% x 1.075 =   $8,600
+     * A second property row with the same id is not a second HECM line and
+     * therefore must not apply a second 1.075 multiplier.
+     */
+    const project = (propertyRows: number) => {
+      const p = singlePersonPlan({ dob: '1956-01-01', planningAge: 90 })
+      p.expenses.baseAnnual = 0
+      p.expenses.healthcare = {
+        pre65MonthlyPremiumPerPerson: 0,
+        applyAcaCredit: false,
+        medicareExtrasMonthlyPerPerson: 0,
+      }
+      p.assumptions.inflationPct = 0
+      p.assumptions.defaultReturnPct = 0
+      p.accounts = [
+        ...Array.from({ length: propertyRows }, (_, index) =>
+          property('shared-home', 400_000, { ...withHecm(2), name: `shared-home-${index}` }),
+        ),
+        traditionalAccount('unreferenced-ira', 400_000),
+      ]
+      const parsed = parsePlan(p)
+      expect(parsed.ok, parsed.ok ? undefined : parsed.issues.join('\n')).toBe(true)
+      if (!parsed.ok) throw new Error(parsed.issues.join('\n'))
+
+      seam.phases.length = 0
+      seam.published.length = 0
+      const result = simulatePlan(parsed.plan, {
+        startYear: START_YEAR,
+        horizonEndYear: START_YEAR + 1,
+        taxCalculator: noTax,
+      })
+      const firstYear = seam.phases.find((phase) => phase.input.year === START_YEAR)!
+      const nextYear = seam.phases.find((phase) => phase.input.year === START_YEAR + 1)!
+      const carriedLine = new Map(nextYear.linesAtCall).get('shared-home')!
+      return {
+        parseAccepted: parsed.ok,
+        principalLimit: carriedLine.principalLimit,
+        loanBalance: yearOf(result, START_YEAR).hecmLoanBalance,
+        hecmGrowthRows: firstYear.rows.map((row) => row.hecmGrowth),
+      }
+    }
+
+    const singleLineControl = project(1)
+    expect(singleLineControl).toEqual({
+      parseAccepted: true,
+      principalLimit: 172_000,
+      loanBalance: 8_600,
+      hecmGrowthRows: [1.075],
+    })
+    expect(project(2)).toEqual({
+      parseAccepted: true,
+      principalLimit: 172_000,
+      loanBalance: 8_600,
+      hecmGrowthRows: [1.075, null],
+    })
+  })
+
   // G1 — defeats the FULLY ORPHANED helper. The inlined `for (const account of
   // plan.accounts)` ran every projected year.
   it('calls the extracted helper exactly once for every projected year', () => {

@@ -586,8 +586,9 @@ function blockE() {
 
   {
     // Two property accounts sharing ONE id. `propertyValues` is keyed by id, so
-    // the second row compounds the first row's already-grown value, and a HECM
-    // line on that id compounds once per row.
+    // the second row compounds the first row's already-grown property value.
+    // Only the first row declares a HECM; that opens one id-keyed line state,
+    // so this member is not evidence for duplicate-row HECM accrual semantics.
     const plan = shell()
     plan.assumptions.inflationPct = 4
     plan.accounts = [
