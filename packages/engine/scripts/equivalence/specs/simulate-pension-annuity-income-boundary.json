@@ -8,7 +8,7 @@
       "label": "ordered account selection and annual opening-state folds",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        118,
+        122,
         165
       ],
       "anchors": [
@@ -55,7 +55,7 @@
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
         197,
-        321
+        308
       ],
       "anchors": [
         {
@@ -73,6 +73,29 @@
         {
           "line": 305,
           "text": "rows.push({"
+        }
+      ]
+    },
+    {
+      "id": "Z.helper.annuityRow",
+      "label": "annuity cash-flow record and ordered commit-row publication",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        310,
+        322
+      ],
+      "anchors": [
+        {
+          "line": 310,
+          "text": ": {"
+        },
+        {
+          "line": 316,
+          "text": "account.purchase?.taxQualification === 'qualified',"
+        },
+        {
+          "line": 322,
+          "text": "})"
         }
       ]
     },
@@ -127,5 +150,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct coordinator tests pin the hand-worked Pub 939 result and input-map purity; the hostile delegation test separately proves exact output selection, commit-row consumption, object identity across years, runtime journaling and cash-flow forwarding."
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The defensive null-record arm at line 309 is deliberately outside the measured ranges: every positive payout has either its living owner or an alive survivor recipient under annuityPayoutFraction's anyAlive gate. Direct coordinator tests pin the hand-worked Pub 939 result and input-map purity; the hostile delegation test separately proves exact output selection, commit-row consumption, object identity across years, runtime journaling and cash-flow forwarding."
 }
