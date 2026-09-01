@@ -98,6 +98,7 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
 })
 
 import type { Account, Plan } from '../model/plan.js'
+import { parseRetirementActionRequest } from '../actions/index.js'
 import { singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
 import {
   simulatePlan,
@@ -105,6 +106,12 @@ import {
 } from './simulate.js'
 
 const START_YEAR = 2026
+
+function parseAction(value: unknown) {
+  const parsed = parseRetirementActionRequest(value)
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  return parsed.request
+}
 
 function traditional(
   id: string,
@@ -138,6 +145,65 @@ function plan(): Plan {
     traditional('owned', 100_000, false),
   ]
   value.expenses.baseAnnual = 50_000
+  return validatePlan(value)
+}
+
+function crossBoundaryPlan(): Plan {
+  const value = singlePersonPlan({ dob: '1970-01-01', planningAge: 90 })
+  value.accounts = [
+    {
+      type: 'cash',
+      id: 'named-cash',
+      name: 'named-cash',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 1_000,
+      annualContribution: 0,
+    },
+    traditional('inherited', 10_000, true),
+    traditional('owned', 100_000, false),
+    {
+      type: 'roth',
+      kind: 'ira',
+      id: 'roth',
+      name: 'roth',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 0,
+      annualContribution: 0,
+    },
+  ]
+  value.expenses.baseAnnual = 50_000
+  value.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      evidenceId: 'owned-classification',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'owned',
+      subtype: 'traditional',
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: [],
+  }
+  value.strategies.retirementActions = [parseAction({
+    actionId: 'named-ordinary-before-aggregate',
+    kind: 'ordinaryWithdrawal',
+    personId: 'p1',
+    year: START_YEAR,
+    executionDate: `${START_YEAR}-01-15`,
+    executionSequence: 1,
+    requestedAmount: 10_000,
+    allocations: [{
+      allocationId: 'named-ordinary-cash-allocation',
+      sourceAccountId: 'named-cash',
+      requestedAmount: 10_000,
+    }],
+    purpose: { kind: 'spending' },
+    provenance: { source: 'manual' },
+  })]
+  value.strategies.rothConversion = {
+    mode: 'manual',
+    conversions: [{ year: START_YEAR, amount: 200 }],
+  }
   return validatePlan(value)
 }
 
@@ -252,5 +318,46 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
     expect(() => run('missingTaxableSale')).toThrow(
       'Planned taxable sale disappeared before commit',
     )
+  })
+
+  it('plans from the live post-ordinary and post-conversion state', () => {
+    seam.mode = 'dynamic'
+    seam.phases.length = 0
+    seam.snapshots.length = 0
+    const result = simulatePlan(crossBoundaryPlan(), {
+      startYear: START_YEAR,
+      horizonEndYear: START_YEAR,
+      taxCalculator: { compute: () => 0 },
+    })
+
+    const phases = phasesFor(START_YEAR)
+    expect(phases).toHaveLength(1)
+    expect(result.years[0]!.retirementActionExecution).toMatchObject({
+      committed: true,
+      balances: [{
+        accountId: 'named-cash',
+        openingBalance: 100_000,
+        closingBalance: 90_000,
+      }],
+    })
+    expect(phases[0]!.openingByAccountId.get('named-cash')).toBe(900)
+    expect(phases[0]!.openingByAccountId.get('owned')).toBe(99_800)
+    expect(phases[0]!.openingByAccountId.get('roth')).toBe(200)
+
+    const applications =
+      result.years[0]!.retirementRuntimeApplicationSource?.applications ?? []
+    const conversion = applications.find(
+      (application) =>
+        application.simulatorPhase === 'legacyRothConversion' &&
+        application.sourceAccountId === 'owned',
+    )
+    const needBased = applications.find(
+      (application) =>
+        application.simulatorPhase === 'legacyNeedBasedWithdrawal' &&
+        application.sourceAccountId === 'owned',
+    )
+    expect(conversion).toBeDefined()
+    expect(needBased).toBeDefined()
+    expect(conversion!.mutationOrdinal).toBeLessThan(needBased!.mutationOrdinal)
   })
 })
