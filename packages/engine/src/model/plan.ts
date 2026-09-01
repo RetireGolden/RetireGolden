@@ -1296,6 +1296,10 @@ export const accountSchema = accountUnionSchema.superRefine((account, ctx) => {
 })
 export type Account = z.infer<typeof accountSchema>
 export type AccountType = Account['type']
+export type LogicalBalanceAccount = Extract<
+  Account,
+  { type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa' }
+>
 
 export type DuplicateAccountIdentityFact = string | number | boolean | null
 
@@ -1313,6 +1317,14 @@ export function duplicateAccountIdentityFacts(
       : undefined
   const beneficiary = inherited?.beneficiary
   const sepp = account.type === 'traditional' ? account.sepp : undefined
+  const estateBeneficiary = account.estateBeneficiary
+  const estateDestination = estateBeneficiary?.destination ?? (
+    account.type === 'traditional'
+      ? 'nonSpouse'
+      : account.type === 'hsa' && account.beneficiary === 'nonSpouse'
+        ? 'nonSpouse'
+        : 'spouse'
+  )
   const isRetirementAccount =
     account.type === 'traditional' || account.type === 'roth'
   // Cash/property duplicates are the one legacy cross-channel pair that never
@@ -1353,20 +1365,34 @@ export function duplicateAccountIdentityFacts(
     account.type === 'hsa' ? account.withdrawalTreatment ?? null : null,
     account.type === 'hsa' ? account.reimburseLater ?? false : null,
     account.type === 'hsa' ? account.beneficiary ?? 'spouse' : null,
+    estateDestination,
+    estateDestination === 'charity' ? estateBeneficiary?.charityPct ?? 0 : 0,
   ]
+}
+
+/** Whether an account becomes a physical BalanceState row in the simulator. */
+export function isLogicalBalanceAccount(
+  account: Account,
+): account is LogicalBalanceAccount {
+  return account.type === 'cash' || account.type === 'taxable' ||
+    account.type === 'equityComp' || account.type === 'traditional' ||
+    account.type === 'roth' || account.type === 'hsa'
+}
+
+/** Last facts and first insertion order for every Plan account ID. */
+export function selectedLogicalAccounts(accounts: readonly Account[]): Account[] {
+  const selected = new Map<string, Account>()
+  for (const account of accounts) selected.set(account.id, account)
+  return [...selected.values()]
 }
 
 /** Last facts and first insertion order for each balance-bearing logical ID. */
 export function selectedLogicalBalanceAccounts(
   accounts: readonly Account[],
-): Account[] {
-  const selected = new Map<string, Account>()
+): LogicalBalanceAccount[] {
+  const selected = new Map<string, LogicalBalanceAccount>()
   for (const account of accounts) {
-    if (account.type === 'cash' || account.type === 'taxable' ||
-        account.type === 'equityComp' || account.type === 'traditional' ||
-        account.type === 'roth' || account.type === 'hsa') {
-      selected.set(account.id, account)
-    }
+    if (isLogicalBalanceAccount(account)) selected.set(account.id, account)
   }
   return [...selected.values()]
 }
@@ -2338,25 +2364,28 @@ export const planSchema = z
     for (const [accountId, indexes] of accountIndexesById) {
       if (indexes.length < 2) continue
       const duplicateAccounts = indexes.map((index) => plan.accounts[index]!)
-      // Preserve the historical cash/property shared-id publication channel.
-      // Property rows never become BalanceState members, so this shape cannot
-      // make the grouped ledger choose between two physical tax characters.
-      // Ownership remains identity-bearing for cash/cash and every other pair.
-      const isLegacyCashPropertyChannel =
+      // Only multiple physical BalanceState rows enter the grouped ledger.
+      // Non-balance aliases retain their historical last-row publication
+      // semantics unless an explicit action references the ambiguous ID.
+      const duplicateBalanceAccounts = duplicateAccounts.filter(isLogicalBalanceAccount)
+      const isLegacyCashPropertyPair = duplicateAccounts.length === 2 &&
         duplicateAccounts.filter((account) => account.type === 'cash').length === 1 &&
-        duplicateAccounts.some((account) => account.type === 'property') &&
-        duplicateAccounts.every(
-          (account) => account.type === 'cash' || account.type === 'property',
-        )
-      const firstForcedDistributionFacts = duplicateAccountIdentityFacts(
-        duplicateAccounts[0]!,
-      )
+        duplicateAccounts.filter((account) => account.type === 'property').length === 1
+      const hasUnsupportedMixedAccountChannel =
+        duplicateBalanceAccounts.length > 0 &&
+        duplicateBalanceAccounts.length < duplicateAccounts.length &&
+        !isLegacyCashPropertyPair
+      const firstForcedDistributionFacts = duplicateBalanceAccounts[0] === undefined
+        ? null
+        : duplicateAccountIdentityFacts(duplicateBalanceAccounts[0])
       const hasConflictingForcedDistributionFacts =
-        !isLegacyCashPropertyChannel && duplicateAccounts.slice(1).some((account) => {
+        hasUnsupportedMixedAccountChannel ||
+        (duplicateBalanceAccounts.length > 1 && firstForcedDistributionFacts !== null &&
+        duplicateBalanceAccounts.slice(1).some((account) => {
           const facts = duplicateAccountIdentityFacts(account)
           return facts.length !== firstForcedDistributionFacts.length ||
             facts.some((fact, factIndex) => fact !== firstForcedDistributionFacts[factIndex])
-        })
+        }))
       if (
         !actionReferencedAccountIds.has(accountId) &&
         !hasConflictingForcedDistributionFacts

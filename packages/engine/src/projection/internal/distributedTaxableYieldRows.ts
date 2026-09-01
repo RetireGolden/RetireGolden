@@ -101,8 +101,7 @@ export function distributedTaxableYieldRows(
 
     // An allocated brokerage account derives its yield fields from the class
     // blend; explicit account-level fields still override that blend.
-    const track = allocationTrack.get(String(stateIndex)) ??
-      allocationTrack.get(account.id)
+    const track = allocationTrack.get(String(stateIndex))
     const blendedYield = track ? blendedTaxableYield(track.weights, classParams) : null
     const interestYieldPct = Math.max(0, account.interestYieldPct ?? blendedYield?.interestYieldPct ?? 0)
     const dividendYieldPct = Math.max(0, account.dividendYieldPct ?? blendedYield?.dividendYieldPct ?? 0)

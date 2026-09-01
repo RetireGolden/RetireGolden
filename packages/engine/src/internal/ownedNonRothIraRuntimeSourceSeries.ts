@@ -1206,10 +1206,9 @@ function aggregateRothCredits(
     fail('aggregateRothCreditInvalid', 'Owned-IRA conversions require an aggregate Roth credit', context)
   }
   const bySource = new Map(conversions.map((entry) => [entry.sourceAccountId, entry]))
-  const ordered = plan.accounts.flatMap((account) => {
-    const occurrence = bySource.get(account.id)
-    return occurrence === undefined ? [] : [occurrence]
-  })
+  const ordered = [...bySource.values()].sort((left, right) =>
+    (accountOrder.get(left.sourceAccountId ?? '') ?? Number.MAX_SAFE_INTEGER) -
+      (accountOrder.get(right.sourceAccountId ?? '') ?? Number.MAX_SAFE_INTEGER))
   if (ordered.length !== conversions.length || bySource.size !== conversions.length) {
     fail('aggregateRothCreditInvalid', 'Conversion occurrences must map uniquely to Plan account order', context)
   }
@@ -1474,7 +1473,10 @@ function validateUnchecked(
   }
 
   const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
-  const accountOrder = new Map(plan.accounts.map((account, index) => [account.id, index]))
+  const accountOrder = new Map<string, number>()
+  for (const [index, account] of plan.accounts.entries()) {
+    if (!accountOrder.has(account.id)) accountOrder.set(account.id, index)
+  }
   const pools = ownedPools(plan)
   const ownedAccounts = [...pools.values()].flat()
   const personIds = new Set(plan.household.people.map((person) => person.id))

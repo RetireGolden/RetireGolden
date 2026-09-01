@@ -1581,7 +1581,7 @@ describe('Plan retirement-action persistence', () => {
       type: 'cash',
       id: 'ambiguous-cash-property',
       name: 'Second cash row',
-      ownerPersonId: 'p2',
+      ownerPersonId: 'p1',
       annualReturnPct: 0,
       balance: 20_000,
       annualContribution: 0,
@@ -1589,7 +1589,7 @@ describe('Plan retirement-action persistence', () => {
       type: 'property',
       id: 'ambiguous-cash-property',
       name: 'Property row',
-      ownerPersonId: null,
+      ownerPersonId: 'p1',
       annualReturnPct: 0,
       value: 100_000,
       plannedSaleYear: null,
@@ -1601,6 +1601,89 @@ describe('Plan retirement-action persistence', () => {
     expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
       'duplicate account id "ambiguous-cash-property"',
     )
+  })
+
+  it('rejects a cash/property channel with more than the exact legacy pair', () => {
+    const plan = validCouplePlan()
+    const cash = {
+      type: 'cash' as const,
+      id: 'legacy-position',
+      name: 'Legacy cash row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+    }
+    const property = {
+      type: 'property' as const,
+      id: 'legacy-position',
+      name: 'Legacy property row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }
+    plan.accounts = [cash, property, { ...property, name: 'Second property row' }]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "legacy-position"',
+    )
+  })
+
+  it('rejects duplicate balance rows whose estate destinations disagree in either order', () => {
+    const plan = validCouplePlan()
+    const account = plan.accounts.find((candidate) => candidate.id === 'a2')!
+    const spouse = { ...account, estateBeneficiary: { destination: 'spouse' as const } }
+    const charity = {
+      ...account,
+      estateBeneficiary: { destination: 'charity' as const, charityPct: 40 },
+    }
+
+    for (const accounts of [[spouse, charity], [charity, spouse]]) {
+      plan.accounts = accounts
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(false)
+      expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+        'duplicate account id "a2"',
+      )
+    }
+  })
+
+  it('normalizes an omitted estate destination to the account-class default', () => {
+    const plan = validCouplePlan()
+    const implicitNonSpouse = plan.accounts.find((candidate) => candidate.id === 'a2')!
+    const explicitNonSpouse = {
+      ...implicitNonSpouse,
+      estateBeneficiary: { destination: 'nonSpouse' as const },
+    }
+    plan.accounts = [implicitNonSpouse, explicitNonSpouse]
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('preserves last-row publication for unreferenced non-balance duplicates', () => {
+    const plan = validCouplePlan()
+    const property = {
+      type: 'property' as const,
+      id: 'duplicate-property',
+      name: 'First property row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }
+    plan.accounts = [property, {
+      ...property,
+      name: 'Selected property row',
+      ownerPersonId: 'p2',
+      value: 200_000,
+    }]
+
+    expect(parsePlan(plan).ok).toBe(true)
   })
 
   it('rejects duplicate equity-comp IDs whose vesting facts disagree', () => {

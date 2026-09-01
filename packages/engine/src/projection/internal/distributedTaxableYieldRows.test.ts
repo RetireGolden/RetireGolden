@@ -130,6 +130,19 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
 
     expect(rows.map((row) => row.kind === 'yield' ? row.interest : null)).toEqual([10, 70])
   })
+
+  it('does not adopt a different row’s positional track through a numeric account ID', () => {
+    const classParams = params()
+    classParams.bonds = { ...classParams.bonds, interestYieldPct: 7, dividendYieldPct: 0 }
+    const rows = distributedTaxableYieldRows(input({
+      states: [state(taxable('1')), state(taxable('tracked'))],
+      startOfYearBalances: [1_000, 1_000],
+      allocationTrack: new Map([['1', { weights: [0, 0, 1, 0] }]]),
+      classParams,
+    }))
+
+    expect(rows.map((row) => row.kind === 'yield' ? row.interest : null)).toEqual([null, 70])
+  })
 })
 
 describe('distributedTaxableYieldRows — yield sources and defaults', () => {
@@ -140,7 +153,7 @@ describe('distributedTaxableYieldRows — yield sources and defaults', () => {
     const [row] = distributedTaxableYieldRows(input({
       states: [state(taxable('allocated'))],
       startOfYearBalances: [12_345.67],
-      allocationTrack: new Map([['allocated', { weights: [0.3, 0, 0.7, 0] }]]),
+      allocationTrack: new Map([['0', { weights: [0.3, 0, 0.7, 0] }]]),
       classParams,
     }))
     if (row?.kind !== 'yield') throw new Error('expected yield row')
@@ -166,7 +179,7 @@ describe('distributedTaxableYieldRows — yield sources and defaults', () => {
         taxExemptInterestYieldPct: 3.125,
       }))],
       startOfYearBalances: [8_000],
-      allocationTrack: new Map([['muni', { weights: [0, 0, 1, 0] }]]),
+      allocationTrack: new Map([['0', { weights: [0, 0, 1, 0] }]]),
     }))
     if (row?.kind !== 'yield') throw new Error('expected yield row')
 
@@ -277,14 +290,14 @@ describe('distributedTaxableYieldRows — exact arithmetic, records, and purity'
     const classParams = params()
     const states = [state(account, 321)]
     const startOfYearBalances = [654]
-    const allocationTrack = new Map([['immutable', { weights }]])
+    const allocationTrack = new Map([['0', { weights }]])
     const before = JSON.stringify({ states, weights, classParams })
 
     distributedTaxableYieldRows({ states, startOfYearBalances, allocationTrack, classParams })
 
     expect(JSON.stringify({ states, weights, classParams })).toBe(before)
     expect(startOfYearBalances).toEqual([654])
-    expect(allocationTrack.get('immutable')?.weights).toBe(weights)
+    expect(allocationTrack.get('0')?.weights).toBe(weights)
   })
 
   it('fails when opening balances lose positional cardinality', () => {

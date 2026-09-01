@@ -230,20 +230,20 @@
       "label": "positional Marketplace publication and per-person premium fallback",
       "file": "projection/simulate.ts",
       "lines": [
-        8053,
-        8068
+        8071,
+        8086
       ],
       "anchors": [
         {
-          "line": 8053,
+          "line": 8071,
           "text": ": peopleStates"
         },
         {
-          "line": 8056,
+          "line": 8074,
           "text": "months: marketplaceMonthsByPersonPosition[position]!,"
         },
         {
-          "line": 8068,
+          "line": 8086,
           "text": "})"
         }
       ]

@@ -29,8 +29,10 @@ function finiteNonnegative(value: number, label: string): void {
 /**
  * One logical account ID backed by one or more live positional balance rows.
  *
- * Facts come from the last row; ID order comes from the first. Mutations are
- * prepared and validated in full before any physical row is written.
+ * Facts come from the last row; ID order comes from the first. The constructor
+ * independently verifies every identity-bearing fact (including normalized
+ * estate disposition) before exposing the group. Mutations are prepared and
+ * validated in full before any physical row is written.
  */
 export class AnnualLogicalBalanceGroup {
   readonly id: string

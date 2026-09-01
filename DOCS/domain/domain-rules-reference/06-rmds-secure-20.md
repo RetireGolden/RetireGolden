@@ -49,10 +49,11 @@
   Contribution occurrence/application keys include the physical balance-row index. Exact owned-IRA replay validates
   physical opening, contribution, pre-growth, and post-growth rows before folding one aggregate Form 8606 member per ID.
   The guardrail opening signal counts each row once while retaining its historical exclusion of unassigned cash. Duplicate
-  retirement rows whose account type, retirement kind, owner, inherited, SEPP, or other
+  retirement rows whose account type, retirement kind, owner, estate destination, inherited, SEPP, or other
   forced-distribution facts disagree, and decision-bearing
   retirement actions, pension lump sums, and annuity purchases, reject duplicate IDs as ambiguous. This convention
-  does not change the positional property/HECM or annuity-payout first-qualifying-row behavior; imported data should
+  admits only the exact historical one-cash/one-property mixed-ID pair and does not change the positional property/HECM
+  or annuity-payout first-qualifying-row behavior; imported data should
   still use unique IDs.
   The regression suite is [`simulate.ownerRmdDuplicateAccountId.test.ts`](../../../packages/engine/src/projection/simulate.ownerRmdDuplicateAccountId.test.ts).
 - **QCD:** direct IRA-to-charity from age 70½, excluded from income, counting toward an RMD when one is due; 2026

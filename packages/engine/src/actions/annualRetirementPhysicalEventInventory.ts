@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
-import { planSchema, selectedLogicalBalanceAccounts, type Plan } from '../model/plan.js'
+import {
+  isLogicalBalanceAccount,
+  planSchema,
+  selectedLogicalAccounts,
+  type Plan,
+} from '../model/plan.js'
 import { packForYear, rmdStartAgeForBirthYear } from '../params/index.js'
 import {
   classifyInheritedRegime,
@@ -120,6 +125,19 @@ export type AnnualRetirementResolvedRuntimeEventKind =
   (typeof annualRetirementResolvedRuntimeEventKinds)[number]
 
 /**
+ * Runtime contribution and match producers identify a physical BalanceState
+ * occurrence, not merely the logical account ID shared by compatible rows.
+ */
+export function annualRetirementRuntimeEventUsesPhysicalBalanceIndex(
+  kind: AnnualRetirementRuntimeEventKind,
+): boolean {
+  return kind === 'ownedIraContribution' ||
+    kind === 'ownedIraEmployerContribution' ||
+    kind === 'employerPlanEmployeeContribution' ||
+    kind === 'employerPlanEmployerMatch'
+}
+
+/**
  * Every producer an annual retirement occurrence can come from. The list is the
  * single source of truth: the record schema below is built from it, so an
  * origin cannot exist in the type and be missing from the validator.
@@ -181,6 +199,8 @@ export interface ResolvedAnnualRetirementPhysicalEventRecord {
   ownerPersonId: PersonId
   /** Affected retirement account; for an inflow, this is the receiving account. */
   sourceAccountId: AccountId
+  /** Exact physical BalanceState row for positional contribution/match producers. */
+  sourceBalanceIndex?: number
   grossAmount: PositiveUsdCents
   executionDate: string
   executionSequence: number
@@ -255,6 +275,7 @@ export interface RuntimeAnnualRetirementPhysicalEvent
   kind: AnnualRetirementResolvedRuntimeEventKind
   ledgerRunId: string
   movementAuthorityId: string
+  sourceBalanceIndex?: number
   executionDate: string
   executionSequence: number
   upstreamEvidenceId: string
@@ -436,6 +457,7 @@ const resolvedRecordSchema = z.object({
   origin: runtimeOriginSchema,
   ownerPersonId: personIdSchema,
   sourceAccountId: accountIdSchema,
+  sourceBalanceIndex: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   grossAmount: positiveUsdCentsSchema,
   executionDate: z.string(),
   executionSequence: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
@@ -1068,6 +1090,7 @@ function canonicalRuntimeRecordKey(record: CanonicalRuntimeRecord): string {
     record.ledgerRunId,
     record.ownerPersonId,
     record.sourceAccountId,
+    record.sourceBalanceIndex ?? null,
     record.grossAmount,
     record.executionDate,
     record.executionSequence,
@@ -1232,6 +1255,9 @@ function canonicalRuntimeEvent(
     movementAuthorityId: record.movementAuthorityId,
     ownerPersonId: record.ownerPersonId,
     sourceAccountId: record.sourceAccountId,
+    ...(record.sourceBalanceIndex === undefined
+      ? {}
+      : { sourceBalanceIndex: record.sourceBalanceIndex }),
     grossAmount: record.grossAmount,
     executionDate: record.executionDate,
     executionSequence: record.executionSequence,
@@ -1306,6 +1332,7 @@ function canonicalEvidenceParts(
     event.movementAuthorityId,
     event.ownerPersonId,
     event.sourceAccountId,
+    event.sourceBalanceIndex ?? null,
     event.grossAmount,
     event.eventDate,
     event.eventSequence,
@@ -1405,10 +1432,11 @@ export function buildAnnualRetirementPhysicalEventInventory(
   if (inventoryIssues.length > 0) return incomplete(inventoryIssues)
 
   const people = new Set(plan.household.people.map((person) => person.id))
-  const logicalAccounts = selectedLogicalBalanceAccounts(plan.accounts)
+  const logicalAccounts = selectedLogicalAccounts(plan.accounts)
   const accountById = new Map(
     logicalAccounts.map((account) => [account.id, account] as const),
   )
+  const physicalBalanceAccounts = plan.accounts.filter(isLogicalBalanceAccount)
   const traditionalById = new Map(
     logicalAccounts
       .filter((account): account is TraditionalAccount =>
@@ -1542,8 +1570,43 @@ export function buildAnnualRetirementPhysicalEventInventory(
         { recordId: record.eventId },
       ))
     }
-    const anyAccount = accountById.get(record.sourceAccountId)
-    const traditionalAccount = traditionalById.get(record.sourceAccountId)
+    const usesPhysicalBalanceIndex =
+      annualRetirementRuntimeEventUsesPhysicalBalanceIndex(record.kind)
+    const physicalSourceCount = physicalBalanceAccounts.reduce(
+      (count, account) => count + Number(account.id === record.sourceAccountId),
+      0,
+    )
+    if (!usesPhysicalBalanceIndex && record.sourceBalanceIndex !== undefined) {
+      inventoryIssues.push(issue(
+        'runtimeRecordBindingMismatch',
+        `Runtime event kind ${record.kind} must bind through its logical account ID, not a physical balance index`,
+        { recordId: record.eventId, sourceAccountId: record.sourceAccountId },
+      ))
+    } else if (
+      usesPhysicalBalanceIndex &&
+      physicalSourceCount > 1 &&
+      record.sourceBalanceIndex === undefined
+    ) {
+      inventoryIssues.push(issue(
+        'runtimeRecordBindingMismatch',
+        `Runtime event kind ${record.kind} must identify its exact physical balance row when the source ID is duplicated`,
+        { recordId: record.eventId, sourceAccountId: record.sourceAccountId },
+      ))
+    }
+    const effectiveBalanceIndex = usesPhysicalBalanceIndex
+      ? record.sourceBalanceIndex
+      : undefined
+    const indexedAccount = effectiveBalanceIndex === undefined
+      ? undefined
+      : physicalBalanceAccounts[effectiveBalanceIndex]
+    const anyAccount = effectiveBalanceIndex === undefined
+      ? accountById.get(record.sourceAccountId)
+      : indexedAccount?.id === record.sourceAccountId
+        ? indexedAccount
+        : undefined
+    const traditionalAccount = anyAccount?.type === 'traditional'
+      ? anyAccount
+      : undefined
     // Inherited kinds (K1/K2) execute for Roth sources; other retirement kinds
     // still require a traditional account.
     const account: InheritedCapableAccount | undefined =

@@ -476,6 +476,145 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     })]))).toContain('sourceKindMismatch')
   })
 
+  it('validates positional IRA and employer inflows against their exact physical rows', () => {
+    const plan = basePlan()
+    plan.household.people[0]!.dob = '1970-01-01'
+    plan.strategies.retirementActions = []
+    plan.incomes = [{
+      type: 'wages',
+      id: 'owner-current-wages',
+      personId: ownerPersonId,
+      annualGross: 100_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const firstIra = traditionalAccount(ownedIraId, 0, ownerPersonId)
+    const selectedIra = traditionalAccount(ownedIraId, 0, ownerPersonId)
+    const firstEmployer = traditionalAccount(employerId, 0, ownerPersonId, 'employer')
+    const selectedEmployer = traditionalAccount(employerId, 0, ownerPersonId, 'employer')
+    if (firstIra.type !== 'traditional' || selectedIra.type !== 'traditional' ||
+        firstEmployer.type !== 'traditional' || selectedEmployer.type !== 'traditional') {
+      throw new Error('fixture drift')
+    }
+    firstIra.annualContribution = 3_000
+    selectedIra.annualContribution = 0
+    firstEmployer.annualContribution = 10_000
+    firstEmployer.employerMatch = { matchPct: 50, capPctOfPay: 6 }
+    selectedEmployer.annualContribution = 0
+    plan.accounts = [firstIra, selectedIra, firstEmployer, selectedEmployer]
+
+    const result = buildAnnualRetirementPhysicalEventInventory(input(plan, [
+      resolved({
+        eventId: 'physical-ira-contribution',
+        movementAuthorityId: 'physical-ira-contribution-authority',
+        upstreamEvidenceId: 'physical-ira-contribution-upstream',
+        kind: 'ownedIraContribution',
+        origin: 'contributionLedger',
+        sourceAccountId: ownedIraId,
+        sourceBalanceIndex: 0,
+      }),
+      resolved({
+        eventId: 'physical-employer-contribution',
+        movementAuthorityId: 'physical-employer-contribution-authority',
+        upstreamEvidenceId: 'physical-employer-contribution-upstream',
+        kind: 'employerPlanEmployeeContribution',
+        origin: 'contributionLedger',
+        sourceAccountId: employerId,
+        sourceBalanceIndex: 2,
+        executionSequence: 11,
+      }),
+      resolved({
+        eventId: 'physical-employer-match',
+        movementAuthorityId: 'physical-employer-match-authority',
+        upstreamEvidenceId: 'physical-employer-match-upstream',
+        kind: 'employerPlanEmployerMatch',
+        origin: 'contributionLedger',
+        sourceAccountId: employerId,
+        sourceBalanceIndex: 2,
+        executionSequence: 12,
+      }),
+    ]))
+
+    expect(result.status).toBe('annualPhysicalEventInventoryBuilt')
+    expect(result.issues.map((item) => item.kind)).not.toContain('sourceKindMismatch')
+    expect(result.issues.map((item) => item.kind)).not.toContain('sourceForeignToPlan')
+  })
+
+  it('fails closed when a positional runtime source does not match its physical row', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = []
+    const result = buildAnnualRetirementPhysicalEventInventory(input(plan, [resolved({
+      kind: 'ownedIraContribution',
+      origin: 'contributionLedger',
+      sourceAccountId: ownedIraId,
+      sourceBalanceIndex: 2,
+    })]))
+
+    expect(result.status).toBe('annualPhysicalEventInventoryIncomplete')
+    expect(result.issues.map((item) => item.kind)).toContain('sourceForeignToPlan')
+  })
+
+  it('requires a physical index for a positional event when its source ID is duplicated', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = []
+    const first = traditionalAccount(ownedIraId, 1_000, ownerPersonId)
+    const selected = traditionalAccount(ownedIraId, 2_000, ownerPersonId)
+    if (first.type !== 'traditional' || selected.type !== 'traditional') {
+      throw new Error('fixture drift')
+    }
+    first.annualContribution = 3_000
+    selected.annualContribution = 0
+    plan.accounts = [first, selected]
+
+    const result = buildAnnualRetirementPhysicalEventInventory(input(plan, [resolved({
+      kind: 'ownedIraContribution',
+      origin: 'contributionLedger',
+      sourceAccountId: ownedIraId,
+    })]))
+
+    expect(result.status).toBe('annualPhysicalEventInventoryIncomplete')
+    expect(result.issues.map((item) => item.kind)).toContain('runtimeRecordBindingMismatch')
+  })
+
+  it('rejects a physical index on an ID-grouped runtime event', () => {
+    const plan = basePlan()
+    plan.strategies.retirementActions = []
+    plan.accounts = [
+      traditionalAccount(ownedIraId, 1_000, ownerPersonId),
+      traditionalAccount(ownedIraId, 2_000, ownerPersonId),
+    ]
+
+    const result = buildAnnualRetirementPhysicalEventInventory(input(plan, [resolved({
+      kind: 'ownedIraRmd',
+      origin: 'rmdEngine',
+      sourceAccountId: ownedIraId,
+      sourceBalanceIndex: 0,
+    })]))
+
+    expect(result.status).toBe('annualPhysicalEventInventoryIncomplete')
+    expect(result.issues.map((item) => item.kind)).toContain('runtimeRecordBindingMismatch')
+  })
+
+  it('classifies a non-balance Plan source as the wrong kind rather than foreign', () => {
+    const plan = basePlan()
+    plan.accounts.push({
+      type: 'property',
+      id: 'property-source',
+      name: 'Property source',
+      ownerPersonId,
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    })
+    const result = buildAnnualRetirementPhysicalEventInventory(input(plan, [resolved({
+      sourceAccountId: asAccountId('property-source'),
+    })]))
+
+    expect(result.issues.map((item) => item.kind)).toContain('sourceKindMismatch')
+    expect(result.issues.map((item) => item.kind)).not.toContain('sourceForeignToPlan')
+  })
+
   it('rejects owned-IRA contributions on S2 accounts past the election year', () => {
     // Post-flip the account is owned for RMD/Form 8606, but contributions stay
     // blocked on any account with an inherited block (WS5 residual).

@@ -1,4 +1,9 @@
-import { planSchema, selectedLogicalBalanceAccounts, type Plan } from '../model/plan.js'
+import {
+  planSchema,
+  selectedLogicalAccounts,
+  selectedLogicalBalanceAccounts,
+  type Plan,
+} from '../model/plan.js'
 import {
   accountIdSchema,
   personIdSchema,
@@ -308,7 +313,7 @@ function claimPlanIdentifiers(
   for (const person of plan.household.people) {
     claim(person.id, 'personId', [planId, person], `person ID ${person.id}`)
   }
-  for (const account of selectedLogicalBalanceAccounts(plan.accounts)) {
+  for (const account of selectedLogicalAccounts(plan.accounts)) {
     claim(account.id, 'accountId', [planId, account], `account ID ${account.id}`)
   }
   for (const action of plan.strategies.retirementActions) {

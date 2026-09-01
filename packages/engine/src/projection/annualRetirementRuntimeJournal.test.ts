@@ -199,6 +199,25 @@ describe('simulator annual retirement runtime journal', () => {
     })
   })
 
+  it('carries the canonical positional contribution source into a resolved record', () => {
+    const result = sealed(occurrence({
+      producerOccurrenceKey: JSON.stringify([
+        'ownedIraContribution', sourceAccountId, 3,
+      ]),
+      kind: 'ownedIraContribution',
+      executionDate: '2030-03-01',
+      executionSequence: 10,
+      movementAuthorityId: 'contribution-movement',
+    }))
+
+    expect(result.runtimeRecords[0]).toMatchObject({
+      recordStatus: 'resolved',
+      kind: 'ownedIraContribution',
+      sourceAccountId,
+      sourceBalanceIndex: 3,
+    })
+  })
+
   it('keeps contract-excluded transfer kinds unresolved even if every fact is supplied', () => {
     const result = sealed(occurrence({
       kind: 'annuityFundingTransfer',

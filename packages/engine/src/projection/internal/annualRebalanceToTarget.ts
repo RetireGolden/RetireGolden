@@ -153,8 +153,7 @@ export function annualRebalanceToTarget(
   const { states, allocationTrack, year, startYear } = input
   const rows: AnnualRebalanceRow[] = []
   for (const [balanceIndex, state] of states.entries()) {
-    const track = allocationTrack.get(String(balanceIndex)) ??
-      allocationTrack.get(state.account.id)
+    const track = allocationTrack.get(String(balanceIndex))
     if (year <= startYear || !track || track.policy.rebalancing === 'none') {
       rows.push({ kind: 'none' })
       continue

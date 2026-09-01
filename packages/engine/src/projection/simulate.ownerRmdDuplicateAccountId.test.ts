@@ -373,8 +373,8 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     })
     const year = result.years[0]!
 
-    // Pub. 590-B Uniform Lifetime Table divisor at age 76 is 23.7. The
-    // Both physical members form the 1,100,000 logical account used by the
+    // Pub. 590-B Uniform Lifetime Table divisor at age 76 is 23.7. Both
+    // physical members form the 1,100,000 logical account used by the
     // requirement and the §408(d)(8)(D) aggregate includible ceiling.
     expect(year.rmd).toBeCloseTo(1_100_000 / 23.7, 10)
     expect(year.qcd).toBe(50_000)

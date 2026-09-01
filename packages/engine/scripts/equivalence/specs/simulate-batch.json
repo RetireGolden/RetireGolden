@@ -9,7 +9,7 @@
       "file": "projection/internal/annualRebalanceToTarget.ts",
       "lines": [
         155,
-        188
+        187
       ],
       "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
       "anchors": [
@@ -18,11 +18,11 @@
           "text": "for (const [balanceIndex, state] of states.entries()) {"
         },
         {
-          "line": 171,
+          "line": 170,
           "text": "openingCostBasis: state.costBasis,"
         },
         {
-          "line": 188,
+          "line": 187,
           "text": "}"
         }
       ]
@@ -32,20 +32,20 @@
       "label": "A: taxable sale through aggregateBasisSale (turnover > 1e-9, taxable, balance > 0)",
       "file": "projection/internal/annualRebalanceToTarget.ts",
       "lines": [
-        165,
-        186
+        164,
+        185
       ],
       "anchors": [
         {
-          "line": 165,
+          "line": 164,
           "text": "if (turnover > 1e-9 && state.account.type === 'taxable' && state.balance > 0) {"
         },
         {
-          "line": 175,
+          "line": 174,
           "text": "kind: 'sale',"
         },
         {
-          "line": 186,
+          "line": 185,
           "text": "}"
         }
       ]
@@ -55,21 +55,21 @@
       "label": "A: the rebalancing-gain ledger payload the caller publishes",
       "file": "projection/internal/annualRebalanceToTarget.ts",
       "lines": [
-        180,
-        183
+        179,
+        182
       ],
       "note": "SHAPE CHANGED WITH THE EXTRACTION: inlined, this literal was an argument to an optional-chained recorder call and was built on cashFlow modes ONLY. The row owns it now, so it is built on every sale row in every mode. A count here is therefore no longer evidence that a cashFlow mode ran.",
       "anchors": [
         {
-          "line": 180,
+          "line": 179,
           "text": "record: {"
         },
         {
-          "line": 181,
+          "line": 180,
           "text": "accountId,"
         },
         {
-          "line": 183,
+          "line": 182,
           "text": "},"
         }
       ]
@@ -79,12 +79,12 @@
       "label": "A: the non-taxable / no-trade retarget row",
       "file": "projection/internal/annualRebalanceToTarget.ts",
       "lines": [
-        187,
-        187
+        186,
+        186
       ],
       "anchors": [
         {
-          "line": 187,
+          "line": 186,
           "text": "rows.push({ kind: 'retarget', accountId, targetWeights: target })"
         }
       ]

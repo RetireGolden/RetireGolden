@@ -272,32 +272,32 @@
       "label": "SEPP operation application and effect publication",
       "file": "projection/simulate.ts",
       "lines": [
-        4104,
-        4167
+        4122,
+        4185
       ],
       "anchors": [
         {
-          "line": 4104,
+          "line": 4122,
           "text": "const seppPlan = annualSeppDistributions({"
         },
         {
-          "line": 4115,
+          "line": 4133,
           "text": "const seppTotal = seppPlan.total"
         },
         {
-          "line": 4116,
+          "line": 4134,
           "text": "for (const operation of seppPlan.operations) {"
         },
         {
-          "line": 4126,
+          "line": 4144,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 4158,
+          "line": 4176,
           "text": "deferredSeppDistributions.push({"
         },
         {
-          "line": 4167,
+          "line": 4185,
           "text": "}"
         }
       ],

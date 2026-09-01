@@ -988,6 +988,9 @@ function collectUseLines(
     lines: attributionInput,
     shortfallAfterHecm: input.shortfallAfterHecm,
   })
+  if (attributed.lines.length !== pending.length) {
+    throw new Error('Cash-flow shortfall attribution lost positional cardinality')
+  }
   if (attributed.remainingUnattributed > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS) {
     // An unattributed shortfall is an incomplete use inventory, not funding
     // fixed-point residue. Fail closed even when the hole is below half a cent.
@@ -1002,8 +1005,7 @@ function collectUseLines(
   // than public line id: duplicate ids deliberately survive to the report so
   // reconciliation can flag them, but must not overwrite each other's amounts.
   for (const [index, row] of pending.entries()) {
-    const funding = attributed.lines[index]
-    if (funding === undefined) continue
+    const funding = attributed.lines[index]!
     if (funding.requestedPlanDollars <= 0 && funding.fundedPlanDollars <= 0) continue
     useLines.push({
       id: row.id,

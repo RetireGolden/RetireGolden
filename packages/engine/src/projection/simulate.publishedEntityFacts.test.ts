@@ -1643,6 +1643,40 @@ describe('simulatePlan published per-entity ledger facts', () => {
       })
     })
 
+    it('does not treat one omitted duplicate member as an omitted owner-wide basis', () => {
+      const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
+      plan.id = 'published-facts-duplicate-ira-explicit-basis'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      const omitted = ownedIra('duplicate-ira', 100_000)
+      const explicit = ownedIra('duplicate-ira', 100_000)
+      if (explicit.type !== 'traditional') throw new Error('fixture drift')
+      explicit.nondeductibleBasis = 40_000
+      plan.accounts = [omitted, explicit, cash(50_000)]
+
+      const year = run(plan)[0]!
+      expect(year.rmd).toBeGreaterThan(0)
+      const owner = (year.ownedTraditionalIraAggregateActivity ?? [])
+        .find((row) => row.ownerPersonId === 'p1')
+      expect(owner?.assumedBasisConsequential).toBeUndefined()
+    })
+
+    it('still reports an omitted distinct IRA when another IRA states basis', () => {
+      const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
+      plan.id = 'published-facts-distinct-ira-missing-basis'
+      plan.assumptions.inflationPct = 0
+      plan.assumptions.defaultReturnPct = 0
+      const explicit = ownedIra('explicit-ira', 100_000)
+      if (explicit.type !== 'traditional') throw new Error('fixture drift')
+      explicit.nondeductibleBasis = 40_000
+      plan.accounts = [ownedIra('omitted-ira', 100_000), explicit, cash(50_000)]
+
+      const year = run(plan)[0]!
+      const owner = (year.ownedTraditionalIraAggregateActivity ?? [])
+        .find((row) => row.ownerPersonId === 'p1')
+      expect(owner?.assumedBasisConsequential?.distributions).toBeGreaterThan(0)
+    })
+
     it('handles a death-year owned-IRA distribution without false silence when taxable', () => {
       // planningAge 73 = last full year alive in 2026 (dob 1953).
       const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 73 })

@@ -554,12 +554,13 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
-  it('replays compatible duplicate owned IRA rows as one logical source account', () => {
-    const plan = singlePersonPlan({ planningAge: 60 })
+  it('replays interleaved duplicate IRA applications in first logical-ID order', () => {
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
     plan.id = 'duplicate-owned-ira-id'
     plan.accounts = [
-      traditional('duplicate-ira', 10_000),
-      traditional('duplicate-ira', 10_000),
+      traditional('duplicate-ira', 265_000),
+      traditional('distinct-ira', 79_500),
+      traditional('duplicate-ira', 53_000),
     ]
     const years = simulatePlan(plan, {
       startYear: TAX_YEAR,
@@ -567,6 +568,34 @@ describe('private owned-IRA runtime source-series validation', () => {
       taxCalculator: noTax,
     }).years
 
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesComplete',
+        issues: [],
+      })
+  })
+
+  it('orders one aggregate conversion occurrence per duplicate logical source', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'duplicate-owned-ira-conversion-source'
+    plan.accounts = [
+      traditional('duplicate-ira', 1_000),
+      traditional('duplicate-ira', 2_000),
+      roth('destination-roth'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: TAX_YEAR, amount: 100 }],
+    }
+    const years = simulatePlan(plan, {
+      startYear: TAX_YEAR,
+      horizonEndYear: TAX_YEAR,
+      taxCalculator: noTax,
+    }).years
+
+    expect(years[0]!.retirementRuntimeSource!.runtimeOccurrences.filter(
+      (occurrence) => occurrence.kind === 'legacyRothConversion',
+    )).toHaveLength(1)
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
       .toMatchObject({
         status: 'ownedNonRothIraRuntimeSourceSeriesComplete',

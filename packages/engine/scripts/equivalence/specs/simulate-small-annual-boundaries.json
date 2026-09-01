@@ -181,7 +181,7 @@
       "file": "projection/internal/distributedTaxableYieldRows.ts",
       "lines": [
         87,
-        152
+        151
       ],
       "anchors": [
         {
@@ -189,11 +189,11 @@
           "text": "const rows: DistributedTaxableYieldResultRow[] = []"
         },
         {
-          "line": 120,
+          "line": 119,
           "text": "const qualified = dividends * Math.min(1, Math.max(0, account.qualifiedRatio ?? blendedYield?.qualifiedRatio ?? 0.85))"
         },
         {
-          "line": 152,
+          "line": 151,
           "text": "}"
         }
       ]

@@ -1,5 +1,6 @@
 import {
   annualRetirementResolvedRuntimeEventKinds,
+  annualRetirementRuntimeEventUsesPhysicalBalanceIndex,
   annualRetirementRuntimeEventKinds,
   type AnnualRetirementResolvedRuntimeEventKind,
   type AnnualRetirementRuntimeEventKind,
@@ -167,6 +168,27 @@ function issue(
   }
 }
 
+function positionalSourceBalanceIndex(
+  occurrence: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
+  sourceAccountId: string | null,
+): number | undefined {
+  if (
+    occurrence.kind !== 'ownedIraContribution' &&
+    occurrence.kind !== 'ownedIraEmployerContribution' &&
+    occurrence.kind !== 'employerPlanEmployeeContribution' &&
+    occurrence.kind !== 'employerPlanEmployerMatch'
+  ) return undefined
+  try {
+    const parsed: unknown = JSON.parse(occurrence.producerOccurrenceKey)
+    if (!Array.isArray(parsed) || parsed.length !== 3 ||
+        parsed[0] !== occurrence.kind || parsed[1] !== sourceAccountId ||
+        !Number.isSafeInteger(parsed[2]) || (parsed[2] as number) < 0) return undefined
+    return parsed[2] as number
+  } catch {
+    return undefined
+  }
+}
+
 function journalWithIssue(
   journal: Readonly<SimulatorAnnualRetirementRuntimeJournal>,
   nextIssue: SimulatorAnnualRetirementRuntimeJournalIssue,
@@ -313,12 +335,16 @@ export function recordSimulatorAnnualRetirementRuntimeOccurrence(
 
   const ownerPersonId = owner === null ? null : owner.data
   const sourceAccountId = source === null ? null : source.data
+  const sourceBalanceIndex = positionalSourceBalanceIndex(occurrence, sourceAccountId)
   const origin = originFor(occurrence.kind)
+  const requiresPositionalSource =
+    annualRetirementRuntimeEventUsesPhysicalBalanceIndex(occurrence.kind)
   const canResolve = resolvedKinds.has(occurrence.kind) &&
     ownerPersonId !== null && sourceAccountId !== null &&
     occurrence.executionDate !== null &&
     occurrence.executionSequence !== null &&
-    occurrence.movementAuthorityId !== null
+    occurrence.movementAuthorityId !== null &&
+    (!requiresPositionalSource || sourceBalanceIndex !== undefined)
   const binding = [
     journal.context.planId,
     journal.context.taxYear,
@@ -329,6 +355,7 @@ export function recordSimulatorAnnualRetirementRuntimeOccurrence(
     grossAmount,
     ownerPersonId,
     sourceAccountId,
+    sourceBalanceIndex ?? null,
     occurrence.executionDate,
     occurrence.executionSequence,
     occurrence.movementAuthorityId,
@@ -395,6 +422,7 @@ export function recordSimulatorAnnualRetirementRuntimeOccurrence(
       origin,
       ownerPersonId: ownerPersonId!,
       sourceAccountId: sourceAccountId!,
+      ...(sourceBalanceIndex === undefined ? {} : { sourceBalanceIndex }),
       grossAmount: positiveUsdCentsSchema.parse(grossAmount),
       executionDate: occurrence.executionDate!,
       executionSequence: occurrence.executionSequence!,
