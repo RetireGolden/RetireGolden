@@ -3,7 +3,7 @@
 import type { Account } from '@retiregolden/engine/model/plan'
 
 import { CheckboxField, MoneyField, PercentField, SelectField, TextField } from '../fields'
-import type { CommitAccountField } from './AccountEditorTypes'
+import type { CommitAccountFieldFor } from './AccountEditorTypes'
 import {
   showTaxExemptAllocationDoubleCountWarning,
   TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING,
@@ -41,7 +41,7 @@ export function TaxableAccountEditor({
   onCommit,
 }: {
   account: Extract<Account, { type: 'taxable' }>
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<Extract<Account, { type: 'taxable' }>>
 }) {
   return (
     <>
@@ -81,7 +81,7 @@ export function TaxableAccountEditor({
         <>
           <PercentField
             label="Interest yield override"
-            help="Optional. Leave blank to use the blended interest yield from the class mix (shown as 'This year's blend' above). Enter a value to override it for this account."
+            help="Optional. Leave blank to use the blended interest yield from the class mix (shown as 'This year's blend' in the asset-class panel below). Enter a value to override it for this account."
             hint="Blank = use blended yield."
             value={account.interestYieldPct ?? null}
             allowNull
@@ -124,7 +124,7 @@ function ReinvestYieldField({
   onCommit,
 }: {
   account: Extract<Account, { type: 'taxable' }>
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<Extract<Account, { type: 'taxable' }>>
 }) {
   return (
     <CheckboxField
@@ -141,7 +141,7 @@ export function EquityCompAccountEditor({
   onCommit,
 }: {
   account: Extract<Account, { type: 'equityComp' }>
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<Extract<Account, { type: 'equityComp' }>>
 }) {
   return (
     <>

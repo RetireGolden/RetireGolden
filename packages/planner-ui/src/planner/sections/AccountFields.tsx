@@ -45,11 +45,11 @@ function accountTypeFields(
       return <PropertyAccountEditor account={account} index={index} onCommit={onCommit} />
     case 'debt':
       return <DebtAccountEditor account={account} onCommit={onCommit} />
-    default:
-      return assertNeverAccount(account)
   }
+  return exhaustiveAccountFallback(account)
 }
 
-function assertNeverAccount(account: never): never {
-  throw new Error(`Unsupported account type: ${JSON.stringify(account)}`)
+function exhaustiveAccountFallback(account: never): null {
+  void account
+  return null
 }

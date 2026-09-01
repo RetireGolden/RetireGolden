@@ -5,7 +5,7 @@ import { packForYear } from '@retiregolden/engine/params'
 
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField } from '../fields'
 import { usePlan } from '../planContextCore'
-import type { CommitAccountField } from './AccountEditorTypes'
+import type { CommitAccountFieldFor } from './AccountEditorTypes'
 
 export function PropertyAccountEditor({
   account,
@@ -14,7 +14,7 @@ export function PropertyAccountEditor({
 }: {
   account: Extract<Account, { type: 'property' }>
   index: number
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<Extract<Account, { type: 'property' }>>
 }) {
   const { update } = usePlan()
 
@@ -159,7 +159,7 @@ export function DebtAccountEditor({
   onCommit,
 }: {
   account: Extract<Account, { type: 'debt' }>
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<Extract<Account, { type: 'debt' }>>
 }) {
   return (
     <>

@@ -24,7 +24,7 @@ import {
   annuityStartAgeHelp,
   clampedAnnuityStartAge,
 } from './sectionHelpers'
-import type { CommitAccountField } from './AccountEditorTypes'
+import type { CommitAccountFieldFor } from './AccountEditorTypes'
 
 /**
  * The lowest election year the engine's parse rule will accept for an elected
@@ -58,7 +58,7 @@ export function PensionAccountEditor({
 }: {
   account: Extract<Account, { type: 'pension' }>
   index: number
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<Extract<Account, { type: 'pension' }>>
 }) {
   const { plan, update } = usePlan()
   return (
@@ -183,7 +183,7 @@ export function AnnuityAccountEditor({
 }: {
   account: Extract<Account, { type: 'annuity' }>
   index: number
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<Extract<Account, { type: 'annuity' }>>
 }) {
   const { plan, update } = usePlan()
   const startAgeBounds = annuityStartAgeBounds(plan, account)

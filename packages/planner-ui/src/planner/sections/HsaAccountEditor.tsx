@@ -3,14 +3,14 @@
 import type { Account } from '@retiregolden/engine/model/plan'
 
 import { CheckboxField, SelectField } from '../fields'
-import type { CommitAccountField } from './AccountEditorTypes'
+import type { CommitAccountFieldFor } from './AccountEditorTypes'
 
 export function HsaAccountEditor({
   account,
   onCommit,
 }: {
   account: Extract<Account, { type: 'hsa' }>
-  onCommit: CommitAccountField
+  onCommit: CommitAccountFieldFor<Extract<Account, { type: 'hsa' }>>
 }) {
   return (
     <>
