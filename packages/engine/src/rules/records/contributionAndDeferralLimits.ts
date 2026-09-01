@@ -757,11 +757,13 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts#allocateAggregateRothConversionByOwner',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts#annualAggregateRothConversionPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#isConvertibleToRoth',
       'packages/engine/src/projection/optimizerAggregateConversionPromotion.ts#promoteOneYear',

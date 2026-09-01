@@ -514,6 +514,7 @@
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
         "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+        "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -542,6 +543,15 @@
             {
               "name": "conversionDestinationIssue",
               "line": 338
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
+          "functions": [
+            {
+              "name": "annualAggregateRothConversionPlan",
+              "line": 160
             }
           ]
         },

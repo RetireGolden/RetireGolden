@@ -977,6 +977,7 @@
         "packages/engine/src/actions/retirementActionManualReview.ts",
         "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
         "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
@@ -1036,6 +1037,15 @@
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
               "line": 2465
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
+          "functions": [
+            {
+              "name": "annualAggregateRothConversionPlan",
+              "line": 160
             }
           ]
         },
