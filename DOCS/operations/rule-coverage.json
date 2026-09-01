@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 300,
+    "totalFiles": 302,
     "byStatus": {
-      "partial": 43,
-      "registered": 98,
+      "partial": 44,
+      "registered": 99,
       "rule-free": 159,
       "unswept": 0
     },
@@ -225,6 +225,11 @@
       "path": "projection/compare.ts",
       "sweptOn": "2026-08-27",
       "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
+    },
+    {
+      "path": "projection/internal/annualInheritedIraDistributions.ts",
+      "sweptOn": "2026-09-01",
+      "note": "the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Thirteen inherited-RMD records name the helper. Residual rule-bearing behavior remains: dead-beneficiary successor-clock suppression has no dedicated registry record; inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only."
     },
     {
       "path": "projection/internal/annualSocialSecurity.ts",
@@ -394,19 +399,19 @@
     },
     {
       "directory": "projection",
-      "files": 66,
+      "files": 67,
       "byStatus": {
-        "partial": 8,
+        "partial": 9,
         "registered": 12,
         "rule-free": 46
       }
     },
     {
       "directory": "rmd",
-      "files": 4,
+      "files": 5,
       "byStatus": {
         "partial": 1,
-        "registered": 3
+        "registered": 4
       }
     },
     {
