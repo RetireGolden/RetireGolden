@@ -61,6 +61,7 @@ export interface AnnualQualifiedAnnuityContractDistribution {
 export type AnnualPensionAndAnnuityIncomeRow =
   | Readonly<{
       kind: 'pension'
+      accountId: string
       record: AnnualPensionCashFlowRecord | null
     }>
   | Readonly<{
@@ -81,6 +82,7 @@ export interface AnnualPensionAndAnnuityIncomeInput {
   readonly personById: ReadonlyMap<string, Readonly<Person>>
   /** First duplicate person ID wins, matching simulatePlan's stateOf lookup. */
   readonly peopleStates: readonly Readonly<PersonYearState>[]
+  readonly anyAlive: boolean
   readonly primaryPersonId: string
   readonly lifeAgeOf: (person: Readonly<Person>) => number
   readonly runtimeOccurrenceKey: (
@@ -131,6 +133,19 @@ export function annualPensionAndAnnuityIncome(
   let publicPensionOrdinary = input.opening.publicPensionOrdinary
   const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []
   const rows: AnnualPensionAndAnnuityIncomeRow[] = []
+  if (!input.accounts.some(
+    (account) => account.type === 'pension' || account.type === 'annuity',
+  )) {
+    return {
+      annuityIncome,
+      pensionIncome,
+      ordinaryIncome,
+      privateRetirementOrdinary,
+      publicPensionOrdinary,
+      qualifiedAnnuityPayments,
+      rows,
+    }
+  }
   // These private shadows preserve ordered duplicate-account consumption even
   // when cash-flow capture is off; caller-owned map values remain untouched.
   const exclusionState = new Map(
@@ -198,6 +213,7 @@ export function annualPensionAndAnnuityIncome(
       else privateRetirementOrdinary += amount
       rows.push({
         kind: 'pension',
+        accountId: account.id,
         record: input.recordCashFlow
           ? {
               accountId: account.id,
@@ -216,7 +232,7 @@ export function annualPensionAndAnnuityIncome(
     const paidFraction = annuityPayoutFraction(annuityPayoutForm(account), {
       ownerAlive: ownerState.alive,
       otherAlive: otherState?.alive ?? false,
-      anyAlive: input.peopleStates.some((state) => state.alive),
+      anyAlive: input.anyAlive,
       yearsSinceStart,
     })
     if (paidFraction <= 0) continue

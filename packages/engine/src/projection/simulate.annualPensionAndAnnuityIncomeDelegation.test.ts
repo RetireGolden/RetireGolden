@@ -53,9 +53,10 @@ vi.mock('./internal/annualPensionAndAnnuityIncome.js', async (importOriginal) =>
           fundingOwnerPersonId: 'p1',
         }],
         rows: [
-          {
-            kind: 'pension',
-            record: {
+        {
+          kind: 'pension',
+          accountId: 'pension-row',
+          record: {
               accountId: 'ghost-pension',
               payeePersonId: 'p1',
               amount: 2_400,

@@ -30,7 +30,7 @@ function pension(
   id: string,
   monthlyAmount: number,
   source: 'private' | 'public',
-): Account {
+): Extract<Account, { type: 'pension' }> {
   return {
     type: 'pension',
     id,
@@ -47,7 +47,7 @@ function pension(
 
 function annuity(
   taxQualification: 'qualified' | 'nonQualified',
-): Account {
+): Extract<Account, { type: 'annuity' }> {
   return {
     type: 'annuity',
     id: 'annuity',
@@ -80,6 +80,7 @@ function annualInput(
     people,
     personById: new Map(people.map((person) => [person.id, person])),
     peopleStates,
+    anyAlive: peopleStates.some((state) => state.alive),
     primaryPersonId: pat.id,
     lifeAgeOf: (person) => person.longevity.planningAge,
     runtimeOccurrenceKey: (kind, ...binding) =>
@@ -149,6 +150,7 @@ describe('annualPensionAndAnnuityIncome', () => {
     expect(result.pensionIncome).toBe(6_000)
     expect(result.rows[0]).toEqual({
       kind: 'pension',
+      accountId: 'private-pension',
       record: {
         accountId: 'private-pension',
         payeePersonId: sam.id,
@@ -170,6 +172,7 @@ describe('annualPensionAndAnnuityIncome', () => {
     expect(living.rows).toEqual([
       {
         kind: 'pension',
+        accountId: 'private-pension',
         record: {
           accountId: 'private-pension',
           payeePersonId: 'p1',
@@ -179,6 +182,7 @@ describe('annualPensionAndAnnuityIncome', () => {
       },
       {
         kind: 'pension',
+        accountId: 'public-pension',
         record: {
           accountId: 'public-pension',
           payeePersonId: 'p1',
@@ -198,6 +202,7 @@ describe('annualPensionAndAnnuityIncome', () => {
     expect(survivor.pensionIncome).toBe(6_000)
     expect(survivor.rows[0]).toEqual({
       kind: 'pension',
+      accountId: 'private-pension',
       record: {
         accountId: 'private-pension',
         payeePersonId: 'p2',
@@ -268,6 +273,38 @@ describe('annualPensionAndAnnuityIncome', () => {
     }))
     expect(exclusionState.get('annuity')).toBe(carried)
     expect(carried).toEqual({ ratio: 0.25, remaining: 8_000 })
+  })
+
+  it('applies the stated taxable percentage to an already-owned annuity', () => {
+    const result = annualPensionAndAnnuityIncome(annualInput([{
+      type: 'annuity',
+      id: 'owned-annuity',
+      name: 'Owned annuity',
+      ownerPersonId: pat.id,
+      annualReturnPct: null,
+      startAge: 60,
+      monthlyAmount: 10_000 / 12,
+      colaPct: 0,
+      taxablePct: 37,
+    }]))
+
+    expect(result.annuityIncome).toBe(10_000)
+    expect(result.ordinaryIncome).toBe(3_700)
+    expect(result.privateRetirementOrdinary).toBe(3_700)
+  })
+
+  it('suppresses pension income from the elected lump-sum year onward', () => {
+    const elected = {
+      ...pension('commuted-pension', 1_000, 'private'),
+      lumpSumOffer: { amount: 200_000, electionYear: 2026 },
+      lumpSumElection: { rolloverAccountId: 'ira' },
+    } satisfies Account
+
+    const result = annualPensionAndAnnuityIncome(annualInput([elected]))
+
+    expect(result.pensionIncome).toBe(0)
+    expect(result.ordinaryIncome).toBe(0)
+    expect(result.rows).toEqual([])
   })
 
   it('returns a qualified-contract debit and publication without mutating contract state', () => {
@@ -346,6 +383,11 @@ describe('annualPensionAndAnnuityIncome', () => {
     expect(result.annuityIncome).toBe(20_000)
     expect(result.ordinaryIncome).toBeCloseTo(25_801.652892561982, 9)
     expect(result.rows.map((row) => row.record)).toEqual([null, null, null])
+    expect(result.rows[0]).toEqual({
+      kind: 'pension',
+      accountId: 'private-pension',
+      record: null,
+    })
     expect(result.rows[1]).toEqual(expect.objectContaining({
       kind: 'annuity',
       accountId: 'nonqualified-annuity',

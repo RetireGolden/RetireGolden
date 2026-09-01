@@ -2474,7 +2474,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       accounts: plan.accounts,
       people,
       personById,
-      peopleStates,
+      peopleStates, anyAlive,
       primaryPersonId: primary.id,
       lifeAgeOf,
       runtimeOccurrenceKey,
