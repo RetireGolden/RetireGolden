@@ -3,7 +3,12 @@
 import { useMemo } from 'react'
 
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
-import { ANNUITY_MAX_START_AGE, type Account, type Plan } from '@retiregolden/engine/model/plan'
+import {
+  ANNUITY_MAX_START_AGE,
+  PENSION_MAX_START_AGE,
+  type Account,
+  type Plan,
+} from '@retiregolden/engine/model/plan'
 
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField } from '../fields'
 import { fmtMoney } from '../format'
@@ -55,16 +60,6 @@ export function PensionAccountEditor({
   const { plan, update } = usePlan()
   return (
     <>
-      <NumberField
-        label="Start age"
-        value={account.startAge}
-        min={40}
-        max={80}
-        onCommit={(v) => onCommit('startAge', Math.min(80, Math.round(v ?? 65)))}
-      />
-      <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
-      <PercentField label="COLA" value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
-      <PercentField label="Survivor benefit" value={account.survivorPct} onCommit={(v) => onCommit('survivorPct', v ?? 0)} />
       <SelectField
         label="Pension source"
         help="Used for state income tax when public civil-service or military pensions receive a different exclusion than private retirement income."
@@ -75,6 +70,16 @@ export function PensionAccountEditor({
         ]}
         onCommit={(v) => onCommit('source', v)}
       />
+      <NumberField
+        label="Start age"
+        value={account.startAge}
+        min={40}
+        max={PENSION_MAX_START_AGE}
+        onCommit={(v) => onCommit('startAge', Math.min(PENSION_MAX_START_AGE, Math.round(v ?? 65)))}
+      />
+      <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
+      <PercentField label="COLA" value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
+      <PercentField label="Survivor benefit" value={account.survivorPct} onCommit={(v) => onCommit('survivorPct', v ?? 0)} />
       <CheckboxField
         label="Lump-sum offer on record"
         help="Record a lump-sum buyout offer to unlock the decision view: the annuity's discounted present value against the offer, a discount-rate × longevity sensitivity table, and the survivor option's value. Recording the offer changes nothing in the projection until you elect it."

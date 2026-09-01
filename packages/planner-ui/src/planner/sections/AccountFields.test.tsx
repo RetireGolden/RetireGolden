@@ -16,6 +16,7 @@ let root: Root | null = null
 let container: HTMLDivElement | null = null
 
 afterEach(() => {
+  vi.useRealTimers()
   if (root) act(() => root!.unmount())
   container?.remove()
   root = null
@@ -966,6 +967,8 @@ describe('AccountFields pension and annuity editor boundaries', () => {
 
     const fields = renderFields(planWithAccount(pension))
 
+    const labels = Array.from(fields.querySelectorAll('label')).map((label) => label.textContent?.trim())
+    expect(labels.indexOf('Pension source')).toBeLessThan(labels.indexOf('Start age'))
     expect(controlByLabel<HTMLInputElement>(fields, 'Start age').max).toBe('80')
     expect(controlByLabel(fields, 'Monthly amount')).toBeTruthy()
     expect(controlByLabel(fields, 'COLA')).toBeTruthy()
@@ -999,6 +1002,37 @@ describe('AccountFields pension and annuity editor boundaries', () => {
 })
 
 describe('AccountFields extracted editor commit wiring', () => {
+  it('clamps a manually entered pension start age to the schema maximum (parse-valid)', () => {
+    const pension: Extract<Account, { type: 'pension' }> = {
+      type: 'pension',
+      id: 'pension',
+      name: 'Pension',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+    }
+    const plan = planWithAccount(pension)
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+    const startAge = controlByLabel<HTMLInputElement>(mounted.container(), 'Start age')
+
+    act(() => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      if (!valueSetter) throw new Error('missing input value setter')
+      valueSetter.call(startAge, '95')
+      startAge.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('pension')
+    if (account?.type !== 'pension') throw new Error('expected pension')
+    expect(account.startAge).toBe(80)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
   it('enables a HECM and marks the property as a primary residence (parse-valid)', () => {
     const property: Extract<Account, { type: 'property' }> = {
       type: 'property',
@@ -1025,6 +1059,8 @@ describe('AccountFields extracted editor commit wiring', () => {
   })
 
   it('revives a historical pension offer year when the lump sum is elected (parse-valid)', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-01T12:00:00Z'))
     const pension: Extract<Account, { type: 'pension' }> = {
       type: 'pension',
       id: 'pension',
@@ -1059,6 +1095,8 @@ describe('AccountFields extracted editor commit wiring', () => {
   })
 
   it('clamps a qualified annuity start age when its owner changes', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-01T12:00:00Z'))
     const annuity: Extract<Account, { type: 'annuity' }> = {
       type: 'annuity',
       id: 'annuity',
@@ -1070,7 +1108,7 @@ describe('AccountFields extracted editor commit wiring', () => {
       colaPct: 0,
       taxablePct: 100,
       purchase: {
-        year: new Date().getFullYear(),
+        year: 2026,
         premium: 100_000,
         fundingAccountId: 'funding',
         taxQualification: 'qualified',
@@ -1111,7 +1149,7 @@ describe('AccountFields extracted editor commit wiring', () => {
       colaPct: 0,
       taxablePct: 50,
       purchase: {
-        year: new Date().getFullYear(),
+        year: 2026,
         premium: 100_000,
         fundingAccountId: 'cash',
         taxQualification: 'nonQualified',

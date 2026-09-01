@@ -137,6 +137,8 @@ export function latestQlacAnnuityStartAge(birthMonth: number): number {
  * regulation permitted it).
  */
 export const ANNUITY_MAX_START_AGE = 95
+/** Pension payments must start by this age in the persisted account schema. */
+export const PENSION_MAX_START_AGE = 80
 
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
@@ -1050,7 +1052,7 @@ export const pensionSchema = z.object({
   /** Drives state tax treatment in states with public-pension exemptions. */
   source: z.enum(['private', 'public']).optional(),
   /** Owner's age when payments start. */
-  startAge: z.number().int().min(40).max(80),
+  startAge: z.number().int().min(40).max(PENSION_MAX_START_AGE),
   monthlyAmount: nonNegative,
   /** Annual COLA applied to payments; 0 = fixed nominal. */
   colaPct: pct,
