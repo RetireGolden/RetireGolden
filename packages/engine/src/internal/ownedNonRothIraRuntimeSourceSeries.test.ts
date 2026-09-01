@@ -343,6 +343,46 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
+  it('exact-binds an owned-IRA contribution occurrence to its balance row', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'positional-contribution-key'
+    plan.incomes = [{
+      id: 'wages', type: 'wages', personId: 'p1', annualGross: 100_000,
+      endAge: null, realGrowthPct: 0,
+    }]
+    const ira = traditional('ira', 0)
+    ira.annualContribution = 1_000
+    plan.accounts = [ira]
+
+    const projected = project(plan)
+    const occurrence = projected[0]!.retirementRuntimeSource!.runtimeOccurrences
+      .find((entry) => entry.kind === 'ownedIraContribution')
+    expect(occurrence?.producerOccurrenceKey)
+      .toBe(JSON.stringify(['ownedIraContribution', 'ira', 0]))
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, projected))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+
+    const forged = copy(projected)
+    const forgedOccurrence = forged[0]!.retirementRuntimeSource!.runtimeOccurrences
+      .find((entry) => entry.kind === 'ownedIraContribution')
+    const forgedApplication = forged[0]!.retirementRuntimeApplicationSource!.applications
+      .find((entry) => entry.applicationKind === 'credit')
+    if (!forgedOccurrence || !forgedApplication ||
+        forgedApplication.applicationKind !== 'credit') {
+      throw new Error('expected owned-IRA contribution occurrence and credit')
+    }
+    const wrongRowKey = JSON.stringify(['ownedIraContribution', 'ira', 1])
+    ;(forgedOccurrence as { producerOccurrenceKey: string }).producerOccurrenceKey =
+      wrongRowKey
+    ;(forgedApplication as { producerOccurrenceKey: string }).producerOccurrenceKey =
+      wrongRowKey
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, forged))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'sourceIdentityInvalid' }],
+      })
+  })
+
   it('preserves genuine fractional-cent RMD chains by normalizing from raw transitions', () => {
     const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
     plan.id = 'fractional-cent-rmd-chain'

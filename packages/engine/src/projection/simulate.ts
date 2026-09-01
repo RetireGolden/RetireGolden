@@ -3156,6 +3156,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const producerOccurrenceKey = runtimeOccurrenceKey(
           contributionKind,
           account.id,
+          balanceIndex,
         )
         recordAnnualRetirementRuntimeOccurrence({
           producerOccurrenceKey,
@@ -3273,7 +3274,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         if (account.type === 'traditional') {
           const kind = 'employerPlanEmployerMatch' as const
           recordAnnualRetirementRuntimeOccurrence({
-            producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id),
+            // Public account ids may be duplicated on accepted, unreferenced
+            // Plan rows. Bind the mutation's balance-row position as well so
+            // employee and match occurrences retain the same row identity as
+            // contribution allocation instead of collapsing downstream.
+            producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id, balanceIndex),
             kind,
             grossAmountPlanDollars: matchVal,
             ownerPersonId: account.ownerPersonId,

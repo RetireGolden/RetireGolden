@@ -954,12 +954,36 @@ function occurrenceOrderAccountId(
   const simpleKinds = new Set([
     'ownedIraRmd', 'employerPlanRmd', 'inheritedIraRmd',
     'automaticSeppDistribution', 'legacyNeedBasedWithdrawal', 'legacyQcd',
-    'ownedIraContribution', 'ownedIraEmployerContribution',
-    'employerPlanEmployeeContribution', 'employerPlanEmployerMatch',
+    'ownedIraEmployerContribution',
   ])
   if (simpleKinds.has(occurrence.kind)) {
     if (key.length !== 2 || key[0] !== occurrence.kind || key[1] !== sourceId) {
       fail('sourceIdentityInvalid', 'Runtime producer key must exact-bind its kind and source account', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      })
+    }
+    return sourceId!
+  }
+  const positionalContributionKinds = new Set([
+    'ownedIraContribution',
+    'employerPlanEmployeeContribution',
+    'employerPlanEmployerMatch',
+  ])
+  if (positionalContributionKinds.has(occurrence.kind)) {
+    const balanceIndex = key[2]
+    // The producer iterates the simulator's investable `balances`, not every
+    // Plan account. Reconstruct that exact row space: pensions, annuities,
+    // property, debt, insurance, and HECM rows do not consume an index.
+    const balanceAccounts = plan.accounts.filter((candidate) =>
+      candidate.type === 'cash' || candidate.type === 'taxable' ||
+      candidate.type === 'equityComp' || candidate.type === 'traditional' ||
+      candidate.type === 'roth' || candidate.type === 'hsa')
+    const account = typeof balanceIndex === 'number' && Number.isSafeInteger(balanceIndex)
+      ? balanceAccounts[balanceIndex]
+      : undefined
+    if (key.length !== 3 || key[0] !== occurrence.kind || key[1] !== sourceId ||
+        account?.id !== sourceId) {
+      fail('sourceIdentityInvalid', 'Contribution producer key must exact-bind its kind, source account, and Plan row', {
         taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
       })
     }
