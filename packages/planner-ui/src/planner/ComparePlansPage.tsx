@@ -10,8 +10,12 @@ import { Link } from 'react-router'
 import { listPlansVia, loadPlanVia, usePlanStore, type PlanSummary } from '../data/planStoreContext'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import { SelectField } from './fields'
 import { fmtMoneyCompact } from './format'
+import { LiveStatus } from './LiveStatus'
 import { projectPlan, type ProjectionView } from './useProjection'
+
+const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
 
 interface ComparedPlan {
   plan: Plan
@@ -171,33 +175,34 @@ export function ComparePlansPage() {
       ) : (
         <>
           <div className="card compare-selectors">
-            <label>
-              Plan A
-              <select value={leftId} onChange={(e) => setLeftId(e.target.value)}>
-                {options.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Plan B
-              <select value={rightId} onChange={(e) => setRightId(e.target.value)}>
-                {options.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </label>
+            <SelectField
+              label="Plan A"
+              value={leftId}
+              options={options.map((s) => ({ value: s.id, label: s.name }))}
+              onCommit={setLeftId}
+            />
+            <SelectField
+              label="Plan B"
+              value={rightId}
+              options={options.map((s) => ({ value: s.id, label: s.name }))}
+              onCommit={setRightId}
+            />
           </div>
+          <LiveStatus
+            message={
+              left !== null && right !== null && left.plan.id === right.plan.id ? SAME_PLAN_NOTICE : ''
+            }
+          />
           {!canCompare ? (
-            <div className="callout callout--info">Choose two different plans to compare.</div>
+            <div className="callout callout--info">{SAME_PLAN_NOTICE}</div>
           ) : (
             <div className="year-table-wrap">
               <table className="year-table compare-table">
                 <thead>
                   <tr>
                     <th>Metric</th>
-                    <th>{left.plan.name}</th>
-                    <th>{right.plan.name}</th>
+                    <th className="compare-table-plan-name">{left.plan.name}</th>
+                    <th className="compare-table-plan-name">{right.plan.name}</th>
                     <th>Plan B − Plan A</th>
                   </tr>
                 </thead>

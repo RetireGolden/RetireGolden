@@ -789,11 +789,17 @@
 }
 
 /* Safety net: a long option label degrades to an ellipsis instead of clipping
-   mid-glyph when the closed control is narrower than the selected text. */
+   mid-glyph when the closed control is narrower than the selected text.
+   `font: inherit` is select-only — Chrome's UA face on <select> is Arial
+   (issue #384); do not restyle every planner input. */
 .field select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Inherit family/weight/line-height from the app (UA <select> is Arial).
+     Re-state the shared field size after the shorthand so it stays 0.98rem. */
+  font: inherit;
+  font-size: 0.98rem;
 }
 
 .field--checkbox input[type='checkbox'] {
@@ -2144,15 +2150,31 @@ html:has(.kpi-bar) {
   margin-bottom: 1rem;
 }
 
-.compare-selectors label {
-  display: grid;
-  gap: 0.35rem;
+.compare-selectors .field {
   min-width: min(22rem, 100%);
-  font-weight: 650;
+  margin-top: 0;
+  flex: 1 1 16rem;
 }
 
 .compare-table th:first-child {
   min-width: 12rem;
+}
+
+/* Compare-plans is the only `year-table compare-table`. Keep year-table
+   metric headers uppercase/nowrap everywhere else; only the two user plan
+   names drop forced uppercase and share equal columns (#384).
+   `min-width` is the narrow-viewport floor: 28%+28% of a 100%-wide table
+   would starve Metric / delta; the wrap's overflow:auto then scrolls. */
+.year-table.compare-table {
+  table-layout: fixed;
+  min-width: 52rem;
+}
+
+.year-table.compare-table thead th.compare-table-plan-name {
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  width: 28%;
 }
 
 /* --- insights ------------------------------------------------------------- */
