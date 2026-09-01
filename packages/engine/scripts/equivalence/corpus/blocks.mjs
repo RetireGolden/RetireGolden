@@ -16,6 +16,7 @@
  *   K  annual SEPP distributions
  *   L  annual Social Security pass
  *   M  exact-cent annual ordinary-withdrawal boundary
+ *   N  annual coordinated HECM eligibility + accepted-draw allocation
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *   T  aggregate Roth-conversion planning
  *   V  annual purchased-annuity funding
@@ -1988,6 +1989,136 @@ function blockM() {
 }
 
 // ---------------------------------------------------------------------------
+// N — annual coordinated-HECM eligibility + accepted-draw allocation
+// ---------------------------------------------------------------------------
+
+function blockN() {
+  const out = []
+
+  {
+    // The two cent-scale lines precede a much larger line on purpose:
+    // ((0.01 + 0.01) + 1e14) !== ((1e14 + 0.01) + 0.01) in binary64. The
+    // first HECM-bearing duplicate owns the shared line's coordinated policy;
+    // its later last-resort alias must neither remove capacity nor receive a
+    // second allocation. An earlier alias without HECM metadata deliberately
+    // does not claim authority. Normal spending fills both small lines, then
+    // takes a partial allocation from the large line, making source order and
+    // the accepted scalar observable without exhausting total capacity. A
+    // second loss year has no spending, so the same eligible ids reach
+    // allocation's accepted-zero half-cent tolerance break.
+    const plan = shell(63)
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 0
+    plan.expenses.oneTimeGoals = [{
+      id: 'n1-loss-year-spending',
+      label: 'n1-loss-year-spending',
+      year: START_YEAR + 1,
+      amount: 70_000,
+      classification: 'required',
+    }]
+    const tiny = property('n1-small-a', 0.2, {
+      primaryResidence: true,
+      hecm: hecm({
+        principalLimitPct: 5,
+        upfrontCostPct: 0,
+        growthRatePct: 0,
+        drawPolicy: 'coordinated',
+      }),
+    })
+    plan.accounts = [
+      taxable('n1-brokerage', 1_000_000, 1_000_000),
+      { ...tiny, name: 'n1-small-a-earlier-no-hecm', hecm: undefined },
+      tiny,
+      {
+        ...tiny,
+        name: 'n1-small-a-later-last-resort',
+        hecm: { ...tiny.hecm, drawPolicy: 'lastResort' },
+      },
+      property('n1-small-b', 0.2, {
+        primaryResidence: true,
+        hecm: hecm({
+          principalLimitPct: 5,
+          upfrontCostPct: 0,
+          growthRatePct: 0,
+          drawPolicy: 'coordinated',
+        }),
+      }),
+      property('n1-large', 2_000_000_000_000_000, {
+        primaryResidence: true,
+        hecm: hecm({
+          principalLimitPct: 5,
+          upfrontCostPct: 0,
+          growthRatePct: 0,
+          drawPolicy: 'coordinated',
+        }),
+      }),
+    ]
+    out.push(
+      member(
+        'n1-duplicateDistinctOrderedPartial',
+        'N: divergent-policy duplicate plus distinct coordinated lines, cancellation-sensitive source-order capacity fold, two full cent allocations, one partial allocation, then an accepted-zero tolerance break',
+        plan,
+        {
+          horizonEndYear: START_YEAR + 2,
+          market: { returnShockPct: [-10, -10, 0] },
+        },
+      ),
+    )
+  }
+
+  {
+    // ACA makes the outer coordinated-draw fixed point probe the same line
+    // repeatedly before one scalar is accepted. Counterfactual mode also
+    // re-enters the annual pass. The line must remain untouched through every
+    // discarded probe and each discarded transaction, then commit once.
+    const plan = singlePersonPlan({
+      dob: '1963-01-01',
+      planningAge: 63,
+    })
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 40_000
+    plan.incomes = [{
+      type: 'recurring',
+      id: 'n2-pension',
+      label: 'n2-pension',
+      annualAmount: 30_000,
+      startYear: START_YEAR,
+      endYear: START_YEAR,
+      inflationAdjusted: false,
+      taxTreatment: 'ordinary',
+    }]
+    plan.accounts = [
+      taxable('n2-brokerage', 400_000, 400_000),
+      property('n2-home', 600_000, {
+        primaryResidence: true,
+        hecm: hecm({
+          principalLimitPct: 40,
+          upfrontCostPct: 0,
+          growthRatePct: 0,
+          drawPolicy: 'coordinated',
+        }),
+      }),
+    ]
+    setAcaYearContract(plan, { year: START_YEAR })
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    out.push(
+      member(
+        'n2-acaProbeRollbackReentry',
+        'N: ACA multi-probe accepts one coordinated scalar; counterfactual rollback and re-entry leave one committed allocation',
+        plan,
+        {
+          startYear: START_YEAR - 1,
+          horizonEndYear: START_YEAR,
+          market: { returnShockPct: [-10, 0] },
+        },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // T — aggregate Roth-conversion planning
 // ---------------------------------------------------------------------------
 
@@ -2385,6 +2516,7 @@ export async function blockMembers() {
     ...blockK(),
     ...blockL(),
     ...blockM(),
+    ...blockN(),
     ...blockS(),
     ...blockT(),
     ...blockV(),
