@@ -130,6 +130,9 @@ export function annualOrdinaryWithdrawalBoundary(
             openingBalance: planDollarsToLedgerCents(state.balance),
           }]
         } catch {
+          // A schema-valid Plan balance can exceed the exact-cent ledger's
+          // safe range. Omit it so the executor reports required facts
+          // missing instead of aborting the whole projection.
           return []
         }
       })
@@ -197,6 +200,8 @@ export function annualOrdinaryWithdrawalBoundary(
                 },
               }]
             } catch {
+              // Keep a valid balance visible while omitting invalid basis
+              // evidence so taxable movement fails closed and explains why.
               return []
             }
           })
@@ -261,6 +266,10 @@ export function annualOrdinaryWithdrawalBoundary(
         break
       }
 
+      // The action ledger is exact-cent while Plan balances are numbers. If a
+      // closing value or annual aggregate cannot cross that boundary
+      // losslessly, rerun without the affected fact source. Independent
+      // actions whose sources remain available may still execute.
       const unavailableBalanceAccountIds = new Set([
         ...unrepresentableClosingBalanceAccountIds,
         ...aggregateFailureSourceAccountIds,
