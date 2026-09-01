@@ -264,7 +264,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -325,7 +325,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -514,6 +514,7 @@
         "packages/engine/src/actions/aggregateRothConversionOwnerAllocation.ts",
         "packages/engine/src/actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
         "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+        "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -546,11 +547,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
+          "functions": [
+            {
+              "name": "annualAggregateRothConversionPlan",
+              "line": 70
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -683,7 +693,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -913,7 +923,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },

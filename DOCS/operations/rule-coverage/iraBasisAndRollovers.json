@@ -263,7 +263,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -389,7 +389,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -610,7 +610,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -713,7 +713,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -825,7 +825,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -977,6 +977,7 @@
         "packages/engine/src/actions/retirementActionManualReview.ts",
         "packages/engine/src/decisions/rothConversionCandidateAdapter.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
         "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
@@ -1040,6 +1041,15 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
+          "functions": [
+            {
+              "name": "annualAggregateRothConversionPlan",
+              "line": 70
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/optimizerAggregateConversionPromotion.ts",
           "functions": [
             {
@@ -1053,7 +1063,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }

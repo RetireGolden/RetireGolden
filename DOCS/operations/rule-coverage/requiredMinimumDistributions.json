@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -92,7 +92,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -164,7 +164,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -229,7 +229,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -291,7 +291,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -489,7 +489,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -569,7 +569,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -657,7 +657,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -759,7 +759,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -821,7 +821,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -886,7 +886,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -938,7 +938,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -1071,7 +1071,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -1304,7 +1304,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -1395,7 +1395,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -1657,7 +1657,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -1769,7 +1769,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -1846,7 +1846,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -1926,7 +1926,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -1993,7 +1993,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -2127,7 +2127,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -2201,7 +2201,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -2397,7 +2397,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -2579,6 +2579,7 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/actions/rothConversionExecution.ts",
+        "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2592,11 +2593,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
+          "functions": [
+            {
+              "name": "annualAggregateRothConversionPlan",
+              "line": 70
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -2732,7 +2742,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         }
@@ -2781,6 +2791,7 @@
       "implementedBy": [
         "packages/engine/src/actions/rothConversionExecution.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -2804,11 +2815,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
+          "functions": [
+            {
+              "name": "annualAggregateRothConversionPlan",
+              "line": 70
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -2905,7 +2925,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -2962,7 +2982,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -3023,7 +3043,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
@@ -3084,7 +3104,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 730
             }
           ]
         },
