@@ -187,6 +187,23 @@ describe('annualPostSolveAccountGrowth', () => {
     expect(result.priorYearPortfolioReturnPct).toBe(-250)
   })
 
+  it('also floors an allocated market loss without flooring its return signal', () => {
+    const weights = [1, 0, 0, 0]
+    const result = annualPostSolveAccountGrowth({
+      ...baseInput([state('traditional', 10, 999)]),
+      allocationTrack: new Map([['0', { weights }]]),
+      classParams: classParams([-250, 0, 0, 0]),
+    })
+
+    expect(result.rows[0]).toEqual({
+      kind: 'allocated',
+      marketClosingBalance: 0,
+      driftedWeights: weights,
+      reinvestedYield: 0,
+    })
+    expect(result.priorYearPortfolioReturnPct).toBe(-250)
+  })
+
   it('returns a zero portfolio signal for a zero wealth base', () => {
     const result = annualPostSolveAccountGrowth({
       ...baseInput([
