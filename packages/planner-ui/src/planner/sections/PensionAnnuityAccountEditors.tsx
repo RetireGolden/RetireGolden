@@ -5,13 +5,15 @@ import { useMemo } from 'react'
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import {
   ANNUITY_MAX_START_AGE,
-  ANNUITY_MIN_START_AGE,
-  PENSION_MAX_START_AGE,
-  PENSION_MIN_START_AGE,
   type Account,
   type Plan,
 } from '@retiregolden/engine/model/plan'
 
+import {
+  ANNUITY_MIN_START_AGE,
+  PENSION_MAX_START_AGE,
+  PENSION_MIN_START_AGE,
+} from '../../accountStartAgeBounds'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField } from '../fields'
 import { fmtMoney } from '../format'
 import { updateAccountField } from '../eligibilityFactActions'

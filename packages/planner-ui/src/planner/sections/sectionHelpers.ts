@@ -6,10 +6,10 @@
 import type { Account, AllocationWeights, Plan } from '@retiregolden/engine/model/plan'
 import {
   ANNUITY_MAX_START_AGE,
-  ANNUITY_MIN_START_AGE,
   latestNonQlacQualifiedAnnuityStartAge,
   latestQlacAnnuityStartAge,
 } from '@retiregolden/engine/model/plan'
+import { ANNUITY_MIN_START_AGE } from '../../accountStartAgeBounds'
 
 export const newId = () => crypto.randomUUID()
 

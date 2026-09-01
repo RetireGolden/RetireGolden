@@ -10,12 +10,8 @@
  */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
-import {
-  createEmptyPlan,
-  parsePlan,
-  PENSION_MAX_START_AGE,
-  PENSION_MIN_START_AGE,
-} from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
+import { PENSION_MAX_START_AGE, PENSION_MIN_START_AGE } from '../accountStartAgeBounds'
 import { MAX_REASONABLE_DOLLARS } from './csv'
 import { form1040Locator as form1040 } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'

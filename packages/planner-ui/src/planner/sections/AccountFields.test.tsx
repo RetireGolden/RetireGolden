@@ -7,6 +7,11 @@ import { MemoryRouter } from 'react-router'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 
+import {
+  ANNUITY_MIN_START_AGE,
+  PENSION_MAX_START_AGE,
+  PENSION_MIN_START_AGE,
+} from '../../accountStartAgeBounds'
 import { PlanCtx } from '../planContextCore'
 import { AccountFields } from './AccountFields'
 import { EVEN_START_WEIGHTS, TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING, localCalendarDateIso } from './sectionHelpers'
@@ -954,6 +959,60 @@ describe('AccountFields property and debt editor boundaries', () => {
 })
 
 describe('AccountFields pension and annuity editor boundaries', () => {
+  it('keeps compatibility bounds aligned with the pension schema', () => {
+    const pension: Extract<Account, { type: 'pension' }> = {
+      type: 'pension',
+      id: 'pension',
+      name: 'Pension',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+    }
+    const plan = planWithAccount(pension)
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const accepts = (startAge: number) => {
+      const candidate = structuredClone(plan)
+      const account = candidate.accounts[0]
+      if (account?.type !== 'pension') throw new Error('expected pension')
+      account.startAge = startAge
+      return parsePlan(candidate).ok
+    }
+
+    expect(accepts(PENSION_MIN_START_AGE)).toBe(true)
+    expect(accepts(PENSION_MAX_START_AGE)).toBe(true)
+    expect(accepts(PENSION_MIN_START_AGE - 1)).toBe(false)
+    expect(accepts(PENSION_MAX_START_AGE + 1)).toBe(false)
+  })
+
+  it('keeps the compatibility minimum aligned with the annuity schema', () => {
+    const annuity: Extract<Account, { type: 'annuity' }> = {
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Annuity',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 1_500,
+      colaPct: 0,
+      taxablePct: 60,
+    }
+    const plan = planWithAccount(annuity)
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const accepts = (startAge: number) => {
+      const candidate = structuredClone(plan)
+      const account = candidate.accounts[0]
+      if (account?.type !== 'annuity') throw new Error('expected annuity')
+      account.startAge = startAge
+      return parsePlan(candidate).ok
+    }
+
+    expect(accepts(ANNUITY_MIN_START_AGE)).toBe(true)
+    expect(accepts(ANNUITY_MIN_START_AGE - 1)).toBe(false)
+  })
+
   it('renders pension-specific fields without annuity purchase fields', () => {
     const pension: Extract<Account, { type: 'pension' }> = {
       type: 'pension',
@@ -972,7 +1031,7 @@ describe('AccountFields pension and annuity editor boundaries', () => {
     const labels = Array.from(fields.querySelectorAll('label')).map((label) => label.textContent?.trim())
     expect(controlByLabel(fields, 'Pension source')).toBeTruthy()
     expect(labels.indexOf('Pension source')).toBeLessThan(labels.indexOf('Start age'))
-    expect(controlByLabel<HTMLInputElement>(fields, 'Start age').max).toBe('80')
+    expect(controlByLabel<HTMLInputElement>(fields, 'Start age').max).toBe(String(PENSION_MAX_START_AGE))
     expect(controlByLabel(fields, 'Monthly amount')).toBeTruthy()
     expect(controlByLabel(fields, 'COLA')).toBeTruthy()
     expect(controlByLabel(fields, 'Survivor benefit')).toBeTruthy()
