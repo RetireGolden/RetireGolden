@@ -989,7 +989,6 @@ function collectUseLines(
     lines: attributionInput,
     shortfallAfterHecm: input.shortfallAfterHecm,
   })
-  const fundingById = new Map(attributed.lines.map((row) => [row.id, row]))
   if (attributed.remainingUnattributed > CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS) {
     // An unattributed shortfall is an incomplete use inventory, not funding
     // fixed-point residue. Fail closed even when the hole is below half a cent.
@@ -1000,8 +999,11 @@ function collectUseLines(
   // half-cent budget and fails closed outside it.
 
   const useLines: YearCashFlowUseLine[] = []
-  for (const row of pending) {
-    const funding = fundingById.get(row.id)
+  // Attribution preserves input cardinality and order. Zip by position rather
+  // than public line id: duplicate ids deliberately survive to the report so
+  // reconciliation can flag them, but must not overwrite each other's amounts.
+  for (const [index, row] of pending.entries()) {
+    const funding = attributed.lines[index]
     if (funding === undefined) continue
     if (funding.requestedPlanDollars <= 0 && funding.fundedPlanDollars <= 0) continue
     useLines.push({
@@ -1024,7 +1026,14 @@ function collectTransferLines(
 ): YearCashFlowTransferLine[] {
   const lines: YearCashFlowTransferLine[] = []
   const { yearSites, passLocals } = input
-  const useById = new Map(useLines.map((line) => [line.id, line]))
+  const contributionUsesById = new Map<YearCashFlowLineId, YearCashFlowUseLine[]>()
+  for (const line of useLines) {
+    if (line.kind !== 'contribution') continue
+    const uses = contributionUsesById.get(line.id) ?? []
+    uses.push(line)
+    contributionUsesById.set(line.id, uses)
+  }
+  const contributionUseOrdinalById = new Map<YearCashFlowLineId, number>()
 
   const push = (line: YearCashFlowTransferLine): void => {
     if (line.debitPlanDollars <= 0 && line.creditPlanDollars <= 0) return
@@ -1032,9 +1041,12 @@ function collectTransferLines(
   }
 
   for (const row of yearSites.contributions) {
-    if (row.credited <= 0) continue
     const useId = cashFlowLineIds.useContribution(row.destinationAccountId)
-    const useLine = useById.get(useId)
+    const ordinal = contributionUseOrdinalById.get(useId) ?? 0
+    const hasUseLine = row.requested > 0 || row.credited > 0
+    const useLine = hasUseLine ? contributionUsesById.get(useId)?.[ordinal] : undefined
+    if (hasUseLine) contributionUseOrdinalById.set(useId, ordinal + 1)
+    if (row.credited <= 0) continue
     // Residual attribution, not statutory-cap rejection: committed-credit
     // lineage only when the transfer actually exceeds the funded use.
     const funded = useLine?.fundedPlanDollars ?? 0
