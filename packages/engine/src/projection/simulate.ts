@@ -4252,22 +4252,34 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // runtime write. The shadow also makes repeated hostile intents validate
     // sequentially without partially applying an earlier one.
     const validatedQcdGiftDebitIntents: Array<{
-      intent: (typeof qcdGiftPlan.debitIntents)[number]
+      balanceIndex: number
+      sourceAccountId: string
+      ownerId: string
+      runtimeOwnerPersonId: string | null
+      sourceBalanceBefore: number
+      sourceBalanceAfter: number
       amount: number
     }> = []
     const remainingQcdGiftBalanceByIndex = new Map<number, number>()
     for (const intent of qcdGiftPlan.debitIntents) {
-      const state = rmdBalances[intent.balanceIndex]
+      // Read every helper-owned property exactly once. Only these normalized
+      // scalars cross into apply, so a getter-backed result cannot change
+      // identity or throw after an earlier intent has already committed.
+      const balanceIndex = intent.balanceIndex
+      const sourceAccountId = intent.sourceAccountId
+      const ownerId = intent.ownerId
+      const sourceBalanceBefore = intent.sourceBalanceBefore
       const amount = intent.amount
+      const state = rmdBalances[balanceIndex]
       const remainingBalance = remainingQcdGiftBalanceByIndex.get(
-        intent.balanceIndex,
+        balanceIndex,
       ) ?? state?.balance
       if (
         state === undefined ||
         !isAggregatedIra(state.account) ||
-        state.account.id !== intent.sourceAccountId ||
-        (state.account.ownerPersonId ?? primary.id) !== intent.ownerId ||
-        remainingBalance !== intent.sourceBalanceBefore ||
+        state.account.id !== sourceAccountId ||
+        (state.account.ownerPersonId ?? primary.id) !== ownerId ||
+        remainingBalance !== sourceBalanceBefore ||
         !Number.isFinite(amount) ||
         amount <= 0 ||
         planDollarsMoveNoLedgerCent(amount) ||
@@ -4278,30 +4290,38 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           'Legacy scalar QCD debit intent lost its live source identity',
         )
       }
+      const sourceBalanceAfter = remainingBalance - amount
       remainingQcdGiftBalanceByIndex.set(
-        intent.balanceIndex,
-        remainingBalance - amount,
+        balanceIndex,
+        sourceBalanceAfter,
       )
-      validatedQcdGiftDebitIntents.push({ intent, amount })
+      validatedQcdGiftDebitIntents.push({
+        balanceIndex,
+        sourceAccountId,
+        ownerId,
+        runtimeOwnerPersonId: state.account.ownerPersonId,
+        sourceBalanceBefore,
+        sourceBalanceAfter,
+        amount,
+      })
     }
 
-    for (const { intent, amount } of validatedQcdGiftDebitIntents) {
-      const state = rmdBalances[intent.balanceIndex]!
-      const sourceBalanceBefore = state.balance
+    for (const debit of validatedQcdGiftDebitIntents) {
+      const state = rmdBalances[debit.balanceIndex]!
       // This logical setter commits the exact aggregate closing balance pro
       // rata across every compatible physical row for the account ID.
-      state.balance -= amount
+      state.balance = debit.sourceBalanceAfter
       const kind = 'legacyQcd' as const
       const producerOccurrenceKey = runtimeOccurrenceKey(
         kind,
-        intent.sourceAccountId,
+        debit.sourceAccountId,
       )
       recordAnnualRetirementRuntimeOccurrence({
         producerOccurrenceKey,
         kind,
-        grossAmountPlanDollars: amount,
-        ownerPersonId: state.account.ownerPersonId,
-        sourceAccountId: intent.sourceAccountId,
+        grossAmountPlanDollars: debit.amount,
+        ownerPersonId: debit.runtimeOwnerPersonId,
+        sourceAccountId: debit.sourceAccountId,
         executionDate: null,
         executionSequence: null,
         movementAuthorityId: null,
@@ -4310,18 +4330,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         applicationKind: 'debit',
         producerOccurrenceKey,
         simulatorPhase: 'legacyQcdDistribution',
-        ownerPersonId: state.account.ownerPersonId,
-        sourceBalanceBeforePlanDollars: sourceBalanceBefore,
-        sourceAccountId: intent.sourceAccountId,
-        appliedAmountPlanDollars: amount,
-        sourceBalanceAfterPlanDollars: state.balance,
+        ownerPersonId: debit.runtimeOwnerPersonId,
+        sourceBalanceBeforePlanDollars: debit.sourceBalanceBefore,
+        sourceAccountId: debit.sourceAccountId,
+        appliedAmountPlanDollars: debit.amount,
+        sourceBalanceAfterPlanDollars: debit.sourceBalanceAfter,
       })
       if (giftApplication.applicationKind === 'debit') {
         deferredLegacyQcdDistributions.push({
-          ownerId: intent.ownerId,
-          amount,
+          ownerId: debit.ownerId,
+          amount: debit.amount,
           producerOccurrenceKey,
-          sourceAccountId: intent.sourceAccountId,
+          sourceAccountId: debit.sourceAccountId,
           mutationOrdinal: giftApplication.mutationOrdinal,
         })
       }

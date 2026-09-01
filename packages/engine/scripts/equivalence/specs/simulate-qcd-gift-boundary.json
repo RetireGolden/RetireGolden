@@ -103,48 +103,54 @@
     },
     {
       "id": "Q.callsite.validate",
-      "label": "whole-plan logical IRA identity, sequential balance and amount validation",
+      "label": "whole-plan logical IRA identity normalization, sequential balance and amount validation",
       "file": "projection/simulate.ts",
-      "lines": [5120, 5142],
+      "lines": [5120, 5153],
       "anchors": [
         { "line": 5120, "text": "const validatedQcdGiftDebitIntents: Array<{" },
-        { "line": 5124, "text": "const remainingQcdGiftBalanceByIndex = new Map<number, number>()" },
-        { "line": 5125, "text": "for (const intent of qcdGiftPlan.debitIntents) {" },
-        { "line": 5126, "text": "const state = rmdBalances[intent.balanceIndex]" },
-        { "line": 5131, "text": "if (" },
-        { "line": 5133, "text": "!isAggregatedIra(state.account) ||" },
-        { "line": 5139, "text": "planDollarsMoveNoLedgerCent(amount) ||" },
-        { "line": 5141, "text": "amount > remainingBalance" }
+        { "line": 5129, "text": "const remainingQcdGiftBalanceByIndex = new Map<number, number>()" },
+        { "line": 5130, "text": "for (const intent of qcdGiftPlan.debitIntents) {" },
+        { "line": 5134, "text": "const balanceIndex = intent.balanceIndex" },
+        { "line": 5135, "text": "const sourceAccountId = intent.sourceAccountId" },
+        { "line": 5136, "text": "const ownerId = intent.ownerId" },
+        { "line": 5137, "text": "const sourceBalanceBefore = intent.sourceBalanceBefore" },
+        { "line": 5138, "text": "const amount = intent.amount" },
+        { "line": 5139, "text": "const state = rmdBalances[balanceIndex]" },
+        { "line": 5143, "text": "if (" },
+        { "line": 5145, "text": "!isAggregatedIra(state.account) ||" },
+        { "line": 5151, "text": "planDollarsMoveNoLedgerCent(amount) ||" },
+        { "line": 5153, "text": "amount > remainingBalance" }
       ],
-      "note": "Validated differential members take the successful seam. The fail-closed throw cannot execute in a behavior-equivalent capture; hostile delegation independently injects wrong logical positions, owner, non-IRA source, stale balance, zero, positive sub-cent and cumulative overdraw intents and asserts complete prevalidation before any mutation."
+      "note": "Validated differential members take the successful seam. The fail-closed throw cannot execute in a behavior-equivalent capture; hostile delegation independently injects wrong logical positions, owner, non-IRA source, stale balance, zero, positive sub-cent, cumulative overdraw and getter-backed identity intents. It proves complete normalization before mutation and that apply never re-reads helper-owned intent objects."
     },
     {
       "id": "Q.callsite.validateSequentialCommit",
-      "label": "sequential shadow-balance advance and validated amount cache",
+      "label": "sequential shadow-balance advance and immutable scalar record cache",
       "file": "projection/simulate.ts",
-      "lines": [5147, 5152],
+      "lines": [5159, 5173],
       "anchors": [
-        { "line": 5147, "text": "remainingQcdGiftBalanceByIndex.set(" },
-        { "line": 5149, "text": "remainingBalance - amount," },
-        { "line": 5151, "text": "validatedQcdGiftDebitIntents.push({ intent, amount })" },
-        { "line": 5152, "text": "}" }
+        { "line": 5159, "text": "const sourceBalanceAfter = remainingBalance - amount" },
+        { "line": 5160, "text": "remainingQcdGiftBalanceByIndex.set(" },
+        { "line": 5164, "text": "validatedQcdGiftDebitIntents.push({" },
+        { "line": 5172, "text": "})" },
+        { "line": 5173, "text": "}" }
       ]
     },
     {
       "id": "Q.callsite.apply",
       "label": "logical pro-rata debit, single runtime identity, deferred character and history writes",
       "file": "projection/simulate.ts",
-      "lines": [5154, 5197],
+      "lines": [5175, 5217],
       "anchors": [
-        { "line": 5154, "text": "for (const { intent, amount } of validatedQcdGiftDebitIntents) {" },
-        { "line": 5155, "text": "const state = rmdBalances[intent.balanceIndex]!" },
-        { "line": 5159, "text": "state.balance -= amount" },
-        { "line": 5165, "text": "recordAnnualRetirementRuntimeOccurrence({" },
-        { "line": 5175, "text": "const giftApplication = recordAnnualRetirementRuntimeApplication({" },
-        { "line": 5185, "text": "if (giftApplication.applicationKind === 'debit') {" },
-        { "line": 5186, "text": "deferredLegacyQcdDistributions.push({" },
-        { "line": 5195, "text": "for (const donorId of qcdGiftPlan.offsetHistoryUnprovableDonorIds) {" },
-        { "line": 5196, "text": "namedQcdOffsetHistoryUnprovable.add(donorId)" }
+        { "line": 5175, "text": "for (const debit of validatedQcdGiftDebitIntents) {" },
+        { "line": 5176, "text": "const state = rmdBalances[debit.balanceIndex]!" },
+        { "line": 5179, "text": "state.balance = debit.sourceBalanceAfter" },
+        { "line": 5185, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 5195, "text": "const giftApplication = recordAnnualRetirementRuntimeApplication({" },
+        { "line": 5205, "text": "if (giftApplication.applicationKind === 'debit') {" },
+        { "line": 5206, "text": "deferredLegacyQcdDistributions.push({" },
+        { "line": 5215, "text": "for (const donorId of qcdGiftPlan.offsetHistoryUnprovableDonorIds) {" },
+        { "line": 5216, "text": "namedQcdOffsetHistoryUnprovable.add(donorId)" }
       ]
     }
   ],
