@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 299,
+    "totalFiles": 300,
     "byStatus": {
       "partial": 43,
-      "registered": 97,
+      "registered": 98,
       "rule-free": 159,
       "unswept": 0
     },
@@ -394,10 +394,10 @@
     },
     {
       "directory": "projection",
-      "files": 65,
+      "files": 66,
       "byStatus": {
         "partial": 8,
-        "registered": 11,
+        "registered": 12,
         "rule-free": 46
       }
     },
