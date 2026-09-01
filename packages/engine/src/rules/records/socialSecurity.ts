@@ -428,7 +428,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, or projection/simulate.ts — consistent with those trigger facts being unrepresentable for any startYear.',
+      'Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, projection/internal/annualSocialSecurity.ts, or projection/simulate.ts — consistent with those trigger facts being unrepresentable for any startYear.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -469,7 +469,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. simulate.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.',
+      'model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. annualSocialSecurity.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -890,7 +890,7 @@ export const socialSecurityRecords = {
   'usc-42-402-k-3-a-survivor-own-dual-entitlement-offset': {
     title: 'Own retirement and survivor benefits combine to the higher amount, not both full amounts',
     statement:
-      'simulate.ts pays a survivor the larger of their own retirement benefit and the survivor amount, not their sum. Section 402(k)(3)(A) reaches the same payable total by reducing the other monthly benefit, but not below zero, by the old-age benefit; POMS describes a widow(er) technically entitled on both records as paid at the higher rate. The engine’s max representation is therefore the benefit-total equivalent of the statutory offset.',
+      'annualSocialSecurity.ts pays a survivor the larger of their own retirement benefit and the survivor amount, not their sum. Section 402(k)(3)(A) reaches the same payable total by reducing the other monthly benefit, but not below zero, by the old-age benefit; POMS describes a widow(er) technically entitled on both records as paid at the higher rate. The engine’s max representation is therefore the benefit-total equivalent of the statutory offset.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -927,12 +927,12 @@ export const socialSecurityRecords = {
   'poms-rs-00615-482-arf-crediting-months': {
     title: 'ARF credits every full or partial work-deduction month',
     statement:
-      'simulate.ts does credit earnings-test withholding back at full retirement age by moving the retirement claim age later and reusing claimFactor.ts. POMS RS 00615.482, however, credits a month with either a full or a partial work deduction. The engine derives one rounded count from annual withholding dollars divided by annual benefit dollars. The annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year — for example when the annual test withholds the whole year the engine credits all payable months while POMS credits only work-deduction months (six work months, full withholding: engine +12, POMS +6, benefit overstated). Whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+      'annualSocialSecurity.ts does credit earnings-test withholding back at full retirement age by moving the retirement claim age later and reusing claimFactor.ts. POMS RS 00615.482, however, credits a month with either a full or a partial work deduction. The engine derives one rounded count from annual withholding dollars divided by annual benefit dollars. The annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year — for example when the annual test withholds the whole year the engine credits all payable months while POMS credits only work-deduction months (six work months, full withholding: engine +12, POMS +6, benefit overstated). Whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The annualized convention is explicit in simulate.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year\'s payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion fixture withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine\'s annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.',
+      'The annualized convention is explicit in annualSocialSecurity.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year\'s payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion fixture withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine\'s annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -978,12 +978,12 @@ export const socialSecurityRecords = {
   'usc-42-403-f-1-earnings-test-month-charging': {
     title: 'Excess earnings are charged to calendar months, not annual benefit fractions',
     statement:
-      'Section 403(f)(1) first charges excess earnings to the first month\'s benefits and then to succeeding months. simulate.ts instead computes a single annual withholding amount and converts its annual-benefit ratio into a rounded number of withheld months. Its annualized proxy can disagree with the statutory charging sequence and feed the ARF credit count; the annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year, while whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+      'Section 403(f)(1) first charges excess earnings to the first month\'s benefits and then to succeeding months. annualSocialSecurity.ts instead computes a single annual withholding amount and converts its annual-benefit ratio into a rounded number of withheld months. Its annualized proxy can disagree with the statutory charging sequence and feed the ARF credit count; the annualized count can fall short of or exceed the deduction-month record depending on how withholding lands across the year, while whether that understates or overstates tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: simulate.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year\'s 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable — reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).',
+      'The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: annualSocialSecurity.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year\'s 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable — reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1009,12 +1009,12 @@ export const socialSecurityRecords = {
   'cfr-20-404-435-grace-year-monthly-earnings-test': {
     title: 'The grace-year monthly earnings test preserves non-service-month benefits',
     statement:
-      'The first grace year can pay a full benefit for a non-service month even when annual earnings are substantial. The Plan accepts one annual wage amount and optional annual stop age, but no month-by-month wages, self-employment service, grace-year, or non-service-month facts; simulate.ts consequently applies only its annual earnings-test pass. Because a first-retirement-year claimant still reaches that pass and receives an annual projected figure, this is an approximation rather than an out-of-scope rule. In an affected grace year the engine pays less benefit than the monthly test; whether that understates or overstates the resulting tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
+      'The first grace year can pay a full benefit for a non-service month even when annual earnings are substantial. The Plan accepts one annual wage amount and optional annual stop age, but no month-by-month wages, self-employment service, grace-year, or non-service-month facts; annualSocialSecurity.ts consequently applies only its annual earnings-test pass. Because a first-retirement-year claimant still reaches that pass and receives an annual projected figure, this is an approximation rather than an out-of-scope rule. In an affected grace year the engine pays less benefit than the monthly test; whether that understates or overstates the resulting tax depends on how the spending shortfall is funded, since a traditional-account withdrawal replacing at-most-85-percent-taxable benefit dollars is fully taxable.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. simulate.ts applies its annual earnings test to the emitted annual wage amount. The companion fixture gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year\'s benefit. That collapse of one engine input against both limbs is the approximation.',
+      'The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. annualSocialSecurity.ts applies its annual earnings test to the emitted annual wage amount. The companion fixture gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year\'s benefit. That collapse of one engine input against both limbs is the approximation.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1287,7 +1287,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The disability limb of section 402(c)(1) quoted on this record lets a husband qualify on a worker entitled to disability insurance benefits without waiting for that worker to claim old-age benefits. simulate.ts nevertheless calculates `higherPayableMonths` from the worker stream\'s 62–70 `claimAge`, even though the SSDI branch disregards it for the worker payment. Section 425(a) also makes the worker\'s disability-benefit suspension suspend auxiliaries on that wage record, while the generic post-top-up SGA pass zeros only the worker. Benefit errors can affect taxable Social Security or trigger a taxable, tax-free, or gain-bearing replacement withdrawal, so the taxpayer-tax sign varies.',
+      'The disability limb of section 402(c)(1) quoted on this record lets a husband qualify on a worker entitled to disability insurance benefits without waiting for that worker to claim old-age benefits. annualSocialSecurity.ts nevertheless calculates `higherPayableMonths` from the worker stream\'s 62–70 `claimAge`, even though the SSDI branch disregards it for the worker payment. Section 425(a) also makes the worker\'s disability-benefit suspension suspend auxiliaries on that wage record, while the generic post-top-up SGA pass zeros only the worker. Benefit errors can affect taxable Social Security or trigger a taxable, tax-free, or gain-bearing replacement withdrawal, so the taxpayer-tax sign varies.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1398,7 +1398,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The companion fixture assigns the same 20,281-dollar 2026 total either to a first January service month or to a ninth December service month after entitlement, leaving the other eleven months at zero in each case. Both are still protected trial-work months, so the authority-side annual benefit remains 24,000 dollars on a 2,000-dollar PIA. The annual Plan makes those distinct monthly cases identical and simulate.ts treats both as annual SGA, returning a suspended annual benefit. The opposite monthly concentration can make an annual total look harmless while an SGA month is payable differently, and replacement-spending taxation depends on its funding source; neither tax direction is one-sided.',
+      'The companion fixture assigns the same 20,281-dollar 2026 total either to a first January service month or to a ninth December service month after entitlement, leaving the other eleven months at zero in each case. Both are still protected trial-work months, so the authority-side annual benefit remains 24,000 dollars on a 2,000-dollar PIA. The annual Plan makes those distinct monthly cases identical and annualSocialSecurity.ts treats both as annual SGA, returning a suspended annual benefit. The opposite monthly concentration can make an annual total look harmless while an SGA month is payable differently, and replacement-spending taxation depends on its funding source; neither tax direction is one-sided.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1439,7 +1439,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The companion fixtures use the same expressible 20,281-dollar annual wage total after trial work has ended. When it is earned in January alone, January and the next two months are payable under the grace rule and payment restarts from April, for a 24,000-dollar annual benefit on a 2,000-dollar PIA. When it is spread at more than monthly SGA across all twelve months, only the three grace months are payable, for 6,000 dollars. simulate.ts cannot distinguish the two monthly histories and produces its whole-year SGA suspension for both. The taxpayer-tax direction changes with the monthly pattern and with the account used to fill any spending shortfall.',
+      'The companion fixtures use the same expressible 20,281-dollar annual wage total after trial work has ended. When it is earned in January alone, January and the next two months are payable under the grace rule and payment restarts from April, for a 24,000-dollar annual benefit on a 2,000-dollar PIA. When it is spread at more than monthly SGA across all twelve months, only the three grace months are payable, for 6,000 dollars. annualSocialSecurity.ts cannot distinguish the two monthly histories and produces its whole-year SGA suspension for both. The taxpayer-tax direction changes with the monthly pattern and with the account used to fill any spending shortfall.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1551,7 +1551,7 @@ export const socialSecurityRecords = {
   'usc-42-423-c-2-ssdi-five-month-waiting-period': {
     title: 'SSDI begins only after a five-month waiting period',
     statement:
-      'Disability insurance benefits begin with the first month after a five consecutive calendar-month waiting period throughout which the worker has been under a disability. The Plan\'s integer-year `disability.onsetAge` is modeled as a January-equivalent onset, so the statutory waiting period is January through May and at most seven post-waiting months are payable in the onset year. disability.ts and simulate.ts instead pay the full annual SSDI amount from the onset year with no waiting-period proration.',
+      'Disability insurance benefits begin with the first month after a five consecutive calendar-month waiting period throughout which the worker has been under a disability. The Plan\'s integer-year `disability.onsetAge` is modeled as a January-equivalent onset, so the statutory waiting period is January through May and at most seven post-waiting months are payable in the onset year. disability.ts and annualSocialSecurity.ts instead pay the full annual SSDI amount from the onset year with no waiting-period proration.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -1590,7 +1590,7 @@ export const socialSecurityRecords = {
   'usc-42-423-a-2-402-q-retirement-claim-before-disability-onset': {
     title: 'A reduced retirement claim before later disability onset carries into DIB',
     statement:
-      'When a worker claims reduced old-age benefits at 62 and later becomes entitled to disability insurance benefits before FRA, section 423(a)(2)\'s 402(q) exception and section 402(q)(2) keep a reduction on the disability benefit, and the reduced retirement benefit remains payable until disability onset. simulate.ts enters the SSDI branch whenever `disability.onsetAge` is set below FRA years and `continue`s past the retirement-claim path, so it pays nothing before onset and the full unreduced PIA from onset.',
+      'When a worker claims reduced old-age benefits at 62 and later becomes entitled to disability insurance benefits before FRA, section 423(a)(2)\'s 402(q) exception and section 402(q)(2) keep a reduction on the disability benefit, and the reduced retirement benefit remains payable until disability onset. annualSocialSecurity.ts enters the SSDI branch whenever `disability.onsetAge` is set below FRA years and `continue`s past the retirement-claim path, so it pays nothing before onset and the full unreduced PIA from onset.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -1685,7 +1685,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is an input and result boundary. socialSecurityIncomeSchema carries only disability.onsetAge, and disability.ts/simulate.ts use it to price an annual SSDI stream; neither accepts a trial-work ending date, subsequent termination, continuing impairment, counterfactual inability to engage in substantial gainful activity, or Part A coverage. A generic healthcare expense cannot turn those absent facts into an entitlement interval. The 78-month cap and the substituted 15-month rule are quoted exactly; no CMS guidance establishing the queue\'s 93-month formulation was staged.',
+      'This is an input and result boundary. socialSecurityIncomeSchema carries only disability.onsetAge, and disability.ts/annualSocialSecurity.ts use it to price an annual SSDI stream; neither accepts a trial-work ending date, subsequent termination, continuing impairment, counterfactual inability to engage in substantial gainful activity, or Part A coverage. A generic healthcare expense cannot turn those absent facts into an entitlement interval. The 78-month cap and the substituted 15-month rule are quoted exactly; no CMS guidance establishing the queue\'s 93-month formulation was staged.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

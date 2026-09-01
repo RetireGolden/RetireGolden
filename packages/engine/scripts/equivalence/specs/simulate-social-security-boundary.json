@@ -25,37 +25,37 @@
       "id": "A4.own-and-ssdi-pay-sites",
       "label": "credited claim age, own-retirement and SSDI pay sites",
       "file": "projection/internal/annualSocialSecurity.ts",
-      "lines": [72, 178]
+      "lines": [72, 186]
     },
     {
       "id": "B.former-spouse",
       "label": "former-spouse divorced and survivor replacement menu",
       "file": "projection/internal/annualSocialSecurity.ts",
-      "lines": [180, 216]
+      "lines": [188, 224]
     },
     {
       "id": "C.current-spouse",
       "label": "current-spouse top-up and worker family-maximum cap",
       "file": "projection/internal/annualSocialSecurity.ts",
-      "lines": [218, 279]
+      "lines": [226, 289]
     },
     {
       "id": "D.survivor",
       "label": "current-household survivor step-up and stream publication",
       "file": "projection/internal/annualSocialSecurity.ts",
-      "lines": [281, 325]
+      "lines": [291, 335]
     },
     {
       "id": "E.withholding",
       "label": "SSDI SGA gate, retirement earnings test, withheld-month writes and warnings",
       "file": "projection/internal/annualSocialSecurity.ts",
-      "lines": [327, 375]
+      "lines": [337, 387]
     },
     {
       "id": "F.publication",
       "label": "living-household total and ordered per-stream publication",
       "file": "projection/internal/annualSocialSecurity.ts",
-      "lines": [377, 445],
+      "lines": [389, 457],
       "note": "The full-corpus report's four cold sub-line regions are defensive invariants, not unmodeled plan behavior: every payable auxiliary writes a positive pre-withholding amount along with claimInForce; every resolved stream creates its publication row before any early continue; the pre-withholding fold creates a key for every publication row; and the post-withholding map is seeded for every schema-valid person before stream publication."
     },
     {

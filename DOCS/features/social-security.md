@@ -153,7 +153,8 @@ SSDI is gated by **Substantial Gainful Activity** (earnings above the SGA limit 
 approximation), **converts to the retirement benefit at FRA at the same dollar amount** (continuous — the
 PIA persists, with no delayed-retirement credits), and is taxed under the same provisional-income tiers as
 retirement benefits. An off-by-default `disability` input on the SS stream drives the pure
-`socialSecurity/disability.ts` helper + `simulate` Pass 3 wiring; SGA lives in the parameter pack. Documented
+`socialSecurity/disability.ts` helper and the `projection/internal/annualSocialSecurity.ts` annual phase;
+`simulatePlan` still owns the annual input/effect wiring, and SGA lives in the parameter pack. Documented
 simplifications / registered gaps: the disability freeze (AIME exclusion; onset exists but is ignored —
 `usc-42-415-b-2-b-disability-freeze-aime-exclusion`), the five-month waiting period
 (`usc-42-423-c-2-ssdi-five-month-waiting-period`), trial-work / EPE annual approximations

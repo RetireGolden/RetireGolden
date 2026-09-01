@@ -33,7 +33,8 @@
  * it exists to reach in `covers`, and
  * `scripts/equivalence/specs/simulate-batch.json` and
  * `scripts/equivalence/specs/simulate-small-annual-boundaries.json` and
- * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json` are the
+ * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json` and
+ * `scripts/equivalence/specs/simulate-social-security-boundary.json` are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  *

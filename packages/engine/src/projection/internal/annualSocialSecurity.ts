@@ -144,10 +144,16 @@ export function annualSocialSecurity(
     const fra = fraForBirthYear(effectiveBirthYear(y, m, d))
 
     const onsetAge = stream.disability?.onsetAge
+    // A pre-FRA disability onset replaces this stream's retirement-claim path.
+    // Onset at or after FRA is intentionally invalid here and falls through to
+    // ordinary retirement rather than creating a second SSDI case.
     if (onsetAge !== undefined && onsetAge < fra.years) {
       if (s.ageAttained >= onsetAge) {
         const monthly = ssdiMonthlyBenefit(pia)
         const annual = monthly * 12 * ssColaFactor * ssHaircutFactor
+        // Keep computation rows for deceased workers as survivor anchors, but
+        // publish only while alive. At FRA the same dollars change source from
+        // SSDI to own retirement without representing a new filing decision.
         ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
         ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
         ssdiByPerson.set(stream.personId, { onsetAge, benefit: annual, fraYears: fra.years })
@@ -168,6 +174,8 @@ export function annualSocialSecurity(
     const monthly = pia * factor
     let annual = monthly * payableMonths * ssColaFactor
     annual *= ssHaircutFactor
+    // Deceased workers remain in computation maps for survivor pricing; only
+    // the per-stream publication row is gated on the worker being alive.
     ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
     ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
     if (s.alive) {
@@ -248,6 +256,8 @@ export function annualSocialSecurity(
                 fraTotalMonths(fraForBirthYear(effectiveBirthYear(higherDob.y, higherDob.m, higherDob.d))),
               ),
             )
+        // The worker-record family maximum caps only the auxiliary excess; the
+        // lower earner's own benefit stays on that person's record unchanged.
         const lowerOwnMonthly = ssActualMonthlyByPerson.get(lower.p.id) ?? 0
         const excessSpousalMonthly = Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
         const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
@@ -361,6 +371,8 @@ export function annualSocialSecurity(
     if (withheld > 0) {
       ssOwnByPerson.set(personId, benefit - withheld)
       ssEarningsTestWithheld += withheld
+      // ARF credits are capped by months actually payable in this year, so a
+      // midyear first claim cannot earn credit for all twelve months.
       const claimAge = ssStreamByPerson.get(personId)?.claimAge
       const payableMonths = claimAge ? payableMonthsAtAge(s.ageAttained, claimAge) : 12
       const monthsWithheld = Math.min(payableMonths, Math.round((withheld / benefit) * payableMonths))
