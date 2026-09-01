@@ -732,10 +732,36 @@
   max-width: 70ch;
 }
 
+/* Form rows share two tracks — a label track and a control track — so every
+   control in a row sits in the same track whatever its label does (design-QA
+   #470, #471, #477, #451, #466, #467, #473: a two-line label used to push
+   only its own control down). Each direct child spans both tracks; a plain
+   label + control field subgrids into them, and anything with more children
+   (a hand-built field with hints, a wrapper, a nested section) just spans
+   them as a block. The 0.35rem row gap is the label-to-control distance; the
+   child's bottom margin restores the 0.8rem rhythm between logical rows. */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
-  gap: 0.8rem 1.1rem;
+  grid-auto-rows: auto;
+  gap: 0.35rem 1.1rem;
+}
+
+.form-grid > * {
+  grid-row: span 2;
+  margin-bottom: 0.45rem;
+}
+
+.form-grid > .field:not(:has(> :nth-child(3))) {
+  display: grid;
+  grid-template-rows: subgrid;
+  gap: 0;
+}
+
+/* The label sits at the bottom of its track, next to its control; a wrapped
+   label grows the track for the whole row instead of displacing one input. */
+.form-grid > .field > .field-label-row {
+  align-self: end;
 }
 
 .form-grid > .field-span-full {
@@ -1694,10 +1720,20 @@ html:has(.kpi-bar) {
 
 /* --- help tooltips --------------------------------------------------------- */
 
+/* Inline formatting, not flex: the ⓘ follows the label's last word, so a
+   wrapped label keeps its help button in reading order instead of parking it
+   at the cell's far edge (#470, #471). */
 .field-label-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+  display: block;
+}
+
+.field-label-row > .field-label {
+  display: inline;
+  margin-right: 0.3rem;
+}
+
+.field-label-row > .help-tip {
+  vertical-align: -0.15em;
 }
 
 .help-tip {

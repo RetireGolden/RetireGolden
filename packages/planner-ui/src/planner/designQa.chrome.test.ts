@@ -244,6 +244,23 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(focus).toMatch(/outline-offset:\s*2px/)
   })
 
+  it('form rows subgrid label and control tracks so a wrapped label never displaces one input (#470, #471, #477)', () => {
+    const grid = rule('.form-grid')
+    expect(grid).toMatch(/grid-auto-rows:\s*auto/)
+    expect(grid).toMatch(/gap:\s*0\.35rem 1\.1rem/)
+    const child = rule('.form-grid > *')
+    expect(child).toMatch(/grid-row:\s*span 2/)
+    expect(child).toMatch(/margin-bottom:\s*0\.45rem/)
+    const sub = rule('.form-grid > .field:not(:has(> :nth-child(3)))')
+    expect(sub).toMatch(/grid-template-rows:\s*subgrid/)
+    expect(sub).toMatch(/gap:\s*0/)
+    expect(rule('.form-grid > .field > .field-label-row')).toMatch(/align-self:\s*end/)
+    // The ⓘ flows after the label's last word: inline formatting, not flex.
+    expect(rule('.field-label-row')).toMatch(/display:\s*block/)
+    expect(rule('.field-label-row > .field-label')).toMatch(/display:\s*inline/)
+    expect(rule('.field-label-row > .help-tip')).toMatch(/vertical-align/)
+  })
+
   it('text, select, and affixed inputs share one height token', () => {
     const affix = rule('.input-affix')
     expect(affix).toMatch(/min-height:\s*var\(--control-height\)/)
