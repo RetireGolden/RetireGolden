@@ -86,6 +86,7 @@ import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
 import {
   annualContributionsAndEmployerMatch,
   type AnnualContributionAndMatchOperation,
+  type AnnualContributionAndMatchOperationIdentity,
   type AnnualContributionsAndEmployerMatchResult,
 } from './internal/annualContributionsAndEmployerMatch.js'
 import {
@@ -549,20 +550,21 @@ function snapshotAnnualContributionsAndEmployerMatchResult(
       operations.push({ kind, message: operation.message })
       continue
     }
-    const retirementOccurrence = operation.retirementOccurrence === null
+    const sourceRetirementOccurrence = operation.retirementOccurrence
+    const retirementOccurrence = sourceRetirementOccurrence === null
       ? null
       : {
           producerOccurrenceKey:
-            operation.retirementOccurrence.producerOccurrenceKey,
-          kind: operation.retirementOccurrence.kind,
+            sourceRetirementOccurrence.producerOccurrenceKey,
+          kind: sourceRetirementOccurrence.kind,
           grossAmountPlanDollars:
-            operation.retirementOccurrence.grossAmountPlanDollars,
-          ownerPersonId: operation.retirementOccurrence.ownerPersonId,
-          sourceAccountId: operation.retirementOccurrence.sourceAccountId,
-          executionDate: operation.retirementOccurrence.executionDate,
-          executionSequence: operation.retirementOccurrence.executionSequence,
+            sourceRetirementOccurrence.grossAmountPlanDollars,
+          ownerPersonId: sourceRetirementOccurrence.ownerPersonId,
+          sourceAccountId: sourceRetirementOccurrence.sourceAccountId,
+          executionDate: sourceRetirementOccurrence.executionDate,
+          executionSequence: sourceRetirementOccurrence.executionSequence,
           movementAuthorityId:
-            operation.retirementOccurrence.movementAuthorityId,
+            sourceRetirementOccurrence.movementAuthorityId,
         }
     if (kind === 'employerMatch') {
       const record = operation.record
@@ -582,29 +584,30 @@ function snapshotAnnualContributionsAndEmployerMatchResult(
       continue
     }
     const sourceRetirementApplication = operation.retirementApplication
-    if (
-      sourceRetirementApplication !== null &&
-      sourceRetirementApplication.applicationKind !== 'credit'
-    ) {
-      throw new Error('Annual contribution plan returned a non-credit application')
+    let retirementApplication:
+      SimulatorRetirementRuntimeApplicationWithoutOrdinal | null = null
+    if (sourceRetirementApplication !== null) {
+      const sourceApplicationKind =
+        sourceRetirementApplication.applicationKind
+      if (sourceApplicationKind !== 'credit') {
+        throw new Error('Annual contribution plan returned a non-credit application')
+      }
+      retirementApplication = {
+        applicationKind: sourceApplicationKind,
+        producerOccurrenceKey:
+          sourceRetirementApplication.producerOccurrenceKey,
+        simulatorPhase: sourceRetirementApplication.simulatorPhase,
+        ownerPersonId: sourceRetirementApplication.ownerPersonId,
+        sourceAccountId: sourceRetirementApplication.sourceAccountId,
+        balanceIndex: sourceRetirementApplication.balanceIndex,
+        sourceBalanceBeforePlanDollars:
+          sourceRetirementApplication.sourceBalanceBeforePlanDollars,
+        creditedAmountPlanDollars:
+          sourceRetirementApplication.creditedAmountPlanDollars,
+        sourceBalanceAfterPlanDollars:
+          sourceRetirementApplication.sourceBalanceAfterPlanDollars,
+      }
     }
-    const retirementApplication = sourceRetirementApplication === null
-      ? null
-      : {
-          applicationKind: sourceRetirementApplication.applicationKind,
-          producerOccurrenceKey:
-            sourceRetirementApplication.producerOccurrenceKey,
-          simulatorPhase: sourceRetirementApplication.simulatorPhase,
-          ownerPersonId: sourceRetirementApplication.ownerPersonId,
-          sourceAccountId: sourceRetirementApplication.sourceAccountId,
-          balanceIndex: sourceRetirementApplication.balanceIndex,
-          sourceBalanceBeforePlanDollars:
-            sourceRetirementApplication.sourceBalanceBeforePlanDollars,
-          creditedAmountPlanDollars:
-            sourceRetirementApplication.creditedAmountPlanDollars,
-          sourceBalanceAfterPlanDollars:
-            sourceRetirementApplication.sourceBalanceAfterPlanDollars,
-        }
     const record = operation.record
     operations.push({
       kind,
@@ -630,14 +633,22 @@ function snapshotAnnualContributionsAndEmployerMatchResult(
     })
   }
 
-  const operationIdentities = [...source.operationIdentities].map((identity) =>
-    identity.kind === 'warning'
-      ? { kind: identity.kind } as const
-      : {
-          kind: identity.kind,
-          balanceIndex: identity.balanceIndex,
-        } as const
-  )
+  const snapshotOperationIdentity = (
+    identity: AnnualContributionAndMatchOperationIdentity,
+  ): AnnualContributionAndMatchOperationIdentity => {
+    const kind = identity.kind
+    return kind === 'warning'
+      ? { kind }
+      : { kind, balanceIndex: identity.balanceIndex }
+  }
+  const operationIdentities = [...source.operationIdentities]
+    .map(snapshotOperationIdentity)
+  const expectedOperationIdentities = [...source.expectedOperationIdentities]
+    .map(snapshotOperationIdentity)
+  const expectedContributionBalanceIndices =
+    [...source.expectedContributionBalanceIndices].map((balanceIndex) =>
+      balanceIndex
+    )
   const sourceTotals = source.totals
   const totals = {
     contributions: sourceTotals.contributions,
@@ -664,6 +675,8 @@ function snapshotAnnualContributionsAndEmployerMatchResult(
   return {
     operations,
     operationIdentities,
+    expectedOperationIdentities,
+    expectedContributionBalanceIndices,
     totals,
     employerAllocationByOwner,
   }
@@ -3068,11 +3081,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     if (
       contributionPlan.operationIdentities.length !==
-      contributionPlan.operations.length
+        contributionPlan.operations.length ||
+      contributionPlan.expectedOperationIdentities.length !==
+        contributionPlan.operations.length
     ) {
       throw new Error('Annual contribution operations lost cardinality')
     }
     const seenMatchBalanceIndices = new Set<number>()
+    const expectedContributionBalanceIndices =
+      new Set(contributionPlan.expectedContributionBalanceIndices)
+    if (
+      expectedContributionBalanceIndices.size !==
+      contributionPlan.expectedContributionBalanceIndices.length
+    ) {
+      throw new Error('Annual contribution expectation has duplicate positions')
+    }
+    const seenContributionBalanceIndices = new Set<number>()
     const shadowContributionBalances = balances.map((state) => state.balance)
     const shadowContributionCostBases = balances.map((state) => state.costBasis)
     let reconciledContributions = 0
@@ -3087,13 +3111,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       contributionPlan.operations.length; operationIndex++) {
       const operation = contributionPlan.operations[operationIndex]!
       const identity = contributionPlan.operationIdentities[operationIndex]!
-      if (identity.kind !== operation.kind) {
+      const expectedIdentity =
+        contributionPlan.expectedOperationIdentities[operationIndex]!
+      if (
+        identity.kind !== operation.kind ||
+        expectedIdentity.kind !== operation.kind
+      ) {
         throw new Error('Annual contribution operation lost its identity')
       }
       if (
         operation.kind !== 'warning' &&
         (identity.kind === 'warning' ||
-          identity.balanceIndex !== operation.balanceIndex)
+          expectedIdentity.kind === 'warning' ||
+          identity.balanceIndex !== operation.balanceIndex ||
+          expectedIdentity.balanceIndex !== operation.balanceIndex)
       ) {
         throw new Error('Annual contribution operation lost its identity')
       }
@@ -3120,6 +3151,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         if (reachedEmployerMatches) {
           throw new Error('Annual contribution operation order is inconsistent')
         }
+        if (
+          !expectedContributionBalanceIndices.has(operation.balanceIndex) ||
+          seenContributionBalanceIndices.has(operation.balanceIndex)
+        ) {
+          throw new Error('Annual contribution operation duplicated a physical position')
+        }
+        seenContributionBalanceIndices.add(operation.balanceIndex)
         if (
           !Object.is(
             shadowContributionCostBases[operation.balanceIndex],
@@ -3218,6 +3256,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       } else {
         reconciledOtherInflow += operation.record.amount
       }
+    }
+    if (
+      seenContributionBalanceIndices.size !==
+      expectedContributionBalanceIndices.size
+    ) {
+      throw new Error('Annual contribution operations lost expected positions')
     }
     assertExactContributionTotal(
       'contribution total',

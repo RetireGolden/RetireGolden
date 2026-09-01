@@ -208,72 +208,72 @@
       "label": "no-action defaults, guarded boundary invocation, and scalar consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        6046,
-        6073
+        6090,
+        6117
       ],
       "anchors": [
         {
-          "line": 6046,
+          "line": 6090,
           "text": "let retirementActionExecution:"
         },
         {
-          "line": 6053,
+          "line": 6097,
           "text": "if (currentYearOrdinaryExecutionActions.length > 0) {"
         },
         {
-          "line": 6054,
+          "line": 6098,
           "text": "const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({"
         },
         {
-          "line": 6073,
+          "line": 6117,
           "text": "if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {"
         }
       ],
-      "note": "The range includes the dominant no-action defaults and outer guard. The cardinality guard and throw on lines 6016-6018 are excluded: the helper maps the exact supplied balances array to one operation per element; focused delegation tests pin both the invariant and zero helper calls for an empty annual request set."
+      "note": "The range includes the dominant no-action defaults and outer guard. The cardinality guard and throw on lines 6117-6119 are excluded: the helper maps the exact supplied balances array to one operation per element; focused delegation tests pin both the invariant and zero helper calls for an empty annual request set."
     },
     {
       "id": "M.callsite.selectOperation",
       "label": "ordinary-withdrawal positional operation selection",
       "file": "projection/simulate.ts",
       "lines": [
-        6076,
-        6080
+        6120,
+        6124
       ],
       "anchors": [
         {
-          "line": 6076,
+          "line": 6120,
           "text": "for (const [index, operation] of"
         },
         {
-          "line": 6078,
+          "line": 6122,
           "text": "if (operation.kind === 'none') continue"
         },
         {
-          "line": 6080,
+          "line": 6124,
           "text": "if (state === undefined || state.account.id !== operation.accountId) {"
         }
       ],
-      "note": "The position-mismatch guard and throw on lines 6023-6025 are excluded: the helper emits operations by mapping the same balance positions and copies each source account id; focused delegation tests pin the invariant."
+      "note": "The position-mismatch guard and throw on lines 6124-6126 are excluded: the helper emits operations by mapping the same balance positions and copies each source account id; focused delegation tests pin the invariant."
     },
     {
       "id": "M.callsite.apply",
       "label": "ordinary-withdrawal basis and balance mutation",
       "file": "projection/simulate.ts",
       "lines": [
-        6083,
-        6086
+        6127,
+        6130
       ],
       "anchors": [
         {
-          "line": 6083,
+          "line": 6127,
           "text": "if (operation.closingCostBasis !== null) {"
         },
         {
-          "line": 6084,
+          "line": 6128,
           "text": "state.costBasis = operation.closingCostBasis"
         },
         {
-          "line": 6086,
+          "line": 6130,
           "text": "state.balance = operation.closingBalance"
         }
       ]

@@ -131,7 +131,15 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
       { kind: 'contribution', balanceIndex: 0 },
       { kind: 'contribution', balanceIndex: 1 },
     ])
+    expect(result.expectedOperationIdentities).toEqual(
+      result.operationIdentities,
+    )
+    expect(result.expectedContributionBalanceIndices).toEqual([0, 1])
     expect(result.operationIdentities).not.toBe(result.operations)
+    expect(result.expectedOperationIdentities)
+      .not.toBe(result.operationIdentities)
+    expect(result.expectedOperationIdentities[0])
+      .not.toBe(result.operationIdentities[0])
     const credits = contributions(result)
     expect(credits.map((row) => [
       row.balanceIndex,
@@ -203,6 +211,34 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
       .not.toBe(amounts[0] + (amounts[1] + amounts[2]))
   })
 
+  it('independently witnesses a warning followed by a zero-credit row', () => {
+    const result = call([
+      balance(account('traditional', 'fills-limit', pack.contributionLimits.ira)),
+      balance(account('traditional', 'zero-credit', 1)),
+    ], {
+      wagesByPerson: new Map([['p1', 100_000]]),
+    })
+
+    expect(result.operations.map((operation) => operation.kind)).toEqual([
+      'contribution', 'warning', 'contribution',
+    ])
+    expect(contributions(result).map((operation) => operation.credited))
+      .toEqual([pack.contributionLimits.ira, 0])
+    expect(result.operationIdentities).toEqual([
+      { kind: 'contribution', balanceIndex: 0 },
+      { kind: 'warning' },
+      { kind: 'contribution', balanceIndex: 1 },
+    ])
+    expect(result.expectedOperationIdentities).toEqual(
+      result.operationIdentities,
+    )
+    expect(result.expectedContributionBalanceIndices).toEqual([0, 1])
+    for (let index = 0; index < result.operationIdentities.length; index++) {
+      expect(result.expectedOperationIdentities[index])
+        .not.toBe(result.operationIdentities[index])
+    }
+  })
+
   it.each([
     ['traditional' as const, pack.contributionLimits.ira],
     ['roth' as const, pack.contributionLimits.ira],
@@ -260,6 +296,21 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
       qcdSection219Amount: 30,
     }))
     expect(result.totals.taxableInflow).toBe(25)
+  })
+
+  it('keeps the defensive null-DOB IRA offset path inert', () => {
+    const result = call([
+      balance(account('traditional', 'null-dob-ira', 30)),
+    ], {
+      resolveOwnerState: () => ({ alive: true, ageAttained: 71 }),
+      resolveOwnerBirthYear: () => 1955,
+      resolveOwnerDob: () => null,
+    })
+
+    expect(contributions(result)[0]).toEqual(expect.objectContaining({
+      qcdSection219OwnerPersonId: null,
+      qcdSection219Amount: 0,
+    }))
   })
 })
 

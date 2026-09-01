@@ -148,12 +148,23 @@ export interface AnnualContributionsAndEmployerMatchTotals {
 export interface AnnualContributionsAndEmployerMatchResult {
   readonly operations: readonly AnnualContributionAndMatchOperation[]
   /**
-   * Independently materialized cardinality/order witness for the operation
-   * stream. The caller checks it before committing any balance or journal
-   * mutation, so an accidentally truncated operation array fails closed.
+   * Identity channel emitted with the operation stream. The caller reconciles
+   * it with both the stream and the independently planned expectation below.
    */
   readonly operationIdentities:
     readonly AnnualContributionAndMatchOperationIdentity[]
+  /**
+   * Expected operation order derived at the planning decision sites rather
+   * than from `emit`. Keeping this witness separate means a coordinated
+   * omission or insertion in the emitted stream still fails closed.
+   */
+  readonly expectedOperationIdentities:
+    readonly AnnualContributionAndMatchOperationIdentity[]
+  /**
+   * Physical contribution rows derived from request eligibility before the
+   * operation loop. This does not repeat limit or dollar arithmetic.
+   */
+  readonly expectedContributionBalanceIndices: readonly number[]
   readonly totals: Readonly<AnnualContributionsAndEmployerMatchTotals>
   readonly employerAllocationByOwner:
     ReadonlyMap<string, Readonly<EmployerElectiveAllocation>>
@@ -175,6 +186,8 @@ export function annualContributionsAndEmployerMatch(
 ): AnnualContributionsAndEmployerMatchResult {
   const operations: AnnualContributionAndMatchOperation[] = []
   const operationIdentities: AnnualContributionAndMatchOperationIdentity[] = []
+  const expectedOperationIdentities:
+    AnnualContributionAndMatchOperationIdentity[] = []
   const emit = (operation: AnnualContributionAndMatchOperation): void => {
     operationIdentities.push(
       operation.kind === 'warning'
@@ -269,6 +282,15 @@ export function annualContributionsAndEmployerMatch(
     }
     desiredByBalanceIndex.set(balanceIndex, desired)
   }
+  const expectedContributionBalanceIndices = input.balances.flatMap(
+    (state, balanceIndex) => {
+      if (!desiredByBalanceIndex.has(balanceIndex)) return []
+      const desired = desiredByBalanceIndex.get(balanceIndex) ?? 0
+      return desired > 0 || isEmployerPlanAccount(state.account)
+        ? [balanceIndex]
+        : []
+    },
+  )
 
   const employerAllocated = new Map<string, number>()
   const employerAllocationByOwner =
@@ -390,6 +412,7 @@ export function annualContributionsAndEmployerMatch(
         !isEmployerAccount &&
         allowed < desired - ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
       ) {
+        expectedOperationIdentities.push({ kind: 'warning' })
         emit({ kind: 'warning', message: CONTRIBUTION_LIMIT_WARNING })
       }
       groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
@@ -418,6 +441,7 @@ export function annualContributionsAndEmployerMatch(
     }
     const balanceBefore = shadowBalances[balanceIndex]!
     const costBasisBefore = shadowCostBases[balanceIndex]!
+    expectedOperationIdentities.push({ kind: 'contribution', balanceIndex })
     if (allowed <= 0) {
       emit({
         kind: 'contribution',
@@ -550,6 +574,7 @@ export function annualContributionsAndEmployerMatch(
       landedTotal <
       desiredTotal - ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
     ) {
+      expectedOperationIdentities.push({ kind: 'warning' })
       emit({ kind: 'warning', message: CONTRIBUTION_LIMIT_WARNING })
     }
   }
@@ -620,6 +645,7 @@ export function annualContributionsAndEmployerMatch(
       ownerPersonId: account.ownerPersonId ?? null,
       amount: matchVal,
     }
+    expectedOperationIdentities.push({ kind: 'employerMatch', balanceIndex })
     emit({
       kind: 'employerMatch',
       balanceIndex,
@@ -638,6 +664,8 @@ export function annualContributionsAndEmployerMatch(
   return {
     operations,
     operationIdentities,
+    expectedOperationIdentities,
+    expectedContributionBalanceIndices,
     totals: {
       contributions,
       ownedNonRothIraContributions,

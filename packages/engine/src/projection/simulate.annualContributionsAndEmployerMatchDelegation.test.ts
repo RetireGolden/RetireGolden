@@ -7,8 +7,9 @@
  * withdrawals, and every detached recorder snapshot prove `simulatePlan`
  * consumes the helper result without retaining an inline copy. The caller
  * materializes each helper-owned getter once, then forwards the same cached
- * caller-owned payload through preflight and commit. An empty-omit
- * counterfactual re-enters the
+ * caller-owned payload through preflight and commit. An independent expected
+ * row witness rejects coordinated emitted-row/identity omissions or inserts.
+ * An empty-omit counterfactual re-enters the
  * annual pass and proves the pre-pass contribution prefix is neither replanned
  * nor applied twice.
  */
@@ -74,7 +75,17 @@ const seam = vi.hoisted(() => ({
   fault: null as null | 'wrongPosition' | 'staleBalance' | 'staleBasis' |
     'signedZero' | 'signedZeroBasis' | 'lateIterator' |
     'lateNestedGetter' | 'lateWarningGetter' | 'totalsGetter' |
-    'allocationGetter' | 'truncate' | 'emptyNonzero',
+    'allocationGetter' | 'truncate' | 'emptyNonzero' |
+    'coordinatedOmitZero' | 'coordinatedInsertWarning' |
+    'changingGetters' | 'nonCreditApplication' | 'wrongIdentity' |
+    'postMatchWarning' | 'badContributionMath' |
+    'duplicateMatchIdentity' | 'badMatchMath' |
+    'omitWholeContributionDecision' | 'duplicateContributionIndex',
+  changingGetterReads: {
+    retirementOccurrence: 0,
+    applicationKind: 0,
+    identityKind: 0,
+  },
 }))
 
 vi.mock(
@@ -234,6 +245,17 @@ vi.mock(
                   { kind: 'employerMatch', balanceIndex: 1 },
                   { kind: 'employerMatch', balanceIndex: 2 },
                 ],
+                expectedOperationIdentities: [
+                  { kind: 'warning' },
+                  { kind: 'contribution', balanceIndex: 2 },
+                  { kind: 'contribution', balanceIndex: 0 },
+                  { kind: 'warning' },
+                  { kind: 'contribution', balanceIndex: 3 },
+                  { kind: 'contribution', balanceIndex: 1 },
+                  { kind: 'employerMatch', balanceIndex: 1 },
+                  { kind: 'employerMatch', balanceIndex: 2 },
+                ],
+                expectedContributionBalanceIndices: [0, 1, 2, 3],
                 totals: {
                   contributions: 600,
                   ownedNonRothIraContributions: 0,
@@ -248,6 +270,8 @@ vi.mock(
             : {
                 operations: [],
                 operationIdentities: [],
+                expectedOperationIdentities: [],
+                expectedContributionBalanceIndices: [],
                 totals: {
                   contributions: 0,
                   ownedNonRothIraContributions: 0,
@@ -272,6 +296,220 @@ vi.mock(
                   throw new Error('sentinel late operation iterator failure')
                 },
               } as unknown as typeof result.operations,
+            }
+          } else if (seam.fault === 'coordinatedOmitZero') {
+            const omittedIndex = result.operations.findIndex((operation) =>
+              operation.kind === 'contribution' && operation.credited === 0
+            )
+            result = {
+              ...result,
+              operations: result.operations.filter((_, index) =>
+                index !== omittedIndex
+              ),
+              operationIdentities: result.operationIdentities.filter(
+                (_, index) => index !== omittedIndex,
+              ),
+            }
+          } else if (seam.fault === 'coordinatedInsertWarning') {
+            result = {
+              ...result,
+              operations: [
+                { kind: 'warning', message: 'coordinated extra warning' },
+                ...result.operations,
+              ],
+              operationIdentities: [
+                { kind: 'warning' },
+                ...result.operationIdentities,
+              ],
+            }
+          } else if (seam.fault === 'omitWholeContributionDecision') {
+            const omittedIndex = result.operations.findIndex((operation) =>
+              operation.kind === 'contribution' && operation.credited === 0
+            )
+            result = {
+              ...result,
+              operations: result.operations.filter((_, index) =>
+                index !== omittedIndex
+              ),
+              operationIdentities: result.operationIdentities.filter(
+                (_, index) => index !== omittedIndex,
+              ),
+              expectedOperationIdentities:
+                result.expectedOperationIdentities.filter(
+                  (_, index) => index !== omittedIndex,
+                ),
+            }
+          } else if (seam.fault === 'duplicateContributionIndex') {
+            const duplicateIndex = result.operations.findIndex((operation) =>
+              operation.kind === 'contribution' && operation.credited === 0
+            )
+            result = {
+              ...result,
+              operations: result.operations.map((operation, index) =>
+                index === duplicateIndex && operation.kind === 'contribution'
+                  ? {
+                      ...operation,
+                      balanceIndex: 2,
+                      sourceAccount: input.balances[2]!.account,
+                      balanceBefore: 300,
+                      balanceAfter: 300,
+                      costBasisBefore: input.balances[2]!.costBasis,
+                      costBasisAfter: input.balances[2]!.costBasis,
+                    }
+                  : operation
+              ),
+              operationIdentities: result.operationIdentities.map(
+                (identity, index) => index === duplicateIndex
+                  ? { kind: 'contribution', balanceIndex: 2 }
+                  : identity,
+              ),
+              expectedOperationIdentities:
+                result.expectedOperationIdentities.map(
+                  (identity, index) => index === duplicateIndex
+                    ? { kind: 'contribution', balanceIndex: 2 }
+                    : identity,
+                ),
+            }
+          } else if (seam.fault === 'changingGetters') {
+            result = {
+              ...result,
+              operations: result.operations.map((operation) => {
+                if (
+                  operation.kind !== 'contribution' ||
+                  operation.balanceIndex !== 0
+                ) return operation
+                const sourceOccurrence = operation.retirementOccurrence!
+                const sourceApplication = operation.retirementApplication!
+                if (sourceApplication.applicationKind !== 'credit') {
+                  throw new Error('fixture contribution must use a credit application')
+                }
+                return {
+                  ...operation,
+                  get retirementOccurrence() {
+                    seam.changingGetterReads.retirementOccurrence++
+                    return seam.changingGetterReads.retirementOccurrence === 1
+                      ? sourceOccurrence
+                      : {
+                          ...sourceOccurrence,
+                          producerOccurrenceKey: 'hybrid-occurrence',
+                          kind: 'employerPlanEmployerMatch' as const,
+                        }
+                  },
+                  retirementApplication: {
+                    ...sourceApplication,
+                    get applicationKind(): 'credit' {
+                      seam.changingGetterReads.applicationKind++
+                      return (seam.changingGetterReads.applicationKind === 1
+                        ? 'credit'
+                        : 'debit') as 'credit'
+                    },
+                  },
+                }
+              }),
+              operationIdentities: result.operationIdentities.map(
+                (identity) => {
+                  if (
+                    identity.kind !== 'contribution' ||
+                    identity.balanceIndex !== 0
+                  ) return identity
+                  return {
+                    balanceIndex: identity.balanceIndex,
+                    get kind(): 'contribution' {
+                      seam.changingGetterReads.identityKind++
+                      return (seam.changingGetterReads.identityKind === 1
+                        ? 'contribution'
+                        : 'warning') as 'contribution'
+                    },
+                  }
+                },
+              ),
+            }
+          } else if (seam.fault === 'nonCreditApplication') {
+            result = {
+              ...result,
+              operations: result.operations.map((operation) =>
+                operation.kind === 'contribution' &&
+                operation.balanceIndex === 0
+                  ? {
+                      ...operation,
+                      retirementApplication: {
+                        ...operation.retirementApplication!,
+                        applicationKind: 'debit',
+                      } as typeof operation.retirementApplication,
+                    }
+                  : operation
+              ),
+            }
+          } else if (seam.fault === 'wrongIdentity') {
+            result = {
+              ...result,
+              operationIdentities: result.operationIdentities.map(
+                (identity, index) => index === 1
+                  ? { kind: 'contribution', balanceIndex: 0 }
+                  : identity,
+              ),
+            }
+          } else if (seam.fault === 'postMatchWarning') {
+            const warningIndex = 3
+            const reorder = <T,>(rows: readonly T[]): readonly T[] => [
+              ...rows.slice(0, warningIndex),
+              ...rows.slice(warningIndex + 1),
+              rows[warningIndex]!,
+            ]
+            result = {
+              ...result,
+              operations: reorder(result.operations),
+              operationIdentities: reorder(result.operationIdentities),
+              expectedOperationIdentities:
+                reorder(result.expectedOperationIdentities),
+            }
+          } else if (seam.fault === 'badContributionMath') {
+            result = {
+              ...result,
+              operations: result.operations.map((operation) =>
+                operation.kind === 'contribution' &&
+                operation.balanceIndex === 2
+                  ? { ...operation, balanceAfter: operation.balanceAfter + 1 }
+                  : operation
+              ),
+            }
+          } else if (seam.fault === 'duplicateMatchIdentity') {
+            result = {
+              ...result,
+              operations: result.operations.map((operation, index) =>
+                index === result.operations.length - 1 &&
+                operation.kind === 'employerMatch'
+                  ? {
+                      ...operation,
+                      balanceIndex: 1,
+                      sourceAccount: input.balances[1]!.account,
+                      balanceBefore: 200,
+                      balanceAfter: 250,
+                    }
+                  : operation
+              ),
+              operationIdentities: result.operationIdentities.map(
+                (identity, index) => index === result.operationIdentities.length - 1
+                  ? { kind: 'employerMatch', balanceIndex: 1 }
+                  : identity,
+              ),
+              expectedOperationIdentities:
+                result.expectedOperationIdentities.map(
+                  (identity, index) =>
+                    index === result.expectedOperationIdentities.length - 1
+                      ? { kind: 'employerMatch', balanceIndex: 1 }
+                      : identity,
+                ),
+            }
+          } else if (seam.fault === 'badMatchMath') {
+            result = {
+              ...result,
+              operations: result.operations.map((operation, index) =>
+                index === result.operations.length - 1 &&
+                operation.kind === 'employerMatch'
+                  ? { ...operation, balanceAfter: operation.balanceAfter + 1 }
+                  : operation
+              ),
             }
           } else if (seam.fault === 'truncate') {
             result = {
@@ -475,7 +713,17 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
     seam.recordedMatches.length = 0
     seam.fault = null
     const counterfactuals: CounterfactualAnnualLiabilityResult[] = []
-    const result = simulatePlan(plan(), {
+    const fixturePlan = plan()
+    const requiredContributionPublications = fixturePlan.accounts.filter(
+      (account) =>
+        'annualContribution' in account && account.annualContribution > 0,
+    ).length
+    const requiredMatchPublications = fixturePlan.accounts.filter(
+      (account) => 'employerMatch' in account &&
+        account.employerMatch !== null &&
+        account.employerMatch !== undefined,
+    ).length
+    const result = simulatePlan(fixturePlan, {
       startYear: 2026,
       horizonEndYear: 2027,
       taxCalculator: createFlatTaxCalculator(0),
@@ -504,8 +752,12 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
       [POSITION_IDS[2]!]: 350,
     })
 
-    expect(seam.recordedContributions).toHaveLength(4)
-    expect(seam.recordedMatches).toHaveLength(2)
+    // These cardinalities come only from authored fixture accounts. They do
+    // not read helper operations or either helper identity channel, so deleting
+    // an entire helper decision site still loses a required publication.
+    expect(seam.recordedContributions)
+      .toHaveLength(requiredContributionPublications)
+    expect(seam.recordedMatches).toHaveLength(requiredMatchPublications)
     expect(new Set(seam.recordedContributions).size).toBe(4)
     expect(new Set(seam.recordedMatches).size).toBe(2)
     expect(seam.recordedContributions).toEqual([
@@ -630,8 +882,45 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
     ['lateWarningGetter' as const, 'sentinel later warning getter failure'],
     ['totalsGetter' as const, 'sentinel totals getter failure'],
     ['allocationGetter' as const, 'sentinel allocation iterator failure'],
+    [
+      'nonCreditApplication' as const,
+      'Annual contribution plan returned a non-credit application',
+    ],
+    ['wrongIdentity' as const, 'Annual contribution operation lost its identity'],
+    [
+      'postMatchWarning' as const,
+      'Annual contribution operation order is inconsistent',
+    ],
+    [
+      'badContributionMath' as const,
+      'Annual contribution operation has inconsistent balance math',
+    ],
+    [
+      'duplicateMatchIdentity' as const,
+      'Annual employer-match operation lost its physical identity',
+    ],
+    [
+      'badMatchMath' as const,
+      'Annual employer-match operation has inconsistent balance math',
+    ],
     ['truncate' as const, 'Annual contribution operations lost cardinality'],
-    ['emptyNonzero' as const, 'inconsistent contribution total'],
+    ['emptyNonzero' as const, 'Annual contribution operations lost cardinality'],
+    [
+      'coordinatedOmitZero' as const,
+      'Annual contribution operations lost cardinality',
+    ],
+    [
+      'coordinatedInsertWarning' as const,
+      'Annual contribution operations lost cardinality',
+    ],
+    [
+      'omitWholeContributionDecision' as const,
+      'Annual contribution operations lost expected positions',
+    ],
+    [
+      'duplicateContributionIndex' as const,
+      'Annual contribution operation duplicated a physical position',
+    ],
   ])(
     'materializes and reconciles %s before any caller-owned effect',
     (fault, message) => {
@@ -652,4 +941,39 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
       seam.fault = null
     },
   )
+
+  it('snapshots changing nested getters exactly once without a hybrid payload', () => {
+    seam.calls.length = 0
+    seam.recordedContributions.length = 0
+    seam.recordedMatches.length = 0
+    seam.changingGetterReads.retirementOccurrence = 0
+    seam.changingGetterReads.applicationKind = 0
+    seam.changingGetterReads.identityKind = 0
+    seam.fault = 'changingGetters'
+
+    const year = simulatePlan(plan(), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
+    }).years[0]!
+
+    expect(seam.changingGetterReads).toEqual({
+      retirementOccurrence: 1,
+      applicationKind: 1,
+      identityKind: 1,
+    })
+    expect(year.retirementRuntimeSource!.runtimeOccurrences).toContainEqual(
+      expect.objectContaining({
+        producerOccurrenceKey: 'a-sentinel-contribution',
+        kind: 'ownedIraContribution',
+      }),
+    )
+    expect(year.retirementRuntimeApplicationSource!.applications)
+      .toContainEqual(expect.objectContaining({
+        applicationKind: 'credit',
+        producerOccurrenceKey: 'a-sentinel-contribution',
+      }))
+    seam.fault = null
+  })
 })
