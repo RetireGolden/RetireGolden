@@ -1198,7 +1198,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
    * spouse treat-as-own IRAs that join the owned pool mid-horizon are covered.
    */
   const ownersWithOmittedNondeductibleBasis = new Set<string>()
-  for (const account of plan.accounts) {
+  // Form 8606 is account-ID keyed everywhere else in the annual pass. Seed
+  // basis from that same last-row view so a superseded duplicate cannot add a
+  // second numerator to the selected row's single balance/denominator.
+  const initialIraAccountById = new Map(
+    plan.accounts.map((account) => [account.id, account] as const),
+  )
+  for (const account of initialIraAccountById.values()) {
     if (!isAggregatedIra(account)) continue
     const ownerId = account.ownerPersonId ?? primary.id
     const basis = account.nondeductibleBasis ?? 0

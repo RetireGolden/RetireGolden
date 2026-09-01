@@ -380,6 +380,36 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     expect(year.ownedTraditionalIraAggregateActivity).toEqual([])
   })
 
+  it('seeds Form 8606 basis from the selected row rather than summing aliases', () => {
+    const plan = singlePersonPlan({
+      dob: '1964-01-01',
+      planningAge: 90,
+      retirementAge: null,
+    })
+    const superseded = traditionalAccount('duplicate-ira', 100_000, 'p1', 'ira')
+    const selected = traditionalAccount('duplicate-ira', 100_000, 'p1', 'ira')
+    if (superseded.type !== 'traditional' || selected.type !== 'traditional') {
+      throw new Error('fixture did not create traditional accounts')
+    }
+    superseded.nondeductibleBasis = 40_000
+    selected.nondeductibleBasis = 10_000
+    plan.accounts = [superseded, selected, cashAccount('cash', 0)]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const result = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+
+    // The ID-keyed balance/denominator is 100,000. Its matching last row owns
+    // 10,000 of basis; summing both aliases would incorrectly publish 50,000.
+    expect(result.years[0]?.balances['duplicate-ira']).toBe(100_000)
+    expect(result.endingNondeductibleIraBasis).toBe(10_000)
+  })
+
   it('uses the selected row once in the optimizer opening snapshot', () => {
     const plan = singlePersonPlan({
       dob: '1964-01-01',
