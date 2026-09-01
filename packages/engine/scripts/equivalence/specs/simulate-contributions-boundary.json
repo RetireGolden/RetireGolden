@@ -1,0 +1,503 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-contributions-boundary",
+  "why": "Measured reach for the annual contribution and employer-match phase extracted from simulatePlan. Five dedicated block-U members run in all four equivalence modes and discriminate employer deferral/catch-up routing and 415(c) match limits, ordered joint IRA compensation and owner ceilings, HSA spouse/survivor limits, Roth-basis and owned-IRA annual-pass re-entry, and exact positional duplicate-ID folds whose public balances remain logical aggregates.",
+  "entries": [
+    {
+      "id": "U.helper.sharedState",
+      "label": "shadow state, aggregate accumulators, and joint or owner compensation pools",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        162,
+        185
+      ],
+      "anchors": [
+        {
+          "line": 162,
+          "text": "const operations: AnnualContributionAndMatchOperation[] = []"
+        },
+        {
+          "line": 185,
+          "text": "}"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.catchup",
+      "label": "age-60 super-catch-up and ordinary age-50 catch-up selection",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        187,
+        194
+      ],
+      "anchors": [
+        {
+          "line": 187,
+          "text": "const employerCatchUpForAge = (age: number): number =>"
+        },
+        {
+          "line": 194,
+          "text": "? input.pack.contributionLimits.catchUp50 * input.limitGrowth"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.desiredSchedule",
+      "label": "positional request discovery and scheduled phase selection",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        199,
+        224
+      ],
+      "anchors": [
+        {
+          "line": 199,
+          "text": "const desiredByBalanceIndex = new Map<number, number>()"
+        },
+        {
+          "line": 224,
+          "text": "const phaseStartYear = phase.fromAge !== null"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.desiredScheduleAmount",
+      "label": "scheduled phase amount, escalation, and inflation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        226,
+        230
+      ],
+      "anchors": [
+        {
+          "line": 226,
+          "text": ": input.startYear"
+        },
+        {
+          "line": 230,
+          "text": "input.inflFactor"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.desiredPublish",
+      "label": "annual request and positional desired publication",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        241,
+        245
+      ],
+      "anchors": [
+        {
+          "line": 241,
+          "text": "} else {"
+        },
+        {
+          "line": 245,
+          "text": "}"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.employerAllocation",
+      "label": "positional employer requests and per-owner elective allocation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        247,
+        286
+      ],
+      "anchors": [
+        {
+          "line": 247,
+          "text": "const employerAllocated = new Map<string, number>()"
+        },
+        {
+          "line": 286,
+          "text": "}"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.annualLimitsStart",
+      "label": "positional iteration and employer, IRA, and family-HSA limit selection",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        288,
+        328
+      ],
+      "anchors": [
+        {
+          "line": 288,
+          "text": "for ("
+        },
+        {
+          "line": 328,
+          "text": "(dividesFamilyLimit ? 2 : 1)"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.hsaCatchup",
+      "label": "whole per-spouse HSA catch-up",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        330,
+        331
+      ],
+      "anchors": [
+        {
+          "line": 330,
+          "text": "const catchUp = age >= 55"
+        },
+        {
+          "line": 331,
+          "text": "? input.pack.contributionLimits.hsaCatchUp55"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.compensationAndRoutingLimits",
+      "label": "HSA result, shared IRA compensation, 415(c), ordered group warnings, and catch-up routing",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        333,
+        385
+      ],
+      "anchors": [
+        {
+          "line": 333,
+          "text": "limit = base * input.limitGrowth + catchUp"
+        },
+        {
+          "line": 385,
+          "text": "? account.ownerPersonId ?? null"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.zeroCreditOperation",
+      "label": "requested/credited record and explicit zero-credit operation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        387,
+        413
+      ],
+      "anchors": [
+        {
+          "line": 387,
+          "text": "const record: RecordedContribution = {"
+        },
+        {
+          "line": 413,
+          "text": "continue"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.creditRuntime",
+      "label": "credited balance and retirement occurrence/application evidence",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        416,
+        440
+      ],
+      "note": "The nontraditional nullable-owner operand on line 441 is unreachable because only traditional accounts create a retirement occurrence; focused helper tests pin the defensive nontraditional arm.",
+      "anchors": [
+        {
+          "line": 416,
+          "text": "if (isEmployerAccount) {"
+        },
+        {
+          "line": 440,
+          "text": "? account.ownerPersonId"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.creditRuntimeTail",
+      "label": "retirement occurrence source and execution evidence",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        442,
+        446
+      ],
+      "anchors": [
+        {
+          "line": 442,
+          "text": "sourceAccountId: account.id,"
+        },
+        {
+          "line": 446,
+          "text": "} satisfies SimulatorAnnualRetirementRuntimeOccurrence"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.creditBasis",
+      "label": "runtime application, taxable basis, Roth pool, and owner-DOB resolution",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        447,
+        475
+      ],
+      "note": "The null-DOB operands on lines 476 and 479 are excluded because validated simulation owners come from Plan people; focused helper tests own defensive resolver behavior.",
+      "anchors": [
+        {
+          "line": 447,
+          "text": "const retirementApplication ="
+        },
+        {
+          "line": 475,
+          "text": "const thresholdDate = ownerDob === null"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.creditDobNonNull",
+      "label": "non-null owner-DOB threshold computation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        477,
+        478
+      ],
+      "anchors": [
+        {
+          "line": 477,
+          "text": ": addCalendarMonths(ownerDob, 846)"
+        },
+        {
+          "line": 478,
+          "text": "const thresholdYear = thresholdDate === null"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.creditDobYear",
+      "label": "non-null owner-DOB threshold year",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        480,
+        480
+      ],
+      "anchors": [
+        {
+          "line": 480,
+          "text": ": Number(thresholdDate.slice(0, 4))"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.creditTotals",
+      "label": "QCD section-219 offset, exact totals, and ordered contribution operation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        481,
+        513
+      ],
+      "anchors": [
+        {
+          "line": 481,
+          "text": "if (thresholdYear !== null && input.year >= thresholdYear) {"
+        },
+        {
+          "line": 513,
+          "text": "})"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.ownerWarning",
+      "label": "ordered employer-request warning fold",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        516,
+        529
+      ],
+      "anchors": [
+        {
+          "line": 516,
+          "text": "for (const [, requests] of employerRequestsByOwner) {"
+        },
+        {
+          "line": 529,
+          "text": "}"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.employerMatchRequest",
+      "label": "employer-match row selection and allocated elective base",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        531,
+        549
+      ],
+      "note": "The allocation-undefined fallback on line 550 is structurally defensive: every desired employer row is collected and allocated before match processing; focused helper tests pin that contract.",
+      "anchors": [
+        {
+          "line": 531,
+          "text": "for ("
+        },
+        {
+          "line": 549,
+          "text": "const electiveForMatch = allocation === undefined"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.employerMatchAllocation",
+      "label": "allocated positional elective match base",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        551,
+        557
+      ],
+      "anchors": [
+        {
+          "line": 551,
+          "text": ": employerMatchElectiveBase({"
+        },
+        {
+          "line": 557,
+          "text": "})"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.employerMatchEffects",
+      "label": "match base, pay and 415(c) cap, traditional/Roth runtime effects, and exact totals",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        558,
+        610
+      ],
+      "anchors": [
+        {
+          "line": 558,
+          "text": "const matchCap = (matchInfo.capPctOfPay / 100) * ownerWages"
+        },
+        {
+          "line": 610,
+          "text": "}"
+        }
+      ]
+    },
+    {
+      "id": "U.helper.return",
+      "label": "complete ordered contribution boundary result",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [
+        612,
+        624
+      ],
+      "anchors": [
+        {
+          "line": 612,
+          "text": "return {"
+        },
+        {
+          "line": 624,
+          "text": "}"
+        }
+      ]
+    },
+    {
+      "id": "U.callsite.invoke",
+      "label": "annual contribution boundary invocation",
+      "file": "projection/simulate.ts",
+      "lines": [
+        3281,
+        3302
+      ],
+      "anchors": [
+        {
+          "line": 3281,
+          "text": "const contributionPlan = annualContributionsAndEmployerMatch({"
+        },
+        {
+          "line": 3302,
+          "text": "})"
+        }
+      ]
+    },
+    {
+      "id": "U.callsite.positionValidation",
+      "label": "ordered warning handling and positional live-balance validation",
+      "file": "projection/simulate.ts",
+      "lines": [
+        3303,
+        3312
+      ],
+      "note": "The fail-closed error body on lines 3313-3317 is intentionally unreachable for genuine plans and is pinned by the hostile delegation suite.",
+      "anchors": [
+        {
+          "line": 3303,
+          "text": "for (const operation of contributionPlan.operations) {"
+        },
+        {
+          "line": 3312,
+          "text": "!Object.is(state.balance, operation.balanceBefore)"
+        }
+      ]
+    },
+    {
+      "id": "U.callsite.basisValidation",
+      "label": "live cost-basis precondition validation",
+      "file": "projection/simulate.ts",
+      "lines": [
+        3318,
+        3319
+      ],
+      "note": "The fail-closed error body on lines 3320-3323 is intentionally unreachable for genuine plans and is pinned by the hostile delegation suite.",
+      "anchors": [
+        {
+          "line": 3318,
+          "text": "if (operation.kind === 'contribution') {"
+        },
+        {
+          "line": 3319,
+          "text": "if (!Object.is(state.costBasis, operation.costBasisBefore)) {"
+        }
+      ]
+    },
+    {
+      "id": "U.callsite.apply",
+      "label": "ordered contribution, basis, runtime, QCD, cash-flow, and employer-match effects",
+      "file": "projection/simulate.ts",
+      "lines": [
+        3324,
+        3364
+      ],
+      "anchors": [
+        {
+          "line": 3324,
+          "text": "if (operation.credited > 0) {"
+        },
+        {
+          "line": 3364,
+          "text": "}"
+        }
+      ]
+    },
+    {
+      "id": "U.callsite.totals",
+      "label": "complete totals and downstream public lookups",
+      "file": "projection/simulate.ts",
+      "lines": [
+        3365,
+        3375
+      ],
+      "anchors": [
+        {
+          "line": 3365,
+          "text": "const {"
+        },
+        {
+          "line": 3375,
+          "text": "contributionPlan.employerAllocationByOwner"
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so the report's cold sub-line regions and focused helper/delegation tests must be read alongside this differential proof."
+}
