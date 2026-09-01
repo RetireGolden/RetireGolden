@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 293,
+    "totalFiles": 296,
     "byStatus": {
       "partial": 43,
-      "registered": 94,
-      "rule-free": 156,
+      "registered": 95,
+      "rule-free": 158,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -254,7 +254,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-08-31",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit"
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, HSA family-limit"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -394,11 +394,11 @@
     },
     {
       "directory": "projection",
-      "files": 59,
+      "files": 62,
       "byStatus": {
         "partial": 8,
-        "registered": 8,
-        "rule-free": 43
+        "registered": 9,
+        "rule-free": 45
       }
     },
     {

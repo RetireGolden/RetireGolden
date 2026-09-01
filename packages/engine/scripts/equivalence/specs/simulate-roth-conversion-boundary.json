@@ -217,36 +217,36 @@
       "label": "caller invocation, exact snapshot publication and subtract/add replay",
       "file": "projection/simulate.ts",
       "lines": [
-        7106,
-        7130
+        6777,
+        6801
       ],
       "anchors": [
         {
-          "line": 7106,
+          "line": 6777,
           "text": "// The Plan order this walks in is how the entries are built and not"
         },
         {
-          "line": 7111,
+          "line": 6782,
           "text": "aggregateRothConversionAllocationDesired = desired"
         },
         {
-          "line": 7112,
+          "line": 6783,
           "text": "const plannedAllocation = annualAggregateRothConversionPlan({"
         },
         {
-          "line": 7119,
+          "line": 6790,
           "text": "})"
         },
         {
-          "line": 7126,
+          "line": 6797,
           "text": "const allocation = withAnnualAggregateRothConversionReservations("
         },
         {
-          "line": 7129,
+          "line": 6800,
           "text": ")"
         },
         {
-          "line": 7130,
+          "line": 6801,
           "text": "if (allocation.status === 'refused') {"
         }
       ],

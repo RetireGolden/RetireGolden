@@ -100,11 +100,13 @@ export const medicareAndHealthCoverageRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/types.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
       'packages/engine/src/params/types.ts#ParameterPack',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -117,7 +119,7 @@ export const medicareAndHealthCoverageRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Absence surface is model/plan.ts, tax/medicare.ts, and the pack Medicare table: simulate.ts starts Part B months from attained age 65 with no enrollment-election fact, and medicareAnnualPremiumPerPerson multiplies the pack standard premium by the IRMAA applicable-percentage scale only. A late-enrollee history is not expressible, so there is no mispriced penalty figure to approximate — only the absent increase.',
+      'Absence surface is model/plan.ts, tax/medicare.ts, and the pack Medicare table: annualHealthcareExpenses starts Part B months from attained age 65 with no enrollment-election fact, and medicareAnnualPremiumPerPerson multiplies the pack standard premium by the IRMAA applicable-percentage scale only. A late-enrollee history is not expressible, so there is no mispriced penalty figure to approximate — only the absent increase.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -134,11 +136,13 @@ export const medicareAndHealthCoverageRecords = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/medicare.ts',
       'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
       'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
@@ -152,7 +156,7 @@ export const medicareAndHealthCoverageRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Absence surface is model/plan.ts and projection/simulate.ts: healthcareConfigSchema and person demographics have no IEP/GEP/SEP election or enrollment month, and simulate.ts derives Medicare months solely from attained age 65 (and birth month in the attainment year). This record is the enrollment-period umbrella; the separate Part B late-enrollment premium increase is registered at usc-42-1395r-b-part-b-late-enrollment-penalty.',
+      'Absence surface is model/plan.ts and projection/internal/annualHealthcareExpenses.ts: healthcareConfigSchema and person demographics have no IEP/GEP/SEP election or enrollment month, and annualHealthcareExpenses derives Medicare months solely from attained age 65 (and birth month in the attainment year). This record is the enrollment-period umbrella; the separate Part B late-enrollment premium increase is registered at usc-42-1395r-b-part-b-late-enrollment-penalty.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -179,10 +183,12 @@ export const medicareAndHealthCoverageRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -190,12 +196,12 @@ export const medicareAndHealthCoverageRecords = {
   'cfr-20-418-1205-1230-irmaa-life-change-redetermination': {
     title: 'IRMAA life-changing-event evidence and redetermination request is not modeled',
     statement:
-      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and simulate.ts\'s min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-redetermination-request surface: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates under 418.1230(a).',
+      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and annualHealthcareExpenses\' min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-redetermination-request surface: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates under 418.1230(a).',
     classification: 'outOfScope',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Keep outOfScope because the remaining claim is genuinely an absent administrative redetermination-request surface, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/simulate behavior already disclosed on the sibling lookback record; model/plan.ts and simulate.ts still have no fields or results for event-category evidence, supporting documentation, or a filed redetermination request under 418.1230. This record deliberately does not re-settle the SSA-44 lookback math.',
+      'Keep outOfScope because the remaining claim is genuinely an absent administrative redetermination-request surface, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/annualHealthcareExpenses behavior already disclosed on the sibling lookback record; model/plan.ts and annualHealthcareExpenses.ts still have no fields or results for event-category evidence, supporting documentation, or a filed redetermination request under 418.1230. This record deliberately does not re-settle the SSA-44 lookback math.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -223,10 +229,12 @@ export const medicareAndHealthCoverageRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/medicare.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
@@ -290,8 +298,12 @@ export const medicareAndHealthCoverageRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

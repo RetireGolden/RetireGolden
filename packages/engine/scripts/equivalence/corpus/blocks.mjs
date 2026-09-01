@@ -18,6 +18,7 @@
  *   M  exact-cent annual ordinary-withdrawal boundary
  *   N  annual coordinated HECM eligibility + accepted-draw allocation
  *   P  annual income setup (distributed yield followed by wages)
+ *   R  remaining annual expense boundaries: debt/LTC, healthcare and guardrails
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *   T  aggregate Roth-conversion planning
  *   V  annual purchased-annuity funding
@@ -31,8 +32,8 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through N, plus P, T, V and W, each have a phase-specific reach spec
- * beside the earlier batch instruments.
+ * Blocks J through N, plus P, R, T, V and W, each have a phase-specific reach
+ * spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
@@ -47,7 +48,8 @@
  * `scripts/equivalence/specs/simulate-hecm-coordinated-boundary.json`,
  * `scripts/equivalence/specs/simulate-income-setup-boundary.json`,
  * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`,
- * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`, and
+ * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`,
+ * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`, and
  * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
@@ -177,7 +179,7 @@ function permanentLife(id, insured, extra = {}) {
   }
 }
 
-function ltc(id, owner) {
+function ltc(id, owner, extra = {}) {
   return {
     kind: 'ltc',
     id,
@@ -188,6 +190,53 @@ function ltc(id, owner) {
     benefitMonthly: 0,
     benefitPeriodYears: 'lifetime',
     eliminationPeriodDays: 0,
+    ...extra,
+  }
+}
+
+function monthly(amount, activeMonths = 12) {
+  return Array.from({ length: 12 }, (_, month) =>
+    month < activeMonths ? amount : 0)
+}
+
+function acaContract(plan, {
+  year = START_YEAR,
+  enrollment = 1_000,
+  benchmark = enrollment,
+  activeMonths = 12,
+  coveredPersonIds = plan.household.people.map((person) => person.id),
+  taxExemptInterest = { state: 'notApplicable', amount: null },
+  foreignExclusionAddback = { state: 'notApplicable', amount: null },
+  assertions = {},
+} = {}) {
+  if (plan.household.people.length > 2) {
+    throw new Error('acaContract fixture supports at most a primary and spouse')
+  }
+  return {
+    year,
+    fplRegion: 'contiguous',
+    taxFamilyMembers: plan.household.people.map((person, index) => ({
+      personId: person.id,
+      relationship: index === 0 ? 'primary' : 'spouse',
+      requiredToFile: 'required',
+      magi: 0,
+    })),
+    coveredMembers: coveredPersonIds.map((personId) => ({
+      personId,
+      enrollmentPremiumByMonth: monthly(enrollment, activeMonths),
+      slcspBenchmarkPremiumByMonth: monthly(benchmark, activeMonths),
+    })),
+    taxExemptInterest,
+    foreignExclusionAddback,
+    assertions: {
+      coverageEligibility: 'supported',
+      form8814: 'notApplicable',
+      specialAllocation: 'notApplicable',
+      marriedFilingSeparatelyException: 'notApplicable',
+      selfEmployedHealthInsuranceDeduction: 'notApplicable',
+      otherMaterialFacts: 'none',
+      ...assertions,
+    },
   }
 }
 
@@ -2443,6 +2492,424 @@ function blockT() {
 }
 
 // ---------------------------------------------------------------------------
+// R — remaining annual expense boundaries
+// ---------------------------------------------------------------------------
+
+function blockR() {
+  const out = []
+
+  {
+    // Both debt rows share the public id and therefore begin from the map's
+    // last-row balance. The first row's amortization must be visible to the
+    // second row before its scheduled payoff. LTC repeats the same hazard with
+    // duplicate policy ids across two simultaneous episodes and later years.
+    const plan = singlePersonPlan({ dob: '1966-03-15', planningAge: 70 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('r1-cash', 500_000, { annualReturnPct: 0 }),
+      debt('r1-duplicate-debt', 9_999, {
+        interestPct: 10,
+        monthlyPayment: 50,
+      }),
+      { ...debt('r1-duplicate-debt', 1_000, {
+        payoffYear: START_YEAR,
+        monthlyPayment: 0,
+      }), name: 'r1-duplicate-debt-second' },
+      debt('r1-self-terminating', 100, {
+        interestPct: 1,
+        monthlyPayment: 1_000,
+      }),
+    ]
+    plan.insurance = [
+      ltc('r1-duplicate-policy', 'p1', {
+        benefitMonthly: 500,
+        benefitPeriodYears: 1,
+        eliminationPeriodDays: 0,
+      }),
+      ltc('r1-duplicate-policy', 'p1', {
+        benefitMonthly: 500,
+        benefitPeriodYears: 1,
+        eliminationPeriodDays: 0,
+      }),
+      ltc('r1-elimination-and-rider', 'p1', {
+        benefitMonthly: 1_000,
+        benefitPeriodYears: 'lifetime',
+        eliminationPeriodDays: 365,
+        inflationRiderPct: 10,
+      }),
+    ]
+    plan.careEvents = [
+      { id: 'r1-care-a', personId: 'p1', startAge: 60, durationYears: 3, annualCost: 8_000 },
+      { id: 'r1-care-b', personId: 'p1', startAge: 60, durationYears: 2, annualCost: 4_000 },
+    ]
+    out.push(member(
+      'r1-positionalDebtAndLtcShadows',
+      'R: duplicate debt-id read-after-write and payoff, capped terminal payment, duplicate LTC policy years, elimination, finite/lifetime periods, rider, ordered person reporting and multi-year carry',
+      plan,
+      { horizonEndYear: START_YEAR + 2 },
+    ))
+  }
+
+  {
+    // p1 turns 65 in July: six Marketplace months and six Medicare months. p2
+    // remains under 65. Direct premiums and Medicare extras both contribute,
+    // while a historical lookback selects an IRMAA tier and next threshold.
+    const plan = couplePlan({
+      p1Dob: '1961-07-15',
+      p2Dob: '1962-03-15',
+      p1PlanningAge: 70,
+      p2PlanningAge: 70,
+    })
+    plan.accounts = [cash('r2-cash', 1_000_000, { annualReturnPct: 0 })]
+    plan.assumptions.historicalAnnualMagiByYear = { '2024': 250_000 }
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 321.125,
+      applyAcaCredit: false,
+      medicareExtrasMonthlyPerPerson: 87.0625,
+    }
+    out.push(member(
+      'r2-partialMedicareAndDirectMarketplace',
+      'R: alive pre-65 and age-65 monthly splits, direct Marketplace premium fold, historical IRMAA lookback, Medicare/extras proration and next-tier publication',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  {
+    // The sole contract is structurally valid but deliberately non-actionable.
+    // A July Medicare transition makes post-June premiums overlap; zero SLCSP,
+    // unknown addbacks, adaptive spending and unsupported assertions pin the
+    // exact support-code order while preserving the contract arrays by identity.
+    const plan = singlePersonPlan({
+      dob: '1961-07-15',
+      planningAge: 67,
+      retirementAge: 65,
+    })
+    plan.accounts = [cash('r3-cash', 1_000_000, { annualReturnPct: 0 })]
+    plan.expenses.spendingPolicy = {
+      mode: 'withdrawalRateGuardrails',
+      upperGuardrailPct: 110,
+      lowerGuardrailPct: 90,
+      adjustmentPct: 10,
+    }
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 1_000,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      acaYears: [acaContract(plan, {
+        enrollment: 1_000,
+        benchmark: 0,
+        activeMonths: 12,
+        taxExemptInterest: { state: 'unknown', amount: null },
+        foreignExclusionAddback: { state: 'unknown', amount: null },
+        assertions: {
+          coverageEligibility: 'unsupported',
+          form8814: 'unsupported',
+          specialAllocation: 'unsupported',
+          marriedFilingSeparatelyException: 'unsupported',
+          selfEmployedHealthInsuranceDeduction: 'unsupported',
+          otherMaterialFacts: 'unsupported',
+        },
+      })],
+    }
+    out.push(member(
+      'r3-soleAcaContractSupportOrdering',
+      'R: sole ACA contract monthly identity, Medicare overlap, missing SLCSP, unknown tax facts, adaptive-policy and assertion support-code order',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // Duplicate current-year contracts are accepted individually. The helper
+    // must take each month's maximum aggregate instead of summing or choosing a
+    // whole-contract winner; their unequal alternating premiums discriminate it.
+    const plan = singlePersonPlan({ dob: '1980-03-15', planningAge: 60 })
+    plan.accounts = [cash('r4-cash', 1_000_000, { annualReturnPct: 0 })]
+    const high = acaContract(plan, { enrollment: 900, benchmark: 800 })
+    const alternating = acaContract(plan, { enrollment: 700, benchmark: 600 })
+    high.coveredMembers[0].enrollmentPremiumByMonth =
+      Array.from({ length: 12 }, (_, month) => month % 2 === 0 ? 900 : 100)
+    alternating.coveredMembers[0].enrollmentPremiumByMonth =
+      Array.from({ length: 12 }, (_, month) => month % 2 === 0 ? 200 : 700)
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 999,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      acaYears: [high, alternating],
+    }
+    out.push(member(
+      'r4-duplicateAcaMonthlyMax',
+      'R: duplicate ACA contract per-month maximum fold, no accidental sum, duplicate-year support and gross-premium fixed-point input',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // With credit modeling enabled and no current-year contract, the helper
+    // falls back to the legacy monthly premium arrays and fails closed with a
+    // missing-contract code rather than erasing known spending.
+    const plan = singlePersonPlan({ dob: '1980-03-15', planningAge: 60 })
+    plan.accounts = [cash('r5-cash', 1_000_000, { annualReturnPct: 0 })]
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 432.125,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    out.push(member(
+      'r5-missingAcaContractFallback',
+      'R: legacy ACA monthly fallback arrays, gross enrollment premium, active gate and missing-year-contract support',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // A rapidly growing portfolio crosses the withdrawal-rate lower guardrail
+    // after anchoring year one. Ideal, excess, and an early flexible goal compete
+    // for the raise budget. Duplicate ids keep the start-portfolio fold positional.
+    const plan = singlePersonPlan({ dob: '1976-03-15', planningAge: 60 })
+    plan.accounts = [
+      taxable('r6-duplicate', 100_000, 50_000, { annualReturnPct: 100 }),
+      { ...taxable('r6-duplicate', 50_000, 25_000, { annualReturnPct: 100 }), name: 'r6-second' },
+      taxable('r6-stable', 100_000, 50_000, { annualReturnPct: 0 }),
+    ]
+    plan.expenses.baseAnnual = 10_000
+    plan.expenses.requiredAnnual = 1_000
+    plan.expenses.idealAnnual = 5_000
+    plan.expenses.excessAnnual = 3_000
+    plan.expenses.oneTimeGoals = [{
+      id: 'r6-flexible-goal',
+      label: 'flexible',
+      year: START_YEAR + 2,
+      earliestYear: START_YEAR + 1,
+      amount: 2_000,
+      classification: 'target',
+      flexibility: 'movable',
+    }]
+    plan.expenses.spendingPolicy = {
+      mode: 'withdrawalRateGuardrails',
+      upperGuardrailPct: 105,
+      lowerGuardrailPct: 80,
+      adjustmentPct: 100,
+      allowRaisesAboveTarget: true,
+    }
+    out.push(member(
+      'r6-withdrawalRateRaiseAndGoalBudget',
+      'R: positional start-portfolio fold, persistent withdrawal-rate anchor, raise action, ideal/excess/early-goal cap and pull-forward funding',
+      plan,
+      { horizonEndYear: START_YEAR + 2 },
+    ))
+  }
+
+  {
+    // Solved risk thresholds make the otherwise inert risk mode observable.
+    // Year one anchors the real portfolio; growth then crosses the upper balance
+    // threshold and spends into the same ordered lifestyle layers.
+    const plan = singlePersonPlan({ dob: '1976-03-15', planningAge: 60 })
+    plan.accounts = [taxable('r7-risk', 100_000, 50_000, { annualReturnPct: 100 })]
+    plan.expenses.baseAnnual = 5_000
+    plan.expenses.requiredAnnual = 1_000
+    plan.expenses.idealAnnual = 2_000
+    plan.expenses.excessAnnual = 1_000
+    plan.expenses.spendingPolicy = {
+      mode: 'riskBasedGuardrails',
+      lowerBalanceThresholdPct: 90,
+      upperBalanceThresholdPct: 101,
+      adjustmentPct: 25,
+      allowRaisesAboveTarget: true,
+    }
+    out.push(member(
+      'r7-riskBalanceAnchorAndRaise',
+      'R: real-balance anchor initialization/carry, solved risk threshold raise and ordered upside funding',
+      plan,
+      { horizonEndYear: START_YEAR + 2 },
+    ))
+  }
+
+  {
+    // Duplicate unreferenced person ids survive Plan parsing. The original
+    // Marketplace publication evaluates each positional person-state row, but
+    // the legacy birth-month lookup is last-wins by public id. Both p1 rows turn
+    // 65 this year and therefore use the duplicate's July birth month, yielding
+    // two positional six-month rows. A position-keyed birth month would drift to
+    // January/July rows with zero/six Marketplace months.
+    const plan = singlePersonPlan({ dob: '1961-01-15', planningAge: 70 })
+    plan.household.people.push({
+      ...plan.household.people[0],
+      dob: '1961-07-15',
+    })
+    plan.accounts = [cash('r8-cash', 1_000_000, { annualReturnPct: 0 })]
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 654.125,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+    }
+    out.push(member(
+      'r8-duplicatePersonMarketplacePublication',
+      'R: accepted duplicate person ids retain positional Marketplace rows while both rows preserve last-wins July birth-month lookup',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // One hostile but parse-valid ACA contract reaches every independent
+    // fail-closed identity/evidence branch. The external covered row comes
+    // first so the missing-person arm cannot be hidden by short circuiting on
+    // the later Medicare-overlap row.
+    const plan = singlePersonPlan({ dob: '1961-07-15', planningAge: 67 })
+    plan.exampleSourceId = 'r9-hostile-aca-evidence'
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({
+      id: 'p2',
+      name: 'Omitted spouse',
+      dob: '1980-01-15',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 67, source: 'manual' },
+    })
+    plan.accounts = [taxable('r9-taxable', 100_000, 100_000, {
+      annualReturnPct: 0,
+      taxExemptInterestYieldPct: 1,
+    })]
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 99,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      acaYears: [{
+        ...acaContract(plan, {
+          enrollment: 100,
+          benchmark: 100,
+          taxExemptInterest: { state: 'unknown', amount: null },
+          foreignExclusionAddback: { state: 'unknown', amount: null },
+        }),
+        taxFamilyMembers: [
+          {
+            personId: 'external-primary',
+            relationship: 'primary',
+            requiredToFile: 'unknown',
+            magi: 0,
+          },
+          {
+            personId: 'p1',
+            relationship: 'dependent',
+            requiredToFile: 'unknown',
+            magi: 0,
+          },
+        ],
+        coveredMembers: [
+          {
+            personId: 'external-primary',
+            enrollmentPremiumByMonth: monthly(0),
+            slcspBenchmarkPremiumByMonth: monthly(50),
+          },
+          {
+            personId: 'p1',
+            enrollmentPremiumByMonth: monthly(100),
+            slcspBenchmarkPremiumByMonth: monthly(0),
+          },
+        ],
+      }],
+    }
+    out.push(member(
+      'r9-hostileAcaIdentityAndEvidence',
+      'R: example-contract member validation, tax-family shape, missing/dead resolution, dependent filing/model overlap, attested tax-exempt interest and both missing/benchmark-only premium evidence',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // The spouse died before the projection starts. The survivor remains on
+    // Medicare with an ACA contract in the second QSS/SSA-44 year, which also
+    // uses the latest parameter pack as a future-year stand-in.
+    const plan = couplePlan({
+      p1Dob: '1958-01-15',
+      p2Dob: '1960-01-15',
+      p1PlanningAge: 72,
+      p2PlanningAge: 65,
+    })
+    plan.household.hasQualifyingDependent = true
+    plan.accounts = [cash('r10-cash', 1_000_000, { annualReturnPct: 0 })]
+    plan.assumptions.historicalAnnualMagiByYear = {
+      '2024': 1_000,
+      '2025': 300_000,
+    }
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 100,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      ssa44: { survivorYears: true, retirementYears: false },
+      acaYears: [acaContract(plan, {
+        year: START_YEAR + 1,
+        enrollment: 100,
+        benchmark: 100,
+        coveredPersonIds: ['p1'],
+      })],
+    }
+    plan.expenses.healthcare.acaYears[0].taxFamilyMembers = [
+      {
+        personId: 'p1',
+        relationship: 'primary',
+        requiredToFile: 'required',
+        magi: 0,
+      },
+      {
+        personId: 'qualifying-dependent',
+        relationship: 'dependent',
+        requiredToFile: 'notRequired',
+        magi: 0,
+      },
+    ]
+    out.push(member(
+      'r10-ssa44QssAndStandIn',
+      'R: SSA-44 alternate lookback selection, QSS-to-single IRMAA mapping and future-pack stand-in ACA support',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  {
+    // Example contracts use the residence-specific FPL region. Two annual
+    // contracts around an Alaska-to-Hawaii move reach both non-contiguous
+    // branches while keeping the premium oracle exact.
+    const plan = singlePersonPlan({ dob: '1980-01-15', planningAge: 60 })
+    plan.exampleSourceId = 'r11-noncontiguous-regions'
+    plan.household.state = 'AK'
+    plan.household.stateMoves = [{
+      fromYear: START_YEAR + 1,
+      fromMonth: 1,
+      state: 'HI',
+    }]
+    plan.accounts = [cash('r11-cash', 1_000_000, { annualReturnPct: 0 })]
+    const alaska = acaContract(plan, { year: START_YEAR, enrollment: 100 })
+    alaska.fplRegion = 'alaska'
+    const hawaii = acaContract(plan, {
+      year: START_YEAR + 1,
+      enrollment: 100,
+    })
+    hawaii.fplRegion = 'hawaii'
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 100,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      acaYears: [alaska, hawaii],
+    }
+    out.push(member(
+      'r11-exampleContractAlaskaHawaii',
+      'R: example-contract Alaska and Hawaii FPL-region selection across a state move with exact monthly-premium evidence',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  return out
+}
+
+
+// ---------------------------------------------------------------------------
 // V — annual purchased-annuity funding
 // ---------------------------------------------------------------------------
 
@@ -2843,6 +3310,7 @@ export async function blockMembers() {
     ...blockM(),
     ...blockN(),
     ...blockP(),
+    ...blockR(),
     ...blockS(),
     ...blockT(),
     ...blockV(),
