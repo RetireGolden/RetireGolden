@@ -13,6 +13,9 @@ function run(
   ],
   options: {
     magi?: number
+    magiByYear?: ReadonlyMap<number, number>
+    ssa44Active?: boolean
+    birthMonths?: readonly number[]
     configurePack?: (pack: ParameterPack) => void
   } = {},
 ) {
@@ -25,13 +28,14 @@ function run(
     year: 2026,
     startYear: 2026,
     peopleStates,
-    birthMonthByPerson: new Map([['p1', 1], ['p2', 7]]),
+    birthMonthByPersonPosition:
+      options.birthMonths ?? peopleStates.map((state) => state.personId === 'p2' ? 7 : 1),
     resolveMagiFor: (year) => ({
-      magi: options.magi ?? 0,
+      magi: options.magiByYear?.get(year) ?? options.magi ?? 0,
       source: 'planFallback',
       year,
     }),
-    ssa44ActiveInYear: () => false,
+    ssa44ActiveInYear: () => options.ssa44Active ?? false,
     filingStatusForYear: 'single',
     taxFilingStatusForYear: 'single',
     inflFactorFrom: () => 1,
@@ -86,8 +90,11 @@ describe('annualHealthcareExpenses', () => {
     const result = run(plan, peopleStates)
 
     expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([12, 6])
+    // 42 U.S.C. 1395p(d) centers the initial-enrollment period on the month of
+    // first eligibility. This planning proxy starts Medicare in the birth month:
     // p1 has 12 pre-65 months; p2 turns 65 in July and therefore has the
-    // documented birthMonth - 1 = 6 Marketplace months plus 6 months of extras.
+    // discriminating birthMonth - 1 = 6 Marketplace months, not a full-year
+    // age flip or the seven months produced by starting after the birth month.
     expect(result.healthcare - result.medicarePremiums).toBe(1_860)
     expect(result.acaActive).toBe(false)
     expect(result.acaInitialSupportCodes).toStrictEqual([])
@@ -100,6 +107,48 @@ describe('annualHealthcareExpenses', () => {
     const result = run(plan, [first, second])
 
     expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([12, 0])
+  })
+
+  it('keeps age-65 duplicate person IDs positional through distinct birth months', () => {
+    const plan = singlePersonPlan()
+    const peopleStates: PersonYearState[] = [
+      { personId: 'p1', ageAttained: 65, alive: true },
+      { personId: 'p1', ageAttained: 65, alive: true },
+    ]
+
+    const result = run(plan, peopleStates, { birthMonths: [1, 7] })
+
+    expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([0, 6])
+  })
+
+  it('rejects a birth-month row count that is not positional to people state', () => {
+    expect(() => run(undefined, undefined, { birthMonths: [] })).toThrow(
+      'Healthcare planner birth-month row mismatch',
+    )
+  })
+
+  it('selects the prior-year SSA-44 MAGI only when it is active and lower', () => {
+    const plan = singlePersonPlan()
+    const magiByYear = new Map([[2024, 120_000], [2025, 90_000]])
+
+    const standard = run(plan, undefined, { magiByYear })
+    const redetermined = run(plan, undefined, {
+      magiByYear,
+      ssa44Active: true,
+    })
+    const tied = run(plan, undefined, {
+      magiByYear: new Map([[2024, 90_000], [2025, 90_000]]),
+      ssa44Active: true,
+    })
+
+    expect([standard.irmaaMagi, standard.irmaaLookbackMagiYear]).toStrictEqual([
+      120_000, 2024,
+    ])
+    expect([
+      redetermined.irmaaMagi,
+      redetermined.irmaaLookbackMagiYear,
+    ]).toStrictEqual([90_000, 2025])
+    expect(tied.irmaaLookbackMagiYear).toBe(2024)
   })
 
   it('keeps referenced duplicate person IDs first-wins like simulatePlan', () => {

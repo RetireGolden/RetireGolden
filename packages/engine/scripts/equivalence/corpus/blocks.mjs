@@ -179,7 +179,7 @@ function permanentLife(id, insured, extra = {}) {
   }
 }
 
-function ltc(id, owner) {
+function ltc(id, owner, extra = {}) {
   return {
     kind: 'ltc',
     id,
@@ -190,6 +190,53 @@ function ltc(id, owner) {
     benefitMonthly: 0,
     benefitPeriodYears: 'lifetime',
     eliminationPeriodDays: 0,
+    ...extra,
+  }
+}
+
+function monthly(amount, activeMonths = 12) {
+  return Array.from({ length: 12 }, (_, month) =>
+    month < activeMonths ? amount : 0)
+}
+
+function acaContract(plan, {
+  year = START_YEAR,
+  enrollment = 1_000,
+  benchmark = enrollment,
+  activeMonths = 12,
+  coveredPersonIds = plan.household.people.map((person) => person.id),
+  taxExemptInterest = { state: 'notApplicable', amount: null },
+  foreignExclusionAddback = { state: 'notApplicable', amount: null },
+  assertions = {},
+} = {}) {
+  if (plan.household.people.length > 2) {
+    throw new Error('acaContract fixture supports at most a primary and spouse')
+  }
+  return {
+    year,
+    fplRegion: 'contiguous',
+    taxFamilyMembers: plan.household.people.map((person, index) => ({
+      personId: person.id,
+      relationship: index === 0 ? 'primary' : 'spouse',
+      requiredToFile: 'required',
+      magi: 0,
+    })),
+    coveredMembers: coveredPersonIds.map((personId) => ({
+      personId,
+      enrollmentPremiumByMonth: monthly(enrollment, activeMonths),
+      slcspBenchmarkPremiumByMonth: monthly(benchmark, activeMonths),
+    })),
+    taxExemptInterest,
+    foreignExclusionAddback,
+    assertions: {
+      coverageEligibility: 'supported',
+      form8814: 'notApplicable',
+      specialAllocation: 'notApplicable',
+      marriedFilingSeparatelyException: 'notApplicable',
+      selfEmployedHealthInsuranceDeduction: 'notApplicable',
+      otherMaterialFacts: 'none',
+      ...assertions,
+    },
   }
 }
 

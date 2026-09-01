@@ -3,6 +3,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
+    // Script tests included here must stay independent of engine-source imports:
+    // only the equivalence CLI installs the configureEngineTree resolve hook.
     include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     // The engine suite runs whole projections and optimizer searches, and CI
     // runs it under v8 coverage on runners measured at roughly six times local

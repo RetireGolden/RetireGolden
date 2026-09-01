@@ -815,9 +815,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   }
   // Clamped: the dob schema enforces YYYY-MM-DD shape but not month range, and
   // an out-of-range month must not produce negative or >12 coverage months.
-  const birthMonthByPerson = new Map(people.map((p) => [
-    p.id,
-    Math.min(12, Math.max(1, socialSecurityDobParts(p).m || 1)),
+  const birthMonthByPersonPosition = people.map((person) =>
+    Math.min(12, Math.max(1, socialSecurityDobParts(person).m || 1)))
+  const birthMonthByPerson = new Map(people.map((person, position) => [
+    person.id,
+    birthMonthByPersonPosition[position]!,
   ]))
   const dobYear = (p: Person) => socialSecurityDobParts(p).y
   /** Last full year alive: a stochastic-longevity override if given, else the plan's planning age. */
@@ -2565,7 +2567,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       year,
       startYear,
       peopleStates,
-      birthMonthByPerson,
+      birthMonthByPersonPosition,
       resolveMagiFor,
       ssa44ActiveInYear,
       filingStatusForYear,

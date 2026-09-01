@@ -53,7 +53,7 @@ export interface AnnualHealthcareExpensesInput {
   readonly year: number
   readonly startYear: number
   readonly peopleStates: readonly PersonYearState[]
-  readonly birthMonthByPerson: ReadonlyMap<string, number>
+  readonly birthMonthByPersonPosition: readonly number[]
   readonly resolveMagiFor: (year: number) => {
     magi: number
     source: IrmaaLookbackMagiSource
@@ -74,6 +74,9 @@ export interface AnnualHealthcareExpensesInput {
 export function annualHealthcareExpenses(
   input: AnnualHealthcareExpensesInput,
 ): AnnualHealthcareExpensesResult {
+  if (input.birthMonthByPersonPosition.length !== input.peopleStates.length) {
+    throw new Error('Healthcare planner birth-month row mismatch')
+  }
   const hc = input.plan.expenses.healthcare
   const healthInflFactor = input.healthInflFactorFrom(input.startYear, input.year)
   let healthcare = 0
@@ -113,6 +116,7 @@ export function annualHealthcareExpenses(
   const warnings: string[] = []
   const marketplaceMonthsBeforeMedicare = (
     person: PersonYearState,
+    birthMonth: number,
   ): number =>
     // Medicare begins in the birth month. Planning grade: the prior-month
     // eligibility rule for people born on the first is not modeled.
@@ -121,18 +125,21 @@ export function annualHealthcareExpenses(
       : person.ageAttained < 65
         ? 12
         : person.ageAttained === 65
-          ? (input.birthMonthByPerson.get(person.personId) ?? 1) - 1
+          ? birthMonth - 1
           : 0
   // Person ids are not globally unique unless a retirement action references
   // them. Keep one row per input position so an accepted duplicate id never
   // collapses another person's transition months in caller-side publication.
-  const marketplaceMonthsByPersonPosition = input.peopleStates.map((person) =>
-    marketplaceMonthsBeforeMedicare(person),
+  const marketplaceMonthsByPersonPosition = input.peopleStates.map((person, position) =>
+    marketplaceMonthsBeforeMedicare(
+      person,
+      input.birthMonthByPersonPosition[position]!,
+    ),
   )
 
-  for (const state of input.peopleStates) {
+  for (const [position, state] of input.peopleStates.entries()) {
     if (!state.alive) continue
-    const acaMonths = marketplaceMonthsBeforeMedicare(state)
+    const acaMonths = marketplaceMonthsByPersonPosition[position]!
     const medicareMonths = 12 - acaMonths
     if (acaMonths > 0 && hc.pre65MonthlyPremiumPerPerson > 0) {
       if (hc.applyAcaCredit) {
@@ -207,11 +214,13 @@ export function annualHealthcareExpenses(
       return (
         acaContract.fplRegion !== expectedRegion ||
         acaContract.coveredMembers.some((member) => {
-          const person = input.peopleStates.find(
+          const personPosition = input.peopleStates.findIndex(
             (state) => state.personId === member.personId,
           )
           const expectedMonths =
-            person === undefined ? 0 : marketplaceMonthsBeforeMedicare(person)
+            personPosition < 0
+              ? 0
+              : marketplaceMonthsByPersonPosition[personPosition]!
           return member.enrollmentPremiumByMonth.some((premium, month) => {
             const expected = month < expectedMonths ? expectedMonthlyPremium : 0
             return Math.abs(premium - expected) > EPSILON
@@ -317,11 +326,12 @@ export function annualHealthcareExpenses(
       }
       if (
         acaContract.coveredMembers.some((member) => {
-          const person = input.peopleStates.find(
+          const personPosition = input.peopleStates.findIndex(
             (state) => state.personId === member.personId,
           )
+          const person = input.peopleStates[personPosition]
           if (person === undefined || !person.alive) return false
-          const marketplaceMonths = marketplaceMonthsBeforeMedicare(person)
+          const marketplaceMonths = marketplaceMonthsByPersonPosition[personPosition]!
           return member.enrollmentPremiumByMonth.some(
             (premium, month) =>
               premium > 0 && month >= marketplaceMonths,
