@@ -218,11 +218,23 @@ describe('annualInheritedIraDistributions', () => {
 
     expect(result.rows).toHaveLength(1)
     const row = result.rows[0]!
+    // Treas. Reg. §1.401(a)(9)-5(d)(1)(ii) requires the greater of the
+    // beneficiary and employee life-expectancy arms. Under (d)(3)(i), (iii),
+    // the beneficiary was 58 in the first distribution year (2023): the
+    // Single Life Table entry is 28.9, reduced by three elapsed years to 25.9.
+    // Under (d)(3)(ii), the owner was 82 in the death year: 9.9 reduced by four
+    // elapsed years is 5.9. The greater divisor is therefore independently
+    // fixed at 25.9, making the 2026 amount exactly this worksheet result.
+    const expected = 300_000 / 25.9
     expect(row.balanceIndex).toBe(0)
     expect(row.evidence).toMatchObject({
       accountId: 'inherited',
       matrixRow: 'R1',
       requirementKind: 'annual-rmd',
+      divisor: 25.9,
+      divisorArm: 'beneficiary-fixed',
+      requiredAmount: expected,
+      executedRequiredAmount: expected,
       voluntaryAmount: 0,
     })
     expect(row.distribution).toEqual({
@@ -230,13 +242,12 @@ describe('annualInheritedIraDistributions', () => {
       accountId: 'inherited',
       ownerPersonId: 'beneficiary',
       sourceBalanceBefore: 300_000,
-      sourceBalanceAfter:
-        300_000 - row.evidence.executedRequiredAmount,
-      executed: row.evidence.executedRequiredAmount,
+      sourceBalanceAfter: 300_000 - expected,
+      executed: expected,
     })
     expect(result.totals).toEqual({
-      inherited: row.evidence.executedRequiredAmount,
-      ordinaryIncome: row.evidence.executedRequiredAmount,
+      inherited: expected,
+      ordinaryIncome: expected,
       rothForced: 0,
     })
     expect(result.rmdShortfallObligations).toEqual([{
@@ -252,8 +263,8 @@ describe('annualInheritedIraDistributions', () => {
         iraType: 'traditional',
       },
       requirementKind: 'inheritedAnnualLifeExpectancy',
-      requiredAmount: row.evidence.requiredAmount,
-      distributedByDeadline: row.evidence.executedRequiredAmount,
+      requiredAmount: expected,
+      distributedByDeadline: expected,
     }])
     expect(balances.map(({ balance }) => balance)).toEqual(before)
   })
@@ -465,6 +476,69 @@ describe('annualInheritedIraDistributions', () => {
       requirementKind: 'inheritedFinalSweep',
       requiredAmount: 0.004,
       distributedByDeadline: 0.004,
+    })
+  })
+
+  it('keeps three zero-cent account residues as an aggregate plan shortfall', () => {
+    const facts = inherited(2022, false, beneficiary({
+      beneficiaryBirthYear: 1980,
+      roth5YearStartYear: 2010,
+    }), 'shared-roth-decedent')
+    const accounts = ['dust-a', 'dust-b', 'dust-c'].map((id) =>
+      account(id, 'roth', facts, 0.004))
+    const result = run({
+      year: 2032,
+      startYear: 2026,
+      balances: accounts.map((value) => ({ account: value, balance: 0.004 })),
+      classEntries: accounts.map(classEntry),
+      startOfYear: accounts.map((value) => [value.id, 0.004] as const),
+    })
+
+    expect(result.rows.map((row) => row.distribution)).toEqual([
+      null,
+      null,
+      null,
+    ])
+    expect(result.rmdShortfallObligations).toHaveLength(1)
+    expect(result.rmdShortfallObligations[0]).toMatchObject({
+      applicablePlan: {
+        kind: 'inheritedIras',
+        decedentId: 'shared-roth-decedent',
+        iraType: 'roth',
+      },
+      requiredAmount: 0.012,
+      distributedByDeadline: 0,
+    })
+  })
+
+  it('discharges only the zero-cent remainder of an aggregate plan shortfall', () => {
+    const facts = inherited(2022, false, beneficiary({
+      beneficiaryBirthYear: 1980,
+      roth5YearStartYear: 2010,
+    }), 'mixed-cent-roth-decedent')
+    const moved = account('moved-cent', 'roth', facts, 0.01)
+    const dust = account('zero-cent-dust', 'roth', facts, 0.004)
+    const result = run({
+      year: 2032,
+      startYear: 2026,
+      balances: [moved, dust].map((value) => ({
+        account: value,
+        balance: value.balance,
+      })),
+      classEntries: [moved, dust].map(classEntry),
+      startOfYear: [
+        ['moved-cent', 0.01],
+        ['zero-cent-dust', 0.004],
+      ],
+    })
+
+    expect(result.rows.map((row) => row.distribution?.executed ?? 0)).toEqual([
+      0.01,
+      0,
+    ])
+    expect(result.rmdShortfallObligations[0]).toMatchObject({
+      requiredAmount: 0.014,
+      distributedByDeadline: 0.014,
     })
   })
 

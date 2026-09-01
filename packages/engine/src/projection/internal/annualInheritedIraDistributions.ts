@@ -55,7 +55,10 @@ export interface AnnualInheritedIraRow {
   readonly balanceIndex: number
   readonly accountId: string
   readonly distribution: AnnualInheritedIraDistributionOperation | null
-  /** Mutable because simulatePlan fills voluntaryAmount later in the pass. */
+  /**
+   * The caller freezes this helper snapshot. Later voluntary amounts are
+   * published by replacing the evidence row, never by mutating this object.
+   */
   readonly evidence: InheritedAccountYearEvidence
 }
 
@@ -395,9 +398,7 @@ export function annualInheritedIraDistributions(
     distributedByApplicablePlan.set(
       applicablePlanKey,
       (distributedByApplicablePlan.get(applicablePlanKey) ?? 0) +
-        (planDollarsMoveNoLedgerCent(evidence.requiredAmount)
-          ? evidence.requiredAmount
-          : evidence.executedRequiredAmount),
+        evidence.executedRequiredAmount,
     )
     const requirementKind = evidence.requirementKind === 'annual-rmd'
       ? 'inheritedAnnualLifeExpectancy' as const
@@ -417,6 +418,12 @@ export function annualInheritedIraDistributions(
     const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
     const requirementKinds =
       requirementKindsByApplicablePlan.get(applicablePlanKey)!
+    const actuallyDistributed =
+      distributedByApplicablePlan.get(applicablePlanKey) ?? 0
+    const aggregateShortfall = Math.max(
+      0,
+      requiredAmount - actuallyDistributed,
+    )
     rmdShortfallObligations.push({
       obligationId: rmdShortfallObligationId(applicablePlan, input.year),
       distributionCalendarYear: input.year,
@@ -428,7 +435,10 @@ export function annualInheritedIraDistributions(
         : 'mixedInheritedRequirements',
       requiredAmount,
       distributedByDeadline:
-        distributedByApplicablePlan.get(applicablePlanKey) ?? 0,
+        aggregateShortfall > 0 &&
+        planDollarsMoveNoLedgerCent(aggregateShortfall)
+          ? requiredAmount
+          : actuallyDistributed,
     })
   }
 

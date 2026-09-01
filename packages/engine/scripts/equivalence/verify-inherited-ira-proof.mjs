@@ -30,6 +30,19 @@ function gitObject(revision) {
   }).trim()
 }
 
+function requiredHistoricalGitObject(revision, label) {
+  try {
+    return gitObject(revision)
+  } catch (cause) {
+    throw new Error(
+      `${label} Git object "${revision}" is unavailable. ` +
+      'Fetch the pinned commit in a full-history checkout before rerunning ' +
+      'this verifier.',
+      { cause },
+    )
+  }
+}
+
 function workingTreeBlob(path) {
   // Apply the path's configured clean filter (notably CRLF normalization on
   // Windows), then require the exact blob Git would commit from these bytes.
@@ -81,12 +94,18 @@ if (proof === undefined) {
 
 // Pin every mutable measurement input independently of the recorded outputs.
 assertEqual(
-  gitObject(`${proof.base.commit}:packages/engine/src`),
+  requiredHistoricalGitObject(
+    `${proof.base.commit}:packages/engine/src`,
+    'base proof',
+  ),
   proof.base.engineSourceTree,
   'base engine source tree',
 )
 assertEqual(
-  gitObject(`${proof.head.observedAtCommit}:packages/engine/src`),
+  requiredHistoricalGitObject(
+    `${proof.head.observedAtCommit}:packages/engine/src`,
+    'observed-head proof',
+  ),
   proof.head.engineSourceTree,
   'observed head engine source tree',
 )
@@ -177,12 +196,11 @@ try {
     '--engine-src', headSrc,
     '--engine-label', proof.head.engineSourceTree,
   ])
-  // This extraction intentionally corrects four calibrated O3 entries, so the
-  // generic comparator must report DIFFERENT (exit 1). The exact allowlist and
-  // every changed entry hash are checked independently below.
+  // This extraction is a strict refactor, so the generic comparator must
+  // report IDENTICAL. The independent walk below also rejects any moved entry.
   runEquivalenceWithStatus(
     ['compare', '--base', baseDump, '--head', headDump],
-    1,
+    0,
   )
   runEquivalence([
     'reach',

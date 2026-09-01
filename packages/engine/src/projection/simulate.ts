@@ -8235,9 +8235,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // --- apply flows -------------------------------------------------------
-    // Fill voluntary amounts on inherited evidence (planner draws beyond the
-    // forced requirement this year). Forced already reduced the balance, so
-    // the need-based plan is voluntary-only for each still-inherited account.
+    // Publish replacement inherited-evidence rows with voluntary amounts
+    // (planner draws beyond the forced requirement this year). The helper
+    // snapshot and each replacement are frozen; this draft array changes only
+    // by replacing a slot, never by mutating a published evidence object.
+    // Forced already reduced the balance, so the need-based plan is
+    // voluntary-only for each still-inherited account.
     // S2 POST-FLIP rows keep voluntaryAmount 0: owner-side draws are not
     // inherited voluntary draws (the flip already moved the account out of
     // the inherited schedule). The helper builds the last-wins account lookup

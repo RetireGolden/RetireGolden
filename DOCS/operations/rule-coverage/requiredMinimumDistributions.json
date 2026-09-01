@@ -93,7 +93,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -540,7 +540,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -630,7 +630,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -728,7 +728,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -1041,7 +1041,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -1202,7 +1202,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -1556,7 +1556,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2214,7 +2214,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2433,7 +2433,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2648,7 +2648,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2787,7 +2787,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2985,7 +2985,7 @@
       "title": "Required distribution below one cent is discharged rather than distributed",
       "classification": "approximated",
       "errorDirection": "understatesTax",
-      "conventionRationale": "Direction of error: permissive, and bounded at under one cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the DISCHARGE. Downstream reserve, QCD-coordination, and section 4974 seams must not read the zero movement as an outstanding shortfall: that would refuse lawful conversions, misreport lawful gifts, and charge an excise on an amount the registered convention treats as settled. Owner-side state therefore omits the residue from unsatisfied RMD, while an inherited applicable-plan obligation retains the independently computed required amount and credits that same zero-cent quantum as distributed by the deadline. The retirement path is an exact-cent balance ledger, which would remove the residue rather than manage it; until then the fixtures pin the required amount, zero movement, and settled obligation together.",
+      "conventionRationale": "Direction of error: permissive, and bounded below half a cent per owned account per year, or below half a cent for an inherited applicable-plan aggregate. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the DISCHARGE. Downstream reserve, QCD-coordination, and section 4974 seams must not read a genuinely zero-cent shortfall as outstanding: that would refuse lawful conversions, misreport lawful gifts, and charge an excise on an amount the registered convention treats as settled. Owner-side state therefore omits its per-account residue from unsatisfied RMD. An inherited obligation first aggregates the required amount and the amount actually distributed across the applicable plan, then credits a zero-movement remainder only when that aggregate shortfall itself rounds to zero. Individually zero-cent account residues are not credited separately when their sum reaches a ledger cent. The retirement path is an exact-cent balance ledger, which would remove the residue rather than manage it; until then the fixtures pin the required amount, zero movement, and bounded aggregate discharge together.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3014,7 +3014,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -3226,7 +3226,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },

@@ -54,9 +54,9 @@
  * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`,
  * `scripts/equivalence/specs/simulate-contributions-boundary.json`,
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`,
- * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`, and
- * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`, and
- * `scripts/equivalence/specs/simulate-owner-rmd.json`, and
+ * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`,
+ * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`,
+ * `scripts/equivalence/specs/simulate-owner-rmd.json`,
  * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`, and
  * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`
  * are the
@@ -3589,7 +3589,7 @@ function blockO() {
     ]
     out.push(member(
       'o3-finalSweepSubCentAggregationAndDeath',
-      'O: visible final sweep, three zero-cent Roth discharges aggregated above a cent for §4974 applicable-plan settlement, Roth/ordinary character, and dead-beneficiary successor evidence',
+      'O: visible final sweep, three zero-cent Roth residues aggregated above a cent as a §4974 applicable-plan shortfall, Roth/ordinary character, and dead-beneficiary successor evidence',
       plan,
       { horizonEndYear: START_YEAR + 6, deathAgeByPersonId: { p2: 62 } },
     ))
