@@ -93,7 +93,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -540,7 +540,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -630,7 +630,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -728,7 +728,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -1041,7 +1041,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -1202,7 +1202,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -1556,7 +1556,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2214,7 +2214,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2433,7 +2433,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2648,7 +2648,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2787,7 +2787,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },
@@ -2985,7 +2985,7 @@
       "title": "Required distribution below one cent is discharged rather than distributed",
       "classification": "approximated",
       "errorDirection": "understatesTax",
-      "conventionRationale": "Direction of error: permissive, and bounded at under one cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the DISCHARGE. Downstream reserve, QCD-coordination, and section 4974 seams must not read the zero movement as an outstanding shortfall: that would refuse lawful conversions, misreport lawful gifts, and charge an excise on an amount the registered convention treats as settled. Owner-side state therefore omits the residue from unsatisfied RMD, while an inherited applicable-plan obligation retains the independently computed required amount and credits that same zero-cent quantum as distributed by the deadline. The retirement path is an exact-cent balance ledger, which would remove the residue rather than manage it; until then the fixtures pin the required amount, zero movement, and settled obligation together.",
+      "conventionRationale": "Direction of error: permissive, and bounded below half a cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the owner-side DISCHARGE. Reserve and QCD-coordination seams do not read that zero movement as an outstanding owned-IRA requirement, because doing so would refuse lawful conversions and misreport lawful gifts under this registered approximation. The convention stops at the inherited §4974 boundary. There the planner aggregates required amounts and actual movements by applicable plan, reports zero distributed for every zero-movement residue, and the excise calculator prices the resulting shortfall. The retirement path is an exact-cent balance ledger, which would remove the owner-side residue rather than manage it; until then the fixtures pin the bounded owner-side deviation and the inherited shortfall separately.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2995,7 +2995,6 @@
       "dueOn": "2027-08-05",
       "implementedBy": [
         "packages/engine/src/actions/planBalanceAdapter.ts",
-        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
         "packages/engine/src/projection/internal/annualSeppDistributions.ts",
         "packages/engine/src/projection/simulate.ts"
@@ -3007,15 +3006,6 @@
             {
               "name": "planDollarsMoveNoLedgerCent",
               "line": 101
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
-          "functions": [
-            {
-              "name": "annualInheritedIraDistributions",
-              "line": 104
             }
           ]
         },
@@ -3248,7 +3238,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 104
+              "line": 107
             }
           ]
         },

@@ -171,17 +171,17 @@
   "measuredProof": {
     "method": "The blocks corpus and both engine source trees are materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. Before any harness module executes, the verifier authenticates this spec against its path-aware clean-filter working-tree blob and the immutable HEAD blob, derives the complete local transitive import closure from committed source, and requires every closure member to match both its pinned HEAD blob and its clean-filter working-tree blob. It then recomputes corpus, captures, byte-identical structural comparison, reach, and all recorded hashes.",
     "base": {
-      "commit": "70b7140a3a2e88dec8c3f18ab072f0c0dcfa9a68",
-      "engineSourceTree": "2c5123501390bd3a7633c9d2ae5727485dcae0b6"
+      "commit": "8ed71e13d6450e66e58f45f74d60ed6e9d71aaed",
+      "engineSourceTree": "33d9b00d8054b592361e37710c78f99cc01cee65"
     },
     "head": {
-      "observedAtCommit": "e2a2e09c4c97de1b94d08a30e09a96a5ae912ddc",
-      "engineSourceTree": "1e4d5af042b9a8405b96b28d78d7619d42e696d0"
+      "observedAtCommit": "daf1b0196b988d756df9fa7b37d6235707bb1f0b",
+      "engineSourceTree": "680276494aa021fd3a48352f2048a926bb1ca2b3"
     },
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "c9b070bac3001e94292773899297ae7161e4d38e",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "a1f3fc656fd2ac7d4f1931265d99e6b8c940326c",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -196,17 +196,17 @@
     },
     "corpus": {
       "name": "blocks",
-      "members": 115,
-      "membersSha256": "4e609b610a0e4355d383bf74673d7d70d2ea8d404f7fec8a7c57b31869c77e4a",
-      "entries": 460
+      "members": 116,
+      "membersSha256": "f7520e1447b07a1d17ad6e815b28da74e8ccdd2cf9dec29c0fcae2152c362a6b",
+      "entries": 464
     },
     "capture": {
-      "baseDumpSha256": "d6c8a18e3d123e649fd96d30f143abbe16b93d15c65578d7986b333543591f06",
-      "headDumpSha256": "d6c8a18e3d123e649fd96d30f143abbe16b93d15c65578d7986b333543591f06",
-      "baseOverallSha256": "dbf6aa6ee027bf7b2d2b0de1ea6807eb1e343107b1cb1ae72d8ca84faf161648",
-      "headOverallSha256": "dbf6aa6ee027bf7b2d2b0de1ea6807eb1e343107b1cb1ae72d8ca84faf161648",
+      "baseDumpSha256": "64acfa43e366e0cb113f07a009a37b9eed4c7146e08bc7644f301f5c997dc746",
+      "headDumpSha256": "64acfa43e366e0cb113f07a009a37b9eed4c7146e08bc7644f301f5c997dc746",
+      "baseOverallSha256": "ce34b2d27721228081b16a0457b98c1ece2a9f1cf23bcd5126d26a842ba906fb",
+      "headOverallSha256": "ce34b2d27721228081b16a0457b98c1ece2a9f1cf23bcd5126d26a842ba906fb",
       "entriesMoved": 0,
-      "entriesIdentical": 460,
+      "entriesIdentical": 464,
       "result": "IDENTICAL"
     },
     "reach": {
