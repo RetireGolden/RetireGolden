@@ -915,9 +915,19 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
