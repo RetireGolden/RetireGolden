@@ -1,0 +1,131 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-pension-annuity-income-boundary",
+  "why": "Measured reach for the annual pension/annuity-income extraction. Existing full-corpus members cover living and survivor pensions, elected and unelected lump-sum offers, already-owned and purchased annuities, life-only and survivor payout forms, non-qualified exclusion-state carry, qualified IRA-funded contract distributions, pre-start contracts, multi-year re-entry, and all four equivalence modes.",
+  "entries": [
+    {
+      "id": "Z.helper.selection",
+      "label": "ordered account selection and annual opening-state folds",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        118,
+        165
+      ],
+      "anchors": [
+        {
+          "line": 127,
+          "text": "const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []"
+        },
+        {
+          "line": 139,
+          "text": "for (const account of input.accounts) {"
+        },
+        {
+          "line": 158,
+          "text": "const startCalendarYear = dobYear(owner) + account.startAge"
+        }
+      ]
+    },
+    {
+      "id": "Z.helper.pensions",
+      "label": "living/survivor pension selection and ordered state-tax folds",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        167,
+        195
+      ],
+      "anchors": [
+        {
+          "line": 167,
+          "text": "if (account.type === 'pension') {"
+        },
+        {
+          "line": 181,
+          "text": "pensionIncome += amount"
+        },
+        {
+          "line": 186,
+          "text": "rows.push({"
+        }
+      ]
+    },
+    {
+      "id": "Z.helper.annuities",
+      "label": "payout form, tax character, exclusion carry and qualified contract-debit plans",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        197,
+        321
+      ],
+      "anchors": [
+        {
+          "line": 203,
+          "text": "const paidFraction = annuityPayoutFraction(annuityPayoutForm(account), {"
+        },
+        {
+          "line": 221,
+          "text": "if (account.purchase?.taxQualification === 'qualified') {"
+        },
+        {
+          "line": 270,
+          "text": "} else if (account.purchase) {"
+        },
+        {
+          "line": 306,
+          "text": "rows.push({"
+        }
+      ]
+    },
+    {
+      "id": "Z.helper.return",
+      "label": "explicit final folds, publications and ordered commit rows",
+      "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "lines": [
+        325,
+        334
+      ],
+      "anchors": [
+        {
+          "line": 325,
+          "text": "return {"
+        },
+        {
+          "line": 332,
+          "text": "rows,"
+        }
+      ]
+    },
+    {
+      "id": "Z.callsite",
+      "label": "annual invocation, scalar selection and ordered caller-owned commits",
+      "file": "projection/simulate.ts",
+      "lines": [
+        2476,
+        2533
+      ],
+      "anchors": [
+        {
+          "line": 2476,
+          "text": "const pensionAndAnnuity = annualPensionAndAnnuityIncome({"
+        },
+        {
+          "line": 2497,
+          "text": "incomes.annuity = pensionAndAnnuity.annuityIncome"
+        },
+        {
+          "line": 2503,
+          "text": "for (const row of pensionAndAnnuity.rows) {"
+        },
+        {
+          "line": 2516,
+          "text": "recordAnnualRetirementRuntimeOccurrence(distribution.occurrence)"
+        },
+        {
+          "line": 2533,
+          "text": "if (row.record !== null) yearSites?.recordAnnuityPayment(row.record)"
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct coordinator tests pin the hand-worked Pub 939 result and input-map purity; the hostile delegation test separately proves exact output selection, commit-row consumption, object identity across years, runtime journaling and cash-flow forwarding."
+}
