@@ -100,11 +100,13 @@ export const medicareAndHealthCoverageRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/types.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
       'packages/engine/src/params/types.ts#ParameterPack',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -134,11 +136,13 @@ export const medicareAndHealthCoverageRecords = {
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/medicare.ts',
       'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
       'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
@@ -179,10 +183,12 @@ export const medicareAndHealthCoverageRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -223,10 +229,12 @@ export const medicareAndHealthCoverageRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/medicare.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
@@ -290,8 +298,12 @@ export const medicareAndHealthCoverageRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

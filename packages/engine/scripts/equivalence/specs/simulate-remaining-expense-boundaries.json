@@ -1,0 +1,164 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-remaining-expense-boundaries-r",
+  "why": "Measured reach for the extracted annual debt/LTC, healthcare/ACA/Medicare, and guardrail-funding planners. Eight block-R members run in all four equivalence modes and discriminate positional duplicate-id state (including accepted duplicate person ids), payoff and benefit carry, partial Medicare months and IRMAA, sole/duplicate/missing ACA evidence, exact support-code order, and persistent withdrawal-rate and real-balance guardrail anchors.",
+  "entries": [
+    {
+      "id": "R.debt.helper",
+      "label": "ordered debt interest, scheduled payoff, capped payment and shadow balance writes",
+      "file": "projection/internal/annualDebtAndLongTermCare.ts",
+      "lines": [13, 40]
+    },
+    {
+      "id": "R.ltc.helper",
+      "label": "ordered care episodes, policy benefit limits, elimination/rider, duplicate-id shadow writes and reporting",
+      "file": "projection/internal/annualDebtAndLongTermCare.ts",
+      "lines": [65, 160]
+    },
+    {
+      "id": "R.healthcare.setup",
+      "label": "ACA arrays, contract selection and primary IRMAA lookback",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [75, 94]
+    },
+    {
+      "id": "R.healthcare.lookbackPublication",
+      "label": "selected IRMAA lookback and filing-status publication",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [101, 106]
+    },
+    {
+      "id": "R.healthcare.marketplaceMonthPlanner",
+      "label": "alive marketplace-month branch planning",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [108, 123]
+    },
+    {
+      "id": "R.healthcare.marketplacePositionalPublication",
+      "label": "positional Marketplace-month publication without duplicate-person-id collapse",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [127, 132]
+    },
+    {
+      "id": "R.healthcare.medicareFold",
+      "label": "pre-65, partial-Medicare and IRMAA premium folds",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [119, 166]
+    },
+    {
+      "id": "R.healthcare.medicarePublication",
+      "label": "prorated Medicare, IRMAA and healthcare publication",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [171, 196]
+    },
+    {
+      "id": "R.healthcare.contractSelection",
+      "label": "sole, duplicate and missing ACA contract monthly folds and gross premium",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [224, 270]
+    },
+    {
+      "id": "R.healthcare.supportEntry",
+      "label": "ACA actionability gate and stand-in check",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [272, 273]
+    },
+    {
+      "id": "R.healthcare.supportContractShape",
+      "label": "ordered policy, contract-count and tax-family shape planning",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [276, 308]
+    },
+    {
+      "id": "R.healthcare.supportFamilyFold",
+      "label": "tax-family size and covered-member identity gates",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [312, 313]
+    },
+    {
+      "id": "R.healthcare.supportFamilyMembership",
+      "label": "covered-member Medicare overlap and family membership folds",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [319, 345]
+    },
+    {
+      "id": "R.healthcare.supportDependentChecks",
+      "label": "dependent filing and modeled-person checks",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [348, 351]
+    },
+    {
+      "id": "R.healthcare.supportDependentFilingGate",
+      "label": "dependent filing-status gate",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [353, 354]
+    },
+    {
+      "id": "R.healthcare.supportModeledDependentGate",
+      "label": "dependent modeled-person overlap gate",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [357, 360]
+    },
+    {
+      "id": "R.healthcare.supportModeledDependentResult",
+      "label": "dependent modeled-person overlap result gate",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [362, 363]
+    },
+    {
+      "id": "R.healthcare.supportTaxFacts",
+      "label": "tax-exempt evidence gate",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [366, 369]
+    },
+    {
+      "id": "R.healthcare.supportPremiumEvidence",
+      "label": "foreign-addback, SLCSP and benchmark-only evidence planning",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [371, 393]
+    },
+    {
+      "id": "R.healthcare.supportAssertions",
+      "label": "ordered explicit ACA support assertions",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [403, 428]
+    },
+    {
+      "id": "R.healthcare.return",
+      "label": "complete healthcare boundary result",
+      "file": "projection/internal/annualHealthcareExpenses.ts",
+      "lines": [430, 454]
+    },
+    {
+      "id": "R.guardrail.helper",
+      "label": "goal budget, positional portfolio fold, persistent anchors, decisions and ordered lifestyle funding",
+      "file": "projection/internal/annualGuardrailFunding.ts",
+      "lines": [24, 159]
+    },
+    {
+      "id": "R.debt.callsite",
+      "label": "debt planner invocation, ordered balance writes, total fold and ledger publication",
+      "file": "projection/simulate.ts",
+      "lines": [2623, 2636]
+    },
+    {
+      "id": "R.healthcare.callsite",
+      "label": "healthcare planner invocation and complete result consumption",
+      "file": "projection/simulate.ts",
+      "lines": [2637, 2684]
+    },
+    {
+      "id": "R.ltc.callsite",
+      "label": "LTC planner invocation, benefit-year writes and reporting rows",
+      "file": "projection/simulate.ts",
+      "lines": [2701, 2718]
+    },
+    {
+      "id": "R.guardrail.callsite",
+      "label": "guardrail planner invocation and persistent/output state consumption",
+      "file": "projection/simulate.ts",
+      "lines": [2754, 2784]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so cold sub-line regions and focused helper/delegation tests remain complementary evidence."
+}

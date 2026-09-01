@@ -51,7 +51,7 @@ import {
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
-import { packForYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE, irmaaTierThreshold, rmdStartAgeForBirthYear } from '../params/index.js'
+import { packForYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE, rmdStartAgeForBirthYear } from '../params/index.js'
 import { assembleYearCashFlow, type AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import {
   collidingEncodedCashFlowSegments,
@@ -84,6 +84,12 @@ import {
   withAnnualAggregateRothConversionReservations,
 } from './internal/annualAggregateRothConversionPlan.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
+import {
+  annualDebtServiceRows,
+  annualLongTermCarePlan,
+} from './internal/annualDebtAndLongTermCare.js'
+import { annualGuardrailFundingPlan } from './internal/annualGuardrailFunding.js'
+import { annualHealthcareExpenses } from './internal/annualHealthcareExpenses.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
 import { publishedEntityFacts } from './internal/publishedEntityFacts.js'
@@ -233,9 +239,6 @@ import { attributeShortfall } from '../spending/layers.js'
 import { ABW_DEFAULTS, abwExpectedRealReturnPct } from '../spending/abw.js'
 import { jointSurvivalPercentileAge, survivalPercentileAge } from '../montecarlo/survival.js'
 import {
-  nextBalanceGuardrailMultiplier,
-  nextGuardrailMultiplier,
-  type GuardrailAction,
   type GuardrailPolicy,
 } from '../spending/guardrails.js'
 import { createGoalScheduler, toSchedulableGoal, type GoalScheduler } from '../spending/flexibleGoals.js'
@@ -247,7 +250,6 @@ import {
   type AcaResult,
 } from '../tax/aca.js'
 import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from '../tax/federalTax.js'
-import { medicareAnnualPremiumPerPerson } from '../tax/medicare.js'
 import {
   taxParameterFilingStatus,
   type MarketSeries,
@@ -2544,322 +2546,68 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       startOfYearBalance,
     })
     let debtService = 0
-    for (const account of plan.accounts) {
-      if (account.type !== 'debt') continue
-      let bal = debtBalances.get(account.id) ?? 0
-      if (bal <= 0) continue
-      bal *= 1 + account.interestPct / 100
-      // A scheduled payoff year clears the whole remaining balance at once
-      // (funded by the withdrawal waterfall below); otherwise pay the level
-      // annual amount, capped at the balance so the loan self-terminates.
-      const payoff = typeof account.payoffYear === 'number' && year >= account.payoffYear
-      const payment = payoff ? bal : Math.min(bal, account.monthlyPayment * 12)
-      bal -= payment
-      debtBalances.set(account.id, bal)
-      debtService += payment
+    for (const row of annualDebtServiceRows({
+      accounts: plan.accounts,
+      balances: debtBalances,
+      year,
+    })) {
+      debtBalances.set(row.accountId, row.nextBalance)
+      debtService += row.amount
       yearSites?.recordDebtService({
-        accountId: account.id,
-        ownerPersonId: account.ownerPersonId ?? null,
-        amount: payment,
+        accountId: row.accountId,
+        ownerPersonId: row.ownerPersonId,
+        amount: row.amount,
       })
     }
-    // Healthcare: ACA-credited marketplace pre-65, Medicare + IRMAA from 65.
-    // Medicare eligibility begins in the birth month of the year a member
-    // turns 65 (planning-grade: the born-on-the-1st prior-month rule is not
-    // modeled), so the transition year splits into birthMonth − 1 months of
-    // marketplace coverage and the remainder on Medicare instead of flipping
-    // the whole year at once.
-    const hc = plan.expenses.healthcare
-    const healthInflFactor = healthInflFactorFrom(startYear, year)
-    let healthcare = 0
-    // The ACA credit is a household calculation and a MONTHLY one: covered
-    // members' premiums pool per calendar month, and each covered month earns
-    // max(0, premium − expectedContribution/12) — so a transition-year member
-    // covered five months owes 5/12 of the household expected contribution,
-    // not all of it, and the contribution is never subtracted per person.
-    const legacyAcaMonthlyPremiums: number[] = new Array<number>(12).fill(0)
-    const acaEnrollmentPremiums: number[] = new Array<number>(12).fill(0)
-    const acaSlcspBenchmarkPremiums: number[] = new Array<number>(12).fill(0)
-    let legacyMarketplacePremiumPaidDirectly = 0
-    const acaContractsForYear = hc.acaYears?.filter((contract) => contract.year === year) ?? []
-    const acaContract = acaContractsForYear.length === 1 ? acaContractsForYear[0] : undefined
-    // SSA-44 (see setup above): in the two years after a qualifying event, the
-    // premium MAGI is the lower of the lookback and the prior-year stand-in.
-    // Source/year name which fallback arm supplied the SELECTED figure; under
-    // SSA-44 min(), the year of the minimum (ties keep the standard year-2
-    // lookback). `'planFallback'` is a coarse stand-in, not evidence.
-    const lookbackPrimary = resolveMagiFor(year - 2)
-    const lookbackSelected = ssa44ActiveInYear(year)
-      ? (() => {
-          const alternate = resolveMagiFor(year - 1)
-          return alternate.magi < lookbackPrimary.magi ? alternate : lookbackPrimary
-        })()
-      : lookbackPrimary
-    const irmaaMagi = lookbackSelected.magi
-    const irmaaLookbackMagiSource = lookbackSelected.source
-    const irmaaLookbackMagiYear = lookbackSelected.year
-    // IRMAA's filing categories differ from the income-tax tables: SSA groups
-    // qualifying-surviving-spouse filers with single/HOH on the individual
-    // threshold table (POMS HI 01101.020), so QSS years price premiums at the
-    // single thresholds even though their income tax uses the joint tables.
-    const irmaaFilingStatus = filingStatusForYear === 'qualifyingSurvivingSpouse' ? 'single' : taxFilingStatusForYear
-    let medicarePremiums = 0
-    let irmaaSurcharge = 0
-    let irmaaTier = 0
-    /** True when any alive person had Medicare months this calendar year. */
-    let anyMedicareActivity = false
-    const marketplaceMonthsBeforeMedicare = (person: PersonYearState): number =>
-      !person.alive
-        ? 0
-        : person.ageAttained < 65
-          ? 12
-          : person.ageAttained === 65
-            ? (birthMonthByPerson.get(person.personId) ?? 1) - 1
-            : 0
-    for (const s of peopleStates) {
-      if (!s.alive) continue
-      const acaMonths = marketplaceMonthsBeforeMedicare(s)
-      const medicareMonths = 12 - acaMonths
-      if (acaMonths > 0 && hc.pre65MonthlyPremiumPerPerson > 0) {
-        if (hc.applyAcaCredit) {
-          for (let m = 0; m < acaMonths; m++) {
-            legacyAcaMonthlyPremiums[m]! += hc.pre65MonthlyPremiumPerPerson * healthInflFactor
-          }
-        } else {
-          if (!hc.applyAcaCredit) {
-            const premium = hc.pre65MonthlyPremiumPerPerson * acaMonths * healthInflFactor
-            healthcare += premium
-            legacyMarketplacePremiumPaidDirectly += premium
-          }
-        }
-      }
-      if (medicareMonths > 0) {
-        anyMedicareActivity = true
-        const med = medicareAnnualPremiumPerPerson(
-          pack,
-          irmaaMagi,
-          irmaaFilingStatus,
-          // The premium year goes with the inflation path rather than a single
-          // pre-multiplied factor: the top IRMAA row is frozen through 2027 and
-          // then indexed from an August 2026 base, one year behind the rows
-          // beneath it, so the threshold helper has to pick its own year.
-          {
-            premiumYear: year,
-            inflationFactorToYear: (toYear: number) => inflFactorFrom(pack.year, toYear),
-          },
-          healthInflFactorFrom(pack.year, year),
-        )
-        if (med.partDSurchargeUnverified) {
-          warnings.add('An IRMAA tier with an unverified Part D surcharge was hit; Part D surcharge omitted for that tier.')
-        }
-        const premium = (med.partBAnnual + med.partDSurchargeAnnual) * (medicareMonths / 12)
-        medicarePremiums += premium
-        irmaaSurcharge += med.irmaaSurchargeAnnual * (medicareMonths / 12)
-        irmaaTier = med.irmaaTier
-        healthcare += premium + hc.medicareExtrasMonthlyPerPerson * medicareMonths * healthInflFactor
-      }
-    }
-    // Next-tier MAGI boundary under the same inflation path / IRMAA filing
-    // status the premiums above were priced with. Published so planning
-    // surfaces never reconstruct pack inflation from `inflationScale`.
-    // Null when nobody was on Medicare this year (pre-enrollment — not a live
-    // boundary) or at the frozen top tier. Do not gate on `irmaaTier === 0`:
-    // a low-MAGI enrollee still needs distance to the first surcharge.
-    const irmaaNextTierThreshold =
-      !anyMedicareActivity || irmaaTier >= pack.medicare.irmaaTiers.length
-        ? null
-        : irmaaTierThreshold(pack, irmaaTier, irmaaFilingStatus, {
-            premiumYear: year,
-            inflationFactorToYear: (toYear: number) => inflFactorFrom(pack.year, toYear),
-          })
-    const exampleContractInputMismatch =
-      plan.exampleSourceId !== undefined &&
-      acaContract !== undefined &&
-      (() => {
-        const exampleResidenceState = stateForYear(plan.household, year)
-        const expectedRegion =
-          exampleResidenceState === 'AK' ? 'alaska' : exampleResidenceState === 'HI' ? 'hawaii' : 'contiguous'
-        const expectedMonthlyPremium = hc.pre65MonthlyPremiumPerPerson * healthInflFactor
-        return (
-          acaContract.fplRegion !== expectedRegion ||
-          acaContract.coveredMembers.some((member) => {
-            const person = peopleStates.find((state) => state.personId === member.personId)
-            const expectedMonths = person === undefined ? 0 : marketplaceMonthsBeforeMedicare(person)
-            return member.enrollmentPremiumByMonth.some((premium, month) => {
-              const expected = month < expectedMonths ? expectedMonthlyPremium : 0
-              return Math.abs(premium - expected) > EPSILON
-            })
-          })
-        )
-      })()
-    if (hc.applyAcaCredit && acaContract && !exampleContractInputMismatch) {
-      for (const member of acaContract.coveredMembers) {
-        for (let month = 0; month < 12; month++) {
-          const enrollmentPremium = member.enrollmentPremiumByMonth[month] ?? 0
-          acaEnrollmentPremiums[month]! += enrollmentPremium
-          if (enrollmentPremium > 0) {
-            acaSlcspBenchmarkPremiums[month]! += member.slcspBenchmarkPremiumByMonth[month] ?? 0
-          }
-        }
-      }
-    } else if (hc.applyAcaCredit && acaContractsForYear.length > 1) {
-      // Duplicate contracts are not reconcilable evidence, but their known
-      // enrollment premiums must not disappear. Fund the largest monthly
-      // aggregate across the conflicting contracts (never a hidden zero and
-      // never double-counting an accidental duplicate).
-      for (let month = 0; month < 12; month++) {
-        acaEnrollmentPremiums[month] = Math.max(
-          ...acaContractsForYear.map((contract) =>
-            contract.coveredMembers.reduce(
-              (sum, member) => sum + (member.enrollmentPremiumByMonth[month] ?? 0),
-              0,
-            ),
-          ),
-        )
-      }
-    } else if (hc.applyAcaCredit) {
-      for (let month = 0; month < 12; month++) {
-        acaEnrollmentPremiums[month] = legacyAcaMonthlyPremiums[month]!
-        acaSlcspBenchmarkPremiums[month] = legacyAcaMonthlyPremiums[month]!
-      }
-    }
-    const acaGrossEnrollmentPremium = acaEnrollmentPremiums.reduce((sum, premium) => sum + premium, 0)
-    const acaActive = hc.applyAcaCredit && acaGrossEnrollmentPremium > 0
-    // Begin conservatively at gross premium. A supported current-year result
-    // can reduce this only inside the exact tax/withdrawal fixed point below.
-    healthcare += acaGrossEnrollmentPremium
-    const healthcareExcludingAcaEnrollment = healthcare - acaGrossEnrollmentPremium
+    const healthcarePlan = annualHealthcareExpenses({
+      plan,
+      pack,
+      year,
+      startYear,
+      peopleStates,
+      birthMonthByPerson,
+      resolveMagiFor,
+      ssa44ActiveInYear,
+      filingStatusForYear,
+      taxFilingStatusForYear,
+      inflFactorFrom,
+      healthInflFactorFrom,
+      isStandIn,
+      hasModeledPerson: (personId) => personById.has(personId),
+      resolvePerson: stateOf,
+      planHasTaxExemptYieldAttestation,
+      taxExemptInterest: incomes.taxExemptInterest,
+    })
+    let healthcare = healthcarePlan.healthcare
+    const healthInflFactor = healthcarePlan.healthInflFactor
+    const acaContractsForYear = healthcarePlan.acaContractsForYear
+    const acaContract = healthcarePlan.acaContract
+    const acaEnrollmentPremiums = healthcarePlan.acaEnrollmentPremiums
+    const acaSlcspBenchmarkPremiums =
+      healthcarePlan.acaSlcspBenchmarkPremiums
+    const acaGrossEnrollmentPremium =
+      healthcarePlan.acaGrossEnrollmentPremium
+    const acaActive = healthcarePlan.acaActive
+    const healthcareExcludingAcaEnrollment =
+      healthcarePlan.healthcareExcludingAcaEnrollment
     const healthcareExcludingMarketplacePremium =
-      healthcareExcludingAcaEnrollment - legacyMarketplacePremiumPaidDirectly
-    const acaInitialSupportCodes: AcaSupportCode[] = []
-    if (acaActive) {
-      if (isStandIn) acaInitialSupportCodes.push('tax-year-parameters-unsupported')
-      if (spendingPolicy !== undefined && spendingPolicy.mode !== 'fixedTarget') {
-        acaInitialSupportCodes.push('guardrail-interaction-unsupported')
-      }
-      if (acaContractsForYear.length === 0) acaInitialSupportCodes.push('missing-year-contract')
-      if (acaContractsForYear.length > 1) acaInitialSupportCodes.push('duplicate-year-contract')
-      if (acaContract) {
-        const taxFamilyIds = new Set(acaContract.taxFamilyMembers.map((member) => member.personId))
-        const coveredIds = new Set(acaContract.coveredMembers.map((member) => member.personId))
-        const primaryCount = acaContract.taxFamilyMembers.filter(
-          (member) => member.relationship === 'primary',
-        ).length
-        const spouseCount = acaContract.taxFamilyMembers.filter(
-          (member) => member.relationship === 'spouse',
-        ).length
-        const expectedSpouseCount = filingStatusForYear === 'marriedFilingJointly' ? 1 : 0
-        const omitsLivingModeledPerson = peopleStates.some(
-          (person) => person.alive && !taxFamilyIds.has(person.personId),
-        )
-        if (
-          primaryCount !== 1 ||
-          spouseCount !== expectedSpouseCount ||
-          omitsLivingModeledPerson ||
-          (
-            filingStatusForYear === 'qualifyingSurvivingSpouse' &&
-            !acaContract.taxFamilyMembers.some((member) => member.relationship === 'dependent')
-          ) ||
-          taxFamilyIds.size !== acaContract.taxFamilyMembers.length
-        ) {
-          acaInitialSupportCodes.push('tax-family-structure-unsupported')
-        }
-        if (coveredIds.size !== acaContract.coveredMembers.length) {
-          acaInitialSupportCodes.push('covered-member-duplicate')
-        }
-        if (
-          acaContract.coveredMembers.some((member) => {
-            const person = peopleStates.find((state) => state.personId === member.personId)
-            if (person === undefined || !person.alive) return false
-            const marketplaceMonths = marketplaceMonthsBeforeMedicare(person)
-            return member.enrollmentPremiumByMonth.some(
-              (premium, month) => premium > 0 && month >= marketplaceMonths,
-            )
-          })
-        ) {
-          acaInitialSupportCodes.push('medicare-overlap-unsupported')
-        }
-        if (
-          acaContract.taxFamilyMembers.some(
-            (member) =>
-              member.relationship !== 'dependent' &&
-              (
-                !personById.has(member.personId) ||
-                !stateOf(member.personId).alive ||
-                member.requiredToFile === 'unknown'
-              ),
-          )
-          || acaContract.coveredMembers.some((member) => !taxFamilyIds.has(member.personId))
-        ) {
-          acaInitialSupportCodes.push('tax-family-member-unknown')
-        }
-        if (
-          acaContract.taxFamilyMembers.some(
-            (member) =>
-              member.relationship === 'dependent' &&
-              member.requiredToFile === 'unknown',
-          )
-        ) {
-          acaInitialSupportCodes.push('dependent-filing-status-unknown')
-        }
-        if (
-          acaContract.taxFamilyMembers.some(
-            (member) =>
-              member.relationship === 'dependent' &&
-              personById.has(member.personId),
-          )
-        ) {
-          acaInitialSupportCodes.push('dependent-modeled-person-overlap')
-        }
-        if (
-          acaContract.taxExemptInterest.state === 'unknown' &&
-          !(planHasTaxExemptYieldAttestation && incomes.taxExemptInterest > 0)
-        ) {
-          acaInitialSupportCodes.push('tax-exempt-interest-unknown')
-        }
-        if (acaContract.foreignExclusionAddback.state === 'unknown') {
-          acaInitialSupportCodes.push('foreign-exclusion-addback-unknown')
-        }
-        if (
-          acaContract.coveredMembers.some((member) =>
-            member.enrollmentPremiumByMonth.some(
-              (premium, month) =>
-                premium > 0 && (member.slcspBenchmarkPremiumByMonth[month] ?? 0) <= 0,
-            ),
-          )
-        ) {
-          acaInitialSupportCodes.push('slcsp-benchmark-missing')
-        }
-        if (
-          acaContract.coveredMembers.some((member) =>
-            member.slcspBenchmarkPremiumByMonth.some(
-              (benchmark, month) =>
-                benchmark > 0 && (member.enrollmentPremiumByMonth[month] ?? 0) <= 0,
-            ),
-          )
-        ) {
-          acaInitialSupportCodes.push('benchmark-only-coverage-unsupported')
-        }
-        if (exampleContractInputMismatch) acaInitialSupportCodes.push('example-contract-input-mismatch')
-        if (acaContract.assertions.coverageEligibility !== 'supported') {
-          acaInitialSupportCodes.push('coverage-eligibility-unsupported')
-        }
-        if (acaContract.assertions.form8814 !== 'notApplicable') acaInitialSupportCodes.push('form-8814-unsupported')
-        if (acaContract.assertions.specialAllocation !== 'notApplicable') {
-          acaInitialSupportCodes.push('special-allocation-unsupported')
-        }
-        if (acaContract.assertions.marriedFilingSeparatelyException !== 'notApplicable') {
-          acaInitialSupportCodes.push('mfs-exception-unsupported')
-        }
-        if (acaContract.assertions.selfEmployedHealthInsuranceDeduction !== 'notApplicable') {
-          acaInitialSupportCodes.push('self-employed-deduction-unsupported')
-        }
-        if (acaContract.assertions.otherMaterialFacts !== 'none') {
-          acaInitialSupportCodes.push('other-material-facts-unsupported')
-        }
-      }
-    }
-
+      healthcarePlan.healthcareExcludingMarketplacePremium
+    const acaInitialSupportCodes = healthcarePlan.acaInitialSupportCodes
+    const exampleContractInputMismatch =
+      healthcarePlan.exampleContractInputMismatch
+    const medicarePremiums = healthcarePlan.medicarePremiums
+    const irmaaSurcharge = healthcarePlan.irmaaSurcharge
+    const irmaaTier = healthcarePlan.irmaaTier
+    const irmaaMagi = healthcarePlan.irmaaMagi
+    const irmaaLookbackMagiSource =
+      healthcarePlan.irmaaLookbackMagiSource
+    const irmaaLookbackMagiYear = healthcarePlan.irmaaLookbackMagiYear
+    const irmaaNextTierThreshold = healthcarePlan.irmaaNextTierThreshold
+    const marketplaceMonthsByPerson =
+      healthcarePlan.marketplaceMonthsByPerson
+    const pre65MonthlyPremiumPerPerson =
+      healthcarePlan.pre65MonthlyPremiumPerPerson
+    for (const warning of healthcarePlan.warnings) warnings.add(warning)
     // Insurance premiums: level (fixed nominal), charged while the insured/owner
     // is alive. paidUp charges nothing; untilAge stops at premiumEndAge.
     let insurancePremiums = 0
@@ -2875,65 +2623,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // baseline spending. An owned LTC policy offsets it up to its monthly cap
     // (grown by the inflation rider) after the elimination period, for at most
     // benefitPeriodYears. The net (careCost − ltcBenefit) is what hits spending.
-    let careCost = 0
-    let ltcBenefit = 0
-    // Reporting-only aggregation. Capture-off allocates nothing extra.
-    const ltcByPerson = captureAnnualCashFlow
-      ? new Map<string, { careEventIds: string[]; payingPolicyIds: string[]; gross: number; benefit: number }>()
-      : null
-    for (const event of plan.careEvents) {
-      const s = stateOf(event.personId)
-      if (!s.alive) continue
-      const yearsIntoEpisode = s.ageAttained - event.startAge
-      if (yearsIntoEpisode < 0 || yearsIntoEpisode >= event.durationYears) continue
-      const gross = event.annualCost * healthInflFactor
-      careCost += gross
-      let remaining = gross
-      const payingPolicyIds: string[] = []
-      for (const policy of plan.insurance) {
-        if (policy.kind !== 'ltc' || policy.owner !== event.personId || remaining <= 0) continue
-        const used = ltcBenefitYearsUsed.get(policy.id) ?? 0
-        if (policy.benefitPeriodYears !== 'lifetime' && used >= policy.benefitPeriodYears) continue
-        const rider = (policy.inflationRiderPct ?? 0) / 100
-        let cap = policy.benefitMonthly * 12 * Math.pow(1 + rider, year - startYear)
-        // Elimination period: the first eliminationPeriodDays of the episode are
-        // out of pocket, so the episode's first year is prorated.
-        if (yearsIntoEpisode === 0) cap *= Math.max(0, 1 - policy.eliminationPeriodDays / 365)
-        const pay = Math.min(remaining, cap)
-        if (pay > 0) {
-          ltcBenefit += pay
-          remaining -= pay
-          ltcBenefitYearsUsed.set(policy.id, used + 1)
-          payingPolicyIds.push(policy.id)
-        }
-      }
-      if (ltcByPerson !== null) {
-        const existing = ltcByPerson.get(event.personId) ?? {
-          careEventIds: [],
-          payingPolicyIds: [],
-          gross: 0,
-          benefit: 0,
-        }
-        existing.careEventIds.push(event.id)
-        existing.gross += gross
-        existing.benefit += gross - remaining
-        for (const policyId of payingPolicyIds) {
-          if (!existing.payingPolicyIds.includes(policyId)) existing.payingPolicyIds.push(policyId)
-        }
-        ltcByPerson.set(event.personId, existing)
-      }
+    const longTermCare = annualLongTermCarePlan({
+      careEvents: plan.careEvents,
+      policies: plan.insurance,
+      benefitYearsUsed: ltcBenefitYearsUsed,
+      resolvePerson: stateOf,
+      healthInflFactor,
+      year,
+      startYear,
+      capturePersonRows: captureAnnualCashFlow,
+    })
+    const careCost = longTermCare.careCost
+    const ltcBenefit = longTermCare.ltcBenefit
+    for (const write of longTermCare.benefitYearWrites) {
+      ltcBenefitYearsUsed.set(write.policyId, write.yearsUsed)
     }
-    if (ltcByPerson !== null) {
-      for (const [personId, row] of ltcByPerson) {
-        yearSites?.recordLongTermCare({
-          personId,
-          careEventIds: row.careEventIds,
-          payingPolicyIds: row.payingPolicyIds,
-          gross: row.gross,
-          benefit: row.benefit,
-          net: row.gross - row.benefit,
-        })
-      }
+    for (const row of longTermCare.personRows) {
+      yearSites?.recordLongTermCare(row)
     }
 
     // Property carrying costs: tax + insurance charged while the property is
@@ -2970,73 +2676,37 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // year's recurring target spending over the start-of-year portfolio, compared
     // to the same ratio in the first solvent year. Cutting/raising moves the
     // discretionary multiplier; the required floor is never touched.
-    let guardrailAction: GuardrailAction = 'hold'
-    const earlyPullGoalBudget = guardrailsActive
-      ? plan.expenses.oneTimeGoals.reduce((sum, goal) => {
-          if (goalScheduler?.isResolved(goal.id)) return sum
-          const flexibility = goal.flexibility ?? 'fixed'
-          if (flexibility === 'fixed') return sum
-          const earliestYear = Math.min(goal.earliestYear ?? goal.year, goal.year)
-          if (year >= earliestYear && year < goal.year) return sum + goal.amount * inflFactor
-          return sum
-        }, 0)
-      : 0
-    const annualUpsideLifestyle = idealLifestyle + excessLifestyle
-    const guardrailStepBasis = Math.max(targetLifestyle, annualUpsideLifestyle, 1)
-    const allowRaisesAboveTarget = spendingPolicy?.allowRaisesAboveTarget ?? annualUpsideLifestyle + earlyPullGoalBudget > 0
-    const maxGuardrailMultiplier =
-      guardrailsActive && allowRaisesAboveTarget
-        ? 1 + (annualUpsideLifestyle + earlyPullGoalBudget) / guardrailStepBasis
-        : 1
-    if (guardrailsActive && anyAlive) {
-      let startPortfolio = 0
-      for (const b of balances) startPortfolio += startOfYearBalance.get(b.account.id) ?? 0
-      if (riskBasedGuardrails) {
-        // Risk-based signal: the real (deflated) balance against dollar
-        // thresholds expressed as a percent of the starting portfolio. The
-        // thresholds come from the shared-path probability solver; when they
-        // have not been solved the decision holds every year (mode is inert).
-        const realBalance = startPortfolio / inflFactor
-        if (startingRealPortfolio === null && startPortfolio > 0) startingRealPortfolio = realBalance
-        if (startingRealPortfolio !== null) {
-          const decision = nextBalanceGuardrailMultiplier(
-            discretionaryMultiplier,
-            realBalance,
-            startingRealPortfolio,
-            guardrailPolicy,
-            maxGuardrailMultiplier,
-          )
-          discretionaryMultiplier = decision.multiplier
-          guardrailAction = decision.action
-        }
-      } else {
-        const targetRecurring = systemRequired + requiredLifestyle + targetLifestyle
-        const currentRate = startPortfolio > 0 ? targetRecurring / startPortfolio : NaN
-        if (startingWithdrawalRate === null && Number.isFinite(currentRate)) startingWithdrawalRate = currentRate
-        if (startingWithdrawalRate !== null) {
-          const decision = nextGuardrailMultiplier(
-            discretionaryMultiplier,
-            currentRate,
-            startingWithdrawalRate,
-            guardrailPolicy,
-            maxGuardrailMultiplier,
-          )
-          discretionaryMultiplier = decision.multiplier
-          guardrailAction = decision.action
-        }
-      }
-    }
-    const targetLifestyleFunded = guardrailsActive
-      ? targetLifestyle * Math.min(1, discretionaryMultiplier)
-      : targetLifestyle
-    const upsideBudget = guardrailsActive
-      ? Math.max(0, discretionaryMultiplier - 1) * guardrailStepBasis
-      : annualUpsideLifestyle
-    const idealLifestyleFunded = Math.min(idealLifestyle, upsideBudget)
-    const excessLifestyleFunded = Math.min(excessLifestyle, Math.max(0, upsideBudget - idealLifestyleFunded))
-    const remainingUpsideBudget = Math.max(0, upsideBudget - idealLifestyleFunded - excessLifestyleFunded)
-    const cutting = guardrailsActive && discretionaryMultiplier < 1 - 1e-9
-    const canPullForwardGoals = guardrailsActive && !cutting && (guardrailAction === 'raise' || discretionaryMultiplier > 1 + 1e-9)
+    const guardrailFunding = annualGuardrailFundingPlan({
+      guardrailsActive,
+      riskBasedGuardrails,
+      spendingPolicy,
+      guardrailPolicy,
+      oneTimeGoals: plan.expenses.oneTimeGoals,
+      isGoalResolved: (goalId) => goalScheduler?.isResolved(goalId) ?? false,
+      year,
+      inflFactor,
+      anyAlive,
+      balances,
+      startOfYearBalance,
+      requiredLifestyle,
+      targetLifestyle,
+      idealLifestyle,
+      excessLifestyle,
+      systemRequired,
+      discretionaryMultiplier,
+      startingWithdrawalRate,
+      startingRealPortfolio,
+    })
+    discretionaryMultiplier = guardrailFunding.discretionaryMultiplier
+    startingWithdrawalRate = guardrailFunding.startingWithdrawalRate
+    startingRealPortfolio = guardrailFunding.startingRealPortfolio
+    const guardrailAction = guardrailFunding.guardrailAction
+    const targetLifestyleFunded = guardrailFunding.targetLifestyleFunded
+    const idealLifestyleFunded = guardrailFunding.idealLifestyleFunded
+    const excessLifestyleFunded = guardrailFunding.excessLifestyleFunded
+    const remainingUpsideBudget = guardrailFunding.remainingUpsideBudget
+    const cutting = guardrailFunding.cutting
+    const canPullForwardGoals = guardrailFunding.canPullForwardGoals
 
     // One-time goals. Under guardrails they route through the scheduler (which
     // may delay/skip flexible goals when cutting); otherwise every goal funds in
@@ -8333,12 +8003,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ? []
           : peopleStates
             .filter((person) => {
-              const months = marketplaceMonthsBeforeMedicare(person)
-              return person.alive && months > 0 && hc.pre65MonthlyPremiumPerPerson > 0
+              const months = marketplaceMonthsByPerson.get(person) ?? 0
+              return person.alive && months > 0 && pre65MonthlyPremiumPerPerson > 0
             })
             .map((person) => {
-              const months = marketplaceMonthsBeforeMedicare(person)
-              const premium = hc.pre65MonthlyPremiumPerPerson * healthInflFactor
+              const months = marketplaceMonthsByPerson.get(person) ?? 0
+              const premium = pre65MonthlyPremiumPerPerson * healthInflFactor
               return {
                 personId: person.personId,
                 coveredMonths: Array.from({ length: months }, (_, month) => month + 1),
