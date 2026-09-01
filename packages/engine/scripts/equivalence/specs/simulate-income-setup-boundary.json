@@ -1,0 +1,54 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-income-setup-boundary",
+  "why": "Measured reach for the annual income-setup extraction. Three dedicated P block members exercise fresh annual containers, explicit none and contributing distributed-yield rows, every distributed-yield channel plus wages, paid and reinvested yield, duplicate-account last-write map behavior, the yield-before-wages floating-point boundary, repeated per-person wages, the legacy LAST-wins person/FIRST-wins annual-state lookup asymmetry, ordered record forwarding, downstream map consumption, and multi-year re-entry in all four equivalence modes.",
+  "entries": [
+    {
+      "id": "P.helper.initializationAndYield",
+      "label": "fresh annual income state, distributed-yield production and ordered fold",
+      "file": "projection/internal/annualIncomeSetup.ts",
+      "lines": [63, 107],
+      "anchors": [
+        { "line": 63, "text": "const incomes: YearIncomes = {" },
+        { "line": 85, "text": "const distributedYieldRows = distributedTaxableYieldRows(" },
+        { "line": 93, "text": "for (const row of distributedYieldRows) {" },
+        { "line": 107, "text": "input.commitDistributedYield?.(row)" }
+      ]
+    },
+    {
+      "id": "P.helper.wages",
+      "label": "wage production after yield and ordered wage/person folds",
+      "file": "projection/internal/annualIncomeSetup.ts",
+      "lines": [114, 122],
+      "anchors": [
+        { "line": 114, "text": "const wageRows = wageIncomeStreams(input.wages)" },
+        { "line": 115, "text": "for (const row of wageRows) {" },
+        { "line": 122, "text": "input.commitWage?.(row)" }
+      ]
+    },
+    {
+      "id": "P.helper.return",
+      "label": "explicit live object, scalar, map and original-row results",
+      "file": "projection/internal/annualIncomeSetup.ts",
+      "lines": [125, 133],
+      "anchors": [
+        { "line": 125, "text": "return {" },
+        { "line": 129, "text": "distributedYieldByAccountId," },
+        { "line": 133, "text": "}" }
+      ]
+    },
+    {
+      "id": "P.callsite",
+      "label": "annual helper invocation, caller-owned commit hooks and live result selection",
+      "file": "projection/simulate.ts",
+      "lines": [2189, 2217],
+      "anchors": [
+        { "line": 2189, "text": "const incomeSetup = annualIncomeSetup({" },
+        { "line": 2204, "text": "commitDistributedYield: yearSites === null" },
+        { "line": 2207, "text": "commitWage: yearSites === null" },
+        { "line": 2217, "text": "let ordinaryIncome = incomeSetup.ordinaryIncome" }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every branch sharing a physical line, so direct hostile-fold and delegation tests separately pin none/yield discrimination, both reinvest outcomes, duplicate-id maps, exact IEEE-754 association, result identity and annual re-entry."
+}

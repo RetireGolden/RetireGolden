@@ -17,6 +17,7 @@
  *   L  annual Social Security pass
  *   M  exact-cent annual ordinary-withdrawal boundary
  *   N  annual coordinated HECM eligibility + accepted-draw allocation
+ *   P  annual income setup (distributed yield followed by wages)
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *   T  aggregate Roth-conversion planning
  *   V  annual purchased-annuity funding
@@ -29,7 +30,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through N, T and V each have a phase-specific reach spec beside the
+ * Blocks J through N, P, T and V each have a phase-specific reach spec beside the
  * earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -43,6 +44,7 @@
  * `scripts/equivalence/specs/simulate-social-security-boundary.json`,
  * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json`,
  * `scripts/equivalence/specs/simulate-hecm-coordinated-boundary.json`,
+ * `scripts/equivalence/specs/simulate-income-setup-boundary.json`,
  * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`, and
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`
  * are the
@@ -2121,6 +2123,146 @@ function blockN() {
 }
 
 // ---------------------------------------------------------------------------
+// P — annual income setup: distributed yield followed by wages
+// ---------------------------------------------------------------------------
+
+function blockP() {
+  const out = []
+
+  {
+    // Every yield publication channel is nonzero across two rows, with only
+    // the second reinvested. Three same-person wage rows then fold onto that
+    // live ordinary-income base. The small middle operand and non-round growth
+    // rates keep reassociation and phase-order defects visible after year one.
+    const plan = shell(90, { retirementAge: 75 })
+    plan.assumptions.inflationPct = 2.125
+    plan.accounts = [
+      taxable('p1-paid-yield', 123_456.78, 70_000, {
+        annualReturnPct: 0,
+        interestYieldPct: 2.25,
+        dividendYieldPct: 3.75,
+        qualifiedRatio: 1 / 3,
+        taxExemptInterestYieldPct: 0.125,
+        reinvestDividends: false,
+      }),
+      taxable('p1-reinvested-yield', 234_567.89, 120_000, {
+        annualReturnPct: 0,
+        interestYieldPct: 0.625,
+        dividendYieldPct: 1.375,
+        qualifiedRatio: 0.875,
+        taxExemptInterestYieldPct: 0.25,
+        reinvestDividends: true,
+      }),
+      cash('p1-none-row', 10_000),
+    ]
+    plan.incomes = [
+      wages('p1-wage-large', 'p1', 120_000.37, { realGrowthPct: 1.375 }),
+      socialSecurityIncome('p1-nonwage-skip', 0, 70),
+      wages('p1-wage-small', 'p1', 0.000_000_03, { realGrowthPct: 0.125 }),
+      wages('p1-wage-tail', 'p1', 45_678.91, { realGrowthPct: 0.625 }),
+    ]
+    out.push(
+      member(
+        'p1-yieldThenHostileWageFold',
+        'P: every yield channel, paid and reinvested rows, an explicit none row, then three ordered same-person wages over the live ordinary-income base',
+        plan,
+        { horizonEndYear: START_YEAR + 4 },
+      ),
+    )
+  }
+
+  {
+    // Duplicate taxable ids make the income-setup map contract observable:
+    // both positional rows contribute to income, the id keeps its first map
+    // position, and the second row replaces its growth/reinvestment value.
+    // Wages arrive p2, p1, p2 so the per-person map's insertion and update
+    // behavior feeds a live p2 Social Security earnings test.
+    const plan = couplePlan({
+      p1PlanningAge: 90,
+      p2PlanningAge: 90,
+      p1RetirementAge: null,
+      p2RetirementAge: null,
+    })
+    plan.assumptions.inflationPct = 1.75
+    plan.accounts = [
+      taxable('p2-duplicate-yield', 100_000, 40_000, {
+        annualReturnPct: 5,
+        interestYieldPct: 1,
+        dividendYieldPct: 2,
+        qualifiedRatio: 0.25,
+        taxExemptInterestYieldPct: 0.5,
+        reinvestDividends: false,
+      }),
+      {
+        ...taxable('p2-duplicate-yield', 250_000, 150_000, {
+          annualReturnPct: 5,
+          interestYieldPct: 3,
+          dividendYieldPct: 4,
+          qualifiedRatio: 0.75,
+          taxExemptInterestYieldPct: 1.5,
+          reinvestDividends: true,
+        }),
+        name: 'p2-duplicate-yield-second',
+      },
+      cash('p2-none-row', 250_000),
+    ]
+    plan.incomes = [
+      wages('p2-wage-first', 'p2', 30_000.13, { endAge: 70 }),
+      wages('p2-wage-p1', 'p1', 10_000.07, { endAge: 70 }),
+      wages('p2-wage-second', 'p2', 25_000.11, { endAge: 70 }),
+      socialSecurityIncome('p2-earnings-test', 2_500, 62, 'p2'),
+    ]
+    out.push(
+      member(
+        'p2-duplicateYieldAndPersonOrder',
+        'P: duplicate taxable-id last-write economics with positional income folds, plus p2/p1/p2 wage-map insertion and update order consumed by Social Security',
+        plan,
+        { horizonEndYear: START_YEAR + 5 },
+      ),
+    )
+  }
+
+  {
+    // The two person lookups intentionally disagree when an otherwise valid
+    // plan repeats a person id: `personById` is LAST-wins, while the annual
+    // `stateOf` lookup is FIRST-wins. In 2026 the first row is age 65 and the
+    // last row's retirement age is 60, so the wage is stopped. Replacing the
+    // state lookup with LAST-wins observes age 50 instead and pays the wage.
+    // This deliberately relies on the legacy validation rule: duplicate
+    // person ids are rejected only when a retirement action references the
+    // id. A wage stream is not such an action, and this member declares no
+    // retirement action, so parsePlan admits the shape and the simulator's
+    // existing FIRST/LAST split stays measurable rather than only unit-tested.
+    const plan = couplePlan({
+      p1Dob: '1961-01-01',
+      p2Dob: '1976-01-01',
+      p1PlanningAge: 90,
+      p2PlanningAge: 90,
+      p1RetirementAge: 70,
+      p2RetirementAge: 60,
+    })
+    plan.household.people[1] = {
+      ...plan.household.people[1],
+      id: 'p1',
+      name: 'Duplicate p1, last map entry',
+    }
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [cash('p3-duplicate-person-cash', 100_000)]
+    plan.incomes = [wages('p3-first-state-last-person', 'p1', 40_000)]
+    out.push(
+      member(
+        'p3-duplicatePersonLookupAsymmetry',
+        'P: duplicate person id preserves LAST-wins retirement-age lookup and FIRST-wins annual state lookup',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // T — aggregate Roth-conversion planning
 // ---------------------------------------------------------------------------
 
@@ -2519,6 +2661,7 @@ export async function blockMembers() {
     ...blockL(),
     ...blockM(),
     ...blockN(),
+    ...blockP(),
     ...blockS(),
     ...blockT(),
     ...blockV(),

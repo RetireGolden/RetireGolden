@@ -107,12 +107,12 @@
       "id": "G.callsite",
       "label": "annual Social Security scalar selection, helper invocation and effect consumption",
       "file": "projection/simulate.ts",
-      "lines": [2295, 2326],
+      "lines": [2254, 2285],
       "anchors": [
-        { "line": 2295, "text": "const ssColaFactor =" },
-        { "line": 2303, "text": "const socialSecurity = annualSocialSecurity({" },
-        { "line": 2317, "text": "incomes.socialSecurity += socialSecurity.socialSecurity" },
-        { "line": 2326, "text": "} = socialSecurity" }
+        { "line": 2254, "text": "const ssColaFactor =" },
+        { "line": 2262, "text": "const socialSecurity = annualSocialSecurity({" },
+        { "line": 2276, "text": "incomes.socialSecurity += socialSecurity.socialSecurity" },
+        { "line": 2285, "text": "} = socialSecurity" }
       ]
     }
   ],
