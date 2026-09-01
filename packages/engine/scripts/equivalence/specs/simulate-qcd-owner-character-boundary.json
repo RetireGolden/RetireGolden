@@ -223,15 +223,15 @@
   "measuredProof": {
     "method": "The blocks corpus and both engine source trees were materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. The verifier pins the corpus source blob, the equivalence runner/loader blobs, and a canonical hash of this spec's schema/name/why/entries measurement input before recomputing the proof. It also materializes the immutable head tree, replaces the helper's sole section 219 read with zero, captures that mutant, and asserts the recorded calibration movement.",
     "base": {
-      "commit": "55a34409b7587157a0485e7bd818b1e223e97539",
-      "engineSourceTree": "fd2fcf1a1539cfbfb5f6d49b4e16fe81ffa74647"
+      "commit": "e3df12ce28ff598d1aa59dd80c46ecfead657ccb",
+      "engineSourceTree": "dc89890dd2e4dd4eabc14bd20bb27fe551535d35"
     },
     "head": {
-      "observedAtCommit": "de85ca02af01963514aabfe3dfea5845a733ffdf",
-      "engineSourceTree": "bd31aea016ee098b0654da277ce5998c7d2b0a7e"
+      "observedAtCommit": "6c87d39326cbfbcd91e04d3eca94ca98b1d09af0",
+      "engineSourceTree": "58b10d380b37934349fc9c0ef995763f4d6a139e"
     },
     "inputs": {
-      "corpusSourceBlob": "df416014ef1154a4a26026ceb026f6d467637765",
+      "corpusSourceBlob": "373736cf4797e5061922a482ad1696001ac1fa6d",
       "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
       "engineTreeLoaderBlob": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
       "specMeasurementSha256": "83d93422af3bdc78056c00bd9821084b5a17c15d9935dd3427ea0be46265eb55"
