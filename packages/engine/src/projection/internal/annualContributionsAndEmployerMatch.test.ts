@@ -109,7 +109,7 @@ function matches(
 }
 
 describe('annualContributionsAndEmployerMatch — positional planning', () => {
-  it('keeps duplicate-id last-write lookup separate from positional mutations and raw owner effects', () => {
+  it('keeps duplicate-id requests positional with exact source identity and raw owner effects', () => {
     const rows = [
       balance(account('traditional', 'duplicate', 1, {
         ownerPersonId: 'p1',
@@ -133,9 +133,8 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
         : '1985-01-01',
     })
 
-    // The public lookup intentionally remains last-row-wins, but each planner
-    // row retains its own authored request: 1 for row 0 and 4 for row 1.
-    expect([...result.desiredByAccountId]).toEqual([['duplicate', 4]])
+    // Each planner row retains its own authored request: 1 for row 0 and 4 for
+    // row 1. No public-id lookup is allowed to overwrite either position.
     expect(result.operations.map((operation) => operation.kind)).toEqual([
       'contribution', 'contribution',
     ])
@@ -150,6 +149,8 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
       [0, 100, 101, 1, 'p1'],
       [1, 100, 104, 4, 'p2'],
     ])
+    expect(credits[0]!.sourceAccount).toBe(rows[0]!.account)
+    expect(credits[1]!.sourceAccount).toBe(rows[1]!.account)
     expect(credits[0]!.retirementOccurrence).toEqual(expect.objectContaining({
       kind: 'ownedIraContribution',
       ownerPersonId: 'p1',
@@ -192,6 +193,41 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
     expect(result.totals.otherInflow).toBe(exact)
     expect(result.totals.contributions)
       .not.toBe(amounts[0] + (amounts[1] + amounts[2]))
+  })
+
+  it.each([
+    ['traditional' as const, pack.contributionLimits.ira],
+    ['roth' as const, pack.contributionLimits.ira],
+    ['hsa' as const, pack.contributionLimits.hsaSelfOnly],
+  ])('keeps same-owner %s limit and basis rows in exact left-fold order', (
+    type,
+    limit,
+  ) => {
+    const amounts = [limit - 1e-12, 4e-13, 4e-13] as const
+    const rows = amounts.map((amount, index) =>
+      balance(account(type, `${type}-${index}`, amount)))
+    const result = call(rows, {
+      wagesByPerson: new Map([['p1', 20_000]]),
+    })
+    const credits = contributions(result)
+    let exact = 0
+    for (const amount of amounts) exact += amount
+
+    expect(credits.map((row) => row.credited)).toEqual(amounts)
+    for (const [index, credit] of credits.entries()) {
+      expect(credit.sourceAccount).toBe(rows[index]!.account)
+    }
+    expect(result.totals.contributions).toBe(exact)
+    expect(result.totals.contributions)
+      .not.toBe(amounts[0] + (amounts[1] + amounts[2]))
+    if (type === 'roth') {
+      expect(credits.map((row) => row.rothContributionPoolKey))
+        .toEqual(['rothira:p1', 'rothira:p1', 'rothira:p1'])
+      expect(credits.map((row) => row.rothContributionBasisDelta))
+        .toEqual(amounts)
+    } else {
+      expect(result.totals.preTaxContributions).toBe(exact)
+    }
   })
 
   it('returns taxable basis and aged-IRA section-219 effects explicitly', () => {
@@ -274,6 +310,28 @@ describe('annualContributionsAndEmployerMatch — employer routing and re-entry'
     expect(result.totals.traditionalInflow)
       .toBe(baseLimit + requested * 0.5)
     expect(result.totals.otherInflow).toBe(catchUp)
+  })
+
+  it('caps employer match at the exact remaining 415(c) room', () => {
+    const baseLimit = pack.contributionLimits.employee401k
+    const wages = 30_000
+    const traditional = account('traditional', 'binding-415c', baseLimit, {
+      kind: 'employer',
+      employerMatch: { matchPct: 100, capPctOfPay: 100 },
+    })
+    const result = call([balance(traditional)], {
+      wagesByPerson: new Map([['p1', wages]]),
+    })
+    const [match] = matches(result)
+    const remaining415c = wages - baseLimit
+
+    expect(match).toEqual(expect.objectContaining({
+      sourceAccount: traditional,
+      balanceBefore: 100 + baseLimit,
+      balanceAfter: 100 + baseLimit + remaining415c,
+      record: expect.objectContaining({ amount: remaining415c }),
+    }))
+    expect(result.totals.employerMatch).toBe(remaining415c)
   })
 
   it('mutates no inputs and holds no state across repeated planning', () => {

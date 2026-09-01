@@ -49,11 +49,13 @@ export const healthSavingsAccountRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -84,9 +86,13 @@ export const healthSavingsAccountRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -255,11 +261,13 @@ export const healthSavingsAccountRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -292,9 +300,11 @@ export const healthSavingsAccountRecords = {
     verifiedOn: '2026-08-27',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -360,10 +370,12 @@ export const healthSavingsAccountRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#hsaAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
       ],
   },
 
@@ -611,10 +623,12 @@ export const healthSavingsAccountRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#hsaAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -659,11 +673,13 @@ export const healthSavingsAccountRecords = {
     verifiedOn: '2026-08-26',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#hsaAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

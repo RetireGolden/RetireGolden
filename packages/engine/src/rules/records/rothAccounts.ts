@@ -35,9 +35,13 @@ export const rothAccountRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-408A-c-3-roth-contribution-agi-phase-out': {
@@ -64,10 +68,12 @@ export const rothAccountRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#rothAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 

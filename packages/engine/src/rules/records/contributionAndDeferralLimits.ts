@@ -79,7 +79,9 @@ export const contributionAndDeferralLimitRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
@@ -165,11 +167,13 @@ export const contributionAndDeferralLimitRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -202,11 +206,13 @@ export const contributionAndDeferralLimitRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -240,12 +246,14 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -305,9 +313,13 @@ export const contributionAndDeferralLimitRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-219-c-1-spousal-ira-combined-compensation': {
@@ -331,9 +343,13 @@ export const contributionAndDeferralLimitRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-219-b-5-C-iii-ira-catch-up-indexed': {
@@ -359,11 +375,13 @@ export const contributionAndDeferralLimitRecords = {
     verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-219-f-1-compensation-excludes-deferred-income': {
@@ -387,9 +405,13 @@ export const contributionAndDeferralLimitRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-29',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-401-c-2-earned-income-not-modeled': {
@@ -416,10 +438,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#wagesIncomeSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-414-v-3-A-catch-up-excluded-from-415c': {
@@ -452,10 +476,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-414-v-2-A-catch-up-limited-to-compensation-excess': {
@@ -482,10 +508,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-414-v-7-E-roth-catch-up-wage-threshold': {
@@ -586,6 +614,7 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
@@ -593,6 +622,7 @@ export const contributionAndDeferralLimitRecords = {
       'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
       'packages/engine/src/projection/employerRothCatchUp.ts#highEarnerRothCatchUpMandated',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-414-v-7-A-prior-year-fica-wage-proxy': {
@@ -631,12 +661,14 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/projection/employerRothCatchUp.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/employerRothCatchUp.ts#priorYearFicaExceedsRothCatchUpThreshold',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-415-d-cost-of-living-adjustment-anchor': {
@@ -669,10 +701,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
   'irc-219-f-3-prior-year-contribution-window': {
@@ -843,10 +877,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -892,10 +928,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -929,10 +967,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#employerMatchSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -1043,12 +1083,14 @@ export const contributionAndDeferralLimitRecords = {
     verifiedOn: '2026-08-26',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#rothAccountSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -1125,10 +1167,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -1162,10 +1206,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -1204,11 +1250,13 @@ export const contributionAndDeferralLimitRecords = {
     verifiedOn: '2026-08-26',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -1240,11 +1288,13 @@ export const contributionAndDeferralLimitRecords = {
     verifiedOn: '2026-08-26',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#planSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -1284,10 +1334,12 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -1443,11 +1495,13 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#rothAccountSchema',
       'packages/engine/src/model/plan.ts#traditionalAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 
@@ -1492,11 +1546,13 @@ export const contributionAndDeferralLimitRecords = {
     verifiedOn: '2026-08-26',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

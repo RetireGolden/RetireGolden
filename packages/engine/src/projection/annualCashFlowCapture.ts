@@ -237,7 +237,6 @@ export interface AssembleYearCashFlowInput {
 
   /** Employer Roth-catch-up routing (pre-pass, survives). */
   readonly employerAllocationByOwner: ReadonlyMap<string, EmployerElectiveAllocation>
-  readonly desiredByAccountId: ReadonlyMap<string, number>
 
   readonly yearTaxExemptInterest: number
   readonly generatedTaxExemptInterest: number
@@ -1043,7 +1042,10 @@ function collectTransferLines(
   for (const row of yearSites.contributions) {
     const useId = cashFlowLineIds.useContribution(row.destinationAccountId)
     const ordinal = contributionUseOrdinalById.get(useId) ?? 0
-    const hasUseLine = row.requested > 0 || row.credited > 0
+    // collectUseLines emits a contribution use exactly when requested > 0.
+    // Advance the duplicate-id ordinal under the same predicate; a defensive
+    // credited-only row has no use to consume and must not shift later lineage.
+    const hasUseLine = row.requested > 0
     const useLine = hasUseLine ? contributionUsesById.get(useId)?.[ordinal] : undefined
     if (hasUseLine) contributionUseOrdinalById.set(useId, ordinal + 1)
     if (row.credited <= 0) continue

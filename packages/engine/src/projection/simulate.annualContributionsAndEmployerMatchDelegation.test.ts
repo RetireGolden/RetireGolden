@@ -1,9 +1,10 @@
 /**
  * Delegation guard for the extracted contribution/match phase.
  *
- * The injected stream deliberately disagrees with live account kinds, ids,
- * owners, balances, and flags. Positional balance/basis effects, runtime
- * payloads, Roth basis, warnings, downstream withdrawals, and recorder object
+ * The injected stream keeps only its positional preimages truthful while its
+ * closing balances, account-shaped payloads, owners, and flags are hostile.
+ * Balance/basis effects, runtime payloads, Roth basis, warnings, downstream
+ * withdrawals, and recorder object
  * identity prove `simulatePlan` consumes the helper result without rebuilding
  * it or retaining an inline copy. An empty-omit counterfactual re-enters the
  * annual pass and proves the pre-pass contribution prefix is neither replanned
@@ -62,6 +63,8 @@ const seam = vi.hoisted(() => ({
   calls: [] as CallRecord[],
   recordedContributions: [] as RecordedContribution[],
   recordedMatches: [] as RecordedEmployerMatch[],
+  fault: null as null | 'wrongPosition' | 'staleBalance' | 'staleBasis' |
+    'signedZero',
 }))
 
 vi.mock(
@@ -75,7 +78,7 @@ vi.mock(
       annualContributionsAndEmployerMatch: (
         input: AnnualContributionsAndEmployerMatchInput,
       ) => {
-        const result: AnnualContributionsAndEmployerMatchResult =
+        let result: AnnualContributionsAndEmployerMatchResult =
           input.year === 2026
             ? {
                 operations: [
@@ -86,10 +89,11 @@ vi.mock(
                   {
                     kind: 'contribution',
                     balanceIndex: 2,
-                    balanceBefore: -30,
+                    sourceAccount: input.balances[2]!.account,
+                    balanceBefore: input.balances[2]!.balance,
                     balanceAfter: 1_100,
-                    costBasisBefore: -31,
-                    costBasisAfter: -32,
+                    costBasisBefore: input.balances[2]!.costBasis,
+                    costBasisAfter: input.balances[2]!.costBasis,
                     credited: 200,
                     retirementOccurrence: null,
                     retirementApplication: null,
@@ -102,9 +106,10 @@ vi.mock(
                   {
                     kind: 'contribution',
                     balanceIndex: 0,
-                    balanceBefore: -10,
+                    sourceAccount: input.balances[0]!.account,
+                    balanceBefore: input.balances[0]!.balance,
                     balanceAfter: 250,
-                    costBasisBefore: 40,
+                    costBasisBefore: input.balances[0]!.costBasis,
                     costBasisAfter: 20,
                     credited: 300,
                     retirementOccurrence: {
@@ -136,10 +141,11 @@ vi.mock(
                   {
                     kind: 'contribution',
                     balanceIndex: 1,
-                    balanceBefore: -20,
+                    sourceAccount: input.balances[1]!.account,
+                    balanceBefore: input.balances[1]!.balance,
                     balanceAfter: 0,
-                    costBasisBefore: -21,
-                    costBasisAfter: -22,
+                    costBasisBefore: input.balances[1]!.costBasis,
+                    costBasisAfter: input.balances[1]!.costBasis,
                     credited: 100,
                     retirementOccurrence: {
                       producerOccurrenceKey: 'b-sentinel-contribution',
@@ -161,7 +167,8 @@ vi.mock(
                   {
                     kind: 'employerMatch',
                     balanceIndex: 0,
-                    balanceBefore: -40,
+                    sourceAccount: input.balances[0]!.account,
+                    balanceBefore: 250,
                     balanceAfter: 200,
                     retirementOccurrence: {
                       producerOccurrenceKey: 'c-sentinel-match',
@@ -178,7 +185,8 @@ vi.mock(
                   {
                     kind: 'employerMatch',
                     balanceIndex: 2,
-                    balanceBefore: -50,
+                    sourceAccount: input.balances[2]!.account,
+                    balanceBefore: 1_100,
                     balanceAfter: 1_000,
                     retirementOccurrence: null,
                     record: matchRecords[1]!,
@@ -193,9 +201,6 @@ vi.mock(
                   otherInflow: 319,
                   taxableInflow: 307,
                 },
-                desiredByAccountId: new Map([
-                  ['sentinel-desired', 991],
-                ]),
                 employerAllocationByOwner: new Map(),
               }
             : {
@@ -209,9 +214,37 @@ vi.mock(
                   otherInflow: 0,
                   taxableInflow: 0,
                 },
-                desiredByAccountId: new Map(),
                 employerAllocationByOwner: new Map(),
               }
+        if (input.year === 2026 && seam.fault !== null) {
+          result = {
+            ...result,
+            operations: result.operations.map((operation) => {
+              if (
+                seam.fault === 'signedZero' &&
+                operation.kind === 'contribution' &&
+                operation.balanceIndex === 1
+              ) {
+                return {
+                  ...operation,
+                  balanceBefore: Object.is(operation.balanceBefore, -0) ? 0 : -0,
+                }
+              }
+              if (operation.kind !== 'contribution' || operation.balanceIndex !== 2) {
+                return operation
+              }
+              if (seam.fault === 'wrongPosition') {
+                return { ...operation, sourceAccount: input.balances[1]!.account }
+              }
+              if (seam.fault === 'staleBalance') {
+                return { ...operation, balanceBefore: operation.balanceBefore + 1 }
+              }
+              return seam.fault === 'staleBasis'
+                ? { ...operation, costBasisBefore: operation.costBasisBefore + 1 }
+                : operation
+            }),
+          }
+        }
         seam.calls.push({ input, result })
         return result
       },
@@ -274,7 +307,7 @@ function plan(): Plan {
     },
     {
       type: 'traditional', id: POSITION_IDS[1], name: POSITION_IDS[1],
-      ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 100,
+      ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 0,
       annualContribution: 0,
     },
     {
@@ -296,6 +329,7 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
     seam.calls.length = 0
     seam.recordedContributions.length = 0
     seam.recordedMatches.length = 0
+    seam.fault = null
     const counterfactuals: CounterfactualAnnualLiabilityResult[] = []
     const result = simulatePlan(plan(), {
       startYear: 2026,
@@ -387,5 +421,41 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
     expect(second.withdrawals.taxable).toBe(200)
     expect(second.withdrawals.roth).toBe(200)
     expect(second.penalties).toBe(0)
+  })
+
+  it.each([
+    [
+      'wrongPosition' as const,
+      'Annual contribution operation lost its live balance position',
+    ],
+    [
+      'staleBalance' as const,
+      'Annual contribution operation lost its live balance position',
+    ],
+    [
+      'staleBasis' as const,
+      'Annual contribution operation has a stale live cost basis',
+    ],
+    [
+      'signedZero' as const,
+      'Annual contribution operation lost its live balance position',
+    ],
+  ])('fails closed before publishing a %s operation', (fault, message) => {
+    seam.calls.length = 0
+    seam.recordedContributions.length = 0
+    seam.recordedMatches.length = 0
+    seam.fault = fault
+
+    expect(() => simulatePlan(plan(), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
+    })).toThrow(message)
+
+    expect(seam.recordedContributions)
+      .toHaveLength(fault === 'signedZero' ? 2 : 0)
+    expect(seam.recordedMatches).toEqual([])
+    seam.fault = null
   })
 })

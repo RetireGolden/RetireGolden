@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 287,
+    "totalFiles": 288,
     "byStatus": {
       "partial": 43,
-      "registered": 92,
+      "registered": 93,
       "rule-free": 152,
       "unswept": 0
     },
@@ -254,7 +254,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-08-31",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit"
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual contribution planning is now registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains effect application and downstream totals/maps; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -394,10 +394,10 @@
     },
     {
       "directory": "projection",
-      "files": 54,
+      "files": 55,
       "byStatus": {
         "partial": 8,
-        "registered": 6,
+        "registered": 7,
         "rule-free": 40
       }
     },

@@ -92,6 +92,8 @@ export interface AnnualContributionCreditOperation {
   readonly kind: 'contribution'
   /** Index into the caller's balance array; account ids may collide. */
   readonly balanceIndex: number
+  /** Exact positional account supplied by the caller; duplicate ids are valid. */
+  readonly sourceAccount: ContributionAccount
   readonly balanceBefore: number
   readonly balanceAfter: number
   readonly costBasisBefore: number
@@ -112,6 +114,8 @@ export interface AnnualEmployerMatchOperation {
   readonly kind: 'employerMatch'
   /** Index into the caller's balance array; account ids may collide. */
   readonly balanceIndex: number
+  /** Exact positional account supplied by the caller; duplicate ids are valid. */
+  readonly sourceAccount: ContributionAccount
   readonly balanceBefore: number
   readonly balanceAfter: number
   readonly retirementOccurrence:
@@ -137,7 +141,6 @@ export interface AnnualContributionsAndEmployerMatchTotals {
 export interface AnnualContributionsAndEmployerMatchResult {
   readonly operations: readonly AnnualContributionAndMatchOperation[]
   readonly totals: Readonly<AnnualContributionsAndEmployerMatchTotals>
-  readonly desiredByAccountId: ReadonlyMap<string, number>
   readonly employerAllocationByOwner:
     ReadonlyMap<string, Readonly<EmployerElectiveAllocation>>
 }
@@ -191,10 +194,8 @@ export function annualContributionsAndEmployerMatch(
         ? input.pack.contributionLimits.catchUp50 * input.limitGrowth
         : 0
 
-  // Public ids retain their legacy last-row-wins projection for downstream
-  // cash-flow assembly. Planning and allocation stay positional so accepted
-  // duplicate ids cannot overwrite one another's requests or credits.
-  const desiredByAccountId = new Map<string, number>()
+  // Contribution rows are positional even when public account ids collide.
+  // Never use an id-keyed map to decide what a row requested or received.
   const desiredByBalanceIndex = new Map<number, number>()
   const employerRowKey = (balanceIndex: number): string => String(balanceIndex)
   for (const [balanceIndex, state] of input.balances.entries()) {
@@ -240,7 +241,6 @@ export function annualContributionsAndEmployerMatch(
     } else {
       desired = account.annualContribution * input.inflFactor
     }
-    desiredByAccountId.set(account.id, desired)
     desiredByBalanceIndex.set(balanceIndex, desired)
   }
 
@@ -396,6 +396,7 @@ export function annualContributionsAndEmployerMatch(
       operations.push({
         kind: 'contribution',
         balanceIndex,
+        sourceAccount: account,
         balanceBefore,
         balanceAfter: balanceBefore,
         costBasisBefore,
@@ -491,6 +492,7 @@ export function annualContributionsAndEmployerMatch(
     operations.push({
       kind: 'contribution',
       balanceIndex,
+      sourceAccount: account,
       balanceBefore,
       balanceAfter,
       costBasisBefore,
@@ -586,6 +588,7 @@ export function annualContributionsAndEmployerMatch(
     operations.push({
       kind: 'employerMatch',
       balanceIndex,
+      sourceAccount: account,
       balanceBefore,
       balanceAfter,
       retirementOccurrence,
@@ -608,7 +611,6 @@ export function annualContributionsAndEmployerMatch(
       otherInflow,
       taxableInflow,
     },
-    desiredByAccountId,
     employerAllocationByOwner,
   }
 }

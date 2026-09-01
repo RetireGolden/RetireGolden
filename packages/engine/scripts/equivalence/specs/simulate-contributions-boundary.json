@@ -1,0 +1,160 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-contributions-boundary",
+  "why": "Measured reach for the annual contribution and employer-match phase extracted from simulatePlan. Five dedicated block-U members run in all four equivalence modes and discriminate employer deferral/catch-up routing and 415(c) match limits, ordered joint IRA compensation and owner ceilings, HSA spouse/survivor limits, Roth-basis and owned-IRA annual-pass re-entry, and exact positional duplicate-id folds.",
+  "entries": [
+    {
+      "id": "U.helper.sharedState",
+      "label": "shadow state, aggregate accumulators, and joint or owner compensation pools",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [162, 185],
+      "note": "The exported declaration on line 159 is type/declaration syntax rather than an executable whole line and is excluded from the runtime reach range."
+    },
+    {
+      "id": "U.helper.catchup",
+      "label": "age-60 super-catch-up and ordinary age-50 catch-up selection",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [187, 194],
+      "note": "The under-50 zero arm on line 195 is outside the claimed hostile cases; existing focused limit tests pin it."
+    },
+    {
+      "id": "U.helper.desiredSchedule",
+      "label": "positional request discovery and scheduled phase selection",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [199, 224],
+      "note": "The non-contributing-account continue is a defensive eligibility arm covered by focused helper tests."
+    },
+    {
+      "id": "U.helper.desiredScheduleAmount",
+      "label": "scheduled phase amount, escalation, and inflation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [226, 230],
+      "note": "Line 225's non-null from-age offset and lines 236-240's scheduled employer zero-wage body are excluded because block U uses all-age schedules and compensated employer rows; focused helper tests own the structural schedule-window and wage-gate branches."
+    },
+    {
+      "id": "U.helper.desiredPublish",
+      "label": "annual request and positional desired publication",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [241, 245],
+      "note": "Lines 239-240 are the unscheduled zero-wage branch body; the block-U employer owners are compensated and focused tests cover the zero-wage case."
+    },
+    {
+      "id": "U.helper.employerAllocation",
+      "label": "positional employer requests and per-owner elective allocation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [247, 286]
+    },
+    {
+      "id": "U.helper.annualLimitsStart",
+      "label": "positional iteration and employer, IRA, and family-HSA limit selection",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [288, 328],
+      "note": "The HSA self-only operand on line 329 is outside U3's deliberately family/survivor claim and remains pinned by focused limit tests."
+    },
+    {
+      "id": "U.helper.hsaCatchup",
+      "label": "whole per-spouse HSA catch-up",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [330, 331],
+      "note": "The under-55 HSA zero operand on line 332 is outside U3's catch-up claim and remains pinned by focused limit tests."
+    },
+    {
+      "id": "U.helper.compensationAndRoutingLimits",
+      "label": "HSA result, shared IRA compensation, 415(c), ordered group warnings, and catch-up routing",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [333, 385],
+      "note": "Line 386 is the no-owner public record arm; block U supplies explicit row owners and focused tests cover nullable public owner metadata."
+    },
+    {
+      "id": "U.helper.zeroCreditOperation",
+      "label": "requested/credited record and explicit zero-credit operation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [387, 413]
+    },
+    {
+      "id": "U.helper.creditRuntime",
+      "label": "credited balance and retirement occurrence/application evidence",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [416, 436],
+      "note": "Line 437 is the nullable owner operand for a nontraditional occurrence; only traditional accounts create an occurrence here, making that operand defensive."
+    },
+    {
+      "id": "U.helper.creditBasis",
+      "label": "runtime application, taxable basis, Roth pool, and owner-DOB resolution",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [438, 470],
+      "note": "The null-DOB threshold arms on lines 471 and 474 are excluded: validated simulation owners come from plan people, while focused helper tests cover defensive owner resolvers."
+    },
+    {
+      "id": "U.helper.creditDobNonNull",
+      "label": "non-null owner-DOB threshold computation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [472, 473],
+      "note": "The null-DOB arm on line 471 and null-threshold arm on line 474 are excluded; validated simulation owners come from plan people, while focused helper tests cover defensive owner resolvers."
+    },
+    {
+      "id": "U.helper.creditTotals",
+      "label": "QCD section-219 offset, exact totals, and ordered contribution operation",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [475, 508]
+    },
+    {
+      "id": "U.helper.ownerWarning",
+      "label": "ordered employer-request warning fold",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [511, 524]
+    },
+    {
+      "id": "U.helper.employerMatchRequest",
+      "label": "employer-match row selection and allocated elective base",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [526, 544],
+      "note": "The allocation-undefined fallback on line 545 is structurally defensive: every desired employer row is collected and allocated before match processing. Focused helper tests pin the fallback contract."
+    },
+    {
+      "id": "U.helper.employerMatchEffects",
+      "label": "match base, pay and 415(c) cap, traditional/Roth runtime effects, and exact totals",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [546, 600]
+    },
+    {
+      "id": "U.helper.return",
+      "label": "complete ordered contribution boundary result",
+      "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
+      "lines": [603, 615]
+    },
+    {
+      "id": "U.callsite.invoke",
+      "label": "annual contribution boundary invocation",
+      "file": "projection/simulate.ts",
+      "lines": [3261, 3282]
+    },
+    {
+      "id": "U.callsite.positionValidation",
+      "label": "ordered warning handling and positional live-balance validation",
+      "file": "projection/simulate.ts",
+      "lines": [3283, 3293],
+      "note": "The fail-closed error body on lines 3294-3297 is intentionally unreachable for genuine plans and is pinned by the hostile delegation suite."
+    },
+    {
+      "id": "U.callsite.basisValidation",
+      "label": "live cost-basis precondition validation",
+      "file": "projection/simulate.ts",
+      "lines": [3298, 3299],
+      "note": "The fail-closed error body on lines 3300-3303 is intentionally unreachable for genuine plans and is pinned by the hostile delegation suite."
+    },
+    {
+      "id": "U.callsite.apply",
+      "label": "ordered contribution, basis, runtime, QCD, cash-flow, and employer-match effects",
+      "file": "projection/simulate.ts",
+      "lines": [3304, 3344]
+    },
+    {
+      "id": "U.callsite.totals",
+      "label": "complete totals and downstream public lookups",
+      "file": "projection/simulate.ts",
+      "lines": [3345, 3355]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so the report's cold sub-line regions and focused helper/delegation tests must be read alongside this differential proof."
+}

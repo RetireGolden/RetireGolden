@@ -66,7 +66,6 @@ function assemble(overrides: Partial<AssembleYearCashFlowInput> = {}) {
     distributedYieldByAccountId: new Map(),
     ownerPersonIdByAccountId: new Map(),
     employerAllocationByOwner: new Map(),
-    desiredByAccountId: new Map(),
     yearTaxExemptInterest: 0,
     generatedTaxExemptInterest: 0,
     acaForeignExclusionAddback: 0,
@@ -203,6 +202,37 @@ describe('assembleYearCashFlow', () => {
     ])
     expect(result.sourceLines.some((line) => line.kind === 'taxableAccountYield')).toBe(false)
     expect(result.reconciliation.status).toBe('reconciled')
+  })
+
+  it('does not consume a duplicate-id use ordinal for a defensive credited-only contribution row', () => {
+    const yearSites = createAnnualCashFlowYearSites()
+    yearSites.recordContribution({
+      destinationAccountId: 'duplicate',
+      ownerPersonId: 'p1',
+      requested: 0,
+      credited: 5,
+    })
+    yearSites.recordContribution({
+      destinationAccountId: 'duplicate',
+      ownerPersonId: 'p1',
+      requested: 10,
+      credited: 10,
+    })
+
+    const result = assemble({
+      yearSites,
+      contributionsTotal: 15,
+      requiredLifestyle: 10,
+    })
+    const transfers = result.transferLines.filter(
+      (line) => line.kind === 'employeeContribution',
+    )
+    expect(transfers).toHaveLength(2)
+    expect(transfers[0]!.lineage).toBeUndefined()
+    expect(transfers[1]!.lineage).toEqual([{
+      lineId: 'use:contribution:duplicate',
+      relationship: 'sameDollarLaterStage',
+    }])
   })
 
   it('emits standalone ordinaryIncome metadata when a zero-net sale is recapture-only', () => {

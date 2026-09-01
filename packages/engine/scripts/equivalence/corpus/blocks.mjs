@@ -16,6 +16,7 @@
  *   K  annual SEPP distributions
  *   L  annual Social Security pass
  *   M  exact-cent annual ordinary-withdrawal boundary
+ *   U  annual contributions and employer match
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
@@ -23,7 +24,7 @@
  * `projection/internal/wageIncomeStreams.ts`; D's members stay because the
  * wages phase still runs in every capture. F through I are the later
  * `simulate-small-annual-boundaries` extraction and are measured by its own
- * reach spec. J through M each have a phase-specific reach spec beside the
+ * reach spec. J through M and U each have a phase-specific reach spec beside the
  * earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -35,7 +36,8 @@
  * `scripts/equivalence/specs/simulate-small-annual-boundaries.json` and
  * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json` and
  * `scripts/equivalence/specs/simulate-social-security-boundary.json` and
- * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json` are the
+ * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json` and
+ * `scripts/equivalence/specs/simulate-contributions-boundary.json` are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  *
@@ -1956,6 +1958,247 @@ function blockM() {
 }
 
 // ---------------------------------------------------------------------------
+// U — annual contributions and employer match
+// ---------------------------------------------------------------------------
+
+function annualSchedule(annualAmount, extra = {}) {
+  return [{
+    annualAmount,
+    fromAge: null,
+    toAge: null,
+    escalationPct: 0,
+    ...extra,
+  }]
+}
+
+function blockU() {
+  const out = []
+
+  {
+    // p1 is inside the age-60 super-catch-up window and above the prior-year
+    // FICA threshold. Current compensation is below the full request, so only
+    // 5,500 of catch-up can redirect to Roth; a generous match then consumes
+    // the last 5,500 of compensation-bound 415(c) room. p2 independently
+    // reaches the ordinary age-50 catch-up arm.
+    const plan = couplePlan({
+      p1Dob: '1966-01-01',
+      p2Dob: '1971-01-01',
+      p1PlanningAge: 70,
+      p2PlanningAge: 70,
+    })
+    plan.accounts = [
+      cash('u1-cash', 500_000, { annualReturnPct: 0 }),
+      qualified('roth', 'u1-p1-roth-feature', 0, {
+        kind: 'employer',
+        annualReturnPct: 0,
+        // A direct Roth request plus redirected high-earner catch-up makes the
+        // Roth employer-match/no-retirement-occurrence arm observable.
+        annualContribution: 2_750,
+        employerMatch: { matchPct: 200, capPctOfPay: 100 },
+      }),
+      qualified('traditional', 'u1-p1-traditional', 0, {
+        kind: 'employer',
+        annualReturnPct: 0,
+        annualContribution: 40_000,
+        priorCalendarYearFicaWages: 200_000,
+        // Matching on this second row observes exhausted 415(c) room after the
+        // redirected Roth row received the only permitted employer dollars.
+        employerMatch: { matchPct: 200, capPctOfPay: 100 },
+      }),
+      qualified('traditional', 'u1-p2-traditional', 0, {
+        kind: 'employer',
+        ownerPersonId: 'p2',
+        annualReturnPct: 0,
+        annualContribution: 40_000,
+        priorCalendarYearFicaWages: 0,
+        employerMatch: { matchPct: 100, capPctOfPay: 1 },
+      }),
+    ]
+    plan.incomes = [
+      wages('u1-p1-wages', 'p1', 30_000),
+      wages('u1-p2-wages', 'p2', 100_000),
+    ]
+    out.push(
+      member(
+        'u1-employerCatchupsCompensationAndMatch',
+        'U: age-60 Roth catch-up redirection, age-50 ordinary catch-up, compensation cap, owner warning, ordered employer match and the 415(c) pay prong',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // Scheduled non-employer deposits bypass the legacy own-wage gate and make
+    // the joint-return compensation pool observable. The aged p1 traditional
+    // and Roth rows share one owner ceiling in row order; p2 then receives only
+    // the compensation left by p1. The aged traditional credit also publishes
+    // the section-219/QCD offset carried into the later annual pass.
+    const plan = couplePlan({
+      p1Dob: '1955-01-01',
+      p2Dob: '1966-01-01',
+      p1PlanningAge: 80,
+      p2PlanningAge: 80,
+    })
+    plan.accounts = [
+      cash('u2-cash', 100_000, { annualReturnPct: 0 }),
+      qualified('traditional', 'u2-p1-traditional-ira', 100, {
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(4_000),
+        nondeductibleBasis: 10,
+      }),
+      qualified('roth', 'u2-p1-roth-ira', 100, {
+        annualReturnPct: 0,
+        contributionBasis: 0,
+        contributionSchedule: annualSchedule(5_000),
+      }),
+      qualified('traditional', 'u2-p2-traditional-ira', 100, {
+        ownerPersonId: 'p2',
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(4_000),
+      }),
+      qualified('roth', 'u2-p2-roth-zero-credit', 100, {
+        ownerPersonId: 'p2',
+        annualReturnPct: 0,
+        contributionBasis: 0,
+        contributionSchedule: annualSchedule(100),
+      }),
+    ]
+    plan.incomes = [wages('u2-p2-wages', 'p2', 10_000)]
+    out.push(
+      member(
+        'u2-jointIraOwnerAndCompensationCoordination',
+        'U: ordered traditional/Roth IRA owner ceiling, joint spousal-compensation pool, zero/partial credits, warnings, aged-IRA runtime application and section-219 QCD offset',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // In 2026 both living spouses receive half of the indexed family base plus
+    // a whole non-indexed catch-up. p2 dies after that year; in 2027 p1 keeps
+    // family coverage but no longer divides it, while the catch-up stays flat
+    // under a deliberately large projected limit-growth factor.
+    const plan = couplePlan({
+      p1Dob: '1971-01-01',
+      p2Dob: '1971-01-01',
+      p1PlanningAge: 80,
+      p2PlanningAge: 80,
+    })
+    plan.assumptions.inflationPct = 10
+    plan.accounts = [
+      cash('u3-cash', 100_000, { annualReturnPct: 0 }),
+      qualified('hsa', 'u3-p1-hsa', 100, {
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(20_000),
+      }),
+      qualified('hsa', 'u3-p2-hsa', 100, {
+        ownerPersonId: 'p2',
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(20_000),
+      }),
+    ]
+    out.push(
+      member(
+        'u3-hsaFamilySplitCatchupAndSurvivor',
+        'U: living-spouse family-limit split, whole per-spouse HSA catch-up, 2027 indexed base with flat catch-up, dead-owner skip and survivor whole-family limit',
+        plan,
+        {
+          horizonEndYear: START_YEAR + 1,
+          deathAgeByPersonId: { p2: 55 },
+        },
+      ),
+    )
+  }
+
+  {
+    // Contributions are planned once, before the annual-pass settlement and
+    // counterfactual attempts. Required spending consumes cash, the contributed
+    // traditional IRA, and then part of the same-year Roth deposit. The Roth
+    // basis delta must survive annual-pass re-entry without being dropped or
+    // doubled, while the nondeductible IRA forces the Form 8606 settlement path.
+    const plan = singlePersonPlan({
+      dob: '1976-01-01',
+      planningAge: 65,
+      retirementAge: null,
+    })
+    plan.accounts = [
+      cash('u4-cash', 2_000, { annualReturnPct: 0, ownerPersonId: 'p1' }),
+      qualified('traditional', 'u4-traditional-ira', 100, {
+        annualReturnPct: 0,
+        nondeductibleBasis: 10,
+        contributionSchedule: annualSchedule(100),
+      }),
+      qualified('roth', 'u4-roth-ira', 0, {
+        annualReturnPct: 0,
+        contributionBasis: 0,
+        contributionSchedule: annualSchedule(500),
+      }),
+    ]
+    plan.incomes = [wages('u4-wages', 'p1', 600)]
+    plan.expenses.baseAnnual = 2_600
+    out.push(
+      member(
+        'u4-rothBasisMutationAcrossAnnualPassReentry',
+        'U: same-year Roth contribution-basis consumption after cash and traditional draws, owned-IRA settlement attempts, runtime/application publication and counterfactual annual-pass re-entry',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  {
+    // Accepted duplicate account ids retain two distinct scheduled requests and
+    // positional cost-basis writes even though published balances remain
+    // last-row-wins. Separate large and tiny rows make
+    // left-associated totals observable; the distinct 50-dollar row defeats a
+    // whole-plan-only repair that loses row association.
+    const plan = singlePersonPlan({ dob: '1980-01-01', planningAge: 60 })
+    plan.accounts = [
+      cash('u5-funding-cash', 20_000_000_001_000, {
+        annualReturnPct: 0,
+        ownerPersonId: 'p1',
+      }),
+      taxable('u5-fp-large', 10, 4, {
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(10_000_000_000_000),
+      }),
+      taxable('u5-fp-small-a', 10, 4, {
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(0.011),
+      }),
+      taxable('u5-fp-small-b', 10, 4, {
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(0.011),
+      }),
+      taxable('u5-duplicate', 10, 4, {
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(100),
+      }),
+      taxable('u5-distinct', 30, 6, {
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(50),
+      }),
+      taxable('u5-duplicate', 20, 8, {
+        annualReturnPct: 0,
+        contributionSchedule: annualSchedule(200),
+      }),
+    ]
+    out.push(
+      member(
+        'u5-positionalDuplicateIdsAndExactFolds',
+        'U: positional duplicate ids with distinct 100/200 requests, a distinct third row, exact row/basis association, cancellation-sensitive folds and duplicate cash-flow identities',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // S — shared blind spots, owned by no single block
 // ---------------------------------------------------------------------------
 
@@ -2037,6 +2280,7 @@ export async function blockMembers() {
     ...blockK(),
     ...blockL(),
     ...blockM(),
+    ...blockU(),
     ...blockS(),
   ]
 }

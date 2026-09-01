@@ -256,9 +256,19 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 159
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -308,6 +318,7 @@
       "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -317,6 +328,15 @@
             {
               "name": "rothAccountSchema",
               "line": 942
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 159
             }
           ]
         },

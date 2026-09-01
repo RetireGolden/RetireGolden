@@ -81,11 +81,11 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 287 |
+| Engine source files | 288 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 43 |
-| registered | 92 |
+| registered | 93 |
 | rule-free | 152 |
 | unswept | 0 |
 
@@ -104,7 +104,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 3 | 3 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 8 | 0 | 6 | 2 | 0 |
-| projection | 54 | 8 | 6 | 40 | 0 |
+| projection | 55 | 8 | 7 | 40 | 0 |
 | rmd | 4 | 1 | 3 | 0 | 0 |
 | rules | 25 | 0 | 20 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -156,7 +156,7 @@ None.
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
-| projection/simulate.ts | 2026-08-31 | QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit |
+| projection/simulate.ts | 2026-08-31 | QCD/RMD/annuity/contribution/QLAC covered; annual contribution planning is now registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains effect application and downstream totals/maps; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65 |
 | rmd/applicableAge.ts | 2026-08-29 | Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy; the born-1959 record's contraryReading now records what the full IRB text of Announcement 2026-7 shows - it defers final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so no current guidance addresses the contest; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact) and the 70½/July-1949 cohort tiers pending a pre-SECURE historical-edition record |
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
 | socialSecurity/piaFromEarnings.ts | 2026-08-27 | AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations |

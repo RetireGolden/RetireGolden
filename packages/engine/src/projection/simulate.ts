@@ -3285,8 +3285,22 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         warnings.add(operation.message)
         continue
       }
-      const state = balances[operation.balanceIndex]!
+      const state = balances[operation.balanceIndex]
+      if (
+        state === undefined ||
+        state.account !== operation.sourceAccount ||
+        !Object.is(state.balance, operation.balanceBefore)
+      ) {
+        throw new Error(
+          'Annual contribution operation lost its live balance position',
+        )
+      }
       if (operation.kind === 'contribution') {
+        if (!Object.is(state.costBasis, operation.costBasisBefore)) {
+          throw new Error(
+            'Annual contribution operation has a stale live cost basis',
+          )
+        }
         if (operation.credited > 0) {
           state.balance = operation.balanceAfter
           if (operation.retirementOccurrence !== null) {
@@ -3337,7 +3351,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       otherInflow,
       taxableInflow,
     } = contributionPlan.totals
-    const desiredByAccountId = contributionPlan.desiredByAccountId
     const employerAllocationByOwner =
       contributionPlan.employerAllocationByOwner
     const iraProRata = new Map<string, IraProRataYear>()
@@ -9756,7 +9769,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 ]),
               ),
               employerAllocationByOwner,
-              desiredByAccountId,
               yearTaxExemptInterest,
               generatedTaxExemptInterest,
               acaForeignExclusionAddback,

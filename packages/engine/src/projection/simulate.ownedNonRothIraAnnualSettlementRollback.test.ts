@@ -189,13 +189,25 @@ describe('simulator owned-IRA settlement rollback integration', () => {
     controller.reason = reason
     const plan = singlePersonPlan({ planningAge: 61 })
     plan.id = 'settlement-rollback-plan'
-    plan.accounts = [ira()]
+    const contributingIra = ira()
+    contributingIra.annualContribution = 10
+    plan.accounts = [contributingIra]
+    plan.incomes = [{
+      id: 'settlement-rollback-wages',
+      type: 'wages',
+      personId: 'p1',
+      annualGross: 100,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    plan.expenses.baseAnnual = 0
     const optimizerProbes: OptimizerYearProbe[] = []
 
     const result = simulatePlan(validatePlan(plan), {
       startYear: TAX_YEAR,
       horizonEndYear: TAX_YEAR + 1,
       taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
       captureOptimizerInputs: (probe) => optimizerProbes.push(probe),
     })
 
@@ -203,7 +215,14 @@ describe('simulator owned-IRA settlement rollback integration', () => {
     expect(optimizerProbes).toHaveLength(2)
     expect(result.years.every((year) =>
       !Object.hasOwn(year, 'ownedNonRothIraAnnualReplay'))).toBe(true)
-    expect(result.years.map((year) => year.balances.ira)).toEqual([100, 100])
+    expect(result.years.map((year) => year.contributions)).toEqual([10, 10])
+    expect(result.years.map((year) => year.balances.ira)).toEqual([110, 120])
+    expect(result.years.map((year) => year.retirementRuntimeSource!
+      .runtimeOccurrences.filter((row) => row.kind === 'ownedIraContribution')
+      .length)).toEqual([1, 1])
+    expect(result.years.map((year) => year.cashFlow!.transferLines
+      .filter((row) => row.kind === 'employeeContribution').length))
+      .toEqual([1, 1])
     expect(JSON.stringify(result)).not.toMatch(
       /pendingOwnedNonRothIraAnnualSettlement|assumptionCycle|attemptCallbackThrew/,
     )

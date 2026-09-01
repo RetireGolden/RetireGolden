@@ -387,4 +387,136 @@ describe('simulatePlan duplicate contribution account ids', () => {
       },
     ])
   })
+
+  it('keeps high-earner Roth catch-up routing and match bases positional for duplicate ids', () => {
+    const plan = singlePersonPlan({ dob: '1976-01-01', planningAge: 60 })
+    plan.incomes = [{
+      id: 'wages',
+      type: 'wages',
+      personId: 'p1',
+      annualGross: 200_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const first = employerAccount(
+      'duplicate-employer', 'First source row', 10, 20_000,
+    )
+    const second = employerAccount(
+      'duplicate-employer', 'Second source row', 20, 20_000,
+    )
+    first.priorCalendarYearFicaWages = 200_000
+    second.priorCalendarYearFicaWages = 200_000
+    first.employerMatch = { matchPct: 100, capPctOfPay: 100 }
+    second.employerMatch = { matchPct: 100, capPctOfPay: 100 }
+    plan.accounts = [
+      {
+        id: 'funding-cash',
+        name: 'Funding cash',
+        type: 'cash',
+        ownerPersonId: 'p1',
+        balance: 0,
+        annualReturnPct: 0,
+        annualContribution: 0,
+      },
+      first,
+      second,
+      {
+        id: 'roth-sibling',
+        name: 'Roth 401(k)',
+        type: 'roth',
+        kind: 'employer',
+        ownerPersonId: 'p1',
+        balance: 0,
+        annualReturnPct: 0,
+        annualContribution: 0,
+      },
+    ]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+
+    const year = simulatePlan(parsed.plan, {
+      startYear: START_YEAR,
+      horizonEndYear: START_YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
+    }).years[0]!
+
+    expect(year.contributions).toBe(32_500)
+    expect(year.employerMatch).toBe(32_500)
+    expect(year.balances['roth-sibling']).toBe(8_000)
+    expect(year.cashFlow!.useLines
+      .filter((line) => line.kind === 'contribution')
+      .map((line) => [
+        line.id, line.requestedPlanDollars, line.fundedPlanDollars,
+      ]))
+      .toEqual([
+        ['use:contribution:duplicate-employer', 20_000, 20_000],
+        ['use:contribution:duplicate-employer', 12_000, 4_500],
+        ['use:contribution:roth-sibling', 8_000, 8_000],
+      ])
+    expect(year.cashFlow!.transferLines
+      .filter((line) => line.kind === 'employerMatch')
+      .map((line) => [line.id, line.creditPlanDollars]))
+      .toEqual([
+        ['transfer:employerMatch:duplicate-employer', 20_000],
+        ['transfer:employerMatch:duplicate-employer', 12_500],
+      ])
+  })
+
+  it('keeps duplicate employer rows positional when 415(c) binds employee plus match', () => {
+    const plan = singlePersonPlan({ dob: '1980-01-01', planningAge: 60 })
+    plan.incomes = [{
+      id: 'wages',
+      type: 'wages',
+      personId: 'p1',
+      annualGross: 30_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const first = employerAccount(
+      'duplicate-employer', 'First binding row', 10, 15_000,
+    )
+    const second = employerAccount(
+      'duplicate-employer', 'Second binding row', 20, 15_000,
+    )
+    first.employerMatch = { matchPct: 200, capPctOfPay: 100 }
+    second.employerMatch = { matchPct: 200, capPctOfPay: 100 }
+    plan.accounts = [
+      {
+        id: 'funding-cash',
+        name: 'Funding cash',
+        type: 'cash',
+        ownerPersonId: 'p1',
+        balance: 0,
+        annualReturnPct: 0,
+        annualContribution: 0,
+      },
+      first,
+      second,
+    ]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+
+    const year = simulatePlan(parsed.plan, {
+      startYear: START_YEAR,
+      horizonEndYear: START_YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
+    }).years[0]!
+
+    expect(year.contributions).toBe(24_500)
+    expect(year.employerMatch).toBe(5_500)
+    expect(year.cashFlow!.useLines
+      .filter((line) => line.kind === 'contribution')
+      .map((line) => [line.requestedPlanDollars, line.fundedPlanDollars]))
+      .toEqual([[15_000, 15_000], [15_000, 9_500]])
+    expect(year.cashFlow!.transferLines
+      .filter((line) => line.kind === 'employerMatch')
+      .map((line) => line.creditPlanDollars))
+      .toEqual([5_500])
+  })
 })
