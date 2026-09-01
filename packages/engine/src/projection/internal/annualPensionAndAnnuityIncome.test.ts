@@ -103,6 +103,29 @@ function annualInput(
 }
 
 describe('annualPensionAndAnnuityIncome', () => {
+  it('returns opening folds unchanged when the plan has no pension or annuity', () => {
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput([]),
+      opening: {
+        annuityIncome: 101,
+        pensionIncome: 202,
+        ordinaryIncome: 303,
+        privateRetirementOrdinary: 404,
+        publicPensionOrdinary: 505,
+      },
+    })
+
+    expect(result).toEqual({
+      annuityIncome: 101,
+      pensionIncome: 202,
+      ordinaryIncome: 303,
+      privateRetirementOrdinary: 404,
+      publicPensionOrdinary: 505,
+      qualifiedAnnuityPayments: [],
+      rows: [],
+    })
+  })
+
   it('preserves every nonzero opening fold while adding the annual phase', () => {
     const result = annualPensionAndAnnuityIncome({
       ...annualInput([pension('private-pension', 1_000, 'private')]),
