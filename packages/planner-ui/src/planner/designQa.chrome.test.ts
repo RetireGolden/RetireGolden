@@ -117,7 +117,7 @@ describe('Design-QA chrome pins: theme and focus tokens', () => {
     expect(body).toMatch(/outline-offset:\s*2px/)
   })
 
-  it('empty states are a bounded well, except the picker landing (#438)', () => {
+  it('empty states are a bounded well; an element that is itself a card keeps card chrome (#438)', () => {
     const body = rule('.empty-state')
     expect(body).toMatch(/border:\s*1px dashed var\(--border\)/)
     expect(body).toMatch(/border-radius:\s*var\(--radius\)/)
