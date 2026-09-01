@@ -80,6 +80,10 @@ function wageRow(personId: string, amount: number, id: string): WageIncomeRow {
 const distributedYieldInput = {} as DistributedTaxableYieldInput
 const wageInput = {} as WageIncomeYearInput
 
+function float64Bits(value: number): bigint {
+  return new BigUint64Array(new Float64Array([value]).buffer)[0]!
+}
+
 describe('annualIncomeSetup', () => {
   beforeEach(() => {
     seam.yieldRows = []
@@ -303,17 +307,57 @@ describe('annualIncomeSetup', () => {
       }
     }
     const ordinaryBeforeWages = expectedOrdinary
-    for (const row of seam.wageRows) expectedOrdinary += row.amount
-    expect(result.ordinaryIncome).toBe(expectedOrdinary)
+    const sourceOrderFold = [ordinaryBeforeWages]
+    for (const row of seam.wageRows) {
+      expectedOrdinary += row.amount
+      sourceOrderFold.push(expectedOrdinary)
+    }
     let reversedWages = ordinaryBeforeWages
+    const reverseOrderFold = [ordinaryBeforeWages]
     for (const row of [...seam.wageRows].reverse()) {
       reversedWages += row.amount
+      reverseOrderFold.push(reversedWages)
     }
-    expect(result.ordinaryIncome).not.toBe(reversedWages)
-    expect(result.ordinaryIncome).not.toBe(
-      ordinaryBeforeWages +
-        seam.wageRows.reduce((total, row) => total + row.amount, 0),
-    )
+    const preSummedWages = ordinaryBeforeWages +
+      seam.wageRows.reduce((total, row) => total + row.amount, 0)
+
+    // These are the exact binary64 folds, expressed both as Numbers and as
+    // their raw bit patterns. At 10^16, one ULP is 2: the source order
+    // [1, 1, 2] stays at the base for both halfway additions, then advances
+    // one ULP. Reversing to [2, 1, 1] advances two ULPs. This makes the
+    // ordering distinction executable rather than dependent on mental
+    // decimal arithmetic in a review.
+    expect(sourceOrderFold).toEqual([
+      10_000_000_000_000_000,
+      10_000_000_000_000_000,
+      10_000_000_000_000_000,
+      10_000_000_000_000_002,
+    ])
+    expect(sourceOrderFold.map(float64Bits)).toEqual([
+      0x4341c37937e08000n,
+      0x4341c37937e08000n,
+      0x4341c37937e08000n,
+      0x4341c37937e08001n,
+    ])
+    expect(reverseOrderFold).toEqual([
+      10_000_000_000_000_000,
+      10_000_000_000_000_002,
+      10_000_000_000_000_004,
+      10_000_000_000_000_004,
+    ])
+    expect(reverseOrderFold.map(float64Bits)).toEqual([
+      0x4341c37937e08000n,
+      0x4341c37937e08001n,
+      0x4341c37937e08002n,
+      0x4341c37937e08002n,
+    ])
+    expect(result.ordinaryIncome).toBe(10_000_000_000_000_002)
+    expect(result.ordinaryIncome).toBe(expectedOrdinary)
+    expect(reversedWages).toBe(10_000_000_000_000_004)
+    expect(preSummedWages).toBe(10_000_000_000_000_004)
+    expect(float64Bits(result.ordinaryIncome)).toBe(0x4341c37937e08001n)
+    expect(float64Bits(reversedWages)).toBe(0x4341c37937e08002n)
+    expect(float64Bits(preSummedWages)).toBe(0x4341c37937e08002n)
 
     expect(result.incomes).toEqual({
       wages: 4,
