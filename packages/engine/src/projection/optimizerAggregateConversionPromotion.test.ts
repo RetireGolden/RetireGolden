@@ -120,7 +120,9 @@ const EXAMPLE_COUPLE_ACCOUNTS = (): Account[] => [
 function openingBalances(plan: Plan, year: number): AggregateConversionPromotionYearBalances {
   const balances: Record<string, number> = {}
   for (const account of plan.accounts) {
-    if ('balance' in account) balances[account.id] = account.balance
+    if ('balance' in account) {
+      balances[account.id] = (balances[account.id] ?? 0) + account.balance
+    }
   }
   return { year, balances }
 }
@@ -220,7 +222,7 @@ describe('the ledger and the chooser allocate the same year the same way', () =>
     expect(ledger.balances['sam-ira']).toBe(310_000)
   })
 
-  it('replays the ledger last-row view for duplicate source and destination IDs', () => {
+  it('replays the ledger aggregate view for duplicate source and destination IDs', () => {
     const supersededSource = traditionalIra('duplicate-source', 300_000, ALEX)
     supersededSource.name = 'Superseded source row'
     const selectedSource = traditionalIra('duplicate-source', 30_000, ALEX)
@@ -238,19 +240,19 @@ describe('the ledger and the chooser allocate the same year the same way', () =>
 
     const ledger = runLedger(plan, 50_000)
     const choice = chosen(chooseFor(plan, 50_000))
-    expect(ledger.converted).toBe(30_000)
+    expect(ledger.converted).toBe(50_000)
     expect(choice.intents).toEqual([expect.objectContaining({
       personId: ALEX,
       destinationRothAccountId: 'duplicate-roth',
-      requestedAmount: 3_000_000,
+      requestedAmount: 5_000_000,
       sourceAllocations: [{
         sourceAccountId: 'duplicate-source',
-        requestedAmount: 3_000_000,
+        requestedAmount: 5_000_000,
       }],
     })])
     expect(ledger.balances).toMatchObject({
-      'duplicate-source': 0,
-      'duplicate-roth': 32_000,
+      'duplicate-source': 280_000,
+      'duplicate-roth': 62_000,
     })
   })
 

@@ -1484,13 +1484,12 @@ function blockK() {
 
   {
     // Duplicate ids are valid when no retirement action references them and
-    // their forced-distribution facts agree. The forced-distribution boundary
-    // selects the later sub-cent row, matching the opening-balance map, and
-    // seeds a sub-cent amortization amount into the shared id cache. That row
-    // then grows 999% annually: by year three, recomputing from its current
-    // opening balance would produce a ledger-visible payment, while the
-    // correctly reused first-year cache remains sub-cent. Reversing row order
-    // or dropping the cache therefore changes complete output.
+    // their forced-distribution facts agree. The grouped ledger aggregates the
+    // two physical balances into one SEPP capacity while preserving each row's
+    // own return. The shared amortization cache is seeded once from that logical
+    // opening and reused while the high-return physical member changes its
+    // later-year share; regrouping, recomputing, or collapsing the physical
+    // rows therefore changes complete output.
     const firstDuplicate = qualified('traditional', 'sepp-shared-cache', 750_000, {
       sepp: { startAge: 56, method: 'amortization' },
     })
@@ -1524,7 +1523,7 @@ function blockK() {
     out.push(
       member(
         'k4-subCentDuplicateAmortCacheOrder',
-        'K: sub-cent first-year cache remains suppressed after duplicate-id opening balance grows past a recomputed ledger cent; order/cache alias is observable',
+        'K: compatible duplicate rows share aggregate SEPP capacity and one first-year amortization cache while retaining positional growth',
         plan,
         { horizonEndYear: START_YEAR + 2 },
       ),

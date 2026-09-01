@@ -61,9 +61,9 @@ describe('simulatePlan duplicate contribution account ids', () => {
     //   funding cash       = 1,000 - 350 = 650
     //   closing rows       = 110, 80, 220; total remains 1,060
     // Duplicate unreferenced account ids are accepted Plan input. Published
-    // balances intentionally remain last-row-wins, while investableTotal counts
-    // every positional row. The contribution and cash-flow streams must retain
-    // both duplicate rows and their distinct 100/200 amounts.
+    // balances aggregate the logical group, while investableTotal counts every
+    // positional row. The contribution and cash-flow streams must retain both
+    // duplicate rows and their distinct 100/200 amounts.
     const plan = singlePersonPlan({
       dob: '1980-01-01',
       planningAge: 60,
@@ -100,12 +100,13 @@ describe('simulatePlan duplicate contribution account ids', () => {
     expect(year.contributions).toBe(350)
     expect(year.balances).toEqual({
       'funding-cash': 650,
-      'duplicate-contribution': 220,
+      // One published logical ID: 10 + 100 and 20 + 200.
+      'duplicate-contribution': 330,
       'distinct-contribution': 80,
     })
     expect(year.investableTotal).toBe(1_060)
     expect(year.investableTotal - Object.values(year.balances).reduce((sum, value) => sum + value, 0))
-      .toBe(110)
+      .toBe(0)
 
     expect(year.cashFlow!.sourceLines).toEqual([{
       id: 'source:needBasedPortfolioWithdrawal:funding-cash',
@@ -289,12 +290,13 @@ describe('simulatePlan duplicate contribution account ids', () => {
     expect(year.employerMatch).toBe(13_000)
     expect(year.balances).toEqual({
       'funding-cash': 75_500,
-      'duplicate-employer': 19_520,
+      // One published logical ID aggregates both physical employer rows.
+      'duplicate-employer': 35_530,
       'distinct-employer': 2_030,
     })
     expect(year.investableTotal).toBe(113_060)
     expect(year.investableTotal - Object.values(year.balances).reduce((sum, value) => sum + value, 0))
-      .toBe(16_010)
+      .toBe(0)
 
     const runtimeContributionOccurrences = year.retirementRuntimeSource!.runtimeOccurrences
       .filter((occurrence) =>

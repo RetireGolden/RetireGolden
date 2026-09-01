@@ -175,9 +175,9 @@ describe('simulatePlan delegates recurring lifestyle layers', () => {
       )
     }
     expect([...openingByYear]).toEqual([
-      [2026, 200],
-      [2027, 135],
-      [2028, 60],
+      [2026, 300],
+      [2027, 235],
+      [2028, 160],
     ])
 
     // Year-ordinal sentinels prove that each year's fresh return remains

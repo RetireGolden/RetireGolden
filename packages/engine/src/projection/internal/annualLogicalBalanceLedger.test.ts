@@ -101,6 +101,13 @@ describe('AnnualLogicalBalanceLedger', () => {
       .toEqual(before)
   })
 
+  it('fails closed when individually finite members overflow in aggregate', () => {
+    expect(() => new AnnualLogicalBalanceLedger([
+      cash('dup', Number.MAX_VALUE),
+      cash('dup', Number.MAX_VALUE),
+    ])).toThrow('aggregate balance')
+  })
+
   it('writes exact single-member targets without multi-member normalization', () => {
     const state = cash('single', 0)
     const group = new AnnualLogicalBalanceLedger([state]).groups[0]!

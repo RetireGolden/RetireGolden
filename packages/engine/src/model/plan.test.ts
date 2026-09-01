@@ -11,6 +11,7 @@ import {
   stateForYear,
   stateResidencySegmentsForYear,
   traditionalAccountSchema,
+  type Account,
   type InheritedAccount,
   type Plan,
 } from './plan.js'
@@ -819,7 +820,10 @@ describe('guaranteed-income and estate-depth fields', () => {
       fundingAccountId: 'a1',
       taxQualification: 'nonQualified',
     })
-    const annuity = plan.accounts.find((account) => account.id === 'ann1')!
+    const annuity = plan.accounts.find(
+      (account): account is Extract<Account, { type: 'annuity' }> =>
+        account.type === 'annuity' && account.id === 'ann1',
+    )!
     plan.accounts.push({
       ...annuity,
       name: 'Duplicate unpurchased annuity',

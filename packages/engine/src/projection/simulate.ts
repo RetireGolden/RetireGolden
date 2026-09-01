@@ -3651,10 +3651,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (year === account.inherited.ownerDeathYear) return false
       return true
     }
-    // ID-keyed forced-distribution, IRA-character, and optimizer evidence must
-    // all observe the same account row. This is deliberately NOT the account
-    // list used by positional phases such as contributions: Map replacement
-    // selects the last row while preserving the id's first insertion position.
+    // ID-keyed forced-distribution, IRA-character, and optimizer evidence all
+    // observe one aggregate live state per compatible logical account ID. The
+    // selected facts come from the last physical row and ID order from the
+    // first, while positional phases such as contributions retain every row.
     const rmdBalanceByAccountId = annualBalanceByAccountId
     const rmdBalances = annualIdKeyedBalances
     // Year-scoped omitted-basis owners: same aggregation membership the
@@ -6799,7 +6799,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // shared policy module -- the same one the optimizer's promotion
         // chooser reads, so a promoted schedule cannot allocate by a different
         // rule than the ledger executes. The snapshot it weights owners by is
-        // the planner's private shadow of `balances`, after reserving any
+        // the planner's private shadow of the aggregate ID-keyed balances,
+        // after reserving any
         // deferred first-year RMD (Treas. Reg. 1.408A-4 A-6(b) requires that
         // amount to precede the conversion) and before anything below reduces
         // live `state.balance`.
@@ -6816,11 +6817,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // Each selected ID retains its first Plan insertion position; that is
         // how this snapshot is built, but plain-object enumeration does not
         // promise that order for integer-like keys. Promotion reconstructs the
-        // same last-row-per-ID view before joining. Consumers must not join the
-        // raw Plan array, which still contains superseded duplicate rows.
+        // same selected-facts-per-ID view before joining. Consumers must not
+        // join the raw Plan array, which can still contain physical aliases.
         aggregateRothConversionAllocationDesired = desired
         const plannedAllocation = annualAggregateRothConversionPlan({
-          balances,
+          balances: annualIdKeyedBalances,
           iraRmdUnsatisfiedByOwner,
           desiredPlanDollars: desired,
           primaryPersonId: primary.id,

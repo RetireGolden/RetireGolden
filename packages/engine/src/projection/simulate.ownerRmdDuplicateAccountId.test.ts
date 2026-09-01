@@ -13,15 +13,13 @@ import type { OptimizerYearProbe } from './types.js'
 const YEAR = 2026
 
 describe('simulatePlan owner RMD duplicate account IDs', () => {
-  it('uses the last ID row once while a distinct account still distributes', () => {
-    // Unreferenced duplicate account IDs are intentionally parseable. Every
-    // ID-keyed annual state channel is last-wins: the prior-Dec-31 balance Map
-    // and published balance record therefore select the second duplicate row.
+  it('uses one aggregate ID group while a distinct account still distributes', () => {
+    // Unreferenced compatible duplicate account IDs form one logical account.
+    // The RMD base and published balance aggregate both physical rows.
     // At age 73 the Uniform Lifetime divisor is 26.5, so the independently
-    // derived obligations are 53,000 / 26.5 = 2,000 and
+    // derived obligations are 318,000 / 26.5 = 12,000 and
     // 79,500 / 26.5 = 3,000. One candidate and one debit per ID must publish
-    // exactly 5,000; processing the duplicate twice previously published
-    // 11,000 by applying its combined 4,000 take to both duplicate rows.
+    // exactly 15,000 with one occurrence/application per logical ID.
     const plan = singlePersonPlan({
       dob: '1953-01-01',
       planningAge: 80,
@@ -51,9 +49,10 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
 
     // Pub. 590-B (2025), Uniform Lifetime Table: age 73 divisor = 26.5.
     // These worksheets are independent of the engine's RMD helper.
-    const duplicateObligation = 53_000 / 26.5
+    const duplicateOpening = 265_000 + 53_000
+    const duplicateObligation = duplicateOpening / 26.5
     const distinctObligation = 79_500 / 26.5
-    expect(duplicateObligation).toBe(2_000)
+    expect(duplicateObligation).toBe(12_000)
     expect(distinctObligation).toBe(3_000)
 
     const year = simulatePlan(parsed.plan, {
@@ -65,7 +64,7 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
 
     expect(year.rmd).toBe(duplicateObligation + distinctObligation)
     expect(year.balances).toMatchObject({
-      'duplicate-ira': 53_000 - duplicateObligation,
+      'duplicate-ira': duplicateOpening - duplicateObligation,
       'distinct-ira': 79_500 - distinctObligation,
     })
     expect(
@@ -94,9 +93,9 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
       expect.objectContaining({
         mutationOrdinal: 1,
         sourceAccountId: 'duplicate-ira',
-        sourceBalanceBeforePlanDollars: 53_000,
+        sourceBalanceBeforePlanDollars: duplicateOpening,
         appliedAmountPlanDollars: duplicateObligation,
-        sourceBalanceAfterPlanDollars: 53_000 - duplicateObligation,
+        sourceBalanceAfterPlanDollars: duplicateOpening - duplicateObligation,
       }),
       expect.objectContaining({
         mutationOrdinal: 2,
@@ -131,7 +130,7 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     })
   })
 
-  it('uses unique last rows for April 1 capacity and the current-year IRA sweep', () => {
+  it('uses aggregate logical capacity for April 1 and current-year obligations', () => {
     const plan = singlePersonPlan({
       dob: '1953-01-01',
       planningAge: 80,
@@ -149,9 +148,10 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
 
     // Uniform Lifetime divisors are 26.5 at age 73 and 25.5 at age 74.
-    const duplicateDeferred = 2_000 / 26.5
+    const duplicateOpening = 265_000 + 2_000
+    const duplicateDeferred = duplicateOpening / 26.5
     const distinctDeferred = 79_500 / 26.5
-    const duplicateCurrent = 2_000 / 25.5
+    const duplicateCurrent = duplicateOpening / 25.5
     const distinctCurrent = 79_500 / 25.5
 
     const result = simulatePlan(parsed.plan, {
@@ -168,12 +168,11 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
 
     const dueYear = result.years[1]!
     const deferredRequired = duplicateDeferred + distinctDeferred
-    const distinctTake =
-      (deferredRequired - 2_000) + distinctCurrent + duplicateCurrent
-    expect(dueYear.rmd).toBe(2_000 + distinctTake)
+    const duplicateTake = deferredRequired + duplicateCurrent
+    expect(dueYear.rmd).toBe(duplicateTake + distinctCurrent)
     expect(dueYear.balances).toMatchObject({
-      'duplicate-ira': 0,
-      'distinct-ira': 79_500 - distinctTake,
+      'duplicate-ira': duplicateOpening - duplicateTake,
+      'distinct-ira': 79_500 - distinctCurrent,
     })
     expect(
       dueYear.retirementRuntimeApplicationSource?.applications.filter(
@@ -183,16 +182,16 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
       expect.objectContaining({
         mutationOrdinal: 1,
         sourceAccountId: 'duplicate-ira',
-        sourceBalanceBeforePlanDollars: 2_000,
-        appliedAmountPlanDollars: 2_000,
-        sourceBalanceAfterPlanDollars: 0,
+        sourceBalanceBeforePlanDollars: duplicateOpening,
+        appliedAmountPlanDollars: duplicateTake,
+        sourceBalanceAfterPlanDollars: duplicateOpening - duplicateTake,
       }),
       expect.objectContaining({
         mutationOrdinal: 2,
         sourceAccountId: 'distinct-ira',
         sourceBalanceBeforePlanDollars: 79_500,
-        appliedAmountPlanDollars: distinctTake,
-        sourceBalanceAfterPlanDollars: 79_500 - distinctTake,
+        appliedAmountPlanDollars: distinctCurrent,
+        sourceBalanceAfterPlanDollars: 79_500 - distinctCurrent,
       }),
     ])
     expect(dueYear.rmdShortfallExciseTax).toBe(0)
@@ -225,7 +224,7 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     })
   })
 
-  it('selects the same last row once on the inherited RMD path', () => {
+  it('uses one aggregate logical account on the inherited RMD path', () => {
     const plan = singlePersonPlan({
       dob: '1965-06-15',
       planningAge: 100,
@@ -268,7 +267,8 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
 
     // Death in 2022 and beneficiary age 58 then gives Single Life 28.9;
     // reducing by 2023–2025 yields the 2026 divisor 25.9.
-    const required = 300_000 / 25.9
+    const opening = 600_000 + 300_000
+    const required = opening / 25.9
     const year = simulatePlan(parsed.plan, {
       startYear: YEAR,
       horizonEndYear: YEAR,
@@ -277,7 +277,7 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     }).years[0]!
 
     expect(year.inheritedDistribution).toBeCloseTo(required, 10)
-    expect(year.balances['inherited-ira']).toBeCloseTo(300_000 - required, 10)
+    expect(year.balances['inherited-ira']).toBeCloseTo(opening - required, 10)
     expect(year.inheritedAccounts).toEqual([expect.objectContaining({
       accountId: 'inherited-ira',
       requirementKind: 'annual-rmd',
@@ -311,7 +311,7 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     })
   })
 
-  it('executes an active SEPP once from the selected RMD row', () => {
+  it('executes an active SEPP once from the aggregate logical account', () => {
     const plan = singlePersonPlan({
       dob: '1970-03-15',
       planningAge: 70,
@@ -336,8 +336,8 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     }).years[0]!
 
     // Notice 2022-6 Single Life Table divisor at 56 is 30.6.
-    expect(year.sepp).toBe(10_000)
-    expect(year.balances['duplicate-ira']).toBe(296_000)
+    expect(year.sepp).toBe(30_000)
+    expect(year.balances['duplicate-ira']).toBe(888_000)
     expect(
       year.retirementRuntimeSource?.runtimeOccurrences.filter(
         (occurrence) => occurrence.kind === 'automaticSeppDistribution',
@@ -345,7 +345,7 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     ).toHaveLength(1)
   })
 
-  it('uses the selected row for QCD capacity and Form 8606 basis', () => {
+  it('uses aggregate logical capacity and basis for QCD and Form 8606', () => {
     const plan = singlePersonPlan({
       dob: '1950-01-01',
       planningAge: 90,
@@ -372,21 +372,21 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     const year = result.years[0]!
 
     // Pub. 590-B Uniform Lifetime Table divisor at age 76 is 23.7. The
-    // selected 100,000 row—not the two rows' 1,100,000 sum—sets both the
+    // Both physical members form the 1,100,000 logical account used by the
     // requirement and the §408(d)(8)(D) aggregate includible ceiling.
-    expect(year.rmd).toBeCloseTo(100_000 / 23.7, 10)
+    expect(year.rmd).toBeCloseTo(1_100_000 / 23.7, 10)
     expect(year.qcd).toBe(50_000)
-    expect(year.balances['duplicate-ira']).toBe(50_000)
+    expect(year.balances['duplicate-ira']).toBe(1_050_000)
     expect(
       year.retirementRuntimeSource?.runtimeOccurrences.filter(
         (occurrence) => occurrence.kind === 'legacyQcd',
       ),
     ).toHaveLength(1)
-    expect(result.endingNondeductibleIraBasis).toBe(50_000)
+    expect(result.endingNondeductibleIraBasis).toBe(60_000)
     expect(year.ownedTraditionalIraAggregateActivity).toEqual([])
   })
 
-  it('seeds Form 8606 basis from the selected row rather than summing aliases', () => {
+  it('aggregates Form 8606 basis across compatible physical members', () => {
     const plan = singlePersonPlan({
       dob: '1964-01-01',
       planningAge: 90,
@@ -410,13 +410,11 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
       taxCalculator: createFlatTaxCalculator(0),
     })
 
-    // The ID-keyed balance/denominator is 100,000. Its matching last row owns
-    // 10,000 of basis; summing both aliases would incorrectly publish 50,000.
-    expect(result.years[0]?.balances['duplicate-ira']).toBe(100_000)
-    expect(result.endingNondeductibleIraBasis).toBe(10_000)
+    expect(result.years[0]?.balances['duplicate-ira']).toBe(200_000)
+    expect(result.endingNondeductibleIraBasis).toBe(50_000)
   })
 
-  it('uses the selected row once in the optimizer opening snapshot', () => {
+  it('uses the aggregate logical account in the optimizer opening snapshot', () => {
     const plan = singlePersonPlan({
       dob: '1964-01-01',
       planningAge: 90,
@@ -440,7 +438,7 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     })
 
     expect(probes).toHaveLength(1)
-    expect(probes[0]?.startTraditional).toBe(30_000)
+    expect(probes[0]?.startTraditional).toBe(330_000)
   })
 
   it('preserves duplicate contribution rows outside the RMD selection boundary', () => {
@@ -497,11 +495,9 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
       taxCalculator: createFlatTaxCalculator(0),
     }).years
 
-    // Publication is ID-keyed and therefore selects 50,000 -> 55,000 ->
-    // 60,500. Economic growth and investable wealth remain positional, so the
-    // superseded 100,000 row grows beside it: 165,000 -> 181,500 in total.
-    expect(years[0]!.balances['duplicate-ira']).toBeCloseTo(55_000, 8)
-    expect(years[1]!.balances['duplicate-ira']).toBeCloseTo(60_500, 8)
+    // Publication aggregates the physical rows, matching positional wealth.
+    expect(years[0]!.balances['duplicate-ira']).toBeCloseTo(165_000, 8)
+    expect(years[1]!.balances['duplicate-ira']).toBeCloseTo(181_500, 8)
     expect(years[0]!.investableTotal).toBeCloseTo(165_000, 8)
     expect(years[1]!.investableTotal).toBeCloseTo(181_500, 8)
   })
@@ -567,16 +563,20 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     })
     const year = result.years[0]!
 
-    // At age 56, 20% basis makes 80% of the gross taxable and subject to the
-    // 10% early-distribution penalty. Solve g - .10(.80g) = 5,000.
-    const gross = 5_000 / 0.92
-    const taxable = gross * 0.8
+    // The logical account has 82,000 basis over 110,000, so 28,000/110,000
+    // of the gross is taxable and subject to the 10% early penalty.
+    const taxableFraction = 28_000 / 110_000
+    const gross = 5_000 / (1 - 0.1 * taxableFraction)
+    const taxable = gross * taxableFraction
     expect(year.withdrawals.traditional).toBeCloseTo(gross, 2)
     expect(year.magi).toBeCloseTo(taxable, 2)
     expect(year.penalties).toBeCloseTo(taxable * 0.1, 2)
-    expect(year.balances['duplicate-ira']).toBeCloseTo(10_000 - gross, 2)
+    expect(year.balances['duplicate-ira']).toBeCloseTo(110_000 - gross, 2)
     expect(year.investableTotal).toBeCloseTo(110_000 - gross, 2)
-    expect(result.endingNondeductibleIraBasis).toBeCloseTo(2_000 - gross * 0.2, 2)
+    expect(result.endingNondeductibleIraBasis).toBeCloseTo(
+      82_000 - gross * (82_000 / 110_000),
+      2,
+    )
     expect(
       year.retirementRuntimeApplicationSource?.applications.filter(
         (application) =>
@@ -622,13 +622,13 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
       taxCalculator: createFlatTaxCalculator(0),
     }).years[0]!
 
-    // Roth ordering is owner-pool economics: the superseded row's 100,000 of
+    // Roth ordering is owner-pool economics: the earlier row's 100,000 of
     // contribution basis remains wealth and covers this draw. Withdrawal
-    // planning and commit are still ID-keyed, so only the selected 10,000 row
-    // loses the 5,000. Last-row-only character would instead penalize earnings.
+    // planning and commit are one ID-keyed logical debit allocated pro rata
+    // across both physical members.
     expect(year.withdrawals.roth).toBe(5_000)
     expect(year.penalties).toBe(0)
-    expect(year.balances['duplicate-roth']).toBe(5_000)
+    expect(year.balances['duplicate-roth']).toBe(105_000)
     expect(year.investableTotal).toBe(105_000)
   })
 })

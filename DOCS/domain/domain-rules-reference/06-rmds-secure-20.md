@@ -37,24 +37,23 @@
   regulation permits, chosen for determinism. Only IRAs held **as owner** aggregate: an inherited IRA, a spouse's
   IRA, and an employer plan each stand outside the sum and must distribute their own amount
   (`treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum`).
-- **Duplicate account IDs are a narrow annual-distribution boundary, not a global Plan repair.** Unreferenced
-  duplicate IDs remain loadable for backward compatibility. Consumers that publish or plan by account ID—owner and
-  inherited RMDs, SEPP, aggregate QCD and Roth conversion, need-based withdrawal planning/character/penalty/commit,
-  Form 8606 pool evidence and ending basis, and optimizer ID-keyed evidence—select the last balance state carrying an
-  ID while retaining that ID's first plan-order position. This matches the ID-keyed prior-year balance and publication
-  channels without applying one ID-keyed movement more than once. Positional economics remain deliberately separate:
-  every row contributes and grows, dividend reinvestment visits every row under its established last-ID yield policy,
-  annual investable totals see every row, and the guardrail
-  opening signal counts each balance row once (while retaining its historical exclusion of unassigned cash). Thus a
-  superseded row remains household wealth even though the public `balances[id]` view and ID-keyed movements select the
-  last row. Roth ordering character remains an owner-pool positional calculation across those wealth rows even though
-  the resulting need-based debit applies once to the selected ID row. The owned-IRA post-growth observation likewise
-  retains both raw rows for later evidence validation rather than laundering them into one filing fact. Duplicate
+- **Duplicate account IDs use a grouped physical-row ledger, not a global Plan rewrite.** Unreferenced
+  duplicate IDs remain loadable for backward compatibility. Compatible rows form one logical account whose facts come
+  from the last row and whose first Plan position controls ID order. Consumers that publish or plan by account ID—owner
+  and inherited RMDs, SEPP, aggregate QCD and Roth conversion, need-based withdrawal
+  planning/character/penalty/commit, Form 8606 pool evidence and ending basis, and optimizer evidence—use aggregate
+  balance and basis. A logical debit or credit is applied once, allocated pro rata across the group's positive physical
+  rows with an exact final residual, and published once as an aggregate `balances[id]` value. No physical wealth is
+  hidden from an ID-keyed withdrawal. Positional economics remain explicit: every row contributes and grows, dividend
+  reinvestment visits every row under its established last-ID yield policy, and annual investable totals see every row.
+  Contribution occurrence keys include the physical balance-row index. The guardrail opening signal counts each row
+  once while retaining its historical exclusion of unassigned cash, and the owned-IRA post-growth observation retains
+  every raw row for evidence validation. Duplicate
   retirement rows whose account type, retirement kind, owner, inherited, SEPP, or other
   forced-distribution facts disagree, and decision-bearing
-  retirement actions, pension lump sums, and annuity purchases, reject duplicate IDs as ambiguous. This convention is
-  intentionally narrower than the positional property/HECM and annuity-payout first-qualifying-row behavior; imported
-  data should use unique IDs.
+  retirement actions, pension lump sums, and annuity purchases, reject duplicate IDs as ambiguous. This convention
+  does not change the positional property/HECM or annuity-payout first-qualifying-row behavior; imported data should
+  still use unique IDs.
   The regression suite is [`simulate.ownerRmdDuplicateAccountId.test.ts`](../../../packages/engine/src/projection/simulate.ownerRmdDuplicateAccountId.test.ts).
 - **QCD:** direct IRA-to-charity from age 70½, excluded from income, counting toward an RMD when one is due; 2026
   limit $111,000, and that figure is one donor's. A QCD is **not** conditional on an RMD — 408(d)(8) turns on the donor's age and nothing in it

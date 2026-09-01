@@ -1,4 +1,7 @@
-import type { Account } from '../../model/plan.js'
+import {
+  duplicateAccountIdentityFacts,
+  type Account,
+} from '../../model/plan.js'
 
 export type PhysicalBalanceAccount = Extract<Account, {
   type: 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa'
@@ -23,16 +26,6 @@ function finiteNonnegative(value: number, label: string): void {
   }
 }
 
-function ownerPersonId(account: PhysicalBalanceAccount): string | null {
-  return account.ownerPersonId ?? null
-}
-
-function retirementKind(account: PhysicalBalanceAccount): string | null {
-  return account.type === 'traditional' || account.type === 'roth'
-    ? account.kind
-    : null
-}
-
 /**
  * One logical account ID backed by one or more live positional balance rows.
  *
@@ -49,19 +42,22 @@ export class AnnualLogicalBalanceGroup {
     this.id = id
     this.members = members
     this.account = members[members.length - 1]!.state.account
+    const selectedFacts = duplicateAccountIdentityFacts(this.account)
 
     for (const { state } of members) {
+      const facts = duplicateAccountIdentityFacts(state.account)
       if (
         state.account.id !== id ||
-        state.account.type !== this.account.type ||
-        retirementKind(state.account) !== retirementKind(this.account) ||
-        ownerPersonId(state.account) !== ownerPersonId(this.account)
+        facts.length !== selectedFacts.length ||
+        facts.some((fact, index) => fact !== selectedFacts[index])
       ) {
         throw new Error(`incompatible physical rows for account id "${id}"`)
       }
       finiteNonnegative(state.balance, `balance for account id "${id}"`)
       finiteNonnegative(state.costBasis, `cost basis for account id "${id}"`)
     }
+    finiteNonnegative(this.balance, `aggregate balance for account id "${id}"`)
+    finiteNonnegative(this.costBasis, `aggregate cost basis for account id "${id}"`)
   }
 
   get balance(): number {

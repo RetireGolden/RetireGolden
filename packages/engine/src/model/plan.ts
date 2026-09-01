@@ -1297,6 +1297,60 @@ export const accountSchema = accountUnionSchema.superRefine((account, ctx) => {
 export type Account = z.infer<typeof accountSchema>
 export type AccountType = Account['type']
 
+export type DuplicateAccountIdentityFact = string | number | boolean | null
+
+/**
+ * Schedule- and tax-character facts that must agree before duplicate physical
+ * rows can represent one logical account ID. Evidence provenance is excluded:
+ * it can differ without changing the modeled schedule.
+ */
+export function duplicateAccountIdentityFacts(
+  account: Account,
+): readonly DuplicateAccountIdentityFact[] {
+  const inherited =
+    account.type === 'traditional' || account.type === 'roth'
+      ? account.inherited
+      : undefined
+  const beneficiary = inherited?.beneficiary
+  const sepp = account.type === 'traditional' ? account.sepp : undefined
+  const isRetirementAccount =
+    account.type === 'traditional' || account.type === 'roth'
+  // Cash/property duplicates are the one legacy cross-channel pair that never
+  // becomes two BalanceState rows. Every balance-bearing account type keeps
+  // its own identity so row order cannot choose tax character.
+  const accountIdentityClass = isRetirementAccount
+    ? account.type
+    : account.type === 'cash' || account.type === 'property'
+      ? 'legacy-cash-property'
+      : account.type
+  return [
+    accountIdentityClass,
+    isRetirementAccount ? account.kind : null,
+    account.ownerPersonId ?? null,
+    account.type === 'traditional' ? account.employerPlanType ?? null : null,
+    account.type === 'traditional' ? account.spouseSoleBeneficiary ?? false : null,
+    sepp?.startAge ?? null,
+    sepp?.method ?? null,
+    inherited !== undefined,
+    inherited?.decedentId ?? null,
+    inherited?.ownerDeathYear ?? null,
+    inherited?.decedentHadStartedRmds ?? null,
+    beneficiary !== undefined,
+    beneficiary?.beneficiaryClass ?? null,
+    beneficiary?.edbCategory ?? 'none',
+    beneficiary?.beneficiaryBirthYear ?? null,
+    beneficiary?.soleBeneficiary ?? false,
+    beneficiary?.election ?? 'none',
+    beneficiary?.treatAsOwnElectionYear ?? null,
+    beneficiary?.spouseUnlimitedWithdrawalRight ?? false,
+    beneficiary?.ownerBirthYear ?? null,
+    beneficiary?.ownerBirthMonth ?? null,
+    beneficiary?.ownerBirthDay ?? null,
+    beneficiary?.ownerYearOfDeathRmdSatisfied ?? false,
+    beneficiary?.roth5YearStartYear ?? null,
+  ]
+}
+
 // ---------------------------------------------------------------------------
 // Insurance (discriminated union on `kind`) — roadmap V6
 // ---------------------------------------------------------------------------
@@ -2263,57 +2317,12 @@ export const planSchema = z
     let hasAmbiguousAccountIds = false
     for (const [accountId, indexes] of accountIndexesById) {
       if (indexes.length < 2) continue
-      type ForcedDistributionFact = string | number | boolean | null
-      const forcedDistributionFacts = (index: number): readonly ForcedDistributionFact[] => {
-        const account = plan.accounts[index]!
-        const inherited =
-          account.type === 'traditional' || account.type === 'roth'
-            ? account.inherited
-            : undefined
-        const beneficiary = inherited?.beneficiary
-        const sepp = account.type === 'traditional' ? account.sepp : undefined
-        const isRetirementAccount =
-          account.type === 'traditional' || account.type === 'roth'
-        // Cash/property duplicates are the one legacy cross-channel pair that
-        // never becomes two BalanceState rows. Every balance-bearing account
-        // type keeps its own identity so row order cannot choose tax character.
-        const accountIdentityClass = isRetirementAccount
-          ? account.type
-          : account.type === 'cash' || account.type === 'property'
-            ? 'legacy-cash-property'
-            : account.type
-        return [
-          accountIdentityClass,
-          isRetirementAccount ? account.kind : null,
-          account.ownerPersonId ?? null,
-          account.type === 'traditional' ? account.employerPlanType ?? null : null,
-          account.type === 'traditional' ? account.spouseSoleBeneficiary ?? false : null,
-          sepp?.startAge ?? null,
-          sepp?.method ?? null,
-          inherited !== undefined,
-          inherited?.decedentId ?? null,
-          inherited?.ownerDeathYear ?? null,
-          inherited?.decedentHadStartedRmds ?? null,
-          beneficiary !== undefined,
-          beneficiary?.beneficiaryClass ?? null,
-          beneficiary?.edbCategory ?? 'none',
-          beneficiary?.beneficiaryBirthYear ?? null,
-          beneficiary?.soleBeneficiary ?? false,
-          beneficiary?.election ?? 'none',
-          beneficiary?.treatAsOwnElectionYear ?? null,
-          beneficiary?.spouseUnlimitedWithdrawalRight ?? false,
-          beneficiary?.ownerBirthYear ?? null,
-          beneficiary?.ownerBirthMonth ?? null,
-          beneficiary?.ownerBirthDay ?? null,
-          beneficiary?.ownerYearOfDeathRmdSatisfied ?? false,
-          beneficiary?.roth5YearStartYear ?? null,
-          // Provenance describes evidence quality, not a different schedule.
-        ]
-      }
-      const firstForcedDistributionFacts = forcedDistributionFacts(indexes[0]!)
+      const firstForcedDistributionFacts = duplicateAccountIdentityFacts(
+        plan.accounts[indexes[0]!]!,
+      )
       const hasConflictingForcedDistributionFacts =
         indexes.slice(1).some((index) => {
-          const facts = forcedDistributionFacts(index)
+          const facts = duplicateAccountIdentityFacts(plan.accounts[index]!)
           return facts.length !== firstForcedDistributionFacts.length ||
             facts.some((fact, factIndex) => fact !== firstForcedDistributionFacts[factIndex])
         })

@@ -52,15 +52,20 @@ SEPP facts disagree. Older backups and third-party data may therefore require re
 
 Give each real account a unique ID, keep the decision on the actual account row, and update every
 reference to that ID. Do not delete a genuine account merely to satisfy validation. Unreferenced
-duplicate rows with identical forced-distribution facts remain loadable for compatibility. RMD,
-QCD, need-based withdrawal, aggregate Roth-conversion, Form 8606, and optimizer ID-keyed consumers
-use the last row. Contribution, annual growth, investable-total, property, and annuity-payout economics
-remain positional and see every row. Reinvestment visits every positional row under the established
-last-ID distributed-yield policy, and the guardrail opening signal likewise counts each balance row
-once. The public `balances[id]` view still selects the last row. This mixed
-contract also keeps Roth ordering basis positional at the owner-pool level and preserves both raw
-owned-IRA rows in the post-growth filing-evidence observation; it does not turn aliases into one tax
-fact and is not a substitute for repair. Imported real accounts should always receive unique IDs.
+duplicate balance rows with compatible tax, owner, and forced-distribution facts remain loadable for
+compatibility. They form one logical account: facts come from the last row, ID order comes from the
+first, and ID-keyed RMD, QCD, need-based withdrawal, aggregate Roth-conversion, Form 8606, and
+optimizer consumers use the rows' aggregate capacity and basis. One logical debit or credit is
+allocated pro rata across the positive physical rows (with an exact final residual), and the public
+`balances[id]` value is the aggregate closing balance.
+
+The physical rows still matter. Contributions, annual growth, reinvestment, and investable totals
+visit every row, so different row-level contribution and return assumptions remain visible in wealth.
+Contribution runtime identity includes the balance-row index, and the owned-IRA post-growth evidence
+source preserves every physical row. The guardrail opening signal likewise counts each balance row
+once while retaining its historical exclusion of unassigned cash. The logical mutation layer makes
+all that positional wealth reachable through ID-keyed operations; it is a compatibility model, not a
+reason to create aliases. Imported real accounts should always receive unique IDs.
 
 ## Sources
 
