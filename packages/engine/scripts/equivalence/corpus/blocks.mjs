@@ -2228,8 +2228,11 @@ function blockP() {
     // `stateOf` lookup is FIRST-wins. In 2026 the first row is age 65 and the
     // last row's retirement age is 60, so the wage is stopped. Replacing the
     // state lookup with LAST-wins observes age 50 instead and pays the wage.
-    // No retirement action references the duplicate id, which keeps this
-    // legacy parseable shape inside the corpus rather than only in a unit test.
+    // This deliberately relies on the legacy validation rule: duplicate
+    // person ids are rejected only when a retirement action references the
+    // id. A wage stream is not such an action, and this member declares no
+    // retirement action, so parsePlan admits the shape and the simulator's
+    // existing FIRST/LAST split stays measurable rather than only unit-tested.
     const plan = couplePlan({
       p1Dob: '1961-01-01',
       p2Dob: '1976-01-01',

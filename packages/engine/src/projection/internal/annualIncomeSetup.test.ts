@@ -321,6 +321,8 @@ describe('annualIncomeSetup', () => {
     const preSummedWages = ordinaryBeforeWages +
       seam.wageRows.reduce((total, row) => total + row.amount, 0)
 
+    // The replay above is a diagnostic trace, not the oracle: the independent
+    // literal Numbers and raw bits below are what make this test fail closed.
     // These are the exact binary64 folds, expressed both as Numbers and as
     // their raw bit patterns. At 10^16, one ULP is 2: the source order
     // [1, 1, 2] stays at the base for both halfway additions, then advances
@@ -352,7 +354,6 @@ describe('annualIncomeSetup', () => {
       0x4341c37937e08002n,
     ])
     expect(result.ordinaryIncome).toBe(10_000_000_000_000_002)
-    expect(result.ordinaryIncome).toBe(expectedOrdinary)
     expect(reversedWages).toBe(10_000_000_000_000_004)
     expect(preSummedWages).toBe(10_000_000_000_000_004)
     expect(float64Bits(result.ordinaryIncome)).toBe(0x4341c37937e08001n)

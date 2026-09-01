@@ -109,7 +109,7 @@
         { "line": 6325, "text": "const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({" },
         { "line": 6344, "text": "if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {" }
       ],
-      "note": "The range includes the dominant no-action defaults and outer guard. The cardinality throw on lines 6386-6387 is excluded: the helper maps the exact supplied balances array to one operation per element; focused delegation tests pin both the invariant and zero helper calls for an empty annual request set."
+      "note": "The range includes the dominant no-action defaults and outer guard. The cardinality guard and throw on lines 6344-6346 are excluded: the helper maps the exact supplied balances array to one operation per element; focused delegation tests pin both the invariant and zero helper calls for an empty annual request set."
     },
     {
       "id": "M.callsite.selectOperation",
@@ -121,7 +121,7 @@
         { "line": 6349, "text": "if (operation.kind === 'none') continue" },
         { "line": 6351, "text": "if (state === undefined || state.account.id !== operation.accountId) {" }
       ],
-      "note": "The position-mismatch throw on lines 6393-6394 is excluded: the helper emits operations by mapping the same balance positions and copies each source account id; focused delegation tests pin the invariant."
+      "note": "The position-mismatch guard and throw on lines 6351-6353 are excluded: the helper emits operations by mapping the same balance positions and copies each source account id; focused delegation tests pin the invariant."
     },
     {
       "id": "M.callsite.apply",
