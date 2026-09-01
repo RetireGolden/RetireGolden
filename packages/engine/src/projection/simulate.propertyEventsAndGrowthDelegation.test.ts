@@ -17,7 +17,7 @@
  *
  * CALIBRATION — every guard below was proved to discriminate by injecting the
  * defect it exists for and recording WHICH named tests failed. Measured over
- * this file and the helper's own unit tests together (6 + 22 = 28 tests):
+ * this file and the helper's own unit tests together (7 + 22 = 29 tests):
  *
  *   orphan (call site re-inlined from the pristine   5 fail — G1, G2a, G2b, G4,
  *   block, helper present and never called)          G5. All 22 helper unit
@@ -271,11 +271,12 @@ function noDrawsHappened(result: ProjectionResult): void {
 describe('simulatePlan delegates property events and growth', () => {
   it('advances one parse-valid duplicate-id HECM line exactly once per year', () => {
     /**
-     * Repository authority: model/plan.ts's HECM schema defines one annual
-     * growth rate on BOTH line numbers, and DOCS/domain/.../19-annuity-...md
-     * says those numbers compound at that annual rate. Duplicate account ids
-     * remain valid when no retirement action references them, so two property
-     * rows can legally resolve to the same single `hecmStates` entry.
+     * Repository model contract: `hecmStates` stores exactly one mutable line
+     * per property-account id, with one principal limit and one loan balance.
+     * Duplicate property rows can legally alias that state when no retirement
+     * action references the id, but an alias does not create a second contract
+     * or a second annual accrual. The helper unit suite separately pins that the
+     * first qualifying duplicate row supplies the shared state's annual rate.
      *
      * Independent worksheet for one 2026 accrual:
      *   principal limit = $400,000 x 40% x 1.075 = $172,000

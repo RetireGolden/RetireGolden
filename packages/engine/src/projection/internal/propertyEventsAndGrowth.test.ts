@@ -194,7 +194,7 @@ describe('propertyEventsAndGrowth — the numeric shadow', () => {
     expect(rows[1]!.value).toBe(121_000.00000000003)
   })
 
-  it('channel 2: the line compounds once per id, and the payoff clamp reads the RUNNING balance', () => {
+  it('channel 2: the payoff clamp reads the RUNNING balance after the first accrual', () => {
     // First row: no sale, so the line grows. Second row: sells, and its
     // non-recourse clamp must see the GROWN balance, not the opening one.
     const growth = 1 + 15 / 100
@@ -210,18 +210,20 @@ describe('propertyEventsAndGrowth — the numeric shadow', () => {
     expect(rows[1]!.closesHecmForAccountId).toBe('twin')
   })
 
-  it('channel 2, third row: duplicate rows do not compound the one line again', () => {
+  it('channel 2, third row: the first qualifying duplicate supplies the shared line’s one annual rate', () => {
     const growth = 1 + 15 / 100
     const rows = call(
       [
         property('twin', {}, {}),
-        property('twin', {}, {}),
+        property('twin', {}, { growthRatePct: 99 }),
         property('twin', { plannedSaleYear: YEAR, expectedNetProceeds: 500_000 }, {}),
       ],
       { hecmStates: new Map([['twin', { principalLimit: 60_000, loanBalance: 40_000 }]]) },
     )
+    expect(rows[0]!.hecmGrowth).toBe(growth)
     expect(rows[1]!.hecmGrowth).toBeNull()
     expect(rows[2]!.deposit).toBe(500_000 - 40_000 * growth)
+    expect(rows[2]!.deposit).not.toBe(500_000 - 40_000 * (1 + 99 / 100))
   })
 
   it('channel 3: a row that closes its own line does not then compound it', () => {
