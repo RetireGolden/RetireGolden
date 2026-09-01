@@ -62,6 +62,11 @@ function localIsoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function isValidCalendarDate(year: number, month: number, day: number): boolean {
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+}
+
 /** Same as {@link latestPriceDate}, as the ISO string used by snapshots and staleness checks. */
 export function latestPriceDateIso(now = new Date()): string {
   return localIsoDate(latestPriceDate(now))
@@ -82,7 +87,13 @@ export function parseFedInvestCsv(text: string): FedInvestTips[] {
     const rateFraction = Number(rate)
     const endOfDayPrice = Number(endOfDay)
     const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(maturity ?? '')
-    if (!m || !Number.isFinite(rateFraction) || !Number.isFinite(endOfDayPrice) || endOfDayPrice <= 0) continue
+    if (
+      !m
+      || !isValidCalendarDate(Number(m[3]), Number(m[1]), Number(m[2]))
+      || !Number.isFinite(rateFraction)
+      || !Number.isFinite(endOfDayPrice)
+      || endOfDayPrice <= 0
+    ) continue
     tips.push({ cusip, ratePct: rateFraction * 100, maturityIso: `${m[3]}-${m[1]}-${m[2]}`, endOfDayPrice })
   }
   return tips.sort((a, b) => a.maturityIso.localeCompare(b.maturityIso))

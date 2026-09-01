@@ -36,13 +36,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isIsoCalendarDate(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false
-  return new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value
+  const date = new Date(`${value}T00:00:00.000Z`)
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
 
 function isIsoTimestamp(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u.test(value)) return false
   const normalized = value.includes('.') ? value : value.replace('Z', '.000Z')
-  return new Date(value).toISOString() === normalized
+  const date = new Date(value)
+  return Number.isFinite(date.getTime()) && date.toISOString() === normalized
 }
 
 function isFedInvestTips(value: unknown): value is FedInvestTips {
@@ -58,7 +60,7 @@ function isFedInvestTips(value: unknown): value is FedInvestTips {
 }
 
 function isFedInvestSnapshot(value: unknown): value is FedInvestSnapshot {
-  if (!isRecord(value) || !isIsoTimestamp(value.fetchedAtIso) || !Array.isArray(value.tips)) return false
+  if (!isRecord(value) || !isIsoTimestamp(value.fetchedAtIso) || !Array.isArray(value.tips) || value.tips.length === 0) return false
   if (value.source === 'fetch') {
     if (!isIsoCalendarDate(value.priceDateIso)) return false
   } else if (value.source === 'import') {

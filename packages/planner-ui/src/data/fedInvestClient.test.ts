@@ -73,6 +73,8 @@ describe('readFedInvestCache', () => {
       JSON.stringify({ ...completeSnapshot, source: 'stale' }),
       JSON.stringify({ ...completeSnapshot, priceDateIso: '2026-02-30' }),
       JSON.stringify({ ...completeSnapshot, fetchedAtIso: 'not a timestamp' }),
+      JSON.stringify({ ...completeSnapshot, fetchedAtIso: '2026-13-01T12:00:00Z' }),
+      JSON.stringify({ ...completeSnapshot, tips: [] }),
       JSON.stringify({ ...completeSnapshot, tips: [[]] }),
       JSON.stringify({ ...completeSnapshot, tips: [{ ...completeSnapshot.tips[0], maturityIso: '2026-02-30' }] }),
       JSON.stringify({ ...completeSnapshot, tips: [{ cusip: '912828S50', ratePct: 0.125, endOfDayPrice: 100.03 }] }),

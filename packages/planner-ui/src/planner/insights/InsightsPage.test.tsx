@@ -29,7 +29,6 @@ describe('InsightsPage dismissed-insights recovery', () => {
     'not json',
     JSON.stringify(null),
     JSON.stringify([]),
-    JSON.stringify({ 'plan-1': [null] }),
   ])('renders with an empty dismissed map for corrupt or structurally invalid storage: %s', async (stored) => {
     const plan = createSamplePlan()
     localStorage.setItem(STORAGE_KEYS.insightsDismissed, stored)
@@ -46,5 +45,39 @@ describe('InsightsPage dismissed-insights recovery', () => {
 
     expect(container.textContent).toContain('Insights')
     expect(container.textContent).not.toContain('Restore dismissed insights')
+  })
+
+  it('rejects an invalid dismissed array for the rendered plan', async () => {
+    const plan = createSamplePlan()
+    localStorage.setItem(STORAGE_KEYS.insightsDismissed, JSON.stringify({ [plan.id]: [null] }))
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={{ plan, update: () => {}, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+            <InsightsPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+
+    expect(container.textContent).not.toContain('Restore dismissed insights')
+  })
+
+  it('keeps a valid dismissed array for the rendered plan', async () => {
+    const plan = createSamplePlan()
+    localStorage.setItem(STORAGE_KEYS.insightsDismissed, JSON.stringify({ [plan.id]: ['card-1'] }))
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={{ plan, update: () => {}, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+            <InsightsPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+
+    expect(container.textContent).toContain('Restore dismissed insights')
   })
 })
