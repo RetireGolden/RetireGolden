@@ -47,9 +47,38 @@ pnpm + Corepack. Run `corepack enable` before the first `pnpm` command.
 ## Pull requests
 
 - Ready for review, never drafts.
-- One PR per repo per phase. Follow-ups on the same branch.
+- Prefer one PR per repo per phase when the changes belong together. Multiple
+  PRs in the same repo are allowed when they form an explicit stack: base each
+  child PR on the preceding branch, describe the stack and merge order in every
+  PR, and merge the stack from the bottom up. Follow-up work for an open PR
+  stays on that PR's branch.
+- Opening or updating a PR starts the automated code-review action. Wait for it
+  to finish, inspect its findings, and invoke the `/needful` skill when it is
+  available. Otherwise apply the same procedure: fix valid findings, reply to
+  incorrect ones with evidence, and resolve only fixed threads. Commit and push
+  valid fixes to the same PR branch. After each push, require a completed review
+  whose reported commit equals the PR's current head SHA and whose result from
+  the reusable pinned in `.github/workflows/openrouter-code-review.yml` is
+  **Verdict:** `clean`. A skipped verification or a carried-forward verdict for
+  an older SHA is insufficient; dispatch the review workflow for the PR when a
+  push does not produce a review of the current head.
+- In this repo, add the exact `run-ci` label only after the PR has a clean
+  review. Require the label-gated jobs to have actually run (not skipped) for
+  the current head SHA, and watch them plus all required ungated checks, such as
+  Semgrep and the resolve gate when applicable, to completion. A later fix
+  invalidates the prior result: require both a clean review and all expected
+  non-CLA checks to be present and successful for the latest commit before
+  merging.
+- Merge completed PRs by squash only when the acting maintainer or operator has
+  authorized the merge. This repository file grants no administrative override;
+  any such authority must come from the operator's local instructions. For a
+  stacked PR,
+  after its parent is squash-merged, rebase the child's unique commits onto the
+  updated base (or recreate them there); merely retargeting the PR is not
+  sufficient. Push the rewritten child head and repeat the latest-SHA review
+  and `run-ci` validation before merging it. Regardless of the operator's merge
+  authority, never bypass an absent, skipped, pending, or failing review,
+  security, or CI check.
 - No publish, release, or tag unless the user asked for that activation step.
-- Do not merge unless the user said to. They admin-override CLA on their own
-  agent PRs.
 - Never add `cursoragent` to the CLA allowlist. Do not modify
   `.github/workflows/cla.yml` to allowlist shared Cursor accounts.

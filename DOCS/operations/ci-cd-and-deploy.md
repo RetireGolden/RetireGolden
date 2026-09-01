@@ -41,8 +41,8 @@ To keep Actions minutes down, PR pushes do **not** run the pipeline by default â
 iterate on a PR without every commit re-running lint/test/e2e/deploy/DAST. The full pipeline runs on a
 PR only while it carries the **`run-ci` label**:
 
-- **Apply `run-ci`** when the PR is ready for CI (typically after the first round of bot review and
-  follow-up commits). Applying the label triggers a run immediately, and every later push runs CI too.
+- **Apply `run-ci`** only after the automated review reports a clean verdict for the PR's current head
+  commit. Applying the label triggers a run immediately, and every later push runs CI too.
   Applying any **other** label never starts or re-runs the pipeline.
 - **Without the label**, the gated jobs report as **skipped**. Skipped checks *satisfy* the Main Guard
   required checks, so always apply `run-ci` (and let CI go green) **before merging** â€” a merge without
