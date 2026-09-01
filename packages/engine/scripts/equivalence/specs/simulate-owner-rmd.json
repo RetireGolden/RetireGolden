@@ -1,0 +1,171 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-owner-rmd",
+  "why": "Measured reach for the pure annual owner-RMD planner and its grouped logical-account callsite. Block X exercises ordered first-year deferral state, April-1 priority, current owner calculations, IRA and 403(b) sweeps, isolated employer plans, joint-life spouse selection, dead-owner exclusion, residual shortfalls, and a compatible duplicate physical pair that reaches the seam as one 318,000 logical account and produces one 12,000 RMD. Focused tests separately pin repeated-id rejection, impossible hostile result ordering via valueOf(), container freshness, and annual-pass rollback.",
+  "entries": [
+    {
+      "id": "A.april1",
+      "label": "due first-year obligation consumes logical capacity before current-year amounts and queues deletion",
+      "file": "projection/internal/annualOwnerRmdPlan.ts",
+      "lines": [
+        115,
+        154
+      ],
+      "anchors": [
+        {
+          "line": 117,
+          "text": "for (const [planKey, deferred] of deferredShadow) {"
+        },
+        {
+          "line": 130,
+          "text": "const take = Math.min(capacity, deferred.requiredAmount - distributedByDeadline)"
+        },
+        {
+          "line": 153,
+          "text": "deferredFirstRmdOperations.push({ kind: 'delete', applicablePlanKey: planKey })"
+        }
+      ]
+    },
+    {
+      "id": "B.current",
+      "label": "one current RMD calculation per logical id and ordered cumulative first-year deferral writes",
+      "file": "projection/internal/annualOwnerRmdPlan.ts",
+      "lines": [
+        156,
+        236
+      ],
+      "anchors": [
+        {
+          "line": 157,
+          "text": "for (const state of balances) {"
+        },
+        {
+          "line": 171,
+          "text": "const ownerDobYear = socialSecurityDobParts(owner).y"
+        },
+        {
+          "line": 195,
+          "text": "requiredAmount: (existing?.requiredAmount ?? 0) + rmd,"
+        },
+        {
+          "line": 217,
+          "text": "const alreadyTaken = rmdTakeByAccount.get(state.account.id) ?? 0"
+        },
+        {
+          "line": 231,
+          "text": "unmetAggregableRmdByApplicablePlan.set("
+        }
+      ],
+      "note": "The defensive repeated-logical-id assertion preceding this range is deliberately unit-only: annualLogicalBalanceLedger.liveStates() guarantees uniqueness at the simulatePlan seam, and the helper suite injects repeated physical rows to pin the failure."
+    },
+    {
+      "id": "C.sweep",
+      "label": "same-owner IRA and explicit 403(b) logical-account sweep",
+      "file": "projection/internal/annualOwnerRmdPlan.ts",
+      "lines": [
+        238,
+        267
+      ],
+      "anchors": [
+        {
+          "line": 239,
+          "text": "for (const [applicablePlanKey, unmet] of unmetAggregableRmdByApplicablePlan) {"
+        },
+        {
+          "line": 253,
+          "text": "const swept = Math.min(capacity, remaining)"
+        },
+        {
+          "line": 261,
+          "text": "if (remaining > epsilon && applicablePlan.kind === 'ownedTraditionalIras') {"
+        }
+      ]
+    },
+    {
+      "id": "D.obligations-result",
+      "label": "current-year plan obligations and fresh result containers",
+      "file": "projection/internal/annualOwnerRmdPlan.ts",
+      "lines": [
+        269,
+        292
+      ],
+      "anchors": [
+        {
+          "line": 269,
+          "text": "for (const [applicablePlanKey, requiredAmount] of currentRmdRequiredByApplicablePlan) {"
+        },
+        {
+          "line": 279,
+          "text": "distributedByDeadline:"
+        },
+        {
+          "line": 284,
+          "text": "return {"
+        },
+        {
+          "line": 291,
+          "text": "deferredFirstRmdOperations,"
+        }
+      ]
+    },
+    {
+      "id": "E.delegate",
+      "label": "grouped logical input, planner invocation, ordered deferral application and numeric result normalization",
+      "file": "projection/simulate.ts",
+      "lines": [
+        4235,
+        4269
+      ],
+      "anchors": [
+        {
+          "line": 4235,
+          "text": "const ownerRmdPlan = annualOwnerRmdPlan({"
+        },
+        {
+          "line": 4236,
+          "text": "balances: rmdBalances,"
+        },
+        {
+          "line": 4249,
+          "text": "for (const operation of ownerRmdPlan.deferredFirstRmdOperations) {"
+        },
+        {
+          "line": 4267,
+          "text": "const rmdTakeByAccount = new Map("
+        }
+      ]
+    },
+    {
+      "id": "F.consume",
+      "label": "one logical debit, runtime occurrence/application, aggregate publication and deferred Form 8606 identity",
+      "file": "projection/simulate.ts",
+      "lines": [
+        4270,
+        4349
+      ],
+      "anchors": [
+        {
+          "line": 4270,
+          "text": "for (const state of rmdBalances) {"
+        },
+        {
+          "line": 4297,
+          "text": "state.balance -= take"
+        },
+        {
+          "line": 4300,
+          "text": "recordAnnualRetirementRuntimeOccurrence({"
+        },
+        {
+          "line": 4313,
+          "text": "ownedIraApplication = recordAnnualRetirementRuntimeApplication({"
+        },
+        {
+          "line": 4340,
+          "text": "deferredRmdDistributions.push({"
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "Member counts prove execution and the reach command additionally fails on cold executable whole lines. JavaScript coverage cannot distinguish every operand sharing a line, so the report must be read with the focused helper, hostile delegation, grouped duplicate integration, and calibrated-mutation tests."
+}

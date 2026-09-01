@@ -24,6 +24,7 @@
  *   U  annual contributions and employer match
  *   V  annual purchased-annuity funding
  *   W  annual voluntary-withdrawal apply-flow boundary
+ *   X  annual owner-RMD planning and deferral lifecycle
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -33,7 +34,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through N, plus P, R, T, U, V and W, each have a phase-specific reach
+ * Blocks J through N, plus P, R, T, U, V, W and X, each have a phase-specific reach
  * spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -52,7 +53,8 @@
  * `scripts/equivalence/specs/simulate-contributions-boundary.json`,
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`,
  * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`, and
- * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`
+ * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`, and
+ * `scripts/equivalence/specs/simulate-owner-rmd.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
@@ -267,6 +269,33 @@ function pension(id, extra = {}) {
     colaPct: 0,
     survivorPct: 0,
     ...extra,
+  }
+}
+
+function qualifiedAnnuity(
+  id,
+  fundingAccountId,
+  premium,
+  year,
+  ownerPersonId = 'p1',
+  ownerBirthYear = 1953,
+) {
+  return {
+    type: 'annuity',
+    id,
+    name: id,
+    ownerPersonId,
+    annualReturnPct: 0,
+    startAge: year - ownerBirthYear,
+    monthlyAmount: 0,
+    colaPct: 0,
+    taxablePct: 100,
+    purchase: {
+      year,
+      premium,
+      fundingAccountId,
+      taxQualification: 'qualified',
+    },
   }
 }
 
@@ -2328,6 +2357,144 @@ function blockP() {
   return out
 }
 
+// X — owner RMD planning + first-year deferral lifecycle
+// ---------------------------------------------------------------------------
+
+function blockX() {
+  const out = []
+
+  {
+    // Two owned IRAs share one election. The two SET operations must remain in
+    // account order and cumulative; the next year consumes the resulting
+    // April-1 amount before calculating and paying the separate December-31
+    // requirement, then DELETEs the cross-year state. Nonmatching account
+    // shapes ahead of the IRAs make the deferred-capacity filters observable.
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 76 })
+    plan.accounts = [
+      qualified('roth', 'roth-f1', 50_000),
+      qualified('traditional', 'employer-f1', 80_000, { kind: 'employer', employerPlanType: '401k' }),
+      qualified('traditional', 'ira-f1-a', 265_000),
+      qualified('traditional', 'ira-f1-b', 132_500),
+    ]
+    out.push(member(
+      'x1-twoIraDeferralLifecycle',
+      'X: ordered cumulative first-year SETs; next-year April-1 consumption, DELETE, and separate current RMD',
+      plan,
+      {
+        horizonEndYear: 2027,
+        rmdFirstYearDeferrals: [{
+          distributionCalendarYear: 2026,
+          applicablePlan: { kind: 'ownedTraditionalIras', payeePersonId: 'p1' },
+        }],
+      },
+    ))
+  }
+
+  {
+    // The annuity purchase happens before owner-RMD planning and leaves the
+    // first IRA with only 8,000 against a much larger prior-year requirement.
+    // The sibling IRA must sweep the exact remainder; simply dropping the
+    // per-account obligation or the aggregation pass moves public output.
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 74 })
+    plan.accounts = [
+      qualified('traditional', 'ira-f2-short', 500_000),
+      qualified('traditional', 'ira-f2-sweep', 120_000),
+      qualifiedAnnuity('annuity-f2', 'ira-f2-short', 492_000, 2026),
+    ]
+    out.push(member(
+      'x2-ownedIraAggregationSweep',
+      'X: depleted IRA leaves an owner-aggregate shortfall swept from a sibling IRA',
+      plan,
+      { horizonEndYear: 2026 },
+    ))
+  }
+
+  {
+    // 403(b)s aggregate with one another, while a 401(k) remains its own
+    // applicable plan. Each depleted source has a distinct residual capacity,
+    // so swapping the grouping or obligation arithmetic changes both the
+    // distribution and the §4974 downstream result.
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 74 })
+    plan.accounts = [
+      qualified('traditional', '403b-f3-short', 200_000, { kind: 'employer', employerPlanType: '403b' }),
+      qualified('traditional', '403b-f3-sweep', 90_000, { kind: 'employer', employerPlanType: '403b' }),
+      qualified('traditional', '401k-f3', 100_000, { kind: 'employer', employerPlanType: '401k' }),
+      qualifiedAnnuity('annuity-f3-403b', '403b-f3-short', 198_000, 2026),
+      qualifiedAnnuity('annuity-f3-401k', '401k-f3', 99_000, 2026),
+    ]
+    out.push(member(
+      'x3-403bAggregationAnd401kIsolation',
+      'X: depleted 403(b) sweeps from another 403(b); depleted 401(k) stays isolated',
+      plan,
+      { horizonEndYear: 2026 },
+    ))
+  }
+
+  {
+    // The spouse is more than ten years younger and the sole beneficiary, so
+    // the helper must pass live spouse ages into the joint-life calculation.
+    // The post-death year keeps projecting, making the dead-owner skip and the
+    // disappearance of the spouse input visible in the same small member.
+    const plan = couplePlan({
+      p1Dob: '1953-06-15',
+      p2Dob: '1975-03-20',
+      p1PlanningAge: 76,
+      p2PlanningAge: 60,
+      p1RetirementAge: null,
+      p2RetirementAge: null,
+    })
+    plan.accounts = [
+      qualified('traditional', 'ira-f4-owner', 400_000, { spouseSoleBeneficiary: true }),
+      qualified('traditional', 'ira-f4-spouse', 75_000, { ownerPersonId: 'p2' }),
+    ]
+    out.push(member(
+      'x4-jointLifeAndDeadOwner',
+      'X: living sole-beneficiary spouse selects joint life; later dead owner is skipped',
+      plan,
+      { horizonEndYear: 2028, deathAgeByPersonId: { p2: 52 } },
+    ))
+  }
+
+  {
+    // No sibling IRA has capacity to cure this annuity-created shortfall. The
+    // helper must preserve the residual in iraRmdUnsatisfiedByOwner for the
+    // downstream conversion/QCD gates as well as publishing the obligation.
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 74 })
+    plan.accounts = [
+      qualified('traditional', 'ira-f5-exhausted', 500_000),
+      qualifiedAnnuity('annuity-f5', 'ira-f5-exhausted', 499_000, 2026),
+    ]
+    out.push(member(
+      'x5-ownedIraResidualShortfall',
+      'X: exhausted owner IRA leaves an aggregable remainder for downstream unsatisfied-RMD gates',
+      plan,
+      { horizonEndYear: 2026 },
+    ))
+  }
+
+  {
+    // Compatible physical rows sharing an ID must arrive at this seam as one
+    // logical 318,000 opening account. The Uniform Lifetime divisor at 73 is
+    // 26.5, so this member discriminates one 12,000 calculation and debit from
+    // positional 10,000 + 2,000 calculations while keeping aggregate output
+    // equal to the independently derived requirement.
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 74 })
+    plan.accounts = [
+      qualified('traditional', 'duplicate-rmd-x6', 265_000),
+      qualified('traditional', 'duplicate-rmd-x6', 53_000),
+      cash('cash-x6', 0),
+    ]
+    out.push(member(
+      'x6-groupedDuplicateLogicalRmd',
+      'X: 265k + 53k physical members form one 318k logical opening and one 12k owner RMD',
+      plan,
+      { horizonEndYear: 2026 },
+    ))
+  }
+
+  return out
+}
+
 // ---------------------------------------------------------------------------
 // T — aggregate Roth-conversion planning
 // ---------------------------------------------------------------------------
@@ -3569,5 +3736,6 @@ export async function blockMembers() {
     ...blockU(),
     ...blockV(),
     ...blockW(),
+    ...blockX(),
   ]
 }

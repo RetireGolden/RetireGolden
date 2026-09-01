@@ -140,10 +140,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/rmd/jointLifeTable.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/rmd/jointLifeTable.ts#jointLifeTableDivisor',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],
@@ -246,6 +248,7 @@ export const requiredMinimumDistributionRecords = {
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts',
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       // A named conversion does not inherit the aggregate pass's position in
       // the annual loop as its proof of A-6(b). It reads the owner's
@@ -256,6 +259,7 @@ export const requiredMinimumDistributionRecords = {
     implementedByFunctions: [
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
       'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts#annualAggregateRothConversionPlan',
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
