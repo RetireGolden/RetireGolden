@@ -2914,9 +2914,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           : 0
 
     // Contribution rows are positional even when their public account ids are
-    // duplicated. Keep the legacy last-row-wins id map for cash-flow assembly,
-    // but never use it to decide what a balance row requested or received.
-    const desiredByAccountId = new Map<string, number>()
+    // duplicated. Never use an id-keyed map to decide what a balance row
+    // requested or received.
     const desiredByBalanceIndex = new Map<number, number>()
     const employerRowKey = (balanceIndex: number): string => String(balanceIndex)
     for (const [balanceIndex, state] of balances.entries()) {
@@ -2959,7 +2958,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           desired = account.annualContribution * inflFactor
         }
       }
-      desiredByAccountId.set(account.id, desired)
       desiredByBalanceIndex.set(balanceIndex, desired)
     }
 
@@ -9712,7 +9710,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                 ]),
               ),
               employerAllocationByOwner,
-              desiredByAccountId,
               yearTaxExemptInterest,
               generatedTaxExemptInterest,
               acaForeignExclusionAddback,
