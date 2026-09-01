@@ -62,10 +62,10 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
           insuranceCashValueTotal: 4,
         },
       ] as const
-      const scalars = scalarSentinels[ordinal]
-      if (scalars === undefined) {
-        throw new Error(`unexpected annual snapshot call ${ordinal}`)
-      }
+      // Re-entry can produce more annual passes than projected years. Cycle
+      // the distinguishing values so the assertions below report a phase-count
+      // mismatch instead of the mock hiding it behind an opaque table bound.
+      const scalars = scalarSentinels[ordinal % scalarSentinels.length]!
       const injected: AnnualSnapshot = {
         balanceRecord: { [`delegated-snapshot-${ordinal}`]: 70_000 + ordinal },
         ...scalars,
