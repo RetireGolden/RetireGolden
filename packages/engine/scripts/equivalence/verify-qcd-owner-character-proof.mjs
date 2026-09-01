@@ -7,6 +7,7 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -103,14 +104,17 @@ const scratch = mkdtempSync(join(tmpdir(), 'retiregolden-qcd-proof-'))
 try {
   const baseSrc = join(scratch, 'base-src')
   const headSrc = join(scratch, 'head-src')
+  const mutantSrc = join(scratch, 'mutant-src')
   const baseTar = join(scratch, 'base.tar')
   const headTar = join(scratch, 'head.tar')
   const corpus = join(scratch, 'corpus.json')
   const baseDump = join(scratch, 'base.json')
   const headDump = join(scratch, 'head.json')
   const reach = join(scratch, 'reach.json')
+  const mutantDump = join(scratch, 'mutant.json')
   mkdirSync(baseSrc)
   mkdirSync(headSrc)
+  mkdirSync(mutantSrc)
 
   execFileSync(
     'git',
@@ -124,12 +128,33 @@ try {
   )
   execFileSync('tar', ['-xf', baseTar, '-C', baseSrc])
   execFileSync('tar', ['-xf', headTar, '-C', headSrc])
+  execFileSync('tar', ['-xf', headTar, '-C', mutantSrc])
+
+  const mutantHelper = join(
+    mutantSrc,
+    'projection',
+    'internal',
+    'annualLegacyQcdOwnerCharacterPlan.ts',
+  )
+  const helperSource = readFileSync(mutantHelper, 'utf8')
+  const section219Read =
+    'const section219 = input.qcdSection219ByDonor.get(ownerId) ?? 0'
+  const mutationCount = helperSource.split(section219Read).length - 1
+  assertEqual(mutationCount, 1, 'section 219 calibration mutation site count')
+  writeFileSync(mutantHelper, helperSource.replace(section219Read, 'const section219 = 0'))
 
   runEquivalence([
     'corpus',
     '--name', 'blocks',
     '--out', corpus,
     '--engine-src', headSrc,
+  ])
+  runEquivalence([
+    'capture',
+    '--corpus', corpus,
+    '--out', mutantDump,
+    '--engine-src', mutantSrc,
+    '--engine-label', 'calibration-ignore-qcd-section219',
   ])
   runEquivalence([
     'capture',
@@ -158,6 +183,8 @@ try {
   const baseManifest = JSON.parse(readFileSync(`${baseDump}.manifest.json`, 'utf8'))
   const headManifest = JSON.parse(readFileSync(`${headDump}.manifest.json`, 'utf8'))
   const reachReport = JSON.parse(readFileSync(reach, 'utf8'))
+  const headDumpBody = JSON.parse(readFileSync(headDump, 'utf8'))
+  const mutantDumpBody = JSON.parse(readFileSync(mutantDump, 'utf8'))
   const unreached = reachReport.entries.filter(
     (entry) => entry.totalHits === 0,
   ).length
@@ -167,6 +194,12 @@ try {
   const withColdRegions = reachReport.entries.filter(
     (entry) => entry.coldRegions.length > 0,
   ).length
+  const movedCalibrationEntries = headDumpBody.entries.filter(
+    (entry, index) => entry.sha256 !== mutantDumpBody.entries[index]?.sha256,
+  )
+  const movedCalibrationMembers = [...new Set(
+    movedCalibrationEntries.map((entry) => entry.member),
+  )]
 
   assertEqual(corpusBody.members.length, proof.corpus.members, 'corpus members')
   assertEqual(
@@ -207,6 +240,16 @@ try {
     withColdRegions,
     proof.reach.entriesWithReportedColdSubLineRegions,
     'entries with reported cold regions',
+  )
+  assertEqual(
+    movedCalibrationEntries.length,
+    proof.calibration.entriesMoved,
+    'calibration entries moved',
+  )
+  assertEqual(
+    JSON.stringify(movedCalibrationMembers),
+    JSON.stringify(proof.calibration.membersMoved),
+    'calibration members moved',
   )
 
   console.log('\nGrouped QCD owner-character proof: VERIFIED')
