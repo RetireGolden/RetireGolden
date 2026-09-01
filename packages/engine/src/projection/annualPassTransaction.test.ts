@@ -195,6 +195,26 @@ function fixture(): {
       [2029, 75_000],
       [2028, 70_000],
     ]),
+    deferredFirstRmdByApplicablePlan: new Map([
+      ['["owned-iras","owner"]', {
+        applicablePlan: {
+          kind: 'ownedTraditionalIras',
+          payeePersonId: 'owner',
+        },
+        distributionCalendarYear: 2029,
+        dueYear: 2030,
+        requiredAmount: 12_500,
+      }],
+      ['["employer-plan","employer"]', {
+        applicablePlan: {
+          kind: 'employerPlan',
+          accountId: 'employer',
+        },
+        distributionCalendarYear: 2028,
+        dueYear: 2029,
+        requiredAmount: 4_500,
+      }],
+    ]),
     namedQcdOffsetConsumedByDonor: new Map([
       ['donor', 1_200],
       ['deleted-donor', 300],
@@ -238,6 +258,9 @@ function stateBytes(bindings: SimulatorAnnualPassStateBindings): string {
     allocationTrack: [...bindings.allocationTrack],
     seppAmortAmount: [...bindings.seppAmortAmount],
     magiHistory: [...bindings.magiHistory],
+    deferredFirstRmdByApplicablePlan: [
+      ...bindings.deferredFirstRmdByApplicablePlan,
+    ],
     namedQcdOffsetConsumedByDonor: [...bindings.namedQcdOffsetConsumedByDonor],
     namedQcdOffsetHistoryUnprovable: [
       ...bindings.namedQcdOffsetHistoryUnprovable,
@@ -377,6 +400,24 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
   bindings.magiHistory.set(2029, 501)
   bindings.magiHistory.delete(2028)
   bindings.magiHistory.set(2030, 502)
+  const deferredFirstRmd = bindings.deferredFirstRmdByApplicablePlan
+    .get('["owned-iras","owner"]')!
+  if (deferredFirstRmd.applicablePlan.kind !== 'ownedTraditionalIras') {
+    throw new Error('expected owned-IRA first-RMD deferral')
+  }
+  ;(deferredFirstRmd.applicablePlan as {
+    kind: 'ownedTraditionalIras'
+    payeePersonId: string
+  }).payeePersonId = 'mutated-owner'
+  deferredFirstRmd.requiredAmount = 503
+  bindings.deferredFirstRmdByApplicablePlan
+    .delete('["employer-plan","employer"]')
+  bindings.deferredFirstRmdByApplicablePlan.set('["added"]', {
+    applicablePlan: { kind: 'employerPlan', accountId: 'added-employer' },
+    distributionCalendarYear: 2030,
+    dueYear: 2031,
+    requiredAmount: 504,
+  })
   bindings.namedQcdOffsetConsumedByDonor.set('donor', 1_900)
   bindings.namedQcdOffsetConsumedByDonor.delete('deleted-donor')
   bindings.namedQcdOffsetConsumedByDonor.set('added-donor', 700)
@@ -461,6 +502,8 @@ describe('simulator annual-pass transaction', () => {
       iraProRata: bindings.iraProRata,
       rothBasis: bindings.rothBasis,
       seppAmortAmount: bindings.seppAmortAmount,
+      deferredFirstRmdByApplicablePlan:
+        bindings.deferredFirstRmdByApplicablePlan,
       warnings: bindings.warnings,
       expenses: bindings.expenses,
     }
@@ -487,6 +530,12 @@ describe('simulator annual-pass transaction', () => {
     expect(bindings.iraProRata).toBe(originalContainers.iraProRata)
     expect(bindings.rothBasis).toBe(originalContainers.rothBasis)
     expect(bindings.seppAmortAmount).toBe(originalContainers.seppAmortAmount)
+    expect(bindings.deferredFirstRmdByApplicablePlan)
+      .toBe(originalContainers.deferredFirstRmdByApplicablePlan)
+    expect([...bindings.deferredFirstRmdByApplicablePlan.keys()]).toEqual([
+      '["owned-iras","owner"]',
+      '["employer-plan","employer"]',
+    ])
     expect(bindings.warnings).toBe(originalContainers.warnings)
     expect(bindings.expenses).toBe(originalContainers.expenses)
     expect([...bindings.warnings]).toEqual(['first warning', 'second warning'])

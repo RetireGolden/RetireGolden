@@ -145,6 +145,12 @@ function bindings(): SimulatorAnnualPassStateBindings {
     }]]),
     seppAmortAmount: new Map([['ira', 12_000]]),
     magiHistory: new Map([[2025, 70_000]]),
+    deferredFirstRmdByApplicablePlan: new Map([['["owned-iras","p1"]', {
+      applicablePlan: { kind: 'ownedTraditionalIras', payeePersonId: 'p1' },
+      distributionCalendarYear: 2025,
+      dueYear: 2026,
+      requiredAmount: 4_000,
+    }]]),
     namedQcdOffsetConsumedByDonor: new Map([['p1', 1_200]]),
     namedQcdOffsetHistoryUnprovable: new Set(['p2']),
     warnings: new Set(['a warning']),
@@ -184,6 +190,9 @@ function annualPassStateBytes(
     allocationTrack: [...state.allocationTrack],
     seppAmortAmount: [...state.seppAmortAmount],
     magiHistory: [...state.magiHistory],
+    deferredFirstRmdByApplicablePlan: [
+      ...state.deferredFirstRmdByApplicablePlan,
+    ],
     namedQcdOffsetConsumedByDonor: [...state.namedQcdOffsetConsumedByDonor],
     namedQcdOffsetHistoryUnprovable: [...state.namedQcdOffsetHistoryUnprovable],
     warnings: [...state.warnings],
@@ -244,6 +253,7 @@ function mutateEverything(state: SimulatorAnnualPassStateBindings): void {
   state.allocationTrack.get('brokerage')!.weights[0] = 99
   state.seppAmortAmount.set('ira', 1)
   state.magiHistory.set(2026, 1)
+  state.deferredFirstRmdByApplicablePlan.clear()
   state.namedQcdOffsetConsumedByDonor.set('p1', 9_999)
   state.namedQcdOffsetHistoryUnprovable.add('p1')
   state.warnings.add('a counterfactual warning')

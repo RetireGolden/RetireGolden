@@ -144,6 +144,9 @@ function annualPassStateBytes(
     allocationTrack: [...state.allocationTrack],
     seppAmortAmount: [...state.seppAmortAmount],
     magiHistory: [...state.magiHistory],
+    deferredFirstRmdByApplicablePlan: [
+      ...state.deferredFirstRmdByApplicablePlan,
+    ],
     namedQcdOffsetConsumedByDonor: [...state.namedQcdOffsetConsumedByDonor],
     namedQcdOffsetHistoryUnprovable: [...state.namedQcdOffsetHistoryUnprovable],
     warnings: [...state.warnings],
@@ -452,6 +455,50 @@ describe('counterfactual annual pass, against the real annual pass', () => {
     expect(captured).toHaveLength(END_YEAR - START_YEAR + 1)
     expect(captured.every((result) =>
       result.status === 'counterfactualAnnualLiabilityRead')).toBe(true)
+  })
+
+  it('does not consume the first-RMD deferral carry in a discarded due-year pass', () => {
+    const target = singlePersonPlan({ dob: '1953-01-01', planningAge: 75 })
+    target.id = 'counterfactual-first-rmd-deferral'
+    const ira = traditionalAccount('deferred-rmd-ira', 265_000, 'p1', 'ira')
+    if (ira.type !== 'traditional') throw new Error('expected traditional IRA')
+    ira.annualReturnPct = 0
+    target.accounts = [cash(), ira]
+    const validated = validatePlan(target)
+    const deferral = {
+      distributionCalendarYear: START_YEAR,
+      applicablePlan: {
+        kind: 'ownedTraditionalIras' as const,
+        payeePersonId: 'p1',
+      },
+    }
+
+    controller.observations.length = 0
+    const control = simulatePlan(validated, {
+      startYear: START_YEAR,
+      horizonEndYear: START_YEAR + 1,
+      taxCalculator: createFlatTaxCalculator(FLAT_RATE_PCT),
+      rmdFirstYearDeferrals: [deferral],
+    })
+    const captured: CounterfactualAnnualLiabilityResult[] = []
+    controller.observations.length = 0
+    const prePassed = simulatePlan(validated, {
+      startYear: START_YEAR,
+      horizonEndYear: START_YEAR + 1,
+      taxCalculator: createFlatTaxCalculator(FLAT_RATE_PCT),
+      rmdFirstYearDeferrals: [deferral],
+      annualCounterfactual: counterfactualRequest([], captured),
+    })
+
+    const dueYearRmd = 265_000 / 26.5 + 265_000 / 25.5
+    expect(control.years[0]!.rmd).toBe(0)
+    expect(control.years[1]!.rmd).toBe(dueYearRmd)
+    expect(captured).toHaveLength(2)
+    expect(controller.observations).toHaveLength(2)
+    for (const observation of controller.observations) {
+      expect(observation.stateBytesAfter).toBe(observation.stateBytesBefore)
+    }
+    expect(prePassed).toStrictEqual(control)
   })
 
   it('leaves both runtime journals byte-identical, with no leaked pre-pass mint', () => {

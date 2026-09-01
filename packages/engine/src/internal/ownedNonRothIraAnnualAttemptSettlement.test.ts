@@ -107,6 +107,12 @@ function state(plan?: Readonly<Plan>): SimulatorAnnualPassStateBindings {
     allocationTrack: new Map(),
     seppAmortAmount: new Map(),
     magiHistory: new Map(),
+    deferredFirstRmdByApplicablePlan: new Map([['["owned-iras","p1"]', {
+      applicablePlan: { kind: 'ownedTraditionalIras', payeePersonId: 'p1' },
+      distributionCalendarYear: TAX_YEAR - 1,
+      dueYear: TAX_YEAR,
+      requiredAmount: 4_000,
+    }]]),
     namedQcdOffsetConsumedByDonor: new Map(),
     namedQcdOffsetHistoryUnprovable: new Set(),
     warnings: new Set(['baseline']),
@@ -143,6 +149,9 @@ function stateBytes(value: SimulatorAnnualPassStateBindings): string {
     allocationTrack: [...value.allocationTrack],
     seppAmortAmount: [...value.seppAmortAmount],
     magiHistory: [...value.magiHistory],
+    deferredFirstRmdByApplicablePlan: [
+      ...value.deferredFirstRmdByApplicablePlan,
+    ],
     namedQcdOffsetConsumedByDonor: [...value.namedQcdOffsetConsumedByDonor],
     namedQcdOffsetHistoryUnprovable: [...value.namedQcdOffsetHistoryUnprovable],
     warnings: [...value.warnings],
@@ -337,7 +346,17 @@ describe('private owned-IRA annual attempt settlement', () => {
           taxYear: year.year,
           attemptNumber: context.attemptNumber,
         })
-        staleState.warnings.add('mutation-after-evidence')
+        const deferredFirstRmd = staleState.deferredFirstRmdByApplicablePlan
+          .get('["owned-iras","p1"]')!
+        if (deferredFirstRmd.applicablePlan.kind !==
+            'ownedTraditionalIras') {
+          throw new Error('expected owned-IRA first-RMD deferral')
+        }
+        ;(deferredFirstRmd.applicablePlan as {
+          kind: 'ownedTraditionalIras'
+          payeePersonId: string
+        }).payeePersonId = 'mutation-after-evidence'
+        deferredFirstRmd.requiredAmount += 1
         return evidence
       },
     })

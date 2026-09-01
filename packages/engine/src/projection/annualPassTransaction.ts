@@ -1,6 +1,7 @@
 import type { AssetAllocationPolicy } from '../model/plan.js'
 import type { RothBasisState } from '../strategies/rothBasis.js'
 import type { IraProRataYear } from '../strategies/iraBasis.js'
+import type { RmdApplicablePlan } from '../rmd/rmdShortfallExcise.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from
   './annualRetirementRuntimeJournal.js'
 import type {
@@ -31,6 +32,14 @@ export interface SimulatorAnnualPassHecmState {
 export interface SimulatorAnnualPassAllocationTrackState {
   policy: AssetAllocationPolicy
   weights: number[]
+}
+
+/** A first-distribution-calendar-year RMD elected into the following RBD year. */
+export interface SimulatorAnnualPassDeferredFirstRmd {
+  applicablePlan: RmdApplicablePlan
+  distributionCalendarYear: number
+  dueYear: number
+  requiredAmount: number
 }
 
 /** A named read/write adapter for a mutable simulator local. */
@@ -74,6 +83,8 @@ export interface SimulatorAnnualPassStateBindings {
   allocationTrack: Map<string, SimulatorAnnualPassAllocationTrackState>
   seppAmortAmount: Map<string, number>
   magiHistory: Map<number, number>
+  deferredFirstRmdByApplicablePlan:
+    Map<string, SimulatorAnnualPassDeferredFirstRmd>
   /**
    * The two named-QCD donor ledgers. Both outlive a single year — the
    * post-70½ deductible-contribution offset is cumulative over the donor's
@@ -170,6 +181,8 @@ interface AnnualPassSnapshot {
   allocationTrack: Array<[string, SimulatorAnnualPassAllocationTrackState]>
   seppAmortAmount: Array<[string, number]>
   magiHistory: Array<[number, number]>
+  deferredFirstRmdByApplicablePlan:
+    Array<[string, SimulatorAnnualPassDeferredFirstRmd]>
   namedQcdOffsetConsumedByDonor: Array<[string, number]>
   namedQcdOffsetHistoryUnprovable: string[]
   warnings: string[]
@@ -210,6 +223,17 @@ function cloneAllocationTrackState(
   value: SimulatorAnnualPassAllocationTrackState,
 ): SimulatorAnnualPassAllocationTrackState {
   return { policy: structuredClone(value.policy), weights: [...value.weights] }
+}
+
+function cloneDeferredFirstRmd(
+  value: SimulatorAnnualPassDeferredFirstRmd,
+): SimulatorAnnualPassDeferredFirstRmd {
+  return {
+    applicablePlan: structuredClone(value.applicablePlan),
+    distributionCalendarYear: value.distributionCalendarYear,
+    dueYear: value.dueYear,
+    requiredAmount: value.requiredAmount,
+  }
 }
 
 function cloneExpenses(value: YearExpenses): YearExpenses {
@@ -305,6 +329,10 @@ function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPass
     allocationTrack: snapshotMap(bindings.allocationTrack, cloneAllocationTrackState),
     seppAmortAmount: snapshotMap(bindings.seppAmortAmount, (value) => value),
     magiHistory: snapshotMap(bindings.magiHistory, (value) => value),
+    deferredFirstRmdByApplicablePlan: snapshotMap(
+      bindings.deferredFirstRmdByApplicablePlan,
+      cloneDeferredFirstRmd,
+    ),
     namedQcdOffsetConsumedByDonor:
       snapshotMap(bindings.namedQcdOffsetConsumedByDonor, (value) => value),
     namedQcdOffsetHistoryUnprovable: [
@@ -390,6 +418,11 @@ function restoreSnapshot(bindings: SimulatorAnnualPassStateBindings, snapshot: A
   restoreMap(bindings.allocationTrack, snapshot.allocationTrack, cloneAllocationTrackState)
   restoreMap(bindings.seppAmortAmount, snapshot.seppAmortAmount, (value) => value)
   restoreMap(bindings.magiHistory, snapshot.magiHistory, (value) => value)
+  restoreMap(
+    bindings.deferredFirstRmdByApplicablePlan,
+    snapshot.deferredFirstRmdByApplicablePlan,
+    cloneDeferredFirstRmd,
+  )
   restoreMap(
     bindings.namedQcdOffsetConsumedByDonor,
     snapshot.namedQcdOffsetConsumedByDonor,
