@@ -242,7 +242,9 @@ describe('simulatePlan duplicate contribution account ids', () => {
   })
 
   it('allocates employee limits and employer match by row for duplicate employer-plan ids', () => {
-    // Independent one-year ledger worksheet:
+    // Independent one-year ledger worksheet. Notice 2025-67 publishes the
+    // 2026 IRC 402(g) elective-deferral limit of 24,500; the matching
+    // authoritative repository record is in contributionAndDeferralLimits.ts.
     //   employee deferrals: 10,000 + 1,000 + 13,500 = 24,500 §402(g) cap
     //   employer match:      6,000 + 1,000 + 6,000  = 13,000
     //   opening balances:    10 + 30 + 20           = 60
@@ -386,5 +388,85 @@ describe('simulatePlan duplicate contribution account ids', () => {
         destination: { entityKind: 'account', accountId: 'duplicate-employer' },
       },
     ])
+  })
+
+  it('keeps high-earner Roth catch-up routing and match bases positional for duplicate ids', () => {
+    // Notice 2025-67 sets the 2026 §402(g) limit at 24,500 and the ordinary
+    // age-50 §414(v) catch-up at 8,000; the repository's authoritative values
+    // are the 2026 records in contributionAndDeferralLimits.ts. With prior-year
+    // FICA wages above the §414(v)(7) threshold, the second traditional row's
+    // 8,000 catch-up must land on the Roth sibling while remaining in that
+    // source row's employer-match base:
+    //   first duplicate: 20,000 pre-tax; match base 20,000
+    //   second duplicate: 4,500 pre-tax + 8,000 redirected; match base 12,500
+    //   Roth sibling:     8,000 designated Roth; match base 0
+    const plan = singlePersonPlan({ dob: '1976-01-01', planningAge: 60 })
+    plan.incomes = [{
+      id: 'wages',
+      type: 'wages',
+      personId: 'p1',
+      annualGross: 200_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+    const first = employerAccount('duplicate-employer', 'First source row', 10, 20_000)
+    const second = employerAccount('duplicate-employer', 'Second source row', 20, 20_000)
+    first.priorCalendarYearFicaWages = 200_000
+    second.priorCalendarYearFicaWages = 200_000
+    first.employerMatch = { matchPct: 100, capPctOfPay: 100 }
+    second.employerMatch = { matchPct: 100, capPctOfPay: 100 }
+    plan.accounts = [
+      {
+        id: 'funding-cash',
+        name: 'Funding cash',
+        type: 'cash',
+        ownerPersonId: 'p1',
+        balance: 0,
+        annualReturnPct: 0,
+        annualContribution: 0,
+      },
+      first,
+      second,
+      {
+        id: 'roth-sibling',
+        name: 'Roth 401(k)',
+        type: 'roth',
+        kind: 'employer',
+        ownerPersonId: 'p1',
+        balance: 0,
+        annualReturnPct: 0,
+        annualContribution: 0,
+      },
+    ]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+
+    const year = simulatePlan(parsed.plan, {
+      startYear: START_YEAR,
+      horizonEndYear: START_YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
+    }).years[0]!
+
+    expect(year.contributions).toBe(32_500)
+    expect(year.employerMatch).toBe(32_500)
+    expect(year.balances['roth-sibling']).toBe(8_000)
+    expect(year.cashFlow!.useLines
+      .filter((line) => line.kind === 'contribution')
+      .map((line) => [line.id, line.requestedPlanDollars, line.fundedPlanDollars]))
+      .toEqual([
+        ['use:contribution:duplicate-employer', 20_000, 20_000],
+        ['use:contribution:duplicate-employer', 12_000, 4_500],
+        ['use:contribution:roth-sibling', 8_000, 8_000],
+      ])
+    expect(year.cashFlow!.transferLines
+      .filter((line) => line.kind === 'employerMatch')
+      .map((line) => [line.id, line.creditPlanDollars]))
+      .toEqual([
+        ['transfer:employerMatch:duplicate-employer', 20_000],
+        ['transfer:employerMatch:duplicate-employer', 12_500],
+      ])
   })
 })
