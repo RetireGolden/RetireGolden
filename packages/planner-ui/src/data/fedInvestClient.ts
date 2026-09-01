@@ -25,18 +25,58 @@ import {
   latestPriceDateIso,
   parseFedInvestCsv,
   type FedInvestSnapshot,
+  type FedInvestTips,
 } from '@retiregolden/engine/ladder/fedInvest'
 
 import { STORAGE_KEYS, readLocal, writeLocal } from './localStore'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isIsoCalendarDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false
+  const date = new Date(`${value}T00:00:00.000Z`)
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u.test(value)) return false
+  const normalized = value.includes('.') ? value : value.replace('Z', '.000Z')
+  const date = new Date(value)
+  return Number.isFinite(date.getTime()) && date.toISOString() === normalized
+}
+
+function isFedInvestTips(value: unknown): value is FedInvestTips {
+  return isRecord(value)
+    && typeof value.cusip === 'string'
+    && value.cusip.length > 0
+    && typeof value.ratePct === 'number'
+    && Number.isFinite(value.ratePct)
+    && isIsoCalendarDate(value.maturityIso)
+    && typeof value.endOfDayPrice === 'number'
+    && Number.isFinite(value.endOfDayPrice)
+    && value.endOfDayPrice > 0
+}
+
+function isFedInvestSnapshot(value: unknown): value is FedInvestSnapshot {
+  if (!isRecord(value) || !isIsoTimestamp(value.fetchedAtIso) || !Array.isArray(value.tips) || value.tips.length === 0) return false
+  if (value.source === 'fetch') {
+    if (!isIsoCalendarDate(value.priceDateIso)) return false
+  } else if (value.source === 'import') {
+    if (value.priceDateIso !== null) return false
+  } else {
+    return false
+  }
+  return value.tips.every(isFedInvestTips)
+}
 
 export function readFedInvestCache(): FedInvestSnapshot | null {
   const raw = readLocal(STORAGE_KEYS.fedInvestCache)
   if (!raw) return null
   try {
-    const parsed = JSON.parse(raw) as FedInvestSnapshot
-    if (!Array.isArray(parsed.tips)) return null
-    if (typeof parsed.priceDateIso !== 'string' && parsed.priceDateIso !== null) return null
-    return parsed
+    const parsed: unknown = JSON.parse(raw)
+    return isFedInvestSnapshot(parsed) ? parsed : null
   } catch {
     return null
   }

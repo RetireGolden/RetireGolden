@@ -26,6 +26,14 @@ describe('parseFedInvestCsv', () => {
   it('returns an empty list for non-CSV content', () => {
     expect(parseFedInvestCsv('<html><body>maintenance</body></html>')).toEqual([])
   })
+
+  it('ignores TIPS rows with impossible maturity dates', () => {
+    const invalidMaturities = [
+      '912828S50,TIPS,0.00125,02/30/2026,,0.000000,100.031250,100.062500',
+      '912828V49,TIPS,0.00375,13/15/2027,,98.687500,98.656250,98.687500',
+    ].join('\n')
+    expect(parseFedInvestCsv(invalidMaturities)).toEqual([])
+  })
 })
 
 describe('latestPriceDate', () => {
