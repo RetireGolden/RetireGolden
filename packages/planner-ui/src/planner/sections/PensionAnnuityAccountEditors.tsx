@@ -57,6 +57,16 @@ export function PensionAccountEditor({
       <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
       <PercentField label="COLA" value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
       <PercentField label="Survivor benefit" value={account.survivorPct} onCommit={(v) => onCommit('survivorPct', v ?? 0)} />
+      <SelectField
+        label="Pension source"
+        help="Used for state income tax when public civil-service or military pensions receive a different exclusion than private retirement income."
+        value={account.source ?? 'private'}
+        options={[
+          { value: 'private', label: 'Private pension' },
+          { value: 'public', label: 'Public / military pension' },
+        ]}
+        onCommit={(v) => onCommit('source', v)}
+      />
       <CheckboxField
         label="Lump-sum offer on record"
         help="Record a lump-sum buyout offer to unlock the decision view: the annuity's discounted present value against the offer, a discount-rate × longevity sensitivity table, and the survivor option's value. Recording the offer changes nothing in the projection until you elect it."

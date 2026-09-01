@@ -786,18 +786,6 @@ export function AccountFields({ account, index }: { account: Account; index: num
         )}
         </>
       ) : null}
-      {account.type === 'pension' ? (
-        <SelectField
-          label="Pension source"
-          help="Used for state income tax when public civil-service or military pensions receive a different exclusion than private retirement income."
-          value={account.source ?? 'private'}
-          options={[
-            { value: 'private', label: 'Private pension' },
-            { value: 'public', label: 'Public / military pension' },
-          ]}
-          onCommit={(v) => set('source', v)}
-        />
-      ) : null}
       {(account.type === 'cash' || account.type === 'equityComp' || (isAllocatable(account) && account.allocation === undefined)) ? (
         <div className="field-with-action">
           <PercentField
