@@ -64,14 +64,15 @@ vi.mock('./internal/annualCoordinatedHecm.js', async (importOriginal) => {
       input: Parameters<typeof original.annualCoordinatedHecmEligibility>[0],
     ) => {
       const production = original.annualCoordinatedHecmEligibility(input)
-      const output = seam.mode === 'capacity30'
+      const afterStartYear = input.year > input.startYear
+      const output = seam.mode === 'capacity30' && afterStartYear
         ? { propertyAccountIds: production.propertyAccountIds, capacity: 30_000 }
-        : seam.mode === 'reverseIds'
+        : seam.mode === 'reverseIds' && afterStartYear
           ? {
               propertyAccountIds: [...production.propertyAccountIds].reverse(),
               capacity: 30_000,
             }
-          : seam.mode === 'insertExcluded' && input.year > input.startYear
+          : seam.mode === 'insertExcluded' && afterStartYear
             ? {
                 propertyAccountIds: [...production.propertyAccountIds, 'excluded'],
                 capacity: production.capacity + 15_000,
@@ -280,7 +281,15 @@ describe('simulatePlan delegates annual coordinated HECM work', () => {
     expect(capacity.hecmDraw).toBe(30_000)
     expect(capacity.hecmLoanBalance).toBe(30_000)
 
-    const reversed = year(run('reverseIds').result, 2027)
+    const capacityStart = year(run('capacity30').result, 2026)
+    expect(capacityStart.hecmDraw).toBe(0)
+    expect(capacityStart.hecmLoanBalance).toBe(0)
+
+    const reversedRun = run('reverseIds').result
+    const reversedStart = year(reversedRun, 2026)
+    expect(reversedStart.hecmDraw).toBe(0)
+    expect(reversedStart.hecmLoanBalance).toBe(0)
+    const reversed = year(reversedRun, 2027)
     expect(reversed.hecmDraw).toBe(30_000)
     expect(coordinatedSources(reversed).map((line) => {
       const identity = line.identities[0]

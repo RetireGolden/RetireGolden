@@ -43,11 +43,11 @@ export function annualCoordinatedHecmEligibility(
 ): AnnualCoordinatedHecmEligibility {
   const propertyAccountIds: string[] = []
   let capacity = 0
-  if (
-    !input.anyAlive ||
-    input.year <= input.startYear ||
-    input.priorYearPortfolioReturnPct >= 0
-  ) {
+  if (!(
+    input.anyAlive &&
+    input.year > input.startYear &&
+    input.priorYearPortfolioReturnPct < 0
+  )) {
     return { propertyAccountIds, capacity }
   }
 

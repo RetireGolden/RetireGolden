@@ -29,7 +29,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through M, T and V each have a phase-specific reach spec beside the
+ * Blocks J through N, T and V each have a phase-specific reach spec beside the
  * earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -42,6 +42,7 @@
  * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json`,
  * `scripts/equivalence/specs/simulate-social-security-boundary.json`,
  * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json`,
+ * `scripts/equivalence/specs/simulate-hecm-coordinated-boundary.json`,
  * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`, and
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`
  * are the

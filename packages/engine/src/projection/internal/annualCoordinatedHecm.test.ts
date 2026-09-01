@@ -64,6 +64,7 @@ describe('annualCoordinatedHecmEligibility', () => {
     ['the projection is in its first year', { year: 2026 }],
     ['the prior return is zero', { priorYearPortfolioReturnPct: 0 }],
     ['the prior return is positive', { priorYearPortfolioReturnPct: 0.01 }],
+    ['the prior return is not a number', { priorYearPortfolioReturnPct: Number.NaN }],
   ] as const)('returns no eligible line when %s', (_label, override) => {
     expect(annualCoordinatedHecmEligibility(eligibilityInput(override))).toEqual({
       propertyAccountIds: [],
