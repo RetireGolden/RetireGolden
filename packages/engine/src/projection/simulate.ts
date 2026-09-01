@@ -63,6 +63,14 @@ import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './a
 import { annuityExclusionMultiple, annuityPayoutForm, annuityPayoutFraction } from './annuityForms.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import { annualOrdinaryWithdrawalBoundary } from './internal/annualOrdinaryWithdrawalBoundary.js'
+import {
+  // Rule-coverage artifacts deep-link simulatePlan by declaration line.
+  // This import deliberately retains the predecessor dependency's source span
+  // so extracting this block does not churn every rule shard implemented by
+  // that simulator entry point. The helper remains the only runtime dependency
+  // at this boundary.
+  annualContributionsAndEmployerMatch,
+} from './internal/annualContributionsAndEmployerMatch.js'
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
@@ -110,14 +118,6 @@ import {
   type InheritedRegimeResult,
 } from '../strategies/inheritedIra.js'
 import {
-  allocateEmployerElectiveDeferrals,
-  employerMatchElectiveBase,
-  indexRothCatchUpWageThreshold,
-  type EmployerElectiveAllocation,
-  type EmployerElectiveRequest,
-} from './employerRothCatchUp.js'
-import {
-  acceptsContributions,
   hsaNonQualifiedPenaltyRate,
   isAggregatedIra,
   hasSpouseTreatAsOwnElection,
@@ -3258,418 +3258,88 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // --- contributions & employer match --------------------
-    let contributions = 0
-    let ownedNonRothIraContributions = 0
-    let employerMatch = 0
-    let preTaxContributions = 0
-    // Deposit destinations for the optimizer probe: the LP models balances as
-    // owner-traditional vs everything-else buckets, so contributions and match
-    // must arrive in the matching compressed bucket, not vanish as spending.
-    let traditionalInflow = 0
-    let otherInflow = 0
-    let taxableInflow = 0
-    const groupUsed = new Map<string, number>()
-    const addition415cUsed = new Map<string, number>()
-    // IRC 219(b)(1) caps an IRA contribution at the lesser of the deductible
-    // amount and compensation includible in gross income, and 219(c) lets a
-    // couple filing jointly reach the other spouse's compensation. So the
-    // ceiling is a single household pool on a joint return with both spouses
-    // living, and each person's own wages otherwise. Wages are the engine's
-    // only compensation source; see the 219(f)(1) registry record.
-    const iraCompensationIsShared =
-      filingStatusForYear === 'marriedFilingJointly' && aliveCount === 2
-    const iraCompensationRemaining = new Map<string, number>()
-    if (iraCompensationIsShared) {
-      let combined = 0
-      for (const wages of wagesByPerson.values()) combined += wages
-      iraCompensationRemaining.set(IRA_HOUSEHOLD_COMPENSATION_KEY, combined)
-    } else {
-      for (const [personId, wages] of wagesByPerson) {
-        iraCompensationRemaining.set(personId, wages)
+    const contributionPlan = annualContributionsAndEmployerMatch({
+      balances,
+      year,
+      startYear,
+      inflFactor,
+      limitGrowth,
+      filingStatus: filingStatusForYear,
+      aliveCount,
+      peopleCount: people.length,
+      primaryPersonId: primary.id,
+      wagesByPerson,
+      resolveOwnerState: stateOf,
+      resolveOwnerBirthYear: (ownerPersonId) =>
+        dobYear(personById.get(ownerPersonId)!),
+      resolveOwnerDob: (ownerPersonId) =>
+        personById.get(ownerPersonId)?.dob ?? null,
+      resolveRothPoolKey: rothPoolKey,
+      runtimeOccurrenceKey,
+      iraHouseholdCompensationKey: IRA_HOUSEHOLD_COMPENSATION_KEY,
+      indexWithStatutoryRounding,
+      pack,
+    })
+    for (const operation of contributionPlan.operations) {
+      if (operation.kind === 'warning') {
+        warnings.add(operation.message)
+        continue
       }
-    }
-
-    const isEmployerPlanAccount = (account: Account): boolean =>
-      (account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer'
-
-    const employerCatchUpForAge = (age: number): number =>
-      age >= 60 && age <= 63
-        ? indexWithStatutoryRounding(pack.contributionLimits.superCatchUp60to63, limitGrowth)
-        : age >= 50
-          // The (B)(i)/(C)(i) first-sentence catch-up does index normally.
-          ? pack.contributionLimits.catchUp50 * limitGrowth
-          : 0
-
-    const desiredByAccountId = new Map<string, number>()
-    for (const state of balances) {
-      const account = state.account
-      const hasSchedule = 'contributionSchedule' in account && account.contributionSchedule && account.contributionSchedule.length > 0
-      // A Roth employer account with a zero schedule still has to sit in the
-      // 414(v)(7) allocator so a high-earner catch-up can be redirected onto it.
-      if (account.annualContribution <= 0 && !hasSchedule && !isEmployerPlanAccount(account)) continue
-      if (!acceptsContributions(account)) continue // inherited accounts can't receive contributions
-      const ownerId = account.ownerPersonId ?? primary.id
-      const ownerState = stateOf(ownerId)
-      if (!ownerState.alive) continue
-
-      let desired = 0
-      if (hasSchedule) {
-        const owner = personById.get(ownerId)!
-        const ownerBirthYear = dobYear(owner)
-        const ownerAgeAtStartYear = startYear - ownerBirthYear
-        for (const phase of account.contributionSchedule!) {
-          const fromAge = phase.fromAge ?? 0
-          const toAge = phase.toAge ?? 120
-          const age = ownerState.ageAttained
-          if (age >= fromAge && age <= toAge) {
-            const phaseStartYear = phase.fromAge !== null
-              ? startYear + (phase.fromAge - ownerAgeAtStartYear)
-              : startYear
-            const yearsElapsed = Math.max(0, year - phaseStartYear)
-            desired += phase.annualAmount * Math.pow(1 + phase.escalationPct / 100, yearsElapsed) * inflFactor
+      const state = balances[operation.balanceIndex]!
+      if (operation.kind === 'contribution') {
+        if (operation.credited > 0) {
+          state.balance = operation.balanceAfter
+          if (operation.retirementOccurrence !== null) {
+            recordAnnualRetirementRuntimeOccurrence(
+              operation.retirementOccurrence,
+            )
+          }
+          if (operation.retirementApplication !== null) {
+            recordAnnualRetirementRuntimeApplication(
+              operation.retirementApplication,
+            )
+          }
+          if (operation.costBasisAfter !== operation.costBasisBefore) {
+            state.costBasis = operation.costBasisAfter
+          }
+          if (operation.rothContributionPoolKey !== null) {
+            const rb = rothBasis.get(operation.rothContributionPoolKey)
+            if (rb) {
+              rb.contributionBasis += operation.rothContributionBasisDelta
+            }
+          }
+          if (operation.qcdSection219OwnerPersonId !== null) {
+            const ownerId = operation.qcdSection219OwnerPersonId
+            qcdSection219ByDonor.set(
+              ownerId,
+              (qcdSection219ByDonor.get(ownerId) ?? 0) +
+                operation.qcdSection219Amount,
+            )
           }
         }
-        // Employer accounts require wages even with a schedule
-        if (isEmployerPlanAccount(account) && (wagesByPerson.get(ownerId) ?? 0) <= 0) {
-          desired = 0
-        }
-      } else {
-        // Legacy behavior: must have wages
-        if ((wagesByPerson.get(ownerId) ?? 0) <= 0) {
-          desired = 0
-        } else {
-          desired = account.annualContribution * inflFactor
-        }
-      }
-      desiredByAccountId.set(account.id, desired)
-    }
-
-    const employerAllocated = new Map<string, number>()
-    const employerAllocationByOwner = new Map<string, EmployerElectiveAllocation>()
-    const employerRequestsByOwner = new Map<string, EmployerElectiveRequest[]>()
-    const employeeLandedByAccountId = new Map<string, number>()
-    for (const state of balances) {
-      const account = state.account
-      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
-      if (account.type !== 'traditional' && account.type !== 'roth') continue
-      const ownerId = account.ownerPersonId ?? primary.id
-      const list = employerRequestsByOwner.get(ownerId) ?? []
-      list.push({
-        accountId: account.id,
-        type: account.type,
-        desired: desiredByAccountId.get(account.id) ?? 0,
-        priorCalendarYearFicaWages: account.priorCalendarYearFicaWages ?? 0,
-      })
-      employerRequestsByOwner.set(ownerId, list)
-    }
-    for (const [ownerId, requests] of employerRequestsByOwner) {
-      const age = stateOf(ownerId).ageAttained
-      // IRC 414(v)(2)(C)(i) sentence two indexes "the adjusted dollar amounts
-      // applicable under clauses (i) and (ii) of subparagraph (E)" -- the
-      // greater-of OUTPUT, not the 10,000 dollar leg inside it. Congress used
-      // figure-specific wording one sentence earlier ("the $5,000 amount in
-      // subparagraph (B)(i)") and switched deliberately here. Treasury settles
-      // it outright: 26 CFR 1.414(v)-1(c)(2)(iii)(B) indexes "the initial
-      // amount ($11,250 ...)", so it is the operative figure that moves and
-      // the 10,000 leg never governs. That provision governs taxable years
-      // beginning after 2025 by its own terms, which covers 2027 -- the first
-      // year in which the candidate readings produce different amounts.
-      const allocation = allocateEmployerElectiveDeferrals(requests, {
-        contributionYear: year,
-        baseLimit: pack.contributionLimits.employee401k * limitGrowth,
-        catchUpLimit: employerCatchUpForAge(age),
-        wageThreshold: indexRothCatchUpWageThreshold(
-          pack.contributionLimits.rothCatchUpWageThreshold,
-          limitGrowth,
-        ),
-        compensation: wagesByPerson.get(ownerId) ?? 0,
-      })
-      employerAllocationByOwner.set(ownerId, allocation)
-      for (const [accountId, amount] of allocation.allowed) {
-        employerAllocated.set(accountId, amount)
-      }
-    }
-
-    for (const state of balances) {
-      const account = state.account
-      if (!desiredByAccountId.has(account.id)) continue
-      const ownerId = account.ownerPersonId ?? primary.id
-      const ownerState = stateOf(ownerId)
-      const desired = desiredByAccountId.get(account.id) ?? 0
-      const isEmployerAccount = isEmployerPlanAccount(account)
-      if (desired <= 0 && !isEmployerAccount) continue
-
-      let allowed = desired
-      let groupKey: string | null = null
-      let compensationKey: string | null = null
-      let limit = Infinity
-      const age = ownerState.ageAttained
-      if (isEmployerAccount) {
-        groupKey = `${ownerId}:employer`
-        allowed = employerAllocated.get(account.id) ?? 0
-      } else if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'ira') {
-        // One group for traditional and Roth together: IRC 408A(c)(2) makes the
-        // Roth limit the 219(b)(1) amount reduced by traditional contributions,
-        // so the pair share a single annual ceiling.
-        groupKey = `${ownerId}:ira`
-        // IRC 219(b)(5)(C)(iii) indexes the (b)(5)(B) catch-up as well as the
-        // deductible amount, so unlike the HSA catch-up this one is projected.
-        const catchUp = age >= 50 ? pack.contributionLimits.iraCatchUp50 : 0
-        limit = (pack.contributionLimits.ira + catchUp) * limitGrowth
-        compensationKey = iraCompensationIsShared ? IRA_HOUSEHOLD_COMPENSATION_KEY : ownerId
-      } else if (account.type === 'hsa') {
-        // The group key stays per person, but a couple does NOT get one family
-        // limit each. IRC 223(b)(5) says that where either spouse has family
-        // coverage, "both spouses shall be treated as having only such family
-        // coverage" and the paragraph (1) limitation "shall be divided equally
-        // between them unless they agree on a different division". One family
-        // limit, split. A plan carries no coverage election and no division
-        // agreement, so the two-person household stands in for family coverage
-        // (as it already did in selecting the base) and the equal division the
-        // statute applies by default stands in for the agreement.
-        groupKey = `${ownerId}:hsa`
-        const hasFamilyCoverage = people.length === 2
-        // (b)(5) opens on "individuals who are married to each other", so the
-        // division reaches a two-person household only while it is a married
-        // one and both spouses are living. Household size alone will not do:
-        // the schema requires two people for a joint return but does not
-        // require a joint return of a two-person household, so unmarried pairs
-        // are representable — and two unmarried individuals covered by a
-        // family plan are each an eligible individual with family coverage
-        // under (b)(2)(B) with no paragraph (5) to divide anything, so they
-        // keep a whole family limit each. A sole survivor likewise has nobody
-        // left to divide with. Same married-and-both-living test as the 219(c)
-        // shared compensation pool above.
-        const dividesFamilyLimit =
-          hasFamilyCoverage && filingStatusForYear === 'marriedFilingJointly' && aliveCount === 2
-        const base = hasFamilyCoverage
-          ? pack.contributionLimits.hsaFamily / (dividesFamilyLimit ? 2 : 1)
-          : pack.contributionLimits.hsaSelfOnly
-        // IRC 223(g)(1) indexes only the subsection (b)(2) limits. The
-        // (b)(3) catch-up has been a flat 1,000 dollars since 2009 and is
-        // absent from the indexing list, so it must not carry limitGrowth.
-        // It is also outside the division: 223(b)(5)(B) divides the limitation
-        // "without regard to any additional contribution amount under
-        // paragraph (3)", so each spouse adds a whole catch-up of their own on
-        // top of half the base rather than half of one.
-        const catchUp = age >= 55 ? pack.contributionLimits.hsaCatchUp55 : 0
-        limit = base * limitGrowth + catchUp
-      }
-      if (groupKey !== null && !isEmployerAccount) {
-        const used = groupUsed.get(groupKey) ?? 0
-        allowed = Math.max(0, Math.min(desired, limit - used))
-      }
-
-      // §415(c)(1) caps annual additions — and §415(c)(2) counts the employee's
-      // own contributions among them, not just the employer's — at the lesser
-      // of the indexed dollar amount and 100 percent of compensation. Deferrals
-      // are the first addition to land, so the cap has to bind them here.
-      // Capping only the match leaves a participant paid less than the §402(g)
-      // limit deferring more than they earned, and zeroing the match cannot
-      // bring that back under the pay prong. IRC 414(v)(3)(A) then carves
-      // paragraph-(1) catch-up out of 415(c) entirely, including as a charge
-      // against other contributions, so only the §402(g) base is countable.
-      const used415c = addition415cUsed.get(ownerId) ?? 0
-      let countableEmployee = 0
-      if (isEmployerAccount) {
-        const catchUp = employerAllocationByOwner.get(ownerId)?.catchUpByAccount.get(account.id) ?? 0
-        const countable = Math.max(0, allowed - catchUp)
-        const limit415c = Math.min(
-          pack.contributionLimits.section415cLimit * limitGrowth,
-          wagesByPerson.get(ownerId) ?? 0,
-        )
-        countableEmployee = Math.max(0, Math.min(countable, limit415c - used415c))
-        allowed = countableEmployee + catchUp
-      }
-
-      if (groupKey !== null) {
-        // §219(b)(1)(B) for IRAs, the counterpart of the §415(c) pay prong
-        // above. It lands here rather than with the dollar limit because the
-        // §219(c) household pool spans both spouses' limit groups, so it has
-        // to draw down once the amount is otherwise final.
-        if (compensationKey !== null) {
-          const compensation = iraCompensationRemaining.get(compensationKey) ?? 0
-          allowed = Math.max(0, Math.min(allowed, compensation))
-          iraCompensationRemaining.set(compensationKey, compensation - allowed)
-        }
-        // Employer 414(v)(7) redirects leave the traditional account's
-        // `allowed` below `desired` even when the owner still deferred the
-        // full request as designated Roth. Compare owner totals after every
-        // employee deferral has landed, not this per-account gap.
-        if (!isEmployerAccount && allowed < desired - EPSILON) {
-          warnings.add('Some contributions were reduced to stay within IRS annual limits.')
-        }
-        groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
-      }
-      const catchUpAllocation = employerAllocationByOwner.get(ownerId)
-      const redirectedFromHere = catchUpAllocation?.redirectedCatchUpBySource.get(account.id) ?? 0
-      const redirectedOntoHere =
-        catchUpAllocation !== undefined && catchUpAllocation.catchUpRothAccountId === account.id
-          ? [...catchUpAllocation.redirectedCatchUpBySource.values()].reduce((sum, amount) => sum + amount, 0)
-          : 0
-      const postRoutingRequested = Math.max(0, desired - redirectedFromHere) + redirectedOntoHere
-      const contributionOwnerPersonId = 'ownerPersonId' in account ? account.ownerPersonId ?? null : null
-      if (allowed <= 0) {
-        yearSites?.recordContribution({
-          destinationAccountId: account.id,
-          ownerPersonId: contributionOwnerPersonId,
-          requested: postRoutingRequested,
-          credited: 0,
-        })
+        yearSites?.recordContribution(operation.record)
         continue
       }
 
-      // Update the countable (non-catch-up) employee contribution inside 415(c)
-      if (isEmployerAccount) {
-        addition415cUsed.set(ownerId, used415c + countableEmployee)
-      }
-
-      const contributionBalanceBefore = state.balance
-      state.balance += allowed
-      const contributionKind = account.type === 'traditional'
-        ? account.kind === 'employer'
-          ? 'employerPlanEmployeeContribution' as const
-          : 'ownedIraContribution' as const
-        : null
-      if (contributionKind !== null) {
-        const producerOccurrenceKey = runtimeOccurrenceKey(
-          contributionKind,
-          account.id,
-        )
-        recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey,
-          kind: contributionKind,
-          grossAmountPlanDollars: allowed,
-          ownerPersonId: account.ownerPersonId,
-          sourceAccountId: account.id,
-          executionDate: null,
-          executionSequence: null,
-          movementAuthorityId: null,
-        })
-        if (isAggregatedIra(account)) {
-          recordAnnualRetirementRuntimeApplication({
-            applicationKind: 'credit',
-            producerOccurrenceKey,
-            simulatorPhase: 'employeeContribution',
-            ownerPersonId: account.ownerPersonId,
-            sourceAccountId: account.id,
-            sourceBalanceBeforePlanDollars: contributionBalanceBefore,
-            creditedAmountPlanDollars: allowed,
-            sourceBalanceAfterPlanDollars: state.balance,
-          })
-        }
-      }
-      if (account.type === 'taxable' || account.type === 'equityComp') state.costBasis += allowed
-      // Direct Roth contributions add to the always-accessible basis (employer
-      // Roth contributions are treated the same here, a planning simplification).
-      if (account.type === 'roth') {
-        const rb = rothBasis.get(rothPoolKey(account))
-        if (rb) rb.contributionBasis += allowed
-      }
-      contributions += allowed
-      if (isAggregatedIra(account)) ownedNonRothIraContributions += allowed
-      if (account.type === 'traditional' && account.kind === 'ira') {
-        const owner = personById.get(ownerId)
-        const thresholdDate = owner === undefined ? null : addCalendarMonths(owner.dob, 846)
-        const thresholdYear = thresholdDate === null ? null : Number(thresholdDate.slice(0, 4))
-        if (thresholdYear !== null && year >= thresholdYear) {
-          qcdSection219ByDonor.set(
-            ownerId, (qcdSection219ByDonor.get(ownerId) ?? 0) + allowed,
-          )
-        }
-      }
-      if (account.type === 'traditional' || account.type === 'hsa') preTaxContributions += allowed
-      if (account.type === 'traditional') traditionalInflow += allowed
-      else otherInflow += allowed
-      if (account.type === 'taxable' || account.type === 'equityComp') taxableInflow += allowed
-      if (isEmployerAccount) employeeLandedByAccountId.set(account.id, allowed)
-      yearSites?.recordContribution({
-        destinationAccountId: account.id,
-        ownerPersonId: contributionOwnerPersonId,
-        requested: postRoutingRequested,
-        credited: allowed,
-      })
-    }
-
-    for (const [, requests] of employerRequestsByOwner) {
-      let desiredTotal = 0
-      let landedTotal = 0
-      for (const request of requests) {
-        desiredTotal += request.desired
-        landedTotal += employeeLandedByAccountId.get(request.accountId) ?? 0
-      }
-      if (landedTotal < desiredTotal - EPSILON) {
-        warnings.add('Some contributions were reduced to stay within IRS annual limits.')
+      // The cash-flow record originally preceded the match balance mutation.
+      yearSites?.recordEmployerMatch(operation.record)
+      state.balance = operation.balanceAfter
+      if (operation.retirementOccurrence !== null) {
+        recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)
       }
     }
-
-    // Employer match after every employee deferral, including 414(v)(7)
-    // redirected catch-up. Regular elective still lands before match so it
-    // consumes §415(c) first; 414(v)(3)(A) keeps the catch-up slice out of
-    // that limit, so match takes leftover room after the §402(g) base only.
-    for (const state of balances) {
-      const account = state.account
-      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
-      if (!('employerMatch' in account) || !account.employerMatch) continue
-      const ownerId = account.ownerPersonId ?? primary.id
-      const matchInfo = account.employerMatch
-      const ownerWages = wagesByPerson.get(ownerId) ?? 0
-      if (ownerWages <= 0) continue
-      const allocation = employerAllocationByOwner.get(ownerId)
-      const electiveForMatch = allocation === undefined
-        ? (employeeLandedByAccountId.get(account.id) ?? 0)
-        : employerMatchElectiveBase({
-          accountId: account.id,
-          employeeLandedByAccountId,
-          allocatedByAccountId: employerAllocated,
-          redirectedCatchUpBySource: allocation.redirectedCatchUpBySource,
-          catchUpRothAccountId: allocation.catchUpRothAccountId,
-        })
-      const matchCap = (matchInfo.capPctOfPay / 100) * ownerWages
-      const baseMatch = Math.min(electiveForMatch, matchCap)
-      let matchVal = baseMatch * (matchInfo.matchPct / 100)
-
-      // Capped by §415(c) total additions limit, which is the LESSER of the
-      // indexed dollar amount and 100 percent of compensation — a low-paid
-      // participant with a generous match is bound by pay, not the dollar
-      // figure. Wages stand in for section 415(c)(3) compensation here.
-      const limit415c = Math.min(
-        pack.contributionLimits.section415cLimit * limitGrowth,
-        ownerWages,
-      )
-      const usedSoFar = addition415cUsed.get(ownerId) ?? 0
-      const remaining415cLimit = Math.max(0, limit415c - usedSoFar)
-      matchVal = Math.min(matchVal, remaining415cLimit)
-
-      if (matchVal > 0) {
-        yearSites?.recordEmployerMatch({
-          destinationAccountId: account.id,
-          ownerPersonId: 'ownerPersonId' in account ? account.ownerPersonId ?? null : null,
-          amount: matchVal,
-        })
-        state.balance += matchVal
-        if (account.type === 'traditional') {
-          const kind = 'employerPlanEmployerMatch' as const
-          recordAnnualRetirementRuntimeOccurrence({
-            producerOccurrenceKey: runtimeOccurrenceKey(kind, account.id),
-            kind,
-            grossAmountPlanDollars: matchVal,
-            ownerPersonId: account.ownerPersonId,
-            sourceAccountId: account.id,
-            executionDate: null,
-            executionSequence: null,
-            movementAuthorityId: null,
-          })
-        }
-        employerMatch += matchVal
-        // Employer match only lands in traditional or Roth employer accounts,
-        // never a taxable brokerage, so taxableInflow is unaffected here.
-        if (account.type === 'traditional') traditionalInflow += matchVal
-        else otherInflow += matchVal
-        addition415cUsed.set(ownerId, usedSoFar + matchVal)
-      }
-    }
-
+    const {
+      contributions,
+      ownedNonRothIraContributions,
+      employerMatch,
+      preTaxContributions,
+      traditionalInflow,
+      otherInflow,
+      taxableInflow,
+    } = contributionPlan.totals
+    const desiredByAccountId = contributionPlan.desiredByAccountId
+    const employerAllocationByOwner =
+      contributionPlan.employerAllocationByOwner
     const iraProRata = new Map<string, IraProRataYear>()
     let conversionNontaxable = 0
 
