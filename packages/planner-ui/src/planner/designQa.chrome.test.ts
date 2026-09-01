@@ -1,8 +1,8 @@
 /**
- * Design-QA chrome pins (#418, #419, #423, #431). Pin the CSS, not a jsdom
- * visual: the plan-name input truncates with an ellipsis, the survivor table
- * has a column floor so headers wrap on word boundaries, and the content-page
- * back link and the full-span field hook exist for the pages that use them.
+ * Design-QA chrome pins (#418, #419, #423, #431, #436, #437, #438, #441). Pin
+ * the CSS, not a jsdom visual: jsdom computes no layout, so the defects these
+ * cover — a clipped focus ring, a mid-word clip, a header row that wraps —
+ * are only observable in the stylesheet.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url'
 
 const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
 const learnCss: string = readFileSync(fileURLToPath(new URL('../learn/learn.css', import.meta.url)), 'utf8')
+const indexCss: string = readFileSync(fileURLToPath(new URL('../index.css', import.meta.url)), 'utf8')
 
 function ruleBodyAt(source: string, start: number, selector: string): string {
   expect(start, `rule ${selector} present`).toBeGreaterThanOrEqual(0)
@@ -88,5 +89,47 @@ describe('Design-QA chrome pins', () => {
 
   it('article source links wrap inside the measure (#418)', () => {
     expect(rule('.learn-sources a', learnCss)).toMatch(/overflow-wrap:\s*anywhere/)
+  })
+})
+
+describe('Design-QA chrome pins: theme and focus tokens', () => {
+  it('the theme switcher does not clip its segment focus rings (#436)', () => {
+    const switcher = rule('.theme-switcher', indexCss)
+    expect(switcher).not.toMatch(/overflow:\s*hidden/)
+    expect(switcher).toMatch(/border-radius:\s*999px/)
+    // The end segments carry the pill shape instead of the container clipping it.
+    expect(rule('.theme-switcher-button:first-child', indexCss)).toMatch(/border-radius:\s*999px 0 0 999px/)
+    expect(rule('.theme-switcher-button:last-child', indexCss)).toMatch(/border-radius:\s*0 999px 999px 0/)
+    // The ring itself is unchanged: the app-wide 2px gold signature, which is
+    // what the removed clip was cutting into a sliver.
+    const sharedFocus = indexCss.slice(indexCss.indexOf('.theme-switcher-button:focus-visible'))
+    expect(sharedFocus.slice(0, 200)).toMatch(/outline:\s*2px solid var\(--accent\)/)
+  })
+
+  it('the plan breadcrumb link uses the shared focus ring, not the UA default (#437)', () => {
+    const body = rule('.workspace-breadcrumb a:focus-visible')
+    expect(body).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(body).toMatch(/outline-offset:\s*2px/)
+  })
+
+  it('empty states are a bounded well, except the picker landing (#438)', () => {
+    const body = rule('.empty-state')
+    expect(body).toMatch(/border:\s*1px dashed var\(--border\)/)
+    expect(body).toMatch(/border-radius:\s*var\(--radius\)/)
+    expect(body).toMatch(/background:\s*color-mix/)
+    const picker = rule('.picker-page .empty-state')
+    expect(picker).toMatch(/border:\s*0/)
+    expect(picker).toMatch(/background:\s*none/)
+  })
+
+  it('disabled buttons use the flat token treatment, not opacity on a live fill (#441)', () => {
+    const body = rule('.btn:disabled', indexCss)
+    expect(body).not.toMatch(/opacity/)
+    expect(body).toMatch(/background:\s*var\(--surface-2\)/)
+    expect(body).toMatch(/color:\s*var\(--muted\)/)
+    expect(body).toMatch(/cursor:\s*not-allowed/)
+    // Ghost buttons have no fill to composite against and keep the faded
+    // treatment the plan-card Delete pin (#312) relies on.
+    expect(rule('.btn-ghost:disabled')).toMatch(/opacity:\s*0\.45/)
   })
 })

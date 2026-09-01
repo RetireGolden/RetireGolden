@@ -230,8 +230,11 @@ transitions, restrained hover states that shift a border or tint a background by
   background 6% Ink.
 - **Danger:** secondary shape with Bad Red text; hover tints background 10% red. Ghost variants
   (`.btn-ghost`) drop the border for inline row actions.
-- **States:** disabled is opacity 0.45 + not-allowed; focus is always `outline: 2px solid
-  var(--accent); outline-offset: 2px` — the app-wide focus signature.
+- **States:** disabled swaps to the flat disabled treatment — `--surface-2` fill, `--muted`
+  label, `--border` edge, not-allowed — rather than dimming the live fill with opacity, which
+  composited the gold primary to ~2.8:1 in dark and failed AA. Focus is always `outline: 2px solid
+  var(--accent); outline-offset: 2px` — the app-wide focus signature, and no ancestor may clip it
+  (a container that needs a clip pads for the ring or rounds its end children instead).
 
 ### Chips
 - **Trust chips** (pill, 999px): 0.85rem muted text on faintly Ink-tinted surface with border;
@@ -246,6 +249,9 @@ transitions, restrained hover states that shift a border or tint a background by
   (`translateY(-1px)`, 120ms); non-clickable cards never lift.
 - **Callouts** (`.callout--info/--warn`): full 1px borders and background tints — never a colored
   side-stripe.
+- **Empty states** (`.empty-state`): a bounded well — 1px dashed border, page radius, and a 3% ink
+  tint — so an empty list reads as a deliberate placeholder instead of a gap where content failed
+  to render. The plan picker's landing empty state opts out of the well and stays flush left.
 
 ### Inputs / Fields
 - **Style:** 1px Slate Border, 6px radius, page-background fill, Ink text, 1rem size; labels

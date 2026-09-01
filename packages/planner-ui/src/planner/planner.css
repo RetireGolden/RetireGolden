@@ -38,6 +38,8 @@
 .picker-page .empty-state {
   text-align: left;
   padding: 2rem 0 1.5rem;
+  border: 0;
+  background: none;
 }
 
 /* --- planner home redesign ----------------------------------------------- */
@@ -523,6 +525,14 @@
   text-decoration: underline;
 }
 
+/* The app-wide focus signature; without it this link fell back to the UA
+   ring, which is near-invisible on the dark background (#437). */
+.workspace-breadcrumb a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .workspace-breadcrumb [aria-current='page'] {
   color: var(--fg);
   font-weight: 550;
@@ -918,6 +928,9 @@
   outline-offset: 1px;
 }
 
+/* Ghost buttons keep the faded treatment: no fill to composite against, and
+   the plan-card Delete pin (#312) relies on it. The flat disabled tokens in
+   index.css are for the filled variants (#441). */
 .btn-ghost:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -1612,10 +1625,15 @@ html:has(.kpi-bar) {
   }
 }
 
+/* A bounded well, so an empty list reads as a deliberate placeholder rather
+   than a gap where content failed to render (#438). */
 .empty-state {
   text-align: center;
-  padding: 3rem 1rem;
+  padding: 2rem 1rem;
   color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--fg) 3%, transparent);
 }
 
 .empty-state h2 {
