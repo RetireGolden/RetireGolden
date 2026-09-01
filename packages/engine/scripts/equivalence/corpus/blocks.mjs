@@ -1483,13 +1483,14 @@ function blockK() {
   }
 
   {
-    // Duplicate ids are valid when no retirement action references them. The
-    // opening-balance map takes the later sub-cent row, so the earlier large
-    // row seeds a sub-cent amortization amount into the shared id cache. The
-    // later row then grows 999% annually: by year three, recomputing from its
-    // current opening balance would produce a ledger-visible payment, while
-    // the correctly reused first-year cache remains sub-cent. Reversing row
-    // order or dropping the cache therefore changes complete output.
+    // Duplicate ids are valid when no retirement action references them and
+    // their forced-distribution facts agree. The forced-distribution boundary
+    // selects the later sub-cent row, matching the opening-balance map, and
+    // seeds a sub-cent amortization amount into the shared id cache. That row
+    // then grows 999% annually: by year three, recomputing from its current
+    // opening balance would produce a ledger-visible payment, while the
+    // correctly reused first-year cache remains sub-cent. Reversing row order
+    // or dropping the cache therefore changes complete output.
     const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
     plan.accounts = [
       cash('sepp-subcent-cash', 1_000_000),
