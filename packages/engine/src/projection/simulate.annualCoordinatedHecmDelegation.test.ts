@@ -16,7 +16,12 @@ import type {
   AnnualCoordinatedHecmEligibilityInput,
 } from './internal/annualCoordinatedHecm.js'
 
-type Mode = 'original' | 'capacity30' | 'reverseIds' | 'inflateAllocation'
+type Mode =
+  | 'original'
+  | 'capacity30'
+  | 'reverseIds'
+  | 'insertExcluded'
+  | 'inflateAllocation'
 
 interface EligibilityEvent {
   readonly input: AnnualCoordinatedHecmEligibilityInput
@@ -66,6 +71,11 @@ vi.mock('./internal/annualCoordinatedHecm.js', async (importOriginal) => {
               propertyAccountIds: [...production.propertyAccountIds].reverse(),
               capacity: 30_000,
             }
+          : seam.mode === 'insertExcluded' && input.year > input.startYear
+            ? {
+                propertyAccountIds: [...production.propertyAccountIds, 'excluded'],
+                capacity: production.capacity + 15_000,
+              }
           : production
       seam.eligibility.push({
         input,
@@ -158,8 +168,16 @@ function coordinatedPlan(): Plan {
   const plan = singlePersonPlan({ dob: '1964-01-01', planningAge: 63 })
   plan.expenses.baseAnnual = 70_000
   const shared = property('home1', 40)
+  const excluded = property('excluded', 15)
+  excluded.hecm!.drawPolicy = 'lastResort'
   plan.accounts = [
     taxable(),
+    excluded,
+    {
+      ...excluded,
+      name: 'later excluded alias with coordinated policy',
+      hecm: { ...excluded.hecm!, drawPolicy: 'coordinated' },
+    },
     { ...shared, name: 'earlier alias without HECM metadata', hecm: undefined },
     shared,
     {
@@ -277,6 +295,16 @@ describe('simulatePlan delegates annual coordinated HECM work', () => {
       ['home2', 10_000],
     ])
 
+    const inserted = year(run('insertExcluded').result, 2027)
+    expect(inserted.hecmDraw).toBe(65_000)
+    expect(inserted.hecmLoanBalance).toBe(65_000)
+    expect(seam.allocations.find(
+      (event) => event.year === 2027 && event.input.acceptedDraw > 0,
+    )!.output).toContainEqual({
+      propertyAccountId: 'excluded',
+      amount: 15_000,
+    })
+
     const inflated = year(run('inflateAllocation').result, 2027)
     expect(inflated.hecmDraw).toBe(50_000)
     expect(inflated.hecmLoanBalance).toBe(57_000)
@@ -352,7 +380,11 @@ describe('simulatePlan delegates annual coordinated HECM work', () => {
     expect(accepted.length).toBeGreaterThan(1)
     for (const event of accepted) {
       expect(event.input.acceptedDraw).toBe(50_000)
-      expect(event.lineBalancesAtCall).toMatchObject({ home1: 0, home2: 0 })
+      expect(event.lineBalancesAtCall).toMatchObject({
+        excluded: 0,
+        home1: 0,
+        home2: 0,
+      })
       expect(event.output).toEqual([
         { propertyAccountId: 'home1', amount: 40_000 },
         { propertyAccountId: 'home2', amount: 10_000 },
