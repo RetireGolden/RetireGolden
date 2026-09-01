@@ -727,7 +727,7 @@ function CoupleHeatmap({
     <>
       <p className="card-hint" style={{ marginTop: '0.5rem' }}>
         After-tax estate by claim age, rows: {personName(rowId!)}, columns: {personName(colId!)}. Greener is better;
-        select a cell with your mouse, Enter, or Space to apply it.
+        {readOnly ? ' claim-age choices are read-only in this workspace.' : ' use Enter or Space on a cell to apply it.'}
       </p>
       <div className="year-table-wrap" style={{ border: 'none' }}>
         <table className="claim-table heatmap">
@@ -747,17 +747,19 @@ function CoupleHeatmap({
                   const v = estate(ra, ca)
                   const isBest = `${ra}-${ca}` === bestKey
                   const isCurrent = current[rowId!] === ra && current[colId!] === ca
-                  const actionLabel = `Apply claim ages: ${personName(rowId!)} at ${ra}, ${personName(colId!)} at ${ca}; after-tax estate ${fmtMoneyCompact(v)}${isBest ? ', best strategy' : ''}`
+                  const actionLabel = `Apply claim ages: ${personName(rowId!)} at ${ra}, ${personName(colId!)} at ${ca}; after-tax estate ${fmtMoneyCompact(v)}${isCurrent ? ', current plan selection' : ''}${isBest ? ', best strategy' : ''}`
+                  const tooltip = `${personName(rowId!)} ${ra} / ${personName(colId!)} ${ca}: ${fmtMoneyCompact(v)}${isCurrent ? ' (current)' : ''}${isBest ? ' (best)' : ''}`
                   return (
                     <td
                       key={ca}
                       style={{ background: heatColor(norm(v)), outline: isCurrent ? '2px solid var(--accent)' : undefined, fontWeight: isBest ? 700 : undefined }}
+                      title={tooltip}
                     >
                       <button
                         type="button"
                         className="heatmap-cell-button"
                         aria-label={actionLabel}
-                        title={actionLabel}
+                        aria-current={isCurrent ? 'true' : undefined}
                         disabled={readOnly}
                         onClick={() => applyStrategy({ [rowId!]: ra, [colId!]: ca })}
                       >
