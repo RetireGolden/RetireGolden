@@ -24,8 +24,7 @@ import {
   annuityStartAgeHelp,
   clampedAnnuityStartAge,
 } from './sectionHelpers'
-
-type CommitAccountField = (key: string, value: unknown) => void
+import type { CommitAccountField } from './AccountEditorTypes'
 
 /**
  * The lowest election year the engine's parse rule will accept for an elected

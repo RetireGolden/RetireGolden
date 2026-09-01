@@ -1290,3 +1290,60 @@ describe('AccountFields extracted editor commit wiring', () => {
     expect(account.purchase?.fundingAccountId).toBe('owned')
   })
 })
+
+describe('AccountFields retirement editor boundary', () => {
+  it('renders retirement inheritance fields without HSA-only fields', () => {
+    const fields = renderFields(planWithAccount(retirementAccount({
+      inherited: { ownerDeathYear: 2025, decedentHadStartedRmds: false },
+    })))
+
+    expect(controlByLabel(fields, 'Kind')).toBeTruthy()
+    expect(controlByLabel(fields, 'Inherited account')).toBeTruthy()
+    expect(controlByLabel(fields, 'Use beneficiary details')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Withdrawal treatment')).toThrow('no label "Withdrawal treatment"')
+    expect(() => controlByLabel(fields, 'Beneficiary')).toThrow('no label "Beneficiary"')
+  })
+})
+
+describe('AccountFields HSA editor boundary', () => {
+  const hsaAccount = (overrides: Partial<Extract<Account, { type: 'hsa' }>> = {}): Extract<Account, { type: 'hsa' }> => ({
+    type: 'hsa',
+    id: 'hsa',
+    name: 'HSA',
+    ownerPersonId: 'af-owner',
+    annualReturnPct: null,
+    balance: 25_000,
+    annualContribution: 0,
+    ...overrides,
+  })
+
+  it('renders HSA-specific fields without retirement inheritance fields', () => {
+    const fields = renderFields(planWithAccount(hsaAccount()))
+
+    expect(controlByLabel(fields, 'Withdrawal treatment')).toBeTruthy()
+    expect(controlByLabel(fields, 'Beneficiary')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Inherited account')).toThrow('no label "Inherited account"')
+  })
+
+  it('clears reimburse-later state when medical-expense capping is disabled (parse-valid)', () => {
+    const plan = planWithAccount(hsaAccount({
+      withdrawalTreatment: 'capByMedicalExpenses',
+      reimburseLater: true,
+    }))
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+    const select = controlByLabel<HTMLSelectElement>(mounted.container(), 'Withdrawal treatment')
+
+    act(() => {
+      select.value = 'assumeAllQualified'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('hsa')
+    if (account?.type !== 'hsa') throw new Error('expected HSA')
+    expect(account.withdrawalTreatment).toBe('assumeAllQualified')
+    expect(account).toHaveProperty('reimburseLater', undefined)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+})

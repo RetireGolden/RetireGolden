@@ -5,8 +5,7 @@ import { packForYear } from '@retiregolden/engine/params'
 
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField } from '../fields'
 import { usePlan } from '../planContextCore'
-
-type CommitAccountField = (key: string, value: unknown) => void
+import type { CommitAccountField } from './AccountEditorTypes'
 
 export function PropertyAccountEditor({
   account,
