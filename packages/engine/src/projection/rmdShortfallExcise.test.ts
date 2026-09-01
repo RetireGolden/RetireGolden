@@ -324,7 +324,7 @@ describe('applicable-plan boundaries and Roth scope', () => {
     })
   })
 
-  it('settles an inherited Roth residue that rounds to zero ledger cents', () => {
+  it('retains an inherited Roth residue that rounds to zero ledger cents as a shortfall', () => {
     const plan = singlePersonPlan({ dob: '1980-06-15', planningAge: 60 })
     plan.household.people[0]!.id = 'beneficiary'
     plan.accounts = [{
@@ -360,11 +360,13 @@ describe('applicable-plan boundaries and Roth scope', () => {
       expect(year.inheritedDistribution).toBe(0)
       expect(year.rmdShortfallExciseDetails).toEqual([expect.objectContaining({
         requiredAmount: 0.004,
-        distributedByDeadline: 0.004,
-        shortfall: 0,
-        reason: 'noShortfall',
+        distributedByDeadline: 0,
+        shortfall: 0.004,
+        rate: 0.25,
+        tax: 0.001,
+        reason: 'default25Percent',
       })])
-      expect(year.rmdShortfallExciseTax).toBe(0)
+      expect(year.rmdShortfallExciseTax).toBe(0.001)
     }
   })
 
@@ -449,8 +451,10 @@ describe('applicable-plan boundaries and Roth scope', () => {
         rmdShortfallObligationId(rothPool, 2032),
       ])
     expect(emptyingYear.rmdShortfallExciseDetails?.map((detail) => detail.reason))
-      .toEqual(['noShortfall', 'noShortfall'])
-    expect(emptyingYear.rmdShortfallExciseTax).toBe(0)
+      .toEqual(['corrected10Percent', 'default25Percent'])
+    expect(emptyingYear.rmdShortfallExciseDetails?.map((detail) => detail.tax))
+      .toEqual([0.0004, 0.001])
+    expect(emptyingYear.rmdShortfallExciseTax).toBe(0.0014)
   })
 
   it('keeps inherited employer plans particular to each account even for one decedent', () => {
