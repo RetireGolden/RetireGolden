@@ -38,11 +38,20 @@
   IRA, and an employer plan each stand outside the sum and must distribute their own amount
   (`treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum`).
 - **Duplicate account IDs are a narrow annual-distribution boundary, not a global Plan repair.** Unreferenced
-  duplicate IDs remain loadable for backward compatibility, and positional phases such as contributions continue
-  to see every row. Owner and inherited RMDs, SEPP, QCD/Form 8606 pool evidence, ending IRA basis, and optimizer
-  forced-distribution snapshots select the last balance state carrying an ID while retaining that ID's first
-  plan-order position. This matches the ID-keyed prior-year balance and publication channels without executing one
-  forced distribution more than once. Duplicate IRA rows whose inherited or SEPP facts disagree, and decision-bearing
+  duplicate IDs remain loadable for backward compatibility. Consumers that publish or plan by account ID—owner and
+  inherited RMDs, SEPP, aggregate QCD and Roth conversion, need-based withdrawal planning/character/penalty/commit,
+  Form 8606 pool evidence and ending basis, and optimizer ID-keyed evidence—select the last balance state carrying an
+  ID while retaining that ID's first plan-order position. This matches the ID-keyed prior-year balance and publication
+  channels without applying one ID-keyed movement more than once. Positional economics remain deliberately separate:
+  every row contributes and grows, dividend reinvestment visits every row under its established last-ID yield policy,
+  annual investable totals see every row, and the guardrail
+  opening signal counts each balance row once (while retaining its historical exclusion of unassigned cash). Thus a
+  superseded row remains household wealth even though the public `balances[id]` view and ID-keyed movements select the
+  last row. Roth ordering character remains an owner-pool positional calculation across those wealth rows even though
+  the resulting need-based debit applies once to the selected ID row. The owned-IRA post-growth observation likewise
+  retains both raw rows for later evidence validation rather than laundering them into one filing fact. Duplicate
+  retirement rows whose account type, retirement kind, owner, inherited, SEPP, or other
+  forced-distribution facts disagree, and decision-bearing
   retirement actions, pension lump sums, and annuity purchases, reject duplicate IDs as ambiguous. This convention is
   intentionally narrower than the positional property/HECM and annuity-payout first-qualifying-row behavior; imported
   data should use unique IDs.

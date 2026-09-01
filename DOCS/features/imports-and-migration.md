@@ -52,9 +52,15 @@ SEPP facts disagree. Older backups and third-party data may therefore require re
 
 Give each real account a unique ID, keep the decision on the actual account row, and update every
 reference to that ID. Do not delete a genuine account merely to satisfy validation. Unreferenced
-duplicate rows with identical forced-distribution facts remain loadable for compatibility: RMD,
-QCD, Form 8606, and optimizer evidence uses the last row, while positional contribution, property,
-and annuity-payout phases retain their documented conventions.
+duplicate rows with identical forced-distribution facts remain loadable for compatibility. RMD,
+QCD, need-based withdrawal, aggregate Roth-conversion, Form 8606, and optimizer ID-keyed consumers
+use the last row. Contribution, annual growth, investable-total, property, and annuity-payout economics
+remain positional and see every row. Reinvestment visits every positional row under the established
+last-ID distributed-yield policy, and the guardrail opening signal likewise counts each balance row
+once. The public `balances[id]` view still selects the last row. This mixed
+contract also keeps Roth ordering basis positional at the owner-pool level and preserves both raw
+owned-IRA rows in the post-growth filing-evidence observation; it does not turn aliases into one tax
+fact and is not a substitute for repair. Imported real accounts should always receive unique IDs.
 
 ## Sources
 

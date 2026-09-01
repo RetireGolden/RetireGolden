@@ -1457,6 +1457,108 @@ describe('Plan retirement-action persistence', () => {
     )
   })
 
+  it('rejects duplicate retirement IDs whose schedule-driving identity disagrees', () => {
+    const typeConflict = validCouplePlan()
+    typeConflict.accounts.push({
+      type: 'roth',
+      id: 'a2',
+      name: 'Same ID, Roth IRA',
+      ownerPersonId: 'p1',
+      annualReturnPct: 6,
+      kind: 'ira',
+      balance: 90_000,
+      annualContribution: 0,
+    })
+
+    const kindConflict = validCouplePlan()
+    const employer = kindConflict.accounts.find((account) => account.id === 'a2')!
+    if (employer.type !== 'traditional') throw new Error('fixture built no traditional account')
+    kindConflict.accounts.push({ ...employer, name: 'Same ID, IRA', kind: 'ira' })
+
+    const ownerConflict = validCouplePlan()
+    ownerConflict.accounts.push({ ...employer, ownerPersonId: 'p2' })
+
+    const employerClassConflict = validCouplePlan()
+    employerClassConflict.accounts.push({ ...employer, employerPlanType: '403b' })
+
+    const divisorConflict = validCouplePlan()
+    divisorConflict.accounts.push({ ...employer, spouseSoleBeneficiary: true })
+
+    for (const plan of [
+      typeConflict,
+      kindConflict,
+      ownerConflict,
+      employerClassConflict,
+      divisorConflict,
+    ]) {
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(false)
+      expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+        'duplicate account id "a2"',
+      )
+    }
+  })
+
+  it('accepts duplicate inherited schedules with reordered keys, different provenance, and explicit defaults', () => {
+    const plan = validCouplePlan()
+    const inheritedBase = {
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'estate' as const,
+        ownerBirthYear: 1940,
+        provenance: { source: 'first custodian', asOf: '2026-01-01' },
+      },
+    }
+    const first = traditionalAccount('duplicate-inherited', 100_000, 'p1', 'ira')
+    const second = traditionalAccount('duplicate-inherited', 50_000, 'p1', 'ira')
+    if (first.type !== 'traditional' || second.type !== 'traditional') {
+      throw new Error('fixture built no traditional account')
+    }
+    first.inherited = inheritedBase
+    second.inherited = {
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        provenance: { asOf: '2026-02-02', source: 'second custodian' },
+        ownerYearOfDeathRmdSatisfied: false,
+        spouseUnlimitedWithdrawalRight: false,
+        election: 'none',
+        soleBeneficiary: false,
+        edbCategory: 'none',
+        ownerBirthYear: 1940,
+        beneficiaryClass: 'estate',
+      },
+      ownerDeathYear: 2022,
+    }
+    plan.accounts = [plan.accounts[0]!, first, second]
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('preserves unreferenced cross-type duplicates outside retirement identity', () => {
+    const plan = validCouplePlan()
+    plan.accounts.push({
+      type: 'cash',
+      id: 'legacy-position',
+      name: 'Legacy cash row',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+    }, {
+      type: 'property',
+      id: 'legacy-position',
+      name: 'Legacy property row',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    })
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
   it('rejects duplicate person IDs before action references can depend on array order', () => {
     const first = actionPlanRaw()
     const firstPeople = (

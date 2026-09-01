@@ -2263,31 +2263,52 @@ export const planSchema = z
     let hasAmbiguousAccountIds = false
     for (const [accountId, indexes] of accountIndexesById) {
       if (indexes.length < 2) continue
-      const forcedDistributionSignatures = indexes.map((index) => {
+      type ForcedDistributionFact = string | number | boolean | null
+      const forcedDistributionFacts = (index: number): readonly ForcedDistributionFact[] => {
         const account = plan.accounts[index]!
         const inherited =
           account.type === 'traditional' || account.type === 'roth'
             ? account.inherited
             : undefined
-        return JSON.stringify({
-          inherited: inherited === undefined
-            ? null
-            : {
-              ...inherited,
-              beneficiary: inherited.beneficiary === undefined
-                ? undefined
-                : {
-                  ...inherited.beneficiary,
-                  // Provenance describes evidence quality, not a different
-                  // forced-distribution schedule.
-                  provenance: undefined,
-                },
-            },
-          sepp: account.type === 'traditional' ? account.sepp ?? null : null,
-        })
-      })
+        const beneficiary = inherited?.beneficiary
+        const sepp = account.type === 'traditional' ? account.sepp : undefined
+        const isRetirementAccount =
+          account.type === 'traditional' || account.type === 'roth'
+        return [
+          isRetirementAccount ? account.type : 'non-retirement',
+          isRetirementAccount ? account.kind : null,
+          isRetirementAccount ? account.ownerPersonId ?? null : null,
+          account.type === 'traditional' ? account.employerPlanType ?? null : null,
+          account.type === 'traditional' ? account.spouseSoleBeneficiary ?? false : null,
+          sepp?.startAge ?? null,
+          sepp?.method ?? null,
+          inherited !== undefined,
+          inherited?.decedentId ?? null,
+          inherited?.ownerDeathYear ?? null,
+          inherited?.decedentHadStartedRmds ?? null,
+          beneficiary !== undefined,
+          beneficiary?.beneficiaryClass ?? null,
+          beneficiary?.edbCategory ?? 'none',
+          beneficiary?.beneficiaryBirthYear ?? null,
+          beneficiary?.soleBeneficiary ?? false,
+          beneficiary?.election ?? 'none',
+          beneficiary?.treatAsOwnElectionYear ?? null,
+          beneficiary?.spouseUnlimitedWithdrawalRight ?? false,
+          beneficiary?.ownerBirthYear ?? null,
+          beneficiary?.ownerBirthMonth ?? null,
+          beneficiary?.ownerBirthDay ?? null,
+          beneficiary?.ownerYearOfDeathRmdSatisfied ?? false,
+          beneficiary?.roth5YearStartYear ?? null,
+          // Provenance describes evidence quality, not a different schedule.
+        ]
+      }
+      const firstForcedDistributionFacts = forcedDistributionFacts(indexes[0]!)
       const hasConflictingForcedDistributionFacts =
-        new Set(forcedDistributionSignatures).size > 1
+        indexes.slice(1).some((index) => {
+          const facts = forcedDistributionFacts(index)
+          return facts.length !== firstForcedDistributionFacts.length ||
+            facts.some((fact, factIndex) => fact !== firstForcedDistributionFacts[factIndex])
+        })
       if (
         !actionReferencedAccountIds.has(accountId) &&
         !hasConflictingForcedDistributionFacts

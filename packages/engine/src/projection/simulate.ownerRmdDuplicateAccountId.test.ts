@@ -376,6 +376,12 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     // requirement and the §408(d)(8)(D) aggregate includible ceiling.
     expect(year.rmd).toBeCloseTo(100_000 / 23.7, 10)
     expect(year.qcd).toBe(50_000)
+    expect(year.balances['duplicate-ira']).toBe(50_000)
+    expect(
+      year.retirementRuntimeSource?.runtimeOccurrences.filter(
+        (occurrence) => occurrence.kind === 'legacyQcd',
+      ),
+    ).toHaveLength(1)
     expect(result.endingNondeductibleIraBasis).toBe(50_000)
     expect(year.ownedTraditionalIraAggregateActivity).toEqual([])
   })
@@ -472,5 +478,157 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     // Both positional rows contribute. A global last-row canonicalization
     // would report only 3,000 and breaks the held-contribution occurrence key.
     expect(year.contributions).toBe(6_000)
+  })
+
+  it('preserves positional growth and investable wealth across duplicate rows', () => {
+    const plan = singlePersonPlan({ planningAge: 70 })
+    const superseded = traditionalAccount('duplicate-ira', 100_000, 'p1', 'ira')
+    const selected = traditionalAccount('duplicate-ira', 50_000, 'p1', 'ira')
+    superseded.annualReturnPct = 10
+    selected.annualReturnPct = 10
+    plan.accounts = [superseded, selected, cashAccount('cash', 0)]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const years = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR + 1,
+      taxCalculator: createFlatTaxCalculator(0),
+    }).years
+
+    // Publication is ID-keyed and therefore selects 50,000 -> 55,000 ->
+    // 60,500. Economic growth and investable wealth remain positional, so the
+    // superseded 100,000 row grows beside it: 165,000 -> 181,500 in total.
+    expect(years[0]!.balances['duplicate-ira']).toBeCloseTo(55_000, 8)
+    expect(years[1]!.balances['duplicate-ira']).toBeCloseTo(60_500, 8)
+    expect(years[0]!.investableTotal).toBeCloseTo(165_000, 8)
+    expect(years[1]!.investableTotal).toBeCloseTo(181_500, 8)
+  })
+
+  it('counts each positional opening row once in the guardrail signal', () => {
+    const plan = singlePersonPlan({ planningAge: 70 })
+    const falling = cashAccount('duplicate-cash', 100_000)
+    const steady = cashAccount('duplicate-cash', 50_000)
+    falling.annualReturnPct = -50
+    steady.annualReturnPct = 0
+    plan.accounts = [falling, steady]
+    plan.expenses.baseAnnual = 30_000
+    plan.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails' }
+    plan.incomes = [{
+      type: 'wages',
+      id: 'wages',
+      personId: 'p1',
+      annualGross: 30_000,
+      endAge: null,
+      realGrowthPct: 0,
+    }]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const years = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR + 1,
+      taxCalculator: createFlatTaxCalculator(0),
+    }).years
+
+    // Opening wealth falls from 150,000 to 100,000, so the withdrawal-rate
+    // signal rises by 50% and crosses the default 120% upper guardrail. The
+    // former alias bug instead read the selected 50,000 twice in both years.
+    expect(years[0]!.guardrailAction).toBe('hold')
+    expect(years[1]!.guardrailAction).toBe('cut')
+    expect(years[1]!.expenses.guardrailFactor).toBe(0.9)
+  })
+
+  it('plans, characterizes, penalizes, and commits one need-based debit per ID', () => {
+    const plan = singlePersonPlan({
+      dob: '1970-01-01',
+      planningAge: 70,
+      retirementAge: null,
+    })
+    const superseded = traditionalAccount('duplicate-ira', 100_000, 'p1', 'ira')
+    const selected = traditionalAccount('duplicate-ira', 10_000, 'p1', 'ira')
+    if (superseded.type !== 'traditional' || selected.type !== 'traditional') {
+      throw new Error('fixture did not create traditional accounts')
+    }
+    superseded.nondeductibleBasis = 80_000
+    selected.nondeductibleBasis = 2_000
+    plan.accounts = [superseded, selected]
+    plan.expenses.baseAnnual = 5_000
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const result = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+    const year = result.years[0]!
+
+    // At age 56, 20% basis makes 80% of the gross taxable and subject to the
+    // 10% early-distribution penalty. Solve g - .10(.80g) = 5,000.
+    const gross = 5_000 / 0.92
+    const taxable = gross * 0.8
+    expect(year.withdrawals.traditional).toBeCloseTo(gross, 2)
+    expect(year.magi).toBeCloseTo(taxable, 2)
+    expect(year.penalties).toBeCloseTo(taxable * 0.1, 2)
+    expect(year.balances['duplicate-ira']).toBeCloseTo(10_000 - gross, 2)
+    expect(year.investableTotal).toBeCloseTo(110_000 - gross, 2)
+    expect(result.endingNondeductibleIraBasis).toBeCloseTo(2_000 - gross * 0.2, 2)
+    expect(
+      year.retirementRuntimeApplicationSource?.applications.filter(
+        (application) =>
+          application.simulatorPhase === 'legacyNeedBasedWithdrawal' &&
+          application.sourceAccountId === 'duplicate-ira',
+      ),
+    ).toHaveLength(1)
+  })
+
+  it('keeps Roth ordering character positional while debiting one selected ID row', () => {
+    const plan = singlePersonPlan({
+      dob: '1970-01-01',
+      planningAge: 70,
+      retirementAge: null,
+    })
+    const rothRow = (
+      name: string,
+      balance: number,
+      contributionBasis: number,
+    ): Account => ({
+      type: 'roth',
+      id: 'duplicate-roth',
+      name,
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      kind: 'ira',
+      balance,
+      annualContribution: 0,
+      contributionBasis,
+    })
+    plan.accounts = [
+      rothRow('Superseded Roth row', 100_000, 100_000),
+      rothRow('Selected Roth row', 10_000, 0),
+    ]
+    plan.expenses.baseAnnual = 5_000
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const year = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+    }).years[0]!
+
+    // Roth ordering is owner-pool economics: the superseded row's 100,000 of
+    // contribution basis remains wealth and covers this draw. Withdrawal
+    // planning and commit are still ID-keyed, so only the selected 10,000 row
+    // loses the 5,000. Last-row-only character would instead penalize earnings.
+    expect(year.withdrawals.roth).toBe(5_000)
+    expect(year.penalties).toBe(0)
+    expect(year.balances['duplicate-roth']).toBe(5_000)
+    expect(year.investableTotal).toBe(105_000)
   })
 })

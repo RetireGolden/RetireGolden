@@ -222,6 +222,91 @@ describe('the published snapshot is what the policy consumed', () => {
     // rather than published as a figure a reader might weight by.
     expect(snapshot['joint-cash']).toBeUndefined()
   })
+
+  it('selects one last row per duplicate source and destination ID', () => {
+    const supersededSource = traditionalIra('duplicate-source', 300_000, ALEX)
+    supersededSource.name = 'Superseded source row'
+    const selectedSource = traditionalIra('duplicate-source', 30_000, ALEX)
+    selectedSource.name = 'Selected source row'
+    const supersededDestination = rothIra('duplicate-roth', 10_000, ALEX)
+    supersededDestination.name = 'Superseded destination row'
+    const selectedDestination = rothIra('duplicate-roth', 2_000, ALEX)
+    selectedDestination.name = 'Selected destination row'
+    const plan = household([
+      supersededSource,
+      selectedSource,
+      supersededDestination,
+      selectedDestination,
+    ])
+
+    const year = runManual(plan, [{ year: TAX_YEAR, amount: 50_000 }])[0]!
+    expect(snapshotOf(year)).toEqual({
+      'duplicate-source': 30_000,
+      'duplicate-roth': 2_000,
+    })
+    expect(year.rothConversion).toBe(30_000)
+    expect(year.balances).toMatchObject({
+      'duplicate-source': 0,
+      'duplicate-roth': 32_000,
+    })
+    // The superseded rows remain positional wealth; the selected source and
+    // destination alone carry the conversion's ID-keyed debit and credit.
+    expect(year.investableTotal).toBe(342_000)
+    expect(
+      year.retirementRuntimeSource?.runtimeOccurrences.filter(
+        (occurrence) => occurrence.kind === 'legacyRothConversion',
+      ),
+    ).toEqual([expect.objectContaining({
+      grossAmountPlanDollars: 30_000,
+      sourceAccountId: 'duplicate-source',
+    })])
+    expect(
+      year.retirementRuntimeApplicationSource?.applications.filter(
+        (application) =>
+          application.simulatorPhase === 'legacyRothConversion' ||
+          application.simulatorPhase === 'legacyRothConversionAggregateDestinationCredit',
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        sourceAccountId: 'duplicate-source',
+        sourceBalanceBeforePlanDollars: 30_000,
+        sourceBalanceAfterPlanDollars: 0,
+      }),
+      expect.objectContaining({
+        destinationRothAccountId: 'duplicate-roth',
+        destinationBalanceBeforePlanDollars: 2_000,
+        destinationBalanceAfterPlanDollars: 32_000,
+      }),
+    ])
+
+    // Promotion joins the published ID-keyed snapshot back to the same last
+    // Plan rows and therefore reproduces the exact selected movement.
+    const selectedAccountById = new Map(
+      validatePlan(plan).accounts.map((account) => [account.id, account] as const),
+    )
+    const replay = allocateAggregateRothConversionByOwner({
+      balances: [...selectedAccountById.values()]
+        .filter((account) => snapshotOf(year)[account.id] !== undefined)
+        .map((account) => ({ account, balance: snapshotOf(year)[account.id]! })),
+      desiredPlanDollars: 50_000,
+      primaryPersonId: ALEX,
+      sourceContextForOwner: () => ({ ownerAgeAttained: 60, ownerRetirementAge: null }),
+    })
+    if (replay.status !== 'allocated') throw new Error('expected duplicate replay allocation')
+    expect(replay.draws).toEqual([expect.objectContaining({
+      amountPlanDollars: 30_000,
+      sourceAccount: expect.objectContaining({
+        id: 'duplicate-source',
+        name: 'Selected source row',
+      }),
+    })])
+    expect(replay.destinations).toEqual([expect.objectContaining({
+      destinationAccount: expect.objectContaining({
+        id: 'duplicate-roth',
+        name: 'Selected destination row',
+      }),
+    })])
+  })
 })
 
 describe('the published desired amount is what the policy was asked for', () => {
