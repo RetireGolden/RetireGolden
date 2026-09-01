@@ -12,7 +12,10 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import { SelectField } from './fields'
 import { fmtMoneyCompact } from './format'
+import { LiveStatus } from './LiveStatus'
 import { projectPlan, type ProjectionView } from './useProjection'
+
+const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
 
 interface ComparedPlan {
   plan: Plan
@@ -185,10 +188,13 @@ export function ComparePlansPage() {
               onCommit={setRightId}
             />
           </div>
+          <LiveStatus
+            message={
+              left !== null && right !== null && left.plan.id === right.plan.id ? SAME_PLAN_NOTICE : ''
+            }
+          />
           {!canCompare ? (
-            <div className="callout callout--info" role="status">
-              Choose two different plans to compare.
-            </div>
+            <div className="callout callout--info">{SAME_PLAN_NOTICE}</div>
           ) : (
             <div className="year-table-wrap">
               <table className="year-table compare-table">

@@ -41,15 +41,28 @@ describe('Compare-plans table chrome (#384)', () => {
     )
     expect(body).toMatch(/text-transform:\s*none/)
     expect(body).not.toMatch(/text-transform:\s*uppercase/)
+    expect(body).toMatch(/white-space:\s*normal/)
+    expect(body).toMatch(/letter-spacing:\s*normal/)
   })
 
   it('Plan A and Plan B columns share equal width under table-layout:fixed', () => {
     const table = ruleBodyAt(css.indexOf('.year-table.compare-table {'), '.year-table.compare-table')
     expect(table).toMatch(/table-layout:\s*fixed/)
+    expect(table).toMatch(/min-width:\s*52rem/)
     const names = ruleBodyAt(
       css.indexOf('.year-table.compare-table thead th.compare-table-plan-name'),
       '.year-table.compare-table thead th.compare-table-plan-name',
     )
     expect(names).toMatch(/width:\s*28%/)
+  })
+
+  it('font inherit is scoped to field select only', () => {
+    const shared = ruleBodyAt(
+      css.indexOf(".field input:not([type='checkbox']):not([type='radio'])"),
+      '.field input / .field select shared',
+    )
+    expect(shared).not.toMatch(/font:\s*inherit/)
+    const select = ruleBodyAt(css.indexOf('\n.field select {'), '.field select')
+    expect(select).toMatch(/font:\s*inherit/)
   })
 })

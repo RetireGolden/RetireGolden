@@ -106,6 +106,11 @@ describe('ComparePlansPage chrome (#384)', () => {
     await mount(twoPlans())
     await waitFor(() => container.querySelector('.compare-table') !== null, { what: 'compares ready' })
 
+    const live = container.querySelector('[role="status"]')
+    expect(live, 'LiveStatus stays mounted while comparing').not.toBeNull()
+    expect(live!.getAttribute('role')).toBe('status')
+    expect(live!.getAttribute('aria-live')).toBe('polite')
+    expect(live!.textContent).toBe('')
     expect(container.textContent).not.toContain('Choose two different plans to compare.')
 
     const planA = labeledSelect('Plan A').select
@@ -116,15 +121,18 @@ describe('ComparePlansPage chrome (#384)', () => {
       planB.dispatchEvent(new Event('change', { bubbles: true }))
     })
     await waitFor(
-      () => container.textContent?.includes('Choose two different plans to compare.') === true,
-      { what: 'same-plan callout' },
+      () => container.querySelector('[role="status"]')?.textContent === 'Choose two different plans to compare.',
+      { what: 'same-plan live message' },
     )
 
+    const announced = container.querySelector('[role="status"]')!
+    expect(announced.getAttribute('role')).toBe('status')
+    expect(announced.getAttribute('aria-live')).toBe('polite')
     const callout = [...container.querySelectorAll('.callout.callout--info')].find((el) =>
       el.textContent?.includes('Choose two different plans to compare.'),
     )
-    expect(callout, 'same-plan info callout').toBeTruthy()
-    expect(callout!.getAttribute('role') === 'status' || callout!.getAttribute('aria-live')).toBeTruthy()
+    expect(callout, 'visible same-plan info callout').toBeTruthy()
+    expect(callout).not.toBe(announced)
     expect(container.querySelector('.compare-table')).toBeNull()
   })
 

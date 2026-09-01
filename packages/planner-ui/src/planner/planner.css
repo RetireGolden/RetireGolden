@@ -783,19 +783,20 @@
   border: 1px solid var(--border);
   background: var(--surface-1);
   color: var(--fg);
-  /* Native <select> otherwise keeps the UA Arial face (issue #384). */
-  font: inherit;
   font-size: 0.98rem;
   width: 100%;
   max-width: 100%;
 }
 
 /* Safety net: a long option label degrades to an ellipsis instead of clipping
-   mid-glyph when the closed control is narrower than the selected text. */
+   mid-glyph when the closed control is narrower than the selected text.
+   `font: inherit` is select-only — Chrome's UA face on <select> is Arial
+   (issue #384); do not restyle every planner input. */
 .field select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font: inherit;
 }
 
 .field--checkbox input[type='checkbox'] {
@@ -2125,9 +2126,12 @@ html:has(.kpi-bar) {
 
 /* Compare-plans is the only `year-table compare-table`. Keep year-table
    metric headers uppercase/nowrap everywhere else; only the two user plan
-   names drop forced uppercase and share equal columns (#384). */
+   names drop forced uppercase and share equal columns (#384).
+   `min-width` is the narrow-viewport floor: 28%+28% of a 100%-wide table
+   would starve Metric / delta; the wrap's overflow:auto then scrolls. */
 .year-table.compare-table {
   table-layout: fixed;
+  min-width: 52rem;
 }
 
 .year-table.compare-table thead th.compare-table-plan-name {
