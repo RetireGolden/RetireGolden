@@ -68,11 +68,11 @@
       "id": "R.healthcare.marketplacePublication",
       "label": "positional Marketplace publication and per-person premium fallback",
       "file": "projection/simulate.ts",
-      "lines": [8118, 8133],
+      "lines": [8087, 8102],
       "anchors": [
-        { "line": 8118, "text": ": peopleStates" },
-        { "line": 8121, "text": "months: marketplaceMonthsByPersonPosition[position]!," },
-        { "line": 8133, "text": "})" }
+        { "line": 8087, "text": ": peopleStates" },
+        { "line": 8090, "text": "months: marketplaceMonthsByPersonPosition[position]!," },
+        { "line": 8102, "text": "})" }
       ]
     },
     {
