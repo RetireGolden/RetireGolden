@@ -80,4 +80,24 @@ describe('InsightsPage dismissed-insights recovery', () => {
 
     expect(container.textContent).toContain('Restore dismissed insights')
   })
+
+  it('keeps valid entries when a different plan has an invalid dismissed array', async () => {
+    const plan = createSamplePlan()
+    localStorage.setItem(STORAGE_KEYS.insightsDismissed, JSON.stringify({
+      [plan.id]: ['card-1'],
+      'other-plan': [null],
+    }))
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={{ plan, update: () => {}, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+            <InsightsPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+
+    expect(container.textContent).toContain('Restore dismissed insights')
+  })
 })

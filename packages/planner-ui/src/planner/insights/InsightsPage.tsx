@@ -14,11 +14,17 @@ function insightRenderKey(card: InsightCard): string {
   return `${card.id}:${card.rationale}:${JSON.stringify(card.action)}`
 }
 
-function isDismissedInsightsMap(value: unknown): value is Record<string, string[]> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
-  return Object.values(value).every(
-    (dismissed) => Array.isArray(dismissed) && dismissed.every((cardId) => typeof cardId === 'string'),
-  )
+function isDismissedCardIds(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((cardId) => typeof cardId === 'string')
+}
+
+function dismissedInsightsMap(value: unknown): Record<string, string[]> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  const map: Record<string, string[]> = {}
+  for (const [planId, dismissed] of Object.entries(value)) {
+    if (isDismissedCardIds(dismissed)) map[planId] = dismissed
+  }
+  return map
 }
 
 function readDismissedInsights(): Record<string, string[]> {
@@ -26,7 +32,7 @@ function readDismissedInsights(): Record<string, string[]> {
   if (!stored) return {}
   try {
     const parsed: unknown = JSON.parse(stored)
-    return isDismissedInsightsMap(parsed) ? parsed : {}
+    return dismissedInsightsMap(parsed)
   } catch {
     return {}
   }
