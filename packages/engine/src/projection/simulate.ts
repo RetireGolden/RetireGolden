@@ -8651,8 +8651,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     })
     // This publication depends on settled tax, penalties, and committed
     // executor evidence, so it remains ordered after every annual movement and
-    // immediately before `YearResult` assembly. The coordinator is pure; this
-    // caller retains all economic commits.
+    // before per-entity fact publication and `YearResult` assembly. The
+    // coordinator is pure; this caller retains all economic commits.
     const {
       qcdActionPrerequisites,
       conversionLinkedWithdrawalGroupExecution,

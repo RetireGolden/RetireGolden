@@ -38,8 +38,8 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z and AB, each have a phase-specific reach
- * spec beside the earlier batch instruments.
+ * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z and AB, each have a
+ * phase-specific reach spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
@@ -60,8 +60,9 @@
  * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`,
  * `scripts/equivalence/specs/simulate-owner-rmd.json`,
  * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`,
- * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`, and
- * `scripts/equivalence/specs/simulate-pension-annuity-income-boundary.json`
+ * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`,
+ * `scripts/equivalence/specs/simulate-pension-annuity-income-boundary.json`,
+ * and `scripts/equivalence/specs/simulate-retirement-action-settlement-publication-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
@@ -4525,6 +4526,10 @@ function blockAB() {
         provenance: { source: 'manual' },
       }],
       sepSimpleActivities: [],
+      // A 1953-01-01 donor reaches age 70 1/2 on 2023-07-01. Eligibility
+      // requires one donor-specific fact for every threshold-through-action
+      // tax year; explicit zero rows establish known absence rather than an
+      // omitted/unknown contribution history.
       deductibleIraContributions: [2023, 2024, 2025, 2026].map((taxYear) => ({
         donorPersonId: 'p1',
         taxYear,

@@ -190,6 +190,10 @@ describe('annualRetirementActionSettlementPublication', () => {
 
     expect(result.conversionLinkedWithdrawalGroupExecution).toMatchObject({
       status: 'refused',
+      groups: [{
+        conversionActionId: 'conversion-a',
+        withdrawalActionId: 'withdrawal-a',
+      }],
       funding: {
         status: 'annualGroupNotEvaluated',
         reason: 'taxUnitUnavailable',
