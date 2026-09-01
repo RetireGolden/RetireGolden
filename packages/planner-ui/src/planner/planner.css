@@ -738,6 +738,62 @@
   gap: 0.8rem 1.1rem;
 }
 
+/* Form rows share two tracks — a label track and a control track — so every
+   control in a row starts on the same line whatever its label does
+   (design-QA #470, #471, #477, #451, #466, #467, #473: a two-line label used
+   to push only its own control down).
+
+   Each direct child spans both tracks. A field made of exactly a label and a
+   control subgrids into them: the label sits at the bottom of the label
+   track (so a wrapped label grows the track for the whole row) and the
+   control is pulled up by 0.45rem so the visible label-to-control distance
+   is the field's usual 0.35rem while the 0.8rem gap still separates logical
+   rows. Anything else — a one-child or many-child hand-built field, a
+   wrapper, a nested section — spans the two tracks as an ordinary block and
+   keeps its own layout. Callouts and hints take a full row of their own so
+   their height never inflates a neighbour's tracks. The whole scheme sits
+   behind a feature query: without subgrid the grid is the single-track one
+   above. */
+@supports (grid-template-rows: subgrid) {
+  .form-grid {
+    grid-auto-rows: auto;
+  }
+
+  .form-grid > * {
+    grid-row: span 2;
+  }
+
+  .form-grid > .callout,
+  .form-grid > .card-hint,
+  .form-grid > .field-hint,
+  .form-grid > p {
+    grid-column: 1 / -1;
+  }
+
+  .form-grid > .field:has(> :nth-child(2)):not(:has(> :nth-child(3))),
+  .form-grid > .field-with-action {
+    grid-template-rows: subgrid;
+  }
+
+  .form-grid > .field:has(> :nth-child(2)):not(:has(> :nth-child(3))) {
+    display: grid;
+  }
+
+  .form-grid > .field:has(> :nth-child(2)):not(:has(> :nth-child(3))) > :first-child,
+  .form-grid > .field-with-action > .field > .field-label-row {
+    align-self: end;
+  }
+
+  .form-grid > .field:has(> :nth-child(2)):not(:has(> :nth-child(3))) > :nth-child(2),
+  .form-grid > .field-with-action > .field > .input-affix,
+  .form-grid > .field-with-action > .field > input,
+  .form-grid > .field-with-action > .field > select,
+  .form-grid > .field-with-action > .field-with-action-actions,
+  .form-grid > .field-with-action > button {
+    margin-top: -0.45rem;
+  }
+}
+
 .form-grid > .field-span-full {
   grid-column: 1 / -1;
 }
@@ -1694,10 +1750,20 @@ html:has(.kpi-bar) {
 
 /* --- help tooltips --------------------------------------------------------- */
 
+/* Inline formatting, not flex: the ⓘ follows the label's last word, so a
+   wrapped label keeps its help button in reading order instead of parking it
+   at the cell's far edge (#470, #471). */
 .field-label-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+  display: block;
+}
+
+.field-label-row > .field-label {
+  display: inline;
+  margin-right: 0.3rem;
+}
+
+.field-label-row > .help-tip {
+  vertical-align: -0.15em;
 }
 
 .help-tip {

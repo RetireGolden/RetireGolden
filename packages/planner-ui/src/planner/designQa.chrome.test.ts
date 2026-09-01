@@ -244,6 +244,33 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(focus).toMatch(/outline-offset:\s*2px/)
   })
 
+  it('form rows subgrid label and control tracks so a wrapped label never displaces one input (#470, #471, #477)', () => {
+    // The base grid is untouched (single track, 0.8rem gap): browsers without
+    // subgrid keep it as it was.
+    expect(rule('.form-grid')).toMatch(/gap:\s*0\.8rem 1\.1rem/)
+    expect(rule('.form-grid')).not.toMatch(/subgrid|grid-row/)
+    const supports = css.slice(css.indexOf('@supports (grid-template-rows: subgrid)'))
+    expect(supports.length).toBeGreaterThan(0)
+    const inside = (selector: string) => rule(selector, supports)
+    expect(inside('.form-grid > *')).toMatch(/grid-row:\s*span 2/)
+    expect(inside('.form-grid > *')).not.toMatch(/margin/)
+    // Exactly two children: a one-child compound field or a many-child field keeps its own layout.
+    const two = '.form-grid > .field:has(> :nth-child(2)):not(:has(> :nth-child(3)))'
+    expect(inside(two)).toMatch(/display:\s*grid/)
+    expect(inside(`${two},\n  .form-grid > .field-with-action`)).toMatch(/grid-template-rows:\s*subgrid/)
+    expect(supports).not.toMatch(/\.form-grid > \.field:not\(:has\(> :nth-child\(3\)\)\)\s*\{/)
+    // Label to the bottom of its track (covers a bare .field-label too); control pulled up 0.45rem.
+    expect(inside(`${two} > :first-child,\n  .form-grid > .field-with-action > .field > .field-label-row`)).toMatch(/align-self:\s*end/)
+    expect(supports).toMatch(/:nth-child\(2\),[\s\S]*?\{\s*margin-top:\s*-0\.45rem/)
+    expect(supports).not.toMatch(/\.form-grid > \.field > \.field-label-row\s*\{/)
+    // Callouts and hints get their own full row.
+    expect(inside('.form-grid > .callout,\n  .form-grid > .card-hint,\n  .form-grid > .field-hint,\n  .form-grid > p')).toMatch(/grid-column:\s*1 \/ -1/)
+    // The ⓘ flows after the label's last word: inline formatting, not flex.
+    expect(rule('.field-label-row')).toMatch(/display:\s*block/)
+    expect(rule('.field-label-row > .field-label')).toMatch(/display:\s*inline/)
+    expect(rule('.field-label-row > .help-tip')).toMatch(/vertical-align/)
+  })
+
   it('text, select, and affixed inputs share one height token', () => {
     const affix = rule('.input-affix')
     expect(affix).toMatch(/min-height:\s*var\(--control-height\)/)
