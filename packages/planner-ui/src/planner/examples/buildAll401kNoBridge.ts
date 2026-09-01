@@ -7,15 +7,25 @@
  * depletes years before the bridge version does.
  */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'all-401k-no-bridge'
 
 export function buildAll401kNoBridge(): Plan {
   const samId = exampleEntityId(EXAMPLE_ID, 'sam')
   const jordanId = exampleEntityId(EXAMPLE_ID, 'jordan')
-  const plan = createEmptyPlan({ name: 'All-in 401(k) (no bridge)', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'All-in 401(k) (no bridge)',
+    assumptions: {
+      inflationPct: 2.4,
+      healthcareExtraInflationPct: 3.2,
+      recentAnnualMagi: 180_000,
+      heirTaxRatePct: 24,
+      safeWithdrawalRatePct: 3.8,
+    },
+  })
 
   plan.household = {
     filingStatus: 'marriedFilingJointly',
@@ -83,25 +93,6 @@ export function buildAll401kNoBridge(): Plan {
     healthcare: { pre65MonthlyPremiumPerPerson: 850, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 170 },
   }
 
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'none' },
-    qcdAnnual: 0,
-    retirementActions: [],
-  }
-
-  plan.assumptions = {
-    inflationPct: 2.4,
-    healthcareExtraInflationPct: 3.2,
-    defaultReturnPct: 6,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 180_000,
-    heirTaxRatePct: 24,
-    safeWithdrawalRatePct: 3.8,
-  }
 
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`all-401k-no-bridge invalid: ${parsed.issues.join('; ')}`)

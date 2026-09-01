@@ -1,13 +1,35 @@
 /** Early retiree and the ACA cliff — pre-65 MAGI vs premium-credit cliff. */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'early-retiree-aca'
 
 export function buildEarlyRetireeAca(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Early retiree & the ACA cliff', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Early retiree & the ACA cliff',
+    strategies: {
+      // The baseline must keep MAGI under 400% FPL for a single filer so the
+      // current year shows a positive credit; filling the 12% bracket lands MAGI
+      // above the cliff regardless of other income, so the demo (raise the
+      // bracket, watch the credit vanish) only works from the 10% baseline.
+      rothConversion: {
+        mode: 'fillToTarget',
+        target: 'topOfBracket',
+        targetValue: 10,
+        startYear: EXAMPLE_FIXED_YEAR,
+        endYear: EXAMPLE_FIXED_YEAR + 4,
+      },
+    },
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 5,
+      recentAnnualMagi: 50_000,
+      heirTaxRatePct: 22,
+    },
+  })
   plan.household = {
     filingStatus: 'single',
     hasQualifyingDependent: false,
@@ -31,34 +53,6 @@ export function buildEarlyRetireeAca(): Plan {
     phases: [],
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 1_000, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 0 },
-  }
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    // The baseline must keep MAGI under 400% FPL for a single filer so the
-    // current year shows a positive credit; filling the 12% bracket lands MAGI
-    // above the cliff regardless of other income, so the demo (raise the
-    // bracket, watch the credit vanish) only works from the 10% baseline.
-    rothConversion: {
-      mode: 'fillToTarget',
-      target: 'topOfBracket',
-      targetValue: 10,
-      startYear: EXAMPLE_FIXED_YEAR,
-      endYear: EXAMPLE_FIXED_YEAR + 4,
-    },
-    qcdAnnual: 0,
-    retirementActions: [],
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 50_000,
-    heirTaxRatePct: 22,
-    safeWithdrawalRatePct: 4,
   }
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`early retiree ACA invalid: ${parsed.issues.join('; ')}`)

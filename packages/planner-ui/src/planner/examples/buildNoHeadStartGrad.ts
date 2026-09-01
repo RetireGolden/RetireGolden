@@ -4,14 +4,18 @@
  * starts at $0 aside from the shared emergency fund — no seeded IRA.
  */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'no-head-start-grad'
 
 export function buildNoHeadStartGrad(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'nova')
-  const plan = createEmptyPlan({ name: 'Starting from zero (no head start)', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Starting from zero (no head start)',
+    assumptions: { recentAnnualMagi: 62_000 },
+  })
 
   plan.household = {
     filingStatus: 'single',
@@ -55,25 +59,6 @@ export function buildNoHeadStartGrad(): Plan {
     healthcare: { pre65MonthlyPremiumPerPerson: 350, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 150 },
   }
 
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'none' },
-    qcdAnnual: 0,
-    retirementActions: [],
-  }
-
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 2,
-    defaultReturnPct: 6,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 62_000,
-    heirTaxRatePct: 25,
-    safeWithdrawalRatePct: 4,
-  }
 
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`no-head-start-grad invalid: ${parsed.issues.join('; ')}`)

@@ -1,14 +1,31 @@
 /** Bracket-fill Roth conversions — converting up to a bracket top. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'bracket-fill-roth'
 
 export function buildBracketFillRoth(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
   const p2 = exampleEntityId(EXAMPLE_ID, 'p2')
-  const plan = createEmptyPlan({ name: 'Bracket-fill Roth conversions', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Bracket-fill Roth conversions',
+    strategies: {
+      rothConversion: {
+        mode: 'fillToTarget',
+        target: 'topOfBracket',
+        targetValue: 22,
+        startYear: EXAMPLE_FIXED_YEAR,
+        endYear: EXAMPLE_FIXED_YEAR + 8,
+      },
+      qcdAnnual: 10_000,
+    },
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 5,
+    },
+  })
   plan.household = {
     filingStatus: 'marriedFilingJointly',
     hasQualifyingDependent: false,
@@ -36,31 +53,7 @@ export function buildBracketFillRoth(): Plan {
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 250 },
   }
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: {
-      mode: 'fillToTarget',
-      target: 'topOfBracket',
-      targetValue: 22,
-      startYear: EXAMPLE_FIXED_YEAR,
-      endYear: EXAMPLE_FIXED_YEAR + 8,
-    },
-    qcdAnnual: 10_000,
-    retirementActions: [],
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 0,
-    heirTaxRatePct: 25,
-    safeWithdrawalRatePct: 4,
-  }
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`bracket-fill roth invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

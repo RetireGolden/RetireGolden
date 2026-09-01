@@ -1,13 +1,22 @@
 /** Moving in retirement — mid-plan relocation changes state tax. */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'moving-state-tax'
 
 export function buildMovingStateTax(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Moving in retirement (state tax)', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Moving in retirement (state tax)',
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 5,
+      recentAnnualMagi: 95_000,
+      heirTaxRatePct: 22,
+    },
+  })
   plan.household = {
     filingStatus: 'single',
     hasQualifyingDependent: false,
@@ -35,18 +44,6 @@ export function buildMovingStateTax(): Plan {
     { id: exampleEntityId(EXAMPLE_ID, 'stay-fl'), name: 'Stay in Florida', patch: { household: { stateMoves: [] } } },
     { id: exampleEntityId(EXAMPLE_ID, 'move-ky'), name: 'Move to Kentucky sooner', patch: { household: { stateMoves: [{ fromYear: EXAMPLE_FIXED_YEAR + 1, fromMonth: 7, state: 'KY' }] } } },
   ]
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 95_000,
-    heirTaxRatePct: 22,
-    safeWithdrawalRatePct: 4,
-  }
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`moving state tax invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan

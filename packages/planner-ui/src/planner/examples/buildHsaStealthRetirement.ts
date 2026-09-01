@@ -1,11 +1,15 @@
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'hsa-stealth-retirement'
 
 export function buildHsaStealthRetirement(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'HSA stealth retirement', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'HSA stealth retirement',
+    assumptions: { recentAnnualMagi: 110_000 },
+  })
   plan.household = {
     filingStatus: 'single',
     hasQualifyingDependent: false,
@@ -78,18 +82,6 @@ export function buildHsaStealthRetirement(): Plan {
     phases: [],
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 450, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 180 },
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 2,
-    defaultReturnPct: 6,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 110_000,
-    heirTaxRatePct: 25,
-    safeWithdrawalRatePct: 4,
   }
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`hsa-stealth-retirement invalid: ${parsed.issues.join('; ')}`)

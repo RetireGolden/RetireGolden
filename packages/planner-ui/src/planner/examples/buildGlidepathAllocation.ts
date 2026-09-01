@@ -4,14 +4,33 @@
  * Also surfaces asset-location opportunities via Insights.
  */
 
-import { createEmptyPlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'glidepath-allocation'
 
 export function buildGlidepathAllocation(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Glidepath allocation retiree', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Glidepath allocation retiree',
+    strategies: {
+      rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 22, startYear: EXAMPLE_FIXED_YEAR + 1, endYear: EXAMPLE_FIXED_YEAR + 9 },
+      qcdAnnual: 3000,
+    },
+    assumptions: {
+      healthcareExtraInflationPct: 3.1,
+      defaultReturnPct: 5.0,
+      recentAnnualMagi: 95000,
+      heirTaxRatePct: 26,
+      safeWithdrawalRatePct: 3.7,
+      // Optional class overrides to highlight drag/returns (additive)
+      assetClassParams: {
+        usStocks: { returnPct: 7.2, volatilityPct: 16 },
+        bonds: { returnPct: 4.1, volatilityPct: 6 },
+      },
+    },
+  })
 
   plan.household = {
     filingStatus: 'single',
@@ -90,30 +109,6 @@ export function buildGlidepathAllocation(): Plan {
     { type: 'socialSecurity', id: exampleEntityId(EXAMPLE_ID, 'ss'), personId: p1, piaMonthly: 2100, earnings: null, claimAge: { years: 70, months: 0 } },
   ]
 
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 22, startYear: EXAMPLE_FIXED_YEAR + 1, endYear: EXAMPLE_FIXED_YEAR + 9 },
-    qcdAnnual: 3000,
-    retirementActions: [],
-  }
-
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3.1,
-    defaultReturnPct: 5.0,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 95000,
-    heirTaxRatePct: 26,
-    safeWithdrawalRatePct: 3.7,
-    // Optional class overrides to highlight drag/returns (additive)
-    assetClassParams: {
-      usStocks: { returnPct: 7.2, volatilityPct: 16 },
-      bonds: { returnPct: 4.1, volatilityPct: 6 },
-    },
-  }
 
   // Scenario: single-factor (no allocation) to contrast MC risk
   plan.scenarios = [

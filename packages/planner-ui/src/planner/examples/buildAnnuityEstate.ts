@@ -4,15 +4,30 @@
  * Positive case for estate/guaranteed-income depth enhancement.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'annuity-purchases-estate'
 
 export function buildAnnuityEstate(): Plan {
   const me = exampleEntityId(EXAMPLE_ID, 'me')
   const partner = exampleEntityId(EXAMPLE_ID, 'partner')
-  const plan = createEmptyPlan({ name: 'Annuity ladder with estate planning', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Annuity ladder with estate planning',
+    strategies: {
+      rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 24, startYear: EXAMPLE_FIXED_YEAR + 1, endYear: EXAMPLE_FIXED_YEAR + 7 },
+      qcdAnnual: 5000,
+    },
+    assumptions: {
+      inflationPct: 2.3,
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 5.2,
+      recentAnnualMagi: 120_000,
+      heirTaxRatePct: 28,
+      safeWithdrawalRatePct: 3.5,
+    },
+  })
 
   plan.household = {
     filingStatus: 'marriedFilingJointly',
@@ -103,25 +118,6 @@ export function buildAnnuityEstate(): Plan {
     healthcare: { pre65MonthlyPremiumPerPerson: 880, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 210 },
   }
 
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 24, startYear: EXAMPLE_FIXED_YEAR + 1, endYear: EXAMPLE_FIXED_YEAR + 7 },
-    qcdAnnual: 5000,
-    retirementActions: [],
-  }
-
-  plan.assumptions = {
-    inflationPct: 2.3,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 5.2,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 120_000,
-    heirTaxRatePct: 28,
-    safeWithdrawalRatePct: 3.5,
-  }
 
   // Scenario: no Roth conversions (for A-B comparison of annuity effect)
   plan.scenarios = [
@@ -132,7 +128,7 @@ export function buildAnnuityEstate(): Plan {
     },
   ]
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`annuity-purchases-estate invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

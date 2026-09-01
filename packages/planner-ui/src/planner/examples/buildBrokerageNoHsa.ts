@@ -5,14 +5,28 @@
  * advantage vs ordinary taxable growth/withdrawals.
  */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'brokerage-no-hsa'
 
 export function buildBrokerageNoHsa(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Brokerage instead of HSA', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Brokerage instead of HSA',
+    strategies: {
+      rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 24, startYear: EXAMPLE_FIXED_YEAR + 3, endYear: EXAMPLE_FIXED_YEAR + 11 },
+    },
+    assumptions: {
+      inflationPct: 2.6,
+      healthcareExtraInflationPct: 3.4,
+      defaultReturnPct: 4.9,
+      recentAnnualMagi: 42000,
+      heirTaxRatePct: 22,
+      safeWithdrawalRatePct: 3.6,
+    },
+  })
 
   plan.household = {
     filingStatus: 'single',
@@ -84,25 +98,6 @@ export function buildBrokerageNoHsa(): Plan {
     { type: 'socialSecurity', id: exampleEntityId(EXAMPLE_ID, 'ss'), personId: p1, piaMonthly: 1720, earnings: null, claimAge: { years: 67, months: 0 } },
   ]
 
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 24, startYear: EXAMPLE_FIXED_YEAR + 3, endYear: EXAMPLE_FIXED_YEAR + 11 },
-    qcdAnnual: 0,
-    retirementActions: [],
-  }
-
-  plan.assumptions = {
-    inflationPct: 2.6,
-    healthcareExtraInflationPct: 3.4,
-    defaultReturnPct: 4.9,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 42000,
-    heirTaxRatePct: 22,
-    safeWithdrawalRatePct: 3.6,
-  }
 
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`brokerage-no-hsa invalid: ${parsed.issues.join('; ')}`)

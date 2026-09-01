@@ -1,14 +1,22 @@
 /** Survivor years (widow's penalty) — first death flips to single brackets and survivor SS. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'survivor-years'
 
 export function buildSurvivorYears(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
   const p2 = exampleEntityId(EXAMPLE_ID, 'p2')
-  const plan = createEmptyPlan({ name: 'Survivor years (widow\'s penalty)', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Survivor years (widow\'s penalty)',
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 4.5,
+      heirTaxRatePct: 22,
+    },
+  })
   plan.household = {
     filingStatus: 'marriedFilingJointly',
     hasQualifyingDependent: false,
@@ -44,19 +52,7 @@ export function buildSurvivorYears(): Plan {
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 200 },
   }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 4.5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 0,
-    heirTaxRatePct: 22,
-    safeWithdrawalRatePct: 4,
-  }
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`survivor years invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

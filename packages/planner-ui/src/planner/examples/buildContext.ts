@@ -1,4 +1,4 @@
-import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 
 /** Fixed clock and deterministic entity ids so example golden tests stay stable. */
 
@@ -19,6 +19,57 @@ export function exampleEntityId(exampleId: string, suffix: string): string {
 export function exampleIdFactory(exampleId: string): () => string {
   let index = 0
   return () => exampleEntityId(exampleId, `seq-${index++}`)
+}
+
+// These are the established example values, intentionally pinned apart from
+// createEmptyPlan's defaults so existing golden projections stay stable.
+const EXAMPLE_BASELINE_ASSUMPTIONS = {
+  inflationPct: 2.5,
+  healthcareExtraInflationPct: 2,
+  defaultReturnPct: 6,
+  ssCola: { mode: 'matchInflation' },
+  ssHaircut: null,
+  stateEffectiveTaxPct: 0,
+  localIncomeTaxPct: 0,
+  recentAnnualMagi: 0,
+  heirTaxRatePct: 25,
+  safeWithdrawalRatePct: 4,
+} satisfies Plan['assumptions']
+
+const EXAMPLE_BASELINE_STRATEGIES = {
+  withdrawalOrder: { mode: 'sequential' },
+  rothConversion: { mode: 'none' },
+  qcdAnnual: 0,
+  retirementActions: [],
+} satisfies Plan['strategies']
+
+type ExamplePlanOptions = {
+  exampleId: string
+  name: string
+  assumptions?: Partial<Plan['assumptions']>
+  strategies?: Partial<Plan['strategies']>
+}
+
+/**
+ * Builds the deterministic shared baseline for every curated example. Builders
+ * only supply the assumptions and strategy facts that make their scenario
+ * distinct; parseExamplePlan remains the validation boundary.
+ */
+export function createExamplePlan({
+  exampleId,
+  name,
+  assumptions = {},
+  strategies = {},
+}: ExamplePlanOptions): Plan {
+  const plan = createEmptyPlan({
+    name,
+    now: exampleFixedNow,
+    newId: exampleIdFactory(exampleId),
+  })
+
+  plan.assumptions = { ...structuredClone(EXAMPLE_BASELINE_ASSUMPTIONS), ...assumptions }
+  plan.strategies = { ...structuredClone(EXAMPLE_BASELINE_STRATEGIES), ...strategies }
+  return plan
 }
 
 /**

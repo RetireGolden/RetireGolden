@@ -5,14 +5,24 @@
  * to see success rate / depletion differences.
  */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'fixed-target-spending'
 
 export function buildFixedTargetSpending(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Fixed target spending (control)', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Fixed target spending (control)',
+    assumptions: {
+      inflationPct: 2.4,
+      healthcareExtraInflationPct: 3.2,
+      defaultReturnPct: 4.8,
+      heirTaxRatePct: 24,
+      safeWithdrawalRatePct: 3.8,
+    },
+  })
 
   plan.household = {
     filingStatus: 'single',
@@ -49,25 +59,6 @@ export function buildFixedTargetSpending(): Plan {
     { type: 'socialSecurity', id: exampleEntityId(EXAMPLE_ID, 'ss'), personId: p1, piaMonthly: 1850, earnings: null, claimAge: { years: 67, months: 0 } },
   ]
 
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'none' },
-    qcdAnnual: 0,
-    retirementActions: [],
-  }
-
-  plan.assumptions = {
-    inflationPct: 2.4,
-    healthcareExtraInflationPct: 3.2,
-    defaultReturnPct: 4.8,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 0,
-    heirTaxRatePct: 24,
-    safeWithdrawalRatePct: 3.8,
-  }
 
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`fixed-target-spending invalid: ${parsed.issues.join('; ')}`)

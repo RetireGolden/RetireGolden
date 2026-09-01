@@ -1,13 +1,21 @@
 /** Long-term-care shock — a care episode and how LTC insurance offsets it. */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'ltc-shock'
 
 export function buildLtcShock(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Long-term-care shock', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Long-term-care shock',
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 4.5,
+      heirTaxRatePct: 22,
+    },
+  })
   plan.household = {
     filingStatus: 'single',
     hasQualifyingDependent: false,
@@ -43,18 +51,6 @@ export function buildLtcShock(): Plan {
     phases: [],
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 650, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 200 },
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 4.5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 0,
-    heirTaxRatePct: 22,
-    safeWithdrawalRatePct: 4,
   }
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`ltc shock invalid: ${parsed.issues.join('; ')}`)
