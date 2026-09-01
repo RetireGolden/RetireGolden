@@ -21,7 +21,7 @@
           "text": "for (const account of input.accounts) {"
         },
         {
-          "line": 158,
+          "line": 153,
           "text": "const startCalendarYear = dobYear(owner) + account.startAge"
         }
       ]
@@ -40,11 +40,11 @@
           "text": "if (account.type === 'pension') {"
         },
         {
-          "line": 181,
+          "line": 183,
           "text": "pensionIncome += amount"
         },
         {
-          "line": 186,
+          "line": 188,
           "text": "rows.push({"
         }
       ]
@@ -71,7 +71,7 @@
           "text": "} else if (account.purchase) {"
         },
         {
-          "line": 306,
+          "line": 305,
           "text": "rows.push({"
         }
       ]
