@@ -263,7 +263,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -389,7 +389,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         },
@@ -610,7 +610,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -678,6 +678,7 @@
         "packages/engine/src/internal/iraAnnuityContractValue.ts",
         "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -709,11 +710,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
+          "functions": [
+            {
+              "name": "annualAnnuityPurchaseFunding",
+              "line": 71
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -825,7 +835,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         },
@@ -1063,7 +1073,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }

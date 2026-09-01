@@ -801,9 +801,11 @@ export const investmentIncomeAndBasisRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/actions/taxableWithdrawalCharacter.ts',
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/taxableWithdrawalCharacter.ts#classifyIndividuallyOwnedTaxableWithdrawal',
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
     ],
   },
 

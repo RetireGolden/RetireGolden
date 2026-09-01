@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-batch",
-  "why": "The four annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Block D - income pass 1, wages - was REMOVED when this branch merged origin/main. That phase was extracted concurrently and independently on main as projection/internal/wageIncomeStreams.ts; this slice's duplicate helper was withdrawn rather than kept, and main's version is not this spec's to prove. The surviving ids A, B, C and E were left as they are rather than renumbered, so reach output stays comparable with the runs taken before the merge. Line numbers are against the working tree and MUST be re-checked before reuse. This PR re-pinned B.application from the stale 2009-2020 window to 1989-2000 after simulate.ts shifted; the other fifteen helper-file ranges were re-checked and remained correct. A stale range silently reports the wrong code as reached, which is exactly what happened to the earlier B.application window.",
+  "why": "The four annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Block D - income pass 1, wages - was REMOVED when this branch merged origin/main. That phase was extracted concurrently and independently on main as projection/internal/wageIncomeStreams.ts; this slice's duplicate helper was withdrawn rather than kept, and main's version is not this spec's to prove. The surviving ids A, B, C and E were left as they are rather than renumbered, so reach output stays comparable with the runs taken before the merge. All helper ranges were rechecked on this tree, while B.application is pinned to its current pension-credit branch by exact content anchors. The normal engine test suite now validates every committed reach-spec anchor and refuses any unanchored projection/simulate.ts range, so a later source shift fails before coverage can silently report unrelated code as reached.",
   "entries": [
     {
       "id": "A",
@@ -11,7 +11,21 @@
         178,
         212
       ],
-      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
+      "anchors": [
+        {
+          "line": 178,
+          "text": "for (const state of states) {"
+        },
+        {
+          "line": 195,
+          "text": "openingCostBasis: state.costBasis,"
+        },
+        {
+          "line": 212,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "A.saleArm",
@@ -20,6 +34,20 @@
       "lines": [
         189,
         210
+      ],
+      "anchors": [
+        {
+          "line": 189,
+          "text": "if (turnover > 1e-9 && state.account.type === 'taxable' && state.balance > 0) {"
+        },
+        {
+          "line": 199,
+          "text": "kind: 'sale',"
+        },
+        {
+          "line": 210,
+          "text": "}"
+        }
       ]
     },
     {
@@ -30,7 +58,21 @@
         204,
         207
       ],
-      "note": "SHAPE CHANGED WITH THE EXTRACTION: inlined, this literal was an argument to an optional-chained recorder call and was built on cashFlow modes ONLY. The row owns it now, so it is built on every sale row in every mode. A count here is therefore no longer evidence that a cashFlow mode ran."
+      "note": "SHAPE CHANGED WITH THE EXTRACTION: inlined, this literal was an argument to an optional-chained recorder call and was built on cashFlow modes ONLY. The row owns it now, so it is built on every sale row in every mode. A count here is therefore no longer evidence that a cashFlow mode ran.",
+      "anchors": [
+        {
+          "line": 204,
+          "text": "record: {"
+        },
+        {
+          "line": 205,
+          "text": "accountId,"
+        },
+        {
+          "line": 207,
+          "text": "},"
+        }
+      ]
     },
     {
       "id": "A.retarget",
@@ -39,6 +81,12 @@
       "lines": [
         211,
         211
+      ],
+      "anchors": [
+        {
+          "line": 211,
+          "text": "rows.push({ kind: 'retarget', accountId, targetWeights: target })"
+        }
       ]
     },
     {
@@ -49,7 +97,21 @@
         158,
         189
       ],
-      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
+      "anchors": [
+        {
+          "line": 158,
+          "text": "for (const account of accounts) {"
+        },
+        {
+          "line": 173,
+          "text": "}"
+        },
+        {
+          "line": 189,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "B.row",
@@ -59,7 +121,21 @@
         175,
         188
       ],
-      "note": "RENAMED from B.credit and repointed. The credit itself no longer lives in the phase: `target.balance += amount` and the before/after capture stay at the call site, because two pensions may elect into one account in the same year and the second before-balance is the first after-balance."
+      "note": "RENAMED from B.credit and repointed. The credit itself no longer lives in the phase: `target.balance += amount` and the before/after capture stay at the call site, because two pensions may elect into one account in the same year and the second before-balance is the first after-balance.",
+      "anchors": [
+        {
+          "line": 175,
+          "text": "rows.push({"
+        },
+        {
+          "line": 181,
+          "text": "runtime,"
+        },
+        {
+          "line": 188,
+          "text": "})"
+        }
+      ]
     },
     {
       "id": "B.occurrence",
@@ -69,17 +145,45 @@
         169,
         174
       ],
-      "note": "the aggregated-IRA gate is now a FLAG computed on line 172 inside this same region, so V8 line coverage can no longer separate the two gates here. B.application points at the caller-side branch that consumes the flag, which is where the separation is now observable."
+      "note": "the aggregated-IRA gate is now a FLAG computed on line 172 inside this same region, so V8 line coverage can no longer separate the two gates here. B.application points at the caller-side branch that consumes the flag, which is where the separation is now observable.",
+      "anchors": [
+        {
+          "line": 169,
+          "text": "if (amount > 0 && destination.account.type === 'traditional') {"
+        },
+        {
+          "line": 171,
+          "text": "producerOccurrenceKey: runtimeOccurrenceKey('rolloverInflow', account.id, destination.account.id),"
+        },
+        {
+          "line": 174,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "B.application",
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        1987,
-        1998
+        1924,
+        1934
       ],
-      "note": "REPINNED after the expense/SEPP extraction changed the import span ahead of this caller-side branch. These lines are the creditsAggregatedIra gate and the complete runtime-application call; the previous 1989-2000 range omitted the gate and call opening while including unrelated closing lines and could false-green."
+      "anchors": [
+        {
+          "line": 1924,
+          "text": "if (row.runtime.creditsAggregatedIra) {"
+        },
+        {
+          "line": 1925,
+          "text": "recordAnnualRetirementRuntimeApplication({"
+        },
+        {
+          "line": 1934,
+          "text": "})"
+        }
+      ],
+      "note": "REPINNED after the annuity-funding extraction and prerequisite stack changed the caller position. These lines are the creditsAggregatedIra gate and the complete runtime-application call. Exact content anchors now make any later positional drift fail the normal engine test suite before coverage is collected."
     },
     {
       "id": "C",
@@ -89,7 +193,21 @@
         149,
         170
       ],
-      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
+      "anchors": [
+        {
+          "line": 149,
+          "text": "for (const account of accounts) {"
+        },
+        {
+          "line": 159,
+          "text": ": null"
+        },
+        {
+          "line": 170,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "C.warning",
@@ -98,6 +216,20 @@
       "lines": [
         156,
         159
+      ],
+      "anchors": [
+        {
+          "line": 156,
+          "text": "const warning ="
+        },
+        {
+          "line": 157,
+          "text": "youngestAge < 62"
+        },
+        {
+          "line": 159,
+          "text": ": null"
+        }
       ]
     },
     {
@@ -108,7 +240,21 @@
         160,
         169
       ],
-      "note": "SAME ARTIFACT AS BEFORE: this range follows four `continue` statements carrying the five guards, and carries no brace of its own, so its count is the enclosing loop count. Members that genuinely open a line are the blocks:c* members plus any example with a HECM (there are none)."
+      "note": "SAME ARTIFACT AS BEFORE: this range follows four `continue` statements carrying the five guards, and carries no brace of its own, so its count is the enclosing loop count. Members that genuinely open a line are the blocks:c* members plus any example with a HECM (there are none).",
+      "anchors": [
+        {
+          "line": 160,
+          "text": "const plfPct = account.hecm.principalLimitPct ?? hecmPrincipalLimitFactorPct(pack, youngestAge)"
+        },
+        {
+          "line": 164,
+          "text": "state: {"
+        },
+        {
+          "line": 169,
+          "text": "})"
+        }
+      ]
     },
     {
       "id": "E",
@@ -118,7 +264,21 @@
         199,
         235
       ],
-      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did."
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
+      "anchors": [
+        {
+          "line": 199,
+          "text": "for (const account of accounts) {"
+        },
+        {
+          "line": 217,
+          "text": "}"
+        },
+        {
+          "line": 235,
+          "text": "rows.push({ propertyAccountId: accountId, value, deposit, closesHecmForAccountId, hecmGrowth, record })"
+        }
+      ]
     },
     {
       "id": "E.saleYear",
@@ -127,6 +287,20 @@
       "lines": [
         209,
         225
+      ],
+      "anchors": [
+        {
+          "line": 209,
+          "text": "if (account.plannedSaleYear === year && value > 0) {"
+        },
+        {
+          "line": 217,
+          "text": "}"
+        },
+        {
+          "line": 225,
+          "text": "}"
+        }
       ]
     },
     {
@@ -136,6 +310,20 @@
       "lines": [
         210,
         223
+      ],
+      "anchors": [
+        {
+          "line": 210,
+          "text": "if (account.costBasis === undefined) {"
+        },
+        {
+          "line": 216,
+          "text": "closesHecmForAccountId = accountId"
+        },
+        {
+          "line": 223,
+          "text": "}"
+        }
       ]
     },
     {
@@ -146,7 +334,21 @@
         220,
         222
       ],
-      "note": "unlike A.ledger, this one is STILL cashFlow-only: the payload is gated on a non-null surplusDestination, and the call site passes that field only when the ledger array the payload feeds is itself non-null - the same condition the inlined phase gated its object literal on."
+      "note": "unlike A.ledger, this one is STILL cashFlow-only: the payload is gated on a non-null surplusDestination, and the call site passes that field only when the ledger array the payload feeds is itself non-null - the same condition the inlined phase gated its object literal on.",
+      "anchors": [
+        {
+          "line": 220,
+          "text": "if (amount > 0 && surplusDestination !== null) {"
+        },
+        {
+          "line": 221,
+          "text": "record = { propertyAccountId: accountId, amount, destination: surplusDestination }"
+        },
+        {
+          "line": 222,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "E.hecmGrowth",
@@ -155,6 +357,20 @@
       "lines": [
         229,
         233
+      ],
+      "anchors": [
+        {
+          "line": 229,
+          "text": "if (openLine && account.hecm && !accruedLineIds.has(accountId)) {"
+        },
+        {
+          "line": 231,
+          "text": "openLine.principalLimit *= hecmGrowth"
+        },
+        {
+          "line": 233,
+          "text": "accruedLineIds.add(accountId)"
+        }
       ]
     }
   ],

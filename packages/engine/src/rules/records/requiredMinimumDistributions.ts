@@ -929,12 +929,14 @@ export const requiredMinimumDistributionRecords = {
     verifiedOn: '2026-08-03',
     implementedBy: [
       'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/decisions/generators.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/decisions/generators.ts#annuityPurchaseGenerator',
       'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1036,12 +1038,14 @@ export const requiredMinimumDistributionRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/model/migrations.ts',
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/migrations.ts#migratePlanToCurrent',
       'packages/engine/src/model/plan.ts#annuitySchema',
       'packages/engine/src/model/plan.ts#latestNonQlacQualifiedAnnuityStartAge',
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1082,6 +1086,7 @@ export const requiredMinimumDistributionRecords = {
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/model/migrations.ts',
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/decisions/generators.ts',
     ],
@@ -1089,6 +1094,7 @@ export const requiredMinimumDistributionRecords = {
       'packages/engine/src/model/migrations.ts#migratePlanToCurrent',
       'packages/engine/src/model/plan.ts#annuitySchema',
       'packages/engine/src/model/plan.ts#latestQlacAnnuityStartAge',
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/decisions/generators.ts#annuityPurchaseGenerator',
     ],
@@ -1122,9 +1128,11 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1169,10 +1177,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/rmd/rmd.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],

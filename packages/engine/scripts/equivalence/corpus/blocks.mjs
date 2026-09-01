@@ -18,6 +18,7 @@
  *   M  exact-cent annual ordinary-withdrawal boundary
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
  *   T  aggregate Roth-conversion planning
+ *   V  annual purchased-annuity funding
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -27,7 +28,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through M and T each have a phase-specific reach spec beside the
+ * Blocks J through M, T and V each have a phase-specific reach spec beside the
  * earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -35,12 +36,14 @@
  * not assumed — so without this tier the differential check would pass on two of
  * the five blocks by never running them. Each member names the branch or hazard
  * it exists to reach in `covers`, and
- * `scripts/equivalence/specs/simulate-batch.json` and
- * `scripts/equivalence/specs/simulate-small-annual-boundaries.json` and
- * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json` and
- * `scripts/equivalence/specs/simulate-social-security-boundary.json` and
- * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json` and
- * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json` are the
+ * `scripts/equivalence/specs/simulate-batch.json`,
+ * `scripts/equivalence/specs/simulate-small-annual-boundaries.json`,
+ * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json`,
+ * `scripts/equivalence/specs/simulate-social-security-boundary.json`,
+ * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json`,
+ * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`, and
+ * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`
+ * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  *
@@ -206,6 +209,29 @@ function pension(id, extra = {}) {
     colaPct: 0,
     survivorPct: 0,
     ...extra,
+  }
+}
+
+function purchasedAnnuity(id, fundingAccountId, premium, extra = {}) {
+  const { purchase: purchaseOverride = {}, ...accountOverride } = extra
+  return {
+    type: 'annuity',
+    id,
+    name: id,
+    ownerPersonId: 'p1',
+    annualReturnPct: null,
+    startAge: 56,
+    monthlyAmount: 0,
+    colaPct: 0,
+    taxablePct: 100,
+    ...accountOverride,
+    purchase: {
+      year: START_YEAR,
+      premium,
+      fundingAccountId,
+      taxQualification: 'nonQualified',
+      ...purchaseOverride,
+    },
   }
 }
 
@@ -2140,6 +2166,144 @@ function blockT() {
 }
 
 // ---------------------------------------------------------------------------
+// V — annual purchased-annuity funding
+// ---------------------------------------------------------------------------
+
+function blockV() {
+  const out = []
+
+  {
+    // The three full taxable sales make purchase-order gain folding
+    // cancellation-sensitive: ((0 + 1e13) - 1e13) + 0.01 is exactly 0.01,
+    // while a right-associated pre-sum is 0.009765625. Each contract and source has a
+    // distinct id so only arithmetic order, not lookup aliasing, can move it.
+    const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      taxable('v1-source-gain', 10_000_000_000_000, 0, { annualReturnPct: 0 }),
+      taxable('v1-source-loss', 10_000_000_000_000, 20_000_000_000_000, { annualReturnPct: 0 }),
+      taxable('v1-source-cent', 0.01, 0, { annualReturnPct: 0 }),
+      purchasedAnnuity('v1-annuity-gain', 'v1-source-gain', 10_000_000_000_000),
+      purchasedAnnuity('v1-annuity-loss', 'v1-source-loss', 10_000_000_000_000),
+      purchasedAnnuity('v1-annuity-cent', 'v1-source-cent', 0.01),
+    ]
+    out.push(member(
+      'v1-cancellationSensitiveTaxableFold',
+      'V: three ordered full taxable sales preserve left-associated realized-gain folding across gain, loss, and one-cent residue',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // Both purchases share one taxable position, and the second must observe
+    // the first debit and basis sale. The equity source pins the original
+    // basis-ratio association at fractional values. A cash
+    // source shorter than its quoted premium begins paying immediately, so the
+    // funded amount — not the quote — becomes observable investment in contract.
+    // The future purchase is a none row in 2026 and a funded row in 2027: the
+    // first cash-funded contract exhausts the source, then its 2026 payment is
+    // deposited back into cash before the future contract purchases. Block V4
+    // separately pins a zero-funded purchase.
+    const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      taxable('v2-shared-source', 100, 40, { annualReturnPct: 0 }),
+      equityComp('v2-equity-source', 0.2, 0.1, { annualReturnPct: 0 }),
+      cash('v2-cash-source', 17, { annualReturnPct: 0, ownerPersonId: 'p1' }),
+      purchasedAnnuity('v2-shared-first', 'v2-shared-source', 25),
+      purchasedAnnuity('v2-shared-second', 'v2-shared-source', 25),
+      purchasedAnnuity('v2-equity-annuity', 'v2-equity-source', 0.1),
+      purchasedAnnuity('v2-partial-annuity', 'v2-cash-source', 100, {
+        monthlyAmount: 10 / 12,
+      }),
+      {
+        type: 'annuity',
+        id: 'v2-existing-annuity',
+        name: 'v2-existing-annuity',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        startAge: 56,
+        monthlyAmount: 0,
+        colaPct: 0,
+        taxablePct: 100,
+      },
+      purchasedAnnuity('v2-future-annuity', 'v2-cash-source', 1, {
+        startAge: 57,
+        purchase: { year: START_YEAR + 1 },
+      }),
+    ]
+    out.push(member(
+      'v2-sharedShadowBasisAndInvestment',
+      'V: ordered shared-source shadow debits/basis, fractional equity association, partial funded investment carry, no-purchase and wrong-year rows',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  {
+    // The first QLAC proves the cap changes funding, while the second emits a
+    // cap warning and then a funding shortfall. All three contracts use
+    // qualified sources, so three runtime debits must precede three contract
+    // credits; ownerless account fallback resolves each to primary.
+    const plan = singlePersonPlan({ dob: '1970-12-15', planningAge: 90 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      qualified('traditional', 'v3-qlac-cap-source', 250_000, { annualReturnPct: 0 }),
+      qualified('traditional', 'v3-qlac-shortfall-source', 150_000, { annualReturnPct: 0 }),
+      qualified('traditional', 'v3-qualified-source', 100, { annualReturnPct: 0 }),
+      purchasedAnnuity('v3-qlac-cap', 'v3-qlac-cap-source', 300_000, {
+        ownerPersonId: null,
+        startAge: 85,
+        purchase: { taxQualification: 'qualified', qlac: true },
+      }),
+      purchasedAnnuity('v3-qlac-shortfall', 'v3-qlac-shortfall-source', 300_000, {
+        ownerPersonId: null,
+        startAge: 85,
+        purchase: { taxQualification: 'qualified', qlac: true },
+      }),
+      purchasedAnnuity('v3-qualified', 'v3-qualified-source', 13, {
+        ownerPersonId: null,
+        startAge: 60,
+        purchase: { taxQualification: 'qualified' },
+      }),
+    ]
+    out.push(member(
+      'v3-qlacCapShortfallAndQualifiedRuntime',
+      'V: qualified owner fallback, effective QLAC cap and cap-before-shortfall warnings, three ordered runtime debits followed by three contract credits',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // Positive but unvested equity is deliberately unspendable. The purchase
+    // remains a real row with a zero gain, unchanged basis write and a shortfall warning,
+    // but emits no optimizer debit and carries no investment into its payout.
+    const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 75 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      equityComp('v4-unvested-source', 80, 20, {
+        annualReturnPct: 0,
+        vestingMode: 'cliff',
+        vestDate: `${START_YEAR + 1}-01-01`,
+      }),
+      purchasedAnnuity('v4-unfunded-annuity', 'v4-unvested-source', 32, {
+        monthlyAmount: 10 / 12,
+      }),
+    ]
+    out.push(member(
+      'v4-unvestedZeroFunding',
+      'V: unvested positive equity source produces a zero-funded purchase, zero gain/basis write, shortfall warning, null debit, and zero investment carry',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // S — shared blind spots, owned by no single block
 // ---------------------------------------------------------------------------
 
@@ -2223,5 +2387,6 @@ export async function blockMembers() {
     ...blockM(),
     ...blockS(),
     ...blockT(),
+    ...blockV(),
   ]
 }

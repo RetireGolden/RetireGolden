@@ -7,66 +7,260 @@
       "id": "A.helper",
       "label": "annual lifestyle-layer selection and arithmetic",
       "file": "projection/internal/annualLifestyleLayers.ts",
-      "lines": [41, 100],
-      "note": "The corpus reaches fixed and ABW modes, stable phase ordering, couple/survivor/no-survivor scaling, optional lifestyle layers, ordered portfolio folding, and the planning-age horizon. The sole cold sub-line region is line 80's `?? 0`: the annual pass builds startOfYearBalance from every balance row before this call, so a helper balance without a corresponding map entry is a defensive structural-input case rather than a reachable validated-simulator case."
+      "lines": [
+        41,
+        100
+      ],
+      "note": "The corpus reaches fixed and ABW modes, stable phase ordering, couple/survivor/no-survivor scaling, optional lifestyle layers, ordered portfolio folding, and the planning-age horizon. The sole cold sub-line region is line 80's `?? 0`: the annual pass builds startOfYearBalance from every balance row before this call, so a helper balance without a corresponding map entry is a defensive structural-input case rather than a reachable validated-simulator case.",
+      "anchors": [
+        {
+          "line": 41,
+          "text": "const {"
+        },
+        {
+          "line": 70,
+          "text": "expenses.requiredAnnual ?? expenses.baseAnnual,"
+        },
+        {
+          "line": 100,
+          "text": "})"
+        }
+      ]
     },
     {
       "id": "A.callsite",
       "label": "annual lifestyle helper invocation and result consumption",
       "file": "projection/simulate.ts",
-      "lines": [2596, 2615]
+      "lines": [
+        2562,
+        2581
+      ],
+      "anchors": [
+        {
+          "line": 2562,
+          "text": "const {"
+        },
+        {
+          "line": 2567,
+          "text": "} = annualLifestyleLayers({"
+        },
+        {
+          "line": 2581,
+          "text": "})"
+        }
+      ]
     },
     {
       "id": "B.helper",
       "label": "annual insurance-premium row production",
       "file": "projection/internal/annualInsurancePremiumRows.ts",
-      "lines": [34, 60],
-      "note": "The corpus reaches paid-up, lifetime, until-age, alive/dead subject, and LTC-owner versus life-insured paths while preserving policy order; reach reports no cold whole lines or sub-line regions in this helper range."
+      "lines": [
+        34,
+        60
+      ],
+      "note": "The corpus reaches paid-up, lifetime, until-age, alive/dead subject, and LTC-owner versus life-insured paths while preserving policy order; reach reports no cold whole lines or sub-line regions in this helper range.",
+      "anchors": [
+        {
+          "line": 34,
+          "text": "const rows: AnnualInsurancePremiumRow[] = []"
+        },
+        {
+          "line": 47,
+          "text": "continue"
+        },
+        {
+          "line": 60,
+          "text": "return rows"
+        }
+      ]
     },
     {
       "id": "B.callsite",
       "label": "ordered insurance-premium fold and publication",
       "file": "projection/simulate.ts",
-      "lines": [2935, 2942]
+      "lines": [
+        2901,
+        2908
+      ],
+      "anchors": [
+        {
+          "line": 2901,
+          "text": "let insurancePremiums = 0"
+        },
+        {
+          "line": 2902,
+          "text": "for (const row of annualInsurancePremiumRows({"
+        },
+        {
+          "line": 2907,
+          "text": "yearSites?.recordInsurancePremium(row.record)"
+        },
+        {
+          "line": 2908,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "C.helper",
       "label": "annual property carrying-cost row production",
       "file": "projection/internal/annualPropertyCarryingCosts.ts",
-      "lines": [31, 48],
-      "note": "The corpus reaches alive and all-dead years, non-property skips, pre-sale and sale-year paths, duplicate ids, omitted cost fields, and both cost operands. The sole cold sub-line region is line 43's `?? null`: the dedicated projection members use owned properties, while the helper unit suite covers the supported ownerless-property record shape."
+      "lines": [
+        31,
+        48
+      ],
+      "note": "The corpus reaches alive and all-dead years, non-property skips, pre-sale and sale-year paths, duplicate ids, omitted cost fields, and both cost operands. The sole cold sub-line region is line 43's `?? null`: the dedicated projection members use owned properties, while the helper unit suite covers the supported ownerless-property record shape.",
+      "anchors": [
+        {
+          "line": 31,
+          "text": "if (!input.anyAlive) return []"
+        },
+        {
+          "line": 40,
+          "text": "input.inflFactor"
+        },
+        {
+          "line": 48,
+          "text": "return rows"
+        }
+      ]
     },
     {
       "id": "C.callsite",
       "label": "ordered property-cost fold and publication",
       "file": "projection/simulate.ts",
-      "lines": [3013, 3022]
+      "lines": [
+        2979,
+        2988
+      ],
+      "anchors": [
+        {
+          "line": 2979,
+          "text": "let propertyCosts = 0"
+        },
+        {
+          "line": 2980,
+          "text": "for (const row of annualPropertyCarryingCosts({"
+        },
+        {
+          "line": 2987,
+          "text": "yearSites?.recordPropertyCosts(row.record)"
+        },
+        {
+          "line": 2988,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "D.helper",
       "label": "annual expense-summary assembly",
       "file": "projection/internal/annualExpenseSummary.ts",
-      "lines": [61, 120],
-      "note": "A dedicated member makes every monetary expense channel nonzero and exercises all lifestyle and goal layers, including the cancellation-sensitive care-cost-minus-LTC-benefit order."
+      "lines": [
+        61,
+        120
+      ],
+      "note": "A dedicated member makes every monetary expense channel nonzero and exercises all lifestyle and goal layers, including the cancellation-sensitive care-cost-minus-LTC-benefit order.",
+      "anchors": [
+        {
+          "line": 61,
+          "text": "const baseSpending ="
+        },
+        {
+          "line": 90,
+          "text": "input.skippedTargetNominal +"
+        },
+        {
+          "line": 120,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "D.callsite",
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/simulate.ts",
-      "lines": [3201, 3231]
+      "lines": [
+        3167,
+        3197
+      ],
+      "anchors": [
+        {
+          "line": 3167,
+          "text": "const expenseSummary = annualExpenseSummary({"
+        },
+        {
+          "line": 3192,
+          "text": "})"
+        },
+        {
+          "line": 3193,
+          "text": "const expenses = expenseSummary.expenses"
+        },
+        {
+          "line": 3197,
+          "text": "const excessSpendingBase = expenseSummary.excessSpendingBase"
+        }
+      ]
     },
     {
       "id": "E.helper",
       "label": "annual SEPP operation planning",
       "file": "projection/internal/annualSeppDistributions.ts",
-      "lines": [90, 184],
-      "note": "The corpus reaches owned IRA and employer-plan rows, inherited S2 pre/post-election gating, active and inactive series, accepted and refused separation boundaries, RMD and amortization methods, new and reused amortization cache values, duplicate ids, distribution and sub-cent suppression paths, and deferred IRA character. Four cold sub-line regions remain: line 104's primary-owner fallback and line 170's corresponding raw null owner are supported ownerless-account shapes covered by helper tests; line 106's dead-owner `continue` is a branch-level corpus gap; line 124's zero fallback is defensive because the annual pass constructs startOfYearBalance from every balance row before calling the helper. Every physical line containing those operands is nevertheless reached."
+      "lines": [
+        90,
+        184
+      ],
+      "note": "The corpus reaches owned IRA and employer-plan rows, inherited S2 pre/post-election gating, active and inactive series, accepted and refused separation boundaries, RMD and amortization methods, new and reused amortization cache values, duplicate ids, distribution and sub-cent suppression paths, and deferred IRA character. Four cold sub-line regions remain: line 104's primary-owner fallback and line 170's corresponding raw null owner are supported ownerless-account shapes covered by helper tests; line 106's dead-owner `continue` is a branch-level corpus gap; line 124's zero fallback is defensive because the annual pass constructs startOfYearBalance from every balance row before calling the helper. Every physical line containing those operands is nevertheless reached.",
+      "anchors": [
+        {
+          "line": 90,
+          "text": "const operations: AnnualSeppOperation[] = []"
+        },
+        {
+          "line": 137,
+          "text": "'amortization',"
+        },
+        {
+          "line": 184,
+          "text": "return { operations, total }"
+        }
+      ]
     },
     {
       "id": "E.callsite",
       "label": "SEPP operation application and effect publication",
       "file": "projection/simulate.ts",
-      "lines": [4464, 4527],
+      "lines": [
+        4430,
+        4493
+      ],
+      "anchors": [
+        {
+          "line": 4430,
+          "text": "const seppPlan = annualSeppDistributions({"
+        },
+        {
+          "line": 4441,
+          "text": "const seppTotal = seppPlan.total"
+        },
+        {
+          "line": 4442,
+          "text": "for (const operation of seppPlan.operations) {"
+        },
+        {
+          "line": 4452,
+          "text": "recordAnnualRetirementRuntimeOccurrence({"
+        },
+        {
+          "line": 4484,
+          "text": "deferredSeppDistributions.push({"
+        },
+        {
+          "line": 4493,
+          "text": "}"
+        }
+      ],
       "note": "The corpus reaches cache writes and distributions, ordered balance mutation, runtime occurrence/application publication, annual cash-flow indexing, and deferred Form 8606 character. Any optional-chain or compound-condition gaps reported by JavaScript coverage are cold sub-line regions rather than cold whole lines."
     }
   ],

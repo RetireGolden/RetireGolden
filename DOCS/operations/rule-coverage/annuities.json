@@ -20,6 +20,7 @@
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/params/index.ts",
         "packages/engine/src/projection/annuityForms.ts",
+        "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -51,11 +52,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
+          "functions": [
+            {
+              "name": "annualAnnuityPurchaseFunding",
+              "line": 71
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -331,7 +341,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
