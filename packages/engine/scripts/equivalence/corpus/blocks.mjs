@@ -52,7 +52,7 @@
  * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`,
  * `scripts/equivalence/specs/simulate-contributions-boundary.json`,
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`,
- * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`, and
+ * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`,
  * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`, and
  * `scripts/equivalence/specs/simulate-owner-rmd.json`
  * are the

@@ -40,7 +40,7 @@ export type DeferredFirstRmdOperation =
     }>
 
 export interface AnnualOwnerRmdPlanInput {
-  /** One aggregate live row per compatible logical account ID, in first-ID order. */
+  /** Required contract: one aggregate live row per logical ID; simulatePlan supplies annualLogicalBalanceLedger.liveStates(), and other callers must group duplicate physical rows first. Repeated IDs are rejected rather than sharing RMD state. */
   readonly balances: readonly OwnerRmdLogicalBalance[]
   /** Aggregate prior-Dec-31 balance by logical account ID. */
   readonly startOfYearBalance: ReadonlyMap<string, number>

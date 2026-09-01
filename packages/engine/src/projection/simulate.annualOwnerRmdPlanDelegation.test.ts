@@ -44,20 +44,20 @@ vi.mock('./internal/annualOwnerRmdPlan.js', async (importOriginal) => {
       }
       const hostileTake = {
         valueOf: () => {
-        const observed = input.deferredFirstRmdByApplicablePlan.get(applicablePlanKey)
-        const operationCheck = {
-          year: input.year,
-          applicablePlanKey,
-          observedExactSetValue: observed === deferredValue,
-          observedDeletedValue: observed === undefined,
-        }
-        seam.downstreamOperationChecks.push(operationCheck)
-        if (
-          (input.year === 2026 && !operationCheck.observedExactSetValue) ||
-          (input.year === 2027 && !operationCheck.observedDeletedValue)
-        ) {
-          throw new Error('simulatePlan consumed owner-RMD rows before applying ordered deferral operations')
-        }
+          const observed = input.deferredFirstRmdByApplicablePlan.get(applicablePlanKey)
+          const operationCheck = {
+            year: input.year,
+            applicablePlanKey,
+            observedExactSetValue: observed === deferredValue,
+            observedDeletedValue: observed === undefined,
+          }
+          seam.downstreamOperationChecks.push(operationCheck)
+          if (
+            (input.year === 2026 && !operationCheck.observedExactSetValue) ||
+            (input.year === 2027 && !operationCheck.observedDeletedValue)
+          ) {
+            throw new Error('simulatePlan consumed owner-RMD rows before applying ordered deferral operations')
+          }
           return take
         },
       } as unknown as number
