@@ -90,8 +90,9 @@ describe('annualHealthcareExpenses', () => {
     const result = run(plan, peopleStates)
 
     expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([12, 6])
-    // 42 U.S.C. 1395p(d) centers the initial-enrollment period on the month of
-    // first eligibility. This planning proxy starts Medicare in the birth month:
+    // 42 U.S.C. 1395c makes age-65 entitlement run in monthly periods, while
+    // 42 U.S.C. 1395p(d) centers initial enrollment on first eligibility. This
+    // planning proxy therefore starts Medicare in the birth month:
     // p1 has 12 pre-65 months; p2 turns 65 in July and therefore has the
     // discriminating birthMonth - 1 = 6 Marketplace months, not a full-year
     // age flip or the seven months produced by starting after the birth month.
