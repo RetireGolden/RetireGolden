@@ -19,17 +19,17 @@
  * carrying the ledger payload for that payment.
  *
  * WHAT IT REFUSES: it will not sum across rows, and it will not write anything
- * the inlined phase wrote. The three accumulators — `incomes.wages`,
- * `ordinaryIncome` and the `wagesByPerson` map — and the `recordWages` call all
- * stay in `simulatePlan`'s year scope. Only ONE of the three folds can move a
- * number under re-association, and it is worth naming which, because the other
- * two cannot:
+ * the inlined phase wrote. `annualIncomeSetup` owns the three accumulators —
+ * `incomes.wages`, `ordinaryIncome` and the `wagesByPerson` map — and forwards
+ * the `recordWages` call at each original transaction point. Only ONE of the
+ * three folds can move a number under re-association, and it is worth naming
+ * which, because the other two cannot:
  *
  *   - `ordinaryIncome` is the LIVE one. Its only earlier writer in the year is
- *     the distributed-yield pass (`simulate.ts`), so a plan with a yielding
- *     taxable account enters this phase with a non-zero base, and there
- *     `B + a + b` is not in general `B + (a + b)` in IEEE-754. Measured over
- *     the 77-member differential corpus: of 9788 year-runs, 2184 produce at
+ *     the distributed-yield pass (`annualIncomeSetup.ts`), so a plan with a
+ *     yielding taxable account enters this phase with a non-zero base, and
+ *     there `B + a + b` is not in general `B + (a + b)` in IEEE-754.
+ *     Measured over the 77-member differential corpus: of 9788 year-runs, 2184 produce at
  *     least one wage row, 364 produce two or more onto a non-zero base, and in
  *     104 of them pre-summing the rows before the fold lands on a different
  *     double. Injecting exactly that pre-sum moved 20 of 308 corpus entries,
@@ -44,9 +44,9 @@
  *     and this file does not claim one does.
  *   - The recorder is a sink, not an accumulator.
  *
- * Returning rows and letting the caller fold them one at a time keeps every
- * floating-point operation identical and identically ordered to the inlined
- * phase this replaces, at every base.
+ * Returning rows and letting `annualIncomeSetup` fold them one at a time keeps
+ * every floating-point operation identical and identically ordered to the
+ * inlined phase this replaces, at every base.
  *
  * TWO PERSON LOOKUPS THAT LOOK REDUNDANT AND ARE NOT. `personById` is a Map
  * (LAST wins on a duplicate id) and `stateOf` is a `find` over an array (FIRST
@@ -65,12 +65,12 @@
  * result, so the helper had to reproduce that visibility itself. This phase's
  * only in-loop write to shared state is `wagesByPerson`, nothing it computes
  * reads that map back — `amount` depends on `annualGross`, `raiseFactor` and
- * `inflFactor` and on nothing else — and the fold stays at the call site
- * anyway, so the per-person left-to-right accumulation order is preserved
- * exactly. The helper writes no map, no `BalanceState` and no cross-year
- * object, and holds no module-scope state, so it is safe under the optimizer's
- * and Monte Carlo's repeated re-entry into `simulatePlan` against the same
- * `Plan` object.
+ * `inflFactor` and on nothing else — and the fold stays in
+ * `annualIncomeSetup`, so the per-person left-to-right accumulation order is
+ * preserved exactly. The helper writes no map, no `BalanceState` and no
+ * cross-year object, and holds no module-scope state, so it is safe under the
+ * optimizer's and Monte Carlo's repeated re-entry into `simulatePlan` against
+ * the same `Plan` object.
  *
  * FOUR THINGS THE LIFT DELIBERATELY DID NOT IMPROVE:
  *

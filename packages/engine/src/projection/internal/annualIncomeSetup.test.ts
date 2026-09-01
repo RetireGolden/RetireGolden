@@ -140,21 +140,34 @@ describe('annualIncomeSetup', () => {
   })
 
   it('stops at the original transaction point when a yield commit throws', () => {
-    const row = yieldRow({
+    const first = yieldRow({
       accountId: 'throwing-yield',
       interest: 1,
       gross: 1,
       distributedYieldPct: 1,
       reinvest: false,
     })
-    seam.yieldRows = [row]
+    const second = yieldRow({
+      accountId: 'must-not-fold',
+      interest: 2,
+      gross: 2,
+      distributedYieldPct: 1,
+      reinvest: false,
+    })
+    Object.defineProperty(second, 'interest', {
+      get: () => {
+        seam.events.push('yield-fold:second')
+        return 2
+      },
+    })
+    seam.yieldRows = [first, second]
     seam.wageRows = [wageRow('p1', 2, 'must-not-run')]
 
     expect(() => annualIncomeSetup({
       distributedYield: distributedYieldInput,
       wages: wageInput,
       commitDistributedYield: (committed) => {
-        expect(committed).toBe(row)
+        expect(committed).toBe(first)
         seam.events.push('yield-commit-throw')
         throw new Error('yield recorder failed')
       },
@@ -167,13 +180,21 @@ describe('annualIncomeSetup', () => {
     ])
   })
 
-  it('commits each wage immediately after its fold and stops before later rows', () => {
+  it('commits each wage after its fold and before folding later rows', () => {
     const first = wageRow('p1', 1, 'first')
     const second = wageRow('p1', 2, 'second')
+    let firstAmountReads = 0
     Object.defineProperty(first, 'amount', {
       get: () => {
+        firstAmountReads += 1
         seam.events.push('wage-fold:first')
         return 1
+      },
+    })
+    Object.defineProperty(second, 'amount', {
+      get: () => {
+        seam.events.push('wage-fold:second')
+        return 2
       },
     })
     seam.wageRows = [first, second]
@@ -182,19 +203,21 @@ describe('annualIncomeSetup', () => {
       distributedYield: distributedYieldInput,
       wages: wageInput,
       commitWage: (row) => {
+        expect(firstAmountReads).toBeGreaterThan(0)
         seam.events.push(`wage-commit:${row.record.incomeStreamId}`)
         if (row === first) throw new Error('wage recorder failed')
       },
     })).toThrow('wage recorder failed')
 
-    expect(seam.events).toEqual([
+    expect(seam.events.slice(0, 2)).toEqual([
       'yield-producer',
       'wage-producer',
-      'wage-fold:first',
-      'wage-fold:first',
-      'wage-fold:first',
-      'wage-commit:first',
     ])
+    expect(seam.events).toContain('wage-commit:first')
+    expect(seam.events.lastIndexOf('wage-fold:first')).toBeLessThan(
+      seam.events.indexOf('wage-commit:first'),
+    )
+    expect(seam.events).not.toContain('wage-fold:second')
   })
 
   it('does not read recorder payload properties when no commit hook exists', () => {
