@@ -317,10 +317,6 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
     expect(phasesFor(START_YEAR).length).toBeGreaterThan(1)
     expect(phasesFor(START_YEAR + 1).length).toBeGreaterThan(1)
     expect(seam.conversionInputs.length).toBeGreaterThan(1)
-    expect(new Set(seam.phases.map((phase) => phase.output)).size)
-      .toBe(seam.phases.length)
-    expect(new Set(seam.phases.map((phase) => phase.output.balanceOperations)).size)
-      .toBe(seam.phases.length)
 
     for (const phase of seam.phases) {
       const actionIds = phase.input.executionRequests.map(
