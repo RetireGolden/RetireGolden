@@ -134,7 +134,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         },
@@ -435,7 +435,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 543
+              "line": 542
             }
           ]
         }
@@ -502,7 +502,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         },
@@ -577,7 +577,7 @@
           "functions": [
             {
               "name": "planWithdrawals",
-              "line": 573
+              "line": 572
             }
           ]
         },
@@ -648,7 +648,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         },
@@ -922,7 +922,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         },
@@ -1425,7 +1425,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -1497,7 +1497,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -1573,7 +1573,8 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
-        "packages/engine/src/actions/taxableWithdrawalCharacter.ts"
+        "packages/engine/src/actions/taxableWithdrawalCharacter.ts",
+        "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts"
       ],
       "implementations": [
         {
@@ -1582,6 +1583,15 @@
             {
               "name": "classifyIndividuallyOwnedTaxableWithdrawal",
               "line": 405
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
+          "functions": [
+            {
+              "name": "annualAnnuityPurchaseFunding",
+              "line": 78
             }
           ]
         }
@@ -1676,7 +1686,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -1772,7 +1782,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -1853,7 +1863,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
@@ -1910,7 +1920,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 733
+              "line": 732
             }
           ]
         }
