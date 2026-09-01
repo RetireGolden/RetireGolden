@@ -779,11 +779,13 @@ export const charitableDistributionRecords = {
     implementedBy: [
       'packages/engine/src/actions/qcdDeductibleContributionOffset.ts',
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      'packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
       'packages/engine/src/actions/qcdDeductibleContributionOffset.ts#applyIrc408d8AContributionOffset',
+      'packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts#annualLegacyQcdOwnerCharacterPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -820,8 +822,12 @@ export const charitableDistributionRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts#annualLegacyQcdOwnerCharacterPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

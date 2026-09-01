@@ -272,9 +272,19 @@
       "verifiedOn": "2026-08-07",
       "dueOn": "2026-12-05",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
+          "functions": [
+            {
+              "name": "annualLegacyQcdOwnerCharacterPlan",
+              "line": 78
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -357,6 +367,7 @@
       "implementedBy": [
         "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
         "packages/engine/src/actions/qcdDeductibleContributionOffset.ts",
+        "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -375,6 +386,15 @@
             {
               "name": "applyIrc408d8AContributionOffset",
               "line": 52
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
+          "functions": [
+            {
+              "name": "annualLegacyQcdOwnerCharacterPlan",
+              "line": 78
             }
           ]
         },
