@@ -81,82 +81,82 @@
       "id": "W.callsite.invokeAndEvidenceSelect",
       "label": "apply-flow invocation and evidence-operation selection",
       "file": "projection/simulate.ts",
-      "lines": [8996, 9006],
+      "lines": [8670, 8680],
       "anchors": [
-        { "line": 8996, "text": "const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({" },
-        { "line": 9003, "text": "})" },
-        { "line": 9004, "text": "for (const write of withdrawalApplyFlowPlan.evidenceWrites) {" },
-        { "line": 9006, "text": "if (evidence === undefined || evidence.accountId !== write.accountId) {" }
+        { "line": 8670, "text": "const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({" },
+        { "line": 8677, "text": "})" },
+        { "line": 8678, "text": "for (const write of withdrawalApplyFlowPlan.evidenceWrites) {" },
+        { "line": 8680, "text": "if (evidence === undefined || evidence.accountId !== write.accountId) {" }
       ],
-      "note": "The evidence-position throw body on lines 9007-9010 is excluded: the helper enumerates the supplied evidence array and copies each row's account id. Hostile delegation tests prove the invariant."
+      "note": "The evidence-position throw body on lines 8681-8684 is excluded: the helper enumerates the supplied evidence array and copies each row's account id. Hostile delegation tests prove the invariant."
     },
     {
       "id": "W.callsite.evidenceWrite",
       "label": "inherited voluntary-amount mutation",
       "file": "projection/simulate.ts",
-      "lines": [9011, 9012],
+      "lines": [8685, 8686],
       "anchors": [
-        { "line": 9011, "text": "evidence.voluntaryAmount = write.voluntaryAmount" },
-        { "line": 9012, "text": "}" }
+        { "line": 8685, "text": "evidence.voluntaryAmount = write.voluntaryAmount" },
+        { "line": 8686, "text": "}" }
       ]
     },
     {
       "id": "W.callsite.balanceSelect",
       "label": "balance-operation iteration and positional lookup",
       "file": "projection/simulate.ts",
-      "lines": [9013, 9017],
+      "lines": [8687, 8691],
       "anchors": [
-        { "line": 9013, "text": "for (const operation of withdrawalApplyFlowPlan.balanceOperations) {" },
-        { "line": 9014, "text": "const state = balances[operation.balanceIndex]" },
-        { "line": 9015, "text": "// Planning and commit are intentionally adjacent. Fail before applying a" },
-        { "line": 9017, "text": "if (" }
+        { "line": 8687, "text": "for (const operation of withdrawalApplyFlowPlan.balanceOperations) {" },
+        { "line": 8688, "text": "const state = balances[operation.balanceIndex]" },
+        { "line": 8689, "text": "// Planning and commit are intentionally adjacent. Fail before applying a" },
+        { "line": 8691, "text": "if (" }
       ],
-      "note": "The position/source-before guard and throw on lines 9018-9025 are excluded because the helper enumerates the same balance positions and advances its repeated-object shadow in original mutation order. Hostile delegation tests cover wrong position and wrong source balance."
+      "note": "The position/source-before guard and throw on lines 8692-8699 are excluded because the helper enumerates the same balance positions and advances its repeated-object shadow in original mutation order. Hostile delegation tests cover wrong position and wrong source balance."
     },
     {
       "id": "W.callsite.runtimeOccurrence",
       "label": "traditional runtime occurrence and owned-IRA application selection",
       "file": "projection/simulate.ts",
-      "lines": [9026, 9054],
+      "lines": [8700, 8728],
       "anchors": [
-        { "line": 9026, "text": "const taken = operation.taken" },
-        { "line": 9036, "text": "if (operation.recordsTraditionalRuntimeOccurrence) {" },
-        { "line": 9041, "text": "recordAnnualRetirementRuntimeOccurrence({" },
-        { "line": 9051, "text": "if (operation.recordsOwnedIraApplication) {" },
-        { "line": 9054, "text": "}" }
+        { "line": 8700, "text": "const taken = operation.taken" },
+        { "line": 8710, "text": "if (operation.recordsTraditionalRuntimeOccurrence) {" },
+        { "line": 8715, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 8725, "text": "if (operation.recordsOwnedIraApplication) {" },
+        { "line": 8728, "text": "}" }
       ]
     },
     {
       "id": "W.callsite.taxableInvariant",
       "label": "taxable-sale completeness check",
       "file": "projection/simulate.ts",
-      "lines": [9055, 9055],
+      "lines": [8729, 8729],
       "anchors": [
-        { "line": 9055, "text": "if (operation.taxableSaleMissing) {" }
+        { "line": 8729, "text": "if (operation.taxableSaleMissing) {" }
       ],
-      "note": "The failure body on line 9056 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
+      "note": "The failure body on line 8730 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
     },
     {
       "id": "W.callsite.apply",
       "label": "basis and balance mutation",
       "file": "projection/simulate.ts",
-      "lines": [9058, 9061],
+      "lines": [8732, 8735],
       "anchors": [
-        { "line": 9058, "text": "if (operation.costBasisAfter !== null) {" },
-        { "line": 9059, "text": "state.costBasis = operation.costBasisAfter" },
-        { "line": 9061, "text": "state.balance = operation.sourceBalanceAfter" }
+        { "line": 8732, "text": "if (operation.costBasisAfter !== null) {" },
+        { "line": 8733, "text": "state.costBasis = operation.costBasisAfter" },
+        { "line": 8735, "text": "state.balance = operation.sourceBalanceAfter" }
       ]
     },
     {
       "id": "W.callsite.application",
       "label": "owned-IRA runtime debit application",
       "file": "projection/simulate.ts",
-      "lines": [9062, 9074],
+      "lines": [8736, 8748],
       "anchors": [
-        { "line": 9062, "text": "if (ownedIraProducerOccurrenceKey !== null) {" },
-        { "line": 9063, "text": "recordAnnualRetirementRuntimeApplication({" },
-        { "line": 9072, "text": "})" },
-        { "line": 9074, "text": "}" }
+        { "line": 8736, "text": "if (ownedIraProducerOccurrenceKey !== null) {" },
+        { "line": 8737, "text": "recordAnnualRetirementRuntimeApplication({" },
+        { "line": 8746, "text": "})" },
+        { "line": 8748, "text": "}" }
       ]
     }
   ],
