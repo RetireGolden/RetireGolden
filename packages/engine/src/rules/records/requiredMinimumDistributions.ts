@@ -107,11 +107,13 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
       'packages/engine/src/projection/internal/annualSeppDistributions.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts#evaluateBeneficiarySpousalElection',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts#evaluateBeneficiaryTraditionalIraDeathPenalty',
       'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
@@ -300,11 +302,13 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#followsOwnerRmds',
       'packages/engine/src/strategies/inheritedIra.ts#inheritedTenYearDeadline',
@@ -344,11 +348,13 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/rmd/rmd.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
@@ -682,10 +688,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
       'packages/engine/src/strategies/inheritedIra.ts#inheritedForcedAmount',
@@ -767,12 +775,14 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/rmd/applicableAge.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/model/plan.ts#inheritedAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/applicableAge.ts#applicableAgeAttainYears',
@@ -812,10 +822,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
       'packages/engine/src/strategies/inheritedIra.ts#inheritedRequirementForYear',
@@ -910,11 +922,15 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-21',
     implementedBy: [
+      'packages/engine/src/rmd/rmdApplicablePlanForAccount.ts',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/rmd/rmdShortfallExcise.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/rmd/rmdApplicablePlanForAccount.ts#rmdApplicablePlanForAccount',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise',
@@ -980,12 +996,12 @@ export const requiredMinimumDistributionRecords = {
   'treas-reg-1-408-8-projection-sub-cent-distribution-discharge': {
     title: 'Required distribution below one cent is discharged rather than distributed',
     statement:
-      'Treas. Reg. 1.408-8(e)(1)(i) requires the required minimum distribution to be calculated separately for each IRA and the sum of those separately calculated amounts to be distributed. Not modelled: an amount that rounds to zero whole cents is not distributed at all. The projection skips the movement entirely — no balance change, no runtime occurrence, and nothing added to the year published required-distribution figure — and treats the undistributed quantum as settled rather than as an outstanding shortfall. The deviation is bounded by one cent per owned account per year and arises only where a balance has already fallen below a cent, which happens when an earlier exact-cent movement drained the account and left the fraction the ledger cannot express. The same discharge applies to a 72(t) series payment, an inherited-account forced distribution, an aggregate charitable distribution, an aggregate Roth conversion, and a need-based withdrawal, each on the same ground.',
+      'Treas. Reg. 1.408-8(e)(1)(i) requires the required minimum distribution to be calculated separately for each IRA and the sum of those separately calculated amounts to be distributed. Not modelled for an owned-IRA requirement: an amount that rounds to zero whole cents is not distributed at all. The projection skips the movement entirely — no balance change, no runtime occurrence, and nothing added to the year published required-distribution figure — and treats the undistributed quantum as settled rather than as an outstanding owner-side reserve. The deviation is bounded below half a cent per owned account per year and arises only where a balance has already fallen below a cent, which happens when an earlier exact-cent movement drained the account and left the fraction the ledger cannot express. The same discharge applies to a 72(t) series payment, an aggregate charitable distribution, an aggregate Roth conversion, and a need-based withdrawal, each on the same ground. It does not apply to an inherited §4974 obligation: an inherited amount that produces no movement remains an excise shortfall.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'Direction of error: permissive, and bounded at under one cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the DISCHARGE. Two seams downstream read an undistributed remainder as proof that every one of the owner aggregated IRAs was exhausted: the conversion executor Treas. Reg. 1.408A-4 A-6(b) reserve, which refuses a conversion while a required amount is outstanding, and a named charitable gift RMD coordination, which reports how much of the requirement the gift satisfied. A residue too small to move is not that proof, so routing it to those seams would refuse lawful conversions and misreport lawful gifts for as long as the residue survived, which is permanently. It is therefore treated as settled and never reaches them. What is NOT modelled here and must not be read into it: the section 4974 excise on a shortfall is not priced anywhere in this engine at all, so no penalty is understated by this record in particular — that gap is registered on its own terms as irc-4974-rmd-shortfall-excise-tax. The retirement path is an exact-cent balance ledger, which would remove the residue rather than manage it; until then the fixture pins the required amount the engine computes against the zero it distributes.',
+      'Direction of error: permissive, and bounded below half a cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the owner-side DISCHARGE. Reserve and QCD-coordination seams do not read that zero movement as an outstanding owned-IRA requirement, because doing so would refuse lawful conversions and misreport lawful gifts under this registered approximation. The convention stops at the inherited §4974 boundary. There the planner aggregates required amounts and actual movements by applicable plan, reports zero distributed for every zero-movement residue, and the excise calculator prices the resulting shortfall. The retirement path is an exact-cent balance ledger, which would remove the owner-side residue rather than manage it; until then the fixtures pin the bounded owner-side deviation and the inherited shortfall separately.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1000,8 +1016,8 @@ export const requiredMinimumDistributionRecords = {
     verifiedOn: '2026-08-05',
     implementedBy: [
       // Where the draws are sized and the discharge decided: the forced
-      // distribution block, the 72(t) and inherited loops, the aggregate gift
-      // and conversion sweeps, and the need-based withdrawal planner.
+      // distribution block, aggregate gift and conversion sweeps, and the
+      // need-based withdrawal planner.
       'packages/engine/src/projection/simulate.ts',
       // Where an annual SEPP payment applies the same no-ledger-cent discharge.
       'packages/engine/src/projection/internal/annualSeppDistributions.ts',
@@ -1266,10 +1282,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#inheritedRequirementForYear',
     ],
@@ -1315,11 +1333,13 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/model/plan.ts#inheritedBeneficiarySchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
@@ -1354,11 +1374,13 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/model/plan.ts#inheritedAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
@@ -1399,11 +1421,13 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/model/plan.ts#inheritedBeneficiarySchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
@@ -1674,11 +1698,13 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#isTreatAsOwnEffective',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',

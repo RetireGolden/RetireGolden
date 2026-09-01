@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -74,6 +74,7 @@
       "dueOn": "2027-08-25",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
@@ -88,11 +89,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -174,7 +184,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -249,7 +259,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -321,7 +331,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -520,16 +530,26 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -599,17 +619,27 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -688,16 +718,26 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -799,7 +839,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -871,7 +911,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -946,7 +986,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -989,11 +1029,22 @@
       "verifiedOn": "2026-08-21",
       "dueOn": "2027-08-21",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/rmd/rmdApplicablePlanForAccount.ts",
         "packages/engine/src/rmd/rmdShortfallExcise.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
           "functions": [
@@ -1008,7 +1059,16 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/rmdApplicablePlanForAccount.ts",
+          "functions": [
+            {
+              "name": "rmdApplicablePlanForAccount",
+              "line": 22
             }
           ]
         },
@@ -1132,16 +1192,26 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -1394,7 +1464,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -1466,6 +1536,7 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/rmd/applicableAge.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
@@ -1481,11 +1552,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -1767,7 +1847,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -1889,7 +1969,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -1976,7 +2056,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -2066,7 +2146,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -2115,6 +2195,7 @@
       "dueOn": "2027-08-25",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
@@ -2129,11 +2210,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -2267,7 +2357,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -2332,11 +2422,21 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/rmd/rmd.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
           "functions": [
@@ -2351,7 +2451,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -2537,17 +2637,27 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -2650,6 +2760,7 @@
       "implementedBy": [
         "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
         "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts",
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/internal/annualSeppDistributions.ts"
       ],
       "implementations": [
@@ -2668,6 +2779,15 @@
             {
               "name": "evaluateBeneficiaryTraditionalIraDeathPenalty",
               "line": 296
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
             }
           ]
         },
@@ -2766,7 +2886,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -2865,7 +2985,7 @@
       "title": "Required distribution below one cent is discharged rather than distributed",
       "classification": "approximated",
       "errorDirection": "understatesTax",
-      "conventionRationale": "Direction of error: permissive, and bounded at under one cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the DISCHARGE. Two seams downstream read an undistributed remainder as proof that every one of the owner aggregated IRAs was exhausted: the conversion executor Treas. Reg. 1.408A-4 A-6(b) reserve, which refuses a conversion while a required amount is outstanding, and a named charitable gift RMD coordination, which reports how much of the requirement the gift satisfied. A residue too small to move is not that proof, so routing it to those seams would refuse lawful conversions and misreport lawful gifts for as long as the residue survived, which is permanently. It is therefore treated as settled and never reaches them. What is NOT modelled here and must not be read into it: the section 4974 excise on a shortfall is not priced anywhere in this engine at all, so no penalty is understated by this record in particular — that gap is registered on its own terms as irc-4974-rmd-shortfall-excise-tax. The retirement path is an exact-cent balance ledger, which would remove the residue rather than manage it; until then the fixture pins the required amount the engine computes against the zero it distributes.",
+      "conventionRationale": "Direction of error: permissive, and bounded below half a cent per owned account per year. The undistributed fraction stays in the account rather than entering income, so ordinary income is understated by it and the year-end balance overstated by the same amount, and both persist for as long as the residue does. Nothing compounds: the residue never grows, and the fraction is below the smallest unit any published figure carries. What the convention buys is that the movement is representable at all. A fraction of a cent is not transferable in currency, no custodian can move it, and the exact-cent runtime journal has no way to hold a gross that rounds to nothing — so the alternatives were to record an occurrence for a movement that did not happen, or to move dollars with no occurrence explaining them, and the journal contract that every movement is explained forbids the second while the first is a false record. The half that is a decision rather than a consequence is the owner-side DISCHARGE. Reserve and QCD-coordination seams do not read that zero movement as an outstanding owned-IRA requirement, because doing so would refuse lawful conversions and misreport lawful gifts under this registered approximation. The convention stops at the inherited §4974 boundary. There the planner aggregates required amounts and actual movements by applicable plan, reports zero distributed for every zero-movement residue, and the excise calculator prices the resulting shortfall. The retirement path is an exact-cent balance ledger, which would remove the owner-side residue rather than manage it; until then the fixtures pin the bounded owner-side deviation and the inherited shortfall separately.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2902,7 +3022,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         }
@@ -2998,7 +3118,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -3077,6 +3197,7 @@
       "dueOn": "2027-08-25",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
@@ -3091,11 +3212,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 107
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -3162,7 +3292,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -3223,7 +3353,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
@@ -3284,7 +3414,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 921
+              "line": 945
             }
           ]
         },
