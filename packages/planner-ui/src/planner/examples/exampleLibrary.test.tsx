@@ -54,7 +54,7 @@ describe('example library page', () => {
     expect(container.querySelectorAll('.example-card')).toHaveLength(3)
     expect(container.textContent).toContain('Example couple')
     const browse = Array.from(container.querySelectorAll('button')).find((b) =>
-      /Browse all \d+ examples/.test(b.textContent ?? ''),
+      /Show all \d+ examples/.test(b.textContent ?? ''),
     )
     expect(browse, 'a Browse-all control should be one interaction away').toBeDefined()
     expect(browse!.getAttribute('aria-expanded')).toBe('false')
@@ -63,7 +63,7 @@ describe('example library page', () => {
   it('reveals all examples one click away and remembers the preference', async () => {
     await renderExamples()
     const browse = Array.from(container.querySelectorAll('button')).find((b) =>
-      /Browse all \d+ examples/.test(b.textContent ?? ''),
+      /Show all \d+ examples/.test(b.textContent ?? ''),
     )!
     await act(async () => {
       browse.click()
@@ -112,7 +112,7 @@ describe('example library page', () => {
     }
 
     const browse = Array.from(container.querySelectorAll('button')).find((b) =>
-      /Browse all \d+ examples/.test(b.textContent ?? ''),
+      /Show all \d+ examples/.test(b.textContent ?? ''),
     )!
     await act(async () => {
       browse.click()

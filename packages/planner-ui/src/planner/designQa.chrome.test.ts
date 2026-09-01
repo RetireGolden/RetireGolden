@@ -271,6 +271,35 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(rule('.field-label-row > .help-tip')).toMatch(/vertical-align/)
   })
 
+  it('the plan-error card aligns its actions and details with its centered prose (#444)', () => {
+    expect(rule('.card.empty-state .picker-actions')).toMatch(/justify-content:\s*center/)
+    const details = rule('.card.empty-state .ss-explainer')
+    expect(details).toMatch(/margin-left:\s*auto/)
+    expect(details).toMatch(/margin-right:\s*auto/)
+    expect(details).toMatch(/text-align:\s*left/)
+  })
+
+  it('prose links get the app focus ring at zero specificity (#450)', () => {
+    const body = rule(':where(a):focus-visible', indexCss)
+    expect(body).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(body).toMatch(/outline-offset:\s*2px/)
+  })
+
+  it('destructive actions on persisted items are --bad at rest: plan cards and saved scenarios (#312, #460)', () => {
+    const body = rule('.plan-card-actions .btn-ghost.btn-ghost-danger,\n.scenarios-table .btn-ghost.btn-ghost-danger')
+    expect(body).toMatch(/color:\s*var\(--bad\)/)
+    // A bare ghost-danger (an unsaved form row's Remove) is not in that list.
+    expect(css).not.toMatch(/^\.btn-ghost\.btn-ghost-danger\s*\{[^}]*--bad/m)
+  })
+
+  it('the Learn-about-this-screen cluster is styled by the globally loaded sheet (#446)', () => {
+    // learn.css loads only on /learn routes; the cluster renders on plan screens.
+    expect(rule('.learn-screen')).toMatch(/margin-top/)
+    expect(rule('.learn-screen-list')).toMatch(/display:\s*flex/)
+    expect(learnCss).not.toMatch(/^\.learn-screen\s*\{/m)
+    expect(learnCss).not.toMatch(/^\.learn-screen-title\s*\{/m)
+  })
+
   it('text, select, and affixed inputs share one height token', () => {
     const affix = rule('.input-affix')
     expect(affix).toMatch(/min-height:\s*var\(--control-height\)/)

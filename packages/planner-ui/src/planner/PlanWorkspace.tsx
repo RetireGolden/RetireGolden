@@ -24,33 +24,10 @@ import { fmtMoneyCompact } from './format'
 import { successBand } from './successBand'
 import { useMcSuccessRate } from './useMcSuccessRate'
 import { useProjection } from './useProjection'
+import { SECTION_TITLES } from './sectionTitles'
 
 const railClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'rail-link rail-link--active' : 'rail-link')
 
-/** Section labels by route segment — drives the tab title and the page h1. */
-const SECTION_TITLES: Record<string, string> = {
-  household: 'Household',
-  'social-security': 'Social Security',
-  accounts: 'Accounts',
-  insurance: 'Insurance',
-  income: 'Income',
-  'income-floor': 'Income floor',
-  spending: 'Spending',
-  strategy: 'Strategy',
-  assumptions: 'Assumptions',
-  insights: 'Insights',
-  optimize: 'Roth & Tax Optimizer',
-  'spending-solver': 'How much can I spend?',
-  'social-security-analysis': 'Social Security Optimizer',
-  results: 'Results',
-  'monte-carlo': 'Monte Carlo',
-  scenarios: 'Scenarios',
-  'household-map': 'Household map',
-  survivor: 'Survivor transition',
-  relocation: 'Relocation Compare',
-  report: 'Report',
-  'assumptions-card': 'Assumptions card',
-}
 
 /** /plan/:planId/<section>[/...] — the segment after the plan id. */
 function sectionSegmentOf(pathname: string): string | undefined {

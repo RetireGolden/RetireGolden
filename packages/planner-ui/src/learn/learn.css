@@ -229,35 +229,8 @@
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
-/* "Learn about this screen" cluster placed on planner screens. */
-.learn-screen {
-  margin-top: 1.25rem;
-  padding-top: 0.85rem;
-  border-top: 1px dashed var(--border);
-}
-
-.learn-screen-title {
-  display: block;
-  font-size: 0.74rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  font-weight: 600;
-  margin-bottom: 0.4rem;
-}
-
-.learn-screen-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 1.1rem;
-}
-
-.learn-screen-list li {
-  margin: 0;
-}
+/* The "Learn about this screen" cluster's rules live in planner/planner.css:
+   it renders on plan screens, which never load this sheet. */
 
 /* --- Article ---------------------------------------------------------------*/
 .learn-back {

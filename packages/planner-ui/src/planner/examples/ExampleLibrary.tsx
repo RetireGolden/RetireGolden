@@ -172,6 +172,16 @@ export function ExampleLibrary({
         ))}
       </div>
 
+      {expanded ? (
+        <div className="plan-grid" id="examples-full-grid">
+          {REST.map((example) => (
+            <ExampleCard key={example.id} example={example} onNotice={onNotice} />
+          ))}
+        </div>
+      ) : null}
+
+      {/* One control, one vocabulary, after the rows it controls (#445): the
+          expanded state used to leave it stranded between the two grids. */}
       <div className="examples-browse-all">
         <button
           type="button"
@@ -180,17 +190,9 @@ export function ExampleLibrary({
           aria-controls="examples-full-grid"
           onClick={toggle}
         >
-          {expanded ? 'Show fewer examples' : `Browse all ${EXAMPLE_PLANS.length} examples`}
+          {expanded ? 'Show fewer examples' : `Show all ${EXAMPLE_PLANS.length} examples`}
         </button>
       </div>
-
-      {expanded ? (
-        <div className="plan-grid" id="examples-full-grid">
-          {REST.map((example) => (
-            <ExampleCard key={example.id} example={example} onNotice={onNotice} />
-          ))}
-        </div>
-      ) : null}
     </section>
   )
 }
