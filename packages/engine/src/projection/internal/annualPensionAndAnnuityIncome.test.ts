@@ -82,6 +82,8 @@ function annualInput(
     peopleStates,
     primaryPersonId: pat.id,
     lifeAgeOf: (person) => person.longevity.planningAge,
+    runtimeOccurrenceKey: (kind, ...binding) =>
+      JSON.stringify([kind, ...binding]),
     pack: packForYear(2026).pack,
     year: 2026,
     recordCashFlow: true,
@@ -147,6 +149,19 @@ describe('annualPensionAndAnnuityIncome', () => {
         source: 'private',
       },
     })
+
+    const ownerDiedBeforeStart = annualPensionAndAnnuityIncome({
+      ...annualInput(
+        [pension('private-pension', 1_000, 'private')],
+        [
+          { personId: pat.id, ageAttained: 63, alive: false, lifeAge: 59 },
+          { personId: sam.id, ageAttained: 63, alive: true, lifeAge: 95 },
+        ],
+      ),
+      lifeAgeOf: () => 59,
+    })
+    expect(ownerDiedBeforeStart.pensionIncome).toBe(0)
+    expect(ownerDiedBeforeStart.rows).toEqual([])
   })
 
   it('plans the Pub 939 exclusion write without mutating the supplied map', () => {
@@ -205,6 +220,8 @@ describe('annualPensionAndAnnuityIncome', () => {
       ...annualInput([annuity('qualified')]),
       annuityContractValue: contractValues,
       annuityContractPoolOwner: new Map([['annuity', pat.id]]),
+      runtimeOccurrenceKey: (kind, ...binding) =>
+        `sentinel:${kind}:${binding.join(':')}`,
     })
 
     // IRC 408(d)(2)(B) puts the full $10,000 payment into current ordinary
@@ -226,6 +243,8 @@ describe('annualPensionAndAnnuityIncome', () => {
         grossAmountPlanDollars: 10_000,
         contractValueAfter: 0,
         occurrence: expect.objectContaining({
+          producerOccurrenceKey:
+            'sentinel:annuityContractDistribution:annuity',
           kind: 'annuityContractDistribution',
           grossAmountPlanDollars: 10_000,
           ownerPersonId: pat.id,
@@ -233,6 +252,8 @@ describe('annualPensionAndAnnuityIncome', () => {
         }),
         application: expect.objectContaining({
           applicationKind: 'debit',
+          producerOccurrenceKey:
+            'sentinel:annuityContractDistribution:annuity',
           sourceBalanceBeforePlanDollars: 5_000,
           appliedAmountPlanDollars: 5_000,
           sourceBalanceAfterPlanDollars: 0,
@@ -243,19 +264,51 @@ describe('annualPensionAndAnnuityIncome', () => {
   })
 
   it('omits cash-flow records when capture is disabled without omitting effects', () => {
+    const nonqualified = {
+      ...annuity('nonQualified'),
+      id: 'nonqualified-annuity',
+    } satisfies Account
+    const qualified = {
+      ...annuity('qualified'),
+      id: 'qualified-annuity',
+    } satisfies Account
     const result = annualPensionAndAnnuityIncome({
       ...annualInput([
         pension('private-pension', 1_000, 'private'),
-        annuity('qualified'),
+        nonqualified,
+        qualified,
       ]),
       recordCashFlow: false,
-      annuityContractPoolOwner: new Map([['annuity', pat.id]]),
+      annuityInvestmentInContract: new Map([
+        ['nonqualified-annuity', 150_000],
+      ]),
+      annuityContractValue: new Map([['qualified-annuity', 5_000]]),
+      annuityContractPoolOwner: new Map([['qualified-annuity', pat.id]]),
     })
 
     expect(result.pensionIncome).toBe(12_000)
-    expect(result.annuityIncome).toBe(10_000)
-    expect(result.ordinaryIncome).toBe(22_000)
-    expect(result.rows.map((row) => row.record)).toEqual([null, null])
+    expect(result.annuityIncome).toBe(20_000)
+    expect(result.ordinaryIncome).toBeCloseTo(25_801.652892561982, 9)
+    expect(result.rows.map((row) => row.record)).toEqual([null, null, null])
+    expect(result.rows[1]).toEqual(expect.objectContaining({
+      kind: 'annuity',
+      accountId: 'nonqualified-annuity',
+      exclusionStateWrite: {
+        accountId: 'nonqualified-annuity',
+        value: {
+          ratio: 0.6198347107438017,
+          remaining: 143_801.65289256198,
+        },
+      },
+    }))
+    expect(result.rows[2]).toEqual(expect.objectContaining({
+      kind: 'annuity',
+      accountId: 'qualified-annuity',
+      contractDistribution: expect.objectContaining({
+        annuityAccountId: 'qualified-annuity',
+        contractValueAfter: 0,
+      }),
+    }))
     expect(result.qualifiedAnnuityPayments).toHaveLength(1)
   })
 })

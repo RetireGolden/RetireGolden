@@ -2467,11 +2467,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       withheldMonthsByPerson.set(write.personId, write.value)
     }
     for (const warning of socialSecurity.warnings) warnings.add(warning)
-    const {
-      socialSecurityStreams,
-      ssEarningsTestWithheld,
-      ssdiPaid,
-    } = socialSecurity
+    const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } =
+      socialSecurity
 
     const pensionAndAnnuity = annualPensionAndAnnuityIncome({
       accounts: plan.accounts,
@@ -2480,7 +2477,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       peopleStates,
       primaryPersonId: primary.id,
       lifeAgeOf,
-      pack, year,
+      runtimeOccurrenceKey,
+      pack,
+      year,
       recordCashFlow: yearSites !== null,
       opening: {
         annuityIncome: incomes.annuity,
@@ -2494,6 +2493,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       annuityContractValue,
       annuityContractPoolOwner,
     })
+
     incomes.annuity = pensionAndAnnuity.annuityIncome
     incomes.pension = pensionAndAnnuity.pensionIncome
     ordinaryIncome = pensionAndAnnuity.ordinaryIncome

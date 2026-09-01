@@ -35,10 +35,10 @@ vi.mock('./internal/annualPensionAndAnnuityIncome.js', async (importOriginal) =>
         observedPriorContractValue:
           input.annuityContractValue.get('ghost-annuity'),
       })
-      const producerOccurrenceKey = JSON.stringify([
+      const producerOccurrenceKey = input.runtimeOccurrenceKey(
         'annuityContractDistribution',
         'ghost-annuity',
-      ])
+      )
       return {
         annuityIncome: input.opening.annuityIncome + 1_200,
         pensionIncome: input.opening.pensionIncome + 2_400,
@@ -112,6 +112,7 @@ vi.mock('./internal/annualPensionAndAnnuityIncome.js', async (importOriginal) =>
 
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { cashAccount, singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
+import type { TaxYearInput } from './types.js'
 import { simulatePlan } from './simulate.js'
 
 describe('simulatePlan delegates annual pension and annuity income', () => {
@@ -125,11 +126,25 @@ describe('simulatePlan delegates annual pension and annuity income', () => {
       applyAcaCredit: false,
       medicareExtrasMonthlyPerPerson: 0,
     }
+    const stateTaxInputs = new Map<number, Readonly<{
+      privateRetirementIncome: number | undefined
+      publicPensionIncome: number | undefined
+    }>>()
+    const flatTax = createFlatTaxCalculator(0)
+    const taxCalculator = {
+      compute(input: TaxYearInput): number {
+        stateTaxInputs.set(input.year, {
+          privateRetirementIncome: input.privateRetirementIncome,
+          publicPensionIncome: input.publicPensionIncome,
+        })
+        return flatTax.compute(input)
+      },
+    }
 
     const result = simulatePlan(validatePlan(plan), {
       startYear: 2026,
       horizonEndYear: 2027,
-      taxCalculator: createFlatTaxCalculator(0),
+      taxCalculator,
       captureAnnualCashFlow: true,
     })
 
@@ -144,6 +159,16 @@ describe('simulatePlan delegates annual pension and annuity income', () => {
         observedPriorExclusionIdentity: true,
         observedPriorContractValue: 777,
       },
+    ])
+    expect([...stateTaxInputs]).toEqual([
+      [2026, {
+        privateRetirementIncome: 1_200,
+        publicPensionIncome: 2_400,
+      }],
+      [2027, {
+        privateRetirementIncome: 1_200,
+        publicPensionIncome: 2_400,
+      }],
     ])
     for (const year of result.years) {
       expect(year.incomes.annuity).toBe(1_200)

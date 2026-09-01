@@ -83,6 +83,10 @@ export interface AnnualPensionAndAnnuityIncomeInput {
   readonly peopleStates: readonly Readonly<PersonYearState>[]
   readonly primaryPersonId: string
   readonly lifeAgeOf: (person: Readonly<Person>) => number
+  readonly runtimeOccurrenceKey: (
+    kind: SimulatorAnnualRetirementRuntimeOccurrence['kind'],
+    ...binding: readonly unknown[]
+  ) => string
   readonly pack: Readonly<ParameterPack>
   readonly year: number
   readonly recordCashFlow: boolean
@@ -247,7 +251,7 @@ export function annualPensionAndAnnuityIncome(
         paid > 0
       ) {
         const kind = 'annuityContractDistribution' as const
-        const producerOccurrenceKey = JSON.stringify([kind, account.id])
+        const producerOccurrenceKey = input.runtimeOccurrenceKey(kind, account.id)
         // Line 7 keeps the whole payment while the line-6 contract channel can
         // debit only its remaining value and therefore floors at zero.
         const applied = Math.min(paid, contractValueBefore)
