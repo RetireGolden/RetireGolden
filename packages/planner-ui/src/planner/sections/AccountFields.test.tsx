@@ -1347,3 +1347,49 @@ describe('AccountFields HSA editor boundary', () => {
     expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
   })
 })
+
+describe('AccountFields liquid-account editor boundaries', () => {
+  it('combines equity-compensation fields with the shared investment and contribution groups', () => {
+    const equityComp: Extract<Account, { type: 'equityComp' }> = {
+      type: 'equityComp',
+      id: 'rsus',
+      name: 'RSUs',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: 50_000,
+      costBasis: 20_000,
+      annualContribution: 0,
+      vestingMode: 'cliff',
+      vestDate: '2028-01-01',
+    }
+
+    const fields = renderFields(planWithAccount(equityComp))
+
+    expect(controlByLabel(fields, 'Availability')).toBeTruthy()
+    expect(controlByLabel(fields, 'Vest date')).toBeTruthy()
+    expect(controlByLabel(fields, 'Expected return')).toBeTruthy()
+    expect(controlByLabel(fields, 'Schedule contributions over time')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Interest yield')).toThrow('no label "Interest yield"')
+  })
+
+  it('routes cash through only the genuinely shared account fields', () => {
+    const cash: Extract<Account, { type: 'cash' }> = {
+      type: 'cash',
+      id: 'cash',
+      name: 'Cash reserve',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: 30_000,
+      annualContribution: 0,
+    }
+
+    const fields = renderFields(planWithAccount(cash))
+
+    expect(controlByLabel(fields, 'Balance')).toBeTruthy()
+    expect(controlByLabel(fields, 'Expected return')).toBeTruthy()
+    expect(controlByLabel(fields, 'Annual contribution')).toBeTruthy()
+    expect(controlByLabel(fields, 'Estate beneficiary')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Cost basis')).toThrow('no label "Cost basis"')
+    expect(() => controlByLabel(fields, 'Availability')).toThrow('no label "Availability"')
+  })
+})
