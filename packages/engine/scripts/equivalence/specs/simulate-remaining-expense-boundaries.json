@@ -77,56 +77,56 @@
       "id": "R.debt.callsite",
       "label": "debt planner invocation, ordered balance writes, total fold and ledger publication",
       "file": "projection/simulate.ts",
-      "lines": [2586, 2599],
+      "lines": [2549, 2562],
       "anchors": [
-        { "line": 2586, "text": "let debtService = 0" },
-        { "line": 2587, "text": "for (const row of annualDebtServiceRows({" },
-        { "line": 2599, "text": "}" }
+        { "line": 2549, "text": "let debtService = 0" },
+        { "line": 2550, "text": "for (const row of annualDebtServiceRows({" },
+        { "line": 2562, "text": "}" }
       ]
     },
     {
       "id": "R.healthcare.callsite",
       "label": "healthcare planner invocation and complete result consumption",
       "file": "projection/simulate.ts",
-      "lines": [2600, 2649],
+      "lines": [2563, 2612],
       "anchors": [
-        { "line": 2600, "text": "const healthcarePlan = annualHealthcareExpenses({" },
-        { "line": 2644, "text": "const marketplaceMonthsByPersonPosition =" },
-        { "line": 2646, "text": "if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')" },
-        { "line": 2649, "text": "for (const warning of healthcarePlan.warnings) warnings.add(warning)" }
+        { "line": 2563, "text": "const healthcarePlan = annualHealthcareExpenses({" },
+        { "line": 2607, "text": "const marketplaceMonthsByPersonPosition =" },
+        { "line": 2609, "text": "if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')" },
+        { "line": 2612, "text": "for (const warning of healthcarePlan.warnings) warnings.add(warning)" }
       ]
     },
     {
       "id": "R.healthcare.marketplacePublication",
       "label": "positional Marketplace publication and per-person premium fallback",
       "file": "projection/simulate.ts",
-      "lines": [8055, 8070],
+      "lines": [8006, 8021],
       "anchors": [
-        { "line": 8055, "text": ": peopleStates" },
-        { "line": 8058, "text": "months: marketplaceMonthsByPersonPosition[position]!," },
-        { "line": 8070, "text": "})" }
+        { "line": 8006, "text": ": peopleStates" },
+        { "line": 8009, "text": "months: marketplaceMonthsByPersonPosition[position]!," },
+        { "line": 8021, "text": "})" }
       ]
     },
     {
       "id": "R.ltc.callsite",
       "label": "LTC planner invocation, benefit-year writes and reporting rows",
       "file": "projection/simulate.ts",
-      "lines": [2665, 2682],
+      "lines": [2628, 2645],
       "anchors": [
-        { "line": 2665, "text": "const longTermCare = annualLongTermCarePlan({" },
-        { "line": 2677, "text": "for (const write of longTermCare.benefitYearWrites) {" },
-        { "line": 2682, "text": "}" }
+        { "line": 2628, "text": "const longTermCare = annualLongTermCarePlan({" },
+        { "line": 2640, "text": "for (const write of longTermCare.benefitYearWrites) {" },
+        { "line": 2645, "text": "}" }
       ]
     },
     {
       "id": "R.guardrail.callsite",
       "label": "guardrail planner invocation and persistent/output state consumption",
       "file": "projection/simulate.ts",
-      "lines": [2718, 2748],
+      "lines": [2681, 2711],
       "anchors": [
-        { "line": 2718, "text": "const guardrailFunding = annualGuardrailFundingPlan({" },
-        { "line": 2739, "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier" },
-        { "line": 2748, "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals" }
+        { "line": 2681, "text": "const guardrailFunding = annualGuardrailFundingPlan({" },
+        { "line": 2702, "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier" },
+        { "line": 2711, "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals" }
       ]
     }
   ],
