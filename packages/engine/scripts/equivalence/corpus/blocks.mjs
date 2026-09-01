@@ -2592,7 +2592,8 @@ function blockW() {
     // order. This makes taxable-sale and equity-basis writes observable beside
     // ordinary subtraction rows, emits traditional occurrences for both the
     // inherited and owned IRA, and emits an owned-IRA application for only the
-    // latter. The zero cash row pins the no-operation continue.
+    // latter. The zero cash row keeps a Plan-level zero draw in the corpus; the
+    // focused helper test pins the no-operation continue directly.
     const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 75 })
     plan.assumptions.defaultReturnPct = 0
     plan.accounts = [

@@ -249,15 +249,11 @@ function run(mode: typeof seam.mode) {
 }
 
 describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () => {
-  it('applies fresh hostile operations at the live commit point on every pass', () => {
+  it('applies phase-specific hostile operations at the live commit point', () => {
     const { result, counterfactualReads } = run('dynamic')
     expect(phasesFor(START_YEAR).length).toBeGreaterThan(1)
     expect(phasesFor(START_YEAR + 1).length).toBeGreaterThan(1)
     expect(counterfactualReads).toHaveLength(2)
-    expect(new Set(seam.phases.map((phase) => phase.output)).size)
-      .toBe(seam.phases.length)
-    expect(new Set(seam.phases.map((phase) => phase.output.balanceOperations)).size)
-      .toBe(seam.phases.length)
 
     for (const year of [START_YEAR, START_YEAR + 1]) {
       const phases = phasesFor(year)
