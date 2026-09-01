@@ -3620,10 +3620,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (year === account.inherited.ownerDeathYear) return false
       return true
     }
+    // ID-keyed forced-distribution, IRA-character, and optimizer evidence must
+    // all observe the same account row. This is deliberately NOT the account
+    // list used by positional phases such as contributions: Map replacement
+    // selects the last row while preserving the id's first insertion position.
+    const rmdBalanceByAccountId = new Map(
+      balances.map((state) => [state.account.id, state] as const),
+    )
+    const rmdBalances = [...rmdBalanceByAccountId.values()]
     // Year-scoped omitted-basis owners: same aggregation membership the
     // Form 8606 settlement uses this year (includes post-election treat-as-own).
     ownersWithOmittedNondeductibleBasis.clear()
-    for (const account of plan.accounts) {
+    for (const { account } of rmdBalances) {
       if (!isAggregatedIraThisYear(account)) continue
       // isAggregatedIraThisYear is not a type predicate (S2 post-flip accounts
       // stay TraditionalAccount with inherited set); re-narrow for basis field.
@@ -3639,7 +3647,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       return true
     }
     const preDistributionAggregateIraBalance = new Map<string, number>()
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (!isAggregatedIraThisYear(state.account)) continue
       const ownerId = state.account.ownerPersonId ?? primary.id
       preDistributionAggregateIraBalance.set(
@@ -3733,17 +3741,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * publishes -- and not of this pool measure's use as a 408(d)(8)(D)
      * ceiling. It is not corrected here.
      */
-    // Annual state maps and published balances are account-ID keyed and
-    // therefore last-row-wins. Select that same row once for every RMD phase:
-    // otherwise duplicate IDs accumulate one obligation into a shared Map and
-    // then execute the combined take against every duplicate balance record.
-    // Map replacement keeps the ID's first insertion position, so unique-ID
-    // plan order is unchanged while the selected record matches the RMD-base
-    // and published-balance channels.
-    const rmdBalanceByAccountId = new Map(
-      balances.map((state) => [state.account.id, state] as const),
-    )
-    const rmdBalances = [...rmdBalanceByAccountId.values()]
     const preDistributionOwnedIraBalance = new Map<string, number>()
     for (const state of rmdBalances) {
       if (!isAggregatedIraThisYear(state.account)) continue
@@ -5716,7 +5713,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // not there and drive the balance negative -- permanently, since nothing
       // downstream rebuilds it. Truncating makes the overdraw unreachable
       // instead of detecting it afterwards.
-      const openingBalances = balances
+      const openingBalances = rmdBalances
         .filter((state) => qcdSourceIds.has(state.account.id))
         .map((state) => ({
           accountId: asAccountId(state.account.id),
@@ -5731,7 +5728,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const remaining = planDollarsToLedgerCents(
           Math.min(iraRmdUnsatisfiedByOwner.get(donorId) ?? 0, iraRmdRequiredByOwner.get(donorId) ?? 0),
         )
-        const sourceAccountIds = plan.accounts
+        const sourceAccountIds = rmdBalances
+          .map((state) => state.account)
           .filter((account) => isAggregatedIra(account) &&
             (account.ownerPersonId ?? primary.id) === donorId)
           .map((account) => asAccountId(account.id))
@@ -5792,7 +5790,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // that invariant sum and the basis numerator, never these two components.
       const poolCapacityInputs: ClassifyOwnedNonRothIraAnnualWithdrawalsInput[] =
         qcdDonorIds.map((donorId) => {
-          const poolAccounts = plan.accounts
+          const poolAccounts = rmdBalances
+            .map((state) => state.account)
             .filter((account) => isAggregatedIra(account) &&
               (account.ownerPersonId ?? primary.id) === donorId)
             .sort((left, right) => compareUtf16CodeUnits(left.id, right.id))
@@ -8109,7 +8108,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // consistent floors; YearResult.rmd / inherited* fields are unchanged.
       let startTraditional = 0
       let startInheritedTraditional = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (state.account.type !== 'traditional') continue
         const opening = startOfYearBalance.get(state.account.id) ?? 0
         if (!state.account.inherited) {
@@ -8128,7 +8127,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let s2FlipOwnerRmdObligationRemapNontaxable = 0
       const ownerRmdNontaxableFraction =
         rmdTotal > 0 ? rmdNontaxable / rmdTotal : 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (state.account.type !== 'traditional') continue
         if (!hasSpouseTreatAsOwnElection(state.account)) continue
         if (!isTreatAsOwnEffective(state.account, year)) continue
@@ -10008,12 +10007,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               ] as const
             }),
           )
+          const optimizerEvidenceAccountById = new Map(
+            plan.accounts.map((account) => [account.id, account] as const),
+          )
           const weightedTaxableFraction = (
             eligible: (account: Account) => boolean,
           ): number | null => {
             let gross = 0
             let taxable = 0
-            for (const account of plan.accounts) {
+            for (const account of optimizerEvidenceAccountById.values()) {
               if (!eligible(account)) continue
               const balance = Math.max(
                 0,
@@ -10151,10 +10153,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // ending aggregated-IRA balance (basis can exceed the balance after market
   // losses, but only balance-worth of dollars actually pass to the heir).
   let endingNondeductibleIraBasis = 0
+  const endingBalanceByAccountId = new Map(
+    balances.map((state) => [state.account.id, state] as const),
+  )
   for (const [ownerId, basis] of iraBasisByOwner) {
     if (basis <= 0) continue
     let ownerIraBalance = 0
-    for (const state of balances) {
+    for (const state of endingBalanceByAccountId.values()) {
       // Horizon bookkeeping: a still-marked inherited account whose treat-as-own
       // election took effect in a prior year is the spouse's own IRA.
       if (state.account.type !== 'traditional' || state.account.kind !== 'ira') continue

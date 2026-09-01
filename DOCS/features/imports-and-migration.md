@@ -43,6 +43,19 @@ The checklist is the honesty mechanism (nothing imports silently). Every item is
   planner screen.
 - **Skipped** — unreadable/junk rows, each named.
 
+### Duplicate IDs on decision-bearing accounts
+
+Current Plan validation refuses a duplicate account ID when row order could select a persisted
+decision or forced-distribution schedule. This includes retirement-action sources and destinations,
+pension lump-sum offers or elections, annuity purchases, and duplicate IRA rows whose inherited or
+SEPP facts disagree. Older backups and third-party data may therefore require repair before import.
+
+Give each real account a unique ID, keep the decision on the actual account row, and update every
+reference to that ID. Do not delete a genuine account merely to satisfy validation. Unreferenced
+duplicate rows with identical forced-distribution facts remain loadable for compatibility: RMD,
+QCD, Form 8606, and optimizer evidence uses the last row, while positional contribution, property,
+and annuity-payout phases retain their documented conventions.
+
 ## Sources
 
 ### Broker positions CSV (Schwab, Fidelity, Vanguard) — `brokerCsv.ts`

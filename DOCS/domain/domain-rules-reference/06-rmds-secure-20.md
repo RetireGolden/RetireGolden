@@ -39,10 +39,13 @@
   (`treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum`).
 - **Duplicate account IDs are a narrow annual-distribution boundary, not a global Plan repair.** Unreferenced
   duplicate IDs remain loadable for backward compatibility, and positional phases such as contributions continue
-  to see every row. For owner RMDs, inherited requirements, and SEPP only, the annual pass selects the last balance
-  state carrying an ID while retaining that ID's first plan-order position. This matches the ID-keyed prior-year
-  balance and publication channels without executing one forced distribution more than once. Decision-bearing
-  retirement actions, pension lump sums, and annuity purchases reject duplicate source/target IDs as ambiguous.
+  to see every row. Owner and inherited RMDs, SEPP, QCD/Form 8606 pool evidence, ending IRA basis, and optimizer
+  forced-distribution snapshots select the last balance state carrying an ID while retaining that ID's first
+  plan-order position. This matches the ID-keyed prior-year balance and publication channels without executing one
+  forced distribution more than once. Duplicate IRA rows whose inherited or SEPP facts disagree, and decision-bearing
+  retirement actions, pension lump sums, and annuity purchases, reject duplicate IDs as ambiguous. This convention is
+  intentionally narrower than the positional property/HECM and annuity-payout first-qualifying-row behavior; imported
+  data should use unique IDs.
   The regression suite is [`simulate.ownerRmdDuplicateAccountId.test.ts`](../../../packages/engine/src/projection/simulate.ownerRmdDuplicateAccountId.test.ts).
 - **QCD:** direct IRA-to-charity from age 70½, excluded from income, counting toward an RMD when one is due; 2026
   limit $111,000, and that figure is one donor's. A QCD is **not** conditional on an RMD — 408(d)(8) turns on the donor's age and nothing in it

@@ -11,7 +11,6 @@ import {
   stateForYear,
   stateResidencySegmentsForYear,
   traditionalAccountSchema,
-  type Account,
   type InheritedAccount,
   type Plan,
 } from './plan.js'
@@ -813,6 +812,23 @@ describe('guaranteed-income and estate-depth fields', () => {
     expect(parsePlan(planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'a2', taxQualification: 'qualified', qlac: true })).ok).toBe(true)
   })
 
+  it('rejects duplicate annuity rows when one carries a purchase decision', () => {
+    const plan = planWithAnnuity({
+      year: 2030,
+      premium: 100_000,
+      fundingAccountId: 'a1',
+      taxQualification: 'nonQualified',
+    })
+    const annuity = plan.accounts.find((account) => account.id === 'ann1')!
+    plan.accounts.push({ ...annuity, name: 'Duplicate purchased annuity' })
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "ann1"',
+    )
+  })
+
   it('rejects a qualified purchase funded from a taxable account', () => {
     expect(parsePlan(planWithAnnuity({ year: 2030, premium: 100_000, fundingAccountId: 'a1', taxQualification: 'qualified' })).ok).toBe(false)
   })
@@ -1087,12 +1103,14 @@ describe('pension lump-sum election', () => {
   it('refuses duplicate pension rows when one carries the lump-sum decision', () => {
     const plan = planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')
     const pension = plan.accounts.find((account) => account.id === 'pen1')!
+    if (pension.type !== 'pension') throw new Error('fixture built no pension')
+    const pensionWithoutDecision = { ...pension }
+    delete pensionWithoutDecision.lumpSumOffer
+    delete pensionWithoutDecision.lumpSumElection
     plan.accounts.push({
-      ...pension,
+      ...pensionWithoutDecision,
       name: 'Duplicate pension without a decision',
-      lumpSumOffer: undefined,
-      lumpSumElection: undefined,
-    } as Account)
+    })
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(false)
     expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "pen1"')
@@ -1396,6 +1414,47 @@ describe('Plan retirement-action persistence', () => {
         )
       }
     }
+  })
+
+  it('rejects duplicate account IDs whose SEPP facts disagree', () => {
+    const plan = validCouplePlan()
+    const traditional = plan.accounts.find((account) => account.id === 'a2')!
+    if (traditional.type !== 'traditional') {
+      throw new Error('fixture built no traditional account')
+    }
+    plan.accounts.push({
+      ...traditional,
+      name: 'Duplicate with SEPP facts',
+      sepp: { startAge: 56, method: 'rmd' },
+    })
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "a2"',
+    )
+  })
+
+  it('rejects duplicate account IDs whose inherited facts disagree', () => {
+    const plan = validCouplePlan()
+    const traditional = plan.accounts.find((account) => account.id === 'a2')!
+    if (traditional.type !== 'traditional') {
+      throw new Error('fixture built no traditional account')
+    }
+    plan.accounts.push({
+      ...traditional,
+      name: 'Duplicate with inherited facts',
+      inherited: {
+        ownerDeathYear: 2022,
+        decedentHadStartedRmds: true,
+      },
+    })
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "a2"',
+    )
   })
 
   it('rejects duplicate person IDs before action references can depend on array order', () => {

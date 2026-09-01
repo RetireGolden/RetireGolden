@@ -8,6 +8,7 @@ import {
   traditionalAccount,
 } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
+import type { OptimizerYearProbe } from './types.js'
 
 const YEAR = 2026
 
@@ -342,6 +343,68 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
         (occurrence) => occurrence.kind === 'automaticSeppDistribution',
       ),
     ).toHaveLength(1)
+  })
+
+  it('uses the selected row for QCD capacity and Form 8606 basis', () => {
+    const plan = singlePersonPlan({
+      dob: '1950-01-01',
+      planningAge: 90,
+      retirementAge: null,
+    })
+    const superseded = traditionalAccount('duplicate-ira', 1_000_000, 'p1', 'ira')
+    const selected = traditionalAccount('duplicate-ira', 100_000, 'p1', 'ira')
+    if (superseded.type !== 'traditional' || selected.type !== 'traditional') {
+      throw new Error('fixture did not create traditional accounts')
+    }
+    superseded.nondeductibleBasis = 0
+    selected.nondeductibleBasis = 60_000
+    plan.accounts = [superseded, selected, cashAccount('cash', 50_000)]
+    plan.strategies.qcdAnnual = 50_000
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const result = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+    const year = result.years[0]!
+
+    // Pub. 590-B Uniform Lifetime Table divisor at age 76 is 23.7. The
+    // selected 100,000 row—not the two rows' 1,100,000 sum—sets both the
+    // requirement and the §408(d)(8)(D) aggregate includible ceiling.
+    expect(year.rmd).toBeCloseTo(100_000 / 23.7, 10)
+    expect(year.qcd).toBe(50_000)
+    expect(result.endingNondeductibleIraBasis).toBe(50_000)
+    expect(year.ownedTraditionalIraAggregateActivity).toEqual([])
+  })
+
+  it('uses the selected row once in the optimizer opening snapshot', () => {
+    const plan = singlePersonPlan({
+      dob: '1964-01-01',
+      planningAge: 90,
+      retirementAge: null,
+    })
+    plan.accounts = [
+      traditionalAccount('duplicate-ira', 300_000, 'p1', 'ira'),
+      traditionalAccount('duplicate-ira', 30_000, 'p1', 'ira'),
+      cashAccount('cash', 0),
+    ]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const probes: OptimizerYearProbe[] = []
+    simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureOptimizerInputs: (probe) => probes.push(probe),
+    })
+
+    expect(probes).toHaveLength(1)
+    expect(probes[0]?.startTraditional).toBe(30_000)
   })
 
   it('preserves duplicate contribution rows outside the RMD selection boundary', () => {

@@ -2260,10 +2260,39 @@ export const planSchema = z
       if (indexes === undefined) accountIndexesById.set(account.id, [index])
       else indexes.push(index)
     })
-    let hasAmbiguousActionAccountIds = false
+    let hasAmbiguousAccountIds = false
     for (const [accountId, indexes] of accountIndexesById) {
-      if (indexes.length < 2 || !actionReferencedAccountIds.has(accountId)) continue
-      hasAmbiguousActionAccountIds = true
+      if (indexes.length < 2) continue
+      const forcedDistributionSignatures = indexes.map((index) => {
+        const account = plan.accounts[index]!
+        const inherited =
+          account.type === 'traditional' || account.type === 'roth'
+            ? account.inherited
+            : undefined
+        return JSON.stringify({
+          inherited: inherited === undefined
+            ? null
+            : {
+              ...inherited,
+              beneficiary: inherited.beneficiary === undefined
+                ? undefined
+                : {
+                  ...inherited.beneficiary,
+                  // Provenance describes evidence quality, not a different
+                  // forced-distribution schedule.
+                  provenance: undefined,
+                },
+            },
+          sepp: account.type === 'traditional' ? account.sepp ?? null : null,
+        })
+      })
+      const hasConflictingForcedDistributionFacts =
+        new Set(forcedDistributionSignatures).size > 1
+      if (
+        !actionReferencedAccountIds.has(accountId) &&
+        !hasConflictingForcedDistributionFacts
+      ) continue
+      hasAmbiguousAccountIds = true
       indexes.forEach((index) => {
         ctx.addIssue({
           code: 'custom',
@@ -2618,7 +2647,7 @@ export const planSchema = z
     if (
       !hasDuplicateActionIds &&
       !hasAmbiguousActionPersonIds &&
-      !hasAmbiguousActionAccountIds
+      !hasAmbiguousAccountIds
     ) {
       const validateOwnedAccount = (
         actionIndex: number,
