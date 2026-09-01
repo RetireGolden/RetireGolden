@@ -18,14 +18,25 @@ import {
 
 type CommitAccountField = (key: string, value: unknown) => void
 
-/** The lowest election year accepted for an elected pension lump sum. */
+/**
+ * The lowest election year the engine's parse rule will accept for an elected
+ * lump sum: the later of the current UTC year (what the save stamp will carry)
+ * and the document's stored stamp year. A stored stamp can be ahead of the wall
+ * clock, and the parse rule compares against that stamp, so the stamp must win.
+ */
 function electionFloorYear(plan: Plan): number {
   const stamped = /^(\d{4})-/.exec(plan.updatedAtIso)
   const stampYear = stamped === null ? 0 : Number(stamped[1])
   return Math.max(new Date().getUTCFullYear(), stampYear)
 }
 
-/** Whether an account can fund an annuity purchase with the selected qualification. */
+/**
+ * Whether an account can fund an annuity purchase with the selected
+ * qualification. An inherited IRA is still `type: 'traditional'`, but those
+ * dollars cannot fund a household-owned contract and parse rejects the shape.
+ * Keep this helper on the option list, still-eligible check, and re-default so
+ * all three paths enforce the same ownership boundary.
+ */
 function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' | 'nonQualified'): boolean {
   return taxQualification === 'qualified'
     ? account.type === 'traditional' && !account.inherited
@@ -42,17 +53,14 @@ export function PensionAccountEditor({
   onCommit: CommitAccountField
 }) {
   const { plan, update } = usePlan()
-  const startAgeBounds = annuityStartAgeBounds(plan, account)
-
   return (
     <>
       <NumberField
         label="Start age"
-        help={annuityStartAgeHelp(startAgeBounds)}
         value={account.startAge}
         min={40}
-        max={startAgeBounds?.binding ?? ANNUITY_MAX_START_AGE}
-        onCommit={(v) => onCommit('startAge', Math.round(v ?? 65))}
+        max={80}
+        onCommit={(v) => onCommit('startAge', Math.min(80, Math.round(v ?? 65)))}
       />
       <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
       <PercentField label="COLA" value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
@@ -95,6 +103,9 @@ export function PensionAccountEditor({
             label="Election year"
             help="The year the election is due, and the year the lump sum would be paid if taken. Taking the lump sum needs a year that has not passed yet: if the rollover already happened, clear the election and add its dollars to the receiving account balance."
             value={account.lumpSumOffer.electionYear}
+            // An offer kept for comparison may be historical, but an elected
+            // rollover needs a projection year that has not passed. Bound the
+            // field to the same floor the engine checks against the save stamp.
             min={account.lumpSumElection ? electionFloorYear(plan) : 1900}
             max={2200}
             onCommit={(v) =>
@@ -116,6 +127,9 @@ export function PensionAccountEditor({
             ]}
             onCommit={(value) => {
               const target = plan.accounts.find((candidate) => candidate.type === 'traditional' && !candidate.inherited)
+              // Electing can revive a historical offer. Bump its year and set
+              // the election atomically so the intermediate plan never carries
+              // the parse-invalid combination of an elected past-year rollover.
               const electionYear = account.lumpSumOffer!.electionYear
               const floorYear = electionFloorYear(plan)
               update((draft) => {
@@ -160,6 +174,12 @@ export function AnnuityAccountEditor({
 }) {
   const { plan, update } = usePlan()
   const startAgeBounds = annuityStartAgeBounds(plan, account)
+  /**
+   * Purchase qualification, QLAC status, purchase year, and the typed start age
+   * can all move the legal ceiling. The input's `max` only constrains its own
+   * stepper, so each related edit must carry the clamp and land it in the same
+   * update block; otherwise the household briefly authors a plan parse refuses.
+   */
   const commitWithStartAgeClamp = (key: string, value: unknown, edited: Extract<Account, { type: 'annuity' }>) => {
     const clamped = clampedAnnuityStartAge(plan, edited)
     update((draft) => {
@@ -326,6 +346,8 @@ export function AnnuityAccountEditor({
 
 /** Deterministic pension lump-sum decision view. */
 function PensionDecisionPanel({ plan, pensionId }: { plan: Plan; pensionId: string }) {
+  // Capture per render so a start-year rollover invalidates the memo even when
+  // the plan itself has not been edited.
   const startYear = currentStartYear()
   const analysis = useMemo(
     () => analyzePensionElections(plan, startYear).find((candidate) => candidate.pensionId === pensionId),

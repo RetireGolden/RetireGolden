@@ -412,6 +412,9 @@ export function AccountFields({ account, index }: { account: Account; index: num
       set('ownerPersonId', next)
       return
     }
+    // A different annuity owner can change the applicable RMD-age ceiling.
+    // Commit the owner and any required start-age clamp together so this shared
+    // identity field cannot leave an annuity in a parse-invalid state.
     const clamped = clampedAnnuityStartAge(plan, { ...account, ownerPersonId: next })
     update((draft) => {
       updateAccountField(draft, index, 'ownerPersonId', next)
