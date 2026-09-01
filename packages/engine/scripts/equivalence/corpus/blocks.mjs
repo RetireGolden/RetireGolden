@@ -2575,6 +2575,12 @@ function blockV() {
       plan,
       { horizonEndYear: START_YEAR },
     ))
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // W — annual voluntary-withdrawal apply-flow boundary
 // ---------------------------------------------------------------------------
 
