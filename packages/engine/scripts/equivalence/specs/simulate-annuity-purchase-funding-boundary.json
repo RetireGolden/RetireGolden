@@ -1,0 +1,103 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-annuity-purchase-funding-boundary",
+  "why": "Measured reach for the annual purchased-annuity funding boundary extracted from simulatePlan. Four dedicated block-V members run in all four equivalence modes and discriminate ordered taxable gain/loss folding, shared-source shadow debits and basis, fractional equity-comp basis arithmetic, partial and zero funding, QLAC cap-before-shortfall warnings, qualified runtime debit/credit ordering, optimizer debits, ledger publication, investment-in-contract carry, and cross-year selection. Entries exclude only validated-input-impossible guard bodies and late-start warning bodies that parsePlan refuses before a corpus member can run; focused helper and delegation tests pin those supported direct-call contracts.",
+  "entries": [
+    {
+      "id": "V.helper.ownerBirthYear",
+      "label": "qualified-purchase owner birth-year decomposition",
+      "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
+      "lines": [69, 71]
+    },
+    {
+      "id": "V.helper.ownerBirthMonth",
+      "label": "QLAC owner birth-month decomposition",
+      "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
+      "lines": [73, 75]
+    },
+    {
+      "id": "V.helper.select",
+      "label": "positional overlay setup, account selection and first funding-position lookup",
+      "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
+      "lines": [81, 99],
+      "note": "The missing-funding body on lines 100-102 is excluded: parsePlan requires every annuity purchase fundingAccountId to resolve to a supported funding account. The helper unit suite covers the structural missing-id input and first-position behavior directly; validated Plan input also rejects a duplicate id once an annuity purchase references it."
+    },
+    {
+      "id": "V.helper.qualification",
+      "label": "qualified owner fallback and QLAC/non-QLAC ceiling selection",
+      "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
+      "lines": [105, 127],
+      "note": "The late-QLAC warning body on lines 128-129 and late non-QLAC body on line 137 are excluded. parsePlan refuses both late-start shapes before corpus capture, while simulatePlan's public TypeScript signature still permits a caller-built in-memory Plan; focused unit tests directly pin both warnings and their order."
+    },
+    {
+      "id": "V.helper.nonQlacCeiling",
+      "label": "qualified non-QLAC required-beginning-date ceiling calculation",
+      "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
+      "lines": [130, 136]
+    },
+    {
+      "id": "V.helper.capAndFunding",
+      "label": "QLAC cap, spendability, premium funding and shortfall warning",
+      "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
+      "lines": [140, 154]
+    },
+    {
+      "id": "V.helper.basisAndShadow",
+      "label": "taxable/equity basis arithmetic and positional shadow update",
+      "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
+      "lines": [156, 181]
+    },
+    {
+      "id": "V.helper.rows",
+      "label": "fresh ledger/debit payloads, positional purchase rows and return",
+      "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
+      "lines": [182, 204]
+    },
+    {
+      "id": "V.callsite.invoke",
+      "label": "annuity-purchase helper invocation",
+      "file": "projection/simulate.ts",
+      "lines": [1766, 1774],
+      "note": "The cardinality-guard body on lines 1775-1777 is excluded because the helper emits exactly one row for every supplied Plan account; focused delegation tests inject a missing row and pin the throw."
+    },
+    {
+      "id": "V.callsite.selectPosition",
+      "label": "positional row selection and position check",
+      "file": "projection/simulate.ts",
+      "lines": [1778, 1780],
+      "note": "The position-mismatch throw body on lines 1781-1782 is excluded: the helper copies account positions. Focused delegation tests inject the defect and pin the throw."
+    },
+    {
+      "id": "V.callsite.selectFunding",
+      "label": "none-row skip and funding-account validation",
+      "file": "projection/simulate.ts",
+      "lines": [1783, 1790],
+      "note": "The funding-mismatch throw body on lines 1791-1793 is excluded: the helper resolves the same funding id the caller validates. Focused delegation tests inject the defect. V8 may report the multiline guard's untaken operands as cold sub-line regions rather than cold whole lines."
+    },
+    {
+      "id": "V.callsite.effects",
+      "label": "ordered warning/gain/basis/balance/ledger/optimizer effect application",
+      "file": "projection/simulate.ts",
+      "lines": [1794, 1807]
+    },
+    {
+      "id": "V.callsite.qualifiedRuntime",
+      "label": "qualified runtime occurrence, debit and deferred contract-credit planning",
+      "file": "projection/simulate.ts",
+      "lines": [1808, 1865]
+    },
+    {
+      "id": "V.callsite.investment",
+      "label": "funded investment-in-contract carry",
+      "file": "projection/simulate.ts",
+      "lines": [1867, 1871]
+    },
+    {
+      "id": "V.callsite.credits",
+      "label": "contiguous ordered annuity-contract premium credits",
+      "file": "projection/simulate.ts",
+      "lines": [1872, 1891]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on every cold executable whole line in a reached range. JavaScript line coverage cannot distinguish every optional-chain, nullish, ternary, or compound-condition operand sharing a physical line, so reported cold sub-line regions and the focused helper/delegation tests must be read alongside this differential proof."
+}

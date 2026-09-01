@@ -42,8 +42,6 @@ import type { Account, AssetAllocationPolicy, Person, Plan } from '../model/plan
 import type { TraditionalAccount } from '../strategies/accountEligibility.js'
 import {
   ASSET_CLASS_IDS,
-  latestNonQlacQualifiedAnnuityStartAge,
-  latestQlacAnnuityStartAge,
   stateForYear,
   stateResidencySegmentsForYear,
 } from '../model/plan.js'
@@ -69,6 +67,7 @@ import {
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
+import { annualAnnuityPurchaseFunding } from './internal/annualAnnuityPurchaseFunding.js'
 import { annualPermanentLifeTransitions } from './internal/annualPermanentLifeTransitions.js'
 import { annualPropertyCarryingCosts } from './internal/annualPropertyCarryingCosts.js'
 import { annualSeppDistributions } from './internal/annualSeppDistributions.js'
@@ -1753,90 +1752,54 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // traditional balance shrinks future RMDs automatically. A QLAC premium is
     // held to the statutory cap. The premium actually funded becomes the
     // contract's investment for the non-qualified exclusion ratio.
-    for (const account of plan.accounts) {
-      if (account.type !== 'annuity' || !account.purchase || account.purchase.year !== year) continue
-      const funding = balances.find((b) => b.account.id === account.purchase!.fundingAccountId)
-      if (!funding) continue
-      let premium = account.purchase.premium
-      // Last line rather than the only one. `parsePlan` refuses a qualified
-      // purchase that starts paying later than its shape permits — past the
-      // owner's required beginning date when it is not a QLAC (Treas. Reg.
-      // 1.401(a)(9)-6(a)(3)(i), excused by (q)(1)(iii) for a QLAC alone), and
-      // past the first of the month after the owner's 85th birthday when it is
-      // one ((q)(1)(ii)) — and a stored document carrying either shape is stood
-      // down at load. `simulatePlan` still takes a `Plan` by type rather than by
-      // parse, so a caller that built one in memory can reach this pass with the
-      // shape intact — and when it does, the premium below leaves the
-      // traditional balance for a contract that holds no balance, which is the
-      // required-distribution exclusion 1.401(a)(9)-5(b)(4) reserves for a QLAC.
-      // Say so rather than let it pass silently, the same way the statutory
-      // premium cap is enforced here and not only at parse.
-      if (account.purchase.taxQualification === 'qualified') {
-        const owner = personById.get(account.ownerPersonId ?? primary.id) ?? primary
-        if (account.purchase.qlac === true) {
-          if (account.startAge > latestQlacAnnuityStartAge(socialSecurityDobParts(owner).m)) {
-            warnings.add(
-              'A QLAC that starts paying later than the first of the month after its owner\'s 85th birthday is not a QLAC; its premium still left the required-distribution base, which only a QLAC may do.',
-            )
-          }
-        } else if (
-          account.startAge >
-          latestNonQlacQualifiedAnnuityStartAge(dobYear(owner), account.purchase.year)
-        ) {
-          warnings.add(
-            'A qualified annuity that starts paying after its owner\'s required beginning date was not marked a QLAC; its premium still left the required-distribution base, which only a QLAC may do.',
-          )
-        }
+    //
+    // The late-start warning is a last line rather than the only one.
+    // `parsePlan` refuses a qualified purchase that starts paying later than
+    // its shape permits, but simulatePlan accepts an in-memory Plan by type.
+    // The pure planner therefore preserves the warning for that reachable
+    // shape alongside the statutory cap and available-funding warnings.
+    const annuityPurchaseRows = annualAnnuityPurchaseFunding({
+      accounts: plan.accounts,
+      balances,
+      peopleById: personById,
+      primaryPerson: primary,
+      year,
+      qlacPremiumCap: pack.annuities.qlacPremiumCap,
+      limitGrowth,
+    })
+    if (annuityPurchaseRows.length !== plan.accounts.length) {
+      throw new Error('Annuity-purchase funding row lost its position')
+    }
+    for (let accountIndex = 0; accountIndex < plan.accounts.length; accountIndex++) {
+      const row = annuityPurchaseRows[accountIndex]!
+      if (row.accountIndex !== accountIndex) {
+        throw new Error('Annuity-purchase funding row lost its position')
       }
-      const qlacCap = pack.annuities.qlacPremiumCap * limitGrowth
-      if (account.purchase.qlac && premium > qlacCap) {
-        premium = qlacCap
-        warnings.add(
-          `A QLAC premium above the $${Math.round(qlacCap).toLocaleString()} cap was reduced to the cap (the excess is not QLAC-eligible).`,
-        )
+      if (row.kind === 'none') continue
+      const account = plan.accounts[accountIndex]
+      const funding = balances[row.fundingIndex]
+      if (
+        account?.type !== 'annuity' ||
+        !account.purchase ||
+        funding === undefined ||
+        funding.account.id !== account.purchase.fundingAccountId
+      ) {
+        throw new Error('Annuity-purchase funding row lost its position')
       }
-      // Only spendable funds can pay the premium: cliff-vesting equity comp with
-      // a future vest date is not liquidatable yet, so it cannot fund a purchase
-      // (mirrors the withdrawal planner's isSpendableInYear gate).
-      const funded = Math.min(premium, spendableBalance(funding, year))
-      if (funded < premium - EPSILON) {
-        warnings.add('An annuity premium exceeded its funding account balance and was reduced to the available amount.')
-      }
+      for (const warning of row.warnings) warnings.add(warning)
       const fundingBalanceBefore = funding.balance
-      let annuityPurchaseCapitalGainOrLoss = 0
-      if (funding.account.type === 'taxable') {
-        const sale = aggregateBasisSale({
-          openingFairMarketValue: funding.balance,
-          openingCostBasis: funding.costBasis,
-          saleProceeds: funded,
-        })
-        annuityPurchaseCapitalGainOrLoss = sale.realizedCapitalGainOrLoss
-        rebalanceRealizedGains += sale.realizedCapitalGainOrLoss
-        funding.costBasis = sale.remainingCostBasis
-      } else if (funding.account.type === 'equityComp' && funding.balance > 0) {
-        const basisRatio = Math.min(1, funding.costBasis / funding.balance)
-        annuityPurchaseCapitalGainOrLoss = funded * (1 - basisRatio)
-        rebalanceRealizedGains += annuityPurchaseCapitalGainOrLoss
-        funding.costBasis = Math.max(0, funding.costBasis - funded * basisRatio)
+      if (row.capitalGainOrLossDelta !== null) {
+        rebalanceRealizedGains += row.capitalGainOrLossDelta
+        funding.costBasis = row.closingCostBasis!
       }
-      funding.balance -= funded
-      yearSites?.recordAnnuityPurchase({
-        fundingAccountId: funding.account.id,
-        annuityAccountId: account.id,
-        funded,
-        capitalGainOrLoss: annuityPurchaseCapitalGainOrLoss,
-      })
+      funding.balance = row.closingBalance
+      yearSites?.recordAnnuityPurchase(row.record)
       // The premium leaves an LP bucket for a contract the LP does not carry.
       // Captured here rather than from the occurrence below, which is emitted
       // only for a traditional funding source — a cash- or brokerage-funded
       // premium moves exactly the same dollars and publishes nothing.
-      if (funded > 0) {
-        exogenousStrategyDebits.push({
-          accountId: funding.account.id,
-          amountPlanDollars: funded,
-        })
-      }
-      if (funded > 0 && funding.account.type === 'traditional') {
+      if (row.debit !== null) exogenousStrategyDebits.push(row.debit)
+      if (row.funded > 0 && funding.account.type === 'traditional') {
         const kind = 'annuityFundingTransfer' as const
         const producerOccurrenceKey = runtimeOccurrenceKey(
           kind,
@@ -1846,7 +1809,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         recordAnnualRetirementRuntimeOccurrence({
           producerOccurrenceKey,
           kind,
-          grossAmountPlanDollars: funded,
+          grossAmountPlanDollars: row.funded,
           ownerPersonId: funding.account.ownerPersonId,
           sourceAccountId: funding.account.id,
           executionDate: null,
@@ -1861,7 +1824,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             ownerPersonId: funding.account.ownerPersonId,
             sourceAccountId: funding.account.id,
             sourceBalanceBeforePlanDollars: fundingBalanceBefore,
-            appliedAmountPlanDollars: funded,
+            appliedAmountPlanDollars: row.funded,
             sourceBalanceAfterPlanDollars: funding.balance,
           })
           // THE CREDIT BESIDE THE DEBIT. The premium is not a distribution --
@@ -1883,20 +1846,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           // then every credit, keeps each phase to one contiguous run.
           if (annuityContractValue.has(account.id)) {
             const contractValueBefore = annuityContractValue.get(account.id)!
-            const contractValueAfter = contractValueBefore + funded
+            const contractValueAfter = contractValueBefore + row.funded
             annuityContractValue.set(account.id, contractValueAfter)
             pendingAnnuityContractCredits.push({
               producerOccurrenceKey,
               annuityAccountId: account.id,
               ownerPersonId: funding.account.ownerPersonId,
-              creditedAmountPlanDollars: funded,
+              creditedAmountPlanDollars: row.funded,
               contractValueBeforePlanDollars: contractValueBefore,
               contractValueAfterPlanDollars: contractValueAfter,
             })
           }
         }
       }
-      annuityInvestmentInContract.set(account.id, (annuityInvestmentInContract.get(account.id) ?? 0) + funded)
+      annuityInvestmentInContract.set(
+        account.id,
+        (annuityInvestmentInContract.get(account.id) ?? 0) + row.funded,
+      )
     }
     for (const credit of pendingAnnuityContractCredits) {
       recordAnnualRetirementRuntimeApplication({
