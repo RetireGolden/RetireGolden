@@ -5,9 +5,10 @@ why) and [standards.md](standards.md) (the conventions).
 
 ## Repository top level
 
-The repo is a pnpm workspace: `corepack enable` then `pnpm install` at the root installs everything; the app consumes the
-engine as `@retiregolden/engine` and the planner UI as `@retiregolden/planner-ui` (workspace
-dependencies, published to npm from `packages/`).
+The repo is a pnpm workspace (`app` and `packages/*`): `corepack enable` then `pnpm install` at the root
+installs everything. It requires Node.js >=24. The web host consumes the engine as
+`@retiregolden/engine` and the planner UI as `@retiregolden/planner-ui` through workspace dependencies;
+both packages are published to npm from `packages/`.
 
 ```
 RetireGolden/
@@ -32,7 +33,7 @@ in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with 
 
 ```
 app/
-├── package.json          deps + scripts; engines: node >= 20
+├── package.json          deps + scripts; engines: node >=24
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
 ├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, sitemap generator, license notices)
@@ -69,7 +70,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `params/` | `index.ts` (incl. `TRUSTEES_DEFAULT_SS_HAIRCUT`) + `provenance.ts`; federal packs in `data/` (e.g. `year2026.ts`); per-state in `state/` |
 | `tax/` | `federalTax.ts` (incl. `applyCapitalLossCarryforward`), `stateTax.ts`, `aca.ts`, `medicare.ts` |
 | `allocation/` | `assetClasses.ts` (per-class returns/volatilities/yields, blended-return helpers) |
-| `ladder/` | TIPS income floor: `ladderMath.ts` (rung solve, pricing, `realPresentValue`), `bridge.ts` (SS bridge sizing), `fundedRatio.ts`, `fedInvest.ts` (CSV parsing/date math only — the fetch + cache live in the app's `data/fedInvestClient.ts`) |
+| `ladder/` | TIPS income floor: `ladderMath.ts` (rung solve, pricing, `realPresentValue`), `bridge.ts` (SS bridge sizing), `fundedRatio.ts`, `fedInvest.ts` (CSV parsing/date math only — the fetch + cache live in `planner-ui/src/data/fedInvestClient.ts`) |
 | `rmd/` | `rmd.ts` |
 | `socialSecurity/` | Pure SS math consumed by the ledger: `nra`, `benefitFactor`, `claimFactor`, `piaFromEarnings`, `ssaWageData`, `maritalBenefits`, `survivorBenefit`, `familyMaximum`, `disability` |
 | `longevity/` | `ssaPeriod2022.ts` (SSA period life table) + shared `types.ts` |
@@ -185,7 +186,7 @@ hosts use the `importEnabled` / `importResolved` props. Omitted configuration pr
 ## Commands
 
 Install once at the repo root with `corepack enable` then `pnpm install` (pnpm workspaces). The root `package.json` runs each of
-these across all three workspaces (engine, then planner-ui, then app); the same commands run from
+these across all three workspace packages (engine, then planner-ui, then app); the same commands run from
 `app/` or a `packages/*` directory scope to that workspace.
 
 | Command (repo root) | Does |

@@ -16,8 +16,9 @@ describe('staticwebapp.config.json', () => {
     expect(headers['Permissions-Policy']).toBeTruthy()
     expect(headers['Content-Security-Policy']).toContain("default-src 'self'")
     expect(headers['Content-Security-Policy']).toContain("worker-src 'self'")
-    // The opt-in FedInvest TIPS price fetch (data/fedInvestClient.ts) is the
-    // app's only cross-origin request; connect-src stays 'self' plus that one host.
+    // The planner UI's opt-in FedInvest TIPS price fetch
+    // (packages/planner-ui/src/data/fedInvestClient.ts) is the app's only
+    // cross-origin request; connect-src stays 'self' plus that one host.
     expect(headers['Content-Security-Policy']).toContain("connect-src 'self' https://www.treasurydirect.gov")
     expect(headers['Content-Security-Policy']).toContain("frame-ancestors 'none'")
     // HiGHS-WASM (the optimizer solver) instantiates a WebAssembly module, which

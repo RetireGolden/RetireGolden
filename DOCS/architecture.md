@@ -6,14 +6,13 @@ The current, ground-truth architecture of RetireGolden. For where specific code 
 ## What it is
 
 A **single static single-page app** — Vite + React 19 + TypeScript (strict) + Vitest — that runs entirely
-in the browser and is hosted on Azure Static Web Apps. There is **no backend, no account, and no network
-call for user data**; everything computes client-side and persists in the browser. At startup the web host
-fetches one tiny same-origin, no-store import-availability document; it contains no user data and fails
-closed. The app makes exactly **one cross-origin network request**, and only on an explicit click: the
-opt-in FedInvest TIPS price fetch (`engine/ladder/fedInvest.ts`, day-cached, zero-network CSV import fallback)
-— the CSP's `connect-src` is `'self'` plus `treasurydirect.gov` and nothing else, pinned by
-`staticwebapp.config.test.ts`. No user data ever leaves the browser. All app code lives under `app/` (it is
-*not* an npm-workspaces monorepo — see the note below).
+in the browser and is hosted on Azure Static Web Apps. There is **no backend and no account**; everything
+computes client-side and persists in the browser, and **no user data leaves the browser**. At startup the
+web host fetches one tiny same-origin, no-store import-availability document; it contains no user data and
+fails closed. On an explicit click only, `packages/planner-ui/src/data/fedInvestClient.ts` owns the opt-in
+cross-origin FedInvest TIPS price request (day-cached, with a zero-network CSV-import fallback). That public
+Treasury request carries only a price date, never plan data. The CSP's `connect-src` is `'self'` plus
+`treasurydirect.gov` and nothing else, pinned by `staticwebapp.config.test.ts`.
 
 ```
 Browser
@@ -87,13 +86,14 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
 
 - A **`Plan`** is the whole household model (people, accounts, income streams, expenses, strategies,
   assumptions, scenarios). Zod schemas define it and infer the types; the same schemas validate imports and
-  storage reads. `CURRENT_PLAN_SCHEMA_VERSION` is **3**.
+  storage reads. `CURRENT_PLAN_SCHEMA_VERSION` is **5**.
 - **Migrations** are a pure `migratePlanToCurrent` step chain (`engine/model/migrations.ts`); the harness
   exists and is tested. The v1 -> v2 step adds the retirement-action schedule and deterministic IDs to
   already-present typed legacy actions. The v2 -> v3 step advances to the optional durable IRA
   classification, per-year SEP/SIMPLE activity, and per-donor/year deductible-contribution facts;
   it never infers or promotes them, and explicitly discards a same-named root smuggled into a v1/v2
-  input. Earlier additive fields (`stateMoves`,
+  input. The v3 -> v4 migration strips any same-named root rather than inventing protected annual tax facts;
+  v4 -> v5 writes `inflationAdjusted: false` for legacy one-time income (their historical behavior). Earlier additive fields (`stateMoves`,
   `insurance`, `capitalLossCarryforward`, and the July 2026 wave: `incomeFloor`, `spendingPolicy`,
   `expenses.healthcare.ssa44`, annuity payout forms, pension `lumpSumOffer`, HECM) shipped via Zod defaults
   rather than migrations. The plan backup JSON is a documented contract

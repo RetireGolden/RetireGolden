@@ -37,11 +37,12 @@ and absent means no behavior change (feature-off byte-identical, `cases:diff` cl
   spending), both read from the same deterministic ledger years, deflated to today's dollars, and discounted
   on the TIPS curve (Pfau's household funded-ratio lens). Shown on Results and the Income floor page;
   `income-floor-funded` fires below ~90%, `ss-bridge-gap` previews a sized bridge as a scenario.
-- **FedInvest (opt-in only).** `engine/ladder/fedInvest.ts` fetches end-of-day TIPS prices
-  (`securityPriceDetail`, CSV) on an explicit click — the app's only cross-origin request, carrying only a date,
-  cached per day. FedInvest sends no CORS headers, so the browser may block it; the UI then offers a
-  zero-network import of the user-downloaded `securityprice.csv`. Prices are a per-$100-face reference
-  (FedInvest omits the inflation index ratio) — the embedded curve remains the planning source of truth.
+- **FedInvest (opt-in only).** `planner-ui/src/data/fedInvestClient.ts` owns the explicit-click fetch and
+  per-day cache for end-of-day TIPS prices (`securityPriceDetail`, CSV); `engine/ladder/fedInvest.ts` is pure
+  CSV parsing/date math. This is the app's only cross-origin request, carrying only a public price date, never
+  plan data. FedInvest sends no CORS headers, so the browser may block it; the UI then offers a zero-network
+  import of the user-downloaded `securityprice.csv`. Prices are a per-$100-face reference (FedInvest omits the
+  inflation index ratio) — the embedded curve remains the planning source of truth.
 
 **Documented simplifications:** annual coupons (real TIPS pay semiannually); no CUSIP lot rounding in core
 mode; par-rung pricing on the par curve; planning-grade OID; taxable-side ladders only.

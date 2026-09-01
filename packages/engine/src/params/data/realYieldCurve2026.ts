@@ -11,9 +11,10 @@ import type { RealYieldCurve } from '../types.js'
  *
  * This snapshot is the app's offline posture: every ladder quote and funded
  * ratio works without a network call. Refresh cadence: annually with the
- * parameter packs (see DOCS/maintenance-schedule.md), or opt-in per-session
- * via the FedInvest live-price fetch (engine/ladder/fedInvest.ts), which
- * never replaces this embedded default.
+ * parameter packs (see DOCS/maintenance-schedule.md), or through the opt-in,
+ * per-day-cached FedInvest live-price fetch in
+ * `packages/planner-ui/src/data/fedInvestClient.ts`, which never replaces
+ * this embedded default.
  */
 export const REAL_YIELD_CURVE_2026: RealYieldCurve = {
   asOfIso: '2026-06-30',

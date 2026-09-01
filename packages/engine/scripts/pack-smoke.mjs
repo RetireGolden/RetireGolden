@@ -384,8 +384,8 @@ const { singlePersonPlan, cashAccount, productionTaxCalculator, runPlan } = awai
 // The current-only schema subpath (the MCP's plan-format source), each explicit
 // version subpath, the legacy compatibility barrel, and the offline JSON
 // artifact must all resolve from the installed tarball. Read the JSON via
-// createRequire + fs — not an import attribute — so this stays valid on the whole
-// supported Node range. The
+// createRequire + fs — not an import attribute — so the smoke test reads the
+// installed artifact through a path supported by the package's Node >=24 floor.
 // JSON path is derived from PLAN_SCHEMA_VERSION so a future schema-version bump
 // retargets it automatically.
 const currentSchemaApi = await import('@retiregolden/engine/schema/current')

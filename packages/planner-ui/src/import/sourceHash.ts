@@ -3,7 +3,7 @@
  * stays browser-free and synchronous; the one thing that genuinely needs
  * `crypto.subtle` — hashing source bytes into the `ImportSourceRef.sha256` — is
  * async and lives here, called only at the UI's async edge. `crypto` and
- * `TextEncoder` are globals in both the browser and Node 20+ (webcrypto).
+ * `TextEncoder` are globals in both the browser and supported Node 24+ (webcrypto).
  */
 
 /**
