@@ -23,7 +23,8 @@ describe('annualGuardrailFundingPlan', () => {
     const input = {
       guardrailsActive: true,
       riskBasedGuardrails: false,
-      spendingPolicy: plan.expenses.spendingPolicy,
+      allowRaisesAboveTarget:
+        plan.expenses.spendingPolicy?.allowRaisesAboveTarget,
       guardrailPolicy: {
         mode: 'withdrawal-rate' as const,
         upperGuardrailPct: 101,
@@ -68,7 +69,7 @@ describe('annualGuardrailFundingPlan', () => {
     const result = annualGuardrailFundingPlan({
       guardrailsActive: true,
       riskBasedGuardrails: true,
-      spendingPolicy: { mode: 'riskBasedGuardrails' },
+      allowRaisesAboveTarget: undefined,
       guardrailPolicy: { mode: 'risk-based' },
       oneTimeGoals: [],
       isGoalResolved: () => false,
@@ -100,7 +101,7 @@ describe('annualGuardrailFundingPlan', () => {
     const result = annualGuardrailFundingPlan({
       guardrailsActive: true,
       riskBasedGuardrails: false,
-      spendingPolicy: { mode: 'withdrawalRateGuardrails' },
+      allowRaisesAboveTarget: undefined,
       guardrailPolicy: { mode: 'withdrawal-rate' },
       oneTimeGoals: [],
       isGoalResolved: () => false,

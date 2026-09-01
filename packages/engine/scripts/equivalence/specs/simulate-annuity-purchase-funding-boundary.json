@@ -194,96 +194,96 @@
       "label": "annuity-purchase helper invocation",
       "file": "projection/simulate.ts",
       "lines": [
-        1768,
-        1776
+        1766,
+        1774
       ],
       "anchors": [
         {
-          "line": 1768,
+          "line": 1766,
           "text": "const annuityPurchaseRows = annualAnnuityPurchaseFunding({"
         },
         {
-          "line": 1776,
+          "line": 1774,
           "text": "})"
         }
       ],
-      "note": "The cardinality-guard body on lines 1777-1779 is excluded because the helper emits exactly one row for every supplied Plan account; focused delegation tests inject a missing row and pin the throw."
+      "note": "The cardinality-guard body on lines 1775-1777 is excluded because the helper emits exactly one row for every supplied Plan account; focused delegation tests inject a missing row and pin the throw."
     },
     {
       "id": "V.callsite.selectPosition",
       "label": "positional row selection and position check",
       "file": "projection/simulate.ts",
       "lines": [
-        1780,
-        1782
+        1778,
+        1780
       ],
       "anchors": [
         {
-          "line": 1780,
+          "line": 1778,
           "text": "for (let accountIndex = 0; accountIndex < plan.accounts.length; accountIndex++) {"
         },
         {
-          "line": 1781,
+          "line": 1779,
           "text": "const row = annuityPurchaseRows[accountIndex]!"
         },
         {
-          "line": 1782,
+          "line": 1780,
           "text": "if (row.accountIndex !== accountIndex) {"
         }
       ],
-      "note": "The position-mismatch throw body on lines 1783-1784 is excluded: the helper copies account positions. Focused delegation tests inject the defect and pin the throw."
+      "note": "The position-mismatch throw body on lines 1781-1782 is excluded: the helper copies account positions. Focused delegation tests inject the defect and pin the throw."
     },
     {
       "id": "V.callsite.selectFunding",
       "label": "none-row skip and funding-account validation",
       "file": "projection/simulate.ts",
       "lines": [
-        1785,
-        1793
+        1783,
+        1791
       ],
       "anchors": [
         {
-          "line": 1785,
+          "line": 1783,
           "text": "if (row.kind === 'none') continue"
         },
         {
-          "line": 1787,
+          "line": 1785,
           "text": "const funding = balances[row.fundingIndex]"
         },
         {
-          "line": 1792,
+          "line": 1790,
           "text": "funding.account.id !== account.purchase.fundingAccountId"
         },
         {
-          "line": 1793,
+          "line": 1791,
           "text": ") {"
         }
       ],
-      "note": "The funding-mismatch throw body on lines 1794-1795 is excluded: the helper resolves the same funding id the caller validates. Focused delegation tests inject the defect. V8 may report the multiline guard's untaken operands as cold sub-line regions rather than cold whole lines."
+      "note": "The funding-mismatch throw body on lines 1792-1793 is excluded: the helper resolves the same funding id the caller validates. Focused delegation tests inject the defect. V8 may report the multiline guard's untaken operands as cold sub-line regions rather than cold whole lines."
     },
     {
       "id": "V.callsite.effects",
       "label": "ordered warning/gain/basis/balance/ledger/optimizer effect application",
       "file": "projection/simulate.ts",
       "lines": [
-        1796,
-        1808
+        1794,
+        1806
       ],
       "anchors": [
         {
-          "line": 1796,
+          "line": 1794,
           "text": "for (const warning of row.warnings) warnings.add(warning)"
         },
         {
-          "line": 1798,
+          "line": 1796,
           "text": "if (row.capitalGainOrLossDelta !== null) {"
         },
         {
-          "line": 1803,
+          "line": 1801,
           "text": "yearSites?.recordAnnuityPurchase(row.record)"
         },
         {
-          "line": 1808,
+          "line": 1806,
           "text": "if (row.debit !== null) exogenousStrategyDebits.push(row.debit)"
         }
       ]
@@ -293,32 +293,32 @@
       "label": "qualified runtime occurrence, debit and deferred contract-credit planning",
       "file": "projection/simulate.ts",
       "lines": [
-        1809,
-        1867
+        1807,
+        1865
       ],
       "anchors": [
         {
-          "line": 1809,
+          "line": 1807,
           "text": "if (row.funded > 0 && funding.account.type === 'traditional') {"
         },
         {
-          "line": 1816,
+          "line": 1814,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 1826,
+          "line": 1824,
           "text": "if (isAggregatedIra(funding.account)) {"
         },
         {
-          "line": 1854,
+          "line": 1852,
           "text": "if (annuityContractValue.has(account.id)) {"
         },
         {
-          "line": 1858,
+          "line": 1856,
           "text": "pendingAnnuityContractCredits.push({"
         },
         {
-          "line": 1867,
+          "line": 1865,
           "text": "}"
         }
       ]
@@ -328,16 +328,16 @@
       "label": "funded investment-in-contract carry",
       "file": "projection/simulate.ts",
       "lines": [
-        1869,
-        1872
+        1867,
+        1870
       ],
       "anchors": [
         {
-          "line": 1869,
+          "line": 1867,
           "text": "annuityInvestmentInContract.set("
         },
         {
-          "line": 1872,
+          "line": 1870,
           "text": ")"
         }
       ]
@@ -347,20 +347,20 @@
       "label": "contiguous ordered annuity-contract premium credits",
       "file": "projection/simulate.ts",
       "lines": [
-        1874,
-        1892
+        1872,
+        1890
       ],
       "anchors": [
         {
-          "line": 1874,
+          "line": 1872,
           "text": "for (const credit of pendingAnnuityContractCredits) {"
         },
         {
-          "line": 1875,
+          "line": 1873,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1892,
+          "line": 1890,
           "text": "})"
         }
       ]

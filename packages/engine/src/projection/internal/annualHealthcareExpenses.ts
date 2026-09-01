@@ -53,6 +53,7 @@ export interface AnnualHealthcareExpensesInput {
   readonly year: number
   readonly startYear: number
   readonly peopleStates: readonly PersonYearState[]
+  /** Last-wins by public person id, matching simulatePlan's Map construction. */
   readonly birthMonthByPerson: ReadonlyMap<string, number>
   readonly resolveMagiFor: (year: number) => {
     magi: number

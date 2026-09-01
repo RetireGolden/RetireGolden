@@ -37,23 +37,23 @@
       "id": "C.eligibility-callsite",
       "label": "annual coordinated HECM eligibility invocation",
       "file": "projection/simulate.ts",
-      "lines": [7046, 7053],
+      "lines": [7044, 7051],
       "anchors": [
-        { "line": 7046, "text": "const coordinatedHecm = annualCoordinatedHecmEligibility({" },
-        { "line": 7052, "text": "priorYearPortfolioReturnPct," },
-        { "line": 7053, "text": "})" }
+        { "line": 7044, "text": "const coordinatedHecm = annualCoordinatedHecmEligibility({" },
+        { "line": 7050, "text": "priorYearPortfolioReturnPct," },
+        { "line": 7051, "text": "})" }
       ]
     },
     {
       "id": "D.accepted-scalar-callsite",
       "label": "coordinated HECM capacity consumption and ACA/tax accepted scalar",
       "file": "projection/simulate.ts",
-      "lines": [7586, 7617],
+      "lines": [7584, 7615],
       "anchors": [
-        { "line": 7586, "text": "if (coordinatedHecm.capacity > EPSILON && spendingNeedBeforeTax > EPSILON) {" },
-        { "line": 7603, "text": "const nextDraw = Math.min(coordinatedHecm.capacity, postCreditPreTaxNeed)" },
-        { "line": 7611, "text": "if (!coordinatedDrawConverged) hecmDraw = 0" },
-        { "line": 7617, "text": "}" }
+        { "line": 7584, "text": "if (coordinatedHecm.capacity > EPSILON && spendingNeedBeforeTax > EPSILON) {" },
+        { "line": 7601, "text": "const nextDraw = Math.min(coordinatedHecm.capacity, postCreditPreTaxNeed)" },
+        { "line": 7609, "text": "if (!coordinatedDrawConverged) hecmDraw = 0" },
+        { "line": 7615, "text": "}" }
       ],
       "note": "N1 reaches the non-ACA outer solve with an accepted draw below total capacity. N2 establishes that multiple ACA/tax probes occur before one scalar is accepted. The focused delegation suite proves those probes do not allocate or mutate a live line."
     },
@@ -61,13 +61,13 @@
       "id": "E.allocation-apply-callsite",
       "label": "accepted coordinated allocation invocation, line mutation and source publication",
       "file": "projection/simulate.ts",
-      "lines": [7725, 7739],
+      "lines": [7723, 7737],
       "anchors": [
-        { "line": 7725, "text": "for (const allocation of annualCoordinatedHecmAllocations({" },
-        { "line": 7732, "text": "line.loanBalance += allocation.amount" },
-        { "line": 7733, "text": "hecmCoordinatedByProperty?.set(" },
-        { "line": 7737, "text": "}" },
-        { "line": 7738, "text": "// Any open HECM line backstops a true portfolio shortfall regardless of" }
+        { "line": 7723, "text": "for (const allocation of annualCoordinatedHecmAllocations({" },
+        { "line": 7730, "text": "line.loanBalance += allocation.amount" },
+        { "line": 7731, "text": "hecmCoordinatedByProperty?.set(" },
+        { "line": 7735, "text": "}" },
+        { "line": 7736, "text": "// Any open HECM line backstops a true portfolio shortfall regardless of" }
       ],
       "note": "N1 applies three ordered rows to distinct actual lines despite no-HECM and divergent-policy duplicate aliases. Cash-flow capture publishes the exact per-property sources; counterfactual capture re-enters the annual pass and observes only the committed transaction after rollback."
     }

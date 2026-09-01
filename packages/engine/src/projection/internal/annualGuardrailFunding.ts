@@ -23,7 +23,7 @@ export interface AnnualGuardrailFundingPlan {
 export function annualGuardrailFundingPlan(input: {
   readonly guardrailsActive: boolean
   readonly riskBasedGuardrails: boolean
-  readonly spendingPolicy: Plan['expenses']['spendingPolicy']
+  readonly allowRaisesAboveTarget: boolean | undefined
   readonly guardrailPolicy: GuardrailPolicy
   readonly oneTimeGoals: Plan['expenses']['oneTimeGoals']
   readonly isGoalResolved: (goalId: string) => boolean
@@ -64,7 +64,7 @@ export function annualGuardrailFundingPlan(input: {
     1,
   )
   const allowRaisesAboveTarget =
-    input.spendingPolicy?.allowRaisesAboveTarget ??
+    input.allowRaisesAboveTarget ??
     annualUpsideLifestyle + earlyPullGoalBudget > 0
   const maxGuardrailMultiplier =
     input.guardrailsActive && allowRaisesAboveTarget

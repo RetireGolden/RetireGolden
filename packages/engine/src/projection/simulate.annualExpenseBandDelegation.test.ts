@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   AnnualHealthcareExpensesInput,
@@ -160,6 +160,10 @@ import {
 } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
 
+afterEach(() => {
+  seam.returnIncompleteMarketplaceMonths = false
+})
+
 function debt(): Extract<Account, { type: 'debt' }> {
   return {
     type: 'debt',
@@ -253,7 +257,5 @@ describe('simulatePlan delegates the remaining annual expense band', () => {
       horizonEndYear: 2026,
       taxCalculator: createFlatTaxCalculator(0),
     })).toThrow('Healthcare planner person-row mismatch')
-
-    seam.returnIncompleteMarketplaceMonths = false
   })
 })
