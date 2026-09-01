@@ -364,6 +364,11 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
     for (const conversion of seam.conversionInputs) {
       const phase = conversion.precedingPhase
       expect(phase).toBeDefined()
+      const injectedTraditionalBalance = phase?.injectedTraditionalBalance
+      expect(injectedTraditionalBalance).toBeTypeOf('number')
+      if (phase === undefined || typeof injectedTraditionalBalance !== 'number') {
+        throw new Error('missing injected traditional balance for conversion')
+      }
       const conversionInput = conversion.input as {
         year: number
         openingBalances: readonly { accountId: string; openingBalance: number }[]
@@ -373,7 +378,7 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
         conversionInput.openingBalances.find(
           (snapshot) => snapshot.accountId === 'traditional',
         )?.openingBalance,
-      ).toBe(phase!.injectedTraditionalBalance! * 100)
+      ).toBe(injectedTraditionalBalance * 100)
     }
 
     const firstYearFinal = finalPhase(START_YEAR)

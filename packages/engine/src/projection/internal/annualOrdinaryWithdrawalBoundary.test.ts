@@ -222,6 +222,27 @@ beforeEach(() => {
 })
 
 describe('annualOrdinaryWithdrawalBoundary — snapshots', () => {
+  it('fails loudly before execution when tax-unit evidence violates the boundary contract', () => {
+    const validTaxUnit = input().taxUnit
+    if (validTaxUnit === null) throw new Error('missing fixture tax unit')
+
+    for (const field of [
+      'members',
+      'taxUnitId',
+      'taxUnitEvidenceId',
+      'stateFilingStatusId',
+    ] as const) {
+      expect(() => annualOrdinaryWithdrawalBoundary(input({
+        taxUnit: {
+          ...validTaxUnit,
+          [field]: null,
+        } as unknown as NonNullable<AnnualOrdinaryWithdrawalBoundaryInput['taxUnit']>,
+      }))).toThrow('Ordinary-withdrawal tax-unit evidence is malformed')
+    }
+
+    expect(seam.executorInputs).toEqual([])
+  })
+
   it('uses strict ordinary actions for sorted source inventory and constructs exact taxable evidence', () => {
     const request = withdrawal('named', [
       'z-cash',

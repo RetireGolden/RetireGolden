@@ -136,8 +136,23 @@ export function annualOrdinaryWithdrawalBoundary(
           return []
         }
       })
+    const taxUnit = input.taxUnit
+    if (
+      taxUnit !== null &&
+      (
+        !Array.isArray(taxUnit.members) ||
+        taxUnit.members.length === 0 ||
+        taxUnit.members.some((member) => typeof member !== 'string') ||
+        typeof taxUnit.taxUnitId !== 'string' ||
+        typeof taxUnit.taxUnitEvidenceId !== 'string' ||
+        typeof taxUnit.stateFilingStatusId !== 'string' ||
+        typeof taxUnit.federalFilingStatus !== 'string'
+      )
+    ) {
+      throw new Error('Ordinary-withdrawal tax-unit evidence is malformed')
+    }
     let taxableAccountSnapshots: TaxableAccountOpeningSnapshot[] =
-      input.taxUnit === null
+      taxUnit === null
         ? []
         : [...input.balances]
           .filter(
@@ -161,7 +176,7 @@ export function annualOrdinaryWithdrawalBoundary(
             try {
               const accountId = asAccountId(state.account.id)
               const ownerPersonId = asPersonId(state.account.ownerPersonId)
-              if (!input.taxUnit!.members.includes(ownerPersonId)) return []
+              if (!taxUnit.members.includes(ownerPersonId)) return []
               return [{
                 accountId,
                 openingCostBasis: planDollarsToLedgerCents(state.costBasis),
@@ -172,8 +187,8 @@ export function annualOrdinaryWithdrawalBoundary(
                       accountId,
                       ownerPersonId,
                       input.year,
-                      input.taxUnit!.federalFilingStatus,
-                      input.taxUnit!.members,
+                      taxUnit.federalFilingStatus,
+                      taxUnit.members,
                     ])}`,
                   beneficialOwnershipShare: {
                     representation: 'exactRational' as const,
@@ -186,16 +201,16 @@ export function annualOrdinaryWithdrawalBoundary(
                       accountId,
                       ownerPersonId,
                       input.year,
-                      input.taxUnit!.federalFilingStatus,
-                      input.taxUnit!.members,
+                      taxUnit.federalFilingStatus,
+                      taxUnit.members,
                     ])}`,
                 },
                 taxUnit: {
-                  taxUnitId: input.taxUnit!.taxUnitId,
-                  taxUnitMemberPersonIds: input.taxUnit!.members,
-                  federalFilingStatus: input.taxUnit!.federalFilingStatus,
-                  stateFilingStatusId: input.taxUnit!.stateFilingStatusId,
-                  taxUnitEvidenceId: input.taxUnit!.taxUnitEvidenceId,
+                  taxUnitId: taxUnit.taxUnitId,
+                  taxUnitMemberPersonIds: taxUnit.members,
+                  federalFilingStatus: taxUnit.federalFilingStatus,
+                  stateFilingStatusId: taxUnit.stateFilingStatusId,
+                  taxUnitEvidenceId: taxUnit.taxUnitEvidenceId,
                   taxYear: input.year,
                 },
               }]
