@@ -62,7 +62,8 @@ describe('Compare-plans table chrome (#384)', () => {
       '.field input / .field select shared',
     )
     expect(shared).not.toMatch(/font:\s*inherit/)
-    const select = ruleBodyAt(css.indexOf('\n.field select {'), '.field select')
+    const selectOnly = css.indexOf('/* Safety net: a long option label')
+    const select = ruleBodyAt(css.indexOf('.field select {', selectOnly), '.field select')
     expect(select).toMatch(/font:\s*inherit/)
   })
 })
