@@ -435,6 +435,30 @@ function annualPassValueBinding<T>(
   return { read, write }
 }
 
+/**
+ * Detach a planner result from helper-owned accessors before the annual pass
+ * performs any irreversible write. `structuredClone` materializes every
+ * enumerable channel as caller-owned data properties; the recursive freeze
+ * makes later consumption a read of that snapshot rather than a second read
+ * of the helper result.
+ */
+function immutablePlainSnapshot<T>(value: T): T {
+  const snapshot = structuredClone(value)
+  const freeze = (candidate: unknown): void => {
+    if (
+      candidate === null ||
+      typeof candidate !== 'object' ||
+      Object.isFrozen(candidate)
+    ) return
+    for (const child of Object.values(candidate as Record<string, unknown>)) {
+      freeze(child)
+    }
+    Object.freeze(candidate)
+  }
+  freeze(snapshot)
+  return snapshot
+}
+
 const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 
 /**
@@ -4040,18 +4064,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // balance. This keeps compatible duplicate physical rows behind one
     // aggregate distribution, evidence row, runtime occurrence, and §4974
     // application while the logical ledger commits the debit pro rata.
-    const inheritedPlan = annualInheritedIraDistributions({
-      year,
-      startYear,
-      pack,
-      primaryPersonId: primary.id,
-      balances: rmdBalances,
-      startOfYearBalance,
-      classCache: inheritedClassCache,
-      beneficiaryState: (personId) => stateOf(personId),
-    })
+    const inheritedPlan = immutablePlainSnapshot(
+      annualInheritedIraDistributions({
+        year,
+        startYear,
+        pack,
+        primaryPersonId: primary.id,
+        balances: rmdBalances,
+        startOfYearBalance,
+        classCache: inheritedClassCache,
+        beneficiaryState: (personId) => stateOf(personId),
+      }),
+    )
     const inheritedOperations = inheritedPlan.rows.flatMap((row) =>
       row.distribution === null ? [] : [row.distribution])
+    const inheritedTotal = inheritedPlan.totals.inherited
+    const inheritedOrdinaryIncome = inheritedPlan.totals.ordinaryIncome
+    const inheritedRothForced = inheritedPlan.totals.rothForced
+    const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =
+      inheritedPlan.rows.map((row) => row.evidence)
+    const inheritedRmdShortfallObligations =
+      inheritedPlan.rmdShortfallObligations
     const inheritedOperationIndexes = new Set<number>()
     for (const operation of inheritedOperations) {
       const state = rmdBalances[operation.balanceIndex]
@@ -4098,12 +4131,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         movementAuthorityId: null,
       })
     }
-    const inheritedTotal = inheritedPlan.totals.inherited
-    const inheritedOrdinaryIncome = inheritedPlan.totals.ordinaryIncome
-    const inheritedRothForced = inheritedPlan.totals.rothForced
-    const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =
-      inheritedPlan.rows.map((row) => row.evidence)
-    rmdShortfallObligations.push(...inheritedPlan.rmdShortfallObligations)
+    rmdShortfallObligations.push(...inheritedRmdShortfallObligations)
     const rmdShortfallExciseResults: RmdShortfallExciseResult[] =
       rmdShortfallObligations.map((obligation) =>
         computeRmdShortfallExcise(
@@ -8229,7 +8257,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           'Withdrawal apply-flow evidence operation lost its row position',
         )
       }
-      evidence.voluntaryAmount = write.voluntaryAmount
+      inheritedYearEvidenceDraft[write.evidenceIndex] = Object.freeze({
+        ...evidence,
+        voluntaryAmount: write.voluntaryAmount,
+      })
     }
     for (const operation of withdrawalApplyFlowPlan.balanceOperations) {
       const state = annualIdKeyedBalances[operation.balanceIndex]
