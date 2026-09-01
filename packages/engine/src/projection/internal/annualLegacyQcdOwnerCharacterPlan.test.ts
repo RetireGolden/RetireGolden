@@ -25,6 +25,10 @@ function call(
 
 describe('annualLegacyQcdOwnerCharacterPlan', () => {
   it('consumes already-aggregated owner maps without sorting or re-canonicalizing them', () => {
+    // IRC 408(d)(8)(D) supplies the aggregate-includible ceiling and Form 8606
+    // line 7 excludes the qualified gift from the year's pro-rata denominator.
+    // Thus the grouped 318 opening pool with 60 basis and a 50 qualified gift
+    // leaves a 268 denominator and a 60 / 268 nontaxable fraction.
     const gross = new Map([
       ['z-owner', 50],
       ['m-owner', 10],
@@ -92,6 +96,10 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
   })
 
   it('fails closed on unprovable offset history without inventing a ledger write', () => {
+    // IRC 408(d)(8)(A), sentence two, reduces the exclusion by post-70½
+    // deductible section 219 contributions net of prior lifetime reductions.
+    // When that lifetime evidence is unprovable, no exclusion or replacement
+    // ledger figure can be derived safely from the current-year gift alone.
     const row = call({
       qcdGrossByOwner: new Map([['owner', 10]]),
       qcdFromRmdByOwner: new Map([['owner', 8]]),
@@ -122,6 +130,9 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
   })
 
   it('rejects a contradictory consumed-offset ledger and preserves exact cents', () => {
+    // The shared 408(d)(8)(A) worksheet contract rejects limb (ii) greater
+    // than limb (i); treating the negative remainder as zero would silently
+    // grant an exclusion from contradictory cross-year evidence.
     const contradictory = call({
       qcdGrossByOwner: new Map([['owner', 10]]),
       qcdFromRmdByOwner: new Map([['owner', 8]]),
