@@ -9,8 +9,9 @@
  * if the two ever disagree, planSchema wins and the artifact is regenerated.
  *
  * This module imports zod + the plan model, so it is intentionally kept OFF the
- * `@retiregolden/engine/schema` barrel (which stays zod-free). Tooling reaches it
- * directly — the build script via dist, and at `@retiregolden/engine/schema/generate`.
+ * `@retiregolden/engine/schema/current` data entry (which stays zod-free).
+ * Tooling reaches this generator directly — the build script via dist, and at
+ * `@retiregolden/engine/schema/generate`.
  *
  * WHAT SURVIVES THE ROUND-TRIP, AND WHAT DOES NOT
  * -----------------------------------------------
@@ -38,7 +39,7 @@
  * empty `{}` in its place — a deliberate guardrail.
  *
  * @see ./planSchemaMeta.ts for the zod-free constants + type.
- * @see ./index.ts for the shipped static artifact (`planJsonSchema`).
+ * @see ./current.ts for the current shipped static artifact (`planJsonSchema`).
  * @see scripts/generate-schema.mjs for the build-time writer.
  */
 
@@ -53,8 +54,8 @@ import {
 } from './planSchemaMeta.js'
 
 // Re-export the metadata so `@retiregolden/engine/schema/generate` is a complete
-// self-contained surface for tooling; the zero-dependency data path is the
-// barrel (./index.ts), which pulls these from ./planSchemaMeta.js instead.
+// self-contained surface for tooling; the zero-dependency current data path is
+// ./current.ts, which pulls these from ./planSchemaMeta.js instead.
 export {
   PLAN_SCHEMA_ID,
   PLAN_SCHEMA_VERSION,

@@ -16,9 +16,10 @@
  * zod-backed generator remains isolated at
  * `@retiregolden/engine/schema/generate`.
  *
- * @deprecated Prefer `@retiregolden/engine/schema/current` or an explicit
- * version entry point. This compatibility barrel will not be removed before a
- * semver-major release.
+ * This entry is documented as legacy rather than carrying a TypeScript
+ * `@deprecated` tag: TypeScript cannot deprecate a module specifier without
+ * ambiguously marking the still-current metadata exports below. This
+ * compatibility barrel will not be removed before a semver-major release.
  */
 export {
   PLAN_SCHEMA_ID,

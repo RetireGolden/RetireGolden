@@ -10,7 +10,7 @@
  * actually resolve. Run from anywhere: `node packages/engine/scripts/pack-smoke.mjs`.
  */
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -20,17 +20,34 @@ const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const shell = process.platform === 'win32' // pnpm is pnpm.cmd on Windows
 const require = createRequire(import.meta.url)
 
-function collectStaticModuleGraph(entryPath, graph = new Set()) {
+function collectImportFootprint(entryPath, footprint = {
+  modulePaths: new Set(),
+  externalSpecifiers: new Set(),
+  dynamicSpecifiers: new Set(),
+}) {
   const modulePath = resolve(entryPath)
-  if (graph.has(modulePath)) return graph
-  graph.add(modulePath)
+  if (footprint.modulePaths.has(modulePath)) return footprint
+  if (!existsSync(modulePath)) {
+    throw new Error(
+      'schema import-footprint entry or dependency does not exist: ' + modulePath +
+        '. Check the package export map and emitted schema files.',
+    )
+  }
+  footprint.modulePaths.add(modulePath)
 
   const source = readFileSync(modulePath, 'utf8')
-  const staticRelativeSpecifier = /\b(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"](\.[^'"]+)['"]/gu
-  for (const match of source.matchAll(staticRelativeSpecifier)) {
-    collectStaticModuleGraph(resolve(dirname(modulePath), match[1]), graph)
+  const staticSpecifier = /\b(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/gu
+  for (const match of source.matchAll(staticSpecifier)) {
+    if (match[1].startsWith('.')) {
+      collectImportFootprint(resolve(dirname(modulePath), match[1]), footprint)
+    } else {
+      footprint.externalSpecifiers.add(match[1])
+    }
   }
-  return graph
+  for (const match of source.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gu)) {
+    footprint.dynamicSpecifiers.add(match[1])
+  }
+  return footprint
 }
 
 const smokeScript = `
@@ -373,6 +390,16 @@ const { singlePersonPlan, cashAccount, productionTaxCalculator, runPlan } = awai
 // retargets it automatically.
 const currentSchemaApi = await import('@retiregolden/engine/schema/current')
 const { planJsonSchema, PLAN_SCHEMA_VERSION } = currentSchemaApi
+assert.deepEqual(
+  Object.keys(currentSchemaApi).sort(),
+  [
+    'PLAN_SCHEMA_ID',
+    'PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS',
+    'PLAN_SCHEMA_VERSION',
+    'planJsonSchema',
+  ].sort(),
+  'schema/current must resolve through the package export map to the current-only namespace',
+)
 const schemaV1Api = await import('@retiregolden/engine/schema/v1')
 const schemaV2Api = await import('@retiregolden/engine/schema/v2')
 const schemaV3Api = await import('@retiregolden/engine/schema/v3')
@@ -1577,12 +1604,29 @@ try {
   })
 
   const installedEngine = join(work, 'node_modules', '@retiregolden', 'engine')
-  const currentSchemaGraph = collectStaticModuleGraph(
-    join(installedEngine, 'dist', 'schema', 'current.js'),
+  const requireFromInstalledPackage = createRequire(join(work, 'package.json'))
+  const currentSchemaEntryPath = requireFromInstalledPackage.resolve(
+    '@retiregolden/engine/schema/current',
   )
-  const legacySchemaGraph = collectStaticModuleGraph(
-    join(installedEngine, 'dist', 'schema', 'index.js'),
+  const legacySchemaEntryPath = requireFromInstalledPackage.resolve(
+    '@retiregolden/engine/schema',
   )
+  const currentSchemaFootprint = collectImportFootprint(currentSchemaEntryPath)
+  const legacySchemaFootprint = collectImportFootprint(legacySchemaEntryPath)
+  const currentSchemaGraph = currentSchemaFootprint.modulePaths
+  const legacySchemaGraph = legacySchemaFootprint.modulePaths
+  if (currentSchemaFootprint.externalSpecifiers.size > 0) {
+    throw new Error(
+      'schema/current statically imports external packages: ' +
+        [...currentSchemaFootprint.externalSpecifiers].sort().join(', '),
+    )
+  }
+  if (currentSchemaFootprint.dynamicSpecifiers.size > 0) {
+    throw new Error(
+      'schema/current contains dynamic imports that the eager footprint cannot prove: ' +
+        [...currentSchemaFootprint.dynamicSpecifiers].sort().join(', '),
+    )
+  }
   const historicalGeneratedPattern = /plan\.v[1-4]\.generated\.js$/u
   const currentHistoricalModules = [...currentSchemaGraph].filter((modulePath) =>
     historicalGeneratedPattern.test(modulePath),
@@ -1619,7 +1663,9 @@ try {
     )
   }
   console.log(
-    'schema import footprint OK: schema/current reaches ' + currentSchemaGraph.size +
+    'schema import footprint OK: ' +
+      relative(installedEngine, currentSchemaEntryPath).replaceAll('\\', '/') +
+      ' reaches ' + currentSchemaGraph.size +
       ' modules / ' + currentSchemaBytes + ' bytes; legacy schema reaches ' +
       legacySchemaGraph.size + ' modules / ' + legacySchemaBytes + ' bytes',
   )
