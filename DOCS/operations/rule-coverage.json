@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 305,
+    "totalFiles": 306,
     "byStatus": {
       "partial": 44,
       "registered": 101,
-      "rule-free": 160,
+      "rule-free": 161,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -259,7 +259,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-09-01",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual pension-and-annuity income planning is registered against internal/annualPensionAndAnnuityIncome.ts while this caller retains ordered exclusion-state and contract-value commits, runtime occurrence/application journaling, qualified-payment publication and cash-flow recording; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies and inherited-Roth post-flip"
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual pension-and-annuity income planning is registered against internal/annualPensionAndAnnuityIncome.ts while this caller retains ordered exclusion-state and contract-value commits, runtime occurrence/application journaling, qualified-payment publication and cash-flow recording; post-solve liquid-account market growth is attested rule-free against internal/annualPostSolveAccountGrowth.ts while this caller retains the ordered market-balance/weight commits, HECM prior-return publication, and second-pass reinvestment/basis credits; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies and inherited-Roth post-flip"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -399,11 +399,11 @@
     },
     {
       "directory": "projection",
-      "files": 69,
+      "files": 70,
       "byStatus": {
         "partial": 9,
         "registered": 14,
-        "rule-free": 46
+        "rule-free": 47
       }
     },
     {

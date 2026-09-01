@@ -47,7 +47,6 @@ import {
 } from '../model/plan.js'
 import {
   accountAllocation,
-  driftWeights,
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
@@ -101,6 +100,7 @@ import {
 } from './internal/annualAggregateRothConversionPlan.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
+import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountGrowth.js'
 import {
   annualDebtServiceRows,
   annualLongTermCarePlan,
@@ -8403,43 +8403,43 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           : []),
     )
 
-    const shockPct = returnShockAt(year)
+    const accountGrowth = annualPostSolveAccountGrowth({
+      states: balances,
+      allocationTrack,
+      distributedYieldByBalanceIndex,
+      classParams,
+      defaultReturnPct: plan.assumptions.defaultReturnPct,
+      shockPct: returnShockAt(year),
+      year,
+      classShockAt,
+    })
     // Wealth-weighted total return the ledger actually applies this year
-    // (including distributed yield — interest, dividends, and tax-exempt interest; a distribution, not a loss).
-    // Next year's coordinated HECM check reads it, so the down-market signal
-    // is the realized portfolio return, not the raw additive shock.
-    let returnWeightedSum = 0
-    let returnWeightBase = 0
-    for (const [balanceIndex, state] of balances.entries()) {
-      const distributedYieldPct = state.account.type === 'taxable' ? (distributedYieldByBalanceIndex.get(balanceIndex)?.distributedYieldPct ?? 0) : 0
-      const track = allocationTrack.get(String(balanceIndex))
-      if (track) {
-        // Allocated account: growth is the class blend at this year's weights
-        // (superseding annualReturnPct); distributed yield is carved
-        // out of price growth exactly like the single-return path. Weights
-        // then drift with the differential class returns until the next
-        // rebalance (or forever, when rebalancing is 'none').
-        const classRates = ASSET_CLASS_IDS.map((id, i) => classParams[id].returnPct + classShockAt(year, i))
-        const blendedPct = classRates.reduce((sum, r, i) => sum + r * (track.weights[i] ?? 0), 0)
-        returnWeightedSum += state.balance * blendedPct
-        returnWeightBase += state.balance
-        state.balance *= Math.max(0, 1 + (blendedPct - distributedYieldPct) / 100)
-        track.weights = driftWeights(track.weights, classRates)
-        continue
+    // (including distributed yield — interest, dividends, and tax-exempt
+    // interest; a distribution, not a loss). Next year's coordinated HECM
+    // check reads it, so the down-market signal is the realized portfolio
+    // return, not the raw additive shock. The coordinator returns exactly one
+    // positional row per physical balance; the caller commits every market
+    // balance and drifted weight before publishing that signal, then commits
+    // reinvestment in the original second pass below.
+    for (let balanceIndex = 0; balanceIndex < balances.length; balanceIndex++) {
+      const row = accountGrowth.rows[balanceIndex]!
+      const state = balances[balanceIndex]!
+      state.balance = row.marketClosingBalance
+      if (row.kind === 'allocated') {
+        allocationTrack.get(String(balanceIndex))!.weights = row.driftedWeights
       }
-      const expectedPct = state.account.annualReturnPct ?? plan.assumptions.defaultReturnPct
-      // Cash is a stable-value bucket: the market shock hits invested accounts only.
-      const ratePct = state.account.type === 'cash' ? expectedPct : expectedPct + shockPct - distributedYieldPct
-      returnWeightedSum += state.balance * (state.account.type === 'cash' ? expectedPct : expectedPct + shockPct)
-      returnWeightBase += state.balance
-      state.balance *= Math.max(0, 1 + ratePct / 100)
     }
-    priorYearPortfolioReturnPct = returnWeightBase > 0 ? returnWeightedSum / returnWeightBase : 0
-    for (const [balanceIndex, state] of balances.entries()) {
-      const distributedYield = distributedYieldByBalanceIndex.get(balanceIndex)
-      if (!distributedYield?.reinvest || distributedYield.gross <= 0) continue
-      state.balance += distributedYield.gross
-      if (state.account.type === 'taxable') state.costBasis += distributedYield.gross
+    priorYearPortfolioReturnPct = accountGrowth.priorYearPortfolioReturnPct
+
+    // Distributed yield is credited only after every account's market growth.
+    // Reinvestment is not growth and adds basis only to the taxable physical
+    // row whose earlier yield calculation produced it.
+    for (let balanceIndex = 0; balanceIndex < balances.length; balanceIndex++) {
+      const row = accountGrowth.rows[balanceIndex]!
+      if (row.reinvestedYield <= 0) continue
+      const state = balances[balanceIndex]!
+      state.balance += row.reinvestedYield
+      if (state.account.type === 'taxable') state.costBasis += row.reinvestedYield
     }
 
     const ownedNonRothIraBalancesByOwner = new Map<

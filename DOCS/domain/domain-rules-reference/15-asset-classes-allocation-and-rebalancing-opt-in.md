@@ -60,8 +60,11 @@ long-horizon average, deliberately not the post-2000 negative regime.
 
 **Code:** [engine/allocation/assetClasses.ts](../../../packages/engine/src/allocation/assetClasses.ts) (params,
 glidepath compilation, blends), applied in
-[engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts) (rebalance pass, yield blend,
-growth), [engine/montecarlo/marketModels.ts](../../../packages/engine/src/montecarlo/marketModels.ts) (class
+[engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts) (ordered annual commits),
+[engine/projection/internal/annualRebalanceToTarget.ts](../../../packages/engine/src/projection/internal/annualRebalanceToTarget.ts)
+(rebalance pass), [engine/projection/internal/distributedTaxableYieldRows.ts](../../../packages/engine/src/projection/internal/distributedTaxableYieldRows.ts)
+(yield blend), [engine/projection/internal/annualPostSolveAccountGrowth.ts](../../../packages/engine/src/projection/internal/annualPostSolveAccountGrowth.ts)
+(growth and weight drift), [engine/montecarlo/marketModels.ts](../../../packages/engine/src/montecarlo/marketModels.ts) (class
 shocks), [engine/decisions/generators.ts](../../../packages/engine/src/decisions/generators.ts) (location
 candidates), [engine/insights/detectors/assetLocation.ts](../../../packages/engine/src/insights/detectors/assetLocation.ts);
 account editor + Assumptions class table in
