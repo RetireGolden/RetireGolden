@@ -47,4 +47,28 @@ describe('Form 8606 pro-rata rule', () => {
     expect(split.nontaxable).toBe(0)
     expect(split.taxable).toBe(10_000)
   })
+
+  it('uses the materialized read state when the observed identity diverges', () => {
+    const identityState = { basis: 9_999, nontaxableFraction: 0.9 }
+    const readState = { basis: 30, nontaxableFraction: 0.25 }
+    const split = splitIraDistribution(identityState, 40, readState)
+
+    expect(split).toEqual({
+      nontaxable: 10,
+      taxable: 30,
+      next: { basis: 20, nontaxableFraction: 0.25 },
+    })
+    expect(split.next).not.toBe(identityState)
+    expect(split.next).not.toBe(readState)
+  })
+
+  it('returns the exact read state for a nonpositive no-op amount', () => {
+    const identityState = { basis: 9_999, nontaxableFraction: 0.9 }
+    const readState = { basis: 30, nontaxableFraction: 0.25 }
+    const split = splitIraDistribution(identityState, 0, readState)
+
+    expect(split).toEqual({ nontaxable: 0, taxable: 0, next: readState })
+    expect(split.next).toBe(readState)
+    expect(split.next).not.toBe(identityState)
+  })
 })

@@ -39,6 +39,8 @@ export interface AnnualLegacyQcdOwnerCharacterPlanInput {
 
 export interface AnnualLegacyQcdOwnerCharacterRow {
   readonly ownerId: string
+  /** True only when a positive gift encountered contradictory carry evidence. */
+  readonly contradictoryOffsetLedger: boolean
   readonly qualifiedFromRmd: number
   readonly nonQualifiedBeyondRmd: number
   readonly incomeOffsetDelta: number
@@ -89,6 +91,7 @@ export function materializeAnnualLegacyQcdOwnerCharacterPlanResult(
         `expected ${JSON.stringify(expectedOwnerIds[index])}`,
       )
     }
+    const contradictoryOffsetLedger = row.contradictoryOffsetLedger
     const qualifiedFromRmd = row.qualifiedFromRmd
     const nonQualifiedBeyondRmd = row.nonQualifiedBeyondRmd
     const incomeOffsetDelta = row.incomeOffsetDelta
@@ -130,6 +133,7 @@ export function materializeAnnualLegacyQcdOwnerCharacterPlanResult(
     })
     return {
       ownerId,
+      contradictoryOffsetLedger,
       qualifiedFromRmd,
       nonQualifiedBeyondRmd,
       incomeOffsetDelta,
@@ -191,12 +195,13 @@ export function annualLegacyQcdOwnerCharacterPlan(
     const aggregateIncludible = Math.max(0, preDistribution - basis)
     const qualified = Math.min(gift, aggregateIncludible)
     const section219 = input.qcdSection219ByDonor.get(ownerId) ?? 0
-    const consumedDollars =
-      (input.qcdOffsetConsumedByDonor.get(ownerId) ?? 0) / 100
-    const contradictoryOffsetLedger = !irc408d8APriorReductionsAreProvable(
-      section219,
-      consumedDollars,
-    )
+    const consumedCents = input.qcdOffsetConsumedByDonor.get(ownerId) ?? 0
+    const consumedDollars = consumedCents / 100
+    // The cross-year ledger is integer cents. Compare both limbs in that same
+    // domain so a valid sub-cent §219 total cannot contradict its rounded carry.
+    const section219LedgerCents = Math.round(section219 * 100)
+    const contradictoryOffsetLedger = gift > 0 &&
+      !irc408d8APriorReductionsAreProvable(section219LedgerCents, consumedCents)
     const offsetUnprovable =
       gift > 0 &&
       (contradictoryOffsetLedger || (
@@ -275,6 +280,7 @@ export function annualLegacyQcdOwnerCharacterPlan(
     }
     rows.push({
       ownerId,
+      contradictoryOffsetLedger,
       qualifiedFromRmd,
       nonQualifiedBeyondRmd,
       incomeOffsetDelta: excludableFromRmd,

@@ -4877,6 +4877,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         [...expectedQcdOwnerIds],
       )
     for (const row of qcdOwnerCharacterPlan.rows) {
+      if (row.contradictoryOffsetLedger) {
+        const ownerName = personById.get(row.ownerId)?.name ?? row.ownerId
+        warnings.add(
+          `${ownerName}’s recurring QCD was treated as ordinary income because its recorded post-70½ deductible-contribution offset exceeds the deductible-contribution total. Review the contribution and QCD history.`,
+        )
+      }
       if (row.qcdOffsetConsumedWrite !== null) {
         namedQcdOffsetConsumedByDonor.set(
           row.ownerId,
@@ -4907,6 +4913,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           case 'ordinaryBeyondRmd':
             qcdOrdinaryBeyondRmdByOwner!.set(write.ownerId, write.value)
             break
+          default: {
+            const exhaustive: never = write.target
+            throw new Error(`Unknown legacy QCD cash-flow target: ${String(exhaustive)}`)
+          }
         }
       }
       if (row.iraProRataWrite !== null) {

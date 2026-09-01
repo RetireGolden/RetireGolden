@@ -66,6 +66,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
     ])
     expect(result.rows[0]).toMatchObject({
       ownerId: 'z-owner',
+      contradictoryOffsetLedger: false,
       qualifiedFromRmd: 20,
       nonQualifiedBeyondRmd: 0,
       incomeOffsetDelta: 20,
@@ -112,6 +113,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
     }).rows[0]!
 
     expect(row).toMatchObject({
+      contradictoryOffsetLedger: false,
       qualifiedFromRmd: 8,
       incomeOffsetDelta: 0,
       nonQualifiedOrdinaryIncomeDelta: 2,
@@ -142,6 +144,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
       publishCashFlow: true,
     }).rows[0]!
     expect(contradictory).toMatchObject({
+      contradictoryOffsetLedger: true,
       incomeOffsetDelta: 0,
       nonQualifiedOrdinaryIncomeDelta: 2,
       qcdOffsetConsumedWrite: null,
@@ -156,6 +159,27 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
     }).rows[0]!
     expect(cents.incomeOffsetDelta).toBe(0)
     expect(cents.qcdOffsetConsumedWrite).toBe(102)
+  })
+
+  it('reconciles a sub-cent §219 total with its rounded cross-year ledger', () => {
+    const first = call({
+      qcdGrossByOwner: new Map([['owner', 1.006]]),
+      qcdFromRmdByOwner: new Map([['owner', 1.006]]),
+      preDistributionAggregateIraBalance: new Map([['owner', 100]]),
+      qcdSection219ByDonor: new Map([['owner', 1.006]]),
+    }).rows[0]!
+    expect(first.incomeOffsetDelta).toBe(0)
+    expect(first.qcdOffsetConsumedWrite).toBe(101)
+
+    const second = call({
+      qcdGrossByOwner: new Map([['owner', 2]]),
+      qcdFromRmdByOwner: new Map([['owner', 2]]),
+      preDistributionAggregateIraBalance: new Map([['owner', 100]]),
+      qcdSection219ByDonor: new Map([['owner', 1.006]]),
+      qcdOffsetConsumedByDonor: new Map([['owner', first.qcdOffsetConsumedWrite!]]),
+    }).rows[0]!
+    expect(second.incomeOffsetDelta).toBe(2)
+    expect(second.qcdOffsetConsumedWrite).toBe(101)
   })
 
   it('preserves cancellation-sensitive left-fold row order', () => {
@@ -202,6 +226,10 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
     }
     const row = {
       get ownerId() { reads.push('row.ownerId'); return 'owner' },
+      get contradictoryOffsetLedger() {
+        reads.push('row.contradictory')
+        return false
+      },
       get qualifiedFromRmd() { reads.push('row.qualified'); return 10 },
       get nonQualifiedBeyondRmd() { reads.push('row.nonQualified'); return 2 },
       get incomeOffsetDelta() { reads.push('row.offset'); return 3 },
@@ -240,6 +268,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
     expect(reads).toEqual([
       'rows.iterate',
       'row.ownerId',
+      'row.contradictory',
       'row.qualified',
       'row.nonQualified',
       'row.offset',
@@ -256,6 +285,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
     ])
     expect(result.rows).toEqual([{
       ownerId: 'owner',
+      contradictoryOffsetLedger: false,
       qualifiedFromRmd: 10,
       nonQualifiedBeyondRmd: 2,
       incomeOffsetDelta: 3,
@@ -300,6 +330,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
   ])('rejects %s owner rows before publication', (_name, shapes, expected) => {
     const rows = shapes.map(({ ownerId }) => ({
       ownerId,
+      contradictoryOffsetLedger: false,
       qualifiedFromRmd: 0,
       nonQualifiedBeyondRmd: 0,
       incomeOffsetDelta: 0,
@@ -318,6 +349,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
   it('rejects a cash-flow write attributed to another owner', () => {
     const row = {
       ownerId: 'p1',
+      contradictoryOffsetLedger: false,
       qualifiedFromRmd: 0,
       nonQualifiedBeyondRmd: 0,
       incomeOffsetDelta: 0,

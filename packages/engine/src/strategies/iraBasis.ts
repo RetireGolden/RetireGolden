@@ -72,8 +72,11 @@ export interface IraDistributionSplit {
  * Split one distribution (or Roth conversion) from the owner's aggregated IRAs
  * under the year's fixed pro-rata fraction. Nontaxable is capped at the
  * remaining basis so repeated draws can never recover more basis than exists.
- * `readState` lets a caller forward a load-bearing source identity while doing
- * all arithmetic over scalar state it materialized before mutable work began.
+ * `identityState` is deliberately observation-only: it lets a caller forward a
+ * load-bearing source identity to instrumentation while `readState` supplies
+ * every scalar used for arithmetic. The returned `next` always derives from
+ * `readState`; for a nonpositive amount it is that exact object because no
+ * arithmetic transition occurred.
  */
 export function splitIraDistribution(
   identityState: IraProRataYear,

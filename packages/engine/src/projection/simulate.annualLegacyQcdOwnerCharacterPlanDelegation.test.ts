@@ -16,7 +16,7 @@ type FailureMode =
   | 'proRataGetter'
   | 'unknownTarget'
 type ShapeMode = 'empty' | 'truncated' | 'reordered' | 'duplicate' | 'extra'
-type Mode = 'normal' | 'fp' | 'proRataSecondRead' | FailureMode | ShapeMode
+type Mode = 'normal' | 'warning' | 'fp' | 'proRataSecondRead' | FailureMode | ShapeMode
 
 interface Phase {
   readonly year: number
@@ -47,6 +47,7 @@ const seam = vi.hoisted(() => ({
   partialStateObservations: [] as (readonly (readonly [string, number])[])[],
   secondReadProRataIdentity: null as IraProRataYear | null,
   secondReadProRataCounts: { basis: 0, nontaxableFraction: 0 },
+  armPublicationObserver: null as (() => void) | null,
 }))
 
 vi.mock('../strategies/iraBasis.js', async (importOriginal) => {
@@ -145,6 +146,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
 
       if (seam.mode === 'rowsIterator') {
         const row = { ...first!, qcdOffsetConsumedWrite: 12_345 }
+        seam.armPublicationObserver?.()
         return {
           rows: {
             *[Symbol.iterator]() {
@@ -172,6 +174,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
             },
           },
         } as unknown as AnnualLegacyQcdOwnerCharacterRow
+        seam.armPublicationObserver?.()
         return { rows: [row] }
       }
 
@@ -184,6 +187,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
             throw new Error('hostile row getter')
           },
         }
+        seam.armPublicationObserver?.()
         return { rows: [row] }
       }
 
@@ -199,6 +203,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
             nontaxableFraction: 0,
           },
         }
+        seam.armPublicationObserver?.()
         return { rows: [row] }
       }
 
@@ -245,6 +250,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
             value: 1,
           }],
         } as unknown as AnnualLegacyQcdOwnerCharacterRow
+        seam.armPublicationObserver?.()
         return { rows: [row] }
       }
 
@@ -272,6 +278,9 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
       ]
       const injectedRow = {
         get ownerId() { return once('row.ownerId', 'p1') },
+        get contradictoryOffsetLedger() {
+          return once('row.contradictoryOffsetLedger', seam.mode === 'warning')
+        },
         get qualifiedFromRmd() {
           return once('row.qualifiedFromRmd', values.qualifiedFromRmd)
         },
@@ -357,6 +366,7 @@ function reset(mode: Mode): void {
   seam.secondReadProRataIdentity = null
   seam.secondReadProRataCounts.basis = 0
   seam.secondReadProRataCounts.nontaxableFraction = 0
+  seam.armPublicationObserver = null
 }
 
 function runNormal() {
@@ -513,6 +523,20 @@ describe('simulatePlan delegates grouped legacy QCD owner character', () => {
     )).toBe(true)
   })
 
+  it('warns when contradictory recurring-QCD offset evidence fails closed', () => {
+    reset('warning')
+    const result = simulatePlan(normalPlan(), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
+    })
+
+    expect(result.warnings.some((warning) =>
+      warning.includes('recorded post-70½ deductible-contribution offset exceeds'),
+    )).toBe(true)
+  })
+
   it.each<FailureMode>([
     'rowGetter',
     'rowsIterator',
@@ -521,16 +545,24 @@ describe('simulatePlan delegates grouped legacy QCD owner character', () => {
     'unknownTarget',
   ])('fully reads hostile %s results before any QCD character mutation', (mode) => {
     reset(mode)
-    expect(() => simulatePlan(normalPlan(), {
-      startYear: 2026,
-      horizonEndYear: 2026,
-      taxCalculator: createFlatTaxCalculator(0),
-      captureAnnualCashFlow: true,
-    })).toThrow(/hostile|Unknown legacy QCD/u)
-    expect(seam.partialStateObservations.length).toBeGreaterThan(0)
-    expect(seam.partialStateObservations).toEqual(
-      seam.partialStateObservations.map(() => []),
-    )
+    const mapSetSpy = vi.spyOn(Map.prototype, 'set')
+    seam.armPublicationObserver = () => mapSetSpy.mockClear()
+    try {
+      expect(() => simulatePlan(normalPlan(), {
+        startYear: 2026,
+        horizonEndYear: 2026,
+        taxCalculator: createFlatTaxCalculator(0),
+        captureAnnualCashFlow: true,
+      })).toThrow(/hostile|Unknown legacy QCD/u)
+      expect(seam.partialStateObservations.length).toBeGreaterThan(0)
+      expect(seam.partialStateObservations).toEqual(
+        seam.partialStateObservations.map(() => []),
+      )
+      expect(mapSetSpy).not.toHaveBeenCalled()
+    } finally {
+      seam.armPublicationObserver = null
+      mapSetSpy.mockRestore()
+    }
   })
 
   it.each<ShapeMode>([
