@@ -517,10 +517,15 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
       {personIds.length === 1 ? (
         <SingleSweepTable personIds={personIds} sweep={sweep} current={current} applyStrategy={applyStrategy} />
       ) : (
-        <CoupleHeatmap personIds={personIds} personName={personName} sweep={sweep} current={current} applyStrategy={applyStrategy} />
+        <>
+          <a className="skip-link" href="#ss-claim-age-heatmap-actions">
+            Skip claim-age choices
+          </a>
+          <CoupleHeatmap personIds={personIds} personName={personName} sweep={sweep} current={current} applyStrategy={applyStrategy} />
+        </>
       )}
 
-      <div className="add-row" style={{ marginTop: '1rem' }}>
+      <div id="ss-claim-age-heatmap-actions" className="add-row" style={{ marginTop: '1rem' }}>
         {best ? (
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setRefined(refineClaimingMonthly(plan, best.claimByPersonId, startYear))}>
             Refine to the month

@@ -1975,8 +1975,12 @@ html:has(.kpi-bar) {
 }
 
 .heatmap-cell-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+  appearance: none;
+  background: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor;
+  opacity: 1;
+  cursor: default;
 }
 
 .earnings-entry {

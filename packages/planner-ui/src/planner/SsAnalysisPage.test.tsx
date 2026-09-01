@@ -56,6 +56,8 @@ describe('SsAnalysisPage claim-age heatmap', () => {
     const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('.heatmap-cell-button'))
     expect(buttons.length).toBeGreaterThan(0)
 
+    expect(container.querySelector<HTMLAnchorElement>('a[href="#ss-claim-age-heatmap-actions"]')?.textContent).toBe('Skip claim-age choices')
+
     for (const button of buttons.slice(0, 2)) {
       expect(button.type).toBe('button')
       const label = button.getAttribute('aria-label')
@@ -95,6 +97,7 @@ describe('SsAnalysisPage claim-age heatmap', () => {
     expect(buttons.length).toBeGreaterThan(0)
     expect(buttons.every((button) => button.disabled)).toBe(true)
     expect(buttons.some((button) => button.getAttribute('aria-current') === 'true')).toBe(true)
+    expect(buttons[0]!.parentElement?.getAttribute('title')).toMatch(/Alex \d+ \/ Sam \d+: \$/)
     expect(container.textContent).toContain('claim-age choices are read-only in this workspace.')
   })
 })
