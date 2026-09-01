@@ -8,20 +8,20 @@
       "label": "ordered account selection and annual opening-state folds",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        126,
-        177
+        129,
+        192
       ],
       "anchors": [
         {
-          "line": 132,
+          "line": 134,
           "text": "const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []"
         },
         {
-          "line": 146,
+          "line": 161,
           "text": "for (const account of input.accounts) {"
         },
         {
-          "line": 162,
+          "line": 177,
           "text": "const startCalendarYear = dobYear(owner) + account.startAge"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "living/survivor pension selection and ordered state-tax folds",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        178,
-        211
+        193,
+        227
       ],
       "anchors": [
         {
-          "line": 178,
+          "line": 193,
           "text": "if (account.type === 'pension') {"
         },
         {
-          "line": 194,
+          "line": 209,
           "text": "pensionIncome += amount"
         },
         {
-          "line": 199,
+          "line": 214,
           "text": "rows.push({"
         }
       ]
@@ -54,24 +54,24 @@
       "label": "payout form, tax character, exclusion carry and qualified contract-debit plans",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        213,
-        322
+        229,
+        338
       ],
       "anchors": [
         {
-          "line": 216,
+          "line": 232,
           "text": "const paidFraction = annuityPayoutFraction(annuityPayoutForm(account), {"
         },
         {
-          "line": 234,
+          "line": 250,
           "text": "if (account.purchase?.taxQualification === 'qualified') {"
         },
         {
-          "line": 287,
+          "line": 303,
           "text": "} else if (account.purchase) {"
         },
         {
-          "line": 322,
+          "line": 338,
           "text": "rows.push({"
         }
       ]
@@ -81,20 +81,20 @@
       "label": "annuity cash-flow record and ordered commit-row publication",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        322,
-        339
+        338,
+        355
       ],
       "anchors": [
         {
-          "line": 327,
+          "line": 343,
           "text": ": {"
         },
         {
-          "line": 333,
+          "line": 349,
           "text": "account.purchase?.taxQualification === 'qualified',"
         },
         {
-          "line": 339,
+          "line": 355,
           "text": "})"
         }
       ]
@@ -104,16 +104,16 @@
       "label": "explicit final folds, publications and ordered commit rows",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        342,
-        351
+        358,
+        366
       ],
       "anchors": [
         {
-          "line": 342,
+          "line": 358,
           "text": "return {"
         },
         {
-          "line": 349,
+          "line": 365,
           "text": "rows,"
         }
       ]
