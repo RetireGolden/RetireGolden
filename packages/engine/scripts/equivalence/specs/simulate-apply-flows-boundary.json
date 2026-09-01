@@ -196,44 +196,44 @@
       "label": "apply-flow invocation and evidence-operation selection",
       "file": "projection/simulate.ts",
       "lines": [
-        8776,
-        8786
+        8614,
+        8624
       ],
       "anchors": [
         {
-          "line": 8776,
+          "line": 8614,
           "text": "const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({"
         },
         {
-          "line": 8783,
+          "line": 8621,
           "text": "})"
         },
         {
-          "line": 8784,
+          "line": 8622,
           "text": "for (const write of withdrawalApplyFlowPlan.evidenceWrites) {"
         },
         {
-          "line": 8786,
+          "line": 8624,
           "text": "if (evidence === undefined || evidence.accountId !== write.accountId) {"
         }
       ],
-      "note": "The evidence-position throw body on lines 8787-8790 is excluded: the helper enumerates the supplied evidence array and copies each row's account id. Hostile delegation tests prove the invariant."
+      "note": "The evidence-position throw body on lines 8625-8628 is excluded: the helper enumerates the supplied evidence array and copies each row's account id. Hostile delegation tests prove the invariant."
     },
     {
       "id": "W.callsite.evidenceWrite",
       "label": "inherited voluntary-amount mutation",
       "file": "projection/simulate.ts",
       "lines": [
-        8791,
-        8792
+        8629,
+        8630
       ],
       "anchors": [
         {
-          "line": 8791,
+          "line": 8629,
           "text": "evidence.voluntaryAmount = write.voluntaryAmount"
         },
         {
-          "line": 8792,
+          "line": 8630,
           "text": "}"
         }
       ]
@@ -243,28 +243,28 @@
       "label": "balance-operation iteration and logical-group lookup",
       "file": "projection/simulate.ts",
       "lines": [
-        8793,
-        8799
+        8631,
+        8637
       ],
       "anchors": [
         {
-          "line": 8793,
+          "line": 8631,
           "text": "for (const operation of withdrawalApplyFlowPlan.balanceOperations) {"
         },
         {
-          "line": 8794,
+          "line": 8632,
           "text": "const state = annualIdKeyedBalances[operation.balanceIndex]"
         },
         {
-          "line": 8795,
+          "line": 8633,
           "text": "const group = annualLogicalBalanceLedger.groups[operation.balanceIndex]"
         },
         {
-          "line": 8796,
+          "line": 8634,
           "text": "// Planning and commit are intentionally adjacent. Fail before applying a"
         },
         {
-          "line": 8798,
+          "line": 8636,
           "text": "if ("
         }
       ],
@@ -275,28 +275,28 @@
       "label": "traditional runtime occurrence and owned-IRA application selection",
       "file": "projection/simulate.ts",
       "lines": [
-        8809,
-        8838
+        8647,
+        8676
       ],
       "anchors": [
         {
-          "line": 8809,
+          "line": 8647,
           "text": "const taken = operation.taken"
         },
         {
-          "line": 8819,
+          "line": 8657,
           "text": "if (operation.recordsTraditionalRuntimeOccurrence) {"
         },
         {
-          "line": 8824,
+          "line": 8662,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 8834,
+          "line": 8672,
           "text": "if (operation.recordsOwnedIraApplication) {"
         },
         {
-          "line": 8837,
+          "line": 8675,
           "text": "}"
         }
       ]
@@ -306,36 +306,36 @@
       "label": "taxable-sale completeness check",
       "file": "projection/simulate.ts",
       "lines": [
-        8838,
-        8838
+        8676,
+        8676
       ],
       "anchors": [
         {
-          "line": 8838,
+          "line": 8676,
           "text": "if (operation.taxableSaleMissing) {"
         }
       ],
-      "note": "The failure body on line 8839 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
+      "note": "The failure body on line 8677 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
     },
     {
       "id": "W.callsite.apply",
       "label": "transactional grouped basis and balance mutation",
       "file": "projection/simulate.ts",
       "lines": [
-        8841,
-        8845
+        8679,
+        8683
       ],
       "anchors": [
         {
-          "line": 8841,
+          "line": 8679,
           "text": "group.applyClosingSnapshot({"
         },
         {
-          "line": 8842,
+          "line": 8680,
           "text": "balance: operation.sourceBalanceAfter,"
         },
         {
-          "line": 8845,
+          "line": 8683,
           "text": ": { costBasis: operation.costBasisAfter }),"
         }
       ]
@@ -345,24 +345,24 @@
       "label": "owned-IRA runtime debit application",
       "file": "projection/simulate.ts",
       "lines": [
-        8847,
-        8859
+        8685,
+        8697
       ],
       "anchors": [
         {
-          "line": 8847,
+          "line": 8685,
           "text": "if (ownedIraProducerOccurrenceKey !== null) {"
         },
         {
-          "line": 8848,
+          "line": 8686,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 8857,
+          "line": 8695,
           "text": "})"
         },
         {
-          "line": 8859,
+          "line": 8697,
           "text": "}"
         }
       ]

@@ -79,8 +79,12 @@ export const contributionAndDeferralLimitRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
