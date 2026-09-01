@@ -2201,8 +2201,10 @@ function blockV() {
     // basis-ratio association at fractional values. A cash
     // source shorter than its quoted premium begins paying immediately, so the
     // funded amount — not the quote — becomes observable investment in contract.
-    // The future purchase is a none row in 2026 and a zero-funded purchase in
-    // 2027 after the first cash-funded contract exhausted the shared source.
+    // The future purchase is a none row in 2026 and a funded row in 2027: the
+    // first cash-funded contract exhausts the source, then its 2026 payment is
+    // deposited back into cash before the future contract purchases. Block V4
+    // separately pins a zero-funded purchase.
     const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 75 })
     plan.assumptions.defaultReturnPct = 0
     plan.accounts = [
