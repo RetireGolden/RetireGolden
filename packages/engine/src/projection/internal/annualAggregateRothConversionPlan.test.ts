@@ -52,8 +52,8 @@ function roth(id: string, ownerPersonId: string, balance = 0): State {
 }
 
 const sourceContextForOwner = () => ({
-  ownerAgeAttained: 73,
-  ownerRetirementAge: null,
+  ownerAgeAttained: 50,
+  ownerRetirementAge: 80,
 })
 
 describe('annualAggregateRothConversionPlan', () => {
@@ -63,7 +63,20 @@ describe('annualAggregateRothConversionPlan', () => {
     const alexRoth = roth('alex-roth', 'alex')
     const samRoth = roth('sam-roth', 'sam')
     const alexLast = traditional('alex-last', 'alex', 30)
-    const balances = [alexFirst, samOnly, alexRoth, samRoth, alexLast]
+    // This later employer row is deliberately large enough to satisfy the
+    // reserve by itself. An owned-plan RMD cannot satisfy an IRA RMD, so the
+    // reverse walk must pass it and continue into Alex's IRAs.
+    const alexEmployer = traditional('alex-employer', 'alex', 100, {
+      kind: 'employer',
+    })
+    const balances = [
+      alexFirst,
+      samOnly,
+      alexRoth,
+      samRoth,
+      alexLast,
+      alexEmployer,
+    ]
     const opening = balances.map((state) => state.balance)
 
     const plan = annualAggregateRothConversionPlan({
@@ -90,6 +103,7 @@ describe('annualAggregateRothConversionPlan', () => {
       'alex-roth': 0,
       'sam-roth': 0,
       'alex-last': 0,
+      'alex-employer': 100,
     })
     expect(Object.isFrozen(plan.allocationBalances)).toBe(true)
     expect(balances.map((state) => state.balance)).toEqual(opening)

@@ -7156,9 +7156,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // shared policy module -- the same one the optimizer's promotion
         // chooser reads, so a promoted schedule cannot allocate by a different
         // rule than the ledger executes. The snapshot it weights owners by is
-        // `balances` as they stand here: after the RMD block (Treas. Reg.
-        // 1.408A-4 A-6(b) requires the forced distribution to precede the
-        // conversion) and before anything below reduces `state.balance`.
+        // the planner's private shadow of `balances`, after reserving any
+        // deferred first-year RMD (Treas. Reg. 1.408A-4 A-6(b) requires that
+        // amount to precede the conversion) and before anything below reduces
+        // live `state.balance`.
         //
         // That snapshot is published on the year, at the instant the policy
         // reads it and over exactly the accounts the policy reads. A promotion

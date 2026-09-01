@@ -23,7 +23,7 @@ type PlannerInput = AnnualAggregateRothConversionPlanInput<
 type PlannerOutput = AnnualAggregateRothConversionPlan<
   AggregateRothConversionBalance
 >
-type Mode = 'original' | 'snapshot' | 'draw' | 'reservation'
+type Mode = 'original' | 'snapshot' | 'draw' | 'reservation' | 'refusal'
 
 interface PlannerEvent {
   readonly input: PlannerInput
@@ -53,7 +53,23 @@ vi.mock('./internal/annualAggregateRothConversionPlan.js', async (
     ) => {
       const production = original.annualAggregateRothConversionPlan(input)
       let output = production
-      if (seam.mode === 'snapshot') {
+      if (
+        seam.mode === 'refusal' &&
+        production.allocation.status === 'refused' &&
+        production.reservations.length > 0
+      ) {
+        const [first, ...rest] = production.reservations
+        output = {
+          ...production,
+          allocationBalances: Object.freeze({
+            'delegated-refusal-snapshot': 9_876.54,
+          }),
+          reservations: [{
+            ...first!,
+            amountPlanDollars: first!.state.balance / 10,
+          }, ...rest],
+        }
+      } else if (seam.mode === 'snapshot') {
         output = {
           ...production,
           allocationBalances: Object.freeze({
@@ -139,6 +155,7 @@ function roth(id = 'roth'): Account {
 function conversionPlan(
   opening = OPENING,
   conversion = OPENING,
+  holdsRoth = true,
 ): Plan {
   const plan = singlePersonPlan({
     dob: '1953-01-01',
@@ -150,7 +167,11 @@ function conversionPlan(
   plan.expenses.baseAnnual = 0
   const source = traditionalAccount('ira', opening)
   source.annualReturnPct = 0
-  plan.accounts = [cashAccount('cash', 100_000), source, roth()]
+  plan.accounts = [
+    cashAccount('cash', 100_000),
+    source,
+    ...(holdsRoth ? [roth()] : []),
+  ]
   plan.strategies.rothConversion = {
     mode: 'manual',
     conversions: [{ year: YEAR, amount: conversion }],
@@ -275,6 +296,39 @@ describe('simulatePlan delegates aggregate Roth-conversion planning', () => {
     expect(year.balances.ira).not.toBe(originalRoundTrip - conversion)
     expect(year.balances.ira).not.toBe(opening - conversion)
     expect(year.balances.roth).toBe(conversion)
+  })
+
+  it('publishes and replays delegated output even when the policy refuses the conversion', () => {
+    const opening = 371_153_914_996_534.69
+    const conversion = 100
+    const firstRmd = opening / 26.5
+    const originalRoundTrip = (opening - firstRmd) + firstRmd
+    const delegatedReservation = opening / 10
+    const delegatedRoundTrip =
+      (opening - delegatedReservation) + delegatedReservation
+    const { result, events } = run(
+      'refusal',
+      conversionPlan(opening, conversion, false),
+    )
+    const year = result.years[0]!
+    const committed = events.at(-1)!
+
+    expect(committed.original.allocation).toEqual({
+      status: 'refused',
+      reason: 'householdHoldsNoRothAccount',
+    })
+    expect(committed.original.reservations[0]!.amountPlanDollars)
+      .toBe(firstRmd)
+    expect(committed.output.reservations[0]!.amountPlanDollars)
+      .toBe(delegatedReservation)
+    expect(year.aggregateRothConversionAllocationBalances)
+      .toBe(committed.output.allocationBalances)
+    expect(year.aggregateRothConversionAllocationBalances).toEqual({
+      'delegated-refusal-snapshot': 9_876.54,
+    })
+    expect(delegatedRoundTrip).not.toBe(originalRoundTrip)
+    expect(year.balances.ira).toBe(delegatedRoundTrip)
+    expect(year.rothConversion).toBe(0)
   })
 
   it('rolls reservation replay and allocation back before counterfactual re-entry', () => {
