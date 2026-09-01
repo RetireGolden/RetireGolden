@@ -7,11 +7,11 @@
       "id": "N.materialize.rows",
       "label": "caller-owned row materialization before annual mutations",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [72, 74],
+      "lines": [83, 85],
       "anchors": [
-        { "line": 72, "text": "const sourceRows = [...result.rows]" },
-        { "line": 73, "text": "const rows = sourceRows.map((row, index) => {" },
-        { "line": 74, "text": "const ownerId = row.ownerId" }
+        { "line": 83, "text": "const sourceRows = [...result.rows]" },
+        { "line": 84, "text": "const rows = sourceRows.map((row, index) => {" },
+        { "line": 85, "text": "const ownerId = row.ownerId" }
       ],
       "note": "Focused hostile tests cover the adjacent exact-order and cardinality rejection paths, including empty, truncated, reordered, duplicate-owner and extra rows."
     },
@@ -19,26 +19,27 @@
       "id": "N.materialize.rowScalars",
       "label": "single-read row scalars and exact pro-rata object preflight",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [81, 94],
+      "lines": [92, 105],
       "anchors": [
-        { "line": 81, "text": "const qualifiedFromRmd = row.qualifiedFromRmd" },
-        { "line": 82, "text": "const nonQualifiedBeyondRmd = row.nonQualifiedBeyondRmd" },
-        { "line": 86, "text": "const qcdOffsetConsumedWrite = row.qcdOffsetConsumedWrite" },
-        { "line": 87, "text": "const iraProRataWrite = row.iraProRataWrite" },
-        { "line": 91, "text": "void iraProRataWrite.basis" },
-        { "line": 92, "text": "void iraProRataWrite.nontaxableFraction" },
-        { "line": 94, "text": "const sourceWrites = [...row.cashFlowWrites]" }
+        { "line": 92, "text": "const qualifiedFromRmd = row.qualifiedFromRmd" },
+        { "line": 93, "text": "const nonQualifiedBeyondRmd = row.nonQualifiedBeyondRmd" },
+        { "line": 97, "text": "const qcdOffsetConsumedWrite = row.qcdOffsetConsumedWrite" },
+        { "line": 98, "text": "const iraProRataWrite = row.iraProRataWrite" },
+        { "line": 99, "text": "const iraProRataReadSnapshot = iraProRataWrite === null" },
+        { "line": 102, "text": "basis: iraProRataWrite.basis," },
+        { "line": 103, "text": "nontaxableFraction: iraProRataWrite.nontaxableFraction," },
+        { "line": 105, "text": "const sourceWrites = [...row.cashFlowWrites]" }
       ]
     },
     {
       "id": "N.materialize.writeOwner",
       "label": "caller-owned cash-flow materialization and owner preflight",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [95, 97],
+      "lines": [106, 108],
       "anchors": [
-        { "line": 95, "text": "const cashFlowWrites = sourceWrites.map((write) => {" },
-        { "line": 96, "text": "const writeOwnerId = write.ownerId" },
-        { "line": 97, "text": "if (writeOwnerId !== ownerId) {" }
+        { "line": 106, "text": "const cashFlowWrites = sourceWrites.map((write) => {" },
+        { "line": 107, "text": "const writeOwnerId = write.ownerId" },
+        { "line": 108, "text": "if (writeOwnerId !== ownerId) {" }
       ],
       "note": "Focused hostile tests cover wrong-owner rejection before any caller-owned mutation."
     },
@@ -46,14 +47,14 @@
       "id": "N.materialize.cashFlowWrites",
       "label": "single-read cash-flow scalars and closed target preflight",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [103, 110],
+      "lines": [114, 121],
       "anchors": [
-        { "line": 103, "text": "const target = write.target" },
-        { "line": 104, "text": "const value = write.value" },
-        { "line": 106, "text": "case 'exclusionFromRmd':" },
-        { "line": 107, "text": "case 'ordinaryFromRmd':" },
-        { "line": 108, "text": "case 'exclusionBeyondRmd':" },
-        { "line": 109, "text": "case 'ordinaryBeyondRmd':" }
+        { "line": 114, "text": "const target = write.target" },
+        { "line": 115, "text": "const value = write.value" },
+        { "line": 117, "text": "case 'exclusionFromRmd':" },
+        { "line": 118, "text": "case 'ordinaryFromRmd':" },
+        { "line": 119, "text": "case 'exclusionBeyondRmd':" },
+        { "line": 120, "text": "case 'ordinaryBeyondRmd':" }
       ],
       "note": "Focused hostile tests cover unknown-target rejection before any caller-owned mutation."
     },
@@ -61,22 +62,23 @@
       "id": "N.materialize.result",
       "label": "plain row snapshots retain exact pro-rata identity and helper order",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [118, 130],
+      "lines": [129, 142],
       "anchors": [
-        { "line": 118, "text": "return { ownerId: writeOwnerId, target, value }" },
-        { "line": 120, "text": "return {" },
-        { "line": 127, "text": "iraProRataWrite," },
-        { "line": 128, "text": "cashFlowWrites," },
-        { "line": 130, "text": "})" }
+        { "line": 129, "text": "return { ownerId: writeOwnerId, target, value }" },
+        { "line": 131, "text": "return {" },
+        { "line": 138, "text": "iraProRataWrite," },
+        { "line": 139, "text": "iraProRataReadSnapshot," },
+        { "line": 140, "text": "cashFlowWrites," },
+        { "line": 142, "text": "})" }
       ]
     },
     {
       "id": "N.materialize.reconcile",
       "label": "exact result cardinality preflight",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [131, 131],
+      "lines": [143, 143],
       "anchors": [
-        { "line": 131, "text": "if (rows.length !== expectedOwnerIds.length) {" }
+        { "line": 143, "text": "if (rows.length !== expectedOwnerIds.length) {" }
       ],
       "note": "The adjacent throw-only body is deliberately excluded from measured natural reach and is pinned by focused underproduction and overproduction tests."
     },
@@ -84,121 +86,121 @@
       "id": "N.materialize.return",
       "label": "caller-owned materialized result",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [137, 137],
+      "lines": [149, 149],
       "anchors": [
-        { "line": 137, "text": "return { rows }" }
+        { "line": 149, "text": "return { rows }" }
       ]
     },
     {
       "id": "N.helper.ownerRows",
       "label": "owner insertion order, basis-owner extension and already-aggregated owner inputs",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [164, 183],
+      "lines": [176, 195],
       "anchors": [
-        { "line": 164, "text": "const ownerIds = new Set<string>(input.qcdGrossByOwner.keys())" },
-        { "line": 165, "text": "for (const [ownerId, basis] of input.iraBasisByOwner) {" },
-        { "line": 170, "text": "for (const ownerId of ownerIds) {" },
-        { "line": 173, "text": "input.preDistributionAggregateIraBalance.get(ownerId) ?? 0" },
-        { "line": 183, "text": "(input.qcdOffsetConsumedByDonor.get(ownerId) ?? 0) / 100" }
+        { "line": 176, "text": "const ownerIds = new Set<string>(input.qcdGrossByOwner.keys())" },
+        { "line": 177, "text": "for (const [ownerId, basis] of input.iraBasisByOwner) {" },
+        { "line": 182, "text": "for (const ownerId of ownerIds) {" },
+        { "line": 185, "text": "input.preDistributionAggregateIraBalance.get(ownerId) ?? 0" },
+        { "line": 195, "text": "(input.qcdOffsetConsumedByDonor.get(ownerId) ?? 0) / 100" }
       ]
     },
     {
       "id": "N.helper.qualificationAndOffset",
       "label": "taxable-first qualification and section 219 offset selection",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [184, 210],
+      "lines": [196, 222],
       "anchors": [
-        { "line": 184, "text": "const contradictoryOffsetLedger = !irc408d8APriorReductionsAreProvable(" },
-        { "line": 188, "text": "const offsetUnprovable =" },
-        { "line": 192, "text": "input.preProjectionQcdOffsetUnprovable.has(ownerId)" },
-        { "line": 194, "text": "const offset = offsetUnprovable" },
-        { "line": 201, "text": "? applyIrc408d8AContributionOffset({" },
-        { "line": 210, "text": "}" }
+        { "line": 196, "text": "const contradictoryOffsetLedger = !irc408d8APriorReductionsAreProvable(" },
+        { "line": 200, "text": "const offsetUnprovable =" },
+        { "line": 204, "text": "input.preProjectionQcdOffsetUnprovable.has(ownerId)" },
+        { "line": 206, "text": "const offset = offsetUnprovable" },
+        { "line": 213, "text": "? applyIrc408d8AContributionOffset({" },
+        { "line": 222, "text": "}" }
       ]
     },
     {
       "id": "N.helper.character",
       "label": "from-RMD and beyond-RMD character partition",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [211, 221],
+      "lines": [223, 233],
       "anchors": [
-        { "line": 211, "text": "const leftover = offset.offsetApplied" },
-        { "line": 213, "text": "const nonQualifiedFromRmd = Math.min(fromRmd, nonQualified)" },
-        { "line": 219, "text": "const beyondRmdLeftover =" },
-        { "line": 221, "text": "const nonQualifiedBeyondRmd = nonQualified - nonQualifiedFromRmd" }
+        { "line": 223, "text": "const leftover = offset.offsetApplied" },
+        { "line": 225, "text": "const nonQualifiedFromRmd = Math.min(fromRmd, nonQualified)" },
+        { "line": 231, "text": "const beyondRmdLeftover =" },
+        { "line": 233, "text": "const nonQualifiedBeyondRmd = nonQualified - nonQualifiedFromRmd" }
       ]
     },
     {
       "id": "N.helper.cashFlow",
       "label": "conditional annual cash-flow write plan",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [222, 263],
+      "lines": [234, 275],
       "anchors": [
-        { "line": 222, "text": "const cashFlowWrites: LegacyQcdCashFlowWrite[] = []" },
-        { "line": 223, "text": "if (input.publishCashFlow) {" },
-        { "line": 224, "text": "if (fromRmd > 0) {" },
-        { "line": 234, "text": "if (ordinaryFromRmd > 0) {" },
-        { "line": 242, "text": "const beyondAmount = gift - fromRmd" },
-        { "line": 243, "text": "if (beyondAmount > 0) {" },
-        { "line": 252, "text": "cashFlowWrites.push({" },
-        { "line": 257, "text": "cashFlowWrites.push({" },
-        { "line": 263, "text": "}" }
+        { "line": 234, "text": "const cashFlowWrites: LegacyQcdCashFlowWrite[] = []" },
+        { "line": 235, "text": "if (input.publishCashFlow) {" },
+        { "line": 236, "text": "if (fromRmd > 0) {" },
+        { "line": 246, "text": "if (ordinaryFromRmd > 0) {" },
+        { "line": 254, "text": "const beyondAmount = gift - fromRmd" },
+        { "line": 255, "text": "if (beyondAmount > 0) {" },
+        { "line": 264, "text": "cashFlowWrites.push({" },
+        { "line": 269, "text": "cashFlowWrites.push({" },
+        { "line": 275, "text": "}" }
       ]
     },
     {
       "id": "N.helper.result",
       "label": "exact-cent offset, pro-rata object and owner row result",
       "file": "projection/internal/annualLegacyQcdOwnerCharacterPlan.ts",
-      "lines": [264, 280],
+      "lines": [276, 292],
       "anchors": [
-        { "line": 264, "text": "rows.push({" },
-        { "line": 271, "text": "qcdOffsetConsumedWrite: gift > 0 && !offsetUnprovable" },
-        { "line": 274, "text": "iraProRataWrite: basis > 0" },
-        { "line": 280, "text": "return { rows }" }
+        { "line": 276, "text": "rows.push({" },
+        { "line": 283, "text": "qcdOffsetConsumedWrite: gift > 0 && !offsetUnprovable" },
+        { "line": 286, "text": "iraProRataWrite: basis > 0" },
+        { "line": 292, "text": "return { rows }" }
       ]
     },
     {
       "id": "N.callsite.invoke",
       "label": "owner-character invocation with grouped annual state snapshots",
       "file": "projection/simulate.ts",
-      "lines": [5364, 5383],
+      "lines": [5374, 5393],
       "anchors": [
-        { "line": 5364, "text": "const qcdQualifiedFromRmdByOwner = new Map<string, number>()" },
-        { "line": 5366, "text": "const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())" },
-        { "line": 5371, "text": "materializeAnnualLegacyQcdOwnerCharacterPlanResult(" },
-        { "line": 5372, "text": "annualLegacyQcdOwnerCharacterPlan({" },
-        { "line": 5376, "text": "preDistributionAggregateIraBalance," },
-        { "line": 5378, "text": "qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor," },
-        { "line": 5382, "text": "[...expectedQcdOwnerIds]," }
+        { "line": 5374, "text": "const qcdQualifiedFromRmdByOwner = new Map<string, number>()" },
+        { "line": 5376, "text": "const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())" },
+        { "line": 5381, "text": "materializeAnnualLegacyQcdOwnerCharacterPlanResult(" },
+        { "line": 5382, "text": "annualLegacyQcdOwnerCharacterPlan({" },
+        { "line": 5386, "text": "preDistributionAggregateIraBalance," },
+        { "line": 5388, "text": "qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor," },
+        { "line": 5392, "text": "[...expectedQcdOwnerIds]," }
       ]
     },
     {
       "id": "N.callsite.applyRows",
       "label": "ordered owner character, offset and income folds",
       "file": "projection/simulate.ts",
-      "lines": [5384, 5400],
+      "lines": [5394, 5410],
       "anchors": [
-        { "line": 5384, "text": "for (const row of qcdOwnerCharacterPlan.rows) {" },
-        { "line": 5385, "text": "if (row.qcdOffsetConsumedWrite !== null) {" },
-        { "line": 5391, "text": "qcdQualifiedFromRmdByOwner.set(row.ownerId, row.qualifiedFromRmd)" },
-        { "line": 5396, "text": "qcdIncomeOffset += row.incomeOffsetDelta" },
-        { "line": 5398, "text": "qcdNonQualifiedOrdinaryIncome +=" },
-        { "line": 5400, "text": "}" }
+        { "line": 5394, "text": "for (const row of qcdOwnerCharacterPlan.rows) {" },
+        { "line": 5395, "text": "if (row.qcdOffsetConsumedWrite !== null) {" },
+        { "line": 5401, "text": "qcdQualifiedFromRmdByOwner.set(row.ownerId, row.qualifiedFromRmd)" },
+        { "line": 5406, "text": "qcdIncomeOffset += row.incomeOffsetDelta" },
+        { "line": 5408, "text": "qcdNonQualifiedOrdinaryIncome +=" },
+        { "line": 5410, "text": "}" }
       ]
     },
     {
       "id": "N.callsite.cashFlowWrites",
       "label": "all four closed-union cash-flow publications",
       "file": "projection/simulate.ts",
-      "lines": [5401, 5414],
+      "lines": [5411, 5424],
       "anchors": [
-        { "line": 5401, "text": "for (const write of row.cashFlowWrites) {" },
-        { "line": 5402, "text": "switch (write.target) {" },
-        { "line": 5403, "text": "case 'exclusionFromRmd':" },
-        { "line": 5406, "text": "case 'ordinaryFromRmd':" },
-        { "line": 5409, "text": "case 'exclusionBeyondRmd':" },
-        { "line": 5412, "text": "case 'ordinaryBeyondRmd':" },
-        { "line": 5414, "text": "break" }
+        { "line": 5411, "text": "for (const write of row.cashFlowWrites) {" },
+        { "line": 5412, "text": "switch (write.target) {" },
+        { "line": 5413, "text": "case 'exclusionFromRmd':" },
+        { "line": 5416, "text": "case 'ordinaryFromRmd':" },
+        { "line": 5419, "text": "case 'exclusionBeyondRmd':" },
+        { "line": 5422, "text": "case 'ordinaryBeyondRmd':" },
+        { "line": 5424, "text": "break" }
       ],
       "note": "The materializer rejects targets outside LegacyQcdCashFlowWrite's closed union before caller mutation. The hostile delegation test injects and observes exact identity/value publication for all four supported targets."
     },
@@ -206,13 +208,16 @@
       "id": "N.callsite.proRataApply",
       "label": "exact helper-owned pro-rata object publication",
       "file": "projection/simulate.ts",
-      "lines": [5417, 5420],
+      "lines": [5427, 5435],
       "anchors": [
-        { "line": 5417, "text": "if (row.iraProRataWrite !== null) {" },
-        { "line": 5418, "text": "iraProRata.set(row.ownerId, row.iraProRataWrite)" },
-        { "line": 5420, "text": "}" }
+        { "line": 5427, "text": "if (row.iraProRataWrite !== null) {" },
+        { "line": 5428, "text": "const readSnapshot = row.iraProRataReadSnapshot!" },
+        { "line": 5429, "text": "iraProRata.set(row.ownerId, readSnapshot)" },
+        { "line": 5430, "text": "qcdProRataIdentityByReadSnapshot.set(" },
+        { "line": 5432, "text": "row.iraProRataWrite," },
+        { "line": 5435, "text": "}" }
       ],
-      "note": "The hostile delegation test observes the exact returned object at a wrapped downstream split, failing if the caller reconstructs the pro-rata year; its hostile getters also fail if caller application rereads helper-owned row state."
+      "note": "The hostile delegation test observes the exact returned object on the wrapped downstream identity channel while a second-read-throwing object proves all arithmetic uses the immutable scalar snapshot."
     }
   ],
   "measuredProof": {
@@ -222,14 +227,14 @@
       "engineSourceTree": "ff7f021a45c6a1aa12592776f849ee6a403d7e33"
     },
     "head": {
-      "observedAtCommit": "40c9efdab5867b20800d8dc6ef6316458c08e06c",
-      "engineSourceTree": "6aef0ad5bc19cf22dd2c45a9d0800ff1834bee92"
+      "observedAtCommit": "8cfabec27c00c866497fcc4674735e3bbc96e7b0",
+      "engineSourceTree": "6f0f9d5b7b57b0634e99f1c8cb2c721ab41c1297"
     },
     "inputs": {
       "corpusSourceBlob": "d75ba0297676f76b79b59c891fe77f13c8204e7a",
       "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
       "engineTreeLoaderBlob": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
-      "specMeasurementSha256": "ccf38f626f213995e8534a28eb1e48f4434452e7fb2541422276da87a695a1e5"
+      "specMeasurementSha256": "7b459ac88a333269fa7a1481fc71db2a73642602e094e44c73176dea9991e4f9"
     },
     "corpus": {
       "members": 69,
@@ -258,7 +263,7 @@
         "blocks:n5-unprovableOffsetFailsClosed"
       ]
     },
-    "scope": "The mixed grouped-ID member measures a same-year deductible contribution updating qcdSection219ByDonor before character planning, and the duplicate-ID members measure one logical aggregate rather than physical-row intent. Focused helper and delegation tests independently pin contradictory offset history; exact pro-rata identity; all four cash-flow target values; multi-year counterfactual retry, rollback and re-entry; fresh per-attempt arrays, rows and writes; single-read hostile getters and iterators before any annual character mutation; exact owner-union order/cardinality; and the caller's three-row 1e16-plus-1-plus-1 binary64 left fold."
+    "scope": "The mixed grouped-ID member measures a same-year deductible contribution updating qcdSection219ByDonor before character planning, and the duplicate-ID members measure one logical aggregate rather than physical-row intent. Focused helper and delegation tests independently pin contradictory offset history; exact pro-rata identity plus immutable scalar arithmetic after a hostile second-read boundary; all four cash-flow target values; multi-year counterfactual retry, rollback and re-entry; fresh per-attempt arrays, rows and writes; single-read hostile getters and iterators before any annual character mutation; exact owner-union order/cardinality; and the caller's three-row 1e16-plus-1-plus-1 binary64 left fold."
   },
   "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on any cold executable whole line in a reached range. JavaScript line coverage cannot distinguish every ternary, nullish or compound-condition operand sharing one physical line, so its reported cold sub-line region and the focused hostile tests must be read alongside the differential proof."
 }
