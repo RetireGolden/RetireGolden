@@ -1736,6 +1736,29 @@ describe('Plan retirement-action persistence', () => {
     expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "duplicate-hsa"')
   })
 
+  it('compares HSA beneficiaries through their effective estate destination', () => {
+    const plan = validCouplePlan()
+    const base = {
+      type: 'hsa' as const,
+      id: 'duplicate-hsa',
+      name: 'HSA row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+      withdrawalTreatment: 'assumeAllQualified' as const,
+      beneficiary: 'nonSpouse' as const,
+    }
+    plan.accounts = [base, {
+      ...base,
+      name: 'Explicit equivalent HSA row',
+      beneficiary: 'spouse',
+      estateBeneficiary: { destination: 'nonSpouse' },
+    }]
+
+    expect(parsePlan(plan).ok).toBe(true)
+  })
+
   it('rejects cross-type duplicate IDs when both rows become financial balances', () => {
     const plan = validCouplePlan()
     plan.accounts.push({

@@ -163,6 +163,7 @@ function contributionRecord(
     movementAuthorityId: 'runtime-contribution-authority',
     kind: 'ownedIraContribution',
     origin: 'contributionLedger',
+    sourceBalanceIndex: 0,
     upstreamEvidenceId: 'runtime-contribution-upstream',
     ...overrides,
   })

@@ -74,6 +74,7 @@ export interface NormalizedOwnedNonRothIraApplication {
     | 'namedQcd'
     | 'namedRothConversion'
     | 'ownedIraContribution'
+    | 'ownedIraEmployerContribution'
     | 'rolloverInflow'
   readonly applicationKind: 'debit' | 'credit'
   readonly simulatorPhase:
@@ -853,6 +854,7 @@ function applicationShape(
     case 'rolloverInflow':
       return { applicationKind: 'credit', simulatorPhase: 'pensionLumpSumRollover', form8606Line: null }
     case 'ownedIraContribution':
+    case 'ownedIraEmployerContribution':
       return { applicationKind: 'credit', simulatorPhase: 'employeeContribution', form8606Line: null }
     case 'ownedIraRmd':
       return { applicationKind: 'debit', simulatorPhase: 'ownerRmdDistribution', form8606Line: 'line7' }
@@ -1034,7 +1036,6 @@ function occurrenceOrderAccountId(
   const simpleKinds = new Set([
     'ownedIraRmd', 'employerPlanRmd', 'inheritedIraRmd',
     'automaticSeppDistribution', 'legacyNeedBasedWithdrawal', 'legacyQcd',
-    'ownedIraEmployerContribution',
   ])
   if (simpleKinds.has(occurrence.kind)) {
     if (key.length !== 2 || key[0] !== occurrence.kind || key[1] !== sourceId) {
@@ -1046,6 +1047,7 @@ function occurrenceOrderAccountId(
   }
   const positionalContributionKinds = new Set([
     'ownedIraContribution',
+    'ownedIraEmployerContribution',
     'employerPlanEmployeeContribution',
     'employerPlanEmployerMatch',
   ])
@@ -2232,7 +2234,9 @@ function validateUnchecked(
       cents(rawAmount, 'Application amount', context)
       const occurrenceAmount = cents(occurrence.grossAmountPlanDollars, 'Occurrence amount', context)
       const sourceAccountId = asAccountId(occurrence.sourceAccountId!)
-      const positionalContribution = occurrence.kind === 'ownedIraContribution'
+      const positionalContribution =
+        occurrence.kind === 'ownedIraContribution' ||
+        occurrence.kind === 'ownedIraEmployerContribution'
       const keyTuple = positionalContribution
         ? parseKey(occurrence.producerOccurrenceKey, taxYear)
         : null

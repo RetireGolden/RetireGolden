@@ -1364,7 +1364,6 @@ export function duplicateAccountIdentityFacts(
     account.type === 'equityComp' ? account.vestDate : null,
     account.type === 'hsa' ? account.withdrawalTreatment ?? null : null,
     account.type === 'hsa' ? account.reimburseLater ?? false : null,
-    account.type === 'hsa' ? account.beneficiary ?? 'spouse' : null,
     estateDestination,
     estateDestination === 'charity' ? estateBeneficiary?.charityPct ?? 0 : 0,
   ]

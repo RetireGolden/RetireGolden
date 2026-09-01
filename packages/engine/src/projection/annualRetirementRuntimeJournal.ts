@@ -213,12 +213,17 @@ function unresolvedReason(
   executionDate: string | null,
   executionSequence: number | null,
   movementAuthorityId: string | null,
+  sourceBalanceIndex: number | undefined,
 ): UnresolvedAnnualRetirementPhysicalActivityRecord['incompatibility'] {
   if (ownerPersonId === null) return 'legacyAggregateIdentityUnavailable'
   if (sourceAccountId === null) return 'sourceAllocationUnavailable'
   if (executionDate === null || executionSequence === null) {
     return 'executionChronologyUnavailable'
   }
+  if (
+    annualRetirementRuntimeEventUsesPhysicalBalanceIndex(kind) &&
+    sourceBalanceIndex === undefined
+  ) return 'sourceBalanceIndexUnavailable'
   if (movementAuthorityId === null || !resolvedKinds.has(kind)) {
     return 'movementAuthorityUnavailable'
   }
@@ -449,6 +454,7 @@ export function recordSimulatorAnnualRetirementRuntimeOccurrence(
         occurrence.executionDate,
         occurrence.executionSequence,
         occurrence.movementAuthorityId,
+        sourceBalanceIndex,
       ),
       upstreamEvidenceId,
     } satisfies UnresolvedAnnualRetirementPhysicalActivityRecord

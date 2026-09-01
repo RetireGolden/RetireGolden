@@ -360,13 +360,13 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
   })
 
   it.each([
-    ['ownedIraContribution', ownedIraId],
-    ['ownedIraEmployerContribution', siblingIraId],
-    ['employerPlanEmployeeContribution', employerId],
-    ['employerPlanEmployerMatch', employerId],
+    ['ownedIraContribution', ownedIraId, 0],
+    ['ownedIraEmployerContribution', siblingIraId, 1],
+    ['employerPlanEmployeeContribution', employerId, 2],
+    ['employerPlanEmployerMatch', employerId, 2],
   ] as const)(
     'inventories explicit %s inflows and prevents standalone execution',
-    (kind, sourceAccountId) => {
+    (kind, sourceAccountId, sourceBalanceIndex) => {
       const plan = basePlan()
       const owner = plan.household.people[0]!
       owner.dob = '1970-01-01'
@@ -410,6 +410,7 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
         kind,
         origin: 'contributionLedger',
         sourceAccountId,
+        sourceBalanceIndex,
       })]))
 
       expect(result.compatibility).toEqual({
@@ -459,6 +460,7 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       [resolved({
         kind: 'ownedIraContribution',
         origin: 'contributionLedger',
+        sourceBalanceIndex: 0,
       })],
     )).status).toBe('annualPhysicalEventInventoryBuilt')
 
@@ -554,17 +556,15 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     expect(result.issues.map((item) => item.kind)).toContain('sourceForeignToPlan')
   })
 
-  it('requires a physical index for a positional event when its source ID is duplicated', () => {
+  it('requires a physical index for a positional event even when its source ID is unique', () => {
     const plan = basePlan()
     plan.strategies.retirementActions = []
-    const first = traditionalAccount(ownedIraId, 1_000, ownerPersonId)
-    const selected = traditionalAccount(ownedIraId, 2_000, ownerPersonId)
-    if (first.type !== 'traditional' || selected.type !== 'traditional') {
+    const account = traditionalAccount(ownedIraId, 1_000, ownerPersonId)
+    if (account.type !== 'traditional') {
       throw new Error('fixture drift')
     }
-    first.annualContribution = 3_000
-    selected.annualContribution = 0
-    plan.accounts = [first, selected]
+    account.annualContribution = 3_000
+    plan.accounts = [account]
 
     const result = buildAnnualRetirementPhysicalEventInventory(input(plan, [resolved({
       kind: 'ownedIraContribution',

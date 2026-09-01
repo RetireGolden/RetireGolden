@@ -575,6 +575,35 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
+  it('replays an owned-IRA employer contribution through its positional row key', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'positional-employer-ira-contribution-key'
+    plan.incomes = [{
+      id: 'wages', type: 'wages', personId: 'p1', annualGross: 100_000,
+      endAge: null, realGrowthPct: 0,
+    }]
+    const ira = traditional('ira', 0)
+    ira.annualContribution = 1_000
+    plan.accounts = [ira]
+
+    const projected = copy(project(plan))
+    const occurrence = projected[0]!.retirementRuntimeSource!.runtimeOccurrences
+      .find((entry) => entry.kind === 'ownedIraContribution')
+    const application = projected[0]!.retirementRuntimeApplicationSource!.applications
+      .find((entry) => entry.applicationKind === 'credit')
+    if (!occurrence || !application || application.applicationKind !== 'credit') {
+      throw new Error('expected owned-IRA contribution occurrence and credit')
+    }
+    const employerKey = JSON.stringify(['ownedIraEmployerContribution', 'ira', 0])
+    ;(occurrence as { kind: string; producerOccurrenceKey: string }).kind =
+      'ownedIraEmployerContribution'
+    ;(occurrence as { producerOccurrenceKey: string }).producerOccurrenceKey = employerKey
+    ;(application as { producerOccurrenceKey: string }).producerOccurrenceKey = employerKey
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, projected))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete' })
+  })
+
   it('orders one aggregate conversion occurrence per duplicate logical source', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'duplicate-owned-ira-conversion-source'

@@ -1643,7 +1643,7 @@ describe('simulatePlan published per-entity ledger facts', () => {
       })
     })
 
-    it('does not treat one omitted duplicate member as an omitted owner-wide basis', () => {
+    it('treats an omitted duplicate member as assumed zero alongside additive stated basis', () => {
       const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
       plan.id = 'published-facts-duplicate-ira-explicit-basis'
       plan.assumptions.inflationPct = 0
@@ -1658,7 +1658,7 @@ describe('simulatePlan published per-entity ledger facts', () => {
       expect(year.rmd).toBeGreaterThan(0)
       const owner = (year.ownedTraditionalIraAggregateActivity ?? [])
         .find((row) => row.ownerPersonId === 'p1')
-      expect(owner?.assumedBasisConsequential).toBeUndefined()
+      expect(owner?.assumedBasisConsequential?.distributions).toBeGreaterThan(0)
     })
 
     it('still reports an omitted distinct IRA when another IRA states basis', () => {

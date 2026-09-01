@@ -3662,29 +3662,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Year-scoped omitted-basis owners: same aggregation membership the
     // Form 8606 settlement uses this year (includes post-election treat-as-own).
     ownersWithOmittedNondeductibleBasis.clear()
-    const logicalAccountHasExplicitNondeductibleBasis = new Map<
-      string,
-      Map<string, boolean>
-    >()
     for (const { account } of balances) {
       if (!isAggregatedIraThisYear(account)) continue
       // isAggregatedIraThisYear is not a type predicate (S2 post-flip accounts
       // stay TraditionalAccount with inherited set); re-narrow for basis field.
       if (account.type !== 'traditional' || account.kind !== 'ira') continue
       const ownerPersonId = account.ownerPersonId ?? primary.id
-      const accountBasisPresence = logicalAccountHasExplicitNondeductibleBasis.get(
-        ownerPersonId,
-      ) ?? new Map<string, boolean>()
-      accountBasisPresence.set(
-        account.id,
-        (accountBasisPresence.get(account.id) ?? false) ||
-          account.nondeductibleBasis !== undefined,
-      )
-      logicalAccountHasExplicitNondeductibleBasis.set(ownerPersonId, accountBasisPresence)
-    }
-    for (const [ownerPersonId, accountBasisPresence] of
-      logicalAccountHasExplicitNondeductibleBasis) {
-      if ([...accountBasisPresence.values()].some((hasExplicitBasis) => !hasExplicitBasis)) {
+      if (account.nondeductibleBasis === undefined) {
         ownersWithOmittedNondeductibleBasis.add(ownerPersonId)
       }
     }

@@ -648,6 +648,7 @@ describe('buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput', () =>
       origin: kind === 'ownedIraRmd' ? 'rmdEngine' : 'contributionLedger',
       ownerPersonId: owner,
       sourceAccountId: requestedIra,
+      ...(kind === 'ownedIraContribution' ? { sourceBalanceIndex: 0 } : {}),
       grossAmount: asPositiveUsdCents(1),
       executionDate: '2030-02-01',
       executionSequence: 1,

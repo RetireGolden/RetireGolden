@@ -210,6 +210,7 @@ export interface ResolvedAnnualRetirementPhysicalEventRecord {
 export type AnnualRetirementUnresolvedActivityReason =
   | 'legacyAggregateIdentityUnavailable'
   | 'sourceAllocationUnavailable'
+  | 'sourceBalanceIndexUnavailable'
   | 'executionChronologyUnavailable'
   | 'movementAuthorityUnavailable'
 
@@ -480,6 +481,7 @@ const unresolvedRecordSchema = z.object({
   incompatibility: z.enum([
     'legacyAggregateIdentityUnavailable',
     'sourceAllocationUnavailable',
+    'sourceBalanceIndexUnavailable',
     'executionChronologyUnavailable',
     'movementAuthorityUnavailable',
   ]),
@@ -1572,10 +1574,6 @@ export function buildAnnualRetirementPhysicalEventInventory(
     }
     const usesPhysicalBalanceIndex =
       annualRetirementRuntimeEventUsesPhysicalBalanceIndex(record.kind)
-    const physicalSourceCount = physicalBalanceAccounts.reduce(
-      (count, account) => count + Number(account.id === record.sourceAccountId),
-      0,
-    )
     if (!usesPhysicalBalanceIndex && record.sourceBalanceIndex !== undefined) {
       inventoryIssues.push(issue(
         'runtimeRecordBindingMismatch',
@@ -1583,13 +1581,11 @@ export function buildAnnualRetirementPhysicalEventInventory(
         { recordId: record.eventId, sourceAccountId: record.sourceAccountId },
       ))
     } else if (
-      usesPhysicalBalanceIndex &&
-      physicalSourceCount > 1 &&
-      record.sourceBalanceIndex === undefined
+      usesPhysicalBalanceIndex && record.sourceBalanceIndex === undefined
     ) {
       inventoryIssues.push(issue(
         'runtimeRecordBindingMismatch',
-        `Runtime event kind ${record.kind} must identify its exact physical balance row when the source ID is duplicated`,
+        `Runtime event kind ${record.kind} must identify its exact physical balance row`,
         { recordId: record.eventId, sourceAccountId: record.sourceAccountId },
       ))
     }
