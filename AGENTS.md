@@ -69,14 +69,16 @@ pnpm + Corepack. Run `corepack enable` before the first `pnpm` command.
   invalidates the prior result: require both a clean review and all expected
   non-CLA checks to be present and successful for the latest commit before
   merging.
-- Merge completed PRs with `gh pr merge --squash --admin`. For a stacked PR,
+- Merge completed PRs by squash only when the acting maintainer or operator has
+  authorized the merge. This repository file grants no administrative override;
+  any such authority must come from the operator's local instructions. For a
+  stacked PR,
   after its parent is squash-merged, rebase the child's unique commits onto the
   updated base (or recreate them there); merely retargeting the PR is not
   sufficient. Push the rewritten child head and repeat the latest-SHA review
-  and `run-ci` validation before merging it. Nathan has granted standing merge
-  authorization for this workflow. The admin override is solely for bypassing
-  an agent-authored CLA restriction; never use it to bypass an absent, skipped,
-  pending, or failing review, security, or CI check.
+  and `run-ci` validation before merging it. Regardless of the operator's merge
+  authority, never bypass an absent, skipped, pending, or failing review,
+  security, or CI check.
 - No publish, release, or tag unless the user asked for that activation step.
 - Never add `cursoragent` to the CLA allowlist. Do not modify
   `.github/workflows/cla.yml` to allowlist shared Cursor accounts.
