@@ -70,7 +70,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | `params/` | `index.ts` (incl. `TRUSTEES_DEFAULT_SS_HAIRCUT`) + `provenance.ts`; federal packs in `data/` (e.g. `year2026.ts`); per-state in `state/` |
 | `tax/` | `federalTax.ts` (incl. `applyCapitalLossCarryforward`), `stateTax.ts`, `aca.ts`, `medicare.ts` |
 | `allocation/` | `assetClasses.ts` (per-class returns/volatilities/yields, blended-return helpers) |
-| `ladder/` | TIPS income floor: `ladderMath.ts` (rung solve, pricing, `realPresentValue`), `bridge.ts` (SS bridge sizing), `fundedRatio.ts`, `fedInvest.ts` (CSV parsing/date math only — the fetch + cache live in the app's `data/fedInvestClient.ts`) |
+| `ladder/` | TIPS income floor: `ladderMath.ts` (rung solve, pricing, `realPresentValue`), `bridge.ts` (SS bridge sizing), `fundedRatio.ts`, `fedInvest.ts` (CSV parsing/date math only — the fetch + cache live in `planner-ui/src/data/fedInvestClient.ts`) |
 | `rmd/` | `rmd.ts` |
 | `socialSecurity/` | Pure SS math consumed by the ledger: `nra`, `benefitFactor`, `claimFactor`, `piaFromEarnings`, `ssaWageData`, `maritalBenefits`, `survivorBenefit`, `familyMaximum`, `disability` |
 | `longevity/` | `ssaPeriod2022.ts` (SSA period life table) + shared `types.ts` |

@@ -9,9 +9,13 @@ import { describe, expect, it } from 'vitest'
 // Vite raw/glob imports keep this test inside the browser-typed src tree.
 import codeMap from '../../DOCS/code-map.md?raw'
 import architecture from '../../DOCS/architecture.md?raw'
+import tipsIncomeFloor from '../../DOCS/domain/domain-rules-reference/18-tips-income-floor-ladders-the-ss-bridge.md?raw'
 import planFileFormat from '../../DOCS/features/plan-file-format.md?raw'
 import planningRecord from '../../DOCS/features/planning-record.md?raw'
 import readme from '../../README.md?raw'
+import appPackageJson from '../package.json?raw'
+import enginePackageJson from '../../packages/engine/package.json?raw'
+import plannerUiPackageJson from '../../packages/planner-ui/package.json?raw'
 import repoPackageJson from '../../package.json?raw'
 import fedInvestClient from '../../packages/planner-ui/src/data/fedInvestClient.ts?raw'
 import { V2_BACKUP_VERSION } from '@retiregolden/planner-ui/data/v2Backup'
@@ -23,6 +27,9 @@ const workflowFiles = Object.keys(import.meta.glob('../../.github/workflows/*.ym
   (path) => path.split('/').pop()!,
 )
 const nodeFloor = (JSON.parse(repoPackageJson) as { engines: { node: string } }).engines.node
+const packageNodeFloors = [appPackageJson, enginePackageJson, plannerUiPackageJson].map(
+  (manifest) => (JSON.parse(manifest) as { engines: { node: string } }).engines.node,
+)
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -56,10 +63,14 @@ describe('docs consistency', () => {
 
   it('code-map.md states the repository Node.js floor', () => {
     expect(codeMap).toMatch(new RegExp(`Node\\.js[^\\n]*${escapeRegExp(nodeFloor)}`))
+    expect(readme).toMatch(new RegExp(`Node[^\\n]*${escapeRegExp(nodeFloor)}`))
+    expect(packageNodeFloors).toEqual([nodeFloor, nodeFloor, nodeFloor])
   })
 
   it('architecture.md assigns opt-in FedInvest IO to the planner client', () => {
-    expect(architecture).toMatch(/packages\/planner-ui\/src\/data\/fedInvestClient\.ts[^.]*\b(fetch|request|IO)\b/i)
+    for (const doc of [architecture, codeMap, tipsIncomeFloor]) {
+      expect(doc).toContain('planner-ui/src/data/fedInvestClient.ts')
+    }
     expect(fedInvestClient).toMatch(/export\s+async\s+function\s+fetchFedInvestTips/)
   })
 

@@ -92,7 +92,8 @@ them (break-even, expected PV, explain, mySSA XML import) stay in the planner-ui
   already-present typed legacy actions. The v2 -> v3 step advances to the optional durable IRA
   classification, per-year SEP/SIMPLE activity, and per-donor/year deductible-contribution facts;
   it never infers or promotes them, and explicitly discards a same-named root smuggled into a v1/v2
-  input. The v3 -> v4 migration adds protected annual tax facts without inventing them; v4 -> v5 writes
+  input. The v3 -> v4 migration strips any same-named root rather than inventing protected annual tax facts;
+  v4 -> v5 writes
   `inflationAdjusted: false` for legacy one-time income (their historical behavior). Earlier additive fields (`stateMoves`,
   `insurance`, `capitalLossCarryforward`, and the July 2026 wave: `incomeFloor`, `spendingPolicy`,
   `expenses.healthcare.ssa44`, annuity payout forms, pension `lumpSumOffer`, HECM) shipped via Zod defaults

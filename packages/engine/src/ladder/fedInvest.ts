@@ -3,8 +3,8 @@
  * rung matching). See social-security-bridge-and-tips-ladder, step 5.
  *
  * The engine performs no IO: the actual fetch against the FedInvest service
- * and the per-day localStorage cache live in the consuming app (the web
- * app's `src/data/fedInvestClient.ts`), which hands CSV text to
+ * and the per-day localStorage cache live in the consuming planner UI
+ * (`packages/planner-ui/src/data/fedInvestClient.ts`), which hands CSV text to
  * {@link parseFedInvestCsv} and assembles {@link FedInvestSnapshot} values.
  * The embedded real-yield curve always remains the planning source of truth
  * — FedInvest prices are an opt-in, user-triggered reference only.

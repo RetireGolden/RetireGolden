@@ -60,8 +60,8 @@ Ten GitHub Actions workflows: the SWA pipeline and both security scans run on pu
 
 | Job | What it does |
 |-----|----------------|
-| `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine package + app) |
-| `test` | Root `pnpm install --frozen-lockfile` + `pnpm test:coverage` (engine package + app, unit tests + coverage thresholds) |
+| `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine, planner-ui, and app) |
+| `test` | Root `pnpm install --frozen-lockfile` + `pnpm test:coverage` (engine, planner-ui, and app unit tests + coverage thresholds) |
 | `e2e` | Playwright browser smoke/layout specs (`pnpm test:e2e` in `app/`) |
 | `build` | Runs after lint, test, and e2e pass; `pnpm build` → `app/dist/` (artifact retained 1 day) |
 | `deploy` | Uploads `app/dist` to **Azure Static Web Apps** (`skip_app_build: true`) |
@@ -70,7 +70,7 @@ Ten GitHub Actions workflows: the SWA pipeline and both security scans run on pu
 
 **Triggers:** push to `main` deploys production; open/sync/reopen PRs get a preview URL; closing a PR removes the preview.
 
-**Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **22** in CI (the workspaces require Node ≥ 20). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
+**Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **24** in CI (the workspaces require Node >=24). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
 
 **Live site:** [https://retiregolden.app/](https://retiregolden.app/)
 
