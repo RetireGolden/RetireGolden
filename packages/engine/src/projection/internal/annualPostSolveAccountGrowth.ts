@@ -16,6 +16,11 @@
  * also carries the wealth-weighted total return used by next year's coordinated
  * HECM decision.
  *
+ * ALLOCATION TRADE: extraction adds one lightweight result row per physical
+ * balance and one result array per year. Allocated rows already needed a fresh
+ * class-rate array and drifted-weight array in the inline implementation; this
+ * coordinator does not clone ledger state or allocation tracks.
+ *
  * WHAT IT REFUSES: it does not write balances, basis, allocation tracks, or the
  * prior-return scalar. `simulatePlan` commits price growth and weight drift for
  * every row first, writes the return scalar second, and only then commits yield
@@ -34,7 +39,6 @@ import type { PhysicalBalanceAccount } from './annualLogicalBalanceLedger.js'
 export interface AnnualPostSolveAccountGrowthState {
   readonly account: Readonly<Pick<PhysicalBalanceAccount, 'type' | 'annualReturnPct'>>
   readonly balance: number
-  readonly costBasis: number
 }
 
 export interface AnnualPostSolveAccountGrowthTrack {

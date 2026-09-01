@@ -15,6 +15,10 @@ import {
   type AnnualPostSolveAccountGrowthState,
 } from './annualPostSolveAccountGrowth.js'
 
+type TestGrowthState = AnnualPostSolveAccountGrowthState & {
+  readonly costBasis: number
+}
+
 const classParams = (returns: readonly number[]): Record<AssetClassId, AssetClassParams> =>
   Object.fromEntries(
     ASSET_CLASS_IDS.map((id, index) => [id, {
@@ -32,7 +36,7 @@ const state = (
   balance: number,
   annualReturnPct: number | null,
   costBasis = 0,
-): AnnualPostSolveAccountGrowthState => ({
+): TestGrowthState => ({
   account: { type, annualReturnPct },
   balance,
   costBasis,
@@ -197,5 +201,17 @@ describe('annualPostSolveAccountGrowth', () => {
     expect(result.rows).toHaveLength(2)
     expect(result.rows[1]!.reinvestedYield).toBe(3)
     expect(result.priorYearPortfolioReturnPct).toBe(0)
+  })
+
+  it('returns no rows and does not read shocks when there are no balance states', () => {
+    const classShockAt = vi.fn(() => 999)
+
+    const result = annualPostSolveAccountGrowth({
+      ...baseInput([]),
+      classShockAt,
+    })
+
+    expect(result).toEqual({ rows: [], priorYearPortfolioReturnPct: 0 })
+    expect(classShockAt).not.toHaveBeenCalled()
   })
 })

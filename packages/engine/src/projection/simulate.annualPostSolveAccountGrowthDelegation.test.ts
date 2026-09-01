@@ -23,6 +23,10 @@ interface GrowthCall {
   readonly returned: AnnualPostSolveAccountGrowthResult
 }
 
+type CallerGrowthState = AnnualPostSolveAccountGrowthInput['states'][number] & {
+  readonly costBasis: number
+}
+
 const seam = vi.hoisted(() => ({
   inject: false,
   growthCalls: [] as GrowthCall[],
@@ -54,7 +58,11 @@ vi.mock('./internal/annualPostSolveAccountGrowth.js', async (importOriginal) => 
       seam.growthCalls.push({
         input,
         openingBalances: input.states.map((state) => state.balance),
-        openingCostBases: input.states.map((state) => state.costBasis),
+        // Cost basis is caller-owned and deliberately absent from the helper's
+        // input contract. The hostile seam observes the live caller rows only.
+        openingCostBases: input.states.map(
+          (state) => (state as CallerGrowthState).costBasis,
+        ),
         openingWeights: input.states.map((_state, balanceIndex) =>
           input.allocationTrack.get(String(balanceIndex))?.weights ?? null),
         returned,

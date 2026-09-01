@@ -1,0 +1,123 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-post-solve-account-growth-boundary",
+  "why": "Measured reach for the post-solve liquid-account growth extraction. The full corpus exercises cash and invested single-return rows, allocated rows, deterministic and scenario shocks, distributed-yield carve-out and reinvestment, taxable basis credits, duplicate physical account rows, weight drift, zero balances, multi-year HECM signal carry, annual-pass re-entry, and all four equivalence modes.",
+  "entries": [
+    {
+      "id": "AA.helper.selection",
+      "label": "positional distributed-yield selection and allocation-track lookup",
+      "file": "projection/internal/annualPostSolveAccountGrowth.ts",
+      "lines": [
+        94,
+        106
+      ],
+      "anchors": [
+        {
+          "line": 98,
+          "text": "for (const [balanceIndex, state] of input.states.entries()) {"
+        },
+        {
+          "line": 103,
+          "text": "const reinvestedYield = distributedYield?.reinvest === true && distributedYield.gross > 0"
+        },
+        {
+          "line": 106,
+          "text": "const track = input.allocationTrack.get(String(balanceIndex))"
+        }
+      ]
+    },
+    {
+      "id": "AA.helper.allocated",
+      "label": "class-shocked blend, wealth fold, market growth and weight drift",
+      "file": "projection/internal/annualPostSolveAccountGrowth.ts",
+      "lines": [
+        108,
+        125
+      ],
+      "anchors": [
+        {
+          "line": 108,
+          "text": "if (track) {"
+        },
+        {
+          "line": 116,
+          "text": "returnWeightedSum += state.balance * blendedPct"
+        },
+        {
+          "line": 122,
+          "text": "driftedWeights: driftWeights(track.weights, classRates),"
+        }
+      ]
+    },
+    {
+      "id": "AA.helper.singleReturn",
+      "label": "cash-stable and invested single-return growth paths",
+      "file": "projection/internal/annualPostSolveAccountGrowth.ts",
+      "lines": [
+        128,
+        139
+      ],
+      "anchors": [
+        {
+          "line": 128,
+          "text": "const expectedPct = state.account.annualReturnPct ?? input.defaultReturnPct"
+        },
+        {
+          "line": 132,
+          "text": "const priceReturnPct = totalReturnPct - distributedYieldPct"
+        },
+        {
+          "line": 137,
+          "text": "marketClosingBalance: state.balance * Math.max(0, 1 + priceReturnPct / 100),"
+        }
+      ]
+    },
+    {
+      "id": "AA.helper.returnSignal",
+      "label": "wealth-weighted total-return publication",
+      "file": "projection/internal/annualPostSolveAccountGrowth.ts",
+      "lines": [
+        142,
+        146
+      ],
+      "anchors": [
+        {
+          "line": 142,
+          "text": "return {"
+        },
+        {
+          "line": 145,
+          "text": "returnWeightBase > 0 ? returnWeightedSum / returnWeightBase : 0,"
+        }
+      ]
+    },
+    {
+      "id": "AA.callsite",
+      "label": "annual invocation and ordered caller-owned two-pass commits",
+      "file": "projection/simulate.ts",
+      "lines": [
+        8406,
+        8443
+      ],
+      "anchors": [
+        {
+          "line": 8406,
+          "text": "const accountGrowth = annualPostSolveAccountGrowth({"
+        },
+        {
+          "line": 8427,
+          "text": "state.balance = row.marketClosingBalance"
+        },
+        {
+          "line": 8432,
+          "text": "priorYearPortfolioReturnPct = accountGrowth.priorYearPortfolioReturnPct"
+        },
+        {
+          "line": 8442,
+          "text": "if (state.account.type === 'taxable') state.costBasis += row.reinvestedYield"
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct coordinator tests pin exact arithmetic, physical-row identity, input purity, zero-wealth behavior and the market-value floor. The hostile delegation test separately injects non-economic rows and proves exact caller consumption of market balance, reinvestment, taxable basis, drifted-weight identity and the next-year HECM return signal."
+}
