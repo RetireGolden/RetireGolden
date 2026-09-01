@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 297,
+    "totalFiles": 298,
     "byStatus": {
       "partial": 43,
-      "registered": 95,
+      "registered": 96,
       "rule-free": 159,
       "unswept": 0
     },
@@ -253,8 +253,8 @@
     },
     {
       "path": "projection/simulate.ts",
-      "sweptOn": "2026-08-31",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, HSA family-limit"
+      "sweptOn": "2026-09-01",
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies and inherited-Roth post-flip"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -394,10 +394,10 @@
     },
     {
       "directory": "projection",
-      "files": 63,
+      "files": 64,
       "byStatus": {
         "partial": 8,
-        "registered": 9,
+        "registered": 10,
         "rule-free": 46
       }
     },

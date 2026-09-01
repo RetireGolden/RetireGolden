@@ -17,15 +17,25 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -69,6 +79,7 @@
       "dueOn": "2026-12-24",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -82,11 +93,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -145,6 +165,7 @@
       "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -158,11 +179,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -205,15 +235,25 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -256,15 +296,25 @@
       "verifiedOn": "2026-08-29",
       "dueOn": "2027-08-29",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -388,6 +438,7 @@
       "dueOn": "2026-12-24",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -401,11 +452,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -459,6 +519,7 @@
       "dueOn": "2026-12-24",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -472,11 +533,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -525,6 +595,7 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -538,11 +609,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -590,6 +670,7 @@
       "dueOn": "2026-12-24",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -603,11 +684,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -680,7 +770,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         },
@@ -833,7 +923,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -945,6 +1035,7 @@
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -967,11 +1058,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1082,6 +1182,7 @@
       "dueOn": "2027-08-26",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1095,11 +1196,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1191,6 +1301,7 @@
       "dueOn": "2026-12-24",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1204,11 +1315,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1305,6 +1425,7 @@
       "dueOn": "2026-12-24",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1322,11 +1443,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1380,6 +1510,7 @@
       "dueOn": "2027-08-19",
       "implementedBy": [
         "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1393,11 +1524,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1441,6 +1581,7 @@
       "dueOn": "2026-12-02",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1454,11 +1595,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1545,6 +1695,7 @@
       "dueOn": "2027-08-19",
       "implementedBy": [
         "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1558,11 +1709,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1611,6 +1771,7 @@
       "dueOn": "2027-08-26",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1624,11 +1785,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1664,6 +1834,7 @@
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1690,11 +1861,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -1846,6 +2026,7 @@
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1868,11 +2049,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -2025,6 +2215,7 @@
       "dueOn": "2026-12-02",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2038,11 +2229,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -2102,6 +2302,7 @@
       "dueOn": "2026-12-01",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2115,11 +2316,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -2172,6 +2382,7 @@
       "dueOn": "2026-12-24",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2185,11 +2396,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -2229,6 +2449,7 @@
       "dueOn": "2027-08-26",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2246,11 +2467,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
@@ -2557,6 +2787,7 @@
       "dueOn": "2027-08-26",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2570,11 +2801,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
+          "functions": [
+            {
+              "name": "annualContributionsAndEmployerMatch",
+              "line": 184
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 737
+              "line": 919
             }
           ]
         }
