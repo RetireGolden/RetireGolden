@@ -8,7 +8,7 @@
       "title": "IRMAA life-changing-event evidence and redetermination request is not modeled",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "Keep outOfScope because the remaining claim is genuinely an absent administrative redetermination-request surface, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/simulate behavior already disclosed on the sibling lookback record; model/plan.ts and simulate.ts still have no fields or results for event-category evidence, supporting documentation, or a filed redetermination request under 418.1230. This record deliberately does not re-settle the SSA-44 lookback math.",
+      "conventionRationale": "Keep outOfScope because the remaining claim is genuinely an absent administrative redetermination-request surface, not a mispriced MAGI. The planning toggles and min lookback are accepted Plan/annualHealthcareExpenses behavior already disclosed on the sibling lookback record; model/plan.ts and annualHealthcareExpenses.ts still have no fields or results for event-category evidence, supporting documentation, or a filed redetermination request under 418.1230. This record deliberately does not re-settle the SSA-44 lookback math.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -18,6 +18,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/medicare.ts"
       ],
@@ -28,6 +29,15 @@
             {
               "name": "healthcareConfigSchema",
               "line": 1718
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+          "functions": [
+            {
+              "name": "annualHealthcareExpenses",
+              "line": 74
             }
           ]
         },
@@ -454,7 +464,7 @@
       "title": "Part B initial, general, and special enrollment periods are not modeled",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "Absence surface is model/plan.ts and projection/simulate.ts: healthcareConfigSchema and person demographics have no IEP/GEP/SEP election or enrollment month, and simulate.ts derives Medicare months solely from attained age 65 (and birth month in the attainment year). This record is the enrollment-period umbrella; the separate Part B late-enrollment premium increase is registered at usc-42-1395r-b-part-b-late-enrollment-penalty.",
+      "conventionRationale": "Absence surface is model/plan.ts and projection/internal/annualHealthcareExpenses.ts: healthcareConfigSchema and person demographics have no IEP/GEP/SEP election or enrollment month, and annualHealthcareExpenses derives Medicare months solely from attained age 65 (and birth month in the attainment year). This record is the enrollment-period umbrella; the separate Part B late-enrollment premium increase is registered at usc-42-1395r-b-part-b-late-enrollment-penalty.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -464,6 +474,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -473,6 +484,15 @@
             {
               "name": "healthcareConfigSchema",
               "line": 1718
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+          "functions": [
+            {
+              "name": "annualHealthcareExpenses",
+              "line": 74
             }
           ]
         },
@@ -587,7 +607,7 @@
       "title": "Part B late-enrollment premium increase is not modeled",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "Absence surface is model/plan.ts, tax/medicare.ts, and the pack Medicare table: simulate.ts starts Part B months from attained age 65 with no enrollment-election fact, and medicareAnnualPremiumPerPerson multiplies the pack standard premium by the IRMAA applicable-percentage scale only. A late-enrollee history is not expressible, so there is no mispriced penalty figure to approximate — only the absent increase.",
+      "conventionRationale": "Absence surface is model/plan.ts, tax/medicare.ts, and the pack Medicare table: annualHealthcareExpenses starts Part B months from attained age 65 with no enrollment-election fact, and medicareAnnualPremiumPerPerson multiplies the pack standard premium by the IRMAA applicable-percentage scale only. A late-enrollee history is not expressible, so there is no mispriced penalty figure to approximate — only the absent increase.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -598,6 +618,7 @@
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/medicare.ts"
       ],
@@ -617,6 +638,15 @@
             {
               "name": "year2026",
               "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+          "functions": [
+            {
+              "name": "annualHealthcareExpenses",
+              "line": 74
             }
           ]
         },
@@ -770,9 +800,19 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+          "functions": [
+            {
+              "name": "annualHealthcareExpenses",
+              "line": 74
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -1018,6 +1058,7 @@
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/params/types.ts",
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1036,6 +1077,15 @@
             {
               "name": "ParameterPack",
               "line": 53
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+          "functions": [
+            {
+              "name": "annualHealthcareExpenses",
+              "line": 74
             }
           ]
         },
