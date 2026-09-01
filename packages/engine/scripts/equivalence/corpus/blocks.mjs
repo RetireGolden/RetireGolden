@@ -68,6 +68,7 @@ let fixtures = null
 const singlePersonPlan = (...args) => fixtures.singlePersonPlan(...args)
 const couplePlan = (...args) => fixtures.couplePlan(...args)
 const socialSecurityIncome = (...args) => fixtures.socialSecurityIncome(...args)
+const setAcaYearContract = (...args) => fixtures.setAcaYearContract(...args)
 
 /** @returns {object} a taxable account literal */
 function taxable(id, balance, costBasis, extra = {}) {
