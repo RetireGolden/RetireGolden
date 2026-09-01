@@ -13,6 +13,7 @@ import tipsIncomeFloor from '../../DOCS/domain/domain-rules-reference/18-tips-in
 import planFileFormat from '../../DOCS/features/plan-file-format.md?raw'
 import planningRecord from '../../DOCS/features/planning-record.md?raw'
 import readme from '../../README.md?raw'
+import engineReadme from '../../packages/engine/README.md?raw'
 import appPackageJson from '../package.json?raw'
 import enginePackageJson from '../../packages/engine/package.json?raw'
 import plannerUiPackageJson from '../../packages/planner-ui/package.json?raw'
@@ -64,6 +65,7 @@ describe('docs consistency', () => {
   it('code-map.md states the repository Node.js floor', () => {
     expect(codeMap).toMatch(new RegExp(`Node\\.js[^\\n]*${escapeRegExp(nodeFloor)}`))
     expect(readme).toMatch(new RegExp(`Node[^\\n]*${escapeRegExp(nodeFloor)}`))
+    expect(engineReadme).toMatch(new RegExp(`Node[^\\n]*${escapeRegExp(nodeFloor)}`))
     expect(packageNodeFloors).toEqual([nodeFloor, nodeFloor, nodeFloor])
   })
 
