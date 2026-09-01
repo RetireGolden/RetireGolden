@@ -4,11 +4,11 @@ async function openExampleAccounts(page: Page, title: string) {
   await page.goto('/examples')
   await expect(page.getByRole('heading', { name: 'Example library' })).toBeVisible()
 
-  // First visits show 3 featured starters; the rest live behind "Browse all".
+  // First visits show 3 featured starters; the rest live behind "Show all".
   // The preference persists per-context, so only expand when still collapsed.
   const card = page.locator('.example-card').filter({ hasText: title })
   if (!(await card.isVisible())) {
-    await page.getByRole('button', { name: /Browse all \d+ examples/ }).click()
+    await page.getByRole('button', { name: /Show all \d+ examples/ }).click()
   }
   await card.getByRole('button', { name: 'Open' }).click()
   await expect(page).toHaveURL(/\/plan\/[^/]+\/results$/)

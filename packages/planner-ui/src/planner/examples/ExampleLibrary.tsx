@@ -2,7 +2,7 @@
  * Example library — browsable curated demos (rendered on `/examples`).
  */
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { LearnLink } from '../../learn/LearnLink'
@@ -151,12 +151,19 @@ export function ExampleLibrary({
   // grid before keeps it open (stored per-device, cleared by "Clear all data").
   const [expanded, setExpanded] = useState(() => readLocal(STORAGE_KEYS.examplesExpanded) === 'true')
 
+  const browseRef = useRef<HTMLButtonElement>(null)
   const toggle = () => {
     setExpanded((prev) => {
       const next = !prev
       writeLocal(STORAGE_KEYS.examplesExpanded, String(next))
       return next
     })
+    // Collapsing unmounts the grid above the control, so the control jumps
+    // up the page; bring it back under the reader's eye (and focus stays on
+    // it, since it never unmounts). jsdom has no scrollIntoView.
+    if (expanded) {
+      requestAnimationFrame(() => browseRef.current?.scrollIntoView?.({ block: 'nearest' }))
+    }
   }
 
   return (
@@ -184,10 +191,11 @@ export function ExampleLibrary({
           expanded state used to leave it stranded between the two grids. */}
       <div className="examples-browse-all">
         <button
+          ref={browseRef}
           type="button"
           className="btn btn-secondary"
           aria-expanded={expanded}
-          aria-controls="examples-full-grid"
+          aria-controls={expanded ? 'examples-full-grid' : undefined}
           onClick={toggle}
         >
           {expanded ? 'Show fewer examples' : `Show all ${EXAMPLE_PLANS.length} examples`}

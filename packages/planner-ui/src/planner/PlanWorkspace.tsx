@@ -254,14 +254,14 @@ function WorkspaceInner() {
             ← {homeLabel}
           </NavLink>
           <span className="rail-group">Enter</span>
-          <NavLink to="household" className={railClass}>Household</NavLink>
-          <NavLink to="social-security" className={railClass}>Social Security</NavLink>
-          <NavLink to="accounts" className={railClass}>Accounts</NavLink>
-          <NavLink to="insurance" className={railClass}>Insurance</NavLink>
-          <NavLink to="income" className={railClass}>Income</NavLink>
-          <NavLink to="income-floor" className={railClass}>Income floor</NavLink>
-          <NavLink to="spending" className={railClass}>Spending</NavLink>
-          <NavLink to="strategy" className={railClass}>Strategy</NavLink>
+          <NavLink to="household" className={railClass}>{SECTION_TITLES.household}</NavLink>
+          <NavLink to="social-security" className={railClass}>{SECTION_TITLES['social-security']}</NavLink>
+          <NavLink to="accounts" className={railClass}>{SECTION_TITLES.accounts}</NavLink>
+          <NavLink to="insurance" className={railClass}>{SECTION_TITLES.insurance}</NavLink>
+          <NavLink to="income" className={railClass}>{SECTION_TITLES.income}</NavLink>
+          <NavLink to="income-floor" className={railClass}>{SECTION_TITLES['income-floor']}</NavLink>
+          <NavLink to="spending" className={railClass}>{SECTION_TITLES.spending}</NavLink>
+          <NavLink to="strategy" className={railClass}>{SECTION_TITLES.strategy}</NavLink>
           {/* The Assumptions card is a child surface without a rail item of
               its own; keep Assumptions highlighted there (#425). NavLink only
               marks its own route match, hence a plain Link with the state. */}
@@ -270,16 +270,16 @@ function WorkspaceInner() {
             className={railClass({ isActive: onAssumptions })}
             aria-current={onAssumptions ? 'page' : undefined}
           >
-            Assumptions
+            {SECTION_TITLES.assumptions}
           </Link>
           <span className="rail-group">Optimize</span>
-          <NavLink to="insights" className={railClass}>Insights</NavLink>
-          <NavLink to="optimize" className={railClass}>Roth & Tax Optimizer</NavLink>
-          <NavLink to="spending-solver" className={railClass}>How much can I spend?</NavLink>
-          <NavLink to="social-security-analysis" className={railClass}>Social Security Optimizer</NavLink>
+          <NavLink to="insights" className={railClass}>{SECTION_TITLES.insights}</NavLink>
+          <NavLink to="optimize" className={railClass}>{SECTION_TITLES.optimize}</NavLink>
+          <NavLink to="spending-solver" className={railClass}>{SECTION_TITLES['spending-solver']}</NavLink>
+          <NavLink to="social-security-analysis" className={railClass}>{SECTION_TITLES['social-security-analysis']}</NavLink>
           <span className="rail-group">Explore</span>
-          <NavLink to="results" className={railClass}>Results</NavLink>
-          <NavLink to="monte-carlo" className={railClass}>Monte Carlo</NavLink>
+          <NavLink to="results" className={railClass}>{SECTION_TITLES.results}</NavLink>
+          <NavLink to="monte-carlo" className={railClass}>{SECTION_TITLES['monte-carlo']}</NavLink>
           <NavLink to="scenarios" className={railClass}>Scenarios</NavLink>
           <NavLink to="household-map" className={railClass}>Household map</NavLink>
           {plan.household.filingStatus === 'marriedFilingJointly' && plan.household.people.length === 2 ? (

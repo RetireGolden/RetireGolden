@@ -566,8 +566,8 @@ export function SocialSecuritySection() {
           Not sure when to claim?{' '}
           <Link to="../social-security-analysis">Compare claiming ages on the Social Security analysis page →</Link>
         </p>
-        <LearnAboutScreen route="/plan/:planId/social-security" />
       </div>
+      <LearnAboutScreen route="/plan/:planId/social-security" />
     </section>
   )
 }

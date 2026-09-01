@@ -56,8 +56,35 @@ describe('example library page', () => {
     const browse = Array.from(container.querySelectorAll('button')).find((b) =>
       /Show all \d+ examples/.test(b.textContent ?? ''),
     )
-    expect(browse, 'a Browse-all control should be one interaction away').toBeDefined()
+    expect(browse, 'a Show-all control should be one interaction away').toBeDefined()
     expect(browse!.getAttribute('aria-expanded')).toBe('false')
+    // Collapsed, there is no grid to point at, so aria-controls is absent (#445 review).
+    expect(browse!.getAttribute('aria-controls')).toBeNull()
+  })
+
+  it('keeps the toggle after the rows it controls and keeps focus on it across a collapse (#445)', async () => {
+    await renderExamples()
+    const browse = Array.from(container.querySelectorAll('button')).find((b) =>
+      /Show all \d+ examples/.test(b.textContent ?? ''),
+    )!
+    await act(async () => {
+      browse.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const grid = container.querySelector('#examples-full-grid')!
+    expect(grid).not.toBeNull()
+    expect(browse.getAttribute('aria-controls')).toBe('examples-full-grid')
+    // The control follows the grid it expands, never sits between the two grids.
+    expect(grid.compareDocumentPosition(browse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(browse.textContent).toBe('Show fewer examples')
+    browse.focus()
+    await act(async () => {
+      browse.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(container.querySelector('#examples-full-grid')).toBeNull()
+    expect(document.activeElement).toBe(browse)
+    expect(browse.getAttribute('aria-controls')).toBeNull()
   })
 
   it('reveals all examples one click away and remembers the preference', async () => {

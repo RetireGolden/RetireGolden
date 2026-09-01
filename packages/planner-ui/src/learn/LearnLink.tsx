@@ -16,6 +16,7 @@
  */
 
 import { Link, useLocation } from 'react-router'
+import { SECTION_TITLES } from '../planner/sectionTitles'
 import { getArticle } from './learningRegistry'
 
 export type LearnHook = {
@@ -37,25 +38,14 @@ type LearnLinkProps = LearnHook & {
   className?: string
 }
 
-/** Title-case a single planner route segment into a human label for the back link. */
+/**
+ * Human label for a planner route segment on the article's back link. The
+ * screen wording is owned by the workspace's SECTION_TITLES; the one override
+ * is the assumptions card, which the reader knows as "Your assumptions".
+ */
 const SEGMENT_LABELS: Record<string, string> = {
-  household: 'Household',
-  'social-security': 'Social Security',
-  accounts: 'Accounts',
-  insurance: 'Insurance',
-  income: 'Income',
-  spending: 'Spending',
-  strategy: 'Strategy',
-  assumptions: 'Assumptions',
+  ...SECTION_TITLES,
   'assumptions-card': 'Your assumptions',
-  insights: 'Insights',
-  'social-security-analysis': 'Social Security Optimizer',
-  results: 'Results',
-  'monte-carlo': 'Monte Carlo',
-  scenarios: 'Scenarios',
-  survivor: 'Survivor transition',
-  optimize: 'Roth & Tax Optimizer',
-  report: 'Report',
 }
 
 /** A short, human label for where a return path points (planner screen name). */

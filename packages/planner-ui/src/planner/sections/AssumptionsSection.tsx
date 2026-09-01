@@ -243,9 +243,8 @@ export function AssumptionsSection() {
           <Link to={`/plan/${plan.id}/assumptions-card`}>See every live assumption on one card →</Link>
         </p>
         <Issues />
-
-        <LearnAboutScreen route="/plan/:planId/assumptions" limit={10} />
       </div>
+      <LearnAboutScreen route="/plan/:planId/assumptions" limit={10} />
     </section>
   )
 }

@@ -279,7 +279,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(details).toMatch(/text-align:\s*left/)
   })
 
-  it('prose links get the app focus ring at zero specificity (#450)', () => {
+  it('prose links get the app focus ring at (0,1,0), below any class-styled anchor rule (#450)', () => {
     const body = rule(':where(a):focus-visible', indexCss)
     expect(body).toMatch(/outline:\s*2px solid var\(--accent\)/)
     expect(body).toMatch(/outline-offset:\s*2px/)
@@ -294,10 +294,20 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
 
   it('the Learn-about-this-screen cluster is styled by the globally loaded sheet (#446)', () => {
     // learn.css loads only on /learn routes; the cluster renders on plan screens.
-    expect(rule('.learn-screen')).toMatch(/margin-top/)
+    // The aside is a .card, which already spaces itself; no extra top margin.
+    expect(css).not.toMatch(/^\.learn-screen\s*\{/m)
     expect(rule('.learn-screen-list')).toMatch(/display:\s*flex/)
     expect(learnCss).not.toMatch(/^\.learn-screen\s*\{/m)
     expect(learnCss).not.toMatch(/^\.learn-screen-title\s*\{/m)
+  })
+
+  it('the scenario rows table carries the class the danger rule targets (#460)', () => {
+    const page: string = readFileSync(fileURLToPath(new URL('./ScenariosPage.tsx', import.meta.url)), 'utf8')
+    const overview = page.indexOf('<caption>Deterministic overview (nominal dollars)</caption>')
+    expect(overview).toBeGreaterThan(0)
+    const tag = page.lastIndexOf('<table', overview)
+    expect(page.slice(tag, overview)).toMatch(/className="compare-table scenarios-table"/)
+    expect(page.slice(overview)).toMatch(/className="btn-ghost btn-ghost-danger"/)
   })
 
   it('text, select, and affixed inputs share one height token', () => {
