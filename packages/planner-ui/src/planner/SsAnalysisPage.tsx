@@ -79,7 +79,12 @@ function EmptyState({ planId }: { planId: string }) {
   return (
     <div className="empty-state">
       <h2>No Social Security to analyze yet</h2>
-      <p>Add a benefit for at least one person on the Social Security entry form, then come back here.</p>
+      {/* claimingPeople() needs a resolved PIA above zero; a freshly added
+          benefit starts at $0, so say what actually clears this state. */}
+      <p>
+        Add a benefit for at least one person on the Social Security entry form and enter its monthly benefit (PIA)
+        or earnings record, then come back here. A benefit of $0 has nothing to analyze.
+      </p>
       {/* The recovery path is a chrome control, not a hunt through the rail (#427). */}
       <p>
         <Link to={`/plan/${planId}/social-security`} className="btn btn-secondary btn-small">

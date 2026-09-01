@@ -136,15 +136,17 @@ describe('LearnAboutScreen', () => {
         <LearnAboutScreen route={route} />
       </MemoryRouter>,
     )
-    expect(withAll).toContain('/learn/what-changes-when-you-move-states')
+    const hrefs = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1])
+    expect(hrefs(withAll)).toContain('/learn/what-changes-when-you-move-states')
     const excluded = renderToString(
       <MemoryRouter>
         <LearnAboutScreen route={route} exclude={['what-changes-when-you-move-states']} />
       </MemoryRouter>,
     )
-    expect(excluded).not.toContain('/learn/what-changes-when-you-move-states')
-    // Relocation has exactly one related article today, so the cluster goes away entirely.
-    expect(excluded).toBe('')
+    // Only the excluded slug goes; every other related article (none today) stays.
+    expect(hrefs(excluded)).toEqual(hrefs(withAll).filter((h) => h !== '/learn/what-changes-when-you-move-states'))
+    // With nothing left to list, the cluster renders nothing rather than an empty aside.
+    if (hrefs(excluded).length === 0) expect(excluded).toBe('')
   })
 })
 
@@ -165,6 +167,13 @@ describe('ExternalLink', () => {
       'ssa.gov/…/agereduction.html',
     )
     expect(sourceLabel('not a url')).toBe('not a url')
+    // Query strings survive, so two editions of one page stay distinguishable.
+    expect(sourceLabel('https://www.ssa.gov/oact/cola/Benefits.html?year=2026')).toBe(
+      'ssa.gov/oact/cola/Benefits.html?year=2026',
+    )
+    expect(sourceLabel('https://www.ssa.gov/benefits/retirement/planner/agereduction.html?year=2027')).toBe(
+      'ssa.gov/…/agereduction.html?year=2027',
+    )
   })
 })
 

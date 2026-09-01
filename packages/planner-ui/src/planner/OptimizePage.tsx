@@ -383,6 +383,7 @@ export function OptimizePage() {
   })
   const noRecommendation = optimizerProducedNoRecommendation({
     scheduleStatus: schedule?.status ?? null,
+    incumbentHolds,
     candidateWins,
     readinessVeto: tournament?.retirementActionReadinessVeto,
   })
@@ -521,8 +522,9 @@ export function OptimizePage() {
             {/* Also disabled while re-running: the held result (and any claim
                 patch in it) describes the pre-edit plan, so a report downloaded
                 mid-run would mix live plan fields with stale recommendations.
-                And disabled after a failed run (#426): recommendationReport-
-                IsAvailable is false when there is no recommendation to report. */}
+                And disabled after a failed run (#426), because
+                recommendationReportIsAvailable is false when there is no
+                recommendation to report. */}
             <button
               type="button"
               className="btn btn-secondary btn-small"

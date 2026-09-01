@@ -1524,12 +1524,20 @@ html:has(.kpi-bar) {
    the .year-table-wrap scrolls. `.nowrap` keeps tokens like "(SSA-44)" and a
    filing-status label whole; each timeline segment takes its own line. */
 .compare-table.survivor-table {
-  min-width: 66rem;
+  min-width: 70rem;
 }
 
 .compare-table.survivor-table thead th {
   overflow-wrap: normal;
   hyphens: none;
+}
+
+/* The filing-status column is wide enough for its longest segment
+   ("married filing jointly (2026–2035)") on one line, so a transition is
+   exactly one line per segment. */
+.compare-table.survivor-table .survivor-filing-cell {
+  min-width: 18rem;
+  text-align: left;
 }
 
 .nowrap {

@@ -127,9 +127,14 @@ describe('App shell smoke', () => {
     expect(document.title).toMatch(/^(Learning Center|About RetireGolden) · RetireGolden$/)
     await waitFor(() => document.title === 'About RetireGolden · RetireGolden', { what: 'the article title' })
     await unmount()
-    // An unknown slug never claims an article name.
+    // An unknown slug never claims an article name: let the registry import
+    // that the route kicked off settle, then the title must still be generic.
     unmount = await mountAt('/learn/no-such-article')
-    await waitFor(() => document.title === 'Learning Center · RetireGolden', { what: 'the not-found title' })
+    expect(document.title).toBe('Learning Center · RetireGolden')
+    await act(async () => {
+      const registry = await import('./learn/learningRegistry')
+      expect(registry.getArticle('no-such-article')).toBeUndefined()
+    })
     expect(document.title).toBe('Learning Center · RetireGolden')
     await unmount()
   })

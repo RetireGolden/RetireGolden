@@ -249,10 +249,11 @@ packages/planner-ui/src/learn/
   components/
     ArticleShell.tsx
     ArticleFigure.tsx
+    ExternalLink.tsx      # off-site link with the ↗ / "opens in a new tab" cue
     FormulaBlock.tsx
     ScenarioCard.tsx
     SourceList.tsx
-    ExternalLink.tsx      # off-site link with the ↗ / "opens in a new tab" cue
+    sourceLabel.ts        # host + path label for a source URL (SourceList)
     LearnLink.tsx
 ```
 
@@ -774,7 +775,10 @@ Wiring rules:
 - Screen-level "Learn about this screen" clusters use `<LearnAboutScreen>`, which
   derives its links from each article's `relatedPlannerRoutes`. A screen can host
   the cluster safely even before any article relates — it renders nothing until
-  one does, then lights up automatically.
+  one does, then lights up automatically. When the screen already links an
+  article inline (an intro sentence or a callout), pass that slug in the
+  `exclude` prop so the same destination does not appear twice within one
+  screen; the cluster renders nothing when exclusion empties it.
 - All links go through `<LearnLink>`, which validates the slug, preserves a
   return path (so the article offers "← Back to Optimize"), and renders
   consistently per variant (`inline` / `tip` / `button`).

@@ -202,24 +202,24 @@ export function SpendingSection() {
               "Risk-based guardrails (success band)") clip to an ellipsis in a
               one-column cell at the default workspace width (#423). */}
           <div className="field-span-full">
-          <SelectField
-            label="Spending policy"
-            help="Fixed target funds the whole budget every year (today's behavior). Withdrawal-rate guardrails ration the discretionary layer path by path based on how the current withdrawal rate compares to the starting rate. Risk-based guardrails trigger on dollar portfolio thresholds solved from your target probability-of-success band, cut only when the plan's odds actually leave the band, not on the withdrawal rate alone. Amortized spending (ABW) ignores the baseline and phases and spends each year's amortized payment: the actual start-of-year portfolio spread over the remaining horizon at an expected real return, so spending self-corrects after good or bad markets and the portfolio is designed to be spent down by the horizon."
-            learn={LEARN.dynamicSpendingGuardrails}
-            value={e.spendingPolicy?.mode ?? 'fixedTarget'}
-            options={[
-              { value: 'fixedTarget', label: 'Fixed target (no guardrails)' },
-              { value: 'withdrawalRateGuardrails', label: 'Withdrawal-rate guardrails' },
-              { value: 'riskBasedGuardrails', label: 'Risk-based guardrails (success band)' },
-              { value: 'abw', label: 'Amortized spending (ABW / VPW)' },
-            ]}
-            onCommit={(mode) =>
-              update((d) => {
-                if (mode === 'fixedTarget') delete d.expenses.spendingPolicy
-                else d.expenses.spendingPolicy = { ...d.expenses.spendingPolicy, mode }
-              })
-            }
-          />
+            <SelectField
+              label="Spending policy"
+              help="Fixed target funds the whole budget every year (today's behavior). Withdrawal-rate guardrails ration the discretionary layer path by path based on how the current withdrawal rate compares to the starting rate. Risk-based guardrails trigger on dollar portfolio thresholds solved from your target probability-of-success band, cut only when the plan's odds actually leave the band, not on the withdrawal rate alone. Amortized spending (ABW) ignores the baseline and phases and spends each year's amortized payment: the actual start-of-year portfolio spread over the remaining horizon at an expected real return, so spending self-corrects after good or bad markets and the portfolio is designed to be spent down by the horizon."
+              learn={LEARN.dynamicSpendingGuardrails}
+              value={e.spendingPolicy?.mode ?? 'fixedTarget'}
+              options={[
+                { value: 'fixedTarget', label: 'Fixed target (no guardrails)' },
+                { value: 'withdrawalRateGuardrails', label: 'Withdrawal-rate guardrails' },
+                { value: 'riskBasedGuardrails', label: 'Risk-based guardrails (success band)' },
+                { value: 'abw', label: 'Amortized spending (ABW / VPW)' },
+              ]}
+              onCommit={(mode) =>
+                update((d) => {
+                  if (mode === 'fixedTarget') delete d.expenses.spendingPolicy
+                  else d.expenses.spendingPolicy = { ...d.expenses.spendingPolicy, mode }
+                })
+              }
+            />
           </div>
           {e.spendingPolicy?.mode === 'withdrawalRateGuardrails' ? (
             <>

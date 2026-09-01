@@ -8,37 +8,30 @@ import { optimizerProducedNoRecommendation } from './optimizePageRecommendation'
  * "Couldn't optimize this plan" card and to withhold the download.
  */
 describe('optimizerProducedNoRecommendation (#426)', () => {
-  it('is true for an infeasible solve with no candidate winner and no readiness veto', () => {
-    expect(
-      optimizerProducedNoRecommendation({ scheduleStatus: 'infeasible', candidateWins: false, readinessVeto: null }),
-    ).toBe(true)
-    expect(
-      optimizerProducedNoRecommendation({
-        scheduleStatus: 'infeasible',
-        candidateWins: false,
-        readinessVeto: undefined,
-      }),
-    ).toBe(true)
+  const base = { scheduleStatus: 'infeasible', incumbentHolds: false, candidateWins: false, readinessVeto: null } as const
+
+  it('is true for an infeasible solve with nothing standing in for a result', () => {
+    expect(optimizerProducedNoRecommendation(base)).toBe(true)
+    expect(optimizerProducedNoRecommendation({ ...base, readinessVeto: undefined })).toBe(true)
+  })
+
+  it('is false when the incumbent strategy holds, even on an infeasible fresh solve', () => {
+    // A plan with conversions already installed can beat every alternative
+    // while the new MILP solve is infeasible; the page shows "Nothing beat
+    // your current plan" and the "no change" report must stay downloadable.
+    expect(optimizerProducedNoRecommendation({ ...base, incumbentHolds: true })).toBe(false)
   })
 
   it('is false when a tournament candidate or a readiness veto stands in for the result', () => {
+    expect(optimizerProducedNoRecommendation({ ...base, candidateWins: true })).toBe(false)
     expect(
-      optimizerProducedNoRecommendation({ scheduleStatus: 'infeasible', candidateWins: true, readinessVeto: null }),
-    ).toBe(false)
-    expect(
-      optimizerProducedNoRecommendation({
-        scheduleStatus: 'infeasible',
-        candidateWins: false,
-        readinessVeto: { reason: 'identityIncomplete' } as never,
-      }),
+      optimizerProducedNoRecommendation({ ...base, readinessVeto: { reason: 'identityIncomplete' } as never }),
     ).toBe(false)
   })
 
   it('is false for every reportable outcome, including "no change" results', () => {
     for (const scheduleStatus of ['optimal', 'feasible', 'timeout', null] as const) {
-      expect(optimizerProducedNoRecommendation({ scheduleStatus, candidateWins: false, readinessVeto: null })).toBe(
-        false,
-      )
+      expect(optimizerProducedNoRecommendation({ ...base, scheduleStatus })).toBe(false)
     }
   })
 })

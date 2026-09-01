@@ -38,10 +38,15 @@ function filingLabel(status: SurvivorScenarioRow['firstSurvivorYear']['filingSta
  */
 function TimelineCell({ row }: { row: SurvivorScenarioRow }) {
   return (
-    <span className="survivor-timeline">
+    <span>
       {row.filingTimeline.map((seg, i) => (
         <span key={seg.fromYear} className="survivor-timeline-segment">
-          {i > 0 ? <span aria-hidden="true">→ </span> : null}
+          {i > 0 ? (
+            <>
+              <span aria-hidden="true">→ </span>
+              <span className="sr-only">then </span>
+            </>
+          ) : null}
           <span className="nowrap">{filingLabel(seg.status)}</span>{' '}
           <span className="small nowrap">{seg.fromYear === seg.toYear ? `(${seg.fromYear})` : `(${seg.fromYear}–${seg.toYear})`}</span>
         </span>
@@ -84,7 +89,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
                 <strong>{row.deathAge}</strong>
                 <div className="small">{row.deathYear}</div>
               </td>
-              <td style={{ maxWidth: '14rem', textAlign: 'left' }}>
+              <td className="survivor-filing-cell">
                 <TimelineCell row={row} />
               </td>
               <td>
