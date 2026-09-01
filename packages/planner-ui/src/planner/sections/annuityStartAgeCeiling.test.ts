@@ -256,6 +256,10 @@ describe('clampedAnnuityStartAge', () => {
     expect(clampedAnnuityStartAge(planWithOwner(), annuity({ startAge: 65 }))).toBeNull()
   })
 
+  it('stores the schema minimum when a typed start age falls below it', () => {
+    expect(clampedAnnuityStartAge(planWithOwner(), annuity({ startAge: 20 }))).toBe(40)
+  })
+
   it('pulls the start age down when the new owner has a lower ceiling', () => {
     // Switching a contract from the 1940 owner (who bought it at 86, so 85 was
     // fine) to the 1962 owner, whose applicable RMD age of 75 puts the last
@@ -285,6 +289,14 @@ describe('clampedAnnuityStartAge', () => {
       purchase: { year: 2026, premium: 100_000, fundingAccountId: 'cash', taxQualification: 'nonQualified' },
     })
     expect(clampedAnnuityStartAge(planWithOwner(), nonQualified)).toBeNull()
+  })
+
+  it('still applies the schema maximum where no regulatory ceiling reaches', () => {
+    const nonQualified = annuity({
+      startAge: 97,
+      purchase: { year: 2026, premium: 100_000, fundingAccountId: 'cash', taxQualification: 'nonQualified' },
+    })
+    expect(clampedAnnuityStartAge(planWithOwner(), nonQualified)).toBe(95)
   })
 
   it('leaves every other account type alone', () => {

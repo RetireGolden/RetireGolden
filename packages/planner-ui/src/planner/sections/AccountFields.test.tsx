@@ -946,6 +946,8 @@ describe('AccountFields property and debt editor boundaries', () => {
     const fields = renderFields(planWithAccount(debt))
 
     expect(controlByLabel(fields, 'Balance owed')).toBeTruthy()
+    expect(controlByLabel(fields, 'Interest rate')).toBeTruthy()
+    expect(controlByLabel(fields, 'Monthly payment')).toBeTruthy()
     expect(controlByLabel(fields, 'Lump-sum payoff year')).toBeTruthy()
     expect(() => controlByLabel(fields, 'Value')).toThrow('no label "Value"')
   })
@@ -968,6 +970,7 @@ describe('AccountFields pension and annuity editor boundaries', () => {
     const fields = renderFields(planWithAccount(pension))
 
     const labels = Array.from(fields.querySelectorAll('label')).map((label) => label.textContent?.trim())
+    expect(controlByLabel(fields, 'Pension source')).toBeTruthy()
     expect(labels.indexOf('Pension source')).toBeLessThan(labels.indexOf('Start age'))
     expect(controlByLabel<HTMLInputElement>(fields, 'Start age').max).toBe('80')
     expect(controlByLabel(fields, 'Monthly amount')).toBeTruthy()
@@ -992,7 +995,7 @@ describe('AccountFields pension and annuity editor boundaries', () => {
 
     const fields = renderFields(planWithAccount(annuity))
 
-    expect(controlByLabel(fields, 'Start age')).toBeTruthy()
+    expect(controlByLabel<HTMLInputElement>(fields, 'Start age').max).toBe('95')
     expect(controlByLabel(fields, 'Monthly amount')).toBeTruthy()
     expect(controlByLabel(fields, 'COLA')).toBeTruthy()
     expect(controlByLabel(fields, 'Payout form')).toBeTruthy()
@@ -1002,7 +1005,10 @@ describe('AccountFields pension and annuity editor boundaries', () => {
 })
 
 describe('AccountFields extracted editor commit wiring', () => {
-  it('clamps a manually entered pension start age to the schema maximum (parse-valid)', () => {
+  it.each([
+    ['below', '20', 40],
+    ['above', '95', 80],
+  ])('clamps a manually entered pension start age %s the schema range (parse-valid)', (_boundary, typed, expected) => {
     const pension: Extract<Account, { type: 'pension' }> = {
       type: 'pension',
       id: 'pension',
@@ -1022,14 +1028,48 @@ describe('AccountFields extracted editor commit wiring', () => {
     act(() => {
       const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
       if (!valueSetter) throw new Error('missing input value setter')
-      valueSetter.call(startAge, '95')
+      valueSetter.call(startAge, typed)
       startAge.dispatchEvent(new Event('input', { bubbles: true }))
     })
 
     const account = mounted.plan.accounts[0]
     expect(account?.type).toBe('pension')
     if (account?.type !== 'pension') throw new Error('expected pension')
-    expect(account.startAge).toBe(80)
+    expect(account.startAge).toBe(expected)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
+  it.each([
+    ['below', '20', 40],
+    ['above', '97', 95],
+  ])('clamps a manually entered unpurchased annuity start age %s the schema range (parse-valid)', (_boundary, typed, expected) => {
+    const annuity: Extract<Account, { type: 'annuity' }> = {
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Annuity',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 1_000,
+      colaPct: 0,
+      taxablePct: 50,
+    }
+    const plan = planWithAccount(annuity)
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+    const startAge = controlByLabel<HTMLInputElement>(mounted.container(), 'Start age')
+
+    act(() => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      if (!valueSetter) throw new Error('missing input value setter')
+      valueSetter.call(startAge, typed)
+      startAge.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('annuity')
+    if (account?.type !== 'annuity') throw new Error('expected annuity')
+    expect(account.startAge).toBe(expected)
     expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
   })
 

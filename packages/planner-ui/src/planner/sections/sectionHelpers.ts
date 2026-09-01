@@ -6,6 +6,7 @@
 import type { Account, AllocationWeights, Plan } from '@retiregolden/engine/model/plan'
 import {
   ANNUITY_MAX_START_AGE,
+  ANNUITY_MIN_START_AGE,
   latestNonQlacQualifiedAnnuityStartAge,
   latestQlacAnnuityStartAge,
 } from '@retiregolden/engine/model/plan'
@@ -178,10 +179,10 @@ export function annuityStartAgeHelp(bounds: AnnuityStartAgeBounds | null): strin
 
 /**
  * The start age an edit has to store instead of the one it asks for, or null
- * when the requested age already fits.
+ * when the requested age already fits the persisted annuity schema.
  *
  * Takes the account AS THE EDIT WOULD LEAVE IT, so every field that can move
- * the ceiling asks the same question: the typed start age itself, the purchase
+ * the allowed range asks the same question: the typed start age itself, the purchase
  * (a qualified switch, a ticked or cleared QLAC box, an earlier purchase year),
  * and the owner, whose birth year decides the applicable RMD age and whose birth
  * month decides whether the QLAC ceiling is 85 or 86. Bounding the age field's
@@ -191,8 +192,8 @@ export function annuityStartAgeHelp(bounds: AnnuityStartAgeBounds | null): strin
  */
 export function clampedAnnuityStartAge(plan: Plan, account: Account): number | null {
   if (account.type !== 'annuity') return null
-  const ceiling = annuityStartAgeCeiling(plan, account)
-  if (ceiling === null) return null
+  const ceiling = annuityStartAgeCeiling(plan, account) ?? ANNUITY_MAX_START_AGE
+  if (account.startAge < ANNUITY_MIN_START_AGE) return ANNUITY_MIN_START_AGE
   return account.startAge > ceiling ? ceiling : null
 }
 

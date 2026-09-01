@@ -89,5 +89,6 @@ rollover); PV math + scenario pair in
 in [engine/params](../../../packages/engine/src/params/data/year2026.ts); detectors in
 [engine/insights/detectors/](../../../packages/engine/src/insights/detectors/); UI in
 [planner/sections/PensionAnnuityAccountEditors.tsx](../../../packages/planner-ui/src/planner/sections/PensionAnnuityAccountEditors.tsx),
-[planner/sections/PropertyDebtAccountEditors.tsx](../../../packages/planner-ui/src/planner/sections/PropertyDebtAccountEditors.tsx), and the sweep chart
+[planner/sections/PropertyDebtAccountEditors.tsx](../../../packages/planner-ui/src/planner/sections/PropertyDebtAccountEditors.tsx), with the owner-change clamp in
+[planner/sections/AccountFields.tsx](../../../packages/planner-ui/src/planner/sections/AccountFields.tsx), and the sweep chart
 in [planner/MonteCarloPage.tsx](../../../packages/planner-ui/src/planner/MonteCarloPage.tsx).

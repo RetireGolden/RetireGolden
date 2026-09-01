@@ -5,7 +5,9 @@ import { useMemo } from 'react'
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import {
   ANNUITY_MAX_START_AGE,
+  ANNUITY_MIN_START_AGE,
   PENSION_MAX_START_AGE,
+  PENSION_MIN_START_AGE,
   type Account,
   type Plan,
 } from '@retiregolden/engine/model/plan'
@@ -73,9 +75,14 @@ export function PensionAccountEditor({
       <NumberField
         label="Start age"
         value={account.startAge}
-        min={40}
+        min={PENSION_MIN_START_AGE}
         max={PENSION_MAX_START_AGE}
-        onCommit={(v) => onCommit('startAge', Math.min(PENSION_MAX_START_AGE, Math.round(v ?? 65)))}
+        onCommit={(v) =>
+          onCommit(
+            'startAge',
+            Math.max(PENSION_MIN_START_AGE, Math.min(PENSION_MAX_START_AGE, Math.round(v ?? 65))),
+          )
+        }
       />
       <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
       <PercentField label="COLA" value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
@@ -202,7 +209,7 @@ export function AnnuityAccountEditor({
         label="Start age"
         help={annuityStartAgeHelp(startAgeBounds)}
         value={account.startAge}
-        min={40}
+        min={ANNUITY_MIN_START_AGE}
         max={startAgeBounds?.binding ?? ANNUITY_MAX_START_AGE}
         onCommit={(v) => onCommit('startAge', clampedAnnuityStartAge(plan, { ...account, startAge: Math.round(v ?? 65) }) ?? Math.round(v ?? 65))}
       />

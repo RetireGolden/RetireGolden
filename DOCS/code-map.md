@@ -135,7 +135,9 @@ hosts use the `importEnabled` / `importResolved` props. Omitted configuration pr
 - Home: `home/` (`useHomeData.ts`, `useHomeMode.ts`, `YourPlans.tsx`, `WelcomeHero.tsx`, getting-started cards, `DataAndPrivacyCard.tsx`).
 - Example library: `examples/` (`registry.ts`, `loadExample.ts`, `ExampleLibrary.tsx`, `ExamplesPage.tsx`, `ExamplePreviewBanner.tsx`, per-example `build*.ts`).
 - Entry: `PlanPickerPage.tsx`, `PlanWorkspace.tsx`, `sections.tsx` (barrel over `sections/` — one file per
-  section + `sectionHelpers.ts`), `fields.tsx`, `SocialSecuritySection.tsx`, `LongevityModal.tsx`,
+  section + `sectionHelpers.ts`; account families begin in `AccountFields.tsx` and dispatch to
+  `PensionAnnuityAccountEditors.tsx` and `PropertyDebtAccountEditors.tsx`), `fields.tsx`,
+  `SocialSecuritySection.tsx`, `LongevityModal.tsx`,
   `usStates.ts`, `householdActions.ts`.
 - Results/analysis: `ResultsPage.tsx`, `ReportPage.tsx`, `SsAnalysisPage.tsx` + `ssAnalysis.ts`,
   `MonteCarloPage.tsx`, `OptimizePage.tsx`, `SpendingSolverPage.tsx`, `ScenariosPage.tsx`,
