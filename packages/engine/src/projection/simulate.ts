@@ -3809,8 +3809,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ? pack.contributionLimits.catchUp50 * limitGrowth
           : 0
 
+    // Contribution rows are positional even when their public account ids are
+    // duplicated. Keep the legacy last-row-wins id map for cash-flow assembly,
+    // but never use it to decide what a balance row requested or received.
     const desiredByAccountId = new Map<string, number>()
-    for (const state of balances) {
+    const desiredByBalanceIndex = new Map<number, number>()
+    const employerRowKey = (balanceIndex: number): string => String(balanceIndex)
+    for (const [balanceIndex, state] of balances.entries()) {
       const account = state.account
       const hasSchedule = 'contributionSchedule' in account && account.contributionSchedule && account.contributionSchedule.length > 0
       // A Roth employer account with a zero schedule still has to sit in the
@@ -3851,22 +3856,26 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       desiredByAccountId.set(account.id, desired)
+      desiredByBalanceIndex.set(balanceIndex, desired)
     }
 
     const employerAllocated = new Map<string, number>()
     const employerAllocationByOwner = new Map<string, EmployerElectiveAllocation>()
     const employerRequestsByOwner = new Map<string, EmployerElectiveRequest[]>()
-    const employeeLandedByAccountId = new Map<string, number>()
-    for (const state of balances) {
+    const employeeLandedByEmployerRowKey = new Map<string, number>()
+    for (const [balanceIndex, state] of balances.entries()) {
       const account = state.account
-      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
+      if (!isEmployerPlanAccount(account) || !desiredByBalanceIndex.has(balanceIndex)) continue
       if (account.type !== 'traditional' && account.type !== 'roth') continue
       const ownerId = account.ownerPersonId ?? primary.id
       const list = employerRequestsByOwner.get(ownerId) ?? []
       list.push({
-        accountId: account.id,
+        // The allocator's map keys are private. A positional key prevents two
+        // accepted Plan rows with the same public id from overwriting each
+        // other's request, allocation, catch-up, or match basis.
+        accountId: employerRowKey(balanceIndex),
         type: account.type,
-        desired: desiredByAccountId.get(account.id) ?? 0,
+        desired: desiredByBalanceIndex.get(balanceIndex) ?? 0,
         priorCalendarYearFicaWages: account.priorCalendarYearFicaWages ?? 0,
       })
       employerRequestsByOwner.set(ownerId, list)
@@ -3899,13 +3908,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
-    for (const state of balances) {
+    for (const [balanceIndex, state] of balances.entries()) {
       const account = state.account
-      if (!desiredByAccountId.has(account.id)) continue
+      if (!desiredByBalanceIndex.has(balanceIndex)) continue
       const ownerId = account.ownerPersonId ?? primary.id
       const ownerState = stateOf(ownerId)
-      const desired = desiredByAccountId.get(account.id) ?? 0
+      const desired = desiredByBalanceIndex.get(balanceIndex) ?? 0
       const isEmployerAccount = isEmployerPlanAccount(account)
+      const rowKey = employerRowKey(balanceIndex)
       if (desired <= 0 && !isEmployerAccount) continue
 
       let allowed = desired
@@ -3915,7 +3925,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const age = ownerState.ageAttained
       if (isEmployerAccount) {
         groupKey = `${ownerId}:employer`
-        allowed = employerAllocated.get(account.id) ?? 0
+        allowed = employerAllocated.get(rowKey) ?? 0
       } else if ((account.type === 'traditional' || account.type === 'roth') && account.kind === 'ira') {
         // One group for traditional and Roth together: IRC 408A(c)(2) makes the
         // Roth limit the 219(b)(1) amount reduced by traditional contributions,
@@ -3981,7 +3991,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const used415c = addition415cUsed.get(ownerId) ?? 0
       let countableEmployee = 0
       if (isEmployerAccount) {
-        const catchUp = employerAllocationByOwner.get(ownerId)?.catchUpByAccount.get(account.id) ?? 0
+        const catchUp = employerAllocationByOwner.get(ownerId)?.catchUpByAccount.get(rowKey) ?? 0
         const countable = Math.max(0, allowed - catchUp)
         const limit415c = Math.min(
           pack.contributionLimits.section415cLimit * limitGrowth,
@@ -4011,9 +4021,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
       }
       const catchUpAllocation = employerAllocationByOwner.get(ownerId)
-      const redirectedFromHere = catchUpAllocation?.redirectedCatchUpBySource.get(account.id) ?? 0
+      const redirectedFromHere = catchUpAllocation?.redirectedCatchUpBySource.get(rowKey) ?? 0
       const redirectedOntoHere =
-        catchUpAllocation !== undefined && catchUpAllocation.catchUpRothAccountId === account.id
+        catchUpAllocation !== undefined && catchUpAllocation.catchUpRothAccountId === rowKey
           ? [...catchUpAllocation.redirectedCatchUpBySource.values()].reduce((sum, amount) => sum + amount, 0)
           : 0
       const postRoutingRequested = Math.max(0, desired - redirectedFromHere) + redirectedOntoHere
@@ -4091,7 +4101,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (account.type === 'traditional') traditionalInflow += allowed
       else otherInflow += allowed
       if (account.type === 'taxable' || account.type === 'equityComp') taxableInflow += allowed
-      if (isEmployerAccount) employeeLandedByAccountId.set(account.id, allowed)
+      if (isEmployerAccount) employeeLandedByEmployerRowKey.set(rowKey, allowed)
       yearSites?.recordContribution({
         destinationAccountId: account.id,
         ownerPersonId: contributionOwnerPersonId,
@@ -4105,7 +4115,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       let landedTotal = 0
       for (const request of requests) {
         desiredTotal += request.desired
-        landedTotal += employeeLandedByAccountId.get(request.accountId) ?? 0
+        landedTotal += employeeLandedByEmployerRowKey.get(request.accountId) ?? 0
       }
       if (landedTotal < desiredTotal - EPSILON) {
         warnings.add('Some contributions were reduced to stay within IRS annual limits.')
@@ -4116,20 +4126,21 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // redirected catch-up. Regular elective still lands before match so it
     // consumes §415(c) first; 414(v)(3)(A) keeps the catch-up slice out of
     // that limit, so match takes leftover room after the §402(g) base only.
-    for (const state of balances) {
+    for (const [balanceIndex, state] of balances.entries()) {
       const account = state.account
-      if (!isEmployerPlanAccount(account) || !desiredByAccountId.has(account.id)) continue
+      if (!isEmployerPlanAccount(account) || !desiredByBalanceIndex.has(balanceIndex)) continue
       if (!('employerMatch' in account) || !account.employerMatch) continue
       const ownerId = account.ownerPersonId ?? primary.id
+      const rowKey = employerRowKey(balanceIndex)
       const matchInfo = account.employerMatch
       const ownerWages = wagesByPerson.get(ownerId) ?? 0
       if (ownerWages <= 0) continue
       const allocation = employerAllocationByOwner.get(ownerId)
       const electiveForMatch = allocation === undefined
-        ? (employeeLandedByAccountId.get(account.id) ?? 0)
+        ? (employeeLandedByEmployerRowKey.get(rowKey) ?? 0)
         : employerMatchElectiveBase({
-          accountId: account.id,
-          employeeLandedByAccountId,
+          accountId: rowKey,
+          employeeLandedByAccountId: employeeLandedByEmployerRowKey,
           allocatedByAccountId: employerAllocated,
           redirectedCatchUpBySource: allocation.redirectedCatchUpBySource,
           catchUpRothAccountId: allocation.catchUpRothAccountId,
