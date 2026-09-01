@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { packForYear } from '../../params/index.js'
+import type { ParameterPack } from '../../params/types.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import type { PersonYearState } from '../types.js'
 import { annualHealthcareExpenses } from './annualHealthcareExpenses.js'
@@ -10,9 +11,14 @@ function run(
   peopleStates: PersonYearState[] = [
     { personId: 'p1', ageAttained: 60, alive: true },
   ],
+  options: {
+    magi?: number
+    configurePack?: (pack: ParameterPack) => void
+  } = {},
 ) {
-  const { pack, isStandIn } = packForYear(2026)
-  const states = new Map(peopleStates.map((state) => [state.personId, state]))
+  const { pack: sourcePack, isStandIn } = packForYear(2026)
+  const pack = structuredClone(sourcePack)
+  options.configurePack?.(pack)
   return annualHealthcareExpenses({
     plan,
     pack,
@@ -21,7 +27,7 @@ function run(
     peopleStates,
     birthMonthByPerson: new Map([['p1', 1], ['p2', 7]]),
     resolveMagiFor: (year) => ({
-      magi: 0,
+      magi: options.magi ?? 0,
       source: 'planFallback',
       year,
     }),
@@ -31,8 +37,10 @@ function run(
     inflFactorFrom: () => 1,
     healthInflFactorFrom: () => 1,
     isStandIn,
-    hasModeledPerson: (personId) => states.has(personId),
-    resolvePerson: (personId) => states.get(personId)!,
+    hasModeledPerson: (personId) =>
+      peopleStates.some((state) => state.personId === personId),
+    resolvePerson: (personId) =>
+      peopleStates.find((state) => state.personId === personId)!,
     planHasTaxExemptYieldAttestation: false,
     taxExemptInterest: 0,
   })
@@ -81,7 +89,9 @@ describe('annualHealthcareExpenses', () => {
       [peopleStates[0], 12],
       [peopleStates[1], 6],
     ])
-    expect(result.healthcare - result.medicarePremiums).toBeCloseTo(1_860, 10)
+    // p1 has 12 pre-65 months; p2 turns 65 in July and therefore has the
+    // documented birthMonth - 1 = 6 Marketplace months plus 6 months of extras.
+    expect(result.healthcare - result.medicarePremiums).toBe(1_860)
     expect(result.acaActive).toBe(false)
     expect(result.acaInitialSupportCodes).toStrictEqual([])
   })
@@ -96,6 +106,26 @@ describe('annualHealthcareExpenses', () => {
       [first, 12],
       [second, 0],
     ])
+  })
+
+  it('keeps referenced duplicate person IDs first-wins like simulatePlan', () => {
+    const plan = singlePersonPlan()
+    plan.exampleSourceId = 'duplicate-person-contract-oracle'
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 100
+    plan.expenses.healthcare.applyAcaCredit = true
+    plan.expenses.healthcare.acaYears = [acaContract(100)]
+    const first = { personId: 'p1', ageAttained: 64, alive: true }
+    const second = { personId: 'p1', ageAttained: 66, alive: false }
+
+    const result = run(plan, [first, second])
+
+    expect(result.exampleContractInputMismatch).toBe(false)
+    expect(result.acaInitialSupportCodes).not.toContain(
+      'tax-family-member-unknown',
+    )
+    expect(result.acaInitialSupportCodes).not.toContain(
+      'medicare-overlap-unsupported',
+    )
   })
 
   it('keeps duplicate-contract max selection and support-code order', () => {
@@ -114,6 +144,36 @@ describe('annualHealthcareExpenses', () => {
     expect(result.acaGrossEnrollmentPremium).toBe(1_200)
     expect(result.acaInitialSupportCodes).toStrictEqual([
       'duplicate-year-contract',
+    ])
+  })
+
+  it('fails closed for duplicate covered members at the direct helper boundary', () => {
+    const plan = singlePersonPlan()
+    const contract = acaContract(100)
+    contract.coveredMembers.push({ ...contract.coveredMembers[0]! })
+    plan.expenses.healthcare.applyAcaCredit = true
+    plan.expenses.healthcare.acaYears = [contract]
+
+    expect(run(plan).acaInitialSupportCodes).toContain(
+      'covered-member-duplicate',
+    )
+  })
+
+  it('warns when a defensive parameter pack has an unverified Part D tier', () => {
+    const plan = singlePersonPlan()
+    const peopleStates: PersonYearState[] = [
+      { personId: 'p1', ageAttained: 66, alive: true },
+    ]
+
+    const result = run(plan, peopleStates, {
+      magi: 110_000,
+      configurePack: (pack) => {
+        pack.medicare.irmaaTiers[0]!.partDSurchargeMonthly = null
+      },
+    })
+
+    expect(result.warnings).toStrictEqual([
+      'An IRMAA tier with an unverified Part D surcharge was hit; Part D surcharge omitted for that tier.',
     ])
   })
 

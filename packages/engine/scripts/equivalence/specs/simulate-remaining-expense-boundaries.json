@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-remaining-expense-boundaries-r",
-  "why": "Measured reach for the extracted annual debt/LTC, healthcare/ACA/Medicare, and guardrail-funding planners. Eight block-R members run in all four equivalence modes and discriminate positional duplicate-id state (including accepted duplicate person ids), payoff and benefit carry, partial Medicare months and IRMAA, sole/duplicate/missing ACA evidence, exact support-code order, and persistent withdrawal-rate and real-balance guardrail anchors.",
+  "why": "Measured reach for the extracted annual debt/LTC, healthcare/ACA/Medicare, and guardrail-funding planners. Eleven block-R members run in all four equivalence modes and discriminate positional duplicate-id state (including accepted duplicate person ids), payoff and benefit carry, partial Medicare months and IRMAA, SSA-44/QSS/stand-in pricing, example-region selection, sole/duplicate/missing/hostile ACA evidence, exact support-code order, and persistent withdrawal-rate and real-balance guardrail anchors.",
   "entries": [
     {
       "id": "R.debt.helper",
@@ -16,118 +16,24 @@
       "lines": [65, 160]
     },
     {
-      "id": "R.healthcare.setup",
-      "label": "ACA arrays, contract selection and primary IRMAA lookback",
+      "id": "R.healthcare.helperPricing",
+      "label": "ACA setup, Marketplace months, Medicare/IRMAA pricing and warning gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [75, 94]
+      "lines": [75, 168],
+      "note": "This begins on the function's first parameter line because V8 does not attribute execution to the preceding export declaration. The warning condition is pinned at line 168; its body at lines 169-172 is simulator-unreachable with every published parameter pack because all shipped IRMAA tiers carry a verified Part D surcharge. The helper unit suite covers the defensive nullable-pack contract."
     },
     {
-      "id": "R.healthcare.lookbackPublication",
-      "label": "selected IRMAA lookback and filing-status publication",
+      "id": "R.healthcare.helperContract",
+      "label": "IRMAA threshold, example validation, contract folds and ACA support through duplicate gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [101, 106]
+      "lines": [173, 318],
+      "note": "The duplicate-covered-member condition is pinned at line 318. Its body at lines 319-320 is unreachable from this validated corpus because acaYearContractSchema rejects duplicate covered person ids before simulation; the helper unit boundary remains defensive for direct typed callers."
     },
     {
-      "id": "R.healthcare.marketplaceMonthPlanner",
-      "label": "alive marketplace-month branch planning",
+      "id": "R.healthcare.helperSupport",
+      "label": "covered-member, tax-family, evidence and assertion support with complete result",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [108, 123]
-    },
-    {
-      "id": "R.healthcare.marketplacePositionalPublication",
-      "label": "positional Marketplace-month publication without duplicate-person-id collapse",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [127, 132]
-    },
-    {
-      "id": "R.healthcare.medicareFold",
-      "label": "pre-65, partial-Medicare and IRMAA premium folds",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [119, 166]
-    },
-    {
-      "id": "R.healthcare.medicarePublication",
-      "label": "prorated Medicare, IRMAA and healthcare publication",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [171, 196]
-    },
-    {
-      "id": "R.healthcare.contractSelection",
-      "label": "sole, duplicate and missing ACA contract monthly folds and gross premium",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [224, 270]
-    },
-    {
-      "id": "R.healthcare.supportEntry",
-      "label": "ACA actionability gate and stand-in check",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [272, 273]
-    },
-    {
-      "id": "R.healthcare.supportContractShape",
-      "label": "ordered policy, contract-count and tax-family shape planning",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [276, 308]
-    },
-    {
-      "id": "R.healthcare.supportFamilyFold",
-      "label": "tax-family size and covered-member identity gates",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [312, 313]
-    },
-    {
-      "id": "R.healthcare.supportFamilyMembership",
-      "label": "covered-member Medicare overlap and family membership folds",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [319, 345]
-    },
-    {
-      "id": "R.healthcare.supportDependentChecks",
-      "label": "dependent filing and modeled-person checks",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [348, 351]
-    },
-    {
-      "id": "R.healthcare.supportDependentFilingGate",
-      "label": "dependent filing-status gate",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [353, 354]
-    },
-    {
-      "id": "R.healthcare.supportModeledDependentGate",
-      "label": "dependent modeled-person overlap gate",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [357, 360]
-    },
-    {
-      "id": "R.healthcare.supportModeledDependentResult",
-      "label": "dependent modeled-person overlap result gate",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [362, 363]
-    },
-    {
-      "id": "R.healthcare.supportTaxFacts",
-      "label": "tax-exempt evidence gate",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [366, 369]
-    },
-    {
-      "id": "R.healthcare.supportPremiumEvidence",
-      "label": "foreign-addback, SLCSP and benchmark-only evidence planning",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [371, 393]
-    },
-    {
-      "id": "R.healthcare.supportAssertions",
-      "label": "ordered explicit ACA support assertions",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [403, 428]
-    },
-    {
-      "id": "R.healthcare.return",
-      "label": "complete healthcare boundary result",
-      "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [430, 454]
+      "lines": [321, 456]
     },
     {
       "id": "R.guardrail.helper",
@@ -146,6 +52,12 @@
       "label": "healthcare planner invocation and complete result consumption",
       "file": "projection/simulate.ts",
       "lines": [2637, 2684]
+    },
+    {
+      "id": "R.healthcare.marketplacePublication",
+      "label": "positional Marketplace publication and per-person premium fallback",
+      "file": "projection/simulate.ts",
+      "lines": [8101, 8115]
     },
     {
       "id": "R.ltc.callsite",

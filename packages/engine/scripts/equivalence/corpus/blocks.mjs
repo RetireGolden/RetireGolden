@@ -2706,6 +2706,157 @@ function blockR() {
     ))
   }
 
+  {
+    // One hostile but parse-valid ACA contract reaches every independent
+    // fail-closed identity/evidence branch. The external covered row comes
+    // first so the missing-person arm cannot be hidden by short circuiting on
+    // the later Medicare-overlap row.
+    const plan = singlePersonPlan({ dob: '1961-07-15', planningAge: 67 })
+    plan.exampleSourceId = 'r9-hostile-aca-evidence'
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people.push({
+      id: 'p2',
+      name: 'Omitted spouse',
+      dob: '1980-01-15',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 67, source: 'manual' },
+    })
+    plan.accounts = [taxable('r9-taxable', 100_000, 100_000, {
+      annualReturnPct: 0,
+      taxExemptInterestYieldPct: 1,
+    })]
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 99,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      acaYears: [{
+        ...acaContract(plan, {
+          enrollment: 100,
+          benchmark: 100,
+          taxExemptInterest: { state: 'unknown', amount: null },
+          foreignExclusionAddback: { state: 'unknown', amount: null },
+        }),
+        taxFamilyMembers: [
+          {
+            personId: 'external-primary',
+            relationship: 'primary',
+            requiredToFile: 'unknown',
+            magi: 0,
+          },
+          {
+            personId: 'p1',
+            relationship: 'dependent',
+            requiredToFile: 'unknown',
+            magi: 0,
+          },
+        ],
+        coveredMembers: [
+          {
+            personId: 'external-primary',
+            enrollmentPremiumByMonth: monthly(0),
+            slcspBenchmarkPremiumByMonth: monthly(50),
+          },
+          {
+            personId: 'p1',
+            enrollmentPremiumByMonth: monthly(100),
+            slcspBenchmarkPremiumByMonth: monthly(0),
+          },
+        ],
+      }],
+    }
+    out.push(member(
+      'r9-hostileAcaIdentityAndEvidence',
+      'R: example-contract member validation, tax-family shape, missing/dead resolution, dependent filing/model overlap, attested tax-exempt interest and both missing/benchmark-only premium evidence',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // The spouse died before the projection starts. The survivor remains on
+    // Medicare with an ACA contract in the second QSS/SSA-44 year, which also
+    // uses the latest parameter pack as a future-year stand-in.
+    const plan = couplePlan({
+      p1Dob: '1958-01-15',
+      p2Dob: '1960-01-15',
+      p1PlanningAge: 72,
+      p2PlanningAge: 65,
+    })
+    plan.household.hasQualifyingDependent = true
+    plan.accounts = [cash('r10-cash', 1_000_000, { annualReturnPct: 0 })]
+    plan.assumptions.historicalAnnualMagiByYear = {
+      '2024': 1_000,
+      '2025': 300_000,
+    }
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 100,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      ssa44: { survivorYears: true, retirementYears: false },
+      acaYears: [acaContract(plan, {
+        year: START_YEAR + 1,
+        enrollment: 100,
+        benchmark: 100,
+        coveredPersonIds: ['p1'],
+      })],
+    }
+    plan.expenses.healthcare.acaYears[0].taxFamilyMembers = [
+      {
+        personId: 'p1',
+        relationship: 'primary',
+        requiredToFile: 'required',
+        magi: 0,
+      },
+      {
+        personId: 'qualifying-dependent',
+        relationship: 'dependent',
+        requiredToFile: 'notRequired',
+        magi: 0,
+      },
+    ]
+    out.push(member(
+      'r10-ssa44QssAndStandIn',
+      'R: SSA-44 alternate lookback selection, QSS-to-single IRMAA mapping and future-pack stand-in ACA support',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  {
+    // Example contracts use the residence-specific FPL region. Two annual
+    // contracts around an Alaska-to-Hawaii move reach both non-contiguous
+    // branches while keeping the premium oracle exact.
+    const plan = singlePersonPlan({ dob: '1980-01-15', planningAge: 60 })
+    plan.exampleSourceId = 'r11-noncontiguous-regions'
+    plan.household.state = 'AK'
+    plan.household.stateMoves = [{
+      fromYear: START_YEAR + 1,
+      fromMonth: 1,
+      state: 'HI',
+    }]
+    plan.accounts = [cash('r11-cash', 1_000_000, { annualReturnPct: 0 })]
+    const alaska = acaContract(plan, { year: START_YEAR, enrollment: 100 })
+    alaska.fplRegion = 'alaska'
+    const hawaii = acaContract(plan, {
+      year: START_YEAR + 1,
+      enrollment: 100,
+    })
+    hawaii.fplRegion = 'hawaii'
+    plan.expenses.healthcare = {
+      pre65MonthlyPremiumPerPerson: 100,
+      applyAcaCredit: true,
+      medicareExtrasMonthlyPerPerson: 0,
+      acaYears: [alaska, hawaii],
+    }
+    out.push(member(
+      'r11-exampleContractAlaskaHawaii',
+      'R: example-contract Alaska and Hawaii FPL-region selection across a state move with exact monthly-premium evidence',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
   return out
 }
 

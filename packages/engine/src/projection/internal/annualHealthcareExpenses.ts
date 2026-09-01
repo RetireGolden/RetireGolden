@@ -114,6 +114,8 @@ export function annualHealthcareExpenses(
   const marketplaceMonthsBeforeMedicare = (
     person: PersonYearState,
   ): number =>
+    // Medicare begins in the birth month. Planning grade: the prior-month
+    // eligibility rule for people born on the first is not modeled.
     !person.alive
       ? 0
       : person.ageAttained < 65
