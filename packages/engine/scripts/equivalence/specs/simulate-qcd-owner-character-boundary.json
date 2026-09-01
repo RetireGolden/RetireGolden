@@ -223,11 +223,11 @@
   "measuredProof": {
     "method": "The blocks corpus and both engine source trees were materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. The verifier pins the corpus source blob, the equivalence runner/loader blobs, and a canonical hash of this spec's schema/name/why/entries measurement input before recomputing the proof. It also materializes the immutable head tree, replaces the helper's sole section 219 read with zero, captures that mutant, and asserts the recorded calibration movement.",
     "base": {
-      "commit": "e3df12ce28ff598d1aa59dd80c46ecfead657ccb",
+      "commit": "5f7106e749a5d568baab836bcab95f4640a2d801",
       "engineSourceTree": "dc89890dd2e4dd4eabc14bd20bb27fe551535d35"
     },
     "head": {
-      "observedAtCommit": "6c87d39326cbfbcd91e04d3eca94ca98b1d09af0",
+      "observedAtCommit": "0c0894f2f8e5ea1c68eadab06553d167bddf724a",
       "engineSourceTree": "58b10d380b37934349fc9c0ef995763f4d6a139e"
     },
     "inputs": {
