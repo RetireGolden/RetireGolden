@@ -32,11 +32,14 @@ const seam = vi.hoisted(() => ({
     | 'historyWrite'
     | 'laterAmountReadFailure'
     | 'laterIdentityReadFailure'
-    | 'identityFlipAfterValidation',
+    | 'identityFlipAfterValidation'
+    | 'historyPropertyReadFailure'
+    | 'historyIteratorReadFailure',
   amountReads: [] as string[],
   identityReads: [] as string[],
   captureLogicalWrites: false,
   logicalWrites: [] as Readonly<{ accountId: string; balance: number }>[],
+  historyPropertyReads: 0,
   historyIterations: 0,
   giftPhases: [] as GiftPhase[],
   characterInputs: [] as Readonly<{
@@ -166,21 +169,33 @@ vi.mock('./internal/annualLegacyQcdGiftPlan.js', async (importOriginal) => {
       Object.defineProperty(offsetHistoryUnprovableDonorIds, Symbol.iterator, {
         value: () => {
           seam.historyIterations += 1
+          if (seam.mode === 'historyIteratorReadFailure') {
+            throw new Error('hostile history iterator read')
+          }
           return historyIterator()
         },
       })
-      const injected: AnnualLegacyQcdGiftPlanResult = {
+      const injected = {
         qcd: 333.33,
         qcdFromRmd: 0,
         qcdGrossByOwner: new Map([['p1', 333.33]]),
         qcdFromRmdByOwner: new Map(),
         // Reverse account order so mutation/application order is observable.
         debitIntents: [firstIntent, secondIntent],
+        offsetHistoryUnprovableDonorIds,
         // Natural planning marks p1. Both outcomes are deliberately hostile:
         // empty catches retained inline marking, while nonempty catches a
         // caller that drops the helper-provided history-write list entirely.
-        offsetHistoryUnprovableDonorIds,
-      }
+      } satisfies AnnualLegacyQcdGiftPlanResult
+      Object.defineProperty(injected, 'offsetHistoryUnprovableDonorIds', {
+        get: () => {
+          seam.historyPropertyReads += 1
+          if (seam.mode === 'historyPropertyReadFailure') {
+            throw new Error('hostile history property read')
+          }
+          return offsetHistoryUnprovableDonorIds
+        },
+      })
       seam.giftPhases.push({
         input,
         balancesAtCall: input.balances.map(({ accountId, balance }) => ({
@@ -360,6 +375,7 @@ function run(mode: typeof seam.mode = 'normal') {
   seam.identityReads.length = 0
   seam.captureLogicalWrites = false
   seam.logicalWrites.length = 0
+  seam.historyPropertyReads = 0
   seam.historyIterations = 0
   seam.characterInputs.length = 0
   seam.prerequisitePriorOffsets.length = 0
@@ -613,5 +629,27 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
         application.applicationKind === 'debit' &&
         application.simulatorPhase === 'legacyQcdDistribution'))
       .toHaveLength(2)
+  })
+
+  it('materializes hostile history channels before any scalar-QCD publication', () => {
+    expect(() => run('historyPropertyReadFailure')).toThrow(
+      'hostile history property read',
+    )
+    expect(seam.historyPropertyReads).toBeGreaterThan(0)
+    expect(seam.historyIterations).toBe(0)
+    // The logical setter is the first apply operation and strictly precedes
+    // runtime, deferred-character and history publication at this seam.
+    expect(seam.logicalWrites).toEqual([])
+    expect(seam.characterInputs).toEqual([])
+    expect(seam.prerequisitePriorOffsets).toEqual([])
+
+    expect(() => run('historyIteratorReadFailure')).toThrow(
+      'hostile history iterator read',
+    )
+    expect(seam.historyPropertyReads).toBeGreaterThan(0)
+    expect(seam.historyIterations).toBe(seam.historyPropertyReads)
+    expect(seam.logicalWrites).toEqual([])
+    expect(seam.characterInputs).toEqual([])
+    expect(seam.prerequisitePriorOffsets).toEqual([])
   })
 })

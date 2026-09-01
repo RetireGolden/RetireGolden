@@ -4305,6 +4305,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         amount,
       })
     }
+    const qcdGiftOffsetHistoryUnprovableDonorIds = [
+      ...qcdGiftPlan.offsetHistoryUnprovableDonorIds,
+    ]
+    const qcdGiftPersonIds = new Set(
+      peopleStates.map((person) => person.personId),
+    )
+    if (qcdGiftOffsetHistoryUnprovableDonorIds.some((donorId) =>
+      !qcdGiftPersonIds.has(donorId))) {
+      throw new Error(
+        'Legacy scalar QCD history write lost its donor identity',
+      )
+    }
 
     for (const debit of validatedQcdGiftDebitIntents) {
       const state = rmdBalances[debit.balanceIndex]!
@@ -4346,7 +4358,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         })
       }
     }
-    for (const donorId of qcdGiftPlan.offsetHistoryUnprovableDonorIds) {
+    for (const donorId of qcdGiftOffsetHistoryUnprovableDonorIds) {
       namedQcdOffsetHistoryUnprovable.add(donorId)
     }
 
