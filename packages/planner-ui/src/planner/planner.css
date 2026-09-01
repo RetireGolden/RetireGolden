@@ -796,7 +796,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Inherit family/weight/line-height from the app (UA <select> is Arial).
+     Re-state the shared field size after the shorthand so it stays 0.98rem. */
   font: inherit;
+  font-size: 0.98rem;
 }
 
 .field--checkbox input[type='checkbox'] {

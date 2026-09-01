@@ -65,5 +65,7 @@ describe('Compare-plans table chrome (#384)', () => {
     const selectOnly = css.indexOf('/* Safety net: a long option label')
     const select = ruleBodyAt(css.indexOf('.field select {', selectOnly), '.field select')
     expect(select).toMatch(/font:\s*inherit/)
+    expect(select).toMatch(/font-size:\s*0\.98rem/)
+    expect(select.indexOf('font: inherit')).toBeLessThan(select.search(/font-size:\s*0\.98rem/))
   })
 })
