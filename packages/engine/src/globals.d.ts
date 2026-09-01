@@ -1,5 +1,5 @@
 /**
- * The engine runs in browsers and in plain Node (≥20), both of which provide
+ * The engine runs in browsers and in supported plain Node (>=24), both of which provide
  * the Web Crypto global. The package compiles against lib "ES2023" alone —
  * deliberately no DOM lib, so browser-only APIs can't creep in — which means
  * the one host global the engine uses must be declared here.
