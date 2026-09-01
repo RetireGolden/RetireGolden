@@ -89,8 +89,9 @@ export interface OptimizerYearProbe {
    * FIVE producers, enumerated rather than described by a rule, so the field
    * makes no universal claim it cannot enforce. Four debit and one credits:
    *   1. the aggregate `strategies.qcdAnnual` gift taken BEYOND the year's
-   *      owned-IRA RMD (`simulate.ts`, the `beyondRmd` loop). The dollars leave
-   *      the household; its charitable exclusion reaches the LP separately, as
+   *      owned-IRA RMD (`annualLegacyQcdGiftPlan`, the `beyondRmd` sizing pass;
+   *      `simulate.ts` applies its `debitIntents`). The dollars leave the
+   *      household; its charitable exclusion reaches the LP separately, as
    *      `forcedDistributionOrdinaryIncomeExclusion` below.
    *   2. a 72(t) SEPP series payment, which debits its account every series
    *      year. Its ordinary income is already booked inside

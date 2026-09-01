@@ -633,12 +633,16 @@ export const charitableDistributionRecords = {
       // the action's own tax year and fails `taxParameterUnavailable` on a
       // stand-in pack, which stops the executor from committing.
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts',
+      // The named request's presence stands the recurring scalar planner down
+      // before it can debit a second gift in that same unsupported year.
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts',
       // The user-visible consequence, including the warning that says the
       // recurring amount stood down as well.
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -750,8 +754,12 @@ export const charitableDistributionRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -822,8 +830,12 @@ export const charitableDistributionRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-07',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

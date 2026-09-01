@@ -1,0 +1,152 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-qcd-gift-boundary",
+  "why": "Measured reach for the grouped legacy aggregate scalar-QCD gift planner extracted from simulatePlan. Six dedicated block-Q members run in all four equivalence modes and discriminate current-year named-action suppression, annual age-70.5 and death eligibility, indexed independent donor caps, proportional routed-RMD attribution and sorted reallocation, first-ID logical beyond-RMD sources, compatible duplicate physical rows, full-drain cent flooring and sub-cent suppression, multi-year freshness, complete caller prevalidation, logical pro-rata mutation, one runtime identity per ID, deferred character rows and history writes. Hostile delegation tests pin fail-closed source identity, balance and amount validation because behavior-equivalent capture cannot execute those throws.",
+  "entries": [
+    {
+      "id": "Q.helper.emptyResult",
+      "label": "fresh empty result factory",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [65, 74],
+      "anchors": [
+        { "line": 65, "text": "function emptyResult(): AnnualLegacyQcdGiftPlanResult {" },
+        { "line": 69, "text": "qcdGrossByOwner: new Map()," },
+        { "line": 74, "text": "}" }
+      ]
+    },
+    {
+      "id": "Q.helper.grossFold",
+      "label": "insertion-ordered owner gross addition",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [76, 80],
+      "anchors": [
+        { "line": 76, "text": "function addGiftGross(" },
+        { "line": 79, "text": "target.set(ownerId, (target.get(ownerId) ?? 0) + amount)" },
+        { "line": 80, "text": "}" }
+      ]
+    },
+    {
+      "id": "Q.helper.donorsAndRequest",
+      "label": "named suppression, annual donor eligibility and per-donor request cap",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [83, 110],
+      "anchors": [
+        { "line": 83, "text": "input: Readonly<AnnualLegacyQcdGiftPlanInput>," },
+        { "line": 85, "text": "if (input.qcdAnnual <= 0 || input.hasNamedQcdRequest) return emptyResult()" },
+        { "line": 90, "text": "const donorIds = new Set(input.people" },
+        { "line": 93, "text": "(person.ageAttained === 70 && person.birthMonth <= 6)" },
+        { "line": 96, "text": "if (donorIds.size === 0) return emptyResult()" },
+        { "line": 101, "text": "const donorCapacity = new Map<string, number>(" },
+        { "line": 104, "text": "const requested = Math.min(" },
+        { "line": 108, "text": "let qcdFromRmd = Math.min(requested, input.ownedIraRmdTotal)" }
+      ]
+    },
+    {
+      "id": "Q.helper.routedRmd",
+      "label": "sorted proportional owner attribution, personal-cap clamp and residual reallocation",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [112, 158],
+      "anchors": [
+        { "line": 112, "text": "if (qcdFromRmd > 0 && input.ownedIraRmdTotal > 0) {" },
+        { "line": 116, "text": "const owners = [...input.ownedIraRmdGrossByOwner.keys()].sort()" },
+        { "line": 123, "text": "owners.forEach((ownerId, index) => {" },
+        { "line": 129, "text": "qcdFromRmd * (" },
+        { "line": 138, "text": "let unassigned = Math.max(0, qcdFromRmd - assigned)" },
+        { "line": 139, "text": "for (const ownerId of owners) {" },
+        { "line": 148, "text": "qcdFromRmd = assigned" },
+        { "line": 149, "text": "for (const [ownerId, share] of shares) {" },
+        { "line": 155, "text": "Math.max(0, (donorCapacity.get(ownerId) ?? 0) - share)," }
+      ]
+    },
+    {
+      "id": "Q.helper.beyondRmd",
+      "label": "first-ID logical source selection, cent-floor drain and one debit intent per ID",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [160, 198],
+      "anchors": [
+        { "line": 160, "text": "const beyondRmd = requested - qcdFromRmd" },
+        { "line": 166, "text": "const sources = input.balances.filter((state) =>" },
+        { "line": 168, "text": "const available = sources.reduce((sum, state) => sum + state.balance, 0)" },
+        { "line": 170, "text": "for (const state of sources) {" },
+        { "line": 177, "text": "const take = allowance >= state.balance" },
+        { "line": 182, "text": "if (planDollarsMoveNoLedgerCent(take)) continue" },
+        { "line": 189, "text": "addGiftGross(qcdGrossByOwner, state.ownerId, take)" },
+        { "line": 190, "text": "debitIntents.push({" }
+      ]
+    },
+    {
+      "id": "Q.helper.result",
+      "label": "left-associated gift total and fresh ordered output",
+      "file": "projection/internal/annualLegacyQcdGiftPlan.ts",
+      "lines": [200, 209],
+      "anchors": [
+        { "line": 200, "text": "const qcd = qcdBeyondRmd + qcdFromRmd" },
+        { "line": 201, "text": "return {" },
+        { "line": 207, "text": "offsetHistoryUnprovableDonorIds: qcd > 0 ? [...donorIds] : []," },
+        { "line": 209, "text": "}" }
+      ]
+    },
+    {
+      "id": "Q.callsite.invoke",
+      "label": "logical live-state snapshot and exact map handoff",
+      "file": "projection/simulate.ts",
+      "lines": [5084, 5115],
+      "anchors": [
+        { "line": 5084, "text": "const qcdGiftPlan = annualLegacyQcdGiftPlan({" },
+        { "line": 5089, "text": "people: peopleStates.map((state) => ({" },
+        { "line": 5096, "text": "ownedIraRmdGrossByOwner," },
+        { "line": 5097, "text": "balances: rmdBalances.map((state, balanceIndex) => ({" },
+        { "line": 5105, "text": "qcd = qcdGiftPlan.qcd" },
+        { "line": 5113, "text": "const qcdGrossByOwner = qcdGiftPlan.qcdGrossByOwner" },
+        { "line": 5115, "text": "const qcdFromRmdByOwner = qcdGiftPlan.qcdFromRmdByOwner" }
+      ]
+    },
+    {
+      "id": "Q.callsite.validate",
+      "label": "whole-plan logical IRA identity, sequential balance and amount validation",
+      "file": "projection/simulate.ts",
+      "lines": [5120, 5142],
+      "anchors": [
+        { "line": 5120, "text": "const validatedQcdGiftDebitIntents: Array<{" },
+        { "line": 5124, "text": "const remainingQcdGiftBalanceByIndex = new Map<number, number>()" },
+        { "line": 5125, "text": "for (const intent of qcdGiftPlan.debitIntents) {" },
+        { "line": 5126, "text": "const state = rmdBalances[intent.balanceIndex]" },
+        { "line": 5131, "text": "if (" },
+        { "line": 5133, "text": "!isAggregatedIra(state.account) ||" },
+        { "line": 5139, "text": "planDollarsMoveNoLedgerCent(amount) ||" },
+        { "line": 5141, "text": "amount > remainingBalance" }
+      ],
+      "note": "Validated differential members take the successful seam. The fail-closed throw cannot execute in a behavior-equivalent capture; hostile delegation independently injects wrong logical positions, owner, non-IRA source, stale balance, zero, positive sub-cent and cumulative overdraw intents and asserts complete prevalidation before any mutation."
+    },
+    {
+      "id": "Q.callsite.validateSequentialCommit",
+      "label": "sequential shadow-balance advance and validated amount cache",
+      "file": "projection/simulate.ts",
+      "lines": [5147, 5152],
+      "anchors": [
+        { "line": 5147, "text": "remainingQcdGiftBalanceByIndex.set(" },
+        { "line": 5149, "text": "remainingBalance - amount," },
+        { "line": 5151, "text": "validatedQcdGiftDebitIntents.push({ intent, amount })" },
+        { "line": 5152, "text": "}" }
+      ]
+    },
+    {
+      "id": "Q.callsite.apply",
+      "label": "logical pro-rata debit, single runtime identity, deferred character and history writes",
+      "file": "projection/simulate.ts",
+      "lines": [5154, 5197],
+      "anchors": [
+        { "line": 5154, "text": "for (const { intent, amount } of validatedQcdGiftDebitIntents) {" },
+        { "line": 5155, "text": "const state = rmdBalances[intent.balanceIndex]!" },
+        { "line": 5159, "text": "state.balance -= amount" },
+        { "line": 5165, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 5175, "text": "const giftApplication = recordAnnualRetirementRuntimeApplication({" },
+        { "line": 5185, "text": "if (giftApplication.applicationKind === 'debit') {" },
+        { "line": 5186, "text": "deferredLegacyQcdDistributions.push({" },
+        { "line": 5195, "text": "for (const donorId of qcdGiftPlan.offsetHistoryUnprovableDonorIds) {" },
+        { "line": 5196, "text": "namedQcdOffsetHistoryUnprovable.add(donorId)" }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on any cold executable whole line in a reached range. JavaScript line coverage cannot distinguish every ternary, nullish or compound-condition operand sharing one physical line, so focused hostile tests must be read alongside the differential proof."
+}
