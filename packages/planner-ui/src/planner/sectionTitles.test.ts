@@ -14,7 +14,26 @@ import { readdirSync, readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
+import { SEGMENT_LABELS } from '../learn/segmentLabels'
 import { SECTION_TITLES, sectionTitleOf } from './sectionTitles'
+
+describe('the Learn back-link labels agree with the screen titles', () => {
+  // LearnLink keeps its own copy on purpose: importing planner/sectionTitles
+  // from the learn graph made Rolldown fold the 124 KiB article registry into
+  // the app entry (PR #488, round 2). This is what keeps the copy honest.
+  it('names every screen the workspace names, with the same wording', () => {
+    for (const [segment, title] of Object.entries(SECTION_TITLES)) {
+      const expected = segment === 'assumptions-card' ? 'Your assumptions' : title
+      expect(SEGMENT_LABELS[segment], `segment "${segment}"`).toBe(expected)
+    }
+  })
+
+  it('names nothing the workspace does not', () => {
+    for (const segment of Object.keys(SEGMENT_LABELS)) {
+      expect(SECTION_TITLES[segment], `learn-only segment "${segment}"`).toBeTruthy()
+    }
+  })
+})
 
 describe('sectionTitleOf', () => {
   it('names a route segment, or a path that starts with one', () => {

@@ -16,8 +16,8 @@
  */
 
 import { Link, useLocation } from 'react-router'
-import { SECTION_TITLES } from '../planner/sectionTitles'
 import { getArticle } from './learningRegistry'
+import { SEGMENT_LABELS } from './segmentLabels'
 
 export type LearnHook = {
   /** Article slug in the Learning Center registry. */
@@ -38,15 +38,6 @@ type LearnLinkProps = LearnHook & {
   className?: string
 }
 
-/**
- * Human label for a planner route segment on the article's back link. The
- * screen wording is owned by the workspace's SECTION_TITLES; the one override
- * is the assumptions card, which the reader knows as "Your assumptions".
- */
-const SEGMENT_LABELS: Record<string, string> = {
-  ...SECTION_TITLES,
-  'assumptions-card': 'Your assumptions',
-}
 
 /** A short, human label for where a return path points (planner screen name). */
 function originLabel(pathname: string): string | undefined {
