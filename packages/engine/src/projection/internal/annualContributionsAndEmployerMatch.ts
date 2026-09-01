@@ -191,8 +191,13 @@ export function annualContributionsAndEmployerMatch(
         ? input.pack.contributionLimits.catchUp50 * input.limitGrowth
         : 0
 
+  // Public ids retain their legacy last-row-wins projection for downstream
+  // cash-flow assembly. Planning and allocation stay positional so accepted
+  // duplicate ids cannot overwrite one another's requests or credits.
   const desiredByAccountId = new Map<string, number>()
-  for (const state of input.balances) {
+  const desiredByBalanceIndex = new Map<number, number>()
+  const employerRowKey = (balanceIndex: number): string => String(balanceIndex)
+  for (const [balanceIndex, state] of input.balances.entries()) {
     const account = state.account
     const hasSchedule = 'contributionSchedule' in account &&
       account.contributionSchedule && account.contributionSchedule.length > 0
@@ -236,6 +241,7 @@ export function annualContributionsAndEmployerMatch(
       desired = account.annualContribution * input.inflFactor
     }
     desiredByAccountId.set(account.id, desired)
+    desiredByBalanceIndex.set(balanceIndex, desired)
   }
 
   const employerAllocated = new Map<string, number>()
@@ -243,19 +249,20 @@ export function annualContributionsAndEmployerMatch(
     new Map<string, EmployerElectiveAllocation>()
   const employerRequestsByOwner =
     new Map<string, EmployerElectiveRequest[]>()
-  const employeeLandedByAccountId = new Map<string, number>()
-  for (const state of input.balances) {
+  const employeeLandedByEmployerRowKey = new Map<string, number>()
+  for (const [balanceIndex, state] of input.balances.entries()) {
     const account = state.account
     if (
       !isEmployerPlanAccount(account) ||
-      !desiredByAccountId.has(account.id)
+      !desiredByBalanceIndex.has(balanceIndex)
     ) continue
     const ownerId = account.ownerPersonId ?? input.primaryPersonId
+    const rowKey = employerRowKey(balanceIndex)
     const list = employerRequestsByOwner.get(ownerId) ?? []
     list.push({
-      accountId: account.id,
+      accountId: rowKey,
       type: account.type,
-      desired: desiredByAccountId.get(account.id) ?? 0,
+      desired: desiredByBalanceIndex.get(balanceIndex) ?? 0,
       priorCalendarYearFicaWages: account.priorCalendarYearFicaWages ?? 0,
     })
     employerRequestsByOwner.set(ownerId, list)
@@ -285,11 +292,12 @@ export function annualContributionsAndEmployerMatch(
   ) {
     const state = input.balances[balanceIndex]!
     const account = state.account
-    if (!desiredByAccountId.has(account.id)) continue
+    if (!desiredByBalanceIndex.has(balanceIndex)) continue
     const ownerId = account.ownerPersonId ?? input.primaryPersonId
     const ownerState = input.resolveOwnerState(ownerId)
-    const desired = desiredByAccountId.get(account.id) ?? 0
+    const desired = desiredByBalanceIndex.get(balanceIndex) ?? 0
     const isEmployerAccount = isEmployerPlanAccount(account)
+    const rowKey = employerRowKey(balanceIndex)
     if (desired <= 0 && !isEmployerAccount) continue
 
     let allowed = desired
@@ -299,7 +307,7 @@ export function annualContributionsAndEmployerMatch(
     const age = ownerState.ageAttained
     if (isEmployerAccount) {
       groupKey = `${ownerId}:employer`
-      allowed = employerAllocated.get(account.id) ?? 0
+      allowed = employerAllocated.get(rowKey) ?? 0
     } else if (
       (account.type === 'traditional' || account.type === 'roth') &&
       account.kind === 'ira'
@@ -333,7 +341,7 @@ export function annualContributionsAndEmployerMatch(
     let countableEmployee = 0
     if (isEmployerAccount) {
       const catchUp = employerAllocationByOwner.get(ownerId)
-        ?.catchUpByAccount.get(account.id) ?? 0
+        ?.catchUpByAccount.get(rowKey) ?? 0
       const countable = Math.max(0, allowed - catchUp)
       const limit415c = Math.min(
         input.pack.contributionLimits.section415cLimit * input.limitGrowth,
@@ -363,9 +371,9 @@ export function annualContributionsAndEmployerMatch(
 
     const catchUpAllocation = employerAllocationByOwner.get(ownerId)
     const redirectedFromHere = catchUpAllocation
-      ?.redirectedCatchUpBySource.get(account.id) ?? 0
+      ?.redirectedCatchUpBySource.get(rowKey) ?? 0
     const redirectedOntoHere = catchUpAllocation !== undefined &&
-      catchUpAllocation.catchUpRothAccountId === account.id
+      catchUpAllocation.catchUpRothAccountId === rowKey
       ? [...catchUpAllocation.redirectedCatchUpBySource.values()].reduce(
           (sum, amount) => sum + amount,
           0,
@@ -477,7 +485,9 @@ export function annualContributionsAndEmployerMatch(
     if (account.type === 'taxable' || account.type === 'equityComp') {
       taxableInflow += allowed
     }
-    if (isEmployerAccount) employeeLandedByAccountId.set(account.id, allowed)
+    if (isEmployerAccount) {
+      employeeLandedByEmployerRowKey.set(rowKey, allowed)
+    }
     operations.push({
       kind: 'contribution',
       balanceIndex,
@@ -501,7 +511,7 @@ export function annualContributionsAndEmployerMatch(
     let landedTotal = 0
     for (const request of requests) {
       desiredTotal += request.desired
-      landedTotal += employeeLandedByAccountId.get(request.accountId) ?? 0
+      landedTotal += employeeLandedByEmployerRowKey.get(request.accountId) ?? 0
     }
     if (
       landedTotal <
@@ -520,19 +530,20 @@ export function annualContributionsAndEmployerMatch(
     const account = state.account
     if (
       !isEmployerPlanAccount(account) ||
-      !desiredByAccountId.has(account.id)
+      !desiredByBalanceIndex.has(balanceIndex)
     ) continue
     if (!account.employerMatch) continue
     const ownerId = account.ownerPersonId ?? input.primaryPersonId
+    const rowKey = employerRowKey(balanceIndex)
     const matchInfo = account.employerMatch
     const ownerWages = input.wagesByPerson.get(ownerId) ?? 0
     if (ownerWages <= 0) continue
     const allocation = employerAllocationByOwner.get(ownerId)
     const electiveForMatch = allocation === undefined
-      ? employeeLandedByAccountId.get(account.id) ?? 0
+      ? employeeLandedByEmployerRowKey.get(rowKey) ?? 0
       : employerMatchElectiveBase({
-          accountId: account.id,
-          employeeLandedByAccountId,
+          accountId: rowKey,
+          employeeLandedByAccountId: employeeLandedByEmployerRowKey,
           allocatedByAccountId: employerAllocated,
           redirectedCatchUpBySource: allocation.redirectedCatchUpBySource,
           catchUpRothAccountId: allocation.catchUpRothAccountId,

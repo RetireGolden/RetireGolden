@@ -133,11 +133,11 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
         : '1985-01-01',
     })
 
-    // The second duplicate overwrites authored desired to 4. Both positional
-    // rows read 4; the joint compensation pool then leaves only 2 for row 2.
+    // The public lookup intentionally remains last-row-wins, but each planner
+    // row retains its own authored request: 1 for row 0 and 4 for row 1.
     expect([...result.desiredByAccountId]).toEqual([['duplicate', 4]])
     expect(result.operations.map((operation) => operation.kind)).toEqual([
-      'contribution', 'warning', 'contribution',
+      'contribution', 'contribution',
     ])
     const credits = contributions(result)
     expect(credits.map((row) => [
@@ -147,30 +147,30 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
       row.credited,
       row.record.ownerPersonId,
     ])).toEqual([
-      [0, 100, 104, 4, 'p1'],
-      [1, 100, 102, 2, 'p2'],
+      [0, 100, 101, 1, 'p1'],
+      [1, 100, 104, 4, 'p2'],
     ])
     expect(credits[0]!.retirementOccurrence).toEqual(expect.objectContaining({
       kind: 'ownedIraContribution',
       ownerPersonId: 'p1',
       sourceAccountId: 'duplicate',
-      grossAmountPlanDollars: 4,
+      grossAmountPlanDollars: 1,
     }))
     expect(credits[0]!.retirementApplication).toEqual(expect.objectContaining({
       sourceBalanceBeforePlanDollars: 100,
-      creditedAmountPlanDollars: 4,
-      sourceBalanceAfterPlanDollars: 104,
+      creditedAmountPlanDollars: 1,
+      sourceBalanceAfterPlanDollars: 101,
     }))
     expect(credits[1]!.retirementOccurrence).toBeNull()
     expect(credits[1]!.rothContributionPoolKey).toBe('rothira:p2')
-    expect(credits[1]!.rothContributionBasisDelta).toBe(2)
+    expect(credits[1]!.rothContributionBasisDelta).toBe(4)
     expect(result.totals).toEqual({
-      contributions: 6,
-      ownedNonRothIraContributions: 4,
+      contributions: 5,
+      ownedNonRothIraContributions: 1,
       employerMatch: 0,
-      preTaxContributions: 4,
-      traditionalInflow: 4,
-      otherInflow: 2,
+      preTaxContributions: 1,
+      traditionalInflow: 1,
+      otherInflow: 4,
       taxableInflow: 0,
     })
   })
