@@ -146,6 +146,7 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -156,6 +157,15 @@
             {
               "name": "personSchema",
               "line": 154
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
             }
           ]
         },
@@ -221,9 +231,19 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -282,10 +302,20 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/rmd/rmd.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -366,6 +396,7 @@
         "packages/engine/src/decisions/objectives.ts",
         "packages/engine/src/insights/detectors/rothBridgeHeadroom.ts",
         "packages/engine/src/params/index.ts",
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/rmd/applicableAge.ts"
       ],
       "implementations": [
@@ -393,6 +424,15 @@
             {
               "name": "rmdStartAgeForBirthYear",
               "line": 137
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
             }
           ]
         },
@@ -812,10 +852,20 @@
       "verifiedOn": "2026-08-26",
       "dueOn": "2027-08-26",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -878,9 +928,19 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -929,10 +989,20 @@
       "verifiedOn": "2026-08-21",
       "dueOn": "2027-08-21",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/rmd/rmdShortfallExcise.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -1225,6 +1295,7 @@
       "dueOn": "2027-08-03",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/rmd/rmd.ts"
       ],
       "implementations": [
@@ -1234,6 +1305,15 @@
             {
               "name": "rmdStartAgeForBirthYear",
               "line": 137
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
             }
           ]
         },
@@ -2242,10 +2322,20 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/rmd/rmd.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
@@ -2842,6 +2932,7 @@
         "packages/engine/src/actions/rothConversionExecution.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts",
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -2870,6 +2961,15 @@
             {
               "name": "annualAggregateRothConversionPlan",
               "line": 160
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
             }
           ]
         },
@@ -3023,10 +3123,20 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/rmd/rmdShortfallExcise.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
+          "functions": [
+            {
+              "name": "annualOwnerRmdPlan",
+              "line": 84
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [

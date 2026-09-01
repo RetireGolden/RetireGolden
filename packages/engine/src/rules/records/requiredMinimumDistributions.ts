@@ -200,12 +200,14 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-29',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/params/index.ts',
       'packages/engine/src/insights/detectors/rothBridgeHeadroom.ts',
       'packages/engine/src/decisions/objectives.ts',
       'packages/engine/src/rmd/applicableAge.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
       'packages/engine/src/insights/detectors/rothBridgeHeadroom.ts#rothBridgeHeadroom',
       'packages/engine/src/decisions/objectives.ts#bridgeYearFilter',
@@ -342,10 +344,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/rmd/rmd.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],
@@ -383,6 +387,7 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
@@ -390,6 +395,7 @@ export const requiredMinimumDistributionRecords = {
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
       'packages/engine/src/projection/internal/annualAggregateRothConversionPlan.ts#annualAggregateRothConversionPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
@@ -515,10 +521,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/params/index.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],
@@ -551,10 +559,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/rmd/rmd.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],
@@ -562,7 +572,7 @@ export const requiredMinimumDistributionRecords = {
   'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': {
     title: 'Elected first-year deferral ignores attainment-year IRA distributions',
     statement:
-      'Amounts distributed from an IRA during the first distribution calendar year count toward that year’s required minimum. The year-crediting machinery is carried by treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year (which year the first required amount belongs to) and treas-reg-1-408-8-b-3-rmd-first-dollars-out (distributions, including a QCD, satisfy the year total in the order they occur); the staged source corpus for this slice does not include Treas. Reg. 1.401(a)(9)-5, so the limbs below reuse spans already quoted on those sibling records and on irc-401-a-9-C-i-first-year-april-1-deferral. Not modelled under an elected `rmdFirstYearDeferrals` path: simulate.ts stores the full calculated first-year RMD at the deferral branch and continues, so an attainment-year IRA withdrawal or QCD does not reduce the deferred obligation; the following receipt year then withdraws that full amount again beside the separately required second-year RMD. Double-counting the deferred amount overstates receipt-year ordinary income and tax. The second-year required amount is still computed on the reduced prior year-end balance, so the overstatement is the re-booked first-year dollars rather than a funding-channel flip. The default attainment-year path and the clean elected path with no intervening attainment-year distribution remain under irc-401-a-9-C-i-first-year-april-1-deferral.',
+      'Amounts distributed from an IRA during the first distribution calendar year count toward that year’s required minimum. The year-crediting machinery is carried by treas-reg-1-401-a-9-5-a-2-first-distribution-calendar-year (which year the first required amount belongs to) and treas-reg-1-408-8-b-3-rmd-first-dollars-out (distributions, including a QCD, satisfy the year total in the order they occur); the staged source corpus for this slice does not include Treas. Reg. 1.401(a)(9)-5, so the limbs below reuse spans already quoted on those sibling records and on irc-401-a-9-C-i-first-year-april-1-deferral. Not modelled under an elected `rmdFirstYearDeferrals` path: annualOwnerRmdPlan stores the full calculated first-year RMD at the deferral branch and continues, so an attainment-year IRA withdrawal or QCD does not reduce the deferred obligation; the following receipt year then withdraws that full amount again beside the separately required second-year RMD. Double-counting the deferred amount overstates receipt-year ordinary income and tax. The second-year required amount is still computed on the reduced prior year-end balance, so the overstatement is the re-booked first-year dollars rather than a funding-channel flip. The default attainment-year path and the clean elected path with no intervening attainment-year distribution remain under irc-401-a-9-C-i-first-year-april-1-deferral.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -592,9 +602,11 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -625,11 +637,13 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/model/plan.ts#personSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#followsOwnerRmds',
@@ -896,10 +910,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-21',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/rmd/rmdShortfallExcise.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise',
     ],
@@ -1452,8 +1468,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1485,10 +1505,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-26',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#followsOwnerRmds',
     ],
@@ -1560,10 +1582,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
       'packages/engine/src/rmd/rmdShortfallExcise.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise',
     ],
