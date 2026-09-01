@@ -136,9 +136,12 @@ hosts use the `importEnabled` / `importResolved` props. Omitted configuration pr
 - Home: `home/` (`useHomeData.ts`, `useHomeMode.ts`, `YourPlans.tsx`, `WelcomeHero.tsx`, getting-started cards, `DataAndPrivacyCard.tsx`).
 - Example library: `examples/` (`registry.ts`, `loadExample.ts`, `ExampleLibrary.tsx`, `ExamplesPage.tsx`, `ExamplePreviewBanner.tsx`, per-example `build*.ts`).
 - Entry: `PlanPickerPage.tsx`, `PlanWorkspace.tsx`, `sections.tsx` (barrel over `sections/` — one file per
-  section + `sectionHelpers.ts`; account families begin in `AccountFields.tsx` and dispatch to
+  section + `sectionHelpers.ts`; `AccountFields.tsx` exhaustively dispatches account families through
+  the callback contract in `AccountEditorTypes.ts` to `LiquidAccountEditors.tsx`,
   `PensionAnnuityAccountEditors.tsx`, `PropertyDebtAccountEditors.tsx`,
-  `RetirementAccountEditors.tsx`, and `HsaAccountEditor.tsx`), `fields.tsx`,
+  `RetirementAccountEditors.tsx`, and `HsaAccountEditor.tsx`, while
+  `AccountEditorSharedFields.tsx` owns the common identity, investment, contribution, and estate
+  groups), `fields.tsx`,
   `SocialSecuritySection.tsx`, `LongevityModal.tsx`,
   `usStates.ts`, `householdActions.ts`.
 - Results/analysis: `ResultsPage.tsx`, `ReportPage.tsx`, `SsAnalysisPage.tsx` + `ssAnalysis.ts`,

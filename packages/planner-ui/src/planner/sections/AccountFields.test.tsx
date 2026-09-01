@@ -1064,6 +1064,35 @@ describe('AccountFields pension and annuity editor boundaries', () => {
 })
 
 describe('AccountFields extracted editor commit wiring', () => {
+  it('enables asset-class modeling and clears taxable yield overrides (parse-valid)', () => {
+    const mounted = mountEditable(
+      planWithAccount(
+        taxableAccount({
+          interestYieldPct: 2,
+          dividendYieldPct: 3,
+          qualifiedRatio: 0.8,
+        }),
+      ),
+    )
+
+    act(() => {
+      controlByLabel<HTMLInputElement>(mounted.container(), 'Model asset classes').click()
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('taxable')
+    if (account?.type !== 'taxable') throw new Error('expected taxable')
+    expect(account.allocation).toEqual({
+      mode: 'static',
+      rebalancing: 'annual',
+      weights: EVEN_START_WEIGHTS,
+    })
+    expect(account).toHaveProperty('interestYieldPct', undefined)
+    expect(account).toHaveProperty('dividendYieldPct', undefined)
+    expect(account).toHaveProperty('qualifiedRatio', undefined)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
   it.each([
     ['below', '20', 40],
     ['above', '95', 80],
@@ -1349,6 +1378,16 @@ describe('AccountFields HSA editor boundary', () => {
 })
 
 describe('AccountFields liquid-account editor boundaries', () => {
+  it('combines taxable fields with shared investment and contribution groups', () => {
+    const fields = renderFields(planWithAccount(taxableAccount()))
+
+    expect(controlByLabel(fields, 'Cost basis')).toBeTruthy()
+    expect(controlByLabel(fields, 'Interest yield')).toBeTruthy()
+    expect(controlByLabel(fields, 'Expected return')).toBeTruthy()
+    expect(controlByLabel(fields, 'Schedule contributions over time')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Availability')).toThrow('no label "Availability"')
+  })
+
   it('combines equity-compensation fields with the shared investment and contribution groups', () => {
     const equityComp: Extract<Account, { type: 'equityComp' }> = {
       type: 'equityComp',

@@ -45,7 +45,7 @@ export function AccountEditorShell({
 }: {
   account: Account
   index: number
-  children?: (onCommit: CommitAccountField) => ReactNode
+  children: (onCommit: CommitAccountField) => ReactNode
 }) {
   const { plan, update } = usePlan()
   const [estimating, setEstimating] = useState(false)
@@ -88,7 +88,7 @@ export function AccountEditorShell({
           onCommit={(value) => onCommit('balance', value ?? 0)}
         />
       ) : null}
-      {children?.(onCommit)}
+      {children(onCommit)}
       <InvestmentFields
         account={account}
         index={index}
@@ -123,10 +123,14 @@ function InvestmentFields({
   onEstimate: () => void
 }) {
   const { update } = usePlan()
+  const showsStandaloneExpectedReturn =
+    account.type === 'cash' ||
+    account.type === 'equityComp' ||
+    (isAllocatable(account) && account.allocation === undefined)
 
   return (
     <>
-      {account.type === 'cash' || account.type === 'equityComp' || (isAllocatable(account) && account.allocation === undefined) ? (
+      {showsStandaloneExpectedReturn ? (
         <div className="field-with-action">
           <PercentField
             label="Expected return"
@@ -153,6 +157,7 @@ function InvestmentFields({
                 ? { mode: 'static', rebalancing: 'annual', weights: { ...EVEN_START_WEIGHTS } }
                 : undefined
               if (target.type === 'taxable' && value) {
+                // Let the class mix drive taxable yield unless re-entered later.
                 target.interestYieldPct = undefined
                 target.dividendYieldPct = undefined
                 target.qualifiedRatio = undefined

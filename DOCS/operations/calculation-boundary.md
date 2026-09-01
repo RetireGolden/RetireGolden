@@ -60,6 +60,8 @@ become one import. The 12% fill target is a product scenario parameter, not a re
 
 `PensionAnnuityAccountEditors.tsx` (QLAC $210,000 / age 85), `PropertyDebtAccountEditors.tsx`
 (§121 figures), `RetirementAccountEditors.tsx` (RMD, inherited-account, and catch-up copy),
+`LiquidAccountEditors.tsx` (taxable-yield copy), `AccountEditorSharedFields.tsx`
+(inherited-contribution and estate-tax copy),
 `StrategySection.tsx` (QCD 70½, $3,000
 capital-loss limit), `AssumptionsSection.tsx` + `import/tenForty.ts` (IRMAA two-year lookback),
 `sectionHelpers.ts` (rule-restating comments), `retirementActionQcdSchedule.ts` (post-70½ copy).
