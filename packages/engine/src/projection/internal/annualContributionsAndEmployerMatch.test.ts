@@ -127,6 +127,11 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
     expect(result.operations.map((operation) => operation.kind)).toEqual([
       'contribution', 'contribution',
     ])
+    expect(result.operationIdentities).toEqual([
+      { kind: 'contribution', balanceIndex: 0 },
+      { kind: 'contribution', balanceIndex: 1 },
+    ])
+    expect(result.operationIdentities).not.toBe(result.operations)
     const credits = contributions(result)
     expect(credits.map((row) => [
       row.balanceIndex,

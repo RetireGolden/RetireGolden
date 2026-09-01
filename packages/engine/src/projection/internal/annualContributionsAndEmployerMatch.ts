@@ -128,6 +128,13 @@ export type AnnualContributionAndMatchOperation =
   | AnnualContributionCreditOperation
   | AnnualEmployerMatchOperation
 
+export type AnnualContributionAndMatchOperationIdentity =
+  | Readonly<{ kind: 'warning' }>
+  | Readonly<{
+      kind: 'contribution' | 'employerMatch'
+      balanceIndex: number
+    }>
+
 export interface AnnualContributionsAndEmployerMatchTotals {
   readonly contributions: number
   readonly ownedNonRothIraContributions: number
@@ -140,6 +147,13 @@ export interface AnnualContributionsAndEmployerMatchTotals {
 
 export interface AnnualContributionsAndEmployerMatchResult {
   readonly operations: readonly AnnualContributionAndMatchOperation[]
+  /**
+   * Independently materialized cardinality/order witness for the operation
+   * stream. The caller checks it before committing any balance or journal
+   * mutation, so an accidentally truncated operation array fails closed.
+   */
+  readonly operationIdentities:
+    readonly AnnualContributionAndMatchOperationIdentity[]
   readonly totals: Readonly<AnnualContributionsAndEmployerMatchTotals>
   readonly employerAllocationByOwner:
     ReadonlyMap<string, Readonly<EmployerElectiveAllocation>>
@@ -160,6 +174,18 @@ export function annualContributionsAndEmployerMatch(
   input: AnnualContributionsAndEmployerMatchInput,
 ): AnnualContributionsAndEmployerMatchResult {
   const operations: AnnualContributionAndMatchOperation[] = []
+  const operationIdentities: AnnualContributionAndMatchOperationIdentity[] = []
+  const emit = (operation: AnnualContributionAndMatchOperation): void => {
+    operationIdentities.push(
+      operation.kind === 'warning'
+        ? { kind: operation.kind }
+        : {
+            kind: operation.kind,
+            balanceIndex: operation.balanceIndex,
+          },
+    )
+    operations.push(operation)
+  }
   const shadowBalances = input.balances.map((state) => state.balance)
   const shadowCostBases = input.balances.map((state) => state.costBasis)
   let contributions = 0
@@ -364,7 +390,7 @@ export function annualContributionsAndEmployerMatch(
         !isEmployerAccount &&
         allowed < desired - ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
       ) {
-        operations.push({ kind: 'warning', message: CONTRIBUTION_LIMIT_WARNING })
+        emit({ kind: 'warning', message: CONTRIBUTION_LIMIT_WARNING })
       }
       groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
     }
@@ -393,7 +419,7 @@ export function annualContributionsAndEmployerMatch(
     const balanceBefore = shadowBalances[balanceIndex]!
     const costBasisBefore = shadowCostBases[balanceIndex]!
     if (allowed <= 0) {
-      operations.push({
+      emit({
         kind: 'contribution',
         balanceIndex,
         sourceAccount: account,
@@ -494,7 +520,7 @@ export function annualContributionsAndEmployerMatch(
     if (isEmployerAccount) {
       employeeLandedByEmployerRowKey.set(rowKey, allowed)
     }
-    operations.push({
+    emit({
       kind: 'contribution',
       balanceIndex,
       sourceAccount: account,
@@ -524,7 +550,7 @@ export function annualContributionsAndEmployerMatch(
       landedTotal <
       desiredTotal - ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
     ) {
-      operations.push({ kind: 'warning', message: CONTRIBUTION_LIMIT_WARNING })
+      emit({ kind: 'warning', message: CONTRIBUTION_LIMIT_WARNING })
     }
   }
 
@@ -594,7 +620,7 @@ export function annualContributionsAndEmployerMatch(
       ownerPersonId: account.ownerPersonId ?? null,
       amount: matchVal,
     }
-    operations.push({
+    emit({
       kind: 'employerMatch',
       balanceIndex,
       sourceAccount: account,
@@ -611,6 +637,7 @@ export function annualContributionsAndEmployerMatch(
 
   return {
     operations,
+    operationIdentities,
     totals: {
       contributions,
       ownedNonRothIraContributions,
