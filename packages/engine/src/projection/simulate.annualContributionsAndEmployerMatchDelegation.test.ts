@@ -75,12 +75,13 @@ const seam = vi.hoisted(() => ({
   fault: null as null | 'wrongPosition' | 'staleBalance' | 'staleBasis' |
     'signedZero' | 'signedZeroBasis' | 'lateIterator' |
     'lateNestedGetter' | 'lateWarningGetter' | 'totalsGetter' |
-    'allocationGetter' | 'truncate' | 'emptyNonzero' |
+    'allocationGetter' | 'truncate' | 'emptyNonzero' | 'inconsistentTotal' |
     'coordinatedOmitZero' | 'coordinatedInsertWarning' |
     'changingGetters' | 'nonCreditApplication' | 'wrongIdentity' |
     'postMatchWarning' | 'badContributionMath' |
     'duplicateMatchIdentity' | 'badMatchMath' |
-    'omitWholeContributionDecision' | 'duplicateContributionIndex',
+    'omitWholeContributionDecision' | 'duplicateContributionIndex' |
+    'duplicateExpectedContributionIndex',
   changingGetterReads: {
     retirementOccurrence: 0,
     applicationKind: 0,
@@ -522,6 +523,22 @@ vi.mock(
               operations: [],
               operationIdentities: [],
             }
+          } else if (seam.fault === 'inconsistentTotal') {
+            result = {
+              ...result,
+              totals: {
+                ...result.totals,
+                contributions: result.totals.contributions + 1,
+              },
+            }
+          } else if (seam.fault === 'duplicateExpectedContributionIndex') {
+            result = {
+              ...result,
+              expectedContributionBalanceIndices: [
+                ...result.expectedContributionBalanceIndices,
+                result.expectedContributionBalanceIndices[0]!,
+              ],
+            }
           } else if (seam.fault === 'totalsGetter') {
             const totals = result.totals
             result = {
@@ -905,6 +922,14 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
     ],
     ['truncate' as const, 'Annual contribution operations lost cardinality'],
     ['emptyNonzero' as const, 'Annual contribution operations lost cardinality'],
+    [
+      'inconsistentTotal' as const,
+      'Annual contribution plan has an inconsistent contribution total',
+    ],
+    [
+      'duplicateExpectedContributionIndex' as const,
+      'Annual contribution expectation has duplicate positions',
+    ],
     [
       'coordinatedOmitZero' as const,
       'Annual contribution operations lost cardinality',

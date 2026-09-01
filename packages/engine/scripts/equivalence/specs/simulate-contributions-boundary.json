@@ -102,10 +102,11 @@
       "id": "U.helper.expectedContributionPositions",
       "label": "pre-allocation physical contribution eligibility witness",
       "file": "projection/internal/annualContributionsAndEmployerMatch.ts",
-      "lines": [285, 293],
+      "lines": [285, 290],
+      "note": "The zero-wage non-employer exclusion on line 291 is outside the blocks-only measured range; a direct helper characterization pins its empty expectation/operation result, and the regenerated full corpus also reaches the arm.",
       "anchors": [
         { "line": 285, "text": "const expectedContributionBalanceIndices = input.balances.flatMap(" },
-        { "line": 293, "text": ")" }
+        { "line": 290, "text": "? [balanceIndex]" }
       ]
     },
     {
@@ -467,7 +468,7 @@
       "label": "exact Object.is total comparison",
       "file": "projection/simulate.ts",
       "lines": [690, 690],
-      "note": "The throw on the next line is hostile-only and pinned by empty/nonzero and inconsistent-total delegation cases.",
+      "note": "The throw on the next line is hostile-only and pinned by a dedicated inconsistent-total delegation case.",
       "anchors": [
         { "line": 690, "text": "if (!Object.is(actual, expected)) {" }
       ]

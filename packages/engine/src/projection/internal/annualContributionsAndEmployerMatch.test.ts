@@ -239,6 +239,20 @@ describe('annualContributionsAndEmployerMatch — positional planning', () => {
     }
   })
 
+  it('excludes a zero-wage non-employer request from required publications', () => {
+    const result = call([
+      balance(account('traditional', 'zero-wage-ira', 1_000)),
+    ], {
+      wagesByPerson: new Map([['p1', 0]]),
+    })
+
+    expect(result.operations).toEqual([])
+    expect(result.operationIdentities).toEqual([])
+    expect(result.expectedOperationIdentities).toEqual([])
+    expect(result.expectedContributionBalanceIndices).toEqual([])
+    expect(result.totals.contributions).toBe(0)
+  })
+
   it.each([
     ['traditional' as const, pack.contributionLimits.ira],
     ['roth' as const, pack.contributionLimits.ira],
