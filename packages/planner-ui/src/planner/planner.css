@@ -783,6 +783,8 @@
   border: 1px solid var(--border);
   background: var(--surface-1);
   color: var(--fg);
+  /* Native <select> otherwise keeps the UA Arial face (issue #384). */
+  font: inherit;
   font-size: 0.98rem;
   width: 100%;
   max-width: 100%;
@@ -2111,15 +2113,28 @@ html:has(.kpi-bar) {
   margin-bottom: 1rem;
 }
 
-.compare-selectors label {
-  display: grid;
-  gap: 0.35rem;
+.compare-selectors .field {
   min-width: min(22rem, 100%);
-  font-weight: 650;
+  margin-top: 0;
+  flex: 1 1 16rem;
 }
 
 .compare-table th:first-child {
   min-width: 12rem;
+}
+
+/* Compare-plans is the only `year-table compare-table`. Keep year-table
+   metric headers uppercase/nowrap everywhere else; only the two user plan
+   names drop forced uppercase and share equal columns (#384). */
+.year-table.compare-table {
+  table-layout: fixed;
+}
+
+.year-table.compare-table thead th.compare-table-plan-name {
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  width: 28%;
 }
 
 /* --- insights ------------------------------------------------------------- */
