@@ -169,13 +169,13 @@
     }
   ],
   "measuredProof": {
-    "method": "The blocks corpus and both engine source trees are materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. Before any harness module executes, the verifier authenticates this spec against its path-aware clean-filter working-tree blob and the immutable HEAD blob, derives the complete local transitive import closure from committed source, and requires every closure member to match both its pinned HEAD blob and its clean-filter working-tree blob. It then recomputes corpus, captures, byte-identical structural comparison, reach, and all recorded hashes.",
+    "method": "The blocks corpus and both engine source trees are materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. The head tree is pinned to the semantic source commit, which the verifier requires to be an ancestor of the exact current HEAD, and the current HEAD engine source tree must remain byte-identical to that semantic tree. Before any harness module executes, the verifier authenticates this spec against its path-aware clean-filter working-tree blob and the immutable HEAD blob, derives the complete local transitive import closure from committed source, and requires every closure member to match both its pinned HEAD blob and its clean-filter working-tree blob. It then recomputes corpus, captures, byte-identical structural comparison, reach, and all recorded hashes.",
     "base": {
       "commit": "815a52b25359c4bbaf103efbf69e2a5bf7d65487",
       "engineSourceTree": "33d9b00d8054b592361e37710c78f99cc01cee65"
     },
     "head": {
-      "observedAtCommit": "2f05d45109757c81e153ff945e7cf884c16f3cb9",
+      "sourceObservedAtCommit": "2f05d45109757c81e153ff945e7cf884c16f3cb9",
       "engineSourceTree": "680276494aa021fd3a48352f2048a926bb1ca2b3"
     },
     "inputs": {

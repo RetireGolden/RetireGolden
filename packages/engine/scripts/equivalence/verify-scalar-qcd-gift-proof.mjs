@@ -31,6 +31,20 @@ function gitObject(revision) {
   }).trim()
 }
 
+function assertGitAncestor(ancestor, descendant, label) {
+  const result = spawnSync(
+    'git',
+    ['merge-base', '--is-ancestor', ancestor, descendant],
+    { cwd: repoDir, encoding: 'utf8' },
+  )
+  if (result.error !== undefined) throw result.error
+  if (result.status !== 0) {
+    throw new Error(
+      `${label}: ${ancestor} is not an ancestor of ${descendant}`,
+    )
+  }
+}
+
 function gitText(path) {
   return execFileSync('git', ['show', `HEAD:${path}`], {
     cwd: repoDir,
@@ -163,9 +177,14 @@ assertEqual(
   'base engine source tree',
 )
 assertEqual(
-  gitObject(`${proof.head.observedAtCommit}:packages/engine/src`),
+  gitObject(`${proof.head.sourceObservedAtCommit}:packages/engine/src`),
   proof.head.engineSourceTree,
-  'observed head engine source tree',
+  'observed semantic source tree',
+)
+assertGitAncestor(
+  proof.head.sourceObservedAtCommit,
+  gitObject('HEAD'),
+  'observed semantic source commit belongs to current HEAD history',
 )
 assertEqual(
   gitObject('HEAD:packages/engine/src'),

@@ -4162,7 +4162,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // person born in months 1-6 reaches 70½ inside the year they attain 70.
     // Within-year timing is not modelled, so a gift dated before the
     // half-birthday counts; that is the annual-granularity convention.
-    let qcd: number
     // Income reduction. Only the RMD entered income, so this is the routed
     // owned-IRA GROSS that qualified under 408(d)(8)(D) -- never the part taken
     // beyond the RMD, which never entered income at all and would be a phantom
@@ -4236,7 +4235,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         balance: state.balance,
       })),
     })
-    qcd = qcdGiftPlan.qcd
+    const qcd = qcdGiftPlan.qcd
     // Gross dollars routed out of the owned-IRA RMD. That RMD already counted
     // these as a cash inflow, so this is what cash must give back. The cap is
     // the owned-IRA share of the forced total, not the whole of it:
