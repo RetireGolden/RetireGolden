@@ -80,20 +80,20 @@
       "label": "annual coordinated HECM eligibility invocation",
       "file": "projection/simulate.ts",
       "lines": [
-        6399,
-        6406
+        6385,
+        6392
       ],
       "anchors": [
         {
-          "line": 6399,
+          "line": 6385,
           "text": "const coordinatedHecm = annualCoordinatedHecmEligibility({"
         },
         {
-          "line": 6405,
+          "line": 6391,
           "text": "priorYearPortfolioReturnPct,"
         },
         {
-          "line": 6406,
+          "line": 6392,
           "text": "})"
         }
       ]
@@ -103,24 +103,24 @@
       "label": "coordinated HECM capacity consumption and ACA/tax accepted scalar",
       "file": "projection/simulate.ts",
       "lines": [
-        6945,
-        6976
+        6931,
+        6962
       ],
       "anchors": [
         {
-          "line": 6945,
+          "line": 6931,
           "text": "if (coordinatedHecm.capacity > EPSILON && spendingNeedBeforeTax > EPSILON) {"
         },
         {
-          "line": 6962,
+          "line": 6948,
           "text": "const nextDraw = Math.min(coordinatedHecm.capacity, postCreditPreTaxNeed)"
         },
         {
-          "line": 6970,
+          "line": 6956,
           "text": "if (!coordinatedDrawConverged) hecmDraw = 0"
         },
         {
-          "line": 6976,
+          "line": 6962,
           "text": "}"
         }
       ],
@@ -131,28 +131,28 @@
       "label": "accepted coordinated allocation invocation, line mutation and source publication",
       "file": "projection/simulate.ts",
       "lines": [
-        7084,
-        7098
+        7070,
+        7084
       ],
       "anchors": [
         {
-          "line": 7084,
+          "line": 7070,
           "text": "for (const allocation of annualCoordinatedHecmAllocations({"
         },
         {
-          "line": 7091,
+          "line": 7077,
           "text": "line.loanBalance += allocation.amount"
         },
         {
-          "line": 7092,
+          "line": 7078,
           "text": "hecmCoordinatedByProperty?.set("
         },
         {
-          "line": 7096,
+          "line": 7082,
           "text": "}"
         },
         {
-          "line": 7097,
+          "line": 7083,
           "text": "// Any open HECM line backstops a true portfolio shortfall regardless of"
         }
       ],

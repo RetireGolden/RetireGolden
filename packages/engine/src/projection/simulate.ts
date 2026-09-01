@@ -101,6 +101,7 @@ import {
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountGrowth.js'
+import { annualRetirementActionSettlementPublication } from './internal/annualRetirementActionSettlementPublication.js'
 import {
   annualDebtServiceRows,
   annualLongTermCarePlan,
@@ -169,17 +170,11 @@ import {
   evaluateAnnualQcdExecutionPrerequisites,
   evaluateRetirementActionSchedule,
   executeAnnualQcds,
-  executeConversionLinkedWithdrawalGroups,
   executeRothConversions,
   ledgerCentsToPlanDollars,
-  ordinaryWithdrawalPublicationEligibility,
-  ordinaryWithdrawalPublicationSource,
   planDollarsMoveNoLedgerCent,
   planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
-  publishAnnualRetirementActions,
-  rothConversionPublicationEligibility,
-  rothConversionPublicationSource,
   signedLedgerCentTotalToPlanDollars,
   stageAnnualQcdPhysicalExecution,
   type ActionId,
@@ -187,10 +182,7 @@ import {
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   type ConversionLinkedWithdrawalGroupAuthorization,
   type ConversionLinkedWithdrawalGroupLiabilityRun,
-  type ConversionLinkedWithdrawalGroupMemberInput,
-  type ConversionLinkedWithdrawalGroupMovementInput,
   type ExecuteAnnualQcdsResult,
-  type ExecuteConversionLinkedWithdrawalGroupsResult,
   type ExecuteRothConversionsResult,
   type PersonId,
   type QualifiedCharitableDistributionRequest,
@@ -200,7 +192,6 @@ import { addCalendarMonths } from '../actions/civilDate.js'
 import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
 import {
   compareUtf16CodeUnits,
-  deriveActionStructuralId,
 } from '../actions/structuralId.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import type { SimulatorAnnualPassDeferredFirstRmd, SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
@@ -219,16 +210,11 @@ import {
   ownedIraFundedAnnuityContracts,
 } from '../internal/iraAnnuityContractValue.js'
 import {
-  COUNTERFACTUAL_OMISSION_TAX_INPUT_ID,
-  exactAnnualLiabilityFromPlanDollars,
   probeAnnualPassUnderTransaction,
   runCounterfactualAnnualLiability,
   type CounterfactualAnnualLiabilityResult,
 } from '../internal/counterfactualAnnualLiability.js'
-import {
-  mintAnnualLiabilityRunIdentity,
-  type AnnualLiabilityRunTaxInput,
-} from '../actions/annualLiabilityRunIdentity.js'
+import type { AnnualLiabilityRunTaxInput } from '../actions/annualLiabilityRunIdentity.js'
 import type {
   ConversionTaxFundingTaxUnitEvidence,
 } from '../actions/conversionTaxFundingEvidence.js'
@@ -8663,221 +8649,29 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ),
       ),
     })
-    const ordinaryPublicationEligibility = retirementActionExecution === undefined
-      ? undefined
-      : ordinaryWithdrawalPublicationEligibility(retirementActionExecution)
-    const conversionPublicationEligibility =
-      rothConversionActionExecution === undefined
-        ? undefined
-        : rothConversionPublicationEligibility(rothConversionActionExecution)
-    const retirementActionPublicationEligible =
-      ordinaryPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly' &&
-      conversionPublicationEligibility?.kind !== 'legacyScheduleDiagnosticsOnly'
-    // A blocked prerequisite batch has no publication source and no canonical
-    // requests, so the year publishes neither rather than half of either. The
-    // evidence also follows the publication boundary: in a legacy
-    // diagnostics-only year no executor source publishes, and prerequisite
-    // evidence with no publication record behind it would orphan the JSDoc's
-    // claim that the publication says which executor published what.
-    const qcdActionPrerequisites =
-      retirementActionPublicationEligible &&
-      qcdActionPrerequisiteResult?.status === 'evaluated'
-        ? qcdActionPrerequisiteResult
-        : undefined
-    const retirementActionPublicationSources = retirementActionPublicationEligible
-      ? [
-          ...(retirementActionExecution === undefined
-            ? []
-            : [ordinaryWithdrawalPublicationSource(retirementActionExecution)]),
-          ...(rothConversionActionExecution === undefined
-            ? []
-            : [rothConversionPublicationSource(rothConversionActionExecution)]),
-          // The executor's own source when it settled the year, and the
-          // prerequisite's otherwise. They are the same shape and never both
-          // publish: `publishAnnualRetirementActions` throws on two records for
-          // one action, and the committed source is the one carrying the
-          // executed dates and amounts the executor is the authority on.
-          ...(qcdActionPrerequisites === undefined
-            ? []
-            : [qcdActionExecution?.committed === true
-                ? qcdActionExecution.publicationSource
-                : qcdActionPrerequisites.publicationSource]),
-        ]
-      : []
-    const retirementActionPublicationRequests = [
-      ...(retirementActionExecution?.requests ?? []),
-      ...(rothConversionActionExecution?.requests ?? []),
-      ...(qcdActionPrerequisites?.requests ?? []),
-    ]
-    /**
-     * The committed run — `T1(F)` — named as a liability run of its own.
-     *
-     * `T1` is not a third pass. It is this one: the run that commits is the run
-     * with the group's requests present, so its final post-pass tax and
-     * penalties are the candidate liability, read through the same exact-cent
-     * conversion the counterfactual reads its own through.
-     *
-     * The funding vector it names is the year's actual one: for each group, the
-     * withdrawal and the cents it executed. That is what makes it a
-     * `candidateT1` rather than an ordinary committed run — a candidate that
-     * did not name the vector it was run against cannot honestly be subtracted
-     * from a baseline, because a different vector is a different candidate. The
-     * vector is all zeros today, and stating it is what will make the slice
-     * that funds a conversion mint a visibly different run.
-     */
-    const committedAnnualLiabilityRun = (
-      taxPlanDollars: number,
-      penaltiesPlanDollars: number,
-    ): Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null => {
-      const unit = conversionFundingTaxUnitEvidence
-      if (unit === null) return null
-      const liability = exactAnnualLiabilityFromPlanDollars(
-        taxPlanDollars,
-        penaltiesPlanDollars,
-      )
-      if (liability === null) return null
-      const executedByActionId = new Map(
-        (retirementActionExecution?.evidence ?? []).map((evidence) =>
-          [evidence.actionId, evidence.disposition.executedAmount] as const),
-      )
-      const fundingVector = effectiveLinkedWithdrawalGroups.groups
-        .map((group) => [
-          group.conversionActionId,
-          group.withdrawalActionId,
-          executedByActionId.get(group.withdrawalActionId) ?? 0,
-        ])
-      const minted = mintAnnualLiabilityRunIdentity({
-        planId: plan.id,
-        taxUnitId: unit.taxUnitId,
-        taxYear: year,
-        liabilityRun: {
-          liabilityRunKind: 'candidateT1',
-          candidateFundingVectorEvidenceId: deriveActionStructuralId(
-            'retirement-action-conversion-tax-funding-vector',
-            [unit.taxUnitId, year, fundingVector],
-          ),
-        },
-        taxInputs: [
-          ...annualLiabilityNonGroupTaxInputs,
-          {
-            inputId: COUNTERFACTUAL_OMISSION_TAX_INPUT_ID,
-            // Stated, not omitted. "This run removed nothing" is a fact about
-            // the run, and it is the fact that makes the two snapshot IDs
-            // comparable: the baseline's spells what it removed, and a
-            // candidate that said nothing at all would be claiming a different
-            // kind of input set rather than a different value of the same one.
-            value: { representation: 'declaredTerm', term: JSON.stringify([]) },
-          },
-        ],
-      })
-      return minted.status === 'annualLiabilityRunIdentityMinted'
-        ? { liability, identity: minted.identity }
-        : null
-    }
-
-    /**
-     * The year's conversion-linked withdrawal groups, executed — which is to
-     * say staged, evidenced, and refused.
-     *
-     * It runs here and not at the phase where the group was assessed, because
-     * `T1(F)` is this run's own final liability and does not exist until the
-     * funding solve has converged. The verdict the executors answered to was
-     * taken much earlier and is unchanged by anything below; what is added here
-     * is the evidence that accompanies the refusal, and evidence cannot precede
-     * the figure it is evidence of.
-     *
-     * Every input it needs is read off what already happened. The weights are
-     * committed taxable conversion principal, which is zero for a refused
-     * conversion; the funded amounts are the linked withdrawals' committed
-     * executed cents, zero for the same reason. That degeneracy is the honest
-     * shape of a group that refused, and it is not what the evaluation is for:
-     * what it carries that nothing carried before is two real annual liability
-     * runs, distinctly identified, whose difference is the group's tax effect.
-     */
-    const conversionLinkedWithdrawalGroupExecution:
-      Readonly<ExecuteConversionLinkedWithdrawalGroupsResult> | undefined =
-      effectiveLinkedWithdrawalGroups.groups.length === 0
-        ? undefined
-        : executeConversionLinkedWithdrawalGroups({
-            taxYear: year,
-            requests: linkedGroupAssessmentRequests,
-            assessment: effectiveLinkedWithdrawalGroups,
-            taxUnit: conversionFundingTaxUnitEvidence,
-            baseline: annualLiabilityBaseline,
-            candidate: committedAnnualLiabilityRun(tax, penalties),
-            movements: effectiveLinkedWithdrawalGroups.groups.map(
-              (group): ConversionLinkedWithdrawalGroupMovementInput => {
-                const conversionEvidence = rothConversionActionExecution?.evidence
-                  .find((evidence) => evidence.actionId === group.conversionActionId)
-                const withdrawalEvidence = retirementActionExecution?.evidence
-                  .find((evidence) => evidence.actionId === group.withdrawalActionId)
-                return {
-                  conversionActionId: group.conversionActionId,
-                  withdrawalActionId: group.withdrawalActionId,
-                  conversion: {
-                    authoredAmount: asUsdCents(
-                      conversionEvidence?.requestedAmount ?? 0,
-                    ),
-                    executedAmount: asUsdCents(
-                      conversionEvidence?.executedAmount ?? 0,
-                    ),
-                  },
-                  withdrawal: {
-                    authoredAmount: asUsdCents(
-                      withdrawalEvidence?.requestedAmount ?? 0,
-                    ),
-                    executedAmount: asUsdCents(
-                      withdrawalEvidence?.disposition.executedAmount ?? 0,
-                    ),
-                  },
-                }
-              },
-            ),
-            members: effectiveLinkedWithdrawalGroups.groups.map(
-              (group): ConversionLinkedWithdrawalGroupMemberInput => {
-                const conversionEvidence = rothConversionActionExecution?.evidence
-                  .find((evidence) => evidence.actionId === group.conversionActionId)
-                const withdrawalEvidence = retirementActionExecution?.evidence
-                  .find((evidence) => evidence.actionId === group.withdrawalActionId)
-                return {
-                  conversionActionId: group.conversionActionId,
-                  conversionPersonId: group.personId,
-                  // A conversion this run never executed has no taxable
-                  // principal; one that executed while leaving its Form 8606
-                  // character to the annual settlement has one nobody can state
-                  // yet, and null is how the evaluation refuses rather than
-                  // reading the unknown as zero.
-                  allocationWeight: conversionEvidence === undefined
-                    ? null
-                    : conversionEvidence.outcome === 'executed'
-                      ? (conversionEvidence.taxableConvertedAmount === null
-                          ? null
-                          : asUsdCents(conversionEvidence.taxableConvertedAmount))
-                      : asUsdCents(0),
-                  // A withdrawal that never reached the executor funded
-                  // nothing, which is a zero this run can state.
-                  fundedAmount: asUsdCents(
-                    withdrawalEvidence?.disposition.executedAmount ?? 0,
-                  ),
-                }
-              },
-            ),
-          })
-    const retirementActionPublication =
-      retirementActionPublicationSources.length > 0 &&
-      retirementActionPublicationEligible
-        ? publishAnnualRetirementActions({
-            taxYear: year,
-            requests: retirementActionPublicationRequests,
-            sources: retirementActionPublicationSources,
-            ...(conversionLinkedWithdrawalGroupExecution === undefined
-              ? {}
-              : {
-                conversionLinkedWithdrawalGroups:
-                  conversionLinkedWithdrawalGroupExecution,
-              }),
-          })
-        : undefined
+    // This publication depends on settled tax, penalties, and committed
+    // executor evidence, so it remains ordered after every annual movement and
+    // immediately before `YearResult` assembly. The coordinator is pure; this
+    // caller retains all economic commits.
+    const {
+      qcdActionPrerequisites,
+      conversionLinkedWithdrawalGroupExecution,
+      retirementActionPublication,
+    } = annualRetirementActionSettlementPublication({
+      planId: plan.id,
+      taxYear: year,
+      taxPlanDollars: tax,
+      penaltiesPlanDollars: penalties,
+      retirementActionExecution,
+      rothConversionActionExecution,
+      qcdActionPrerequisiteResult,
+      qcdActionExecution,
+      linkedGroupAssessmentRequests,
+      linkedWithdrawalGroups: effectiveLinkedWithdrawalGroups,
+      conversionFundingTaxUnitEvidence,
+      annualLiabilityBaseline,
+      annualLiabilityNonGroupTaxInputs,
+    })
 
     // --- per-entity published facts (insight one-source-of-truth channel) ---
     // Only assumed-basis consequential verdicts are published on these rows —
