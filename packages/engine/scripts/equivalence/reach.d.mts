@@ -9,6 +9,7 @@ export interface SpecEntry {
   label: string
   file: string
   lines: [number, number]
+  anchors?: readonly { line: number; text: string }[]
 }
 
 export declare class ReachRecorder {

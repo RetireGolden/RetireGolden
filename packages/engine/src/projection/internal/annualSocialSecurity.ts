@@ -15,6 +15,7 @@ import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../../socialS
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../../socialSecurity/nra.js'
 import { survivorBenefitMonthly } from '../../socialSecurity/survivorBenefit.js'
+import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import type {
   SocialSecurityBenefitSource,
   SocialSecurityStreamActivity,
@@ -48,19 +49,15 @@ export interface AnnualSocialSecurityResult {
   readonly warnings: readonly string[]
 }
 
-function dobParts(person: Readonly<Person>): { y: number; m: number; d: number } {
-  return {
-    y: Number(person.dob.slice(0, 4)),
-    m: Number(person.dob.slice(5, 7)),
-    d: Number(person.dob.slice(8, 10)),
-  }
-}
-
 function claimAgeFromTotalMonths(totalMonths: number): ClaimAge {
   return { years: Math.floor(totalMonths / 12), months: totalMonths % 12 }
 }
 
-function payableMonthsAtAge(ageAttained: number, claimAge: ClaimAge): number {
+/** Annual-ledger approximation: a same-year claim pays only months after the claim month. */
+export function annualSocialSecurityPayableMonths(
+  ageAttained: number,
+  claimAge: Readonly<ClaimAge>,
+): number {
   if (ageAttained < claimAge.years) return 0
   if (ageAttained > claimAge.years) return 12
   return Math.max(0, 12 - claimAge.months)
@@ -140,7 +137,7 @@ export function annualSocialSecurity(
     const streamPub = ensureSsStreamPub(stream.id, stream.personId)
     const person = personById.get(stream.personId)!
     const s = stateOf(stream.personId)
-    const { y, m, d } = dobParts(person)
+    const { y, m, d } = socialSecurityDobParts(person)
     const fra = fraForBirthYear(effectiveBirthYear(y, m, d))
 
     const onsetAge = stream.disability?.onsetAge
@@ -166,7 +163,7 @@ export function annualSocialSecurity(
       continue
     }
 
-    const payableMonths = payableMonthsAtAge(s.ageAttained, stream.claimAge)
+    const payableMonths = annualSocialSecurityPayableMonths(s.ageAttained, stream.claimAge)
     if (payableMonths <= 0) continue
     const fraMonths = fraTotalMonths(fra)
     const claimForFactor = creditedClaimAgeFor(person, stream.claimAge, s.ageAttained, fraMonths)
@@ -190,10 +187,10 @@ export function annualSocialSecurity(
     if (stream.type !== 'socialSecurity') continue
     if (!stream.formerSpouses || stream.formerSpouses.length === 0) continue
     const s = stateOf(stream.personId)
-    const payableMonths = payableMonthsAtAge(s.ageAttained, stream.claimAge)
+    const payableMonths = annualSocialSecurityPayableMonths(s.ageAttained, stream.claimAge)
     if (!s.alive || payableMonths <= 0) continue
     const claimant = personById.get(stream.personId)!
-    const { y, m, d } = dobParts(claimant)
+    const { y, m, d } = socialSecurityDobParts(claimant)
     const retirementFraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(y, m, d)))
     const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(effectiveBirthYear(y, m, d)))
     const best = bestMaritalBenefit(stream.formerSpouses, {
@@ -232,16 +229,16 @@ export function annualSocialSecurity(
       const lower = aSs.pia >= bSs.pia ? { p: b!, ss: bSs } : { p: a!, ss: aSs }
       const lowerState = stateOf(lower.p.id)
       const higherState = stateOf(higher.p.id)
-      const lowerPayableMonths = payableMonthsAtAge(lowerState.ageAttained, lower.ss.claimAge)
-      const higherPayableMonths = payableMonthsAtAge(higherState.ageAttained, higher.ss.claimAge)
+      const lowerPayableMonths = annualSocialSecurityPayableMonths(lowerState.ageAttained, lower.ss.claimAge)
+      const higherPayableMonths = annualSocialSecurityPayableMonths(higherState.ageAttained, higher.ss.claimAge)
       const spousalPayableMonths = Math.min(lowerPayableMonths, higherPayableMonths)
       if (lowerState.alive && higherState.alive && spousalPayableMonths > 0) {
-        const { y, m, d } = dobParts(lower.p)
+        const { y, m, d } = socialSecurityDobParts(lower.p)
         const lowerFraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(y, m, d)))
         const spousalClaimAge = creditedClaimAgeFor(lower.p, lower.ss.claimAge, lowerState.ageAttained, lowerFraMonths)
         const rawSpousalMonthly = 0.5 * higher.ss.pia * spousalBenefitFactor(y, m, d, spousalClaimAge)
 
-        const higherDob = dobParts(higher.p)
+        const higherDob = socialSecurityDobParts(higher.p)
         const workerActualMonthly =
           ssActualMonthlyByPerson.get(higher.p.id) ??
           higher.ss.pia *
@@ -300,10 +297,10 @@ export function annualSocialSecurity(
       const deceasedPia = ssStreamByPerson.get(deceased.id)?.pia
       const deceasedActualMonthly = ssActualMonthlyByPerson.get(deceased.id) ?? 0
       if (!survivorStream || deceasedPia === undefined || deceasedActualMonthly <= 0) continue
-      const payableMonths = payableMonthsAtAge(survivorState.ageAttained, survivorStream.claimAge)
+      const payableMonths = annualSocialSecurityPayableMonths(survivorState.ageAttained, survivorStream.claimAge)
       if (payableMonths <= 0) continue
       const ownBenefit = ssOwnByPerson.get(survivor.id) ?? 0
-      const { y, m, d } = dobParts(survivor)
+      const { y, m, d } = socialSecurityDobParts(survivor)
       const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(effectiveBirthYear(y, m, d)))
       const survivorClaimAge = creditedClaimAgeFor(survivor, survivorStream.claimAge, survivorState.ageAttained, survivorFraMonths)
       const survivorAnnual =
@@ -359,7 +356,7 @@ export function annualSocialSecurity(
     const wages = wagesByPerson.get(personId) ?? 0
     if (wages <= 0) continue
     const person = personById.get(personId)!
-    const { y, m, d } = dobParts(person)
+    const { y, m, d } = socialSecurityDobParts(person)
     const fraYears = fraForBirthYear(effectiveBirthYear(y, m, d)).years
     let withheld = 0
     if (s.ageAttained < fraYears) {
@@ -374,7 +371,9 @@ export function annualSocialSecurity(
       // ARF credits are capped by months actually payable in this year, so a
       // midyear first claim cannot earn credit for all twelve months.
       const claimAge = ssStreamByPerson.get(personId)?.claimAge
-      const payableMonths = claimAge ? payableMonthsAtAge(s.ageAttained, claimAge) : 12
+      const payableMonths = claimAge
+        ? annualSocialSecurityPayableMonths(s.ageAttained, claimAge)
+        : 12
       const monthsWithheld = Math.min(payableMonths, Math.round((withheld / benefit) * payableMonths))
       withheldMonthWrites.push({
         personId,

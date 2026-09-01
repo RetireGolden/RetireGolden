@@ -99,7 +99,12 @@ import {
 import { MODE_IDS, runMember } from './equivalence/modes.mjs'
 import { ReachRecorder } from './equivalence/reach.mjs'
 import { CORPORA, CORPUS_NAMES, buildCorpus, examplesTierLocation } from './equivalence/corpus/index.mjs'
-import { UsageError, modesFromFlag, assertReachSpecSchema } from './equivalence/usage.mjs'
+import {
+  UsageError,
+  modesFromFlag,
+  assertReachEntryAnchors,
+  assertReachSpecSchema,
+} from './equivalence/usage.mjs'
 
 const SCHEMA = 'retiregolden.equivalence-dump/1'
 const CORPUS_SCHEMA = 'retiregolden.equivalence-corpus/1'
@@ -500,6 +505,7 @@ async function commandReach(argv) {
     ...entry,
     file: resolve(src, entry.file).split('\\').join('/'),
   }))
+  assertReachEntryAnchors(entries, opts.spec, (file) => readFileSync(file, 'utf8'))
   // The recorder attaches its debugger BEFORE the engine is imported (that is
   // when `scriptParsed` names the compiled script), verifies offsets, and only
   // then starts counting — so no count here belongs to module top-level work.

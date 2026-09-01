@@ -7,6 +7,7 @@ import { couplePlan, singlePersonPlan } from '../../testing/planFixtures.js'
 import type { PersonYearState } from '../types.js'
 import {
   annualSocialSecurity,
+  annualSocialSecurityPayableMonths,
   type AnnualSocialSecurityInput,
 } from './annualSocialSecurity.js'
 
@@ -68,6 +69,14 @@ function peopleAndStates(
 }
 
 describe('annualSocialSecurity — own benefits and publication', () => {
+  it('pins the shared detector/projection payable-month boundary', () => {
+    expect(annualSocialSecurityPayableMonths(61, { years: 62, months: 6 })).toBe(0)
+    expect(annualSocialSecurityPayableMonths(62, { years: 62, months: 6 })).toBe(6)
+    expect(annualSocialSecurityPayableMonths(62, { years: 62, months: 0 })).toBe(12)
+    expect(annualSocialSecurityPayableMonths(62, { years: 62, months: 11 })).toBe(1)
+    expect(annualSocialSecurityPayableMonths(63, { years: 62, months: 11 })).toBe(12)
+  })
+
   it('publishes one fresh row per configured stream in plan order and marks the last resolved gate', () => {
     const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 90 })
     const person = plan.household.people[0]!

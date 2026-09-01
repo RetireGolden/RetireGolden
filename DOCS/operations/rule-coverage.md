@@ -81,12 +81,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 286 |
+| Engine source files | 287 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 43 |
 | registered | 92 |
-| rule-free | 151 |
+| rule-free | 152 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -109,7 +109,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | rules | 25 | 0 | 20 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
 | schema | 8 | 0 | 0 | 8 | 0 |
-| socialSecurity | 9 | 2 | 7 | 0 | 0 |
+| socialSecurity | 10 | 2 | 7 | 1 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
 | tax | 7 | 2 | 4 | 1 | 0 |
@@ -151,7 +151,7 @@ None.
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-08-27 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain |
-| projection/internal/annualSocialSecurity.ts | 2026-08-31 | the annual Social Security phase moved out of simulatePlan and is linked to 18 genuine rule records covering the retirement earnings test and its annual month-credit proxies, current-spouse/deemed-filing and survivor dual-entitlement behavior, deceased-worker DRC pass-through, and the modeled SSDI amount, timing, family-maximum, spouse-auxiliary, work-window, and SGA surfaces. Residual rule-bearing behavior is the former-spouse eligibility delegated to socialSecurity/maritalBenefits.ts: the 10-year divorced-spouse marriage, 9-month survivor marriage, claimant/former-spouse age gates, and remarriage forfeiture still have no rule records. Per-stream publication and application of the caller-resolved Plan COLA and haircut factors are rule-free plumbing |
+| projection/internal/annualSocialSecurity.ts | 2026-08-31 | the annual Social Security phase moved out of simulatePlan and is linked to genuine rule records covering the retirement earnings test and its annual month-credit proxies, current-spouse/deemed-filing and survivor dual-entitlement behavior, deceased-worker DRC pass-through, and the modeled SSDI amount, timing, family-maximum, spouse-auxiliary, work-window, and SGA surfaces. The registry is the mechanical inventory; this note deliberately does not duplicate its changing count. Residual rule-bearing behavior is the former-spouse eligibility delegated to socialSecurity/maritalBenefits.ts: the 10-year divorced-spouse marriage, 9-month survivor marriage, claimant/former-spouse age gates, and remarriage forfeiture still have no rule records. Per-stream publication and application of the caller-resolved Plan COLA and haircut factors are rule-free plumbing |
 | projection/optimizePlan.ts | 2026-08-27 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |

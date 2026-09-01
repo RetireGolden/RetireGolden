@@ -225,6 +225,7 @@ import {
   piaInputFromEarnings,
   resolveEarningsProjection,
 } from '../socialSecurity/piaFromEarnings.js'
+import { socialSecurityDobParts } from '../socialSecurity/annualTiming.js'
 import { attributeShortfall } from '../spending/layers.js'
 import { ABW_DEFAULTS, abwExpectedRealReturnPct } from '../spending/abw.js'
 import { jointSurvivalPercentileAge, survivalPercentileAge } from '../montecarlo/survival.js'
@@ -555,14 +556,6 @@ interface WithdrawalPlanResult {
   reserveUsed: number
 }
 
-function dobParts(person: Person): { y: number; m: number; d: number } {
-  return {
-    y: Number(person.dob.slice(0, 4)),
-    m: Number(person.dob.slice(5, 7)),
-    d: Number(person.dob.slice(8, 10)),
-  }
-}
-
 const SEQUENTIAL_ORDER = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
 const PROPORTIONAL_POOL = ['cash', 'taxable', 'equityComp', 'traditional', 'roth'] as const
 
@@ -818,8 +811,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   }
   // Clamped: the dob schema enforces YYYY-MM-DD shape but not month range, and
   // an out-of-range month must not produce negative or >12 coverage months.
-  const birthMonthByPerson = new Map(people.map((p) => [p.id, Math.min(12, Math.max(1, dobParts(p).m || 1))]))
-  const dobYear = (p: Person) => dobParts(p).y
+  const birthMonthByPerson = new Map(people.map((p) => [
+    p.id,
+    Math.min(12, Math.max(1, socialSecurityDobParts(p).m || 1)),
+  ]))
+  const dobYear = (p: Person) => socialSecurityDobParts(p).y
   /** Last full year alive: a stochastic-longevity override if given, else the plan's planning age. */
   const lifeAgeOf = (p: Person) => opts.deathAgeByPersonId?.[p.id] ?? p.longevity.planningAge
   const lastAliveYearOf = (p: Person) => dobYear(p) + lifeAgeOf(p)
@@ -1278,7 +1274,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       continue
     }
     const person = personById.get(stream.personId)!
-    const { y, m, d } = dobParts(person)
+    const { y, m, d } = socialSecurityDobParts(person)
     const projection = resolveEarningsProjection(stream.earningsProjection, person.retirementAge)
     const result = computePiaFromEarnings(piaInputFromEarnings(y, m, d, stream.earnings, projection))
     if (isPiaFromEarningsError(result)) {
@@ -1778,7 +1774,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (account.purchase.taxQualification === 'qualified') {
         const owner = personById.get(account.ownerPersonId ?? primary.id) ?? primary
         if (account.purchase.qlac === true) {
-          if (account.startAge > latestQlacAnnuityStartAge(dobParts(owner).m)) {
+          if (account.startAge > latestQlacAnnuityStartAge(socialSecurityDobParts(owner).m)) {
             warnings.add(
               'A QLAC that starts paying later than the first of the month after its owner\'s 85th birthday is not a QLAC; its premium still left the required-distribution base, which only a QLAC may do.',
             )
@@ -2348,7 +2344,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       pack,
       limitGrowth,
     })
-    incomes.socialSecurity = socialSecurity.socialSecurity
+    incomes.socialSecurity += socialSecurity.socialSecurity
     for (const write of socialSecurity.withheldMonthWrites) {
       withheldMonthsByPerson.set(write.personId, write.value)
     }
