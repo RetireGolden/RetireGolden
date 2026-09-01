@@ -27,7 +27,7 @@
       "id": "B.callsite",
       "label": "ordered insurance-premium fold and publication",
       "file": "projection/simulate.ts",
-      "lines": [3347, 3354]
+      "lines": [3346, 3354]
     },
     {
       "id": "C.helper",
@@ -53,7 +53,7 @@
       "id": "D.callsite",
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/simulate.ts",
-      "lines": [3613, 3643]
+      "lines": [3612, 3643]
     },
     {
       "id": "E.helper",
@@ -66,7 +66,7 @@
       "id": "E.callsite",
       "label": "SEPP operation application and effect publication",
       "file": "projection/simulate.ts",
-      "lines": [4876, 4939],
+      "lines": [4875, 4939],
       "note": "The corpus reaches cache writes and distributions, ordered balance mutation, runtime occurrence/application publication, annual cash-flow indexing, and deferred Form 8606 character. Any optional-chain or compound-condition gaps reported by JavaScript coverage are cold sub-line regions rather than cold whole lines."
     }
   ],

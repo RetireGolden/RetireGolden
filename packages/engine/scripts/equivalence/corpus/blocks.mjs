@@ -21,7 +21,9 @@
  * `projection/internal/wageIncomeStreams.ts`; D's members stay because the
  * wages phase still runs in every capture. F through I are the later
  * `simulate-small-annual-boundaries` extraction and are measured by its own
- * reach spec.
+ * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
+ * members measure entries A through D and block K's SEPP members measure entry
+ * E; the entry letters identify extracted boundaries, not corpus block names.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
