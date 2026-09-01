@@ -1,16 +1,11 @@
 /** Per-account form fields. */
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 import type { Account, InheritedBeneficiary, Plan } from '@retiregolden/engine/model/plan'
-import { ANNUITY_MAX_START_AGE } from '@retiregolden/engine/model/plan'
-import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
-import { packForYear } from '@retiregolden/engine/params'
 import { AllocationPanel, ReturnEstimatorModal } from './AllocationPanel'
 import {
   ACCOUNT_LABEL,
-  annuityStartAgeBounds,
-  annuityStartAgeHelp,
   clampedAnnuityStartAge,
   EVEN_START_WEIGHTS,
   isAllocatable,
@@ -22,44 +17,16 @@ import {
 } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
 import { ROTH_FIVE_YEAR_INCOMPLETE_NOTE } from '../../report/reportModel'
-import { CheckboxField, DateField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
-import { fmtMoney } from '../format'
+import { CheckboxField, DateField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
 import { currentStartYear } from '../useProjection'
 import { LEARN } from '../learnLinks'
 import { updateAccountField } from '../eligibilityFactActions'
+import { AnnuityAccountEditor, PensionAccountEditor } from './PensionAnnuityAccountEditors'
+import { DebtAccountEditor, PropertyAccountEditor } from './PropertyDebtAccountEditors'
 
 function ownerOptions(plan: Plan, type: Account['type']) {
   const peopleOptions = plan.household.people.map((p) => ({ value: p.id, label: p.name }))
   return isIndividuallyOwnedAccount(type) ? peopleOptions : [{ value: 'joint', label: 'Joint' }, ...peopleOptions]
-}
-
-/**
- * The lowest election year the engine's parse rule will accept for an ELECTED
- * lump sum: the later of the current UTC year (what the save stamp will carry)
- * and the document's stored stamp year (which can be ahead of the wall clock
- * when the plan was last saved on a fast clock — the parse rule compares
- * against the stamp, so the stamp must win).
- */
-function electionFloorYear(plan: Plan): number {
-  const stamped = /^(\d{4})-/.exec(plan.updatedAtIso)
-  const stampYear = stamped === null ? 0 : Number(stamped[1])
-  return Math.max(new Date().getUTCFullYear(), stampYear)
-}
-
-/**
- * Can this account pay an annuity premium of the given tax qualification?
- *
- * An inherited account is `type: 'traditional'` like any other, so a bare type
- * test offered a beneficiary's inherited IRA as a qualified funding source. Those
- * dollars cannot leave for a contract the household owns, and the engine refuses
- * the shape at parse, so keep it out of the picker in all three places that ask
- * (the option list, the still-eligible check, and the re-default) rather than in
- * only some of them.
- */
-function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' | 'nonQualified'): boolean {
-  return taxQualification === 'qualified'
-    ? account.type === 'traditional' && !account.inherited
-    : account.type === 'cash' || account.type === 'taxable' || account.type === 'equityComp'
 }
 
 const TAX_EXEMPT_INTEREST_HELP =
@@ -440,49 +407,16 @@ export function AccountFields({ account, index }: { account: Account; index: num
     update((d) => {
       updateAccountField(d, index, key, value)
     })
-  // Both ceilings, not just the binding one: the field's `max` wants the bound
-  // that applies, and the help under it has to say whether the QLAC box would
-  // raise or lower that bound for THIS owner before it names the box at all.
-  const startAgeBounds = annuityStartAgeBounds(plan, account)
-  /**
-   * Commit one field and, in the same update block, pull the start age down to
-   * whatever the edit leaves permitted.
-   *
-   * Three different fields can move the ceiling and each has to carry the
-   * consequence with it, because none of them is the age field: the purchase
-   * (switching to qualified, clearing the QLAC box, moving the purchase year
-   * earlier), the owner (a different birth year is a different applicable RMD
-   * age), and the age itself when it is typed rather than stepped. A `max` on
-   * the number field governs the stepper alone, so without this the household
-   * gets a plan the engine refuses at save and no field showing which value is
-   * at fault. One update block per edit, so the clamp and the change land as a
-   * single recomputation — the atomic-commit pattern the lump-sum election uses
-   * to revive its offer year.
-   */
-  const commitWithStartAgeClamp = (key: string, value: unknown, edited: Account) => {
-    const clamped = clampedAnnuityStartAge(plan, edited)
-    update((d) => {
-      updateAccountField(d, index, key, value)
-      if (clamped !== null) updateAccountField(d, index, 'startAge', clamped)
-    })
-  }
-  const setAnnuityPurchase = (next: Extract<Account, { type: 'annuity' }>['purchase']) => {
-    if (account.type !== 'annuity') return
-    commitWithStartAgeClamp('purchase', next, { ...account, purchase: next })
-  }
   const setOwner = (next: string | null) => {
     if (account.type !== 'annuity') {
       set('ownerPersonId', next)
       return
     }
-    commitWithStartAgeClamp('ownerPersonId', next, { ...account, ownerPersonId: next })
-  }
-  const setStartAge = (next: number) => {
-    if (account.type !== 'annuity') {
-      set('startAge', next)
-      return
-    }
-    set('startAge', clampedAnnuityStartAge(plan, { ...account, startAge: next }) ?? next)
+    const clamped = clampedAnnuityStartAge(plan, { ...account, ownerPersonId: next })
+    update((draft) => {
+      updateAccountField(draft, index, 'ownerPersonId', next)
+      if (clamped !== null) updateAccountField(draft, index, 'startAge', clamped)
+    })
   }
   return (
     <div className="form-grid">
@@ -992,352 +926,10 @@ export function AccountFields({ account, index }: { account: Account; index: num
           )}
         </>
       ) : null}
-      {account.type === 'pension' || account.type === 'annuity' ? (
-        <>
-          <NumberField
-            label="Start age"
-            help={annuityStartAgeHelp(startAgeBounds)}
-            value={account.startAge}
-            min={40}
-            max={startAgeBounds?.binding ?? ANNUITY_MAX_START_AGE}
-            onCommit={(v) => setStartAge(Math.round(v ?? 65))}
-          />
-          <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => set('monthlyAmount', v ?? 0)} />
-          <PercentField label="COLA" value={account.colaPct} onCommit={(v) => set('colaPct', v ?? 0)} />
-        </>
-      ) : null}
-      {account.type === 'pension' ? <PercentField label="Survivor benefit" value={account.survivorPct} onCommit={(v) => set('survivorPct', v ?? 0)} /> : null}
-      {account.type === 'pension' ? (
-        <CheckboxField
-          label="Lump-sum offer on record"
-          help="Record a lump-sum buyout offer to unlock the decision view: the annuity's discounted present value against the offer, a discount-rate × longevity sensitivity table, and the survivor option's value. Recording the offer changes nothing in the projection until you elect it."
-          value={account.lumpSumOffer !== undefined}
-          onCommit={(v) =>
-            update((d) => {
-              const p = d.accounts[index] as Extract<Account, { type: 'pension' }>
-              if (v) {
-                p.lumpSumOffer = { amount: 0, electionYear: new Date().getFullYear() }
-              } else {
-                p.lumpSumOffer = undefined
-                p.lumpSumElection = undefined
-              }
-            })
-          }
-        />
-      ) : null}
-      {account.type === 'pension' && account.lumpSumOffer ? (
-        <>
-          <MoneyField
-            label="Lump sum offered"
-            help="The one-time payment offered instead of the lifetime annuity (from your plan administrator's election packet)."
-            value={account.lumpSumOffer.amount}
-            onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, amount: v ?? 0 })}
-          />
-          <NumberField
-            label="Election year"
-            help="The year the election is due, and the year the lump sum would be paid if taken. Taking the lump sum needs a year that has not passed yet: if the rollover already happened, clear the election and add its dollars to the receiving account balance."
-            value={account.lumpSumOffer.electionYear}
-            // An offer kept on record for comparison may be any year; an ELECTED
-            // one may not be in the past, because the projection has no year left
-            // to perform the rollover in and the dollars are already inside the
-            // receiving account's entered balance. The engine refuses that shape
-            // at parse, so bound the field rather than letting the user author a
-            // plan that will not store. The floor is the later of the UTC year
-            // the save stamp will carry and the document's stored stamp year,
-            // which is what the parse rule actually compares against.
-            min={account.lumpSumElection ? electionFloorYear(plan) : 1900}
-            max={2200}
-            onCommit={(v) => set('lumpSumOffer', { ...account.lumpSumOffer!, electionYear: Math.round(v ?? electionFloorYear(plan)) })}
-          />
-          <SelectField
-            label="Election"
-            help="Take the lump sum: in the election year the offer rolls over tax-free into the chosen traditional IRA/401(k) and the pension never pays its annuity. Keep the annuity: the offer stays on record for comparison only. Taking the lump sum requires a traditional account you own to receive the rollover. An inherited IRA cannot receive it."
-            value={account.lumpSumElection ? 'lumpSum' : 'annuity'}
-            options={[
-              { value: 'annuity', label: 'Keep the annuity (undecided)' },
-              ...(plan.accounts.some((a) => a.type === 'traditional' && !a.inherited)
-                ? [{ value: 'lumpSum', label: 'Take the lump sum (rollover)' }]
-                : []),
-            ]}
-            onCommit={(v) => {
-              const target = plan.accounts.find((a) => a.type === 'traditional' && !a.inherited)
-              // Electing revives the offer's year: an offer kept for comparison
-              // may carry a past year, and an election with a past year is the
-              // shape the engine refuses at parse. Bumping to the election
-              // floor (the later of the UTC year and the document's own stamp
-              // year, which the parse rule compares against) keeps the common
-              // flow (old offer, then elect) storable; the year field stays
-              // editable after. One update block, so the bump and the toggle
-              // land as a single edit rather than two recomputations.
-              const electionYear = account.lumpSumOffer!.electionYear
-              const floorYear = electionFloorYear(plan)
-              update((d) => {
-                if (v === 'lumpSum' && target && electionYear < floorYear) {
-                  updateAccountField(d, index, 'lumpSumOffer', { ...account.lumpSumOffer!, electionYear: floorYear })
-                }
-                updateAccountField(d, index, 'lumpSumElection', v === 'lumpSum' && target ? { rolloverAccountId: target.id } : undefined)
-              })
-            }}
-          />
-          {account.lumpSumElection ? (
-            <SelectField
-              label="Rollover account"
-              help="The traditional account receiving the tax-free direct rollover in the election year."
-              value={account.lumpSumElection.rolloverAccountId}
-              options={plan.accounts
-                .filter((a) => a.type === 'traditional' && !a.inherited)
-                .map((a) => ({ value: a.id, label: a.name }))}
-              onCommit={(v) => set('lumpSumElection', { rolloverAccountId: v })}
-            />
-          ) : null}
-          <PensionDecisionPanel plan={plan} pensionId={account.id} />
-        </>
-      ) : null}
-      {account.type === 'annuity' && !account.purchase ? <PercentField label="Taxable share" hint="Simplified exclusion ratio." value={account.taxablePct} onCommit={(v) => set('taxablePct', v ?? 0)} /> : null}
-      {account.type === 'annuity' && account.purchase ? (
-        <ReadonlyField label="Taxable share" value="Determined by purchase (exclusion ratio for non-qualified; fully taxable for qualified)" />
-      ) : null}
-      {account.type === 'annuity' ? (
-        <SelectField
-          label="Payout form"
-          help="Life only: payments stop at the owner's death (the default). Life with period certain: payments are guaranteed for N years from the start age, if the owner dies inside the window, the household keeps receiving them. Joint & survivor: payments continue to the other household member at the chosen share for their lifetime. Non-qualified exclusion-ratio taxation adjusts to the form."
-          value={account.payoutForm?.kind ?? 'lifeOnly'}
-          options={[
-            { value: 'lifeOnly', label: 'Life only' },
-            { value: 'periodCertain', label: 'Life with period certain' },
-            ...(plan.household.people.length >= 2 ? [{ value: 'jointSurvivor', label: 'Joint & survivor' }] : []),
-          ]}
-          onCommit={(v) =>
-            set(
-              'payoutForm',
-              v === 'periodCertain'
-                ? { kind: 'periodCertain', certainYears: account.payoutForm?.kind === 'periodCertain' ? account.payoutForm.certainYears : 10 }
-                : v === 'jointSurvivor'
-                  ? { kind: 'jointSurvivor', survivorPct: account.payoutForm?.kind === 'jointSurvivor' ? account.payoutForm.survivorPct : 50 }
-                  : undefined,
-            )
-          }
-        />
-      ) : null}
-      {account.type === 'annuity' && account.payoutForm?.kind === 'periodCertain' ? (
-        <NumberField
-          label="Guaranteed years"
-          help="Years of payments guaranteed from the start age, paid to the household even if the owner dies inside the window."
-          value={account.payoutForm.certainYears}
-          min={1}
-          max={40}
-          onCommit={(v) => set('payoutForm', { kind: 'periodCertain', certainYears: Math.round(v ?? 10) })}
-        />
-      ) : null}
-      {account.type === 'annuity' && account.payoutForm?.kind === 'jointSurvivor' ? (
-        <PercentField
-          label="Survivor share"
-          help="Percent of the payment continuing to the surviving joint annuitant for their lifetime (100% / 75% / 50% are the common contract options)."
-          value={account.payoutForm.survivorPct}
-          onCommit={(v) => set('payoutForm', { kind: 'jointSurvivor', survivorPct: Math.min(100, Math.max(1, v ?? 50)) })}
-        />
-      ) : null}
-      {account.type === 'annuity' ? (
-        <CheckboxField
-          label="Model a purchase event"
-          help="Configure an annuity purchase: the engine withdraws the premium from a funding account in the purchase year, then applies IRS exclusion-ratio taxation for non-qualified purchases or fully ordinary taxation for qualified purchases. QLAC purchases are capped at the statutory limit."
-          value={account.purchase !== undefined}
-          onCommit={(v) => {
-            // Default to the first eligible non-qualified funding source (cash /
-            // taxable / equity comp) so toggling the feature on leaves the plan
-            // valid rather than immediately failing the funding-account refinement.
-            const defaultFunding = plan.accounts.find(
-              (a) => a.id !== account.id && (a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp'),
-            )
-            setAnnuityPurchase(
-              v
-                ? {
-                    year: new Date().getFullYear(),
-                    premium: 100_000,
-                    fundingAccountId: defaultFunding?.id ?? '',
-                    taxQualification: 'nonQualified' as const,
-                  }
-                : undefined,
-            )
-          }}
-        />
-      ) : null}
-      {account.type === 'annuity' && account.purchase ? (
-        <>
-          <NumberField
-            label="Purchase year"
-            value={account.purchase.year}
-            min={1900}
-            max={2200}
-            onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, year: Math.round(v ?? new Date().getFullYear()) })}
-          />
-          <MoneyField
-            label="Premium"
-            help="The lump sum paid to purchase the annuity contract, withdrawn from the funding account in the purchase year."
-            value={account.purchase.premium}
-            onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, premium: v ?? 0 })}
-          />
-          <SelectField
-            label="Funding account"
-            help="Which account the premium is withdrawn from. Non-qualified purchases must come from cash, taxable, or equity comp; qualified purchases from a traditional IRA or 401(k) you own. An inherited IRA cannot fund one."
-            value={account.purchase.fundingAccountId}
-            options={plan.accounts
-              .filter((a) => a.id !== account.id && canFundAnnuityPurchase(a, account.purchase!.taxQualification))
-              .map((a) => ({ value: a.id, label: a.name }))}
-            onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, fundingAccountId: v })}
-          />
-          <SelectField
-            label="Tax qualification"
-            help="Non-qualified: purchased with after-tax money; payouts use the IRS Pub 939 exclusion ratio (part tax-free, part taxable) until the investment is recovered. Qualified: purchased with pre-tax IRA/401(k) money; every payout is fully ordinary income."
-            value={account.purchase.taxQualification}
-            options={[
-              { value: 'nonQualified', label: 'Non-qualified (after-tax money)' },
-              { value: 'qualified', label: 'Qualified (pre-tax IRA/401k)' },
-            ]}
-            onCommit={(v) => {
-              const taxQualification = v as 'nonQualified' | 'qualified'
-              // The current funding account may no longer be eligible for the new
-              // qualification; re-default to the first eligible source so the plan
-              // stays valid instead of pointing at an impossible funding type.
-              const stillEligible = plan.accounts.some(
-                (a) => a.id === account.purchase!.fundingAccountId && canFundAnnuityPurchase(a, taxQualification),
-              )
-              const fundingAccountId = stillEligible
-                ? account.purchase!.fundingAccountId
-                : plan.accounts.find((a) => a.id !== account.id && canFundAnnuityPurchase(a, taxQualification))?.id ?? ''
-              setAnnuityPurchase({
-                ...account.purchase!,
-                taxQualification,
-                fundingAccountId,
-                qlac: taxQualification === 'nonQualified' ? undefined : account.purchase!.qlac,
-              })
-            }}
-          />
-          {account.purchase.taxQualification === 'qualified' ? (
-            <CheckboxField
-              label="QLAC (qualified longevity annuity)"
-              help="A deferred-start longevity annuity purchased inside a traditional account. The premium is capped at the SECURE 2.0 statutory limit ($210,000 for 2026) and excluded from the RMD base until payouts begin. Payments still have to begin by the first of the month after your 85th birthday — that is what makes it a QLAC."
-              value={account.purchase.qlac === true}
-              onCommit={(v) => setAnnuityPurchase({ ...account.purchase!, qlac: v || undefined })}
-            />
-          ) : null}
-        </>
-      ) : null}
-      {account.type === 'property' ? (
-        <>
-          <MoneyField label="Value" value={account.value} onCommit={(v) => set('value', v ?? 0)} />
-          <NumberField label="Planned sale year" value={account.plannedSaleYear} allowNull min={1900} max={2200} onCommit={(v) => set('plannedSaleYear', v === null ? null : Math.round(v))} />
-          <MoneyField
-            label="Cost basis"
-            help="What you paid for the property plus improvements (not inflation-adjusted). Set this to have the sale taxed exactly: capital-gains tax on the gain above basis, net of selling costs, minus the primary-residence exclusion. Leave blank to fall back to the simple tax-free 'expected net proceeds' estimate below."
-            hint="Blank = use expected net proceeds (tax-free)."
-            value={account.costBasis ?? null}
-            allowNull
-            onCommit={(v) => set('costBasis', v ?? undefined)}
-          />
-          {account.costBasis !== undefined ? (
-            <>
-              <PercentField
-                label="Selling costs"
-                help="Commissions plus closing costs as a percent of the sale price, deducted from the amount realized before computing the gain. Typical all-in cost to sell a home is 6–8%."
-                hint="% of sale price."
-                value={account.sellingCostPct ?? null}
-                allowNull
-                onCommit={(v) => set('sellingCostPct', v ?? undefined)}
-              />
-              <CheckboxField
-                label="Primary residence (§121 exclusion)"
-                help="If this is your main home and you meet the ownership/use tests (lived there 2 of the last 5 years), the IRS §121 exclusion shields $250,000 of gain ($500,000 if married filing jointly) from tax. Only the gain above the exclusion is taxed."
-                value={account.primaryResidence === true}
-                onCommit={(v) => set('primaryResidence', v ? true : undefined)}
-              />
-              <MoneyField
-                label="Depreciation to recapture"
-                help="Depreciation you claimed (e.g. rental years or a home office). It is recaptured as ordinary income on sale and cannot be shielded by the §121 exclusion. Leave blank if none."
-                hint="Blank = none."
-                value={account.depreciationRecapture ?? null}
-                allowNull
-                onCommit={(v) => set('depreciationRecapture', v ?? undefined)}
-              />
-            </>
-          ) : (
-            <MoneyField label="Expected net proceeds" hint="Blank = sell at projected value." value={account.expectedNetProceeds} allowNull onCommit={(v) => set('expectedNetProceeds', v)} />
-          )}
-          <MoneyField label="Property tax / year" help="Annual property tax in today's dollars. Charged as a recurring expense while you own the home, and, unlike the mortgage, it keeps going after the loan is paid off." hint="Today's $; continues after payoff." value={account.propertyTaxAnnual ?? null} allowNull onCommit={(v) => set('propertyTaxAnnual', v ?? undefined)} />
-          <MoneyField label="Insurance / year" hint="Homeowner's/hazard insurance, today's $." value={account.insuranceAnnual ?? null} allowNull onCommit={(v) => set('insuranceAnnual', v ?? undefined)} />
-          <CheckboxField
-            label="Model a HECM line of credit"
-            help="An FHA reverse-mortgage line of credit on your primary residence (borrowers 62+). The unused line grows every year regardless of home value; draws are tax-free loan proceeds; the loan is repaid from the home at sale or the end of the plan, non-recourse (never more than the home is worth). Turning this on marks the home as your primary residence."
-            value={account.hecm !== undefined}
-            onCommit={(v) =>
-              update((d) => {
-                const p = d.accounts[index] as Extract<Account, { type: 'property' }>
-                if (v) {
-                  p.primaryResidence = true
-                  p.hecm = {
-                    openYear: new Date().getFullYear(),
-                    growthRatePct: packForYear(new Date().getFullYear()).pack.hecm.defaultGrowthRatePct,
-                    drawPolicy: 'lastResort',
-                  }
-                } else {
-                  p.hecm = undefined
-                }
-              })
-            }
-          />
-          {account.hecm ? (
-            <>
-              <NumberField
-                label="Line opens in"
-                help="The year the line of credit is opened. Pfau's research favors opening early. The unused credit compounds from that point regardless of home value."
-                value={account.hecm.openYear}
-                min={1900}
-                max={2200}
-                onCommit={(v) => set('hecm', { ...account.hecm!, openYear: Math.round(v ?? new Date().getFullYear()) })}
-              />
-              <PercentField
-                label="Line size (% of value)"
-                help="The initial principal limit as a percent of the home's value. Enter your lender-quoted figure. Blank uses the published HUD principal-limit-factor table by the youngest borrower's age (35–61% between 62 and 90 at a 5.875% expected rate)."
-                hint="Blank = published factor table."
-                value={account.hecm.principalLimitPct ?? null}
-                allowNull
-                onCommit={(v) => set('hecm', { ...account.hecm!, principalLimitPct: v ?? undefined })}
-              />
-              <PercentField
-                label="Line & loan growth / yr"
-                help="Annual growth applied to both the credit line and the loan balance: the note rate plus the 0.5% annual mortgage-insurance premium (roughly 7–8% at 2026 rates)."
-                value={account.hecm.growthRatePct}
-                onCommit={(v) => set('hecm', { ...account.hecm!, growthRatePct: v ?? 7.5 })}
-              />
-              <PercentField
-                label="Upfront costs (% of value)"
-                help="Origination, closing costs, and the initial 2% FHA mortgage-insurance premium, financed into the loan balance at open (typically 3–6% of home value)."
-                hint="Blank = none."
-                value={account.hecm.upfrontCostPct ?? null}
-                allowNull
-                onCommit={(v) => set('hecm', { ...account.hecm!, upfrontCostPct: v ?? undefined })}
-              />
-              <SelectField
-                label="Draw policy"
-                help="Coordinated (buffer asset): draw for spending in years after a negative market return so depressed holdings can recover, visible in Monte Carlo, where down years exist. Last resort: draw only once the portfolio cannot cover spending. Either way an open line backstops a true shortfall."
-                value={account.hecm.drawPolicy}
-                options={[
-                  { value: 'lastResort', label: 'Last resort (when portfolio is exhausted)' },
-                  { value: 'coordinated', label: 'Coordinated (after down market years)' },
-                ]}
-                onCommit={(v) => set('hecm', { ...account.hecm!, drawPolicy: v as 'coordinated' | 'lastResort' })}
-              />
-            </>
-          ) : null}
-        </>
-      ) : null}
-      {account.type === 'debt' ? (
-        <>
-          <PercentField label="Interest rate" value={account.interestPct} onCommit={(v) => set('interestPct', v ?? 0)} />
-          <MoneyField label="Monthly payment" help="Principal & interest only. Don't include escrowed property tax or homeowner's insurance here. Put those on the home (property) account so they correctly continue after the loan is paid off." hint="P&I only, escrow goes on the home account." value={account.monthlyPayment} onCommit={(v) => set('monthlyPayment', v ?? 0)} />
-          <NumberField label="Lump-sum payoff year" help="Optional. In this year the entire remaining balance is paid off at once, funded from your withdrawal order (selling taxable holdings realizes gains/tax, just like any other withdrawal). Use it to compare keeping a low-rate loan vs. paying it off early or mid-retirement." hint="Blank = run to term." value={account.payoffYear ?? null} allowNull min={1900} max={2200} onCommit={(v) => set('payoffYear', v === null ? undefined : Math.round(v))} />
-        </>
-      ) : null}
+      {account.type === 'pension' ? <PensionAccountEditor account={account} index={index} onCommit={set} /> : null}
+      {account.type === 'annuity' ? <AnnuityAccountEditor account={account} index={index} onCommit={set} /> : null}
+      {account.type === 'property' ? <PropertyAccountEditor account={account} index={index} onCommit={set} /> : null}
+      {account.type === 'debt' ? <DebtAccountEditor account={account} onCommit={set} /> : null}
       {account.type !== 'debt' && account.type !== 'property' && account.type !== 'pension' ? (
         <>
           <SelectField
@@ -1381,75 +973,6 @@ export function AccountFields({ account, index }: { account: Account; index: num
           onClose={() => setEstimating(false)}
         />
       ) : null}
-    </div>
-  )
-}
-
-/**
- * Lump-sum vs annuity decision view (annuity-pension-and-home-equity, step 3):
- * deterministic PV math against the recorded offer — a curve-anchored
- * discounted value, the survivor option's worth, and a discount-rate ×
- * longevity sensitivity table. Framed as tradeoffs; the exact-ledger scenario
- * pair (Insights preview / decision engine) prices taxes and sequence risk.
- */
-function PensionDecisionPanel({ plan, pensionId }: { plan: Plan; pensionId: string }) {
-  // Captured per render (not just inside the memo) so a start-year rollover
-  // invalidates the memoized analysis even without a plan edit.
-  const startYear = currentStartYear()
-  const analysis = useMemo(
-    () => analyzePensionElections(plan, startYear).find((a) => a.pensionId === pensionId),
-    [plan, pensionId, startYear],
-  )
-  if (!analysis) return null
-  if (analysis.lumpSum <= 0) {
-    return (
-      <p className="muted field-span-full" style={{ margin: 0 }}>
-        Enter the offered amount to see the decision view: the annuity's discounted value against the lump sum across
-        discount rates and longevity.
-      </p>
-    )
-  }
-  const ratio = analysis.presentValueAtCurveRate / analysis.lumpSum
-  const survivorOptionValue = analysis.presentValueAtCurveRate - analysis.presentValueSingleLife
-  return (
-    <div className="field-span-full">
-      <h4 style={{ marginBottom: '0.25rem' }}>Lump sum vs annuity</h4>
-      <p className="card-hint" style={{ marginTop: 0 }}>
-        At the {analysis.curveRatePct.toFixed(1)}% curve-anchored discount rate (TIPS real yield + your inflation
-        assumption) to the owner's planning age, the annuity's payments are worth{' '}
-        <strong>{fmtMoney(analysis.presentValueAtCurveRate)}</strong> against the{' '}
-        <strong>{fmtMoney(analysis.lumpSum)}</strong> offer ({(ratio * 100).toFixed(0)}%).
-        {survivorOptionValue > 1 ? (
-          <> The survivor continuation accounts for {fmtMoney(survivorOptionValue)} of that value.</>
-        ) : null}{' '}
-        Living longer or discounting at lower rates favors the annuity; dying earlier, higher rates, bequest goals, and
-        control over the money favor the lump sum. The table shows how the comparison moves, and the Insights page can
-        preview the rollover against your full plan. A tradeoff, not advice.
-      </p>
-      <div className="year-table-wrap" style={{ border: 'none' }}>
-        <table className="compare-table">
-          <thead>
-            <tr>
-              <th>Annuity value ÷ offer</th>
-              {analysis.sensitivity.discountRatesPct.map((r) => (
-                <th key={r}>{r.toFixed(1)}%</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {analysis.sensitivity.rows.map((row) => (
-              <tr key={row.ownerDeathAge}>
-                <td>To age {row.ownerDeathAge}</td>
-                {row.cells.map((cell) => (
-                  <td key={cell.discountRatePct} title={fmtMoney(cell.presentValue)}>
-                    {(cell.ratioToLumpSum * 100).toFixed(0)}%
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   )
 }

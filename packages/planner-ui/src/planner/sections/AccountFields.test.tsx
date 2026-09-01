@@ -909,3 +909,85 @@ describe('prior-year FICA wages (414(v)(7) Box 3 proxy)', () => {
     expect(input.value).not.toBe('150,000')
   })
 })
+
+describe('AccountFields property and debt editor boundaries', () => {
+  it('renders property-specific fields without debt fields', () => {
+    const property: Extract<Account, { type: 'property' }> = {
+      type: 'property',
+      id: 'home',
+      name: 'Home',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      value: 500_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }
+
+    const fields = renderFields(planWithAccount(property))
+
+    expect(controlByLabel(fields, 'Value')).toBeTruthy()
+    expect(controlByLabel(fields, 'Model a HECM line of credit')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Interest rate')).toThrow('no label "Interest rate"')
+  })
+
+  it('renders debt-specific fields without property fields', () => {
+    const debt: Extract<Account, { type: 'debt' }> = {
+      type: 'debt',
+      id: 'mortgage',
+      name: 'Mortgage',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: 250_000,
+      interestPct: 4,
+      monthlyPayment: 1_500,
+    }
+
+    const fields = renderFields(planWithAccount(debt))
+
+    expect(controlByLabel(fields, 'Balance owed')).toBeTruthy()
+    expect(controlByLabel(fields, 'Lump-sum payoff year')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Value')).toThrow('no label "Value"')
+  })
+})
+
+describe('AccountFields pension and annuity editor boundaries', () => {
+  it('renders pension-specific fields without annuity purchase fields', () => {
+    const pension: Extract<Account, { type: 'pension' }> = {
+      type: 'pension',
+      id: 'pension',
+      name: 'Pension',
+      ownerPersonId: 'af-owner',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+    }
+
+    const fields = renderFields(planWithAccount(pension))
+
+    expect(controlByLabel(fields, 'Survivor benefit')).toBeTruthy()
+    expect(controlByLabel(fields, 'Lump-sum offer on record')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Model a purchase event')).toThrow('no label "Model a purchase event"')
+  })
+
+  it('renders annuity-specific fields without pension election fields', () => {
+    const annuity: Extract<Account, { type: 'annuity' }> = {
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Annuity',
+      ownerPersonId: 'af-owner',
+      annualReturnPct: null,
+      startAge: 70,
+      monthlyAmount: 1_500,
+      colaPct: 0,
+      taxablePct: 60,
+    }
+
+    const fields = renderFields(planWithAccount(annuity))
+
+    expect(controlByLabel(fields, 'Payout form')).toBeTruthy()
+    expect(controlByLabel(fields, 'Model a purchase event')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Lump-sum offer on record')).toThrow('no label "Lump-sum offer on record"')
+  })
+})
