@@ -3733,8 +3733,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * publishes -- and not of this pool measure's use as a 408(d)(8)(D)
      * ceiling. It is not corrected here.
      */
+    // Annual state maps and published balances are account-ID keyed and
+    // therefore last-row-wins. Select that same row once for every RMD phase:
+    // otherwise duplicate IDs accumulate one obligation into a shared Map and
+    // then execute the combined take against every duplicate balance record.
+    // Map replacement keeps the ID's first insertion position, so unique-ID
+    // plan order is unchanged while the selected record matches the RMD-base
+    // and published-balance channels.
+    const rmdBalanceByAccountId = new Map(
+      balances.map((state) => [state.account.id, state] as const),
+    )
+    const rmdBalances = [...rmdBalanceByAccountId.values()]
     const preDistributionOwnedIraBalance = new Map<string, number>()
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (!isAggregatedIraThisYear(state.account)) continue
       preDistributionOwnedIraBalance.set(state.account.id, state.balance)
     }
@@ -3810,7 +3821,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     for (const [planKey, deferred] of deferredFirstRmdByApplicablePlan) {
       if (deferred.dueYear !== year) continue
       let distributedByDeadline = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (distributedByDeadline >= deferred.requiredAmount - EPSILON) break
         if (state.account.type !== 'traditional') continue
         if (!followsOwnerRmdsThisYear(state.account)) continue
@@ -3845,7 +3856,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       applicablePlanByKey.set(planKey, deferred.applicablePlan)
       deferredFirstRmdByApplicablePlan.delete(planKey)
     }
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (state.account.type !== 'traditional') continue
       if (!followsOwnerRmdsThisYear(state.account)) continue // inherited (pre-S2) follows the beneficiary schedule below
       const ownerId = state.account.ownerPersonId ?? primary.id
@@ -3930,7 +3941,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     for (const [applicablePlanKey, unmet] of unmetAggregableRmdByApplicablePlan) {
       const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
       let remaining = unmet
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (remaining <= EPSILON) break
         if (state.account.type !== 'traditional') continue
         if (!followsOwnerRmdsThisYear(state.account)) continue
@@ -3977,7 +3988,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           currentRmdDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
       })
     }
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       // Only traditional accounts were ever entered above; the guard is here
       // so the account narrows for `kind` rather than being asserted.
       if (state.account.type !== 'traditional') continue
@@ -4147,7 +4158,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     /** Roth-character forced amount (Roth withdrawals only; never ordinary income). */
     let inheritedRothForced = 0
     const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] = []
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (state.account.type !== 'traditional' && state.account.type !== 'roth') continue
       if (state.account.inherited === undefined) continue
       const cache = inheritedClassCache.get(state.account.id)
@@ -4499,7 +4510,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     >()
     for (const evidence of inheritedYearEvidenceDraft) {
       if (evidence.requiredAmount <= 0 || evidence.noticeWaived === true) continue
-      const account = plan.accounts.find((candidate) => candidate.id === evidence.accountId)
+      const account = rmdBalanceByAccountId.get(evidence.accountId)?.account
       if (
         account === undefined ||
         (account.type !== 'traditional' && account.type !== 'roth') ||
