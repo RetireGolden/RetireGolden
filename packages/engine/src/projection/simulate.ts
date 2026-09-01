@@ -734,24 +734,7 @@ function planWithdrawals(
   }
 }
 
-export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): ProjectionResult {
-  /**
-   * A Plan may contain an unreferenced duplicate account id. Every observable
-   * simulator channel is keyed by that id, so retaining both rows would make
-   * an unpublishable second balance available to array-based phases while maps
-   * expose only one row. Canonicalize once at the boundary: the last row is the
-   * account of record, while Map replacement preserves the id's first plan-order
-   * position. Referenced duplicates are rejected by parsePlan before this point.
-   * Reusing the input object on the ordinary unique-id path also preserves its
-   * identity and avoids an allocation on every simulation/re-entry.
-   */
-  const accountById = new Map(
-    inputPlan.accounts.map((account) => [account.id, account] as const),
-  )
-  const canonicalAccounts = [...accountById.values()]
-  const plan = canonicalAccounts.length === inputPlan.accounts.length
-    ? inputPlan
-    : { ...inputPlan, accounts: canonicalAccounts }
+export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
   const { startYear, taxCalculator, market } = opts
   const preHorizonFirstRmdDeferral = (opts.rmdFirstYearDeferrals ?? [])
     .find((election) => election.distributionCalendarYear < startYear)
@@ -3750,13 +3733,19 @@ export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): Projection
      * publishes -- and not of this pool measure's use as a 408(d)(8)(D)
      * ceiling. It is not corrected here.
      */
-    // The simulation boundary already selected one canonical row per account
-    // id. Keep a lookup for the inherited-shortfall evidence join below.
+    // Annual state maps and published balances are account-ID keyed and
+    // therefore last-row-wins. Select that same row once for every RMD phase:
+    // otherwise duplicate IDs accumulate one obligation into a shared Map and
+    // then execute the combined take against every duplicate balance record.
+    // Map replacement keeps the ID's first insertion position, so unique-ID
+    // plan order is unchanged while the selected record matches the RMD-base
+    // and published-balance channels.
     const rmdBalanceByAccountId = new Map(
       balances.map((state) => [state.account.id, state] as const),
     )
+    const rmdBalances = [...rmdBalanceByAccountId.values()]
     const preDistributionOwnedIraBalance = new Map<string, number>()
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (!isAggregatedIraThisYear(state.account)) continue
       preDistributionOwnedIraBalance.set(state.account.id, state.balance)
     }
@@ -3832,7 +3821,7 @@ export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): Projection
     for (const [planKey, deferred] of deferredFirstRmdByApplicablePlan) {
       if (deferred.dueYear !== year) continue
       let distributedByDeadline = 0
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (distributedByDeadline >= deferred.requiredAmount - EPSILON) break
         if (state.account.type !== 'traditional') continue
         if (!followsOwnerRmdsThisYear(state.account)) continue
@@ -3867,7 +3856,7 @@ export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): Projection
       applicablePlanByKey.set(planKey, deferred.applicablePlan)
       deferredFirstRmdByApplicablePlan.delete(planKey)
     }
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (state.account.type !== 'traditional') continue
       if (!followsOwnerRmdsThisYear(state.account)) continue // inherited (pre-S2) follows the beneficiary schedule below
       const ownerId = state.account.ownerPersonId ?? primary.id
@@ -3952,7 +3941,7 @@ export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): Projection
     for (const [applicablePlanKey, unmet] of unmetAggregableRmdByApplicablePlan) {
       const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
       let remaining = unmet
-      for (const state of balances) {
+      for (const state of rmdBalances) {
         if (remaining <= EPSILON) break
         if (state.account.type !== 'traditional') continue
         if (!followsOwnerRmdsThisYear(state.account)) continue
@@ -3999,7 +3988,7 @@ export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): Projection
           currentRmdDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
       })
     }
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       // Only traditional accounts were ever entered above; the guard is here
       // so the account narrows for `kind` rather than being asserted.
       if (state.account.type !== 'traditional') continue
@@ -4085,7 +4074,7 @@ export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): Projection
     // need-based withdrawal flow, so it never attracts the early-withdrawal
     // penalty — and is taxable ordinary income that also supplies spending cash.
     const seppPlan = annualSeppDistributions({
-      balances,
+      balances: rmdBalances,
       year,
       primaryPersonId: primary.id,
       resolveOwnerState: stateOf,
@@ -4102,7 +4091,7 @@ export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): Projection
         continue
       }
 
-      const state = balances[operation.balanceIndex]!
+      const state = rmdBalances[operation.balanceIndex]!
       state.balance = operation.sourceBalanceAfter
       const kind = 'automaticSeppDistribution' as const
       const producerOccurrenceKey = runtimeOccurrenceKey(kind, operation.accountId)
@@ -4169,7 +4158,7 @@ export function simulatePlan(inputPlan: Plan, opts: SimulateOptions): Projection
     /** Roth-character forced amount (Roth withdrawals only; never ordinary income). */
     let inheritedRothForced = 0
     const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] = []
-    for (const state of balances) {
+    for (const state of rmdBalances) {
       if (state.account.type !== 'traditional' && state.account.type !== 'roth') continue
       if (state.account.inherited === undefined) continue
       const cache = inheritedClassCache.get(state.account.id)

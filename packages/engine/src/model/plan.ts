@@ -2218,17 +2218,21 @@ export const planSchema = z
         actionReferencedAccountIds.add(action.destinationRothAccountId)
       }
     })
-    // A lump-sum rollover target and a qualified annuity's funding source get
-    // the same ambiguity protection as action-referenced accounts: their
-    // ownership validations and the simulator's canonical account view both
-    // resolve an unreferenced id through a map (last duplicate wins). A
-    // referenced duplicate remains ambiguous, however: a persisted action must
-    // bind one actual account rather than depend on a row-selection convention.
+    // Decision-bearing pension/annuity rows and their referenced accounts get
+    // the same ambiguity protection as retirement actions. Otherwise a duplicate
+    // source id could silently select whether a persisted decision executes,
+    // while a duplicate target id could select where its dollars land.
     plan.accounts.forEach((account) => {
-      if (account.type === 'pension' && account.lumpSumElection !== undefined && account.lumpSumOffer !== undefined) {
-        actionReferencedAccountIds.add(account.lumpSumElection.rolloverAccountId)
+      if (account.type === 'pension') {
+        if (account.lumpSumOffer !== undefined || account.lumpSumElection !== undefined) {
+          actionReferencedAccountIds.add(account.id)
+        }
+        if (account.lumpSumElection !== undefined) {
+          actionReferencedAccountIds.add(account.lumpSumElection.rolloverAccountId)
+        }
       }
       if (account.type === 'annuity' && account.purchase !== undefined) {
+        actionReferencedAccountIds.add(account.id)
         actionReferencedAccountIds.add(account.purchase.fundingAccountId)
       }
     })

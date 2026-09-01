@@ -11,6 +11,7 @@ import {
   stateForYear,
   stateResidencySegmentsForYear,
   traditionalAccountSchema,
+  type Account,
   type InheritedAccount,
   type Plan,
 } from './plan.js'
@@ -1073,16 +1074,28 @@ describe('pension lump-sum election', () => {
   })
 
   it('refuses a duplicated account id once a rollover election references it', () => {
-    // The simulator has a deterministic last-row convention for unreferenced
-    // legacy duplicates, but a persisted rollover must identify one actual
-    // receiving account. A referenced duplicate is therefore ambiguous and
-    // refused — the same protection action-referenced accounts already have.
+    // A persisted rollover must identify one actual receiving account rather
+    // than depend on map/array row-selection conventions.
     const plan = planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')
     const owned = plan.accounts.find((a) => a.id === 'a2')!
     plan.accounts.push({ ...owned, name: 'Duplicate of a2' })
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(false)
     expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "a2"')
+  })
+
+  it('refuses duplicate pension rows when one carries the lump-sum decision', () => {
+    const plan = planWithElection({ amount: 300_000, electionYear: 2030 }, 'a2')
+    const pension = plan.accounts.find((account) => account.id === 'pen1')!
+    plan.accounts.push({
+      ...pension,
+      name: 'Duplicate pension without a decision',
+      lumpSumOffer: undefined,
+      lumpSumElection: undefined,
+    } as Account)
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "pen1"')
   })
 
   it('refuses an inherited IRA as the rollover target', () => {

@@ -273,16 +273,16 @@ describe('simulatePlan delegates property events and growth', () => {
     /**
      * Repository model contract: `hecmStates` stores exactly one mutable line
      * per property-account id, with one principal limit and one loan balance.
-     * Duplicate property rows can legally share an id when no retirement
-     * action references it, but the simulation boundary selects one canonical
-     * row before this phase. That row creates one contract and one annual
-     * accrual; the helper never receives a second alias row.
+     * Duplicate property rows can legally alias that state when no retirement
+     * action references the id, but an alias does not create a second contract
+     * or a second annual accrual. The helper unit suite separately pins that the
+     * first qualifying duplicate row supplies the shared state's annual rate.
      *
      * Independent worksheet for one 2026 accrual:
      *   principal limit = $400,000 x 40% x 1.075 = $172,000
      *   loan balance    = $400,000 x  2% x 1.075 =   $8,600
-     * A second property row with the same id is neither a second HECM line nor
-     * a second helper row, and therefore must not apply another multiplier.
+     * A second property row with the same id is not a second HECM line and
+     * therefore must not apply a second 1.075 multiplier.
      */
     const project = (propertyRows: number) => {
       const p = singlePersonPlan({ dob: '1956-01-01', planningAge: 90 })
@@ -333,7 +333,7 @@ describe('simulatePlan delegates property events and growth', () => {
       parseAccepted: true,
       principalLimit: 172_000,
       loanBalance: 8_600,
-      hecmGrowthRows: [1.075],
+      hecmGrowthRows: [1.075, null],
     })
   })
 

@@ -394,7 +394,7 @@ describe('simulate annual owned-IRA runtime application source', () => {
     expect(sourceOf(year).applications).toEqual([])
   })
 
-  it('publishes only the canonical last row for a duplicate contribution account id', () => {
+  it('preserves null ownership and duplicate occurrence keys with distinct commit ordinals', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'runtime-app-raw-duplicates'
     plan.incomes = [{
@@ -408,22 +408,18 @@ describe('simulate annual owned-IRA runtime application source', () => {
     const year = runOneYear(plan, false)
     const applications = sourceOf(year).applications
 
-    expect(applications).toHaveLength(1)
+    expect(applications).toHaveLength(2)
     expect(applications.map((application) => application.ownerPersonId))
-      .toEqual([null])
+      .toEqual([null, null])
     expect(applications.map((application) => application.sourceAccountId))
-      .toEqual(['duplicate-ira'])
+      .toEqual(['duplicate-ira', 'duplicate-ira'])
     expect(applications.map((application) => application.producerOccurrenceKey))
       .toEqual([
         JSON.stringify(['ownedIraContribution', 'duplicate-ira']),
+        JSON.stringify(['ownedIraContribution', 'duplicate-ira']),
       ])
     expect(applications.map((application) => application.mutationOrdinal))
-      .toEqual([1])
-    expect(applications[0]!.applicationKind).toBe('credit')
-    if (applications[0]!.applicationKind !== 'credit') {
-      throw new Error('expected the selected contribution credit')
-    }
-    expect(applications[0]!.creditedAmountPlanDollars).toBe(1_000)
+      .toEqual([1, 2])
   })
 
   it('rejoins every application to the exact raw occurrence key without sorting commit order', () => {
