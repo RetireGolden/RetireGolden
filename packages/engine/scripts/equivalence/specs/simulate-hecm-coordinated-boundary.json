@@ -1,0 +1,76 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-hecm-coordinated-boundary",
+  "why": "Measured reach for both pure coordinated-HECM helpers and every caller band that consumes their results. Block N's two hostile members run in all four equivalence modes: N1 combines a legal duplicate property id with no-HECM and divergent-policy aliases, distinct lines, a cancellation-sensitive source-order capacity fold, full cent-scale allocations and a partial final allocation; N2 activates the ACA outer fixed point and counterfactual annual-pass rollback/re-entry. The default and optimizer modes observe ProjectionResult/debt, cashFlow observes exact source identities and order, and counterfactual proves discarded transactions restore caller-owned line state.",
+  "entries": [
+    {
+      "id": "A.eligibility-helper",
+      "label": "coordinated HECM eligibility, first-HECM-row policy ownership and ordered capacity fold",
+      "file": "projection/internal/annualCoordinatedHecm.ts",
+      "lines": [41, 68],
+      "anchors": [
+        { "line": 41, "text": "export function annualCoordinatedHecmEligibility(" },
+        { "line": 46, "text": "if (!(" },
+        { "line": 54, "text": "const visitedHecmLineIds = new Set<string>()" },
+        { "line": 58, "text": "visitedHecmLineIds.add(account.id)" },
+        { "line": 65, "text": "capacity += available" },
+        { "line": 67, "text": "return { propertyAccountIds, capacity }" }
+      ],
+      "note": "N1 reaches the no-HECM alias, first HECM-bearing policy owner, later divergent-policy duplicate, live-line and positive-capacity decisions while preserving the exact sequential binary64 fold. Start-year calls reach the early gate; whole-corpus post-death years reach its anyAlive operand. Non-property, missing-line and exhausted-line continues are supported defensive branches pinned by the focused helper suite; their conditions share reached physical lines, so the reach report separately treats them as sub-line branch evidence rather than cold whole lines."
+    },
+    {
+      "id": "B.allocation-helper",
+      "label": "accepted coordinated draw allocation in unique source order",
+      "file": "projection/internal/annualCoordinatedHecm.ts",
+      "lines": [82, 104],
+      "anchors": [
+        { "line": 82, "text": "export function annualCoordinatedHecmAllocations(" },
+        { "line": 85, "text": "const rows: AnnualCoordinatedHecmAllocationRow[] = []" },
+        { "line": 89, "text": "for (const propertyAccountId of input.propertyAccountIds) {" },
+        { "line": 90, "text": "if (remaining <= ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS) break" },
+        { "line": 99, "text": "rows.push({ propertyAccountId, amount })" },
+        { "line": 103, "text": "return rows" }
+      ],
+      "note": "N1 consumes two one-cent lines completely and then partially consumes a much larger line, preserving accepted-scalar subtraction order; its following no-spending loss year reaches the accepted-zero half-cent tolerance break with eligible ids present. Missing-state, repeated-id shadow and nonpositive-availability branches are impossible from the eligibility helper's returned ids in an unmodified simulator call and are pinned independently by the focused helper suite."
+    },
+    {
+      "id": "C.eligibility-callsite",
+      "label": "annual coordinated HECM eligibility invocation",
+      "file": "projection/simulate.ts",
+      "lines": [7413, 7420],
+      "anchors": [
+        { "line": 7413, "text": "const coordinatedHecm = annualCoordinatedHecmEligibility({" },
+        { "line": 7419, "text": "priorYearPortfolioReturnPct," },
+        { "line": 7420, "text": "})" }
+      ]
+    },
+    {
+      "id": "D.accepted-scalar-callsite",
+      "label": "coordinated HECM capacity consumption and ACA/tax accepted scalar",
+      "file": "projection/simulate.ts",
+      "lines": [7953, 7984],
+      "anchors": [
+        { "line": 7953, "text": "if (coordinatedHecm.capacity > EPSILON && spendingNeedBeforeTax > EPSILON) {" },
+        { "line": 7970, "text": "const nextDraw = Math.min(coordinatedHecm.capacity, postCreditPreTaxNeed)" },
+        { "line": 7978, "text": "if (!coordinatedDrawConverged) hecmDraw = 0" },
+        { "line": 7984, "text": "}" }
+      ],
+      "note": "N1 reaches the non-ACA outer solve with an accepted draw below total capacity. N2 establishes that multiple ACA/tax probes occur before one scalar is accepted. The focused delegation suite proves those probes do not allocate or mutate a live line."
+    },
+    {
+      "id": "E.allocation-apply-callsite",
+      "label": "accepted coordinated allocation invocation, line mutation and source publication",
+      "file": "projection/simulate.ts",
+      "lines": [8092, 8106],
+      "anchors": [
+        { "line": 8092, "text": "for (const allocation of annualCoordinatedHecmAllocations({" },
+        { "line": 8099, "text": "line.loanBalance += allocation.amount" },
+        { "line": 8100, "text": "hecmCoordinatedByProperty?.set(" },
+        { "line": 8104, "text": "}" },
+        { "line": 8105, "text": "// Any open HECM line backstops a true portfolio shortfall regardless of" }
+      ],
+      "note": "N1 applies three ordered rows to distinct actual lines despite no-HECM and divergent-policy duplicate aliases. Cash-flow capture publishes the exact per-property sources; counterfactual capture re-enters the annual pass and observes only the committed transaction after rollback."
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every operand or branch sharing one physical line, so the report's cold sub-line regions and these notes must be read together with the focused helper and hostile delegation tests."
+}
