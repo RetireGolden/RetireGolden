@@ -1,11 +1,15 @@
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'lean-fat-fire'
 
 export function buildLeanFatFire(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Lean vs Fat FIRE', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Lean vs Fat FIRE',
+    assumptions: { recentAnnualMagi: 135_000 },
+  })
   plan.household = {
     filingStatus: 'single',
     hasQualifyingDependent: false,
@@ -79,18 +83,6 @@ export function buildLeanFatFire(): Plan {
     phases: [],
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 500, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 200 },
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 2,
-    defaultReturnPct: 6,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 135_000,
-    heirTaxRatePct: 25,
-    safeWithdrawalRatePct: 4,
   }
   plan.scenarios = [
     {

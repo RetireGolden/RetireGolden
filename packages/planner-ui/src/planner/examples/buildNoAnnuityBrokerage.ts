@@ -5,15 +5,30 @@
  * RMD impact, and estate outcome differences.
  */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId } from './buildContext'
 
 const EXAMPLE_ID = 'no-annuity-brokerage'
 
 export function buildNoAnnuityBrokerage(): Plan {
   const me = exampleEntityId(EXAMPLE_ID, 'me')
   const partner = exampleEntityId(EXAMPLE_ID, 'partner')
-  const plan = createEmptyPlan({ name: 'Brokerage only (no annuities)', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Brokerage only (no annuities)',
+    strategies: {
+      rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 24, startYear: EXAMPLE_FIXED_YEAR + 1, endYear: EXAMPLE_FIXED_YEAR + 7 },
+      qcdAnnual: 5000,
+    },
+    assumptions: {
+      inflationPct: 2.3,
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 5.2,
+      recentAnnualMagi: 120_000,
+      heirTaxRatePct: 28,
+      safeWithdrawalRatePct: 3.5,
+    },
+  })
 
   plan.household = {
     filingStatus: 'marriedFilingJointly',
@@ -67,25 +82,6 @@ export function buildNoAnnuityBrokerage(): Plan {
     healthcare: { pre65MonthlyPremiumPerPerson: 880, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 210 },
   }
 
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 24, startYear: EXAMPLE_FIXED_YEAR + 1, endYear: EXAMPLE_FIXED_YEAR + 7 },
-    qcdAnnual: 5000,
-    retirementActions: [],
-  }
-
-  plan.assumptions = {
-    inflationPct: 2.3,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 5.2,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 120_000,
-    heirTaxRatePct: 28,
-    safeWithdrawalRatePct: 3.5,
-  }
 
   const parsed = parsePlan(plan)
   if (!parsed.ok) throw new Error(`no-annuity-brokerage invalid: ${parsed.issues.join('; ')}`)

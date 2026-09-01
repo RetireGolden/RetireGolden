@@ -1,13 +1,22 @@
 /** High balances: RMDs and IRMAA — large traditional balances push MAGI into Medicare tiers. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'rmd-irmaa'
 
 export function buildRmdIrmaa(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'High balances: RMDs & IRMAA', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'High balances: RMDs & IRMAA',
+    strategies: { qcdAnnual: 15_000 },
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 5,
+      heirTaxRatePct: 28,
+    },
+  })
   plan.household = {
     filingStatus: 'single',
     hasQualifyingDependent: false,
@@ -32,25 +41,7 @@ export function buildRmdIrmaa(): Plan {
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 350 },
   }
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'none' },
-    qcdAnnual: 15_000,
-    retirementActions: [],
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 0,
-    heirTaxRatePct: 28,
-    safeWithdrawalRatePct: 4,
-  }
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`rmd irmaa invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

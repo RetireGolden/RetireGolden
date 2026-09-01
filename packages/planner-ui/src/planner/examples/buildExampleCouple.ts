@@ -1,15 +1,32 @@
 /** Example couple — the full picture: accounts, SS, Roth strategy, insurance, scenarios. */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
+import type { Plan } from '@retiregolden/engine/model/plan'
 import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'example-couple'
 
 export function buildExampleCouple(): Plan {
   const meId = exampleEntityId(EXAMPLE_ID, 'alex')
   const partnerId = exampleEntityId(EXAMPLE_ID, 'sam')
-  const plan = createEmptyPlan({ name: 'Example couple', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Example couple',
+    strategies: {
+      rothConversion: {
+        mode: 'fillToTarget',
+        target: 'topOfBracket',
+        targetValue: 22,
+        startYear: EXAMPLE_FIXED_YEAR + 2,
+        endYear: EXAMPLE_FIXED_YEAR + 10,
+      },
+    },
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 5.5,
+      recentAnnualMagi: 225_000,
+    },
+  })
   plan.household = {
     filingStatus: 'marriedFilingJointly',
     hasQualifyingDependent: false,
@@ -65,30 +82,6 @@ export function buildExampleCouple(): Plan {
     ],
     oneTimeGoals: [{ id: exampleEntityId(EXAMPLE_ID, 'remodel'), label: 'Kitchen remodel', year: EXAMPLE_FIXED_YEAR + 3, amount: 45_000 }],
     healthcare: { pre65MonthlyPremiumPerPerson: 950, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 180 },
-  }
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: {
-      mode: 'fillToTarget',
-      target: 'topOfBracket',
-      targetValue: 22,
-      startYear: EXAMPLE_FIXED_YEAR + 2,
-      endYear: EXAMPLE_FIXED_YEAR + 10,
-    },
-    qcdAnnual: 0,
-    retirementActions: [],
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 5.5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 225_000,
-    heirTaxRatePct: 25,
-    safeWithdrawalRatePct: 4,
   }
   plan.scenarios = [
     {

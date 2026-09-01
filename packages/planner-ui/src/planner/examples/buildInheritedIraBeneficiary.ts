@@ -1,16 +1,20 @@
 /** Inherited IRA beneficiary details — contrasts a classified spouse schedule with a legacy account. */
 
-import { createEmptyPlan, parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'inherited-ira-beneficiary'
 
 export function buildInheritedIraBeneficiary(): Plan {
   const spouse = exampleEntityId(EXAMPLE_ID, 'spouse')
-  const plan = createEmptyPlan({
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
     name: 'Inherited IRA beneficiary schedules',
-    now: exampleFixedNow,
-    newId: exampleIdFactory(EXAMPLE_ID),
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 4.5,
+      heirTaxRatePct: 22,
+    },
   })
   plan.household = {
     filingStatus: 'single',
@@ -85,26 +89,7 @@ export function buildInheritedIraBeneficiary(): Plan {
       medicareExtrasMonthlyPerPerson: 200,
     },
   }
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'none' },
-    qcdAnnual: 0,
-    retirementActions: [],
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 4.5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 0,
-    heirTaxRatePct: 22,
-    safeWithdrawalRatePct: 4,
-  }
-
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`inherited IRA beneficiary invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

@@ -8,15 +8,25 @@
  * control's depletion into a plan that lasts to the planning horizon.
  */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'brokerage-bridge-401k'
 
 export function buildBrokerageBridge401k(): Plan {
   const samId = exampleEntityId(EXAMPLE_ID, 'sam')
   const jordanId = exampleEntityId(EXAMPLE_ID, 'jordan')
-  const plan = createEmptyPlan({ name: '401(k) plus brokerage bridge', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: '401(k) plus brokerage bridge',
+    assumptions: {
+      inflationPct: 2.4,
+      healthcareExtraInflationPct: 3.2,
+      recentAnnualMagi: 180_000,
+      heirTaxRatePct: 24,
+      safeWithdrawalRatePct: 3.8,
+    },
+  })
 
   plan.household = {
     filingStatus: 'marriedFilingJointly',
@@ -87,25 +97,6 @@ export function buildBrokerageBridge401k(): Plan {
     healthcare: { pre65MonthlyPremiumPerPerson: 850, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 170 },
   }
 
-  plan.strategies = {
-    withdrawalOrder: { mode: 'sequential' },
-    rothConversion: { mode: 'none' },
-    qcdAnnual: 0,
-    retirementActions: [],
-  }
-
-  plan.assumptions = {
-    inflationPct: 2.4,
-    healthcareExtraInflationPct: 3.2,
-    defaultReturnPct: 6,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 180_000,
-    heirTaxRatePct: 24,
-    safeWithdrawalRatePct: 3.8,
-  }
 
   // Conversion levers stay OFF in the base plan so Compare isolates the
   // savings-location decision alone. This scenario is the honest stress test of

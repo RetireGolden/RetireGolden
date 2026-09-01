@@ -1,11 +1,15 @@
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'salary-growth-escalation'
 
 export function buildSalaryGrowthEscalation(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Salary growth & escalation', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Salary growth & escalation',
+    assumptions: { recentAnnualMagi: 80_000 },
+  })
   plan.household = {
     filingStatus: 'single',
     hasQualifyingDependent: false,
@@ -77,18 +81,6 @@ export function buildSalaryGrowthEscalation(): Plan {
     phases: [],
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 400, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 150 },
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 2,
-    defaultReturnPct: 6,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 80_000,
-    heirTaxRatePct: 25,
-    safeWithdrawalRatePct: 4,
   }
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`salary-growth-escalation invalid: ${parsed.issues.join('; ')}`)

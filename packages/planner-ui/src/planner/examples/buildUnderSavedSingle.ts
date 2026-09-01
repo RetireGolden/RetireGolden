@@ -1,13 +1,22 @@
 /** Under-saved single retiree — spending outpaces savings toward a depletion year. */
 
-import { createEmptyPlan, type Plan } from '@retiregolden/engine/model/plan'
-import { exampleEntityId, exampleFixedNow, exampleIdFactory, parseExamplePlan } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'under-saved-single'
 
 export function buildUnderSavedSingle(): Plan {
   const p1 = exampleEntityId(EXAMPLE_ID, 'p1')
-  const plan = createEmptyPlan({ name: 'Under-saved single retiree', now: exampleFixedNow, newId: exampleIdFactory(EXAMPLE_ID) })
+  const plan = createExamplePlan({
+    exampleId: EXAMPLE_ID,
+    name: 'Under-saved single retiree',
+    assumptions: {
+      healthcareExtraInflationPct: 3,
+      defaultReturnPct: 5,
+      recentAnnualMagi: 35_000,
+      heirTaxRatePct: 22,
+    },
+  })
   plan.household = {
     filingStatus: 'single',
     hasQualifyingDependent: false,
@@ -32,18 +41,6 @@ export function buildUnderSavedSingle(): Plan {
     phases: [],
     oneTimeGoals: [],
     healthcare: { pre65MonthlyPremiumPerPerson: 650, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 200 },
-  }
-  plan.assumptions = {
-    inflationPct: 2.5,
-    healthcareExtraInflationPct: 3,
-    defaultReturnPct: 5,
-    ssCola: { mode: 'matchInflation' },
-    ssHaircut: null,
-    stateEffectiveTaxPct: 0,
-    localIncomeTaxPct: 0,
-    recentAnnualMagi: 35_000,
-    heirTaxRatePct: 22,
-    safeWithdrawalRatePct: 4,
   }
   const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`under-saved single invalid: ${parsed.issues.join('; ')}`)
