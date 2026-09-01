@@ -175,13 +175,13 @@
       "engineSourceTree": "33d9b00d8054b592361e37710c78f99cc01cee65"
     },
     "head": {
-      "sourceObservedAtCommit": "2f05d45109757c81e153ff945e7cf884c16f3cb9",
-      "engineSourceTree": "680276494aa021fd3a48352f2048a926bb1ca2b3"
+      "sourceObservedAtCommit": "2b203471599106fb3caed5fd0bf0529d352e4cfa",
+      "engineSourceTree": "e090f99cccea577223cf19a2a584fef721097ade"
     },
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "a1f3fc656fd2ac7d4f1931265d99e6b8c940326c",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "9e9bb3e4f17254fc85030de77c603cdde119ea4a",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -192,21 +192,21 @@
         "packages/engine/scripts/equivalence/usage.mjs": "0b3b3072c3e716d4bace88f6887a41bdda5d60d1",
         "packages/engine/scripts/typescript-source-resolution.mjs": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a"
       },
-      "specMeasurementSha256": "c5aee7aa84cd631cdb271432e4b2f5b7fb0f283c841ea0f0799839f3972dd283"
+      "specMeasurementSha256": "32297929273f365c5783d9f5dafba16a4be974dc920572cbce52b8c0e778db79"
     },
     "corpus": {
       "name": "blocks",
-      "members": 116,
-      "membersSha256": "f7520e1447b07a1d17ad6e815b28da74e8ccdd2cf9dec29c0fcae2152c362a6b",
-      "entries": 464
+      "members": 118,
+      "membersSha256": "c4081f83c329eac576a75eb6a7ea6224e0fd8b7e73aec920bc810c008868bd9b",
+      "entries": 472
     },
     "capture": {
-      "baseDumpSha256": "64acfa43e366e0cb113f07a009a37b9eed4c7146e08bc7644f301f5c997dc746",
-      "headDumpSha256": "64acfa43e366e0cb113f07a009a37b9eed4c7146e08bc7644f301f5c997dc746",
-      "baseOverallSha256": "ce34b2d27721228081b16a0457b98c1ece2a9f1cf23bcd5126d26a842ba906fb",
-      "headOverallSha256": "ce34b2d27721228081b16a0457b98c1ece2a9f1cf23bcd5126d26a842ba906fb",
+      "baseDumpSha256": "013965585b44eefbf5c80cfe5f38e1ef1b87233bccd9f83348b0a80be9389dd3",
+      "headDumpSha256": "013965585b44eefbf5c80cfe5f38e1ef1b87233bccd9f83348b0a80be9389dd3",
+      "baseOverallSha256": "2f6633e8abc56f036b81491613b84915d035c96e36ed65bcfa95c00c0e421bcc",
+      "headOverallSha256": "2f6633e8abc56f036b81491613b84915d035c96e36ed65bcfa95c00c0e421bcc",
       "entriesMoved": 0,
-      "entriesIdentical": 464,
+      "entriesIdentical": 472,
       "result": "IDENTICAL"
     },
     "reach": {
