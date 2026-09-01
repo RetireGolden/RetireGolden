@@ -53,19 +53,30 @@ pnpm + Corepack. Run `corepack enable` before the first `pnpm` command.
   PR, and merge the stack from the bottom up. Follow-up work for an open PR
   stays on that PR's branch.
 - Opening or updating a PR starts the automated code-review action. Wait for it
-  to finish, inspect its findings, and follow the `/needful` skill to triage and
-  address them. Commit and push valid fixes to the same PR branch; the review
-  action will run again for the new commit. Repeat until the newest review
-  reports **Verdict:** `clean`.
+  to finish, inspect its findings, and invoke the `/needful` skill when it is
+  available. Otherwise apply the same procedure: fix valid findings, reply to
+  incorrect ones with evidence, and resolve only fixed threads. Commit and push
+  valid fixes to the same PR branch. After each push, require a completed review
+  whose reported commit equals the PR's current head SHA and whose result from
+  the reusable pinned in `.github/workflows/openrouter-code-review.yml` is
+  **Verdict:** `clean`. A skipped verification or a carried-forward verdict for
+  an older SHA is insufficient; dispatch the review workflow for the PR when a
+  push does not produce a review of the current head.
 - In this repo, add the exact `run-ci` label only after the PR has a clean
-  review. Watch the gated CI pipelines to completion and fix any failures. A
-  later fix invalidates the prior result: require both a clean review of the
-  latest commit and green CI for the latest commit before merging.
+  review. Require the label-gated jobs to have actually run (not skipped) for
+  the current head SHA, and watch them plus all required ungated checks, such as
+  Semgrep and the resolve gate when applicable, to completion. A later fix
+  invalidates the prior result: require both a clean review and all expected
+  non-CLA checks to be present and successful for the latest commit before
+  merging.
 - Merge completed PRs with `gh pr merge --squash --admin`. For a stacked PR,
-  after its parent merges, rebase or retarget the child onto the updated base
-  and repeat the review and `run-ci` validation before merging it. The admin
-  override may bypass the agent-authored CLA restriction; never use it to skip
-  a pending or failing review or CI check.
+  after its parent is squash-merged, rebase the child's unique commits onto the
+  updated base (or recreate them there); merely retargeting the PR is not
+  sufficient. Push the rewritten child head and repeat the latest-SHA review
+  and `run-ci` validation before merging it. Nathan has granted standing merge
+  authorization for this workflow. The admin override is solely for bypassing
+  an agent-authored CLA restriction; never use it to bypass an absent, skipped,
+  pending, or failing review, security, or CI check.
 - No publish, release, or tag unless the user asked for that activation step.
 - Never add `cursoragent` to the CLA allowlist. Do not modify
   `.github/workflows/cla.yml` to allowlist shared Cursor accounts.
