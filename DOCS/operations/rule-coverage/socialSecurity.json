@@ -18,6 +18,7 @@
       "dueOn": "2026-12-01",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/disability.ts"
       ],
@@ -32,11 +33,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -150,7 +160,7 @@
       "title": "The nine-service-month trial work period preserves SSDI",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "The companion fixture assigns the same 20,281-dollar 2026 total either to a first January service month or to a ninth December service month after entitlement, leaving the other eleven months at zero in each case. Both are still protected trial-work months, so the authority-side annual benefit remains 24,000 dollars on a 2,000-dollar PIA. The annual Plan makes those distinct monthly cases identical and simulate.ts treats both as annual SGA, returning a suspended annual benefit. The opposite monthly concentration can make an annual total look harmless while an SGA month is payable differently, and replacement-spending taxation depends on its funding source; neither tax direction is one-sided.",
+      "conventionRationale": "The companion fixture assigns the same 20,281-dollar 2026 total either to a first January service month or to a ninth December service month after entitlement, leaving the other eleven months at zero in each case. Both are still protected trial-work months, so the authority-side annual benefit remains 24,000 dollars on a 2,000-dollar PIA. The annual Plan makes those distinct monthly cases identical and annualSocialSecurity.ts treats both as annual SGA, returning a suspended annual benefit. The opposite monthly concentration can make an annual total look harmless while an SGA month is payable differently, and replacement-spending taxation depends on its funding source; neither tax direction is one-sided.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -160,6 +170,7 @@
       "dueOn": "2026-12-25",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/disability.ts"
       ],
@@ -174,11 +185,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -226,7 +246,7 @@
       "title": "The 36-month extended period of eligibility tests SGA by month",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "The companion fixtures use the same expressible 20,281-dollar annual wage total after trial work has ended. When it is earned in January alone, January and the next two months are payable under the grace rule and payment restarts from April, for a 24,000-dollar annual benefit on a 2,000-dollar PIA. When it is spread at more than monthly SGA across all twelve months, only the three grace months are payable, for 6,000 dollars. simulate.ts cannot distinguish the two monthly histories and produces its whole-year SGA suspension for both. The taxpayer-tax direction changes with the monthly pattern and with the account used to fill any spending shortfall.",
+      "conventionRationale": "The companion fixtures use the same expressible 20,281-dollar annual wage total after trial work has ended. When it is earned in January alone, January and the next two months are payable under the grace rule and payment restarts from April, for a 24,000-dollar annual benefit on a 2,000-dollar PIA. When it is spread at more than monthly SGA across all twelve months, only the three grace months are payable, for 6,000 dollars. annualSocialSecurity.ts cannot distinguish the two monthly histories and produces its whole-year SGA suspension for both. The taxpayer-tax direction changes with the monthly pattern and with the account used to fill any spending shortfall.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -236,6 +256,7 @@
       "dueOn": "2026-12-25",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/disability.ts"
       ],
@@ -250,11 +271,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -409,9 +439,19 @@
       "verifiedOn": "2026-08-26",
       "dueOn": "2027-08-26",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/socialSecurity/survivorBenefit.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
           "functions": [
@@ -517,7 +557,7 @@
       "title": "The grace-year monthly earnings test preserves non-service-month benefits",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. simulate.ts applies its annual earnings test to the emitted annual wage amount. The companion fixture gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year's benefit. That collapse of one engine input against both limbs is the approximation.",
+      "conventionRationale": "The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. annualSocialSecurity.ts applies its annual earnings test to the emitted annual wage amount. The companion fixture gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year's benefit. That collapse of one engine input against both limbs is the approximation.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -527,6 +567,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -544,11 +585,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         }
@@ -892,7 +942,7 @@
       "title": "WEP and GPO are repealed for title II monthly benefits after December 2023",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, or projection/simulate.ts — consistent with those trigger facts being unrepresentable for any startYear.",
+      "conventionRationale": "Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, projection/internal/annualSocialSecurity.ts, or projection/simulate.ts — consistent with those trigger facts being unrepresentable for any startYear.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1005,7 +1055,7 @@
       "title": "ARF credits every full or partial work-deduction month",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "The annualized convention is explicit in simulate.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year's payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion fixture withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine's annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.",
+      "conventionRationale": "The annualized convention is explicit in annualSocialSecurity.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year's payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion fixture withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine's annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1014,16 +1064,26 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/claimFactor.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -1196,16 +1256,26 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/claimFactor.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -1248,7 +1318,7 @@
       "title": "An SSDI spouse auxiliary is one-half PIA before the disability-family reduction",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "The disability limb of section 402(c)(1) quoted on this record lets a husband qualify on a worker entitled to disability insurance benefits without waiting for that worker to claim old-age benefits. simulate.ts nevertheless calculates `higherPayableMonths` from the worker stream's 62–70 `claimAge`, even though the SSDI branch disregards it for the worker payment. Section 425(a) also makes the worker's disability-benefit suspension suspend auxiliaries on that wage record, while the generic post-top-up SGA pass zeros only the worker. Benefit errors can affect taxable Social Security or trigger a taxable, tax-free, or gain-bearing replacement withdrawal, so the taxpayer-tax sign varies.",
+      "conventionRationale": "The disability limb of section 402(c)(1) quoted on this record lets a husband qualify on a worker entitled to disability insurance benefits without waiting for that worker to claim old-age benefits. annualSocialSecurity.ts nevertheless calculates `higherPayableMonths` from the worker stream's 62–70 `claimAge`, even though the SSDI branch disregards it for the worker payment. Section 425(a) also makes the worker's disability-benefit suspension suspend auxiliaries on that wage record, while the generic post-top-up SGA pass zeros only the worker. Benefit errors can affect taxable Social Security or trigger a taxable, tax-free, or gain-bearing replacement withdrawal, so the taxpayer-tax sign varies.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1257,16 +1327,26 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/familyMaximum.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -1676,15 +1756,25 @@
       "verifiedOn": "2026-08-26",
       "dueOn": "2027-08-26",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         }
@@ -1829,6 +1919,7 @@
       "dueOn": "2027-08-26",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1842,11 +1933,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         }
@@ -1899,7 +1999,7 @@
       "title": "Survivor benefits are exempt from deemed filing, but a whole-plan survivor/own switch is not representable",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. simulate.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.",
+      "conventionRationale": "model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. annualSocialSecurity.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1909,6 +2009,7 @@
       "dueOn": "2027-08-26",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -1922,11 +2023,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         }
@@ -2102,16 +2212,26 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/familyMaximum.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -2158,7 +2278,7 @@
       "title": "Excess earnings are charged to calendar months, not annual benefit fractions",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: simulate.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year's 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable — reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).",
+      "conventionRationale": "The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: annualSocialSecurity.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year's 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable — reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2167,15 +2287,25 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         }
@@ -2219,6 +2349,7 @@
       "dueOn": "2026-12-02",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2232,11 +2363,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         }
@@ -2285,6 +2425,7 @@
       "dueOn": "2026-12-01",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2298,11 +2439,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         }
@@ -2424,7 +2574,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -2501,7 +2651,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -2730,6 +2880,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -2743,11 +2894,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         }
@@ -2800,16 +2960,26 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/disability.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -2882,16 +3052,26 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/disability.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 66
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 758
+              "line": 733
             }
           ]
         },
@@ -2939,7 +3119,7 @@
       "title": "Disabled-worker Medicare continuation after trial work is not modeled",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "This is an input and result boundary. socialSecurityIncomeSchema carries only disability.onsetAge, and disability.ts/simulate.ts use it to price an annual SSDI stream; neither accepts a trial-work ending date, subsequent termination, continuing impairment, counterfactual inability to engage in substantial gainful activity, or Part A coverage. A generic healthcare expense cannot turn those absent facts into an entitlement interval. The 78-month cap and the substituted 15-month rule are quoted exactly; no CMS guidance establishing the queue's 93-month formulation was staged.",
+      "conventionRationale": "This is an input and result boundary. socialSecurityIncomeSchema carries only disability.onsetAge, and disability.ts/annualSocialSecurity.ts use it to price an annual SSDI stream; neither accepts a trial-work ending date, subsequent termination, continuing impairment, counterfactual inability to engage in substantial gainful activity, or Part A coverage. A generic healthcare expense cannot turn those absent facts into an entitlement interval. The 78-month cap and the substituted 15-month rule are quoted exactly; no CMS guidance establishing the queue's 93-month formulation was staged.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",

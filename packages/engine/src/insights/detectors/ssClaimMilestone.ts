@@ -1,10 +1,12 @@
 import type { Detector, InsightCard } from '../types.js'
 import type { FormerSpouse, Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
+import { annualSocialSecurityPayableMonths } from '../../projection/internal/annualSocialSecurity.js'
 import { claimFactor, spousalBenefitFactor } from '../../socialSecurity/claimFactor.js'
 import { capAuxiliaryForFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
+import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
@@ -40,9 +42,7 @@ function resolveOwnPiaMonthly(
 ): number | null {
   if (streamIncome.piaMonthly !== null) return streamIncome.piaMonthly
   if (!streamIncome.earnings || streamIncome.earnings.length === 0) return null
-  const y = Number(claimant.dob.slice(0, 4))
-  const m = Number(claimant.dob.slice(5, 7))
-  const d = Number(claimant.dob.slice(8, 10))
+  const { y, m, d } = socialSecurityDobParts(claimant)
   const projection = resolveEarningsProjection(
     streamIncome.earningsProjection,
     claimant.retirementAge,
@@ -55,25 +55,11 @@ function resolveOwnPiaMonthly(
 }
 
 /**
- * Annual-ledger payable months in a year at `ageAttained` given `claimAge`
- * (same rule as simulatePlan): claim year truncates to months after the claim
- * month; later years pay all 12.
- */
-function payableMonthsAtAge(
-  ageAttained: number,
-  claimAge: { years: number; months: number },
-): number {
-  if (ageAttained < claimAge.years) return 0
-  if (ageAttained > claimAge.years) return 12
-  return Math.max(0, 12 - claimAge.months)
-}
-
-/**
  * Sum of the claimant's own annual SS benefits at `ageAttained` — same
- * accumulation as simulatePlan's `ssOwnByPerson` before a former-spouse benefit
- * can replace them. Each resolved stream contributes (SSDI full-PIA × 12, or
+ * accumulation as the `ssOwnByPerson` map in annualSocialSecurity.ts before a
+ * former-spouse benefit can replace them. Each resolved stream contributes (SSDI full-PIA × 12, or
  * retirement pia × claimFactor × payableMonths). Unresolved streams (null PIA
- * and no usable earnings) are skipped, matching the sim's resolved-PIA gate.
+ * and no usable earnings) are skipped, matching that helper's resolved-PIA gate.
  *
  * Returns null when no stream yields a usable own PIA — caller cannot prove a
  * prior-year marital win over own (same enabling-event fallback as a single
@@ -85,9 +71,7 @@ function resolveOwnAnnualSum(
   claimant: HouseholdPerson,
   ageAttained: number,
 ): number | null {
-  const birthYear = Number(claimant.dob.slice(0, 4))
-  const birthMonth = Number(claimant.dob.slice(5, 7))
-  const birthDay = Number(claimant.dob.slice(8, 10))
+  const { y: birthYear, m: birthMonth, d: birthDay } = socialSecurityDobParts(claimant)
   const personFraYears = fraForBirthYear(
     effectiveBirthYear(birthYear, birthMonth, birthDay),
   ).years
@@ -111,7 +95,7 @@ function resolveOwnAnnualSum(
       continue
     }
 
-    const months = payableMonthsAtAge(ageAttained, stream.claimAge)
+    const months = annualSocialSecurityPayableMonths(ageAttained, stream.claimAge)
     if (months <= 0) continue
     const factor = claimFactor(birthYear, birthMonth, birthDay, stream.claimAge)
     sum += pia * factor * months
@@ -121,8 +105,8 @@ function resolveOwnAnnualSum(
 
 /**
  * Sum of the person's own monthly SS rates at `ageAttained` — same accumulation
- * as simulatePlan's `ssActualMonthlyByPerson` (pre-former / pre-spousal). Used
- * for current-spouse top-up excess and family-maximum worker actual.
+ * as the `ssActualMonthlyByPerson` map in annualSocialSecurity.ts (pre-former /
+ * pre-spousal). Used for current-spouse top-up excess and family-maximum worker actual.
  */
 function resolveOwnMonthlyRate(
   plan: Plan,
@@ -130,9 +114,7 @@ function resolveOwnMonthlyRate(
   person: HouseholdPerson,
   ageAttained: number,
 ): number | null {
-  const birthYear = Number(person.dob.slice(0, 4))
-  const birthMonth = Number(person.dob.slice(5, 7))
-  const birthDay = Number(person.dob.slice(8, 10))
+  const { y: birthYear, m: birthMonth, d: birthDay } = socialSecurityDobParts(person)
   const personFraYears = fraForBirthYear(
     effectiveBirthYear(birthYear, birthMonth, birthDay),
   ).years
@@ -155,16 +137,16 @@ function resolveOwnMonthlyRate(
       continue
     }
 
-    if (payableMonthsAtAge(ageAttained, stream.claimAge) <= 0) continue
+    if (annualSocialSecurityPayableMonths(ageAttained, stream.claimAge) <= 0) continue
     sum += pia * claimFactor(birthYear, birthMonth, birthDay, stream.claimAge)
   }
   return anyResolved ? sum : null
 }
 
 /**
- * Current-spouse spousal total annual the sim would assign the claimant in the
- * prior year (lower-earner top-up, family-max capped) — 0 when not eligible.
- * Mirrors simulatePlan's current-spouse pass after the former-spouse menu.
+ * Current-spouse spousal total annual that annualSocialSecurity.ts would assign
+ * the claimant in the prior year (lower-earner top-up, family-max capped) — 0
+ * when not eligible. Mirrors its current-spouse pass after the former-spouse menu.
  */
 function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   plan: Plan
@@ -188,8 +170,11 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   const coPia = resolveOwnPiaMonthly(coStream, coPerson)
   if (claimantPia === null || coPia === null) return 0
 
-  const claimantMonths = payableMonthsAtAge(claimantAgePrior, claimantStream.claimAge)
-  const coMonths = payableMonthsAtAge(coPersonAgePrior, coStream.claimAge)
+  const claimantMonths = annualSocialSecurityPayableMonths(
+    claimantAgePrior,
+    claimantStream.claimAge,
+  )
+  const coMonths = annualSocialSecurityPayableMonths(coPersonAgePrior, coStream.claimAge)
   const spousalMonths = Math.min(claimantMonths, coMonths)
   if (spousalMonths <= 0) return 0
 
@@ -210,15 +195,17 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     age: claimantAgePrior,
   }
 
+  const lowerDobParts = socialSecurityDobParts(lower.person)
   const lowerDob = {
-    year: Number(lower.person.dob.slice(0, 4)),
-    month: Number(lower.person.dob.slice(5, 7)),
-    day: Number(lower.person.dob.slice(8, 10)),
+    year: lowerDobParts.y,
+    month: lowerDobParts.m,
+    day: lowerDobParts.d,
   }
+  const higherDobParts = socialSecurityDobParts(higher.person)
   const higherDob = {
-    year: Number(higher.person.dob.slice(0, 4)),
-    month: Number(higher.person.dob.slice(5, 7)),
-    day: Number(higher.person.dob.slice(8, 10)),
+    year: higherDobParts.y,
+    month: higherDobParts.m,
+    day: higherDobParts.d,
   }
   const rawSpousalMonthly =
     0.5 *
@@ -243,11 +230,11 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
 /**
  * True when a former-spouse marital benefit was the *actual* paying source in
  * the year before the horizon start — the same sequential highest-wins gate
- * the sim uses (own → former menu → current-spouse top-up).
+ * used by annualSocialSecurity.ts (own → former menu → current-spouse top-up).
  *
  * Former-spouse records may be split across multiple SS streams for the same
- * claimant. The sim walks every stream's formers against the rolling
- * `ssOwnByPerson` sum; this gate mirrors that by taking the best prior-year
+ * claimant. annualSocialSecurity.ts walks every stream's formers against the
+ * rolling `ssOwnByPerson` sum; this gate mirrors that by taking the best prior-year
  * former annual across ALL of the claimant's streams (each priced on that
  * stream's claim age / payable months) and comparing it to competing sources.
  *
@@ -293,17 +280,18 @@ function formerSpouseWonOverOwnPriorYear(args: {
   const claimant = plan.household.people.find((row) => row.id === personId)
   if (claimant === undefined) return false
 
+  const claimantDobParts = socialSecurityDobParts(claimant)
   const claimantDob = {
-    year: Number(claimant.dob.slice(0, 4)),
-    month: Number(claimant.dob.slice(5, 7)),
-    day: Number(claimant.dob.slice(8, 10)),
+    year: claimantDobParts.y,
+    month: claimantDobParts.m,
+    day: claimantDobParts.d,
   }
   const priorYear = startYear - 1
   const claimantAgePrior = projectedAge - 1
 
-  // Mirror simulatePlan's former-spouse pass: each stream's formers are priced
+  // Mirror the former-spouse pass in annualSocialSecurity.ts: each stream's formers are priced
   // only when that stream has positive payable months in the year (claim age
-  // reached — same payableMonthsAtAge gate as the sim before bestMaritalBenefit).
+  // reached — the same shared annual payable-month gate before bestMaritalBenefit).
   // An age-eligible former on a stream that had not begun paying enables nothing.
   let anyEligibleFormer = false
   let bestFormerAnnual = 0
@@ -313,7 +301,10 @@ function formerSpouseWonOverOwnPriorYear(args: {
       (former) => former.relationship === formerRelationship,
     )
     if (formers.length === 0) continue
-    const formerPayableMonths = payableMonthsAtAge(claimantAgePrior, stream.claimAge)
+    const formerPayableMonths = annualSocialSecurityPayableMonths(
+      claimantAgePrior,
+      stream.claimAge,
+    )
     if (formerPayableMonths <= 0) continue
     const bestPrior = bestMaritalBenefit(formers, {
       claimantDob,
@@ -473,9 +464,9 @@ function streamPublishedSsdiThrough(
 }
 
 /**
- * Last *resolved* socialSecurity income for a person — matches sim
- * `ssStreamByPerson` last-wins precedence (unresolved streams with no PIA
- * resolution are skipped, same as simulatePlan's resolved-PIA gate) and the
+ * Last *resolved* socialSecurity income for a person — matches the
+ * `ssStreamByPerson` last-wins precedence in annualSocialSecurity.ts (unresolved
+ * streams with no PIA resolution are skipped by its resolved-PIA gate) and the
  * published `isSpousalSurvivorGateStream` marker. Plan-order last among
  * resolved only: a trailing unresolved sibling (null PIA / no usable earnings)
  * must not displace the resolved gate/winner stream used for prior-year
@@ -487,8 +478,8 @@ function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityInco
   let last: SocialSecurityIncome | undefined
   for (const candidate of plan.incomes) {
     if (candidate.type !== 'socialSecurity' || candidate.personId !== personId) continue
-    // Skip unresolved (no published PIA resolution) — sim never writes them
-    // into ssStreamByPerson for spousal/survivor gating.
+    // Skip unresolved (no published PIA resolution) — annualSocialSecurity.ts
+    // never writes them into ssStreamByPerson for spousal/survivor gating.
     if (resolveOwnPiaMonthly(candidate, person) === null) continue
     last = candidate
   }
@@ -673,8 +664,8 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     // Former-spouse spousal (single household): pre-horizon only when a living
     // former spouse was eligible under bestMaritalBenefit *and* that benefit
     // actually displaced the claimant's summed own benefit before start — the
-    // same "larger of own vs marital" rule the sim uses when publishing the
-    // auxiliary (ssOwnByPerson sums ALL resolved streams; formers may be split
+    // same "larger of own vs marital" rule that annualSocialSecurity.ts uses
+    // when publishing the auxiliary (ssOwnByPerson sums ALL resolved streams; formers may be split
     // across streams). Mere eligibility of a low-PIA ex is not already-paying
     // when the published start-year spousal row first appears because a second
     // ex turns 62 at start. First eligibility year at start (e.g. ex turns 62
@@ -781,9 +772,7 @@ export const ssClaimMilestone: Detector = {
       // same stream can still fire (zero-PIA retirement / SSDI auxiliary path).
       // Calendar birth year for ageAttained alignment with simulatePlan;
       // FRA uses effectiveBirthYear (Jan-1 rule) exactly as the sim does.
-      const birthYear = Number(person.dob.slice(0, 4))
-      const birthMonth = Number(person.dob.slice(5, 7))
-      const birthDay = Number(person.dob.slice(8, 10))
+      const { y: birthYear, m: birthMonth, d: birthDay } = socialSecurityDobParts(person)
       const personFraYears = fraForBirthYear(
         effectiveBirthYear(birthYear, birthMonth, birthDay),
       ).years
@@ -1030,10 +1019,10 @@ export const ssClaimMilestone: Detector = {
           `(attained age ${ageAtFirstPayableYear}). The modeled benefit amount depends on the claim age — confirm it against the Social Security analysis before filing.`
 
       // Partial-year wording only when the filing actually truncates months in
-      // the first payable year (payableMonthsAtAge < 12). Pre-horizon filers
+      // the first payable year (annualSocialSecurityPayableMonths < 12). Pre-horizon filers
       // receiving all 12 months in an auxiliary first-benefit year must not
       // carry the "partial when claim months > 0" qualifier.
-      const firstYearPayableMonths = payableMonthsAtAge(
+      const firstYearPayableMonths = annualSocialSecurityPayableMonths(
         ageAtFirstPayableYear,
         income.claimAge,
       )

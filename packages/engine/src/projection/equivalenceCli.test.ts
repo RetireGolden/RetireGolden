@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   UsageError,
+  assertReachEntryAnchors,
   assertReachSpecSchema,
   modesFromFlag,
 } from '../../scripts/equivalence/usage.mjs'
@@ -28,5 +29,27 @@ describe('equivalence CLI: operator-input failures', () => {
     expect(() =>
       assertReachSpecSchema({ schema: 'retiregolden.equivalence-reach-spec/1' }, 'spec.json'),
     ).not.toThrow()
+  })
+
+  it('reach refuses a positional range when an exact content anchor drifts', () => {
+    const entries = [{
+      id: 'phase',
+      file: 'phase.ts',
+      lines: [2, 4] as [number, number],
+      anchors: [
+        { line: 2, text: 'const phase = () => {' },
+        { line: 3, text: 'return 1' },
+      ],
+    }]
+    expect(() => assertReachEntryAnchors(
+      entries,
+      'spec.json',
+      () => ['header', 'const phase = () => {', 'return 1', '}'].join('\n'),
+    )).not.toThrow()
+    expect(() => assertReachEntryAnchors(
+      entries,
+      'spec.json',
+      () => ['inserted', 'header', 'const phase = () => {', 'return 1', '}'].join('\n'),
+    )).toThrow(/spec\.json entry "phase" is stale at phase\.ts:2/u)
   })
 })

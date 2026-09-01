@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 285,
+    "totalFiles": 287,
     "byStatus": {
-      "partial": 42,
+      "partial": 43,
       "registered": 92,
-      "rule-free": 151,
+      "rule-free": 152,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -227,6 +227,11 @@
       "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
     },
     {
+      "path": "projection/internal/annualSocialSecurity.ts",
+      "sweptOn": "2026-08-31",
+      "note": "the annual Social Security phase moved out of simulatePlan and is linked to genuine rule records covering the retirement earnings test and its annual month-credit proxies, current-spouse/deemed-filing and survivor dual-entitlement behavior, deceased-worker DRC pass-through, and the modeled SSDI amount, timing, family-maximum, spouse-auxiliary, work-window, and SGA surfaces. The registry is the mechanical inventory; this note deliberately does not duplicate its changing count. Residual rule-bearing behavior is the former-spouse eligibility delegated to socialSecurity/maritalBenefits.ts: the 10-year divorced-spouse marriage, 9-month survivor marriage, claimant/former-spouse age gates, and remarriage forfeiture still have no rule records. Per-stream publication and application of the caller-resolved Plan COLA and haircut factors are rule-free plumbing"
+    },
+    {
       "path": "projection/optimizePlan.ts",
       "sweptOn": "2026-08-27",
       "note": "Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered"
@@ -248,8 +253,8 @@
     },
     {
       "path": "projection/simulate.ts",
-      "sweptOn": "2026-08-26",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit, spousal/survivor SS"
+      "sweptOn": "2026-08-31",
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -389,9 +394,9 @@
     },
     {
       "directory": "projection",
-      "files": 52,
+      "files": 53,
       "byStatus": {
-        "partial": 7,
+        "partial": 8,
         "registered": 6,
         "rule-free": 39
       }
@@ -428,10 +433,11 @@
     },
     {
       "directory": "socialSecurity",
-      "files": 9,
+      "files": 10,
       "byStatus": {
         "partial": 2,
-        "registered": 7
+        "registered": 7,
+        "rule-free": 1
       }
     },
     {

@@ -24,3 +24,39 @@ export function assertReachSpecSchema(spec, path) {
     throw new UsageError(`${path} is not a ${REACH_SPEC_SCHEMA} spec (found "${spec.schema}")`)
   }
 }
+
+/**
+ * Refuse positional reach ranges whose checked source text has drifted. Specs
+ * may carry multiple exact, trimmed line anchors per entry so insertions above
+ * a range and edits inside it fail before coverage is collected.
+ *
+ * @param {readonly object[]} entries resolved reach entries
+ * @param {string} path operator-facing spec path
+ * @param {(file: string) => string} readSource injected for CLI tests
+ */
+export function assertReachEntryAnchors(entries, path, readSource) {
+  for (const entry of entries) {
+    if (!Array.isArray(entry.anchors) || entry.anchors.length === 0) continue
+    const rows = readSource(entry.file).split('\n')
+    for (const anchor of entry.anchors) {
+      const line = anchor?.line
+      const text = anchor?.text
+      if (!Number.isInteger(line) || typeof text !== 'string' || text.trim() === '') {
+        throw new UsageError(`${path} entry "${entry.id}" has an invalid content anchor`)
+      }
+      if (line < entry.lines[0] || line > entry.lines[1]) {
+        throw new UsageError(
+          `${path} entry "${entry.id}" anchor line ${line} is outside ` +
+          `its ${entry.lines[0]}-${entry.lines[1]} range`,
+        )
+      }
+      const actual = rows[line - 1]?.trim()
+      if (actual !== text) {
+        throw new UsageError(
+          `${path} entry "${entry.id}" is stale at ${entry.file}:${line}: ` +
+          `expected ${JSON.stringify(text)}, found ${JSON.stringify(actual ?? '(missing line)')}`,
+        )
+      }
+    }
+  }
+}

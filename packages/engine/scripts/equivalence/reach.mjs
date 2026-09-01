@@ -57,7 +57,7 @@ import { readFileSync } from 'node:fs'
 import { Session } from 'node:inspector/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-/** @typedef {{ id: string, label: string, file: string, lines: [number, number] }} SpecEntry */
+/** @typedef {{ id: string, label: string, file: string, lines: [number, number], anchors?: readonly {line: number, text: string}[] }} SpecEntry */
 
 /** Labels wrapped in parentheses are bookkeeping, not corpus members. */
 const isMemberLabel = (label) => !label.startsWith('(')
