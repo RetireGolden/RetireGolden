@@ -14,7 +14,7 @@
       "id": "A.callsite",
       "label": "annual lifestyle helper invocation and result consumption",
       "file": "projection/simulate.ts",
-      "lines": [3012, 3031]
+      "lines": [3008, 3027]
     },
     {
       "id": "B.helper",
@@ -27,7 +27,7 @@
       "id": "B.callsite",
       "label": "ordered insurance-premium fold and publication",
       "file": "projection/simulate.ts",
-      "lines": [3351, 3358]
+      "lines": [3347, 3354]
     },
     {
       "id": "C.helper",
@@ -40,7 +40,7 @@
       "id": "C.callsite",
       "label": "ordered property-cost fold and publication",
       "file": "projection/simulate.ts",
-      "lines": [3429, 3438]
+      "lines": [3425, 3434]
     },
     {
       "id": "D.helper",
@@ -53,7 +53,7 @@
       "id": "D.callsite",
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/simulate.ts",
-      "lines": [3617, 3647]
+      "lines": [3613, 3643]
     },
     {
       "id": "E.helper",
@@ -66,7 +66,7 @@
       "id": "E.callsite",
       "label": "SEPP operation application and effect publication",
       "file": "projection/simulate.ts",
-      "lines": [4880, 4943],
+      "lines": [4876, 4939],
       "note": "The corpus reaches cache writes and distributions, ordered balance mutation, runtime occurrence/application publication, annual cash-flow indexing, and deferred Form 8606 character. Any optional-chain or compound-condition gaps reported by JavaScript coverage are cold sub-line regions rather than cold whole lines."
     }
   ],
