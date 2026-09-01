@@ -1,8 +1,8 @@
 /**
- * Design-QA chrome pins (#418, #419, #423, #431). Pin the CSS, not a jsdom
- * visual: the plan-name input truncates with an ellipsis, the survivor table
- * has a column floor so headers wrap on word boundaries, and the content-page
- * back link and the full-span field hook exist for the pages that use them.
+ * Design-QA chrome pins (#418, #419, #423, #431, #436, #437, #438, #441). Pin
+ * the CSS, not a jsdom visual: jsdom computes no layout, so the defects these
+ * cover — a clipped focus ring, a mid-word clip, a header row that wraps —
+ * are only observable in the stylesheet.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url'
 
 const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
 const learnCss: string = readFileSync(fileURLToPath(new URL('../learn/learn.css', import.meta.url)), 'utf8')
+const indexCss: string = readFileSync(fileURLToPath(new URL('../index.css', import.meta.url)), 'utf8')
 
 function ruleBodyAt(source: string, start: number, selector: string): string {
   expect(start, `rule ${selector} present`).toBeGreaterThanOrEqual(0)
@@ -88,5 +89,58 @@ describe('Design-QA chrome pins', () => {
 
   it('article source links wrap inside the measure (#418)', () => {
     expect(rule('.learn-sources a', learnCss)).toMatch(/overflow-wrap:\s*anywhere/)
+  })
+})
+
+describe('Design-QA chrome pins: theme and focus tokens', () => {
+  it('the theme switcher does not clip its segment focus rings (#436)', () => {
+    const switcher = rule('.theme-switcher', indexCss)
+    // Any clipping overflow would cut the ring; only visible (the default) is allowed.
+    expect(switcher).not.toMatch(/overflow(-x|-y)?:\s*(hidden|clip|auto|scroll)/)
+    expect(switcher).toMatch(/border-radius:\s*999px/)
+    // The end segments carry the pill shape instead of the container clipping it.
+    expect(rule('.theme-switcher-button:first-child', indexCss)).toMatch(/border-radius:\s*999px 0 0 999px/)
+    expect(rule('.theme-switcher-button:last-child', indexCss)).toMatch(/border-radius:\s*0 999px 999px 0/)
+    // The ring itself is unchanged: the app-wide 2px gold signature, which is
+    // what the removed clip was cutting into a sliver.
+    const sharedFocus = rule(
+      '.nav-link:focus-visible,\n.brand:focus-visible,\n.theme-switcher-button:focus-visible',
+      indexCss,
+    )
+    expect(sharedFocus).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(sharedFocus).toMatch(/outline-offset:\s*2px/)
+  })
+
+  it('the plan breadcrumb link uses the shared focus ring, not the UA default (#437)', () => {
+    const body = rule('.workspace-breadcrumb a:focus-visible')
+    expect(body).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(body).toMatch(/outline-offset:\s*2px/)
+  })
+
+  it('empty states are a bounded well; an element that is itself a card keeps card chrome (#438)', () => {
+    const body = rule('.empty-state')
+    expect(body).toMatch(/border:\s*1px dashed var\(--border\)/)
+    expect(body).toMatch(/border-radius:\s*var\(--radius\)/)
+    expect(body).toMatch(/background:\s*color-mix/)
+    // An element that is itself a card keeps its card chrome (#463 review).
+    const cardEmpty = rule('.card.empty-state')
+    expect(cardEmpty).toMatch(/border:\s*1px solid var\(--border\)/)
+    expect(cardEmpty).toMatch(/background:\s*var\(--surface-1\)/)
+  })
+
+  it('disabled buttons use the flat token treatment, not opacity on a live fill (#441)', () => {
+    const body = rule('.btn:disabled', indexCss)
+    // Explicitly opaque: no dimming value, and nothing left for a UA sheet to fade.
+    expect(body).not.toMatch(/opacity:\s*0?\.\d/)
+    expect(body).toMatch(/opacity:\s*1\b/)
+    expect(body).toMatch(/background:\s*var\(--surface-2\)/)
+    expect(body).toMatch(/color:\s*var\(--muted\)/)
+    expect(body).toMatch(/cursor:\s*not-allowed/)
+    // Ghost buttons have no fill to composite against and keep the faded
+    // treatment the plan-card Delete pin (#312) relies on.
+    const ghost = rule('.btn-ghost:disabled,\n.btn.btn-ghost:disabled')
+    expect(ghost).toMatch(/opacity:\s*0\.45/)
+    // A ghost that also carries .btn must not pick up the filled treatment.
+    expect(ghost).toMatch(/background:\s*transparent/)
   })
 })
