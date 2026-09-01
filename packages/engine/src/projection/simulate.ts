@@ -2480,8 +2480,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       peopleStates,
       primaryPersonId: primary.id,
       lifeAgeOf,
-      pack,
-      year,
+      pack, year,
+      recordCashFlow: yearSites !== null,
       opening: {
         annuityIncome: incomes.annuity,
         pensionIncome: incomes.pension,
@@ -2502,7 +2502,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const qualifiedAnnuityPayments = pensionAndAnnuity.qualifiedAnnuityPayments
     for (const row of pensionAndAnnuity.rows) {
       if (row.kind === 'pension') {
-        yearSites?.recordPension(row.record)
+        if (row.record !== null) yearSites?.recordPension(row.record)
         continue
       }
       if (row.exclusionStateWrite !== null) {

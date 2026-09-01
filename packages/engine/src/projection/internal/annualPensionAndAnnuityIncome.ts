@@ -61,7 +61,7 @@ export interface AnnualQualifiedAnnuityContractDistribution {
 export type AnnualPensionAndAnnuityIncomeRow =
   | Readonly<{
       kind: 'pension'
-      record: AnnualPensionCashFlowRecord
+      record: AnnualPensionCashFlowRecord | null
     }>
   | Readonly<{
       kind: 'annuity'
@@ -85,6 +85,7 @@ export interface AnnualPensionAndAnnuityIncomeInput {
   readonly lifeAgeOf: (person: Readonly<Person>) => number
   readonly pack: Readonly<ParameterPack>
   readonly year: number
+  readonly recordCashFlow: boolean
   readonly opening: Readonly<{
     annuityIncome: number
     pensionIncome: number
@@ -126,6 +127,8 @@ export function annualPensionAndAnnuityIncome(
   let publicPensionOrdinary = input.opening.publicPensionOrdinary
   const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []
   const rows: AnnualPensionAndAnnuityIncomeRow[] = []
+  // These private shadows preserve ordered duplicate-account consumption even
+  // when cash-flow capture is off; caller-owned map values remain untouched.
   const exclusionState = new Map(
     [...input.annuityExclusionState].map(([accountId, state]) => [
       accountId,
@@ -138,6 +141,8 @@ export function annualPensionAndAnnuityIncome(
 
   for (const account of input.accounts) {
     if (account.type !== 'pension' && account.type !== 'annuity') continue
+    // A commuted pension pays only until its election year; the election-year
+    // offer is handled separately as a rollover.
     if (
       account.type === 'pension' &&
       account.lumpSumElection &&
@@ -152,6 +157,8 @@ export function annualPensionAndAnnuityIncome(
     const ownerState = stateOf(ownerId)
     const startCalendarYear = dobYear(owner) + account.startAge
     if (input.year < startCalendarYear) continue
+    // A purchase year is a separate gate from attained start age: no contract
+    // can pay before its premium has been funded.
     if (
       account.type === 'annuity' &&
       account.purchase &&
@@ -187,12 +194,14 @@ export function annualPensionAndAnnuityIncome(
       else privateRetirementOrdinary += amount
       rows.push({
         kind: 'pension',
-        record: {
-          accountId: account.id,
-          payeePersonId,
-          amount,
-          source,
-        },
+        record: input.recordCashFlow
+          ? {
+              accountId: account.id,
+              payeePersonId,
+              amount,
+              source,
+            }
+          : null,
       })
       continue
     }
@@ -227,6 +236,8 @@ export function annualPensionAndAnnuityIncome(
           fundingOwnerPersonId,
         })
       }
+      // IRC 408(d)(2)(B) and Pub. 590-B put the full payment on line 7 here;
+      // the annual settlement later subtracts its aggregate Form 8606 basis.
       annuityTaxable = paid
       const contractValueBefore = contractValues.get(account.id)
       const poolOwnerPersonId = input.annuityContractPoolOwner.get(account.id)
@@ -237,6 +248,8 @@ export function annualPensionAndAnnuityIncome(
       ) {
         const kind = 'annuityContractDistribution' as const
         const producerOccurrenceKey = JSON.stringify([kind, account.id])
+        // Line 7 keeps the whole payment while the line-6 contract channel can
+        // debit only its remaining value and therefore floors at zero.
         const applied = Math.min(paid, contractValueBefore)
         const contractValueAfter = contractValueBefore - applied
         contractValues.set(account.id, contractValueAfter)
@@ -305,7 +318,7 @@ export function annualPensionAndAnnuityIncome(
     rows.push({
       kind: 'annuity',
       accountId: account.id,
-      record: recipientPersonId === undefined
+      record: !input.recordCashFlow || recipientPersonId === undefined
         ? null
         : {
             accountId: account.id,

@@ -58,7 +58,7 @@
  * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`,
  * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`,
  * `scripts/equivalence/specs/simulate-owner-rmd.json`,
- * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`, and
+ * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`,
  * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`, and
  * `scripts/equivalence/specs/simulate-pension-annuity-income-boundary.json`
  * are the
@@ -4365,7 +4365,10 @@ function blockZ() {
     // The payment start age is already reached, but the purchase is still a
     // year away. This distinguishes the purchase-date guard from the earlier
     // start-calendar guard; both must remain separate none paths.
-    const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 75 })
+    const plan = singlePersonPlan({
+      dob: `${START_YEAR - 56}-01-01`,
+      planningAge: 75,
+    })
     plan.accounts = [
       cash('z1-cash', 100),
       purchasedAnnuity('z1-future-purchase', 'z1-cash', 50, {

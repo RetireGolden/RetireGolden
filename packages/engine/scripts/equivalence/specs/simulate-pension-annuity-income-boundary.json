@@ -9,19 +9,19 @@
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
         122,
-        165
+        172
       ],
       "anchors": [
         {
-          "line": 127,
+          "line": 128,
           "text": "const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []"
         },
         {
-          "line": 139,
+          "line": 142,
           "text": "for (const account of input.accounts) {"
         },
         {
-          "line": 153,
+          "line": 158,
           "text": "const startCalendarYear = dobYear(owner) + account.startAge"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "living/survivor pension selection and ordered state-tax folds",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        167,
-        195
+        174,
+        207
       ],
       "anchors": [
         {
-          "line": 167,
+          "line": 174,
           "text": "if (account.type === 'pension') {"
         },
         {
-          "line": 183,
+          "line": 190,
           "text": "pensionIncome += amount"
         },
         {
-          "line": 188,
+          "line": 195,
           "text": "rows.push({"
         }
       ]
@@ -54,24 +54,24 @@
       "label": "payout form, tax character, exclusion carry and qualified contract-debit plans",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        197,
-        308
+        209,
+        318
       ],
       "anchors": [
         {
-          "line": 203,
+          "line": 212,
           "text": "const paidFraction = annuityPayoutFraction(annuityPayoutForm(account), {"
         },
         {
-          "line": 221,
+          "line": 230,
           "text": "if (account.purchase?.taxQualification === 'qualified') {"
         },
         {
-          "line": 270,
+          "line": 283,
           "text": "} else if (account.purchase) {"
         },
         {
-          "line": 305,
+          "line": 318,
           "text": "rows.push({"
         }
       ]
@@ -81,20 +81,20 @@
       "label": "annuity cash-flow record and ordered commit-row publication",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        310,
-        322
+        318,
+        335
       ],
       "anchors": [
         {
-          "line": 310,
+          "line": 323,
           "text": ": {"
         },
         {
-          "line": 316,
+          "line": 329,
           "text": "account.purchase?.taxQualification === 'qualified',"
         },
         {
-          "line": 322,
+          "line": 335,
           "text": "})"
         }
       ]
@@ -104,16 +104,16 @@
       "label": "explicit final folds, publications and ordered commit rows",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        325,
-        334
+        338,
+        347
       ],
       "anchors": [
         {
-          "line": 325,
+          "line": 338,
           "text": "return {"
         },
         {
-          "line": 332,
+          "line": 345,
           "text": "rows,"
         }
       ]
@@ -150,5 +150,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The defensive null-record arm at line 309 is deliberately outside the measured ranges: every positive payout has either its living owner or an alive survivor recipient under annuityPayoutFraction's anyAlive gate. Direct coordinator tests pin the hand-worked Pub 939 result and input-map purity; the hostile delegation test separately proves exact output selection, commit-row consumption, object identity across years, runtime journaling and cash-flow forwarding."
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The record-null arm is measured in capture-disabled modes; its recipient-undefined alternative remains defensive because every positive payout has either its living owner or an alive survivor recipient under annuityPayoutFraction's anyAlive gate. Direct coordinator tests pin the hand-worked Pub 939 result, full qualified-payment income character, capture-gated record construction and input-map purity; the hostile delegation test separately proves exact output selection, commit-row consumption, object identity across years, runtime journaling and cash-flow forwarding."
 }

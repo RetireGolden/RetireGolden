@@ -84,6 +84,7 @@ function annualInput(
     lifeAgeOf: (person) => person.longevity.planningAge,
     pack: packForYear(2026).pack,
     year: 2026,
+    recordCashFlow: true,
     opening: {
       annuityIncome: 0,
       pensionIncome: 0,
@@ -185,6 +186,12 @@ describe('annualPensionAndAnnuityIncome', () => {
       annuityContractPoolOwner: new Map([['annuity', pat.id]]),
     })
 
+    // IRC 408(d)(2)(B) puts the full $10,000 payment into current ordinary
+    // income here even though the contract-value channel can debit only $5,000;
+    // the annual settlement applies any Form 8606 basis later.
+    expect(result.annuityIncome).toBe(10_000)
+    expect(result.ordinaryIncome).toBe(10_000)
+    expect(result.privateRetirementOrdinary).toBe(10_000)
     expect(result.qualifiedAnnuityPayments).toEqual([{
       annuityAccountId: 'annuity',
       payment: 10_000,
@@ -212,5 +219,22 @@ describe('annualPensionAndAnnuityIncome', () => {
       },
     }))
     expect(contractValues.get('annuity')).toBe(5_000)
+  })
+
+  it('omits cash-flow records when capture is disabled without omitting effects', () => {
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput([
+        pension('private-pension', 1_000, 'private'),
+        annuity('qualified'),
+      ]),
+      recordCashFlow: false,
+      annuityContractPoolOwner: new Map([['annuity', pat.id]]),
+    })
+
+    expect(result.pensionIncome).toBe(12_000)
+    expect(result.annuityIncome).toBe(10_000)
+    expect(result.ordinaryIncome).toBe(22_000)
+    expect(result.rows.map((row) => row.record)).toEqual([null, null])
+    expect(result.qualifiedAnnuityPayments).toHaveLength(1)
   })
 })
