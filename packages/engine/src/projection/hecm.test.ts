@@ -356,7 +356,7 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
       growthRatePct: 0,
       upfrontCostPct: 0,
       drawPolicy: 'lastResort',
-    }, 100_000)
+    }, 100_000) as Extract<Account, { type: 'property' }>
     plan.accounts = [
       {
         type: 'taxable',
