@@ -30,8 +30,8 @@ vi.mock('../../actions/index.js', async (importOriginal) => {
     executeOrdinaryWithdrawals: (
       input: Parameters<typeof original.executeOrdinaryWithdrawals>[0],
     ) => {
-      if (!seam.active) return original.executeOrdinaryWithdrawals(input)
       seam.executorInputs.push(input)
+      if (!seam.active) return original.executeOrdinaryWithdrawals(input)
       const execution = seam.executions.shift()
       if (execution === undefined) throw new Error('missing synthetic execution')
       return execution
@@ -120,15 +120,18 @@ function state(
 function withdrawal(
   id: string,
   accountIds: readonly string[],
+  perAllocationCents = 100,
 ): OrdinaryWithdrawalRequest {
-  const perAllocation = asPositiveUsdCents(100)
+  const perAllocation = asPositiveUsdCents(perAllocationCents)
   return {
     actionId: asActionId(id),
     kind: 'ordinaryWithdrawal',
     personId: asPersonId('p1'),
     year: YEAR,
     executionSequence: 1,
-    requestedAmount: asPositiveUsdCents(accountIds.length * 100),
+    requestedAmount: asPositiveUsdCents(
+      accountIds.length * perAllocationCents,
+    ),
     allocations: accountIds.map((accountId, index) => ({
       allocationId: asAllocationId(`${id}-${index}`),
       sourceAccountId: asAccountId(accountId),
@@ -378,6 +381,42 @@ describe('annualOrdinaryWithdrawalBoundary — retry', () => {
       'd-safe',
     ])
   })
+
+  it('retains an exact opening balance when only its independently assessed taxable basis is unsafe', () => {
+    // Exact-cent worksheet: a three-cent sale from $100 with
+    // $90,071,992,547,409.90 of opening basis leaves exact closing basis cents
+    // that cannot round-trip through a Plan number. The balance remains a
+    // separate, exactly representable fact, so the retry must retain it while
+    // withholding only the independently rejected basis snapshot.
+    const account = taxable(
+      'basis-only',
+      100,
+      90_071_992_547_409.9,
+    )
+    const plan = singlePersonPlan() as Plan
+    plan.accounts = [account]
+    const request = withdrawal('basis-only-sale', ['basis-only'], 3)
+
+    const result = annualOrdinaryWithdrawalBoundary(input({
+      plan,
+      ordinaryActions: [request],
+      executionRequests: [request],
+      balances: [state(account)],
+    }))
+
+    expect(seam.executorInputs).toHaveLength(2)
+    const first = seam.executorInputs[0] as ExecuteOrdinaryWithdrawalsInput
+    const retry = seam.executorInputs[1] as ExecuteOrdinaryWithdrawalsInput
+    expect(first.openingBalances).toEqual([{
+      accountId: 'basis-only',
+      openingBalance: 10_000,
+    }])
+    expect(first.taxableAccountSnapshots).toHaveLength(1)
+    expect(retry.openingBalances).toEqual(first.openingBalances)
+    expect(retry.taxableAccountSnapshots).toEqual([])
+    expect(result.execution?.committed).toBe(true)
+    expect(result.balanceOperations).toEqual([{ kind: 'none' }])
+  })
 })
 
 describe('annualOrdinaryWithdrawalBoundary — commit operations', () => {
@@ -440,6 +479,49 @@ describe('annualOrdinaryWithdrawalBoundary — commit operations', () => {
       balance: entry.balance,
       costBasis: entry.costBasis,
     }))).toEqual(before)
+  })
+
+  it('clamps underwater and floating-point full-liquidation equity basis', () => {
+    const final = execution({
+      committed: true,
+      balances: [
+        {
+          accountId: asAccountId('underwater'),
+          openingBalance: asUsdCents(10_000),
+          closingBalance: asUsdCents(5_000),
+        },
+        {
+          accountId: asAccountId('fully-liquidated'),
+          openingBalance: asUsdCents(14),
+          closingBalance: asUsdCents(0),
+        },
+      ],
+      taxableBases: [],
+    })
+    useSynthetic([final], [boundary()])
+
+    const result = annualOrdinaryWithdrawalBoundary(input({
+      balances: [
+        state(equity('underwater', 100, 120), 100, 120),
+        // 0.11 - 0.14 * (0.11 / 0.14) is a tiny negative IEEE-754 value.
+        state(equity('fully-liquidated', 0.14, 0.11), 0.14, 0.11),
+      ],
+    }))
+
+    expect(result.balanceOperations).toEqual([
+      {
+        kind: 'write',
+        accountId: 'underwater',
+        closingBalance: 50,
+        closingCostBasis: 70,
+      },
+      {
+        kind: 'write',
+        accountId: 'fully-liquidated',
+        closingBalance: 0,
+        closingCostBasis: 0,
+      },
+    ])
   })
 
   it('throws when a committed taxable balance loses its paired basis', () => {
