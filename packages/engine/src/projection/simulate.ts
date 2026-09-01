@@ -9012,6 +9012,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     for (const operation of withdrawalApplyFlowPlan.balanceOperations) {
       const state = balances[operation.balanceIndex]
+      // Planning and commit are intentionally adjacent. Fail before applying a
+      // stale operation if a future change breaks that state-identity boundary.
       if (
         state === undefined ||
         state.account.id !== operation.accountId ||

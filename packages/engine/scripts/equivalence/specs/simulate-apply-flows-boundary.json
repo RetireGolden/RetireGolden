@@ -104,58 +104,59 @@
       "id": "W.callsite.balanceSelect",
       "label": "balance-operation iteration and positional lookup",
       "file": "projection/simulate.ts",
-      "lines": [9062, 9064],
+      "lines": [9062, 9066],
       "anchors": [
         { "line": 9062, "text": "for (const operation of withdrawalApplyFlowPlan.balanceOperations) {" },
         { "line": 9063, "text": "const state = balances[operation.balanceIndex]" },
-        { "line": 9064, "text": "if (" }
+        { "line": 9064, "text": "// Planning and commit are intentionally adjacent. Fail before applying a" },
+        { "line": 9066, "text": "if (" }
       ],
-      "note": "The position/source-before guard and throw on lines 9065-9072 are excluded because the helper enumerates the same balance positions and advances its repeated-object shadow in original mutation order. Hostile delegation tests cover wrong position and wrong source balance."
+      "note": "The position/source-before guard and throw on lines 9067-9074 are excluded because the helper enumerates the same balance positions and advances its repeated-object shadow in original mutation order. Hostile delegation tests cover wrong position and wrong source balance."
     },
     {
       "id": "W.callsite.runtimeOccurrence",
       "label": "traditional runtime occurrence and owned-IRA application selection",
       "file": "projection/simulate.ts",
-      "lines": [9073, 9101],
+      "lines": [9075, 9103],
       "anchors": [
-        { "line": 9073, "text": "const taken = operation.taken" },
-        { "line": 9083, "text": "if (operation.recordsTraditionalRuntimeOccurrence) {" },
-        { "line": 9088, "text": "recordAnnualRetirementRuntimeOccurrence({" },
-        { "line": 9098, "text": "if (operation.recordsOwnedIraApplication) {" },
-        { "line": 9101, "text": "}" }
+        { "line": 9075, "text": "const taken = operation.taken" },
+        { "line": 9085, "text": "if (operation.recordsTraditionalRuntimeOccurrence) {" },
+        { "line": 9090, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 9100, "text": "if (operation.recordsOwnedIraApplication) {" },
+        { "line": 9103, "text": "}" }
       ]
     },
     {
       "id": "W.callsite.taxableInvariant",
       "label": "taxable-sale completeness check",
       "file": "projection/simulate.ts",
-      "lines": [9102, 9102],
+      "lines": [9104, 9104],
       "anchors": [
-        { "line": 9102, "text": "if (operation.taxableSaleMissing) {" }
+        { "line": 9104, "text": "if (operation.taxableSaleMissing) {" }
       ],
-      "note": "The failure body on line 9103 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
+      "note": "The failure body on line 9105 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
     },
     {
       "id": "W.callsite.apply",
       "label": "basis and balance mutation",
       "file": "projection/simulate.ts",
-      "lines": [9105, 9108],
+      "lines": [9107, 9110],
       "anchors": [
-        { "line": 9105, "text": "if (operation.costBasisAfter !== null) {" },
-        { "line": 9106, "text": "state.costBasis = operation.costBasisAfter" },
-        { "line": 9108, "text": "state.balance = operation.sourceBalanceAfter" }
+        { "line": 9107, "text": "if (operation.costBasisAfter !== null) {" },
+        { "line": 9108, "text": "state.costBasis = operation.costBasisAfter" },
+        { "line": 9110, "text": "state.balance = operation.sourceBalanceAfter" }
       ]
     },
     {
       "id": "W.callsite.application",
       "label": "owned-IRA runtime debit application",
       "file": "projection/simulate.ts",
-      "lines": [9109, 9121],
+      "lines": [9111, 9123],
       "anchors": [
-        { "line": 9109, "text": "if (ownedIraProducerOccurrenceKey !== null) {" },
-        { "line": 9110, "text": "recordAnnualRetirementRuntimeApplication({" },
-        { "line": 9119, "text": "})" },
-        { "line": 9121, "text": "}" }
+        { "line": 9111, "text": "if (ownedIraProducerOccurrenceKey !== null) {" },
+        { "line": 9112, "text": "recordAnnualRetirementRuntimeApplication({" },
+        { "line": 9121, "text": "})" },
+        { "line": 9123, "text": "}" }
       ]
     }
   ],
