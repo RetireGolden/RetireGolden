@@ -7,65 +7,223 @@
       "id": "A.filters",
       "label": "per-entity account indexing and positive verdict filters",
       "file": "projection/internal/publishedEntityFacts.ts",
-      "lines": [56, 101],
-      "note": "The corpus reaches positive owned-Roth, employer-Roth, Form 8606 distribution, and Form 8606 conversion channels. The annuityPayments predicate on line 102 is deliberately excluded: validated projection members do execute qualified annuity payments, but the annual settlement currently publishes no matching assumed-basis effect for them (the existing integration characterization is likewise conditional), so the simulator cannot presently populate a positive annuity-only channel. The pure helper unit test covers that supported structural input."
+      "lines": [
+        56,
+        101
+      ],
+      "note": "The corpus reaches positive owned-Roth, employer-Roth, Form 8606 distribution, and Form 8606 conversion channels. The annuityPayments predicate on line 102 is deliberately excluded: validated projection members do execute qualified annuity payments, but the annual settlement currently publishes no matching assumed-basis effect for them (the existing integration characterization is likewise conditional), so the simulator cannot presently populate a positive annuity-only channel. The pure helper unit test covers that supported structural input.",
+      "anchors": [
+        {
+          "line": 56,
+          "text": "const {"
+        },
+        {
+          "line": 78,
+          "text": ".sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))"
+        },
+        {
+          "line": 101,
+          "text": "channels.conversions > 0 ||"
+        }
+      ]
     },
     {
       "id": "A.rows",
       "label": "per-entity deterministic sorting, row construction, and return",
       "file": "projection/internal/publishedEntityFacts.ts",
-      "lines": [103, 118]
+      "lines": [
+        103,
+        118
+      ],
+      "anchors": [
+        {
+          "line": 103,
+          "text": ")"
+        },
+        {
+          "line": 110,
+          "text": "annuityPayments: channels.annuityPayments,"
+        },
+        {
+          "line": 118,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "B",
       "label": "annual balance snapshot",
       "file": "projection/internal/annualSnapshot.ts",
-      "lines": [68, 113]
+      "lines": [
+        68,
+        113
+      ],
+      "anchors": [
+        {
+          "line": 68,
+          "text": "const {"
+        },
+        {
+          "line": 90,
+          "text": "balanceEntries.push([id, value])"
+        },
+        {
+          "line": 113,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "C",
       "label": "permanent-life annual state transitions",
       "file": "projection/internal/annualPermanentLifeTransitions.ts",
-      "lines": [69, 110],
-      "note": "The corpus reaches the permanent-life kind filter, flat-rate and schedule modes, positive and zero settlement, and post-death zeroing. The missing-insured nullish operands on lines 81-82 are a defensive structural-input contract: Plan validation rejects an insurance subject absent from household.people, so no validated differential member can select those sub-line operands."
+      "lines": [
+        69,
+        110
+      ],
+      "note": "The corpus reaches the permanent-life kind filter, flat-rate and schedule modes, positive and zero settlement, and post-death zeroing. The missing-insured nullish operands on lines 81-82 are a defensive structural-input contract: Plan validation rejects an insurance subject absent from household.people, so no validated differential member can select those sub-line operands.",
+      "anchors": [
+        {
+          "line": 69,
+          "text": "const transitions: AnnualPermanentLifeTransition[] = []"
+        },
+        {
+          "line": 90,
+          "text": "const previousCashValue = cashValueFor(policy.id)"
+        },
+        {
+          "line": 110,
+          "text": "return { transitions, deathBenefitPaid }"
+        }
+      ]
     },
     {
       "id": "C.interpolateSort",
       "label": "permanent-life schedule copy and numeric sort",
       "file": "projection/internal/annualPermanentLifeTransitions.ts",
-      "lines": [52, 52]
+      "lines": [
+        52,
+        52
+      ],
+      "anchors": [
+        {
+          "line": 52,
+          "text": "const sorted = [...schedule].sort((a, b) => a.age - b.age)"
+        }
+      ]
     },
     {
       "id": "C.interpolateClamps",
       "label": "permanent-life schedule lower and upper endpoint clamps",
       "file": "projection/internal/annualPermanentLifeTransitions.ts",
-      "lines": [53, 54]
+      "lines": [
+        53,
+        54
+      ],
+      "anchors": [
+        {
+          "line": 53,
+          "text": "if (age <= sorted[0]!.age) return sorted[0]!.value"
+        },
+        {
+          "line": 54,
+          "text": "if (age >= sorted[sorted.length - 1]!.age) return sorted[sorted.length - 1]!.value"
+        }
+      ]
     },
     {
       "id": "C.interpolateInterior",
       "label": "permanent-life schedule interior interpolation",
       "file": "projection/internal/annualPermanentLifeTransitions.ts",
-      "lines": [55, 62],
-      "note": "Lines 51 (empty schedule) and 63 (mathematical fall-through after a sorted finite schedule) are excluded. Plan validation requires a non-empty schedule, and finite ages plus the endpoint clamps make line 63 unreachable for validated Plan input."
+      "lines": [
+        55,
+        62
+      ],
+      "note": "Lines 51 (empty schedule) and 63 (mathematical fall-through after a sorted finite schedule) are excluded. Plan validation requires a non-empty schedule, and finite ages plus the endpoint clamps make line 63 unreachable for validated Plan input.",
+      "anchors": [
+        {
+          "line": 55,
+          "text": "for (let i = 0; i < sorted.length - 1; i++) {"
+        },
+        {
+          "line": 58,
+          "text": "if (age >= lo.age && age <= hi.age) {"
+        },
+        {
+          "line": 62,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "D",
       "label": "distributed taxable-yield row production",
       "file": "projection/internal/distributedTaxableYieldRows.ts",
-      "lines": [81, 145]
+      "lines": [
+        81,
+        145
+      ],
+      "anchors": [
+        {
+          "line": 81,
+          "text": "const { states, startOfYearBalance, allocationTrack, classParams } = input"
+        },
+        {
+          "line": 114,
+          "text": "const qualified = dividends * Math.min(1, Math.max(0, account.qualifiedRatio ?? blendedYield?.qualifiedRatio ?? 0.85))"
+        },
+        {
+          "line": 145,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "E.select",
       "label": "TIPS purchase selection and funding-account resolution",
       "file": "projection/internal/tipsLadderPurchaseFunding.ts",
-      "lines": [76, 87],
-      "note": "The absent/wrong-year branch and a successful funding-account lookup are both reached. The missing-account body on lines 89-90 is excluded: Plan validation requires every purchase fundingAccountId to resolve to a cash, taxable, or equity-comp account, all of which necessarily appear in balances."
+      "lines": [
+        76,
+        87
+      ],
+      "note": "The absent/wrong-year branch and a successful funding-account lookup are both reached. The missing-account body on lines 89-90 is excluded: Plan validation requires every purchase fundingAccountId to resolve to a cash, taxable, or equity-comp account, all of which necessarily appear in balances.",
+      "anchors": [
+        {
+          "line": 76,
+          "text": "const { ladderStates, balances, year, inflFactor } = input"
+        },
+        {
+          "line": 82,
+          "text": "rows.push({ kind: 'none', ladderIndex })"
+        },
+        {
+          "line": 87,
+          "text": ")"
+        }
+      ]
     },
     {
       "id": "E.purchase",
       "label": "TIPS purchase funding arithmetic and ordered shadow-state update",
       "file": "projection/internal/tipsLadderPurchaseFunding.ts",
-      "lines": [93, 143]
+      "lines": [
+        93,
+        143
+      ],
+      "anchors": [
+        {
+          "line": 93,
+          "text": "const funding = balances[fundingIndex]!"
+        },
+        {
+          "line": 118,
+          "text": "shadow[fundingIndex] = { balance: closingBalance, costBasis: closingCostBasis }"
+        },
+        {
+          "line": 143,
+          "text": "}"
+        }
+      ]
     }
   ],
   "readingTheCounts": "A member count is evidence that some line in the named range executed. The reach command additionally fails on any cold executable line inside that range. JavaScript line coverage cannot distinguish nullish/ternary operands sharing one physical line, so read the reported cold sub-line regions together with the entry notes and focused helper tests rather than treating a green range as branch coverage."

@@ -7,71 +7,248 @@
       "id": "A.replay",
       "label": "protected live subtract/add replay",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [74, 85]
+      "lines": [
+        74,
+        85
+      ],
+      "anchors": [
+        {
+          "line": 74,
+          "text": "const applied: AnnualAggregateRothConversionReservation<TBalance>[] = []"
+        },
+        {
+          "line": 79,
+          "text": "}"
+        },
+        {
+          "line": 85,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "B.shadows",
       "label": "private Plan-order planning shadows and reservation stream",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [165, 172]
+      "lines": [
+        165,
+        172
+      ],
+      "anchors": [
+        {
+          "line": 165,
+          "text": "const planningBalances: PlanningBalance<TBalance>[] = input.balances.map("
+        },
+        {
+          "line": 168,
+          "text": "balance: state.balance,"
+        },
+        {
+          "line": 172,
+          "text": "const reservations: AnnualAggregateRothConversionReservation<TBalance>[] = []"
+        }
+      ]
     },
     {
       "id": "C.reservations",
       "label": "owner-order and reverse Plan-order deferred-RMD reservation",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [174, 200],
-      "note": "T1 reaches both owners, skips nontraditional and other-owner rows, exhausts p1's one-dollar tail, skips its zero-dollar IRA and continues into the earlier source. T2 supplies the cancellation-sensitive reservation. Inherited-account exclusion is pinned by the focused helper suite. The remaining cold nullish owner fallback is a supported structural contract but cannot be selected by corpus data because Plan validation requires every traditional account to name an individual owner."
+      "lines": [
+        174,
+        200
+      ],
+      "note": "T1 reaches both owners, skips nontraditional and other-owner rows, exhausts p1's one-dollar tail, skips its zero-dollar IRA and continues into the earlier source. T2 supplies the cancellation-sensitive reservation. Inherited-account exclusion is pinned by the focused helper suite. The remaining cold nullish owner fallback is a supported structural contract but cannot be selected by corpus data because Plan validation requires every traditional account to name an individual owner.",
+      "anchors": [
+        {
+          "line": 174,
+          "text": "for (const [ownerPersonId, unsatisfiedRmd] of input.iraRmdUnsatisfiedByOwner) {"
+        },
+        {
+          "line": 187,
+          "text": "(account.ownerPersonId ?? input.primaryPersonId) !== ownerPersonId"
+        },
+        {
+          "line": 200,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "D.snapshot-policy",
       "label": "duplicate-id last-write snapshot and shared allocation invocation",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [202, 215]
+      "lines": [
+        202,
+        215
+      ],
+      "anchors": [
+        {
+          "line": 202,
+          "text": "const allocationBalances = Object.freeze("
+        },
+        {
+          "line": 208,
+          "text": "),"
+        },
+        {
+          "line": 215,
+          "text": "})"
+        }
+      ]
     },
     {
       "id": "E.refusal",
       "label": "household allocation refusal return",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [217, 223]
+      "lines": [
+        217,
+        223
+      ],
+      "anchors": [
+        {
+          "line": 217,
+          "text": "if (planningAllocation.status === 'refused') {"
+        },
+        {
+          "line": 220,
+          "text": "allocationBalances,"
+        },
+        {
+          "line": 223,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "F.destinations",
       "label": "allocated destination identity rebound",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [102, 114]
+      "lines": [
+        102,
+        114
+      ],
+      "anchors": [
+        {
+          "line": 102,
+          "text": "const destinationByPlanning = new Map<"
+        },
+        {
+          "line": 108,
+          "text": "ownerPersonId: destination.ownerPersonId,"
+        },
+        {
+          "line": 114,
+          "text": "})"
+        }
+      ]
     },
     {
       "id": "G.destination-lookup",
       "label": "allocation destination lookup",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [115, 119],
-      "note": "The missing-destination throw on line 120 is excluded from Plan-driven reach because it requires an allocator result whose slice or draw destination object is absent from that same result's destination inventory; no validated Plan can select such a graph. The focused helper suite injects exactly that hostile allocation and asserts the throw, while the allocator and delegation suites pin the production inventory and exact rebound identities."
+      "lines": [
+        115,
+        119
+      ],
+      "note": "The missing-destination throw on line 120 is excluded from Plan-driven reach because it requires an allocator result whose slice or draw destination object is absent from that same result's destination inventory; no validated Plan can select such a graph. The focused helper suite injects exactly that hostile allocation and asserts the throw, while the allocator and delegation suites pin the production inventory and exact rebound identities.",
+      "anchors": [
+        {
+          "line": 115,
+          "text": "const destinationFor = ("
+        },
+        {
+          "line": 117,
+          "text": "): AggregateRothConversionDestination<TBalance> => {"
+        },
+        {
+          "line": 119,
+          "text": "if (rebound === undefined) {"
+        }
+      ]
     },
     {
       "id": "H.allocated-return",
       "label": "allocated slices, draws, destinations and target rebound",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [125, 143]
+      "lines": [
+        125,
+        143
+      ],
+      "anchors": [
+        {
+          "line": 125,
+          "text": "return {"
+        },
+        {
+          "line": 134,
+          "text": "ownerPersonId: draw.ownerPersonId,"
+        },
+        {
+          "line": 143,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "I.planner-return",
       "label": "planner return with rebound allocation",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [225, 231]
+      "lines": [
+        225,
+        231
+      ],
+      "anchors": [
+        {
+          "line": 225,
+          "text": "return {"
+        },
+        {
+          "line": 228,
+          "text": "allocation: rebindAnnualAggregateRothConversionAllocation("
+        },
+        {
+          "line": 231,
+          "text": "}"
+        }
+      ]
     },
     {
       "id": "J.callsite",
       "label": "caller invocation, exact snapshot publication and subtract/add replay",
       "file": "projection/simulate.ts",
-      "lines": [7142, 7166],
+      "lines": [
+        7142,
+        7166
+      ],
       "anchors": [
-        { "line": 7142, "text": "// The Plan order this walks in is how the entries are built and not" },
-        { "line": 7147, "text": "aggregateRothConversionAllocationDesired = desired" },
-        { "line": 7148, "text": "const plannedAllocation = annualAggregateRothConversionPlan({" },
-        { "line": 7155, "text": "})" },
-        { "line": 7162, "text": "const allocation = withAnnualAggregateRothConversionReservations(" },
-        { "line": 7165, "text": ")" },
-        { "line": 7166, "text": "if (allocation.status === 'refused') {" }
+        {
+          "line": 7142,
+          "text": "// The Plan order this walks in is how the entries are built and not"
+        },
+        {
+          "line": 7147,
+          "text": "aggregateRothConversionAllocationDesired = desired"
+        },
+        {
+          "line": 7148,
+          "text": "const plannedAllocation = annualAggregateRothConversionPlan({"
+        },
+        {
+          "line": 7155,
+          "text": "})"
+        },
+        {
+          "line": 7162,
+          "text": "const allocation = withAnnualAggregateRothConversionReservations("
+        },
+        {
+          "line": 7165,
+          "text": ")"
+        },
+        {
+          "line": 7166,
+          "text": "if (allocation.status === 'refused') {"
+        }
       ],
       "note": "Re-pinned after the annuity-funding extraction shifted this caller band. Exact anchors cover the Plan-order contract, planner invocation, snapshot publication, protected subtract/add replay and the first allocation-consumption branch."
     }

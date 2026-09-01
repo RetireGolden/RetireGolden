@@ -27,7 +27,7 @@ export function assertReachSpecSchema(spec, path) {
 
 /**
  * Refuse positional reach ranges whose checked source text has drifted. Specs
- * may carry multiple exact, trimmed line anchors per entry so insertions above
+ * must carry multiple exact, trimmed line anchors per entry so insertions above
  * a range and edits inside it fail before coverage is collected.
  *
  * @param {readonly object[]} entries resolved reach entries
@@ -36,7 +36,11 @@ export function assertReachSpecSchema(spec, path) {
  */
 export function assertReachEntryAnchors(entries, path, readSource) {
   for (const entry of entries) {
-    if (!Array.isArray(entry.anchors) || entry.anchors.length === 0) continue
+    if (!Array.isArray(entry.anchors) || entry.anchors.length === 0) {
+      throw new UsageError(
+        `${path} entry "${entry.id}" must anchor its positional source range`,
+      )
+    }
     const rows = readSource(entry.file).split('\n')
     for (const anchor of entry.anchors) {
       const line = anchor?.line

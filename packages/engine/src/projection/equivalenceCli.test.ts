@@ -58,4 +58,11 @@ describe('equivalence CLI: operator-input failures', () => {
     )).toThrow(/spec\.json entry "phase" is stale at phase\.ts:2/u)
   })
 
+  it('reach refuses every unanchored positional source range', () => {
+    expect(() => assertReachEntryAnchors(
+      [{ id: 'phase', file: 'phase.ts', lines: [2, 4] }],
+      'spec.json',
+      () => ['header', 'const phase = () => {', 'return 1', '}'].join('\n'),
+    )).toThrow(/spec\.json entry "phase" must anchor its positional source range/u)
+  })
 })

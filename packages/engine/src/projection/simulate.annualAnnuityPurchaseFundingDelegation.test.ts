@@ -421,12 +421,12 @@ describe('simulatePlan delegates annual annuity-purchase funding', () => {
       startYear: YEAR,
       horizonEndYear: YEAR,
       taxCalculator: createFlatTaxCalculator(0),
-    })).toThrowError('Annuity-purchase funding row lost its position')
+    })).toThrowError('Annuity-purchase funding row lost its Plan position')
   })
 
   it.each([
-    ['missing-row', 'Annuity-purchase funding row lost its position'],
-    ['wrong-funding', 'Annuity-purchase funding row lost its position'],
+    ['missing-row', 'Annuity-purchase funding row count does not match Plan accounts'],
+    ['wrong-funding', 'Annuity-purchase funding row does not resolve its funding account'],
   ] as const)('rejects %s helper output', (mode, message) => {
     seam.mode = mode
     seam.phases.length = 0

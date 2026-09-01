@@ -36,12 +36,12 @@
  * not assumed — so without this tier the differential check would pass on two of
  * the five blocks by never running them. Each member names the branch or hazard
  * it exists to reach in `covers`, and
- * `scripts/equivalence/specs/simulate-batch.json` and
- * `scripts/equivalence/specs/simulate-small-annual-boundaries.json` and
- * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json` and
- * `scripts/equivalence/specs/simulate-social-security-boundary.json` and
- * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json` and
- * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json` and
+ * `scripts/equivalence/specs/simulate-batch.json`,
+ * `scripts/equivalence/specs/simulate-small-annual-boundaries.json`,
+ * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json`,
+ * `scripts/equivalence/specs/simulate-social-security-boundary.json`,
+ * `scripts/equivalence/specs/simulate-ordinary-withdrawal-boundary.json`,
+ * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`, and
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts

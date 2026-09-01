@@ -187,6 +187,8 @@ describe('annualAnnuityPurchaseFunding — exact arithmetic and warnings', () =>
     expect(row.closingCostBasis).toBe(associatedBasis)
   })
 
+  // Treas. Reg. 1.401(a)(9)-6(q)(1)(ii)-(iii) sets the QLAC start boundary;
+  // paragraph (q)(2)(ii) supplies the indexed premium cap exercised here.
   it('emits late-start, cap, and shortfall warnings in original order', () => {
     const account = annuity('qlac', 300, 'fund', {
       startAge: 86,
@@ -211,6 +213,7 @@ describe('annualAnnuityPurchaseFunding — exact arithmetic and warnings', () =>
     ])
   })
 
+  // Treas. Reg. 1.401(a)(9)-6(a)(3)(i) is the non-QLAC start boundary.
   it('uses the primary fallback for the non-QLAC qualified start warning', () => {
     const account = annuity('qualified', 10, 'fund', {
       ownerPersonId: 'missing-owner',

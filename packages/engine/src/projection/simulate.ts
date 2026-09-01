@@ -1768,12 +1768,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       limitGrowth,
     })
     if (annuityPurchaseRows.length !== plan.accounts.length) {
-      throw new Error('Annuity-purchase funding row lost its position')
+      throw new Error('Annuity-purchase funding row count does not match Plan accounts')
     }
     for (let accountIndex = 0; accountIndex < plan.accounts.length; accountIndex++) {
       const row = annuityPurchaseRows[accountIndex]!
       if (row.accountIndex !== accountIndex) {
-        throw new Error('Annuity-purchase funding row lost its position')
+        throw new Error('Annuity-purchase funding row lost its Plan position')
       }
       if (row.kind === 'none') continue
       const account = plan.accounts[accountIndex]
@@ -1784,7 +1784,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         funding === undefined ||
         funding.account.id !== account.purchase.fundingAccountId
       ) {
-        throw new Error('Annuity-purchase funding row lost its position')
+        throw new Error('Annuity-purchase funding row does not resolve its funding account')
       }
       for (const warning of row.warnings) warnings.add(warning)
       const fundingBalanceBefore = funding.balance
