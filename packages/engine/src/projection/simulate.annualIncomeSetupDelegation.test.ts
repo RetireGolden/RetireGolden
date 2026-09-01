@@ -26,7 +26,6 @@ interface PhaseCall {
   readonly inputBalances: readonly Readonly<{
     accountId: string
     balance: number
-    costBasis: number
   }>[]
   readonly natural: AnnualIncomeSetupResult
   readonly returned: AnnualIncomeSetupResult
@@ -65,7 +64,6 @@ vi.mock('./internal/annualIncomeSetup.js', async (importOriginal) => {
         inputBalances: input.distributedYield.states.map((state) => ({
           accountId: state.account.id,
           balance: state.balance,
-          costBasis: state.costBasis,
         })),
         natural,
         returned,
@@ -341,7 +339,6 @@ describe('simulatePlan delegates annual income setup', () => {
     expect(taxableAtSetup).toEqual({
       accountId: 'annuity-yield-source',
       balance: 60_000,
-      costBasis: 30_000,
     })
     expect(
       first.input.distributedYield.startOfYearBalance.get(
