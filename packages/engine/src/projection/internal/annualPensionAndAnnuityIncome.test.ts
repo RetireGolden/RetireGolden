@@ -178,6 +178,27 @@ describe('annualPensionAndAnnuityIncome', () => {
     expect(exclusionState.size).toBe(0)
   })
 
+  it('does not mutate a carried Pub 939 exclusion entry', () => {
+    const carried = { ratio: 0.25, remaining: 8_000 }
+    const exclusionState = new Map([['annuity', carried]])
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput([annuity('nonQualified')]),
+      annuityExclusionState: exclusionState,
+    })
+
+    expect(result.annuityIncome).toBeCloseTo(10_000, 9)
+    expect(result.ordinaryIncome).toBeCloseTo(7_500, 9)
+    expect(result.rows[0]).toEqual(expect.objectContaining({
+      kind: 'annuity',
+      exclusionStateWrite: {
+        accountId: 'annuity',
+        value: { ratio: 0.25, remaining: 5_500 },
+      },
+    }))
+    expect(exclusionState.get('annuity')).toBe(carried)
+    expect(carried).toEqual({ ratio: 0.25, remaining: 8_000 })
+  })
+
   it('returns a qualified-contract debit and publication without mutating contract state', () => {
     const contractValues = new Map([['annuity', 5_000]])
     const result = annualPensionAndAnnuityIncome({

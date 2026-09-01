@@ -43,10 +43,11 @@ and after-tax estate.
 annuity products; estate/inheritance tax, probate, trusts, and legal-planning precision are out of scope.
 
 **Code:** schema in [engine/model/plan.ts](../../../packages/engine/src/model/plan.ts) (`annuityPurchaseSchema`,
-`estateBeneficiarySchema`, `heirTaxByClass`, `survivorReserveTarget`); purchase execution and QLAC
-RMD-base exclusion in [engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts),
-annual exclusion-ratio and qualified-payment planning in
-[engine/projection/internal/annualPensionAndAnnuityIncome.ts](../../../packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts), and
-[engine/rmd/](../../../packages/engine/src/rmd/); after-tax estate depth in
+`estateBeneficiarySchema`, `heirTaxByClass`, `survivorReserveTarget`); purchase execution in
+[engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts); QLAC RMD-base exclusion
+in `simulate.ts` and [engine/rmd/](../../../packages/engine/src/rmd/); annual exclusion-ratio and
+qualified-payment planning in
+[engine/projection/internal/annualPensionAndAnnuityIncome.ts](../../../packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts);
+after-tax estate depth in
 [engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts); candidates in
 [engine/decisions/generators.ts](../../../packages/engine/src/decisions/generators.ts).
