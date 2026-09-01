@@ -33,7 +33,7 @@ in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with 
 
 ```
 app/
-├── package.json          deps + scripts; engines: node >= 24
+├── package.json          deps + scripts; engines: node >=24
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
 ├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, sitemap generator, license notices)

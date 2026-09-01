@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 // Vite raw/glob imports keep this test inside the browser-typed src tree.
 import codeMap from '../../DOCS/code-map.md?raw'
 import architecture from '../../DOCS/architecture.md?raw'
+import standards from '../../DOCS/standards.md?raw'
 import tipsIncomeFloor from '../../DOCS/domain/domain-rules-reference/18-tips-income-floor-ladders-the-ss-bridge.md?raw'
 import planFileFormat from '../../DOCS/features/plan-file-format.md?raw'
 import planningRecord from '../../DOCS/features/planning-record.md?raw'
@@ -19,6 +20,8 @@ import enginePackageJson from '../../packages/engine/package.json?raw'
 import plannerUiPackageJson from '../../packages/planner-ui/package.json?raw'
 import repoPackageJson from '../../package.json?raw'
 import fedInvestClient from '../../packages/planner-ui/src/data/fedInvestClient.ts?raw'
+import incomeFloorSection from '../../packages/planner-ui/src/planner/sections/IncomeFloorSection.tsx?raw'
+import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
 import { V2_BACKUP_VERSION } from '@retiregolden/planner-ui/data/v2Backup'
 import { COMPLETE_EXPORT_FORMAT_VERSION } from '../../packages/planner-ui/src/data/completeExport'
 import { CURRENT_PLAN_SCHEMA_VERSION } from '@retiregolden/engine/model/plan'
@@ -31,10 +34,7 @@ const nodeFloor = (JSON.parse(repoPackageJson) as { engines: { node: string } })
 const packageNodeFloors = [appPackageJson, enginePackageJson, plannerUiPackageJson].map(
   (manifest) => (JSON.parse(manifest) as { engines: { node: string } }).engines.node,
 )
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
+const ciNodeVersion = swaWorkflow.match(/node-version: '(\d+)'/)?.[1]
 
 describe('docs consistency', () => {
   it('code-map.md states the current Learning Center article count', () => {
@@ -62,18 +62,26 @@ describe('docs consistency', () => {
     )
   })
 
-  it('code-map.md states the repository Node.js floor', () => {
-    expect(codeMap).toMatch(new RegExp(`Node\\.js[^\\n]*${escapeRegExp(nodeFloor)}`))
-    expect(readme).toMatch(new RegExp(`Node[^\\n]*${escapeRegExp(nodeFloor)}`))
-    expect(engineReadme).toMatch(new RegExp(`Node[^\\n]*${escapeRegExp(nodeFloor)}`))
+  it('documentation states the repository Node.js floor and CI version', () => {
+    expect(ciNodeVersion).toBeDefined()
+    expect(nodeFloor).toBe(`>=${ciNodeVersion}`)
+    expect(codeMap).toContain(`Node.js ${nodeFloor}`)
+    expect(codeMap).toContain(`engines: node ${nodeFloor}`)
+    expect(readme).toContain(`Node **${ciNodeVersion}** in CI`)
+    expect(engineReadme).toContain(`Node ${nodeFloor}`)
     expect(packageNodeFloors).toEqual([nodeFloor, nodeFloor, nodeFloor])
+    for (const doc of [codeMap, readme, engineReadme]) {
+      expect(doc).not.toMatch(/\bNode\s*(?:≥|>=)\s*(?:20|22)\b/)
+    }
   })
 
   it('architecture.md assigns opt-in FedInvest IO to the planner client', () => {
-    for (const doc of [architecture, codeMap, tipsIncomeFloor]) {
+    for (const doc of [architecture, codeMap, standards, tipsIncomeFloor]) {
       expect(doc).toContain('planner-ui/src/data/fedInvestClient.ts')
     }
     expect(fedInvestClient).toMatch(/export\s+async\s+function\s+fetchFedInvestTips/)
+    expect(incomeFloorSection).toMatch(/from '\.\.\/\.\.\/data\/fedInvestClient'/)
+    expect(incomeFloorSection).toMatch(/fetchFedInvestTips\(\)/)
   })
 
   it('planning-record.md states the current complete-export format version', () => {
