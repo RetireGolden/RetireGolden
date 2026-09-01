@@ -33,13 +33,6 @@
   text-align: left;
 }
 
-/* The shared empty state is centered for in-page sections, but on the picker
-   landing page it should sit on the same left edge as the heading and cards. */
-.picker-page .empty-state {
-  text-align: left;
-  padding: 2rem 0 1.5rem;
-}
-
 /* --- planner home redesign ----------------------------------------------- */
 
 .home-hero {
