@@ -1,7 +1,6 @@
 /**
- * `@retiregolden/engine/schema` — the versioned JSON Schema for the Plan
- * document, for consumers that need the plan format as data rather than as
- * TypeScript types.
+ * `@retiregolden/engine/schema` — the legacy compatibility barrel for the
+ * versioned JSON Schemas for the Plan document.
  *
  * The intended consumer is the RetireGolden MCP's `describe_plan_schema` tool:
  * an AI client fetches this schema to learn how to author a valid plan from a
@@ -9,24 +8,28 @@
  * slices subtrees itself); `PLAN_SCHEMA_VERSION` stamps which plan version it
  * describes.
  *
- * This barrel is intentionally ZOD-FREE: every export resolves to either the
- * checked-in generated constant (a plain object literal) or the zod-free
- * `./planSchemaMeta.js` metadata, so importing it pulls in neither zod nor the
- * plan model. The zod-backed generator is deliberately NOT re-exported here — it
- * lives at `@retiregolden/engine/schema/generate` (and dist/schema/generate.js
- * for the build script). Read `planJsonSchema` as a constant here, or read the
- * same bytes offline from the shipped `schema/plan.v5.json` file in the package
- * root.
+ * This barrel remains ZOD-FREE, but preserving its historical named exports
+ * means importing it evaluates every generated schema module. New consumers
+ * should import the common-case constant and metadata from
+ * `@retiregolden/engine/schema/current`, or one historical schema from the
+ * explicit `@retiregolden/engine/schema/v1` through `/v5` entry points. The
+ * zod-backed generator remains isolated at
+ * `@retiregolden/engine/schema/generate`.
+ *
+ * This entry is documented as legacy rather than carrying a TypeScript
+ * `@deprecated` tag: TypeScript cannot deprecate a module specifier without
+ * ambiguously marking the still-current metadata exports below. This
+ * compatibility barrel will not be removed before a semver-major release.
  */
 export {
   PLAN_SCHEMA_ID,
   PLAN_SCHEMA_VERSION,
   PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS,
   type JsonSchemaDocument,
-} from './planSchemaMeta.js'
+} from './current.js'
 
 export { planJsonSchema as planV1JsonSchema } from './plan.v1.generated.js'
 export { planJsonSchema as planV2JsonSchema } from './plan.v2.generated.js'
 export { planJsonSchema as planV3JsonSchema } from './plan.v3.generated.js'
 export { planJsonSchema as planV4JsonSchema } from './plan.v4.generated.js'
-export { planJsonSchema } from './plan.v5.generated.js'
+export { planJsonSchema } from './current.js'

@@ -62,7 +62,7 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 | Folder (`src/`) | What's here |
 |--------|-------------|
 | `model/` | `plan.ts` (Zod `Plan` schema, `CURRENT_PLAN_SCHEMA_VERSION`), `migrations.ts` |
-| `schema/` | Generated JSON Schema per plan version (`plan.v1..v4.generated.ts`), `generate.ts`, `planSchemaMeta.ts` |
+| `schema/` | Plan JSON Schema package surfaces: lightweight current entry (`current.ts`), legacy compatibility barrel (`index.ts`), explicit generated versions (`plan.v1..v5.generated.ts`), generator (`generate.ts`), and metadata (`planSchemaMeta.ts`) |
 | `rules/` | `records/` (one typed frozen record per statutory rule, in per-domain modules), `taxRuleRegistry.ts` (the types, the spread-composed frozen registry, and the re-verification helpers), `describeRule.ts` (the fixture helper that requires a `produced` reading for an `approximated` record), the conformance and quote-fidelity suites, and `approximations/` |
 | `actions/` | Identity-bearing retirement actions: the request contract (`contract.ts`), exact-cent money/identity/structural-ID primitives, the three executors the ledger calls (`execution.ts`, `rothConversionExecution.ts`, `annualQcdExecution.ts`), the conversion-linked funding group, the owned-IRA / beneficiary / SEPP / employer-plan evidence boundaries, and `reasons.ts` (the typed refusal registry) |
 | `internal/` | Not part of the package's public API: the bounded annual-attempt driver, the T0 counterfactual liability run, and the owned-IRA runtime source-series / replay / settlement chain the simulator runs after each attempt |

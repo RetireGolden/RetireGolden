@@ -12,9 +12,9 @@ export { CURRENT_PLAN_SCHEMA_VERSION, planSchema, type Plan } from './model/plan
 // also available on its own at `@retiregolden/engine/version`.
 export { ENGINE_VERSION } from './version.js'
 // The derived Plan JSON Schema is intentionally NOT re-exported here: it lives
-// only on the `@retiregolden/engine/schema` subpath so importing this minimal
-// root (simulatePlan, planSchema) never eagerly evaluates the ~130 KB generated
-// schema constant. @see ./schema/index.ts
+// only on the `@retiregolden/engine/schema/current` subpath so importing this
+// minimal root (simulatePlan, planSchema) never eagerly evaluates the generated
+// schema constant. @see ./schema/current.ts
 export { migratePlanToCurrent, type MigrateResult, type PlanLoadRepair } from './model/migrations.js'
 export { simulatePlan, type SimulateOptions } from './projection/simulate.js'
 export type { ProjectionResult, YearResult } from './projection/types.js'

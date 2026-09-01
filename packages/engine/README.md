@@ -108,13 +108,28 @@ shipped both as a constant and as a static file, so a non-TypeScript consumer ca
 learn the plan format:
 
 ```ts
-import { planJsonSchema, PLAN_SCHEMA_VERSION } from '@retiregolden/engine/schema'
+import { planJsonSchema, PLAN_SCHEMA_VERSION } from '@retiregolden/engine/schema/current'
 ```
 
-This subpath is **zod-free** — it resolves only to the generated constant and
-plain metadata, so importing it pulls in neither zod nor the plan model. The same
-bytes ship as `@retiregolden/engine/schema/plan.v5.json` for offline, no-import
-reads; the historical v1/v2/v3/v4 artifacts remain available at their versioned subpaths.
+This current-only subpath is **zod-free** and resolves only to the current
+generated constant and plain metadata. Importing it pulls in neither zod, the
+plan model, nor any historical generated schema module. The same bytes ship as
+`@retiregolden/engine/schema/plan.v5.json` for offline, no-import reads.
+
+Historical schemas have explicit module and JSON entry points:
+
+```ts
+import { planJsonSchema as planV4JsonSchema } from '@retiregolden/engine/schema/v4'
+```
+
+The module subpaths are `schema/v1` through `schema/v5`; the static artifacts
+are `schema/plan.v1.json` through `schema/plan.v5.json`. Existing named imports
+from `@retiregolden/engine/schema` remain compatible, including
+`planV1JsonSchema` through `planV4JsonSchema`, but that legacy barrel necessarily
+loads every historical generated module. New code should use `schema/current`
+or one explicit version. The legacy barrel will not be removed before a
+semver-major release.
+
 The schema describes the plan's *structure*; it is necessary but not
 sufficient — cross-field rules (id references, funding rules, allocation weights
 summing to 100%, …) live only in `parsePlan`, which stays the full validator.
@@ -147,7 +162,7 @@ supported runtime API.
 | Subpath | Contents |
 |---------|----------|
 | `model/` | Plan schema (Zod), types, migrations |
-| `schema/` | Derived, versioned JSON Schema for the `Plan` document (`planJsonSchema`, `PLAN_SCHEMA_VERSION`) + shipped current `schema/plan.v5.json` and historical v1/v2/v3/v4 artifacts |
+| `schema/` | Derived, versioned JSON Schema for the `Plan` document: lightweight `schema/current`, explicit `schema/v1`…`schema/v5` modules, legacy-compatible `schema`, and static `schema/plan.v1.json`…`plan.v5.json` artifacts |
 | `params/` | Annual parameter packs (tax brackets, limits, RMD, Medicare, SS, state) + typed accessors |
 | `tax/` | Federal + state tax engine, ACA credit, Medicare/IRMAA |
 | `rmd/` | Required minimum distributions (SECURE 2.0) |

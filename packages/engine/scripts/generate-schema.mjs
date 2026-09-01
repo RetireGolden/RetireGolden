@@ -28,11 +28,16 @@ const pkgDir = resolve(scriptDir, '..')
 
 // Bump this in lockstep with a Plan schema-version bump AFTER retargeting every
 // place that hardcodes the current version:
-//   - package.json current `exports` key and `files` entry
-//   - src/schema/index.ts current barrel import
+//   - package.json: retain every existing `schema/v<N>` and JSON export, append
+//     the new version, add its JSON to `files`, and retarget only `schema/current`
+//   - src/schema/current.ts: retarget the current-only generated import
+//   - src/schema/index.ts: retain all legacy names, add the former current
+//     version's named alias, and keep `planJsonSchema` pointed at `current.ts`
 //   - src/schema/planSchemaMeta.ts (`PLAN_SCHEMA_VERSION`)
-//   - scripts/pack-smoke.mjs (the `@retiregolden/engine/schema/plan.v<N>.json` read)
-//   - README.md usage examples / subpath table
+//   - scripts/pack-smoke.mjs: per-version runtime/type imports and assertions,
+//     historical-module pattern/count, current version, and JSON artifact read
+//   - README.md usage examples / subpath table; DOCS/code-map.md; schema pointers
+//     in src/index.ts and schema/generate.ts; app/planner-ui export-key mirrors
 // This guard fails generation loudly if the model's version moves ahead of those
 // static paths, so a future bump can't silently overwrite an older artifact (the sync
 // test would otherwise compare the overwritten file against the new object and pass).
@@ -54,7 +59,7 @@ try {
 if (PLAN_SCHEMA_VERSION !== EXPECTED_VERSION) {
   throw new Error(
     `Plan schema version is ${PLAN_SCHEMA_VERSION} but the versioned artifact paths still target v${EXPECTED_VERSION}. ` +
-      'Update package.json exports/files and src/schema/index.ts to the new plan.v<N>.* paths, then set EXPECTED_VERSION to match.',
+      'Update package.json exports/files plus src/schema/current.ts and src/schema/index.ts to the new plan.v<N>.* paths, then set EXPECTED_VERSION to match.',
   )
 }
 

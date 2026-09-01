@@ -47,6 +47,7 @@ import {
 // Import the public data surface through the zod-free barrel, and the whole
 // namespace so a test can assert the barrel does not re-expose the zod generator.
 import * as schemaBarrel from './index.js'
+import * as currentSchemaEntry from './current.js'
 import {
   planJsonSchema,
   planV1JsonSchema,
@@ -61,6 +62,40 @@ import shippedPlanV4JsonSchema from '../../schema/plan.v4.json' with { type: 'js
 import shippedPlanV1JsonSchema from '../../schema/plan.v1.json' with { type: 'json' }
 import shippedPlanV2JsonSchema from '../../schema/plan.v2.json' with { type: 'json' }
 import shippedPlanV3JsonSchema from '../../schema/plan.v3.json' with { type: 'json' }
+
+// Vite requires the options to be inline object literals. Raw source lets the
+// ordinary engine suite guard the production entry's static graph without Node
+// filesystem types or evaluating the historical generated modules as code.
+const schemaSources = import.meta.glob('./*.ts', { query: '?raw', import: 'default', eager: true })
+
+function currentSchemaSourceGraph(): {
+  readonly modulePaths: ReadonlySet<string>
+  readonly externalSpecifiers: ReadonlySet<string>
+  readonly dynamicSpecifiers: ReadonlySet<string>
+} {
+  const modulePaths = new Set<string>()
+  const externalSpecifiers = new Set<string>()
+  const dynamicSpecifiers = new Set<string>()
+
+  const visit = (modulePath: string): void => {
+    if (modulePaths.has(modulePath)) return
+    const source = schemaSources[modulePath]
+    if (typeof source !== 'string') throw new Error(`schema source graph cannot resolve ${modulePath}`)
+    modulePaths.add(modulePath)
+
+    for (const match of source.matchAll(/\b(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/gu)) {
+      const specifier = match[1]
+      if (specifier.startsWith('./')) visit(specifier.replace(/\.js$/u, '.ts'))
+      else externalSpecifiers.add(specifier)
+    }
+    for (const match of source.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gu)) {
+      dynamicSpecifiers.add(match[1])
+    }
+  }
+
+  visit('./current.ts')
+  return { modulePaths, externalSpecifiers, dynamicSpecifiers }
+}
 
 function compileSchema(): ValidateFunction {
   // `strict: false` — the derived schema is plain draft-2020-12 with no custom
@@ -597,6 +632,33 @@ describe('schema barrel — zero-dependency data surface', () => {
     )
     expect('generatePlanJsonSchema' in schemaBarrel).toBe(false)
     expect(typeof planJsonSchema).toBe('object')
+  })
+})
+
+describe('current schema entry — common-case data surface', () => {
+  it('exposes only the current schema and metadata', () => {
+    expect(Object.keys(currentSchemaEntry).sort()).toEqual(
+      [
+        'PLAN_SCHEMA_ID',
+        'PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS',
+        'PLAN_SCHEMA_VERSION',
+        'planJsonSchema',
+      ].sort(),
+    )
+    expect(currentSchemaEntry.planJsonSchema).toBe(planJsonSchema)
+    expect(currentSchemaEntry.PLAN_SCHEMA_VERSION).toBe(PLAN_SCHEMA_VERSION)
+    expect('planV1JsonSchema' in currentSchemaEntry).toBe(false)
+    expect('generatePlanJsonSchema' in currentSchemaEntry).toBe(false)
+  })
+
+  it('statically reaches the current generated module but no historical schema', () => {
+    const footprint = currentSchemaSourceGraph()
+    expect([...footprint.externalSpecifiers]).toEqual([])
+    expect([...footprint.dynamicSpecifiers]).toEqual([])
+    expect([...footprint.modulePaths]).toContain('./plan.v5.generated.ts')
+    expect([...footprint.modulePaths]).toContain('./planSchemaMeta.ts')
+    expect([...footprint.modulePaths]).not.toContain('./index.ts')
+    expect([...footprint.modulePaths].filter((path) => /plan\.v[1-4]\.generated\.ts$/u.test(path))).toEqual([])
   })
 })
 

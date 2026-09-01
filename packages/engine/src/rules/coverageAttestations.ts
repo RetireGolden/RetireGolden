@@ -286,6 +286,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'scenarios/taxStrategyTradeoffs.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'schema/generate.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'schema/index.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'schema/current.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-01', note: 'package entry point' }),
   'schema/plan.v1.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'generated file' }),
   'schema/plan.v2.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'generated file' }),
   'schema/plan.v3.generated.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'generated file' }),

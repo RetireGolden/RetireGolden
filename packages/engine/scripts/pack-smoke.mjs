@@ -10,15 +10,45 @@
  * actually resolve. Run from anywhere: `node packages/engine/scripts/pack-smoke.mjs`.
  */
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const shell = process.platform === 'win32' // pnpm is pnpm.cmd on Windows
 const require = createRequire(import.meta.url)
+
+function collectImportFootprint(entryPath, footprint = {
+  modulePaths: new Set(),
+  externalSpecifiers: new Set(),
+  dynamicSpecifiers: new Set(),
+}) {
+  const modulePath = resolve(entryPath)
+  if (footprint.modulePaths.has(modulePath)) return footprint
+  if (!existsSync(modulePath)) {
+    throw new Error(
+      'schema import-footprint entry or dependency does not exist: ' + modulePath +
+        '. Check the package export map and emitted schema files.',
+    )
+  }
+  footprint.modulePaths.add(modulePath)
+
+  const source = readFileSync(modulePath, 'utf8')
+  const staticSpecifier = /\b(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/gu
+  for (const match of source.matchAll(staticSpecifier)) {
+    if (match[1].startsWith('.')) {
+      collectImportFootprint(resolve(dirname(modulePath), match[1]), footprint)
+    } else {
+      footprint.externalSpecifiers.add(match[1])
+    }
+  }
+  for (const match of source.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gu)) {
+    footprint.dynamicSpecifiers.add(match[1])
+  }
+  return footprint
+}
 
 const smokeScript = `
 import assert from 'node:assert/strict'
@@ -351,13 +381,31 @@ const { singlePersonPlan, cashAccount, productionTaxCalculator, runPlan } = awai
   '@retiregolden/engine/testing/planFixtures'
 )
 
-// The ./schema subpath (the MCP's plan-format source) and the offline JSON
-// artifact must both resolve from the installed tarball. Read the JSON via
+// The current-only schema subpath (the MCP's plan-format source), each explicit
+// version subpath, the legacy compatibility barrel, and the offline JSON
+// artifact must all resolve from the installed tarball. Read the JSON via
 // createRequire + fs — not an import attribute — so this stays valid on the whole
-// supported Node range (engines.node >=20; import attributes need >=20.10). The
+// supported Node range. The
 // JSON path is derived from PLAN_SCHEMA_VERSION so a future schema-version bump
 // retargets it automatically.
-const { planJsonSchema, PLAN_SCHEMA_VERSION } = await import('@retiregolden/engine/schema')
+const currentSchemaApi = await import('@retiregolden/engine/schema/current')
+const { planJsonSchema, PLAN_SCHEMA_VERSION } = currentSchemaApi
+assert.deepEqual(
+  Object.keys(currentSchemaApi).sort(),
+  [
+    'PLAN_SCHEMA_ID',
+    'PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS',
+    'PLAN_SCHEMA_VERSION',
+    'planJsonSchema',
+  ].sort(),
+  'schema/current must resolve through the package export map to the current-only namespace',
+)
+const schemaV1Api = await import('@retiregolden/engine/schema/v1')
+const schemaV2Api = await import('@retiregolden/engine/schema/v2')
+const schemaV3Api = await import('@retiregolden/engine/schema/v3')
+const schemaV4Api = await import('@retiregolden/engine/schema/v4')
+const schemaV5Api = await import('@retiregolden/engine/schema/v5')
+const legacySchemaApi = await import('@retiregolden/engine/schema')
 const requireFromSmoke = createRequire(import.meta.url)
 const shippedPath = requireFromSmoke.resolve(
   '@retiregolden/engine/schema/plan.v' + PLAN_SCHEMA_VERSION + '.json',
@@ -450,6 +498,16 @@ assert.ok(packForYear(2026) && typeof packForYear(2026) === 'object')
 assert.equal(PLAN_SCHEMA_VERSION, 5)
 assert.equal(planJsonSchema.properties.schemaVersion.const, 5)
 assert.ok(String(planJsonSchema.$id).includes('/v' + PLAN_SCHEMA_VERSION + '.json'), 'schema carries a versioned $id')
+assert.equal(schemaV1Api.planJsonSchema.properties.schemaVersion.const, 1)
+assert.equal(schemaV2Api.planJsonSchema.properties.schemaVersion.const, 2)
+assert.equal(schemaV3Api.planJsonSchema.properties.schemaVersion.const, 3)
+assert.equal(schemaV4Api.planJsonSchema.properties.schemaVersion.const, 4)
+assert.equal(schemaV5Api.planJsonSchema, planJsonSchema)
+assert.equal(legacySchemaApi.planJsonSchema, planJsonSchema)
+assert.equal(legacySchemaApi.planV1JsonSchema, schemaV1Api.planJsonSchema)
+assert.equal(legacySchemaApi.planV2JsonSchema, schemaV2Api.planJsonSchema)
+assert.equal(legacySchemaApi.planV3JsonSchema, schemaV3Api.planJsonSchema)
+assert.equal(legacySchemaApi.planV4JsonSchema, schemaV4Api.planJsonSchema)
 assert.deepEqual(shippedSchema, planJsonSchema, 'offline JSON artifact matches the exported constant')
 assert.ok(
   Array.isArray(planJsonSchema['x-retiregolden-unrepresentableConstraints']) &&
@@ -1467,6 +1525,15 @@ import type { ActionId } from '@retiregolden/engine/actions/identity'
 import type { TaxCalculator } from '@retiregolden/engine/projection/types'
 import { createFlatTaxCalculator as deprecatedFlatTax } from '@retiregolden/engine/projection/flatTax'
 import { createFlatTaxCalculator as relocatedFlatTax } from '@retiregolden/engine/testing/flatTax'
+import {
+  planJsonSchema as currentPlanJsonSchema,
+  type JsonSchemaDocument,
+} from '@retiregolden/engine/schema/current'
+import { planJsonSchema as planV1JsonSchema } from '@retiregolden/engine/schema/v1'
+import { planJsonSchema as planV2JsonSchema } from '@retiregolden/engine/schema/v2'
+import { planJsonSchema as planV3JsonSchema } from '@retiregolden/engine/schema/v3'
+import { planJsonSchema as planV4JsonSchema } from '@retiregolden/engine/schema/v4'
+import { planJsonSchema as planV5JsonSchema } from '@retiregolden/engine/schema/v5'
 
 // The deprecated projection/flatTax subpath has to stay NAMEABLE, not merely
 // resolvable at runtime. If stripInternal ever deletes its declaration, the
@@ -1474,6 +1541,15 @@ import { createFlatTaxCalculator as relocatedFlatTax } from '@retiregolden/engin
 // this import fails to compile — the only place that break is visible.
 export const flatTaxDoubles: readonly TaxCalculator[] =
   [deprecatedFlatTax(12), relocatedFlatTax(12)]
+
+export const schemaDocuments: readonly JsonSchemaDocument[] = [
+  currentPlanJsonSchema,
+  planV1JsonSchema,
+  planV2JsonSchema,
+  planV3JsonSchema,
+  planV4JsonSchema,
+  planV5JsonSchema,
+]
 
 // The option, spelled out the way a consumer would have to spell it.
 const filingStatus: AnnualLiabilityRunTaxInputValue =
@@ -1526,6 +1602,73 @@ try {
     stdio: 'inherit',
     shell,
   })
+
+  const installedEngine = join(work, 'node_modules', '@retiregolden', 'engine')
+  const requireFromInstalledPackage = createRequire(join(work, 'package.json'))
+  const currentSchemaEntryPath = requireFromInstalledPackage.resolve(
+    '@retiregolden/engine/schema/current',
+  )
+  const legacySchemaEntryPath = requireFromInstalledPackage.resolve(
+    '@retiregolden/engine/schema',
+  )
+  const currentSchemaFootprint = collectImportFootprint(currentSchemaEntryPath)
+  const legacySchemaFootprint = collectImportFootprint(legacySchemaEntryPath)
+  const currentSchemaGraph = currentSchemaFootprint.modulePaths
+  const legacySchemaGraph = legacySchemaFootprint.modulePaths
+  if (currentSchemaFootprint.externalSpecifiers.size > 0) {
+    throw new Error(
+      'schema/current statically imports external packages: ' +
+        [...currentSchemaFootprint.externalSpecifiers].sort().join(', '),
+    )
+  }
+  if (currentSchemaFootprint.dynamicSpecifiers.size > 0) {
+    throw new Error(
+      'schema/current contains dynamic imports that the eager footprint cannot prove: ' +
+        [...currentSchemaFootprint.dynamicSpecifiers].sort().join(', '),
+    )
+  }
+  const historicalGeneratedPattern = /plan\.v[1-4]\.generated\.js$/u
+  const currentHistoricalModules = [...currentSchemaGraph].filter((modulePath) =>
+    historicalGeneratedPattern.test(modulePath),
+  )
+  if (currentHistoricalModules.length > 0) {
+    throw new Error(
+      'schema/current statically reaches historical generated schema modules: ' +
+        currentHistoricalModules
+          .map((modulePath) => relative(installedEngine, modulePath).replaceAll('\\', '/'))
+          .join(', '),
+    )
+  }
+  if (![...currentSchemaGraph].some((modulePath) => /plan\.v5\.generated\.js$/u.test(modulePath))) {
+    throw new Error('schema/current no longer statically reaches the current generated schema module')
+  }
+  const legacyHistoricalModules = [...legacySchemaGraph].filter((modulePath) =>
+    historicalGeneratedPattern.test(modulePath),
+  )
+  if (legacyHistoricalModules.length !== 4) {
+    throw new Error(
+      'the legacy schema compatibility barrel must retain all four historical generated modules',
+    )
+  }
+  const graphBytes = (graph) => [...graph].reduce(
+    (total, modulePath) => total + Buffer.byteLength(readFileSync(modulePath, 'utf8')),
+    0,
+  )
+  const currentSchemaBytes = graphBytes(currentSchemaGraph)
+  const legacySchemaBytes = graphBytes(legacySchemaGraph)
+  if (currentSchemaBytes >= legacySchemaBytes) {
+    throw new Error(
+      'schema/current static source footprint must stay smaller than the legacy barrel: ' +
+        currentSchemaBytes + ' >= ' + legacySchemaBytes,
+    )
+  }
+  console.log(
+    'schema import footprint OK: ' +
+      relative(installedEngine, currentSchemaEntryPath).replaceAll('\\', '/') +
+      ' reaches ' + currentSchemaGraph.size +
+      ' modules / ' + currentSchemaBytes + ' bytes; legacy schema reaches ' +
+      legacySchemaGraph.size + ' modules / ' + legacySchemaBytes + ' bytes',
+  )
 
   const structuralDeclarations = readFileSync(join(
     work,

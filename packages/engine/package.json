@@ -63,6 +63,30 @@
       "types": "./dist/schema/index.d.ts",
       "default": "./dist/schema/index.js"
     },
+    "./schema/current": {
+      "types": "./dist/schema/current.d.ts",
+      "default": "./dist/schema/current.js"
+    },
+    "./schema/v1": {
+      "types": "./dist/schema/plan.v1.generated.d.ts",
+      "default": "./dist/schema/plan.v1.generated.js"
+    },
+    "./schema/v2": {
+      "types": "./dist/schema/plan.v2.generated.d.ts",
+      "default": "./dist/schema/plan.v2.generated.js"
+    },
+    "./schema/v3": {
+      "types": "./dist/schema/plan.v3.generated.d.ts",
+      "default": "./dist/schema/plan.v3.generated.js"
+    },
+    "./schema/v4": {
+      "types": "./dist/schema/plan.v4.generated.d.ts",
+      "default": "./dist/schema/plan.v4.generated.js"
+    },
+    "./schema/v5": {
+      "types": "./dist/schema/plan.v5.generated.d.ts",
+      "default": "./dist/schema/plan.v5.generated.js"
+    },
     "./schema/plan.v1.json": "./schema/plan.v1.json",
     "./schema/plan.v2.json": "./schema/plan.v2.json",
     "./schema/plan.v3.json": "./schema/plan.v3.json",
