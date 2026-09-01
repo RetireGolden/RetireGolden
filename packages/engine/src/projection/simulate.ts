@@ -2567,7 +2567,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       year,
       startYear,
       peopleStates,
-      birthMonthByPersonPosition,
+      birthMonthByPerson,
       resolveMagiFor,
       ssa44ActiveInYear,
       filingStatusForYear,

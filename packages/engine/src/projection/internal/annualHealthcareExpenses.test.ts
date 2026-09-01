@@ -16,6 +16,7 @@ function run(
     magiByYear?: ReadonlyMap<number, number>
     ssa44Active?: boolean
     birthMonths?: readonly number[]
+    birthMonthByPerson?: ReadonlyMap<string, number>
     configurePack?: (pack: ParameterPack) => void
   } = {},
 ) {
@@ -28,8 +29,10 @@ function run(
     year: 2026,
     startYear: 2026,
     peopleStates,
-    birthMonthByPersonPosition:
-      options.birthMonths ?? peopleStates.map((state) => state.personId === 'p2' ? 7 : 1),
+    birthMonthByPerson: options.birthMonthByPerson ?? new Map(peopleStates.map((state, position) => [
+      state.personId,
+      options.birthMonths?.[position] ?? (state.personId === 'p2' ? 7 : 1),
+    ])),
     resolveMagiFor: (year) => ({
       magi: options.magiByYear?.get(year) ?? options.magi ?? 0,
       source: 'planFallback',
@@ -110,7 +113,7 @@ describe('annualHealthcareExpenses', () => {
     expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([12, 0])
   })
 
-  it('keeps age-65 duplicate person IDs positional through distinct birth months', () => {
+  it('keeps age-65 duplicate rows positional while preserving last-wins birth-month lookup', () => {
     const plan = singlePersonPlan()
     const peopleStates: PersonYearState[] = [
       { personId: 'p1', ageAttained: 65, alive: true },
@@ -119,13 +122,15 @@ describe('annualHealthcareExpenses', () => {
 
     const result = run(plan, peopleStates, { birthMonths: [1, 7] })
 
-    expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([0, 6])
+    expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([6, 6])
   })
 
-  it('rejects a birth-month row count that is not positional to people state', () => {
-    expect(() => run(undefined, undefined, { birthMonths: [] })).toThrow(
-      'Healthcare planner birth-month row mismatch',
-    )
+  it('preserves the legacy January fallback for a missing birth-month key', () => {
+    const result = run(undefined, [
+      { personId: 'missing', ageAttained: 65, alive: true },
+    ], { birthMonthByPerson: new Map() })
+
+    expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([0])
   })
 
   it('selects the prior-year SSA-44 MAGI only when it is active and lower', () => {

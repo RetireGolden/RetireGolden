@@ -29,37 +29,37 @@
       "id": "R.healthcare.helperPricing",
       "label": "ACA setup, Marketplace months, Medicare/IRMAA pricing and warning gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [80, 172],
+      "lines": [77, 169],
       "anchors": [
-        { "line": 80, "text": "const hc = input.plan.expenses.healthcare" },
-        { "line": 94, "text": "const lookbackPrimary = input.resolveMagiFor(input.year - 2)" },
-        { "line": 133, "text": "const marketplaceMonthsByPersonPosition = input.peopleStates.map((person, position) =>" },
-        { "line": 172, "text": "if (medicare.partDSurchargeUnverified) {" }
+        { "line": 77, "text": "const hc = input.plan.expenses.healthcare" },
+        { "line": 91, "text": "const lookbackPrimary = input.resolveMagiFor(input.year - 2)" },
+        { "line": 130, "text": "const marketplaceMonthsByPersonPosition = input.peopleStates.map((person) =>" },
+        { "line": 169, "text": "if (medicare.partDSurchargeUnverified) {" }
       ],
-      "note": "The fail-loud positional input assertion at lines 77-79 is simulator-unreachable because simulatePlan builds both arrays from the same people order; the focused helper suite injects a mismatched row count and pins the throw. The warning condition is pinned at line 172; its body at lines 173-176 is simulator-unreachable with every published parameter pack because all shipped IRMAA tiers carry a verified Part D surcharge. The helper unit suite covers the defensive nullable-pack contract."
+      "note": "The positional result retains one row per person-state while the keyed birth-month input deliberately preserves simulatePlan's last-wins duplicate-id lookup and January fallback; focused helper and differential fixtures pin both contracts. The warning condition is pinned at line 169; its body at lines 170-173 is simulator-unreachable with every published parameter pack because all shipped IRMAA tiers carry a verified Part D surcharge. The helper unit suite covers the defensive nullable-pack contract."
     },
     {
       "id": "R.healthcare.helperContract",
       "label": "IRMAA threshold, example validation, contract folds and ACA support through duplicate gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [177, 324],
+      "lines": [174, 321],
       "anchors": [
-        { "line": 177, "text": "const premium =" },
-        { "line": 201, "text": "const exampleContractInputMismatch =" },
-        { "line": 324, "text": "if (coveredIds.size !== acaContract.coveredMembers.length) {" }
+        { "line": 174, "text": "const premium =" },
+        { "line": 198, "text": "const exampleContractInputMismatch =" },
+        { "line": 321, "text": "if (coveredIds.size !== acaContract.coveredMembers.length) {" }
       ],
-      "note": "The duplicate-covered-member condition is pinned at line 324. Its body at lines 325-326 is unreachable from this validated corpus because acaYearContractSchema rejects duplicate covered person ids before simulation; the helper unit boundary remains defensive for direct typed callers."
+      "note": "The duplicate-covered-member condition is pinned at line 321. Its body at lines 322-323 is unreachable from this validated corpus because acaYearContractSchema rejects duplicate covered person ids before simulation; the helper unit boundary remains defensive for direct typed callers."
     },
     {
       "id": "R.healthcare.helperSupport",
       "label": "covered-member, tax-family, evidence and assertion support with complete result",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [327, 463],
+      "lines": [324, 460],
       "anchors": [
-        { "line": 327, "text": "if (" },
-        { "line": 334, "text": "const marketplaceMonths = marketplaceMonthsByPersonPosition[personPosition]!" },
-        { "line": 439, "text": "return {" },
-        { "line": 463, "text": "}" }
+        { "line": 324, "text": "if (" },
+        { "line": 331, "text": "const marketplaceMonths = marketplaceMonthsByPersonPosition[personPosition]!" },
+        { "line": 436, "text": "return {" },
+        { "line": 460, "text": "}" }
       ]
     },
     {

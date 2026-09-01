@@ -53,7 +53,7 @@ export interface AnnualHealthcareExpensesInput {
   readonly year: number
   readonly startYear: number
   readonly peopleStates: readonly PersonYearState[]
-  readonly birthMonthByPersonPosition: readonly number[]
+  readonly birthMonthByPerson: ReadonlyMap<string, number>
   readonly resolveMagiFor: (year: number) => {
     magi: number
     source: IrmaaLookbackMagiSource
@@ -74,9 +74,6 @@ export interface AnnualHealthcareExpensesInput {
 export function annualHealthcareExpenses(
   input: AnnualHealthcareExpensesInput,
 ): AnnualHealthcareExpensesResult {
-  if (input.birthMonthByPersonPosition.length !== input.peopleStates.length) {
-    throw new Error('Healthcare planner birth-month row mismatch')
-  }
   const hc = input.plan.expenses.healthcare
   const healthInflFactor = input.healthInflFactorFrom(input.startYear, input.year)
   let healthcare = 0
@@ -128,12 +125,12 @@ export function annualHealthcareExpenses(
           ? birthMonth - 1
           : 0
   // Person ids are not globally unique unless a retirement action references
-  // them. Keep one row per input position so an accepted duplicate id never
-  // collapses another person's transition months in caller-side publication.
-  const marketplaceMonthsByPersonPosition = input.peopleStates.map((person, position) =>
+  // them. Keep one output row per input position, but preserve simulatePlan's
+  // legacy last-wins birth-month lookup by public id for accepted duplicates.
+  const marketplaceMonthsByPersonPosition = input.peopleStates.map((person) =>
     marketplaceMonthsBeforeMedicare(
       person,
-      input.birthMonthByPersonPosition[position]!,
+      input.birthMonthByPerson.get(person.personId) ?? 1,
     ),
   )
 

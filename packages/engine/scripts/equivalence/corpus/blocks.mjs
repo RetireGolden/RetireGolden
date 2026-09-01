@@ -2730,14 +2730,15 @@ function blockR() {
 
   {
     // Duplicate unreferenced person ids survive Plan parsing. The original
-    // Marketplace publication evaluates each positional person-state row: the
-    // first p1 is under 65 and contributes twelve covered months, while the
-    // second p1 is already on Medicare and contributes none. Keying those
-    // months by the public id would let the second row erase the first.
-    const plan = singlePersonPlan({ dob: '1980-03-15', planningAge: 70 })
+    // Marketplace publication evaluates each positional person-state row, but
+    // the legacy birth-month lookup is last-wins by public id. Both p1 rows turn
+    // 65 this year and therefore use the duplicate's July birth month, yielding
+    // two positional six-month rows. A position-keyed birth month would drift to
+    // January/July rows with zero/six Marketplace months.
+    const plan = singlePersonPlan({ dob: '1961-01-15', planningAge: 70 })
     plan.household.people.push({
       ...plan.household.people[0],
-      dob: '1960-03-15',
+      dob: '1961-07-15',
     })
     plan.accounts = [cash('r8-cash', 1_000_000, { annualReturnPct: 0 })]
     plan.expenses.healthcare = {
@@ -2747,7 +2748,7 @@ function blockR() {
     }
     out.push(member(
       'r8-duplicatePersonMarketplacePublication',
-      'R: accepted duplicate person ids retain positional pre-65/Medicare month rows in missing-contract ACA publication rather than collapsing last-wins by id',
+      'R: accepted duplicate person ids retain positional Marketplace rows while both rows preserve last-wins July birth-month lookup',
       plan,
       { horizonEndYear: START_YEAR },
     ))
