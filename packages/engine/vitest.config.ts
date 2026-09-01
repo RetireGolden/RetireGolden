@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     // The engine suite runs whole projections and optimizer searches, and CI
     // runs it under v8 coverage on runners measured at roughly six times local
     // runtime (#230's diagnosis). The 5s default kept tipping marginal tests
