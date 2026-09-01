@@ -7,6 +7,11 @@ import { MemoryRouter } from 'react-router'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 
+import {
+  ANNUITY_MIN_START_AGE,
+  PENSION_MAX_START_AGE,
+  PENSION_MIN_START_AGE,
+} from '../../accountStartAgeBounds'
 import { PlanCtx } from '../planContextCore'
 import { AccountFields } from './AccountFields'
 import { EVEN_START_WEIGHTS, TAX_EXEMPT_ALLOCATION_DOUBLE_COUNT_WARNING, localCalendarDateIso } from './sectionHelpers'
@@ -16,6 +21,7 @@ let root: Root | null = null
 let container: HTMLDivElement | null = null
 
 afterEach(() => {
+  vi.useRealTimers()
   if (root) act(() => root!.unmount())
   container?.remove()
   root = null
@@ -907,5 +913,380 @@ describe('prior-year FICA wages (414(v)(7) Box 3 proxy)', () => {
     const input = controlByLabel<HTMLInputElement>(container!, 'Prior-year FICA wages (Box 3)')
     expect(input.value).toBe('150,000.01')
     expect(input.value).not.toBe('150,000')
+  })
+})
+
+describe('AccountFields property and debt editor boundaries', () => {
+  it('renders property-specific fields without debt fields', () => {
+    const property: Extract<Account, { type: 'property' }> = {
+      type: 'property',
+      id: 'home',
+      name: 'Home',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      value: 500_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }
+
+    const fields = renderFields(planWithAccount(property))
+
+    expect(controlByLabel(fields, 'Value')).toBeTruthy()
+    expect(controlByLabel(fields, 'Model a HECM line of credit')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Interest rate')).toThrow('no label "Interest rate"')
+  })
+
+  it('renders debt-specific fields without property fields', () => {
+    const debt: Extract<Account, { type: 'debt' }> = {
+      type: 'debt',
+      id: 'mortgage',
+      name: 'Mortgage',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance: 250_000,
+      interestPct: 4,
+      monthlyPayment: 1_500,
+    }
+
+    const fields = renderFields(planWithAccount(debt))
+
+    expect(controlByLabel(fields, 'Balance owed')).toBeTruthy()
+    expect(controlByLabel(fields, 'Interest rate')).toBeTruthy()
+    expect(controlByLabel(fields, 'Monthly payment')).toBeTruthy()
+    expect(controlByLabel(fields, 'Lump-sum payoff year')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Value')).toThrow('no label "Value"')
+  })
+})
+
+describe('AccountFields pension and annuity editor boundaries', () => {
+  it('keeps compatibility bounds aligned with the pension schema', () => {
+    const pension: Extract<Account, { type: 'pension' }> = {
+      type: 'pension',
+      id: 'pension',
+      name: 'Pension',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+    }
+    const plan = planWithAccount(pension)
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const accepts = (startAge: number) => {
+      const candidate = structuredClone(plan)
+      const account = candidate.accounts[0]
+      if (account?.type !== 'pension') throw new Error('expected pension')
+      account.startAge = startAge
+      return parsePlan(candidate).ok
+    }
+
+    expect(accepts(PENSION_MIN_START_AGE)).toBe(true)
+    expect(accepts(PENSION_MAX_START_AGE)).toBe(true)
+    expect(accepts(PENSION_MIN_START_AGE - 1)).toBe(false)
+    expect(accepts(PENSION_MAX_START_AGE + 1)).toBe(false)
+  })
+
+  it('keeps the compatibility minimum aligned with the annuity schema', () => {
+    const annuity: Extract<Account, { type: 'annuity' }> = {
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Annuity',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 1_500,
+      colaPct: 0,
+      taxablePct: 60,
+    }
+    const plan = planWithAccount(annuity)
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const accepts = (startAge: number) => {
+      const candidate = structuredClone(plan)
+      const account = candidate.accounts[0]
+      if (account?.type !== 'annuity') throw new Error('expected annuity')
+      account.startAge = startAge
+      return parsePlan(candidate).ok
+    }
+
+    expect(accepts(ANNUITY_MIN_START_AGE)).toBe(true)
+    expect(accepts(ANNUITY_MIN_START_AGE - 1)).toBe(false)
+  })
+
+  it('renders pension-specific fields without annuity purchase fields', () => {
+    const pension: Extract<Account, { type: 'pension' }> = {
+      type: 'pension',
+      id: 'pension',
+      name: 'Pension',
+      ownerPersonId: 'af-owner',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+    }
+
+    const fields = renderFields(planWithAccount(pension))
+
+    const labels = Array.from(fields.querySelectorAll('label')).map((label) => label.textContent?.trim())
+    expect(controlByLabel(fields, 'Pension source')).toBeTruthy()
+    expect(labels.indexOf('Pension source')).toBeLessThan(labels.indexOf('Start age'))
+    expect(controlByLabel<HTMLInputElement>(fields, 'Start age').max).toBe(String(PENSION_MAX_START_AGE))
+    expect(controlByLabel(fields, 'Monthly amount')).toBeTruthy()
+    expect(controlByLabel(fields, 'COLA')).toBeTruthy()
+    expect(controlByLabel(fields, 'Survivor benefit')).toBeTruthy()
+    expect(controlByLabel(fields, 'Lump-sum offer on record')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Model a purchase event')).toThrow('no label "Model a purchase event"')
+  })
+
+  it('renders annuity-specific fields without pension election fields', () => {
+    const annuity: Extract<Account, { type: 'annuity' }> = {
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Annuity',
+      ownerPersonId: 'af-owner',
+      annualReturnPct: null,
+      startAge: 70,
+      monthlyAmount: 1_500,
+      colaPct: 0,
+      taxablePct: 60,
+    }
+
+    const fields = renderFields(planWithAccount(annuity))
+
+    expect(controlByLabel<HTMLInputElement>(fields, 'Start age').max).toBe('95')
+    expect(controlByLabel(fields, 'Monthly amount')).toBeTruthy()
+    expect(controlByLabel(fields, 'COLA')).toBeTruthy()
+    expect(controlByLabel(fields, 'Payout form')).toBeTruthy()
+    expect(controlByLabel(fields, 'Model a purchase event')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Lump-sum offer on record')).toThrow('no label "Lump-sum offer on record"')
+  })
+})
+
+describe('AccountFields extracted editor commit wiring', () => {
+  it.each([
+    ['below', '20', 40],
+    ['above', '95', 80],
+  ])('clamps a manually entered pension start age %s the schema range (parse-valid)', (_boundary, typed, expected) => {
+    const pension: Extract<Account, { type: 'pension' }> = {
+      type: 'pension',
+      id: 'pension',
+      name: 'Pension',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+    }
+    const plan = planWithAccount(pension)
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+    const startAge = controlByLabel<HTMLInputElement>(mounted.container(), 'Start age')
+
+    act(() => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      if (!valueSetter) throw new Error('missing input value setter')
+      valueSetter.call(startAge, typed)
+      startAge.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('pension')
+    if (account?.type !== 'pension') throw new Error('expected pension')
+    expect(account.startAge).toBe(expected)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
+  it.each([
+    ['below', '20', 40],
+    ['above', '97', 95],
+  ])('clamps a manually entered unpurchased annuity start age %s the schema range (parse-valid)', (_boundary, typed, expected) => {
+    const annuity: Extract<Account, { type: 'annuity' }> = {
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Annuity',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 1_000,
+      colaPct: 0,
+      taxablePct: 50,
+    }
+    const plan = planWithAccount(annuity)
+    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    const mounted = mountEditable(plan)
+    const startAge = controlByLabel<HTMLInputElement>(mounted.container(), 'Start age')
+
+    act(() => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      if (!valueSetter) throw new Error('missing input value setter')
+      valueSetter.call(startAge, typed)
+      startAge.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('annuity')
+    if (account?.type !== 'annuity') throw new Error('expected annuity')
+    expect(account.startAge).toBe(expected)
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
+  it('enables a HECM and marks the property as a primary residence (parse-valid)', () => {
+    const property: Extract<Account, { type: 'property' }> = {
+      type: 'property',
+      id: 'home',
+      name: 'Home',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      value: 500_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }
+    const mounted = mountEditable(planWithAccount(property))
+
+    act(() => {
+      controlByLabel<HTMLInputElement>(mounted.container(), 'Model a HECM line of credit').click()
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('property')
+    if (account?.type !== 'property') throw new Error('expected property')
+    expect(account.primaryResidence).toBe(true)
+    expect(account.hecm?.drawPolicy).toBe('lastResort')
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
+  it('revives a historical pension offer year when the lump sum is elected (parse-valid)', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-01T12:00:00Z'))
+    const pension: Extract<Account, { type: 'pension' }> = {
+      type: 'pension',
+      id: 'pension',
+      name: 'Pension',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+      lumpSumOffer: { amount: 200_000, electionYear: 2020 },
+    }
+    const plan = planWithAccount(pension)
+    const ownerId = plan.household.people[0]!.id
+    plan.updatedAtIso = '2030-01-02T00:00:00.000Z'
+    plan.accounts[0]!.ownerPersonId = ownerId
+    plan.accounts.push(retirementAccount({ id: 'rollover', name: 'Rollover IRA', ownerPersonId: ownerId }))
+    const mounted = mountEditable(plan)
+    const election = controlByLabel<HTMLSelectElement>(mounted.container(), 'Election')
+
+    act(() => {
+      election.value = 'lumpSum'
+      election.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('pension')
+    if (account?.type !== 'pension') throw new Error('expected pension')
+    expect(account.lumpSumOffer?.electionYear).toBe(2030)
+    expect(account.lumpSumElection?.rolloverAccountId).toBe('rollover')
+    expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
+  })
+
+  it('clamps a qualified annuity start age when its owner changes', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-01T12:00:00Z'))
+    const annuity: Extract<Account, { type: 'annuity' }> = {
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Deferred annuity',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 90,
+      monthlyAmount: 1_500,
+      colaPct: 0,
+      taxablePct: 100,
+      purchase: {
+        year: 2026,
+        premium: 100_000,
+        fundingAccountId: 'funding',
+        taxQualification: 'qualified',
+      },
+    }
+    const plan = planWithAccount(annuity)
+    const olderOwner = plan.household.people[0]!
+    olderOwner.dob = '1930-01-01'
+    const youngerOwner = { ...olderOwner, id: 'younger', name: 'Younger owner', dob: '1970-01-01' }
+    plan.household.people.push(youngerOwner)
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.accounts[0]!.ownerPersonId = olderOwner.id
+    plan.accounts.push(retirementAccount({ id: 'funding', name: 'Funding IRA', ownerPersonId: olderOwner.id }))
+    const mounted = mountEditable(plan)
+    const owner = controlByLabel<HTMLSelectElement>(mounted.container(), 'Owner')
+
+    act(() => {
+      owner.value = youngerOwner.id
+      owner.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('annuity')
+    if (account?.type !== 'annuity') throw new Error('expected annuity')
+    expect(account.ownerPersonId).toBe(youngerOwner.id)
+    expect(account.startAge).toBe(76)
+  })
+
+  it('retargets a qualified annuity away from an inherited IRA', () => {
+    const annuity: Extract<Account, { type: 'annuity' }> = {
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Annuity',
+      ownerPersonId: 'placeholder',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 1_000,
+      colaPct: 0,
+      taxablePct: 50,
+      purchase: {
+        year: 2026,
+        premium: 100_000,
+        fundingAccountId: 'cash',
+        taxQualification: 'nonQualified',
+      },
+    }
+    const plan = planWithAccount(annuity)
+    const ownerId = plan.household.people[0]!.id
+    plan.accounts[0]!.ownerPersonId = ownerId
+    plan.accounts.push(
+      retirementAccount({
+        id: 'inherited',
+        name: 'Inherited IRA',
+        ownerPersonId: ownerId,
+        inherited: { ownerDeathYear: 2025, decedentHadStartedRmds: false },
+      }),
+      retirementAccount({ id: 'owned', name: 'Owned IRA', ownerPersonId: ownerId }),
+      {
+        type: 'cash',
+        id: 'cash',
+        name: 'Cash',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 150_000,
+        annualContribution: 0,
+      },
+    )
+    const mounted = mountEditable(plan)
+    const qualification = controlByLabel<HTMLSelectElement>(mounted.container(), 'Tax qualification')
+
+    act(() => {
+      qualification.value = 'qualified'
+      qualification.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const account = mounted.plan.accounts[0]
+    expect(account?.type).toBe('annuity')
+    if (account?.type !== 'annuity') throw new Error('expected annuity')
+    expect(account.purchase?.taxQualification).toBe('qualified')
+    expect(account.purchase?.fundingAccountId).toBe('owned')
   })
 })

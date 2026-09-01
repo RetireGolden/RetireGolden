@@ -11,6 +11,7 @@
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
+import { PENSION_MAX_START_AGE, PENSION_MIN_START_AGE } from '../accountStartAgeBounds'
 import { MAX_REASONABLE_DOLLARS } from './csv'
 import { form1040Locator as form1040 } from './provenance'
 import type { ImportReviewItem } from './reviewChecklist'
@@ -236,7 +237,10 @@ export function seedPlanFromTenForty(
 
   // --- Line 5b: pensions ------------------------------------------------------
   if (inputs.pensionsAndAnnuities > 0) {
-    const startAge = Math.min(80, Math.max(40, ageAt(inputs.primaryDob, today)))
+    const startAge = Math.min(
+      PENSION_MAX_START_AGE,
+      Math.max(PENSION_MIN_START_AGE, ageAt(inputs.primaryDob, today)),
+    )
     plan.accounts.push({
       id: newId(),
       type: 'pension',
