@@ -1,0 +1,164 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-apply-flows-boundary",
+  "why": "Measured reach for the annual voluntary-withdrawal apply-flow planner extracted from simulatePlan. Four dedicated block-W members run in all four equivalence modes. W1 exhausts every positive balance class and reaches taxable-sale, equity-basis, ordinary-subtraction, inherited/owned traditional runtime, Roth, HSA, evidence-write and owned-IRA application paths; it also carries the Plan-level zero row whose no-operation guard the focused helper test pins directly. W2 makes duplicate-id last-wins evidence identity and post-election spouse treat-as-own suppression observable. W3 makes the exact basis-minus-taken-times-ratio equity-compensation association observable across annual re-entry. W4 forces the Roth side of the qualified evidence test and the inherited zero fallback. Helper ranges and caller-consumption ranges are split around defensive invariant throws so zero cold executable whole lines is a meaningful requirement rather than an aggregate-range accident.",
+  "entries": [
+    {
+      "id": "W.helper.evidence",
+      "label": "last-wins evidence-account index, post-flip suppression, and explicit voluntary writes",
+      "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
+      "lines": [74, 93],
+      "anchors": [
+        { "line": 74, "text": "const balanceStateByAccountId = new Map(" },
+        { "line": 78, "text": "for (const [evidenceIndex, evidence] of input.inheritedEvidence.entries()) {" },
+        { "line": 85, "text": "isTreatAsOwnEffective(evidenceAccount, input.year)" },
+        { "line": 87, "text": "evidenceWrites.push({" },
+        { "line": 91, "text": "input.withdrawnByAccountId.get(evidence.accountId) ?? 0," },
+        { "line": 93, "text": "}" }
+      ]
+    },
+    {
+      "id": "W.helper.shadowAndSelection",
+      "label": "positional balance/basis shadow and positive-withdrawal selection",
+      "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
+      "lines": [95, 114],
+      "anchors": [
+        { "line": 95, "text": "const shadowByState = new Map<" },
+        { "line": 104, "text": "const balanceOperations: AnnualWithdrawalBalanceOperation[] = []" },
+        { "line": 105, "text": "for (const [balanceIndex, state] of input.balances.entries()) {" },
+        { "line": 107, "text": "if (taken <= 0) continue" },
+        { "line": 108, "text": "const shadow = shadowByState.get(state)!" },
+        { "line": 113, "text": "if (state.account.type === 'taxable') {" },
+        { "line": 114, "text": "const sale = input.taxableSales.get(state.account.id)" }
+      ]
+    },
+    {
+      "id": "W.helper.taxableSale",
+      "label": "committed taxable-sale balance and basis result",
+      "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
+      "lines": [119, 121],
+      "anchors": [
+        { "line": 119, "text": "costBasisAfter = sale.remainingCostBasis" },
+        { "line": 120, "text": "sourceBalanceAfter = sale.remainingFairMarketValue" },
+        { "line": 121, "text": "}" }
+      ],
+      "note": "The missing-sale branch on lines 115-117 is excluded: planWithdrawals creates a taxableSales record whenever it allocates a positive taxable draw. The structural `else` line 118 is excluded because V8 maps its branch entry to the closing brace and reports that whole line cold even when the taxable body runs; lines 119-121 are the actual committed result reads. The helper's supported defensive missing-map input and the caller-timed failure are pinned by focused direct and delegation tests."
+    },
+    {
+      "id": "W.helper.equityAndOrdinary",
+      "label": "equity-compensation basis association and ordinary balance subtraction",
+      "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
+      "lines": [122, 137],
+      "anchors": [
+        { "line": 122, "text": "} else if (" },
+        { "line": 123, "text": "state.account.type === 'equityComp' &&" },
+        { "line": 126, "text": "const basisRatio = Math.min(" },
+        { "line": 128, "text": "shadow.costBasis / sourceBalanceBefore," },
+        { "line": 130, "text": "costBasisAfter = Math.max(" },
+        { "line": 132, "text": "shadow.costBasis - taken * basisRatio," },
+        { "line": 134, "text": "sourceBalanceAfter = sourceBalanceBefore - taken" },
+        { "line": 136, "text": "sourceBalanceAfter = sourceBalanceBefore - taken" },
+        { "line": 137, "text": "}" }
+      ]
+    },
+    {
+      "id": "W.helper.operations",
+      "label": "ordered shadow writes, runtime/application verdicts, and complete result",
+      "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
+      "lines": [138, 155],
+      "anchors": [
+        { "line": 138, "text": "shadow.balance = sourceBalanceAfter" },
+        { "line": 139, "text": "if (costBasisAfter !== null) shadow.costBasis = costBasisAfter" },
+        { "line": 140, "text": "balanceOperations.push({" },
+        { "line": 148, "text": "recordsTraditionalRuntimeOccurrence:" },
+        { "line": 150, "text": "recordsOwnedIraApplication:" },
+        { "line": 152, "text": "input.recordsOwnedIraApplicationFor(state.account)," },
+        { "line": 153, "text": "})" },
+        { "line": 155, "text": "return { evidenceWrites, balanceOperations }" }
+      ]
+    },
+    {
+      "id": "W.callsite.invokeAndEvidenceSelect",
+      "label": "apply-flow invocation and evidence-operation selection",
+      "file": "projection/simulate.ts",
+      "lines": [8996, 9006],
+      "anchors": [
+        { "line": 8996, "text": "const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({" },
+        { "line": 9003, "text": "})" },
+        { "line": 9004, "text": "for (const write of withdrawalApplyFlowPlan.evidenceWrites) {" },
+        { "line": 9006, "text": "if (evidence === undefined || evidence.accountId !== write.accountId) {" }
+      ],
+      "note": "The evidence-position throw body on lines 9007-9010 is excluded: the helper enumerates the supplied evidence array and copies each row's account id. Hostile delegation tests prove the invariant."
+    },
+    {
+      "id": "W.callsite.evidenceWrite",
+      "label": "inherited voluntary-amount mutation",
+      "file": "projection/simulate.ts",
+      "lines": [9011, 9012],
+      "anchors": [
+        { "line": 9011, "text": "evidence.voluntaryAmount = write.voluntaryAmount" },
+        { "line": 9012, "text": "}" }
+      ]
+    },
+    {
+      "id": "W.callsite.balanceSelect",
+      "label": "balance-operation iteration and positional lookup",
+      "file": "projection/simulate.ts",
+      "lines": [9013, 9017],
+      "anchors": [
+        { "line": 9013, "text": "for (const operation of withdrawalApplyFlowPlan.balanceOperations) {" },
+        { "line": 9014, "text": "const state = balances[operation.balanceIndex]" },
+        { "line": 9015, "text": "// Planning and commit are intentionally adjacent. Fail before applying a" },
+        { "line": 9017, "text": "if (" }
+      ],
+      "note": "The position/source-before guard and throw on lines 9018-9025 are excluded because the helper enumerates the same balance positions and advances its repeated-object shadow in original mutation order. Hostile delegation tests cover wrong position and wrong source balance."
+    },
+    {
+      "id": "W.callsite.runtimeOccurrence",
+      "label": "traditional runtime occurrence and owned-IRA application selection",
+      "file": "projection/simulate.ts",
+      "lines": [9026, 9054],
+      "anchors": [
+        { "line": 9026, "text": "const taken = operation.taken" },
+        { "line": 9036, "text": "if (operation.recordsTraditionalRuntimeOccurrence) {" },
+        { "line": 9041, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 9051, "text": "if (operation.recordsOwnedIraApplication) {" },
+        { "line": 9054, "text": "}" }
+      ]
+    },
+    {
+      "id": "W.callsite.taxableInvariant",
+      "label": "taxable-sale completeness check",
+      "file": "projection/simulate.ts",
+      "lines": [9055, 9055],
+      "anchors": [
+        { "line": 9055, "text": "if (operation.taxableSaleMissing) {" }
+      ],
+      "note": "The failure body on line 9056 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
+    },
+    {
+      "id": "W.callsite.apply",
+      "label": "basis and balance mutation",
+      "file": "projection/simulate.ts",
+      "lines": [9058, 9061],
+      "anchors": [
+        { "line": 9058, "text": "if (operation.costBasisAfter !== null) {" },
+        { "line": 9059, "text": "state.costBasis = operation.costBasisAfter" },
+        { "line": 9061, "text": "state.balance = operation.sourceBalanceAfter" }
+      ]
+    },
+    {
+      "id": "W.callsite.application",
+      "label": "owned-IRA runtime debit application",
+      "file": "projection/simulate.ts",
+      "lines": [9062, 9074],
+      "anchors": [
+        { "line": 9062, "text": "if (ownedIraProducerOccurrenceKey !== null) {" },
+        { "line": 9063, "text": "recordAnnualRetirementRuntimeApplication({" },
+        { "line": 9072, "text": "})" },
+        { "line": 9074, "text": "}" }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every optional-chain, nullish, compound-condition, or short-circuit operand sharing one physical line, so cold sub-line regions and the focused helper/delegation guards must be read alongside this differential proof."
+}
