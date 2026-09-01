@@ -5,9 +5,11 @@ or changing a feature. These are the rules the codebase already follows — matc
 
 ## Non-negotiable invariants
 
-1. **Local-first, no network for user data.** No backend, no account, no analytics, no remote content. Any
-   feature that would send a plan off the device is out of scope by definition. Persistence is IndexedDB +
-   JSON export only.
+1. **Local-first: no user data leaves the browser.** No backend, account, or analytics sends plan data off
+   the device. The documented exceptions are public/config requests that carry no plan data: the host's
+   same-origin, no-store `/import-feature.json` switch and the explicit opt-in request from
+   `planner-ui/src/data/fedInvestClient.ts` to Treasury FedInvest for a public TIPS price date. Persistence
+   is IndexedDB + JSON export only.
 2. **The engine stays pure.** `packages/engine/src/**` (the `@retiregolden/engine` package) must not
    import React, recharts, `idb`, or app-layer code, and must not touch `localStorage`, `indexedDB`,
    `document`, `window`, or `fetch` — it runs in plain Node as well as the browser. This is enforced by

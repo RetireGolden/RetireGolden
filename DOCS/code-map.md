@@ -5,9 +5,10 @@ why) and [standards.md](standards.md) (the conventions).
 
 ## Repository top level
 
-The repo is a pnpm workspace: `corepack enable` then `pnpm install` at the root installs everything; the app consumes the
-engine as `@retiregolden/engine` and the planner UI as `@retiregolden/planner-ui` (workspace
-dependencies, published to npm from `packages/`).
+The repo is a pnpm workspace (`app` and `packages/*`): `corepack enable` then `pnpm install` at the root
+installs everything. It requires Node.js >=24. The web host consumes the engine as
+`@retiregolden/engine` and the planner UI as `@retiregolden/planner-ui` through workspace dependencies;
+both packages are published to npm from `packages/`.
 
 ```
 RetireGolden/
@@ -32,7 +33,7 @@ in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with 
 
 ```
 app/
-├── package.json          deps + scripts; engines: node >= 20
+├── package.json          deps + scripts; engines: node >= 24
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
 ├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, sitemap generator, license notices)
@@ -185,7 +186,7 @@ hosts use the `importEnabled` / `importResolved` props. Omitted configuration pr
 ## Commands
 
 Install once at the repo root with `corepack enable` then `pnpm install` (pnpm workspaces). The root `package.json` runs each of
-these across all three workspaces (engine, then planner-ui, then app); the same commands run from
+these across all three workspace packages (engine, then planner-ui, then app); the same commands run from
 `app/` or a `packages/*` directory scope to that workspace.
 
 | Command (repo root) | Does |
