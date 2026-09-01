@@ -223,28 +223,28 @@
   "measuredProof": {
     "method": "The blocks corpus and both engine source trees were materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. The verifier pins the corpus source blob, the equivalence runner/loader blobs, and a canonical hash of this spec's schema/name/why/entries measurement input before recomputing the proof. It also materializes the immutable head tree, replaces the helper's sole section 219 read with zero, captures that mutant, and asserts the recorded calibration movement.",
     "base": {
-      "commit": "0e79f795f861d0bb751cf9df94e866f5b59ca7f7",
-      "engineSourceTree": "ff7f021a45c6a1aa12592776f849ee6a403d7e33"
+      "commit": "db7acf090e8c1a8ecf1e28795ca24103f7e25fab",
+      "engineSourceTree": "942f73e66cb735678dde051e067397560e0112e8"
     },
     "head": {
-      "observedAtCommit": "8cfabec27c00c866497fcc4674735e3bbc96e7b0",
-      "engineSourceTree": "6f0f9d5b7b57b0634e99f1c8cb2c721ab41c1297"
+      "observedAtCommit": "4d6eb2366e33877c6664a773a972d7a1ce46ee93",
+      "engineSourceTree": "66013b655ba3fc22e53b9c1e997652a8a350aeb4"
     },
     "inputs": {
-      "corpusSourceBlob": "d75ba0297676f76b79b59c891fe77f13c8204e7a",
+      "corpusSourceBlob": "df416014ef1154a4a26026ceb026f6d467637765",
       "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
       "engineTreeLoaderBlob": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
-      "specMeasurementSha256": "7b459ac88a333269fa7a1481fc71db2a73642602e094e44c73176dea9991e4f9"
+      "specMeasurementSha256": "2abe09a8119b3caa52043d8a0a9ab353dc953a183bb73a5192627763a005e9cd"
     },
     "corpus": {
-      "members": 69,
-      "membersSha256": "b965e849bae9eb3e285cd5d7ef26b3504e00799b4e9050345861c638eee202b5",
-      "entries": 276
+      "members": 104,
+      "membersSha256": "aa2d3129d7b3fb4194066cb562f962bda2fb4442b8203c5eee6ea8697226a765",
+      "entries": 416
     },
     "capture": {
-      "baseDumpSha256": "ed58061a2b6fc6c9d7ff55fc679e91250f92e4e69f0001c4507ea82a81960ccb",
-      "headDumpSha256": "ed58061a2b6fc6c9d7ff55fc679e91250f92e4e69f0001c4507ea82a81960ccb",
-      "overallSha256": "2df77b2c6ad176950c094f00ed3349491dd37b3ebbda03bbb47f6fe914094b4b",
+      "baseDumpSha256": "e3112018d805ef3b7bc54ab957b2986b801b410aaab30943069971814c5dfb0d",
+      "headDumpSha256": "e3112018d805ef3b7bc54ab957b2986b801b410aaab30943069971814c5dfb0d",
+      "overallSha256": "6459258462781075a9da8087bd6a650fc8bd826679dee7c562d60124e26676aa",
       "entriesMoved": 0,
       "result": "IDENTICAL"
     },
