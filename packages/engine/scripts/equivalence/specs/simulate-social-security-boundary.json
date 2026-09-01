@@ -217,7 +217,7 @@
       "file": "projection/simulate.ts",
       "lines": [
         2443,
-        2475
+        2471
       ],
       "anchors": [
         {
@@ -233,8 +233,8 @@
           "text": "incomes.socialSecurity += socialSecurity.socialSecurity"
         },
         {
-          "line": 2474,
-          "text": "} = socialSecurity"
+          "line": 2470,
+          "text": "const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } ="
         }
       ]
     }
