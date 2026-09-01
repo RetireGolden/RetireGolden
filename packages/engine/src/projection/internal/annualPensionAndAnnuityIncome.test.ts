@@ -102,6 +102,62 @@ function annualInput(
 }
 
 describe('annualPensionAndAnnuityIncome', () => {
+  it('preserves every nonzero opening fold while adding the annual phase', () => {
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput([pension('private-pension', 1_000, 'private')]),
+      opening: {
+        annuityIncome: 101,
+        pensionIncome: 202,
+        ordinaryIncome: 303,
+        privateRetirementOrdinary: 404,
+        publicPensionOrdinary: 505,
+      },
+    })
+
+    expect(result.annuityIncome).toBe(101)
+    expect(result.pensionIncome).toBe(12_202)
+    expect(result.ordinaryIncome).toBe(12_303)
+    expect(result.privateRetirementOrdinary).toBe(12_404)
+    expect(result.publicPensionOrdinary).toBe(505)
+  })
+
+  it('preserves last-wins people and first-wins annual-state lookup', () => {
+    const firstDuplicate = {
+      ...pat,
+      name: 'First duplicate',
+      dob: '1970-01-01',
+    } satisfies Person
+    const lastDuplicate = {
+      ...pat,
+      name: 'Last duplicate',
+      dob: '1966-01-01',
+    } satisfies Person
+    const people = [firstDuplicate, lastDuplicate, sam]
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput(
+        [pension('private-pension', 1_000, 'private')],
+        [
+          { personId: pat.id, ageAttained: 56, alive: false, lifeAge: 95 },
+          { personId: pat.id, ageAttained: 60, alive: true, lifeAge: 95 },
+          { personId: sam.id, ageAttained: 60, alive: true, lifeAge: 95 },
+        ],
+      ),
+      people,
+      personById: new Map(people.map((person) => [person.id, person])),
+    })
+
+    expect(result.pensionIncome).toBe(6_000)
+    expect(result.rows[0]).toEqual({
+      kind: 'pension',
+      record: {
+        accountId: 'private-pension',
+        payeePersonId: sam.id,
+        amount: 6_000,
+        source: 'private',
+      },
+    })
+  })
+
   it('folds living and survivor pension payments into the correct state-tax subsets', () => {
     const living = annualPensionAndAnnuityIncome(annualInput([
       pension('private-pension', 1_000, 'private'),

@@ -259,7 +259,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-09-01",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies and inherited-Roth post-flip"
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual pension-and-annuity income planning is registered against internal/annualPensionAndAnnuityIncome.ts while this caller retains ordered exclusion-state and contract-value commits, runtime occurrence/application journaling, qualified-payment publication and cash-flow recording; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies and inherited-Roth post-flip"
     },
     {
       "path": "rmd/applicableAge.ts",
