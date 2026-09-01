@@ -168,5 +168,54 @@
       ]
     }
   ],
+  "measuredProof": {
+    "method": "The blocks corpus and both engine source trees are materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. Before any harness module executes, the verifier authenticates this spec against its path-aware clean-filter working-tree blob and the immutable HEAD blob, derives the complete local transitive import closure from committed source, and requires every closure member to match both its pinned HEAD blob and its clean-filter working-tree blob. It then recomputes corpus, captures, byte-identical structural comparison, reach, and all recorded hashes.",
+    "base": {
+      "commit": "70b7140a3a2e88dec8c3f18ab072f0c0dcfa9a68",
+      "engineSourceTree": "2c5123501390bd3a7633c9d2ae5727485dcae0b6"
+    },
+    "head": {
+      "observedAtCommit": "e2a2e09c4c97de1b94d08a30e09a96a5ae912ddc",
+      "engineSourceTree": "1e4d5af042b9a8405b96b28d78d7619d42e696d0"
+    },
+    "inputs": {
+      "harnessBlobs": {
+        "packages/engine/scripts/equivalence.mjs": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "c9b070bac3001e94292773899297ae7161e4d38e",
+        "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
+        "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
+        "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
+        "packages/engine/scripts/equivalence/encode.mjs": "8bb6b7f19eb068444ee7fa6970a704945ab28f06",
+        "packages/engine/scripts/equivalence/engine-tree.mjs": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
+        "packages/engine/scripts/equivalence/modes.mjs": "0c75aac27538942bf96517fd00c417fa8b967ab9",
+        "packages/engine/scripts/equivalence/reach.mjs": "81d6c4cce57b40f770be21b7a89ea2da9c0c217d",
+        "packages/engine/scripts/equivalence/usage.mjs": "0b3b3072c3e716d4bace88f6887a41bdda5d60d1",
+        "packages/engine/scripts/typescript-source-resolution.mjs": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a"
+      },
+      "specMeasurementSha256": "c5aee7aa84cd631cdb271432e4b2f5b7fb0f283c841ea0f0799839f3972dd283"
+    },
+    "corpus": {
+      "name": "blocks",
+      "members": 115,
+      "membersSha256": "4e609b610a0e4355d383bf74673d7d70d2ea8d404f7fec8a7c57b31869c77e4a",
+      "entries": 460
+    },
+    "capture": {
+      "baseDumpSha256": "d6c8a18e3d123e649fd96d30f143abbe16b93d15c65578d7986b333543591f06",
+      "headDumpSha256": "d6c8a18e3d123e649fd96d30f143abbe16b93d15c65578d7986b333543591f06",
+      "baseOverallSha256": "dbf6aa6ee027bf7b2d2b0de1ea6807eb1e343107b1cb1ae72d8ca84faf161648",
+      "headOverallSha256": "dbf6aa6ee027bf7b2d2b0de1ea6807eb1e343107b1cb1ae72d8ca84faf161648",
+      "entriesMoved": 0,
+      "entriesIdentical": 460,
+      "result": "IDENTICAL"
+    },
+    "reach": {
+      "entries": 11,
+      "unreached": 0,
+      "entriesWithColdWholeLines": 0,
+      "entriesWithReportedColdSubLineRegions": 6
+    },
+    "scope": "The scalar-QCD source extraction changes no captured output in any block member or mode. The helper and caller retain named-request stand-down, donor eligibility and per-person caps, routed-RMD attribution, grouped logical beyond-RMD debits, exact-cent suppression, runtime/deferred-character publication, and ordered history writes. Focused helper and hostile delegation tests independently pin identity, atomicity, defensive rejection, and publication contracts that a byte-identical dump cannot prove."
+  },
   "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on any cold executable whole line in a reached range. JavaScript line coverage cannot distinguish every ternary, nullish or compound-condition operand sharing one physical line, so focused hostile tests must be read alongside the differential proof."
 }
