@@ -4,8 +4,8 @@
  * Positive case for estate/guaranteed-income depth enhancement.
  */
 
-import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'annuity-purchases-estate'
 
@@ -128,7 +128,7 @@ export function buildAnnuityEstate(): Plan {
     },
   ]
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`annuity-purchases-estate invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }

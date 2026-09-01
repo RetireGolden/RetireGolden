@@ -21,6 +21,8 @@ export function exampleIdFactory(exampleId: string): () => string {
   return () => exampleEntityId(exampleId, `seq-${index++}`)
 }
 
+// These are the established example values, intentionally pinned apart from
+// createEmptyPlan's defaults so existing golden projections stay stable.
 const EXAMPLE_BASELINE_ASSUMPTIONS = {
   inflationPct: 2.5,
   healthcareExtraInflationPct: 2,
@@ -65,18 +67,8 @@ export function createExamplePlan({
     newId: exampleIdFactory(exampleId),
   })
 
-  plan.assumptions = {
-    ...EXAMPLE_BASELINE_ASSUMPTIONS,
-    ssCola: { ...EXAMPLE_BASELINE_ASSUMPTIONS.ssCola },
-    ...assumptions,
-  }
-  plan.strategies = {
-    ...EXAMPLE_BASELINE_STRATEGIES,
-    withdrawalOrder: { ...EXAMPLE_BASELINE_STRATEGIES.withdrawalOrder },
-    rothConversion: { ...EXAMPLE_BASELINE_STRATEGIES.rothConversion },
-    retirementActions: [],
-    ...strategies,
-  }
+  plan.assumptions = { ...structuredClone(EXAMPLE_BASELINE_ASSUMPTIONS), ...assumptions }
+  plan.strategies = { ...structuredClone(EXAMPLE_BASELINE_STRATEGIES), ...strategies }
   return plan
 }
 

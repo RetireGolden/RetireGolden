@@ -5,8 +5,8 @@
  * RMD impact, and estate outcome differences.
  */
 
-import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
-import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId } from './buildContext'
+import type { Plan } from '@retiregolden/engine/model/plan'
+import { EXAMPLE_FIXED_YEAR, createExamplePlan, exampleEntityId, parseExamplePlan } from './buildContext'
 
 const EXAMPLE_ID = 'no-annuity-brokerage'
 
@@ -83,7 +83,7 @@ export function buildNoAnnuityBrokerage(): Plan {
   }
 
 
-  const parsed = parsePlan(plan)
+  const parsed = parseExamplePlan(plan)
   if (!parsed.ok) throw new Error(`no-annuity-brokerage invalid: ${parsed.issues.join('; ')}`)
   return parsed.plan
 }
