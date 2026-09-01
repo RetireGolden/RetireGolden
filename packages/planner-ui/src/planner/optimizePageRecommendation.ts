@@ -4,6 +4,29 @@ import type {
 } from '@retiregolden/engine/projection/optimizePlan'
 import { fmtMoney, fmtMoneyCompact } from './format'
 
+/**
+ * True when a run ended with nothing to recommend: the solver found no
+ * feasible schedule and neither the incumbent strategy, a tournament
+ * candidate, nor a readiness veto stands in for a result. The page shows
+ * "Couldn't optimize this plan" on exactly this condition, and the
+ * recommendation report must not be offered for it (#426). An incumbent-holds
+ * outcome — the plan's own conversions beat everything, even when the fresh
+ * solve was infeasible — or a no-beneficial-conversions outcome is still a
+ * recommendation ("no change"), so it stays reportable. Keep the argument
+ * order aligned with the page's result-card chain, which tests incumbent
+ * holds before infeasibility.
+ */
+export function optimizerProducedNoRecommendation(args: {
+  scheduleStatus: 'optimal' | 'feasible' | 'infeasible' | 'timeout' | null
+  incumbentHolds: boolean
+  candidateWins: boolean
+  readinessVeto: RetirementActionReadinessVetoSummary | null | undefined
+}): boolean {
+  return (
+    !args.incumbentHolds && args.scheduleStatus === 'infeasible' && !args.candidateWins && !args.readinessVeto
+  )
+}
+
 /** Publication copy follows the readiness veto while retaining exact metrics. */
 export function publicationValidation(
   validation: ExactLedgerValidation,

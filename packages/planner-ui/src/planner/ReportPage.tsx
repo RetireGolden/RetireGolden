@@ -5,6 +5,7 @@
  * old jspdf/html2canvas path with native print CSS.
  */
 
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
 import {
   Area,
@@ -100,6 +101,17 @@ function ReportBody() {
   const reportBranding = useReportBranding()
   const view = useProjection(plan)
   const { result, summary } = view
+  // The report route sits outside the workspace shell, so it names its own
+  // tab: plan + report context, like the rail screens (#430).
+  useEffect(() => {
+    document.title = `${plan.name} · Report · RetireGolden`
+  }, [plan.name])
+  useEffect(
+    () => () => {
+      document.title = 'RetireGolden'
+    },
+    [],
+  )
   const acaLedgerRows = acaLedgerSummary(result.years)
   const inheritedSchedules = buildInheritedSchedules(plan, result.years).accounts
   const hasCarryforward = hasCapitalLossCarryforward(
@@ -175,9 +187,17 @@ function ReportBody() {
           <ReportKpi label="Avg Savings Rate" value={`${summary.averagePreRetirementSavingsRatePct.toFixed(1)}%`} sub="pre-retirement average" />
           <ReportKpi label="Coast-FIRE Target" value={fmtMoneyCompact(summary.coastFireNumber)} sub="needed today" />
         </div>
+        {/* Each chart is a named image (#430): the year table below is the
+            accessible data alternative, so the print charts drop Recharts'
+            keyboard tooltip layer rather than nest a focusable application
+            inside an image. */}
         <div className="report-chart">
           <h3>Investable balances by account type (nominal)</h3>
-          <AreaChart width={700} height={260} data={chartRows} margin={{ left: 8, right: 8, top: 8 }}>
+          <div
+            role="img"
+            aria-label={`Stacked area chart of investable balances by account type, ${result.years[0]?.year ?? ''} to ${result.endYear}, nominal dollars. Year-by-year figures are in the appendix table below.`}
+          >
+          <AreaChart width={700} height={260} data={chartRows} margin={{ left: 8, right: 8, top: 8 }} accessibilityLayer={false}>
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 11 }} />
             <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 11 }} width={64} />
@@ -187,10 +207,15 @@ function ReportBody() {
               <Area key={c} dataKey={c} stackId="bal" name={CAT_LABEL[c]} stroke={CAT_COLOR[c]} fill={CAT_COLOR[c]} fillOpacity={0.55} isAnimationActive={false} />
             ))}
           </AreaChart>
+          </div>
         </div>
         <div className="report-chart">
           <h3>Income vs. spending (nominal)</h3>
-          <BarChart width={700} height={220} data={chartRows} margin={{ left: 8, right: 8, top: 8 }}>
+          <div
+            role="img"
+            aria-label={`Bar chart of total income against spending plus tax, ${result.years[0]?.year ?? ''} to ${result.endYear}, nominal dollars. Year-by-year figures are in the appendix table below.`}
+          >
+          <BarChart width={700} height={220} data={chartRows} margin={{ left: 8, right: 8, top: 8 }} accessibilityLayer={false}>
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 11 }} />
             <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 11 }} width={64} />
@@ -200,10 +225,15 @@ function ReportBody() {
             <Bar dataKey="income" name="Income" fill="var(--chart-3)" isAnimationActive={false} />
             <Bar dataKey="spending" name="Spending + tax" fill="var(--chart-1)" isAnimationActive={false} />
           </BarChart>
+          </div>
         </div>
         <div className="report-chart">
           <h3>Tax and MAGI (nominal)</h3>
-          <LineChart width={700} height={200} data={chartRows} margin={{ left: 8, right: 8, top: 8 }}>
+          <div
+            role="img"
+            aria-label={`Line chart of total tax and MAGI, ${result.years[0]?.year ?? ''} to ${result.endYear}, nominal dollars. Year-by-year figures are in the appendix table below.`}
+          >
+          <LineChart width={700} height={200} data={chartRows} margin={{ left: 8, right: 8, top: 8 }} accessibilityLayer={false}>
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 11 }} />
             <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 11 }} width={64} />
@@ -212,6 +242,7 @@ function ReportBody() {
             <Line dataKey="tax" name="Tax" stroke="var(--chart-4)" dot={false} strokeWidth={2} isAnimationActive={false} />
             <Line dataKey="magi" name="MAGI" stroke="var(--chart-2)" dot={false} strokeWidth={2} isAnimationActive={false} />
           </LineChart>
+          </div>
         </div>
       </section>
 
@@ -275,7 +306,7 @@ function ReportBody() {
             <tr><td style={td}>Baseline annual spending</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.baseAnnual)} (today's $)</td></tr>
             <tr><td style={td}>Retirement phases</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.phases.length ? plan.expenses.phases.map((p) => `${p.multiplier}× from ${p.fromAge}`).join(', ') : 'none'}</td></tr>
             <tr><td style={td}>One-time goals</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.oneTimeGoals.length}</td></tr>
-            <tr><td style={td}>Legacy pre-65 premium input / person</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.healthcare.pre65MonthlyPremiumPerPerson)}/mo{acaReportStatus(plan, result.years)}</td></tr>
+            <tr><td style={td}>Pre-65 premium / person</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.healthcare.pre65MonthlyPremiumPerPerson)}/mo{acaReportStatus(plan, result.years)}</td></tr>
             <tr><td style={td}>Withdrawal order</td><td style={{ ...td, textAlign: 'right' }}>{withdrawalSummary(plan)}</td></tr>
             <tr><td style={td}>Roth conversions</td><td style={{ ...td, textAlign: 'right' }}>{conversionSummary(plan)}</td></tr>
             <tr><td style={td}>QCD per year</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.strategies.qcdAnnual)}</td></tr>

@@ -31,14 +31,24 @@ function filingLabel(status: SurvivorScenarioRow['firstSurvivorYear']['filingSta
       : 'single'
 }
 
+/**
+ * One filing segment per line, each status and year range kept whole, so a
+ * transition reads as two scannable lines instead of a many-line wrap in the
+ * narrow column (#431).
+ */
 function TimelineCell({ row }: { row: SurvivorScenarioRow }) {
   return (
     <span>
       {row.filingTimeline.map((seg, i) => (
-        <span key={seg.fromYear}>
-          {i > 0 ? ' → ' : ''}
-          {filingLabel(seg.status)}
-          <span className="small"> {seg.fromYear === seg.toYear ? `(${seg.fromYear})` : `(${seg.fromYear}–${seg.toYear})`}</span>
+        <span key={seg.fromYear} className="survivor-timeline-segment">
+          {i > 0 ? (
+            <>
+              <span aria-hidden="true">→ </span>
+              <span className="sr-only">then </span>
+            </>
+          ) : null}
+          <span className="nowrap">{filingLabel(seg.status)}</span>{' '}
+          <span className="small nowrap">{seg.fromYear === seg.toYear ? `(${seg.fromYear})` : `(${seg.fromYear}–${seg.toYear})`}</span>
         </span>
       ))}
     </span>
@@ -56,14 +66,18 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
   }
   return (
     <div className="year-table-wrap" style={{ border: 'none' }}>
-      <table className="compare-table">
+      {/* survivor-table: a column floor so headers wrap on word boundaries at
+          most once, and the wrap scrolls instead of stacking them (#431). */}
+      <table className="compare-table survivor-table">
         <thead>
           <tr>
             <th>Dies at</th>
             <th>Filing status</th>
             <th>Household Social Security</th>
             <th>Tax around the transition</th>
-            <th>IRMAA relief (SSA-44)</th>
+            <th>
+              IRMAA relief <span className="nowrap">(SSA-44)</span>
+            </th>
             <th>Survivor spending</th>
             <th>Convert-early lever</th>
           </tr>
@@ -75,7 +89,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
                 <strong>{row.deathAge}</strong>
                 <div className="small">{row.deathYear}</div>
               </td>
-              <td style={{ maxWidth: '14rem', textAlign: 'left' }}>
+              <td className="survivor-filing-cell">
                 <TimelineCell row={row} />
               </td>
               <td>

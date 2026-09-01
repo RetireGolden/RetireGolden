@@ -8,6 +8,8 @@
 
 import { Link } from 'react-router'
 
+import { ExternalLink } from './components/ExternalLink'
+
 type PrimarySource = { name: string; scope: string; href: string }
 
 const PRIMARY_SOURCES: PrimarySource[] = [
@@ -59,9 +61,7 @@ export function SourcesPage() {
           {PRIMARY_SOURCES.map((s) => (
             <tr key={s.href}>
               <td>
-                <a href={s.href} target="_blank" rel="noreferrer">
-                  {s.name}
-                </a>
+                <ExternalLink href={s.href}>{s.name}</ExternalLink>
               </td>
               <td>{s.scope}</td>
             </tr>

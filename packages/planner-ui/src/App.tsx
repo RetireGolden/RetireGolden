@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, useLocation, useRoutes } from 'react-router'
+import { Link, NavLink, useLocation, useRoutes } from 'react-router'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
 import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './routes/groups'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
@@ -20,7 +20,13 @@ const ROUTE_TITLES: ReadonlyArray<[prefix: string, title: string]> = [
   ['/examples', 'Examples'],
   ['/import', 'Import & migrate'],
   ['/compare', 'Compare plans'],
-  ['/learn', 'Learn'],
+  // Learn routes each get their own name so tabs and history can tell the
+  // landing, glossary, sources, and articles apart (#417). Longer prefixes
+  // sit first: the match is first-wins. An article's title is resolved from
+  // the registry asynchronously (see learnArticleSlugOf).
+  ['/learn/glossary', 'Glossary'],
+  ['/learn/sources', 'Sources & review methodology'],
+  ['/learn', 'Learning Center'],
   ['/disclaimer', 'Disclaimer'],
   ['/how-tested', 'How RetireGolden is tested'],
 ]
@@ -30,6 +36,12 @@ function routeTitleOf(pathname: string): string | null {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return title
   }
   return null
+}
+
+/** `/learn/<slug>` for an article route; null for the landing, glossary, and sources. */
+function learnArticleSlugOf(pathname: string): string | null {
+  const slug = pathname.match(/^\/learn\/([^/]+)\/?$/)?.[1]
+  return slug && slug !== 'glossary' && slug !== 'sources' ? slug : null
 }
 
 type ThemeMode = 'light' | 'dark' | 'system'
@@ -109,6 +121,12 @@ export function App({
   // so composing the exported groups this way renders identically.
   const routeTree = useRoutes([...plannerHomeRoutes, ...plannerWorkspaceRoutes, ...plannerContentRoutes])
   const isLanding = location.pathname === '/' || location.pathname === '/examples'
+  // How-tested is reached from Disclaimer and has no nav item of its own, so
+  // Disclaimer stays the active place while it is open (#419). NavLink only
+  // sets aria-current for its own route match, hence a plain Link below.
+  const disclaimerActive = ['/disclaimer', '/how-tested'].some(
+    (p) => location.pathname === p || location.pathname.startsWith(`${p}/`),
+  )
   const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialThemeMode)
   const isFirstRoute = useRef(true)
 
@@ -130,6 +148,17 @@ export function App({
       } else {
         const title = routeTitleOf(location.pathname)
         document.title = title ? `${title} · RetireGolden` : 'RetireGolden'
+        const slug = learnArticleSlugOf(location.pathname)
+        if (slug) {
+          // Article names live in the Learning Center registry, which stays
+          // out of the landing chunk; the generic Learning Center title holds
+          // until it loads. An unknown slug keeps that title (the route
+          // renders "Article not found").
+          void import('./learn/learningRegistry').then((m) => {
+            const article = m.getArticle(slug)
+            if (!cancelled && article) document.title = `${article.title} · RetireGolden`
+          })
+        }
       }
     }
     if (isFirstRoute.current) {
@@ -196,9 +225,13 @@ export function App({
                   <NavLink to="/learn" className={navClass}>
                     Learn
                   </NavLink>
-                  <NavLink to="/disclaimer" className={navClass}>
+                  <Link
+                    to="/disclaimer"
+                    className={navClass({ isActive: disclaimerActive })}
+                    aria-current={disclaimerActive ? 'page' : undefined}
+                  >
                     Disclaimer
-                  </NavLink>
+                  </Link>
                 </nav>
                 <div className="theme-switcher-cluster">
                   <span className="theme-switcher-label" id="theme-switcher-label">

@@ -5,6 +5,9 @@ import { MemoryRouter } from 'react-router'
 import type { ArticleBlock } from './learningRegistry'
 import { ArticleBody } from './ArticleBody'
 import { SourceList } from './components/SourceList'
+import { ExternalLink } from './components/ExternalLink'
+import { sourceLabel } from './components/sourceLabel'
+import { LearnAboutScreen } from './LearnAboutScreen'
 import { RelatedArticles } from './components/RelatedArticles'
 
 function renderBlocks(blocks: ArticleBlock[]): string {
@@ -109,6 +112,68 @@ describe('SourceList', () => {
     const html = renderToString(<SourceList urls={['https://www.irs.gov/']} />)
     expect(html).toContain('href="https://www.irs.gov/"')
     expect(html).toContain('Sources')
+  })
+
+  it('labels each source host + path with the new-tab cue, not the bare URL (#418)', () => {
+    const url =
+      'https://www.irs.gov/retirement-plans/plan-participant-employee/rollovers-of-retirement-plan-and-ira-distributions'
+    const html = renderToString(<SourceList urls={[url]} />)
+    expect(html).toContain(`href="${url}"`)
+    expect(html).toContain(`title="${url}"`)
+    expect(html).toContain('irs.gov/…/rollovers-of-retirement-plan-and-ira-distributions')
+    expect(html).not.toContain(`>${url}<`)
+    expect(html).toContain('target="_blank"')
+    expect(html).toContain('↗')
+    expect(html).toContain('opens in a new tab')
+  })
+})
+
+describe('LearnAboutScreen', () => {
+  it('drops slugs the screen already links inline, and renders nothing when none remain (#429)', () => {
+    const route = '/plan/:planId/relocation'
+    const withAll = renderToString(
+      <MemoryRouter>
+        <LearnAboutScreen route={route} />
+      </MemoryRouter>,
+    )
+    const hrefs = (html: string) => [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1])
+    expect(hrefs(withAll)).toContain('/learn/what-changes-when-you-move-states')
+    const excluded = renderToString(
+      <MemoryRouter>
+        <LearnAboutScreen route={route} exclude={['what-changes-when-you-move-states']} />
+      </MemoryRouter>,
+    )
+    // Only the excluded slug goes; every other related article (none today) stays.
+    expect(hrefs(excluded)).toEqual(hrefs(withAll).filter((h) => h !== '/learn/what-changes-when-you-move-states'))
+    // With nothing left to list, the cluster renders nothing rather than an empty aside.
+    if (hrefs(excluded).length === 0) expect(excluded).toBe('')
+  })
+})
+
+describe('ExternalLink', () => {
+  it('opens in a new tab with a visible ↗ and a screen-reader cue', () => {
+    const html = renderToString(<ExternalLink href="https://www.ssa.gov/">SSA</ExternalLink>)
+    expect(html).toContain('href="https://www.ssa.gov/"')
+    expect(html).toContain('target="_blank"')
+    expect(html).toContain('rel="noopener noreferrer"')
+    expect(html).toContain('<span aria-hidden="true"> ↗</span>')
+    expect(html).toContain('<span class="sr-only"> (opens in a new tab)</span>')
+  })
+
+  it('derives short labels: host + short path, host + last segment for long paths', () => {
+    expect(sourceLabel('https://www.irs.gov/')).toBe('irs.gov')
+    expect(sourceLabel('https://www.irs.gov/retirement-plans/roth-iras')).toBe('irs.gov/retirement-plans/roth-iras')
+    expect(sourceLabel('https://www.ssa.gov/benefits/retirement/planner/agereduction.html')).toBe(
+      'ssa.gov/…/agereduction.html',
+    )
+    expect(sourceLabel('not a url')).toBe('not a url')
+    // Query strings survive, so two editions of one page stay distinguishable.
+    expect(sourceLabel('https://www.ssa.gov/oact/cola/Benefits.html?year=2026')).toBe(
+      'ssa.gov/oact/cola/Benefits.html?year=2026',
+    )
+    expect(sourceLabel('https://www.ssa.gov/benefits/retirement/planner/agereduction.html?year=2027')).toBe(
+      'ssa.gov/…/agereduction.html?year=2027',
+    )
   })
 })
 

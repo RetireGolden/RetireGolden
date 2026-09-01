@@ -19,12 +19,21 @@ export function LearnAboutScreen({
   route,
   title = 'Learn about this screen',
   limit = MAX_LINKS,
+  exclude = [],
 }: {
   route: string
   title?: string
   limit?: number
+  /**
+   * Slugs the screen already links inline (its intro, a callout), so the
+   * cluster does not repeat the same destination a second time (#429).
+   */
+  exclude?: readonly string[]
 }) {
-  const articles = articlesForRoute(route).slice().sort(byListingOrder).slice(0, limit)
+  const articles = articlesForRoute(route)
+    .filter((a) => !exclude.includes(a.slug))
+    .sort(byListingOrder)
+    .slice(0, limit)
   if (articles.length === 0) return null
   return (
     <aside className="learn-screen" aria-label={title}>

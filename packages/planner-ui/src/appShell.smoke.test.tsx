@@ -87,7 +87,7 @@ describe('App shell smoke', () => {
         </MemoryRouter>,
       )
     })
-    expect(document.title).toBe('Learn · RetireGolden')
+    expect(document.title).toBe('Learning Center · RetireGolden')
 
     await act(async () => {
       ;(container.querySelector('a[href="/"]') as HTMLAnchorElement).click()
@@ -96,6 +96,65 @@ describe('App shell smoke', () => {
     expect(document.title).toBe('RetireGolden')
     expect(document.title).not.toMatch(/Your plans|Learn/)
     resolveList?.([])
+    await act(async () => root.unmount())
+  })
+
+  it('titles each Learn route distinctly: landing, glossary, sources, article (#417)', async () => {
+    // A fresh router per path: MemoryRouter reads initialEntries only on mount.
+    const mountAt = async (path: string) => {
+      const container = document.createElement('div')
+      document.body.appendChild(container)
+      const root = createRoot(container)
+      await act(async () => {
+        root.render(
+          <MemoryRouter initialEntries={[path]}>
+            <App />
+          </MemoryRouter>,
+        )
+      })
+      return () => act(async () => root.unmount())
+    }
+
+    let unmount = await mountAt('/learn/glossary')
+    expect(document.title).toBe('Glossary · RetireGolden')
+    await unmount()
+    unmount = await mountAt('/learn/sources')
+    expect(document.title).toBe('Sources & review methodology · RetireGolden')
+    await unmount()
+    // An article holds the Learning Center title until the registry chunk
+    // resolves its name, then takes the article title.
+    unmount = await mountAt('/learn/about-retiregolden')
+    expect(document.title).toMatch(/^(Learning Center|About RetireGolden) · RetireGolden$/)
+    await waitFor(() => document.title === 'About RetireGolden · RetireGolden', { what: 'the article title' })
+    await unmount()
+    // An unknown slug never claims an article name: let the registry import
+    // that the route kicked off settle, then the title must still be generic.
+    unmount = await mountAt('/learn/no-such-article')
+    expect(document.title).toBe('Learning Center · RetireGolden')
+    await act(async () => {
+      const registry = await import('./learn/learningRegistry')
+      expect(registry.getArticle('no-such-article')).toBeUndefined()
+    })
+    expect(document.title).toBe('Learning Center · RetireGolden')
+    await unmount()
+  })
+
+  it('keeps Disclaimer the active header item on /how-tested (#419)', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/how-tested']}>
+          <App />
+        </MemoryRouter>,
+      )
+    })
+    const nav = container.querySelector('nav[aria-label="Primary"]')!
+    const active = Array.from(nav.querySelectorAll('a')).filter((a) => a.getAttribute('aria-current') === 'page')
+    expect(active.map((a) => a.textContent)).toEqual(['Disclaimer'])
+    expect(active[0]!.className).toContain('nav-link--active')
+    expect(active[0]!.getAttribute('href')).toBe('/disclaimer')
     await act(async () => root.unmount())
   })
 

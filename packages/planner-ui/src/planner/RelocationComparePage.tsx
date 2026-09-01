@@ -271,7 +271,7 @@ export function RelocationComparePage() {
             <strong>Income tax is one relocation factor, not the decision.</strong> Property and sales taxes, housing
             and living costs, healthcare access, and being near people you love are all outside this model. The
             optional local-rate and spending-adjustment knobs are blunt approximations you control. Nothing here
-            recommends a &quot;best state.&quot; <LearnLink {...LEARN.stateRelocation} />
+            recommends a &quot;best state.&quot;
           </p>
         </div>
         {overrideActive ? (
@@ -481,7 +481,9 @@ export function RelocationComparePage() {
         </div>
       ) : null}
 
-      <LearnAboutScreen route="/plan/:planId/relocation" />
+      {/* The intro already links the moving-states article; one Learn
+          affordance per destination on this screen (#429). */}
+      <LearnAboutScreen route="/plan/:planId/relocation" exclude={[LEARN.stateRelocation.slug]} />
     </section>
   )
 }
