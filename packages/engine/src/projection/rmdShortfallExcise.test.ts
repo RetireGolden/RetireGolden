@@ -324,7 +324,7 @@ describe('applicable-plan boundaries and Roth scope', () => {
     })
   })
 
-  it('taxes an inherited Roth residue in the emptying year and every later year', () => {
+  it('settles an inherited Roth residue that rounds to zero ledger cents', () => {
     const plan = singlePersonPlan({ dob: '1980-06-15', planningAge: 60 })
     plan.household.people[0]!.id = 'beneficiary'
     plan.accounts = [{
@@ -358,7 +358,13 @@ describe('applicable-plan boundaries and Roth scope', () => {
       expect(year.inheritedAccounts?.[0]?.requirementKind).toBe('final-sweep')
       expect(year.inheritedAccounts?.[0]?.requiredAmount).toBeCloseTo(0.004, 12)
       expect(year.inheritedDistribution).toBe(0)
-      expect(year.rmdShortfallExciseTax).toBeCloseTo(0.001, 12)
+      expect(year.rmdShortfallExciseDetails).toEqual([expect.objectContaining({
+        requiredAmount: 0.004,
+        distributedByDeadline: 0.004,
+        shortfall: 0,
+        reason: 'noShortfall',
+      })])
+      expect(year.rmdShortfallExciseTax).toBe(0)
     }
   })
 
@@ -431,9 +437,20 @@ describe('applicable-plan boundaries and Roth scope', () => {
     const emptyingYear = result.years.find((year) => year.year === 2032)!
 
     expect(emptyingYear.rmdShortfallExciseDetails).toHaveLength(2)
+    const rothPool: RmdApplicablePlan = {
+      kind: 'inheritedIras',
+      payeePersonId: 'beneficiary',
+      decedentId: 'decedent',
+      iraType: 'roth',
+    }
+    expect(emptyingYear.rmdShortfallExciseDetails?.map((detail) => detail.obligationId))
+      .toEqual([
+        rmdShortfallObligationId(traditionalPool, 2032),
+        rmdShortfallObligationId(rothPool, 2032),
+      ])
     expect(emptyingYear.rmdShortfallExciseDetails?.map((detail) => detail.reason))
-      .toEqual(['corrected10Percent', 'default25Percent'])
-    expect(emptyingYear.rmdShortfallExciseTax).toBeCloseTo(0.004 * 0.10 + 0.004 * 0.25, 12)
+      .toEqual(['noShortfall', 'noShortfall'])
+    expect(emptyingYear.rmdShortfallExciseTax).toBe(0)
   })
 
   it('keeps inherited employer plans particular to each account even for one decedent', () => {

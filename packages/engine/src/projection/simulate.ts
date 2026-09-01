@@ -81,6 +81,7 @@ import {
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { annualAnnuityPurchaseFunding } from './internal/annualAnnuityPurchaseFunding.js'
 import { annualOwnerRmdPlan } from './internal/annualOwnerRmdPlan.js'
+import { annualInheritedIraDistributions } from './internal/annualInheritedIraDistributions.js'
 import { annualPermanentLifeTransitions } from './internal/annualPermanentLifeTransitions.js'
 import { annualPropertyCarryingCosts } from './internal/annualPropertyCarryingCosts.js'
 import { annualSeppDistributions } from './internal/annualSeppDistributions.js'
@@ -117,12 +118,13 @@ import { stateParamsFor } from '../params/state/index.js'
 import type { ParameterPack } from '../params/types.js'
 import {
   computeRmdShortfallExcise,
-  rmdApplicablePlanKey,
-  rmdShortfallObligationId,
   type RmdApplicablePlan,
   type RmdShortfallExciseResult,
   type RmdShortfallReliefElection,
 } from '../rmd/rmdShortfallExcise.js'
+import {
+  rmdApplicablePlanForAccount as identifyRmdApplicablePlan,
+} from '../rmd/rmdApplicablePlanForAccount.js'
 import { sizeRothConversion } from '../strategies/rothConversion.js'
 import {
   ROTH_QUALIFIED_AGE,
@@ -133,8 +135,6 @@ import {
 } from '../strategies/rothBasis.js'
 import {
   classifyInheritedRegime,
-  inheritedForcedAmount,
-  inheritedRequirementForYear,
   type InheritedRegimeClassification,
   type InheritedRegimeResult,
 } from '../strategies/inheritedIra.js'
@@ -937,49 +937,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   const people = plan.household.people
   const primary = people[0]!
   const personById = new Map(people.map((p) => [p.id, p]))
-  /**
-   * Identify the §54.4974-1(a)(2)(iv) applicable plan without inferring facts
-   * the Plan does not carry. Owned traditional IRAs aggregate per owner;
-   * explicitly typed 403(b)s aggregate per owner; an ordinary employer plan is
-   * its own plan. Inherited IRAs aggregate only when an explicit decedentId
-   * proves the same decedent, and traditional and Roth pools remain separate.
-   * An inherited employer account remains particular to its plan. Absence
-   * fails closed per account instead of grouping accounts whose demographic
-   * facts merely happen to match.
-   */
   const rmdApplicablePlanForAccount = (
     account: Extract<Account, { type: 'traditional' | 'roth' }>,
-  ): RmdApplicablePlan => {
-    const payeePersonId = account.ownerPersonId ?? primary.id
-    if (account.inherited !== undefined) {
-      if (account.kind === 'employer') {
-        return {
-          kind: 'inheritedEmployerPlan',
-          payeePersonId,
-          accountId: account.id,
-        }
-      }
-      return account.inherited.decedentId === undefined
-        ? { kind: 'inheritedIraAccount', payeePersonId, accountId: account.id }
-        : {
-            kind: 'inheritedIras',
-            payeePersonId,
-            decedentId: account.inherited.decedentId,
-            iraType: account.type,
-          }
-    }
-    if (account.type === 'traditional' && account.kind === 'ira') {
-      return { kind: 'ownedTraditionalIras', payeePersonId }
-    }
-    if (
-      account.type === 'traditional' &&
-      account.kind === 'employer' &&
-      account.employerPlanType === '403b'
-    ) {
-      return { kind: 'aggregable403bPlans', payeePersonId }
-    }
-    return { kind: 'employerPlan', accountId: account.id }
-  }
+  ): RmdApplicablePlan => identifyRmdApplicablePlan(account, primary.id)
   const reliefCandidatesByObligationId = new Map<string, RmdShortfallReliefElection[]>()
   for (const election of opts.rmdShortfallReliefElections ?? []) {
     reliefCandidatesByObligationId.set(election.obligationId, [
@@ -3727,7 +3687,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // observe one aggregate live state per compatible logical account ID. The
     // selected facts come from the last physical row and ID order from the
     // first, while positional phases such as contributions retain every row.
-    const rmdBalanceByAccountId = annualBalanceByAccountId
     const rmdBalances = annualIdKeyedBalances
     // Year-scoped omitted-basis owners: same aggregation membership the
     // Form 8606 settlement uses this year (includes post-election treat-as-own).
@@ -3919,7 +3878,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const {
       rmdTakeByAccount: plannedRmdTakeByAccount,
       rmdObligationByAccount,
-      applicablePlanByKey,
       iraRmdRequiredByOwner,
       iraRmdUnsatisfiedByOwner,
       rmdShortfallObligations,
@@ -4078,424 +4036,74 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // --- Inherited IRA: exact-ledger execution (WS4) ------------------------
-    // Two paths, chosen once from the per-simulation classification cache:
-    //   1. Legacy (X1 / no-beneficiary / non-X1 refusal fallback): the prior
-    //      inheritedForcedAmount behavior — byte-identical for two-field
-    //      traditional accounts.
-    //   2. Classified: inheritedRequirementForYear on the real prior-Dec-31
-    //      balance. year-of-death-rmd / annual-rmd force min(required, balance)
-    //      (noticeWaived amounts still execute); final-sweep takes the ENTIRE
-    //      current balance; none forces 0. Regime law is never re-derived here.
-    // S2: years before treatAsOwnElectionYear run the synthetic S0 schedule;
-    // from the election year the account left this loop for owner RMD above.
-    // K1/K2 (Roth): forced dollars are Roth-character — no ordinary income, no
-    // penalty — and join the Roth withdrawal category; traditional forced still
-    // supplies ordinary income. Evidence distinguishes required vs voluntary.
-    let inheritedTotal = 0
-    /** Traditional-character forced amount (ordinary income + traditional withdrawals). */
-    let inheritedOrdinaryIncome = 0
-    /** Roth-character forced amount (Roth withdrawals only; never ordinary income). */
-    let inheritedRothForced = 0
-    const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] = []
-    for (const state of rmdBalances) {
-      if (state.account.type !== 'traditional' && state.account.type !== 'roth') continue
-      if (state.account.inherited === undefined) continue
-      const cache = inheritedClassCache.get(state.account.id)
-      if (cache === undefined) continue
-      const beneficiary = personById.get(state.account.ownerPersonId ?? primary.id)!
-      const beneficiaryState = stateOf(beneficiary.id)
-      // Dead beneficiary: do not silently drop the schedule. Successor rules
-      // after an EDB/spouse death are out of scope (matrix X2); emit a flag
-      // row every post-death year. Checked before the S2 post-flip arm so a
-      // dead beneficiary gets the successor row, never an owner-side row.
-      if (!beneficiaryState.alive) {
-        const primaryClass =
-          cache.primary.kind === 'regime' ? cache.primary : undefined
-        inheritedYearEvidenceDraft.push({
-          accountId: state.account.id,
-          ownerPersonId: cache.ownerPersonId,
-          regime: primaryClass?.regime ??
-            (cache.primary.kind === 'refusal' ? cache.primary.refusal : 'unsupported'),
-          matrixRow: primaryClass?.row ??
-            (cache.primary.kind === 'refusal' ? cache.primary.row : 'X2'),
-          ...(primaryClass !== undefined
-            ? { classification: primaryClass.classification }
-            : {}),
-          refusalReason:
-            'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope',
-          requirementKind: 'none',
-          requiredAmount: 0,
-          executedRequiredAmount: 0,
-          voluntaryAmount: 0,
-          disclosures: ['successor-clock-out-of-scope'],
-          citations: primaryClass?.citations ??
-            (cache.primary.kind === 'refusal'
-              ? cache.primary.citations
-              : [
-                  'IRC §401(a)(9)(H)(iii)',
-                  'Treas. Reg. §1.401(a)(9)-5(e)(3)',
-                ]),
-        })
-        continue
+    // Classify and plan the whole logical-ID phase before touching any live
+    // balance. This keeps compatible duplicate physical rows behind one
+    // aggregate distribution, evidence row, runtime occurrence, and §4974
+    // application while the logical ledger commits the debit pro rata.
+    const inheritedPlan = annualInheritedIraDistributions({
+      year,
+      startYear,
+      pack,
+      primaryPersonId: primary.id,
+      balances: rmdBalances,
+      startOfYearBalance,
+      classCache: inheritedClassCache,
+      beneficiaryState: (personId) => stateOf(personId),
+    })
+    const inheritedOperations = inheritedPlan.rows.flatMap((row) =>
+      row.distribution === null ? [] : [row.distribution])
+    const inheritedOperationIndexes = new Set<number>()
+    for (const operation of inheritedOperations) {
+      const state = rmdBalances[operation.balanceIndex]
+      if (state === undefined || state.account.id !== operation.accountId) {
+        throw new Error(
+          'Inherited-IRA distribution operation lost its balance position',
+        )
       }
-      // S2 post-election: owned-side bookkeeping owns the account this year
-      // (except the same-year-flip death-year arm immediately below).
-      if (isTreatAsOwnEffective(state.account, year)) {
-        const primaryClass =
-          cache.primary.kind === 'regime' ? cache.primary : undefined
-        const preHorizonLimitation =
-          year === startYear && cache.preHorizonYearOfDeathRmdUnresolved === true
-            ? 'pre-horizon-year-of-death-rmd-unresolved' as const
-            : undefined
-        // §1.408-8(c)(3): when the treat-as-own election year equals the
-        // owner's death year, the spouse takes no owner RMD that year but MUST
-        // take the decedent's unsatisfied year-of-death RMD. Owner-side
-        // treatment (followsOwnerRmdsThisYear / isAggregatedIraThisYear) is
-        // already suppressed for this death year above; execute and evidence
-        // the YOD requirement here before owner-side treatment begins the
-        // following year.
-        const sameYearFlipYodDue =
-          year === state.account.inherited.ownerDeathYear &&
-          primaryClass !== undefined &&
-          primaryClass.rbdComparison === 'on-or-after-rbd' &&
-          state.account.inherited.beneficiary?.ownerYearOfDeathRmdSatisfied !== true
-        if (sameYearFlipYodDue) {
-          const priorYearEndBalance = startOfYearBalance.get(state.account.id) ?? 0
-          const req = inheritedRequirementForYear({
-            pack,
-            classification: primaryClass,
-            inherited: state.account.inherited,
-            year,
-            priorYearEndBalance,
-          })
-          const requiredAmount = req.requiredAmount
-          const take =
-            req.kind === 'year-of-death-rmd'
-              ? Math.min(req.requiredAmount, state.balance)
-              : 0
-          const executed =
-            take > 0 && !planDollarsMoveNoLedgerCent(take) ? take : 0
-          if (executed > 0) {
-            state.balance -= executed
-            const kind = 'inheritedIraRmd' as const
-            const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
-            recordAnnualRetirementRuntimeOccurrence({
-              producerOccurrenceKey,
-              kind,
-              grossAmountPlanDollars: executed,
-              ownerPersonId: state.account.ownerPersonId,
-              sourceAccountId: state.account.id,
-              executionDate: null,
-              executionSequence: null,
-              movementAuthorityId: null,
-            })
-            if (state.account.type === 'roth') {
-              inheritedRothForced += executed
-            } else {
-              inheritedOrdinaryIncome += executed
-            }
-            inheritedTotal += executed
-          }
-          let limitation = req.limitation
-          if (
-            year === startYear &&
-            cache.preHorizonYearOfDeathRmdUnresolved === true
-          ) {
-            limitation = 'pre-horizon-year-of-death-rmd-unresolved'
-          }
-          inheritedYearEvidenceDraft.push({
-            accountId: state.account.id,
-            ownerPersonId: cache.ownerPersonId,
-            regime: primaryClass.regime,
-            matrixRow: primaryClass.row,
-            classification: primaryClass.classification,
-            requirementKind: req.kind,
-            requiredAmount,
-            executedRequiredAmount: executed,
-            // Owner-side draws after the flip are not inherited voluntary draws.
-            voluntaryAmount: 0,
-            ...(req.divisor !== undefined ? { divisor: req.divisor } : {}),
-            ...(req.divisorArm !== undefined ? { divisorArm: req.divisorArm } : {}),
-            ...(limitation !== undefined ? { limitation } : {}),
-            disclosures: [...primaryClass.disclosures],
-            citations: [...req.citations],
-          })
-          continue
-        }
-        inheritedYearEvidenceDraft.push({
-          accountId: state.account.id,
-          ownerPersonId: cache.ownerPersonId,
-          regime: primaryClass?.regime ??
-            (cache.primary.kind === 'refusal' ? cache.primary.refusal : 'spouse-treat-as-own-transition'),
-          matrixRow: primaryClass?.row ??
-            (cache.primary.kind === 'refusal' ? cache.primary.row : 'S2'),
-          ...(primaryClass !== undefined
-            ? { classification: primaryClass.classification }
-            : {}),
-          requirementKind: 'none',
-          requiredAmount: 0,
-          executedRequiredAmount: 0,
-          // Owner-side draws after the flip are not inherited voluntary draws.
-          voluntaryAmount: 0,
-          ...(preHorizonLimitation !== undefined
-            ? { limitation: preHorizonLimitation }
-            : {}),
-          disclosures: primaryClass?.disclosures ?? [],
-          citations: primaryClass?.citations ??
-            (cache.primary.kind === 'refusal' ? cache.primary.citations : []),
-        })
-        continue
-      }
-
-      const priorYearEndBalance = startOfYearBalance.get(state.account.id) ?? 0
-      let take: number
-      let requirementKind: InheritedAccountYearEvidence['requirementKind']
-      let requiredAmount: number
-      let divisor: number | undefined
-      let divisorArm: string | undefined
-      let noticeWaived: boolean | undefined
-      let limitation: string | undefined
-      let regime: string
-      let matrixRow: string
-      let classification: 'settled' | 'unsettled' | undefined
-      let disclosures: string[]
-      let citations: string[]
-      let finalDeadlineYear: number | undefined
-      const refusalReason = cache.refusalReason
-
-      if (cache.path === 'legacy' || cache.schedule === undefined) {
-        // Legacy path — byte-identical forced amount for two-field accounts.
-        take = inheritedForcedAmount({
-          pack,
-          year,
-          ownerDeathYear: state.account.inherited.ownerDeathYear,
-          decedentHadStartedRmds: state.account.inherited.decedentHadStartedRmds,
-          balance: state.balance,
-          startBalance: priorYearEndBalance,
-          beneficiaryAge: beneficiaryState.ageAttained,
-        })
-        requiredAmount = take
-        requirementKind = 'legacy'
-        if (cache.primary.kind === 'refusal') {
-          regime = cache.primary.refusal
-          matrixRow = cache.primary.row
-          citations = cache.primary.citations
-          disclosures = []
-        } else {
-          // S2 synthetic-S0 refusal fallback: primary remains the S2 regime
-          // classification while the pre-election schedule refused. Label
-          // needs-review / X5 with the cached reason (path is legacy only when
-          // primary is refusal or this synthetic-refusal case).
-          regime = 'needs-review'
-          matrixRow = 'X5'
-          citations = cache.primary.citations
-          disclosures = []
-        }
-      } else {
-        // Classified path — schedule from the cache (synthetic S0 for S2 pre-year).
-        // For S2 pre-election the schedule class is S0; primary remains S2 for
-        // matrix identity on post-election rows only (handled above).
-        const scheduleClass = cache.schedule
-        // S2 pre-election: the inherited facts for the calculator use election
-        // 'none' so the S0 schedule is honest (WS3 S2 calculator still returns
-        // treat-as-own-election-year-not-carried and is not consulted here).
-        const inheritedForReq =
-          cache.isS2 && state.account.inherited.beneficiary
-            ? {
-                ...state.account.inherited,
-                beneficiary: {
-                  ...state.account.inherited.beneficiary,
-                  election: 'none' as const,
-                },
-              }
-            : state.account.inherited
-        const req = inheritedRequirementForYear({
-          pack,
-          classification: scheduleClass,
-          inherited: inheritedForReq,
-          year,
-          priorYearEndBalance,
-        })
-        requirementKind = req.kind
-        requiredAmount = req.requiredAmount
-        divisor = req.divisor
-        divisorArm = req.divisorArm
-        noticeWaived = req.noticeWaived
-        limitation = req.limitation
-        if (req.kind === 'final-sweep') {
-          if (req.noticeWaived === true) {
-            // Matrix §4 relief-year exhaustion: evidence publishes final-sweep
-            // with noticeWaived; executedRequiredAmount stays 0 (mirror annual).
-            // Unreachable at currently supported projection start years; implement
-            // per the matrix regardless so a pre-2025 start never forces them.
-            take = 0
-          } else {
-            // Ledger reconciles the live balance, not the prior-year-end figure.
-            take = state.balance
-          }
-        } else if (req.kind === 'none') {
-          take = 0
-        } else if (req.noticeWaived === true) {
-          // Matrix §4 (relief years): notices make those annual amounts not
-          // required. Evidence still publishes the computed amount with
-          // noticeWaived true; executedRequiredAmount stays 0.
-          // Unreachable at currently supported projection start years (notices
-          // cover distribution years 2021–2024 for deaths 2020–2023); implement
-          // per the matrix regardless so a pre-2025 start never forces them.
-          take = 0
-        } else {
-          // year-of-death-rmd / annual-rmd
-          take = Math.min(req.requiredAmount, state.balance)
-        }
-        regime = scheduleClass.regime
-        matrixRow = scheduleClass.row
-        classification = scheduleClass.classification
-        disclosures = [...scheduleClass.disclosures]
-        citations = [...req.citations]
-        finalDeadlineYear = scheduleClass.finalDeadlineYear
-      }
-
-      // Death-year treat-as-own election: isTreatAsOwnEffective defers the flip,
-      // but matrix identity for the election year is S2 (primary), not the
-      // synthetic S0 schedule used for year-of-death arithmetic.
-      const beneficiaryForIdentity = state.account.inherited.beneficiary
       if (
-        cache.isS2 &&
-        cache.primary.kind === 'regime' &&
-        beneficiaryForIdentity?.election === 'treat-as-own' &&
-        beneficiaryForIdentity.treatAsOwnElectionYear === state.account.inherited.ownerDeathYear &&
-        year === state.account.inherited.ownerDeathYear
+        inheritedOperationIndexes.has(operation.balanceIndex) ||
+        (state.account.type !== 'traditional' &&
+          state.account.type !== 'roth') ||
+        state.account.inherited === undefined ||
+        state.account.ownerPersonId !== operation.ownerPersonId ||
+        state.balance !== operation.sourceBalanceBefore ||
+        !Number.isFinite(operation.sourceBalanceAfter) ||
+        operation.sourceBalanceAfter < 0 ||
+        !Number.isFinite(operation.executed) ||
+        operation.executed <= 0 ||
+        operation.executed > operation.sourceBalanceBefore ||
+        planDollarsMoveNoLedgerCent(operation.executed) ||
+        operation.sourceBalanceBefore - operation.executed !==
+          operation.sourceBalanceAfter
       ) {
-        regime = cache.primary.regime
-        matrixRow = cache.primary.row
-        classification = cache.primary.classification
-        disclosures = [...cache.primary.disclosures]
+        throw new Error(
+          `invalid annual inherited-IRA distribution operation for account id "${operation.accountId}"`,
+        )
       }
-
-      // Pre-horizon year-of-death RMD: obligation predates startYear and is not
-      // modeled as satisfied (§1.408-8(e)(4)(i)). First projection year only;
-      // no amount is forced beyond the year's ordinary schedule.
-      if (
-        year === startYear &&
-        cache.preHorizonYearOfDeathRmdUnresolved === true
-      ) {
-        limitation = 'pre-horizon-year-of-death-rmd-unresolved'
-      }
-
-      // Discharged on the same terms as the owner's own forced distribution.
-      // A zero-cent inherited distribution must not journal: the runtime source
-      // series reads every occurrence, and a sub-cent gross refuses the year.
-      const executed =
-        take > 0 && !planDollarsMoveNoLedgerCent(take) ? take : 0
-      if (executed > 0) {
-        state.balance -= executed
-        // Distinct forced kind from voluntary need-based draws
-        // (`legacyNeedBasedWithdrawal`) and from owned RMD (`ownedIraRmd`).
-        // Required and final-sweep share this kind (mutually exclusive per year);
-        // the evidence row's requirementKind separates them.
-        const kind = 'inheritedIraRmd' as const
-        const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
-        recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey,
-          kind,
-          grossAmountPlanDollars: executed,
-          ownerPersonId: state.account.ownerPersonId,
-          sourceAccountId: state.account.id,
-          executionDate: null,
-          executionSequence: null,
-          movementAuthorityId: null,
-        })
-        if (state.account.type === 'roth') {
-          // Roth character: non-taxable and penalty-free (K1/K2). Outside the
-          // beneficiary's owned-Roth basis/ordering pool — do not deplete
-          // owned basis. K3 non-qualified earnings tax is disclosure-only.
-          inheritedRothForced += executed
-        } else {
-          inheritedOrdinaryIncome += executed
-        }
-        inheritedTotal += executed
-      }
-
-      inheritedYearEvidenceDraft.push({
-        accountId: state.account.id,
-        ownerPersonId: cache.ownerPersonId,
-        regime,
-        matrixRow,
-        ...(classification !== undefined ? { classification } : {}),
-        ...(refusalReason !== undefined ? { refusalReason } : {}),
-        requirementKind,
-        requiredAmount,
-        executedRequiredAmount: executed,
-        voluntaryAmount: 0, // filled after need-based withdrawals
-        ...(divisor !== undefined ? { divisor } : {}),
-        ...(divisorArm !== undefined ? { divisorArm } : {}),
-        ...(noticeWaived !== undefined ? { noticeWaived } : {}),
-        ...(limitation !== undefined ? { limitation } : {}),
-        ...(finalDeadlineYear !== undefined ? { finalDeadlineYear } : {}),
-        disclosures,
-        citations,
+      inheritedOperationIndexes.add(operation.balanceIndex)
+    }
+    for (const operation of inheritedOperations) {
+      const state = rmdBalances[operation.balanceIndex]!
+      state.balance = operation.sourceBalanceAfter
+      const kind = 'inheritedIraRmd' as const
+      const producerOccurrenceKey = runtimeOccurrenceKey(kind, operation.accountId)
+      recordAnnualRetirementRuntimeOccurrence({
+        producerOccurrenceKey,
+        kind,
+        grossAmountPlanDollars: operation.executed,
+        ownerPersonId: operation.ownerPersonId,
+        sourceAccountId: operation.accountId,
+        executionDate: null,
+        executionSequence: null,
+        movementAuthorityId: null,
       })
     }
-
-    // Inherited traditional and Roth IRAs are both §4974 plans, but not one
-    // aggregation pool. Group IRA rows only when type plus explicit decedentId
-    // prove the same group. Inherited employer plans and IRAs without a
-    // decedent identity stay account-specific and fail closed.
-    const inheritedRequiredByApplicablePlan = new Map<string, number>()
-    const inheritedDistributedByApplicablePlan = new Map<string, number>()
-    const inheritedRequirementKindsByApplicablePlan = new Map<
-      string,
-      Set<Parameters<typeof computeRmdShortfallExcise>[0]['requirementKind']>
-    >()
-    for (const evidence of inheritedYearEvidenceDraft) {
-      if (evidence.requiredAmount <= 0 || evidence.noticeWaived === true) continue
-      const account = rmdBalanceByAccountId.get(evidence.accountId)?.account
-      if (
-        account === undefined ||
-        (account.type !== 'traditional' && account.type !== 'roth') ||
-        account.inherited === undefined
-      ) continue
-      const applicablePlan = rmdApplicablePlanForAccount(account)
-      const applicablePlanKey = rmdApplicablePlanKey(applicablePlan)
-      applicablePlanByKey.set(applicablePlanKey, applicablePlan)
-      inheritedRequiredByApplicablePlan.set(
-        applicablePlanKey,
-        (inheritedRequiredByApplicablePlan.get(applicablePlanKey) ?? 0) +
-          evidence.requiredAmount,
-      )
-      inheritedDistributedByApplicablePlan.set(
-        applicablePlanKey,
-        (inheritedDistributedByApplicablePlan.get(applicablePlanKey) ?? 0) +
-          evidence.executedRequiredAmount,
-      )
-      const requirementKind = evidence.requirementKind === 'annual-rmd'
-        ? 'inheritedAnnualLifeExpectancy' as const
-        : evidence.requirementKind === 'year-of-death-rmd'
-          ? 'inheritedYearOfDeath' as const
-          : evidence.requirementKind === 'final-sweep'
-            ? 'inheritedFinalSweep' as const
-            : 'inheritedLegacy' as const
-      const kinds = inheritedRequirementKindsByApplicablePlan.get(applicablePlanKey) ?? new Set()
-      kinds.add(requirementKind)
-      inheritedRequirementKindsByApplicablePlan.set(applicablePlanKey, kinds)
-    }
-    for (const [applicablePlanKey, requiredAmount] of inheritedRequiredByApplicablePlan) {
-      const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
-      const requirementKinds = inheritedRequirementKindsByApplicablePlan.get(applicablePlanKey)!
-      rmdShortfallObligations.push({
-        obligationId: rmdShortfallObligationId(applicablePlan, year),
-        distributionCalendarYear: year,
-        taxYear: year,
-        taxImposedOn: `${year}-12-31`,
-        applicablePlan,
-        requirementKind: requirementKinds.size === 1
-          ? [...requirementKinds][0]!
-          : 'mixedInheritedRequirements',
-        requiredAmount,
-        distributedByDeadline:
-          inheritedDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
-      })
-    }
+    const inheritedTotal = inheritedPlan.totals.inherited
+    const inheritedOrdinaryIncome = inheritedPlan.totals.ordinaryIncome
+    const inheritedRothForced = inheritedPlan.totals.rothForced
+    const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =
+      inheritedPlan.rows.map((row) => row.evidence)
+    rmdShortfallObligations.push(...inheritedPlan.rmdShortfallObligations)
     const rmdShortfallExciseResults: RmdShortfallExciseResult[] =
       rmdShortfallObligations.map((obligation) =>
         computeRmdShortfallExcise(

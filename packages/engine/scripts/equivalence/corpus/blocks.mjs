@@ -17,6 +17,7 @@
  *   L  annual Social Security pass
  *   M  exact-cent annual ordinary-withdrawal boundary
  *   N  annual coordinated HECM eligibility + accepted-draw allocation
+ *   O  annual inherited-IRA required distributions
  *   P  annual income setup (distributed yield followed by wages)
  *   R  remaining annual expense boundaries: debt/LTC, healthcare and guardrails
  *   S  shared: whole-corpus holes found by measurement (see `blockS`)
@@ -35,7 +36,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through N, plus P, R, T, U, V, W, X and Y, each have a phase-specific reach
+ * Blocks J through O, plus P, R, T, U, V, W, X and Y, each have a phase-specific reach
  * spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -53,10 +54,11 @@
  * `scripts/equivalence/specs/simulate-roth-conversion-boundary.json`,
  * `scripts/equivalence/specs/simulate-contributions-boundary.json`,
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`,
- * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`,
- * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`,
- * `scripts/equivalence/specs/simulate-owner-rmd.json`,
- * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`
+ * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`, and
+ * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`, and
+ * `scripts/equivalence/specs/simulate-owner-rmd.json`, and
+ * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`, and
+ * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
@@ -108,6 +110,19 @@ function qualified(type, id, balance, extra = {}) {
     annualContribution: 0,
     ...(type === 'traditional' || type === 'roth' ? { kind: 'ira' } : {}),
     ...extra,
+  }
+}
+
+function inheritedBeneficiary(overrides = {}) {
+  return {
+    beneficiaryClass: 'designated-individual',
+    edbCategory: 'none',
+    beneficiaryBirthYear: 1965,
+    soleBeneficiary: true,
+    election: 'none',
+    ownerBirthYear: 1940,
+    provenance: { source: 'equivalence corpus', asOf: '2026-08-31' },
+    ...overrides,
   }
 }
 
@@ -3436,6 +3451,224 @@ function blockW() {
 }
 
 // ---------------------------------------------------------------------------
+// O — annual inherited-IRA required distributions
+// ---------------------------------------------------------------------------
+
+function blockO() {
+  const out = []
+
+  {
+    // The two shared-decedent traditional IRAs aggregate into one §4974 plan
+    // in Plan order. The legacy employer and Roth EDB make all three character
+    // and identity paths observable under repeated multi-year mode entry.
+    const plan = singlePersonPlan({ dob: '1965-03-15', planningAge: 80, retirementAge: 65 })
+    plan.assumptions.defaultReturnPct = 0
+    const sharedFacts = {
+      decedentId: 'o1-shared-decedent',
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: true,
+      beneficiary: inheritedBeneficiary(),
+    }
+    plan.accounts = [
+      cash('o1-cash', 2_000_000),
+      qualified('traditional', 'o1-owned-sentinel', 10_000.125),
+      qualified('traditional', 'o1-legacy-employer', 120_000.125, {
+        kind: 'employer',
+        inherited: { ownerDeathYear: 2019, decedentHadStartedRmds: true },
+      }),
+      qualified('traditional', 'o1-shared-z', 300_000.0625, { inherited: sharedFacts }),
+      qualified('traditional', 'o1-ungrouped-ira', 80_000.03125, {
+        inherited: {
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: true,
+          beneficiary: inheritedBeneficiary(),
+        },
+      }),
+      qualified('roth', 'o1-roth-edb', 90_000.03125, {
+        inherited: {
+          decedentId: 'o1-roth-decedent',
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: false,
+          beneficiary: inheritedBeneficiary({
+            edbCategory: 'disabled',
+            roth5YearStartYear: 2010,
+          }),
+        },
+      }),
+      qualified('traditional', 'o1-shared-a', 200_000.015625, { inherited: sharedFacts }),
+    ]
+    out.push(member(
+      'o1-legacyClassifiedRothAggregationReentry',
+      'O: ordered legacy employer, classified shared-decedent IRA aggregation, Roth-forced character, and repeated all-mode multi-year re-entry',
+      plan,
+      { horizonEndYear: START_YEAR + 2 },
+    ))
+  }
+
+  {
+    // Both S2 accounts remain beneficiary accounts in the death year. Their
+    // different election years distinguish the death-year S2 identity override,
+    // synthetic S0 schedule, following-year ownership flip, and later zero rows.
+    const plan = singlePersonPlan({ dob: '1965-03-15', planningAge: 80 })
+    plan.assumptions.defaultReturnPct = 0
+    const spouseFacts = (electionYear, decedentId) => ({
+      decedentId,
+      ownerDeathYear: START_YEAR,
+      decedentHadStartedRmds: true,
+      beneficiary: inheritedBeneficiary({
+        edbCategory: 'surviving-spouse',
+        election: 'treat-as-own',
+        spouseUnlimitedWithdrawalRight: true,
+        treatAsOwnElectionYear: electionYear,
+        ownerYearOfDeathRmdSatisfied: false,
+      }),
+    })
+    plan.accounts = [
+      cash('o2-cash', 2_000_000),
+      qualified('traditional', 'o2-s2-later', 400_000.125, {
+        inherited: spouseFacts(START_YEAR + 1, 'o2-later-decedent'),
+      }),
+      qualified('traditional', 'o2-s2-same-year', 500_000.0625, {
+        inherited: spouseFacts(START_YEAR, 'o2-same-year-decedent'),
+      }),
+    ]
+    out.push(member(
+      'o2-spouseYodPrePostElection',
+      'O: S2 death-year identity override, synthetic pre-election schedule, following-year treat-as-own effect, and later post-election zero rows',
+      plan,
+      { horizonEndYear: START_YEAR + 2 },
+    ))
+  }
+
+  {
+    // p1 survives the deadline. Three individually unmovable Roth residues share
+    // a decedent identity and aggregate above one cent; a traditional sibling
+    // makes the final sweep visible. p2 dies first, forcing X2 evidence.
+    const plan = couplePlan({
+      p1Dob: '1970-03-15',
+      p2Dob: '1965-07-20',
+      p1PlanningAge: 80,
+      p2PlanningAge: 80,
+    })
+    plan.assumptions.defaultReturnPct = 0
+    const rothDust = {
+      decedentId: 'o3-roth-dust-decedent',
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: inheritedBeneficiary({ beneficiaryBirthYear: 1970, roth5YearStartYear: 2010 }),
+    }
+    plan.accounts = [
+      cash('o3-cash', 2_000_000),
+      qualified('roth', 'o3-roth-dust-z', 0.004, { inherited: rothDust }),
+      qualified('traditional', 'o3-visible-final', 1_000.125, {
+        inherited: {
+          decedentId: 'o3-visible-decedent',
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: false,
+          beneficiary: inheritedBeneficiary({ beneficiaryBirthYear: 1970 }),
+        },
+      }),
+      qualified('traditional', 'o3-dead-beneficiary', 75_000.03125, {
+        ownerPersonId: 'p2',
+        inherited: {
+          ownerDeathYear: 2019,
+          decedentHadStartedRmds: true,
+        },
+      }),
+      qualified('traditional', 'o3-dead-classified', 55_000.015625, {
+        ownerPersonId: 'p2',
+        inherited: {
+          decedentId: 'o3-dead-classified-decedent',
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: true,
+          beneficiary: inheritedBeneficiary({ beneficiaryBirthYear: 1965 }),
+        },
+      }),
+      qualified('roth', 'o3-roth-dust-m', 0.004, { inherited: rothDust }),
+      qualified('roth', 'o3-roth-dust-a', 0.004, { inherited: rothDust }),
+    ]
+    out.push(member(
+      'o3-finalSweepSubCentAggregationAndDeath',
+      'O: visible final sweep, three zero-cent Roth discharges aggregated above a cent for §4974 applicable-plan settlement, Roth/ordinary character, and dead-beneficiary successor evidence',
+      plan,
+      { horizonEndYear: START_YEAR + 6, deathAgeByPersonId: { p2: 62 } },
+    ))
+  }
+
+  {
+    // Two compatible physical rows share one logical inherited IRA. The
+    // selected facts are identical, first-ID order is stable, and the grouped
+    // ledger must produce one requirement, one runtime occurrence, and one
+    // applicable-plan obligation while committing the debit pro rata.
+    const plan = singlePersonPlan({ dob: '1965-03-15', planningAge: 80 })
+    plan.assumptions.defaultReturnPct = 0
+    const duplicateFacts = {
+      decedentId: 'o4-shared-decedent',
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: true,
+      beneficiary: inheritedBeneficiary(),
+    }
+    plan.accounts = [
+      cash('o4-cash', 2_000_000),
+      qualified('traditional', 'o4-duplicate', 265_000, {
+        inherited: duplicateFacts,
+      }),
+      qualified('traditional', 'o4-duplicate', 53_000, {
+        inherited: duplicateFacts,
+      }),
+    ]
+    plan.incomes = [wages('o4-duplicate-order-wages', 'p1', 123.45)]
+    out.push(member(
+      'o4-compatibleGroupedDuplicateId',
+      'O: compatible duplicate physical rows aggregate to one logical inherited distribution and applicable-plan obligation',
+      plan,
+      { horizonEndYear: START_YEAR + 1 },
+    ))
+  }
+
+  {
+    // The death and same-year S2 election predate this projection. A second
+    // classified account reaches the last transition-relief year, distinguishing
+    // the notice-waived annual requirement from the S2 rollback limitation.
+    const plan = singlePersonPlan({ dob: '1965-03-15', planningAge: 80 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('o5-cash', 2_000_000),
+      qualified('traditional', 'o5-pre-horizon-s2', 250_000.125, {
+        inherited: {
+          decedentId: 'o5-decedent',
+          ownerDeathYear: START_YEAR - 4,
+          decedentHadStartedRmds: true,
+          beneficiary: inheritedBeneficiary({
+            edbCategory: 'surviving-spouse',
+            election: 'treat-as-own',
+            spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: START_YEAR - 4,
+            ownerYearOfDeathRmdSatisfied: false,
+          }),
+        },
+      }),
+      qualified('traditional', 'o5-transition-relief', 175_000.0625, {
+        inherited: {
+          decedentId: 'o5-relief-decedent',
+          ownerDeathYear: START_YEAR - 5,
+          decedentHadStartedRmds: true,
+          beneficiary: inheritedBeneficiary(),
+        },
+      }),
+    ]
+    out.push(member(
+      'o5-preHorizonS2RollbackReentry',
+      'O: first-year pre-horizon YOD limitation on an already-effective S2 account under repeated optimizer/counterfactual re-entry',
+      plan,
+      { startYear: START_YEAR - 2, horizonEndYear: START_YEAR },
+    ))
+  }
+
+  return out
+}
+
+// ---------------------------------------------------------------------------
 // S — shared blind spots, owned by no single block
 // ---------------------------------------------------------------------------
 
@@ -3932,6 +4165,7 @@ export async function blockMembers() {
     ...blockL(),
     ...blockM(),
     ...blockN(),
+    ...blockO(),
     ...blockP(),
     ...blockR(),
     ...blockS(),
