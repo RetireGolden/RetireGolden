@@ -57,14 +57,34 @@ describe('readFedInvestCache', () => {
     expect(readFedInvestCache()).toBeNull()
   })
 
-  it('rejects malformed cache entries', () => {
+  it('rejects corrupt JSON and valid JSON that is not a complete snapshot', () => {
     const store = stubLocalStorage()
-    store.set(STORAGE_KEYS.fedInvestCache, 'not json')
-    expect(readFedInvestCache()).toBeNull()
-    store.set(STORAGE_KEYS.fedInvestCache, JSON.stringify({ priceDateIso: 7, tips: [] }))
-    expect(readFedInvestCache()).toBeNull()
-    store.set(STORAGE_KEYS.fedInvestCache, JSON.stringify({ priceDateIso: null, tips: 'nope' }))
-    expect(readFedInvestCache()).toBeNull()
+    const completeSnapshot = {
+      priceDateIso: '2026-07-07',
+      fetchedAtIso: '2026-07-08T12:00:00.000Z',
+      source: 'fetch',
+      tips: importFedInvestCsv(sampleCsv).tips,
+    }
+    const invalidPayloads = [
+      'not json',
+      JSON.stringify(null),
+      JSON.stringify([]),
+      JSON.stringify({ priceDateIso: 7, tips: [] }),
+      JSON.stringify({ ...completeSnapshot, source: 'stale' }),
+      JSON.stringify({ ...completeSnapshot, priceDateIso: '2026-02-30' }),
+      JSON.stringify({ ...completeSnapshot, fetchedAtIso: 'not a timestamp' }),
+      JSON.stringify({ ...completeSnapshot, tips: [[]] }),
+      JSON.stringify({ ...completeSnapshot, tips: [{ ...completeSnapshot.tips[0], maturityIso: '2026-02-30' }] }),
+      JSON.stringify({ ...completeSnapshot, tips: [{ cusip: '912828S50', ratePct: 0.125, endOfDayPrice: 100.03 }] }),
+    ]
+
+    for (const payload of invalidPayloads) {
+      store.set(STORAGE_KEYS.fedInvestCache, payload)
+      expect(readFedInvestCache()).toBeNull()
+    }
+
+    store.set(STORAGE_KEYS.fedInvestCache, JSON.stringify(completeSnapshot))
+    expect(readFedInvestCache()).toEqual(completeSnapshot)
   })
 })
 

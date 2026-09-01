@@ -14,19 +14,30 @@ function insightRenderKey(card: InsightCard): string {
   return `${card.id}:${card.rationale}:${JSON.stringify(card.action)}`
 }
 
+function isDismissedInsightsMap(value: unknown): value is Record<string, string[]> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  return Object.values(value).every(
+    (dismissed) => Array.isArray(dismissed) && dismissed.every((cardId) => typeof cardId === 'string'),
+  )
+}
+
+function readDismissedInsights(): Record<string, string[]> {
+  const stored = readLocal(STORAGE_KEYS.insightsDismissed)
+  if (!stored) return {}
+  try {
+    const parsed: unknown = JSON.parse(stored)
+    return isDismissedInsightsMap(parsed) ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
 export function InsightsPage() {
   const { plan } = usePlan()
   const projectionView = useProjection(plan)
 
   // Manage dismissed cards state loaded from localStorage
-  const [dismissedMap, setDismissedMap] = useState<Record<string, string[]>>(() => {
-    try {
-      const stored = readLocal(STORAGE_KEYS.insightsDismissed)
-      return stored ? JSON.parse(stored) : {}
-    } catch {
-      return {}
-    }
-  })
+  const [dismissedMap, setDismissedMap] = useState<Record<string, string[]>>(readDismissedInsights)
 
   // State for collapsible category groups (default expanded: true)
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
