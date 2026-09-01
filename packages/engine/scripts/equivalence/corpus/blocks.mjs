@@ -36,9 +36,9 @@
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
- * not assumed — so without this tier the differential check would pass on two of
- * the five blocks by never running them. Each member names the branch or hazard
- * it exists to reach in `covers`, and
+ * not assumed — so without this tier the differential check would pass on two
+ * of the original five A-through-E blocks by never running them. Each member
+ * names the branch or hazard it exists to reach in `covers`, and
  * `scripts/equivalence/specs/simulate-batch.json`,
  * `scripts/equivalence/specs/simulate-small-annual-boundaries.json`,
  * `scripts/equivalence/specs/simulate-expense-sepp-boundaries.json`,
@@ -2757,7 +2757,8 @@ function blockW() {
 
 /**
  * Members that exist because the CORPUS was measured blind, not because one of
- * the five phases needs them. The corpus is the durable half of this tool, and
+ * the original five A-through-E phases needs them. The corpus is the durable
+ * half of this tool, and
  * a hole in it produces a meaningless IDENTICAL for as long as it stays open.
  *
  * MEASURED, which is why this section exists at all: every other member here

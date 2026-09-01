@@ -8991,7 +8991,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // the need-based plan is voluntary-only for each still-inherited account.
     // S2 POST-FLIP rows keep voluntaryAmount 0: owner-side draws are not
     // inherited voluntary draws (the flip already moved the account out of
-    // the inherited schedule). Map built once per year — avoid per-row find.
+    // the inherited schedule). The helper builds the last-wins account lookup
+    // once per year so evidence rows do not scan every balance.
     const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({
       year,
       balances,

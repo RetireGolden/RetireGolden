@@ -219,6 +219,42 @@ describe('annualWithdrawalApplyFlowPlan', () => {
     ])
   })
 
+  it('honors planned taxable-sale leftovers for every duplicate-id row', () => {
+    const result = annualWithdrawalApplyFlowPlan({
+      year: 2026,
+      balances: [
+        state(account('duplicate-taxable', 'taxable'), 100, 40),
+        state(account('duplicate-taxable', 'taxable'), 200, 80),
+      ],
+      inheritedEvidence: [],
+      withdrawnByAccountId: new Map([['duplicate-taxable', 25]]),
+      // Deliberately differs from either row's naive subtraction. The planner's
+      // last-wins sale result is authoritative for both duplicate-id writes.
+      taxableSales: new Map([['duplicate-taxable', {
+        remainingCostBasis: 53,
+        remainingFairMarketValue: 137,
+      }]]),
+      recordsOwnedIraApplicationFor: () => false,
+    })
+
+    expect(result.balanceOperations.map((operation) => ({
+      sourceBalanceBefore: operation.sourceBalanceBefore,
+      sourceBalanceAfter: operation.sourceBalanceAfter,
+      costBasisAfter: operation.costBasisAfter,
+    }))).toEqual([
+      {
+        sourceBalanceBefore: 100,
+        sourceBalanceAfter: 137,
+        costBasisAfter: 53,
+      },
+      {
+        sourceBalanceBefore: 200,
+        sourceBalanceAfter: 137,
+        costBasisAfter: 53,
+      },
+    ])
+  })
+
   it('returns a missing-sale operation for caller-timed failure and fresh outputs', () => {
     const input = {
       year: 2026,
