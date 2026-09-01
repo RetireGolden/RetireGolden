@@ -3104,16 +3104,12 @@ function blockW() {
   }
 
   {
-    // Duplicate ids are legal without named retirement actions. Evidence
-    // resolution uses the LAST balance row: the post-election S2 inherited IRA
-    // suppresses its inherited voluntary write even though the first row with
-    // the same id is cash. Changing the Map to first-wins changes the dump.
+    // Compatible duplicate physical rows form one logical inherited IRA. Both
+    // carry the same post-election S2 facts, so inherited voluntary evidence is
+    // suppressed while the grouped balance remains one ID-keyed apply target.
     const plan = singlePersonPlan({ dob: '1970-06-15', planningAge: 75 })
     plan.assumptions.defaultReturnPct = 0
-    plan.accounts = [
-      cash('w2-duplicate', 10, { annualReturnPct: 0 }),
-      {
-        ...qualified('traditional', 'w2-duplicate', 100, {
+    const postFlip = qualified('traditional', 'w2-duplicate', 100, {
           annualReturnPct: 0,
           inherited: {
             ownerDeathYear: 2024,
@@ -3134,15 +3130,16 @@ function blockW() {
               },
             },
           },
-        }),
-        name: 'w2-duplicate-post-flip-ira',
-      },
+        })
+    plan.accounts = [
+      { ...postFlip, balance: 10, name: 'w2-duplicate-post-flip-first' },
+      { ...postFlip, name: 'w2-duplicate-post-flip-selected' },
     ]
     plan.expenses.baseAnnual = 4
     out.push(
       member(
-        'w2-lastWinsPostFlipEvidence',
-        'W: duplicate-id last-wins balance identity suppresses a post-election spouse treat-as-own inherited voluntary write while preserving ordered balance application',
+        'w2-groupedPostFlipEvidence',
+        'W: compatible duplicate inherited rows suppress post-election spouse treat-as-own voluntary evidence and commit one grouped logical balance application',
         plan,
         { horizonEndYear: START_YEAR },
       ),

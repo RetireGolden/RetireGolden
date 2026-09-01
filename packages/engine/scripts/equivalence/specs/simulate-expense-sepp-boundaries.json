@@ -4,25 +4,45 @@
   "why": "Measured reach for the five annual expense and SEPP boundaries extracted from simulatePlan. Each helper entry pins the complete executable helper body, and each paired callsite entry pins the complete caller-side consumption band, including ordered folds and effect publication. The nine dedicated J/K block members run in all four equivalence modes. Reach reports cold sub-line operands separately; entry notes distinguish those branch-level gaps from whole-line reach.",
   "entries": [
     {
-      "id": "A.helper",
-      "label": "annual lifestyle-layer selection and arithmetic",
+      "id": "A.helper.input",
+      "label": "annual lifestyle-layer input selection and positional cardinality guard",
       "file": "projection/internal/annualLifestyleLayers.ts",
       "lines": [
-        41,
-        100
+        42,
+        58
       ],
-      "note": "The corpus reaches fixed and ABW modes, stable phase ordering, couple/survivor/no-survivor scaling, optional lifestyle layers, ordered portfolio folding, and the planning-age horizon. The sole cold sub-line region is line 80's `?? 0`: the annual pass builds startOfYearBalance from every balance row before this call, so a helper balance without a corresponding map entry is a defensive structural-input case rather than a reachable validated-simulator case.",
+      "note": "The mismatch throw on lines 59-60 is excluded: simulatePlan supplies one opening value per physical balance, while focused helper tests pin fail-closed cardinality drift.",
       "anchors": [
         {
-          "line": 41,
+          "line": 42,
           "text": "const {"
         },
         {
-          "line": 70,
+          "line": 58,
+          "text": "if (startOfYearBalances.length !== balances.length) {"
+        }
+      ]
+    },
+    {
+      "id": "A.helper.execution",
+      "label": "annual lifestyle-layer phase, survivor, ABW and spending arithmetic",
+      "file": "projection/internal/annualLifestyleLayers.ts",
+      "lines": [
+        62,
+        105
+      ],
+      "note": "The corpus reaches fixed and ABW modes, stable phase ordering, couple/survivor/no-survivor scaling, optional lifestyle layers, ordered positional portfolio folding, and the planning-age horizon.",
+      "anchors": [
+        {
+          "line": 62,
+          "text": "let phaseMultiplier = 1"
+        },
+        {
+          "line": 75,
           "text": "expenses.requiredAnnual ?? expenses.baseAnnual,"
         },
         {
-          "line": 100,
+          "line": 105,
           "text": "})"
         }
       ]
@@ -32,20 +52,20 @@
       "label": "annual lifestyle helper invocation and result consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2528,
-        2547
+        2546,
+        2565
       ],
       "anchors": [
         {
-          "line": 2528,
+          "line": 2546,
           "text": "const {"
         },
         {
-          "line": 2533,
+          "line": 2551,
           "text": "} = annualLifestyleLayers({"
         },
         {
-          "line": 2547,
+          "line": 2565,
           "text": "})"
         }
       ]
@@ -79,24 +99,24 @@
       "label": "ordered insurance-premium fold and publication",
       "file": "projection/simulate.ts",
       "lines": [
-        2614,
-        2621
+        2632,
+        2639
       ],
       "anchors": [
         {
-          "line": 2614,
+          "line": 2632,
           "text": "let insurancePremiums = 0"
         },
         {
-          "line": 2615,
+          "line": 2633,
           "text": "for (const row of annualInsurancePremiumRows({"
         },
         {
-          "line": 2620,
+          "line": 2638,
           "text": "yearSites?.recordInsurancePremium(row.record)"
         },
         {
-          "line": 2621,
+          "line": 2639,
           "text": "}"
         }
       ]
@@ -130,24 +150,24 @@
       "label": "ordered property-cost fold and publication",
       "file": "projection/simulate.ts",
       "lines": [
-        2650,
-        2659
+        2668,
+        2677
       ],
       "anchors": [
         {
-          "line": 2650,
+          "line": 2668,
           "text": "let propertyCosts = 0"
         },
         {
-          "line": 2651,
+          "line": 2669,
           "text": "for (const row of annualPropertyCarryingCosts({"
         },
         {
-          "line": 2658,
+          "line": 2676,
           "text": "yearSites?.recordPropertyCosts(row.record)"
         },
         {
-          "line": 2659,
+          "line": 2677,
           "text": "}"
         }
       ]
@@ -181,41 +201,61 @@
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2802,
-        2832
+        2820,
+        2850
       ],
       "anchors": [
         {
-          "line": 2802,
+          "line": 2820,
           "text": "const expenseSummary = annualExpenseSummary({"
         },
         {
-          "line": 2827,
+          "line": 2845,
           "text": "})"
         },
         {
-          "line": 2828,
+          "line": 2846,
           "text": "const expenses = expenseSummary.expenses"
         },
         {
-          "line": 2832,
+          "line": 2850,
           "text": "const excessSpendingBase = expenseSummary.excessSpendingBase"
         }
       ]
     },
     {
-      "id": "E.helper",
-      "label": "annual SEPP operation planning",
+      "id": "E.helper.selection",
+      "label": "annual SEPP selection through amortization-cache branch",
       "file": "projection/internal/annualSeppDistributions.ts",
       "lines": [
         90,
-        184
+        131
       ],
-      "note": "The corpus reaches owned IRA and employer-plan rows, inherited S2 pre/post-election gating, active and inactive series, accepted and refused separation boundaries, RMD and amortization methods, new and reused amortization cache values, duplicate ids, distribution and sub-cent suppression paths, and deferred IRA character. Four cold sub-line regions remain: line 104's primary-owner fallback and line 170's corresponding raw null owner are supported ownerless-account shapes covered by helper tests; line 106's dead-owner `continue` is a branch-level corpus gap; line 124's zero fallback is defensive because the annual pass constructs startOfYearBalance from every balance row before calling the helper. Every physical line containing those operands is nevertheless reached.",
+      "note": "The corpus reaches owned IRA and employer-plan rows, inherited S2 pre/post-election gating, active and inactive series, accepted and refused separation boundaries, and RMD/amortization selection. Line 132's same-call duplicate shadow-hit arm is excluded because simulatePlan supplies one grouped state per ID; focused helper tests retain that defensive direct-input contract.",
       "anchors": [
         {
           "line": 90,
           "text": "const operations: AnnualSeppOperation[] = []"
+        },
+        {
+          "line": 131,
+          "text": "let fixed = shadowAmortizationAmounts.has(state.account.id)"
+        }
+      ]
+    },
+    {
+      "id": "E.helper.amountAndReturn",
+      "label": "annual SEPP amount, cache write, distribution and return planning",
+      "file": "projection/internal/annualSeppDistributions.ts",
+      "lines": [
+        133,
+        184
+      ],
+      "note": "The corpus reaches new and prior-year amortization cache values, RMD amounts, distribution and sub-cent suppression paths, and deferred IRA character. Ownerless-account and defensive fallback operands remain reported as sub-line regions and are covered directly by helper tests.",
+      "anchors": [
+        {
+          "line": 133,
+          "text": ": input.amortizationAmountByAccountId.get(state.account.id)"
         },
         {
           "line": 137,
@@ -232,32 +272,32 @@
       "label": "SEPP operation application and effect publication",
       "file": "projection/simulate.ts",
       "lines": [
-        4065,
-        4128
+        4104,
+        4167
       ],
       "anchors": [
         {
-          "line": 4065,
+          "line": 4104,
           "text": "const seppPlan = annualSeppDistributions({"
         },
         {
-          "line": 4076,
+          "line": 4115,
           "text": "const seppTotal = seppPlan.total"
         },
         {
-          "line": 4077,
+          "line": 4116,
           "text": "for (const operation of seppPlan.operations) {"
         },
         {
-          "line": 4087,
+          "line": 4126,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 4119,
+          "line": 4158,
           "text": "deferredSeppDistributions.push({"
         },
         {
-          "line": 4128,
+          "line": 4167,
           "text": "}"
         }
       ],

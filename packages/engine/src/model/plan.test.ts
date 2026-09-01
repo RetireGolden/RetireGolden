@@ -1557,7 +1557,7 @@ describe('Plan retirement-action persistence', () => {
       type: 'property',
       id: 'legacy-position',
       name: 'Legacy property row',
-      ownerPersonId: null,
+      ownerPersonId: 'p1',
       annualReturnPct: 0,
       value: 100_000,
       plannedSaleYear: null,
@@ -1565,6 +1565,42 @@ describe('Plan retirement-action persistence', () => {
     })
 
     expect(parsePlan(plan).ok).toBe(true)
+  })
+
+  it('rejects a cash/property channel that aliases two physical cash rows', () => {
+    const plan = validCouplePlan()
+    plan.accounts = [{
+      type: 'cash',
+      id: 'ambiguous-cash-property',
+      name: 'First cash row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+    }, {
+      type: 'cash',
+      id: 'ambiguous-cash-property',
+      name: 'Second cash row',
+      ownerPersonId: 'p2',
+      annualReturnPct: 0,
+      balance: 20_000,
+      annualContribution: 0,
+    }, {
+      type: 'property',
+      id: 'ambiguous-cash-property',
+      name: 'Property row',
+      ownerPersonId: null,
+      annualReturnPct: 0,
+      value: 100_000,
+      plannedSaleYear: null,
+      expectedNetProceeds: null,
+    }]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
+      'duplicate account id "ambiguous-cash-property"',
+    )
   })
 
   it('rejects duplicate equity-comp IDs whose vesting facts disagree', () => {

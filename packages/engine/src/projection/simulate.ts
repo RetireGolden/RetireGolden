@@ -1711,10 +1711,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const annualBalanceByAccountId = new Map(
       annualIdKeyedBalances.map((state) => [state.account.id, state] as const),
     )
-    const startOfYearPositionalBalanceTotal = balances.reduce(
-      (sum, state) => sum + state.balance,
-      0,
-    )
     const startOfYearPositionalBalances = balances.map((state) => state.balance)
     const startOfYearBalance = new Map(
       annualIdKeyedBalances.map((state) => [state.account.id, state.balance]),
@@ -2710,7 +2706,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       inflFactor,
       anyAlive,
       balances,
-      startOfYearBalance,
+      startOfYearBalances: startOfYearPositionalBalances,
       requiredLifestyle,
       targetLifestyle,
       idealLifestyle,
@@ -8719,7 +8715,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // once per year so evidence rows do not scan every balance.
     const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({
       year,
-      balances,
+      balances: annualIdKeyedBalances,
       inheritedEvidence: inheritedYearEvidenceDraft,
       withdrawnByAccountId: withdrawalPlan.byAccountId,
       taxableSales: withdrawalPlan.taxableSales,
@@ -8735,12 +8731,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       evidence.voluntaryAmount = write.voluntaryAmount
     }
     for (const operation of withdrawalApplyFlowPlan.balanceOperations) {
-      const state = balances[operation.balanceIndex]
+      const state = annualIdKeyedBalances[operation.balanceIndex]
+      const group = annualLogicalBalanceLedger.groups[operation.balanceIndex]
       // Planning and commit are intentionally adjacent. Fail before applying a
-      // stale operation if a future change breaks that state-identity boundary.
+      // stale operation if a future change breaks the logical group boundary.
       if (
         state === undefined ||
+        group === undefined ||
         state.account.id !== operation.accountId ||
+        group.id !== operation.accountId ||
         state.balance !== operation.sourceBalanceBefore
       ) {
         throw new Error(
@@ -8779,10 +8778,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (operation.taxableSaleMissing) {
         throw new Error('Planned taxable sale disappeared before commit')
       }
-      if (operation.costBasisAfter !== null) {
-        state.costBasis = operation.costBasisAfter
-      }
-      state.balance = operation.sourceBalanceAfter
+      group.applyClosingSnapshot({
+        balance: operation.sourceBalanceAfter,
+        ...(operation.costBasisAfter === null
+          ? {}
+          : { costBasis: operation.costBasisAfter }),
+      })
       if (ownedIraProducerOccurrenceKey !== null) {
         recordAnnualRetirementRuntimeApplication({
           applicationKind: 'debit',

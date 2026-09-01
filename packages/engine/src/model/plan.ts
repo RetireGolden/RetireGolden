@@ -2337,12 +2337,23 @@ export const planSchema = z
     let hasAmbiguousAccountIds = false
     for (const [accountId, indexes] of accountIndexesById) {
       if (indexes.length < 2) continue
+      const duplicateAccounts = indexes.map((index) => plan.accounts[index]!)
+      // Preserve the historical cash/property shared-id publication channel.
+      // Property rows never become BalanceState members, so this shape cannot
+      // make the grouped ledger choose between two physical tax characters.
+      // Ownership remains identity-bearing for cash/cash and every other pair.
+      const isLegacyCashPropertyChannel =
+        duplicateAccounts.filter((account) => account.type === 'cash').length === 1 &&
+        duplicateAccounts.some((account) => account.type === 'property') &&
+        duplicateAccounts.every(
+          (account) => account.type === 'cash' || account.type === 'property',
+        )
       const firstForcedDistributionFacts = duplicateAccountIdentityFacts(
-        plan.accounts[indexes[0]!]!,
+        duplicateAccounts[0]!,
       )
       const hasConflictingForcedDistributionFacts =
-        indexes.slice(1).some((index) => {
-          const facts = duplicateAccountIdentityFacts(plan.accounts[index]!)
+        !isLegacyCashPropertyChannel && duplicateAccounts.slice(1).some((account) => {
+          const facts = duplicateAccountIdentityFacts(account)
           return facts.length !== firstForcedDistributionFacts.length ||
             facts.some((fact, factIndex) => fact !== firstForcedDistributionFacts[factIndex])
         })

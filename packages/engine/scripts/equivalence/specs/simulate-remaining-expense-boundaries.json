@@ -7,34 +7,73 @@
       "id": "R.debt.helper",
       "label": "ordered debt interest, scheduled payoff, capped payment and shadow balance writes",
       "file": "projection/internal/annualDebtAndLongTermCare.ts",
-      "lines": [13, 40],
+      "lines": [
+        13,
+        40
+      ],
       "anchors": [
-        { "line": 13, "text": "readonly accounts: readonly Account[]" },
-        { "line": 19, "text": "for (const account of input.accounts) {" },
-        { "line": 40, "text": "return rows" }
+        {
+          "line": 13,
+          "text": "readonly accounts: readonly Account[]"
+        },
+        {
+          "line": 19,
+          "text": "for (const account of input.accounts) {"
+        },
+        {
+          "line": 40,
+          "text": "return rows"
+        }
       ]
     },
     {
       "id": "R.ltc.helper",
       "label": "ordered care episodes, policy benefit limits, elimination/rider, duplicate-id shadow writes and reporting",
       "file": "projection/internal/annualDebtAndLongTermCare.ts",
-      "lines": [65, 160],
+      "lines": [
+        65,
+        160
+      ],
       "anchors": [
-        { "line": 65, "text": "readonly careEvents: readonly CareEvent[]" },
-        { "line": 87, "text": "for (const event of input.careEvents) {" },
-        { "line": 160, "text": "}" }
+        {
+          "line": 65,
+          "text": "readonly careEvents: readonly CareEvent[]"
+        },
+        {
+          "line": 87,
+          "text": "for (const event of input.careEvents) {"
+        },
+        {
+          "line": 160,
+          "text": "}"
+        }
       ]
     },
     {
       "id": "R.healthcare.helperPricing",
       "label": "ACA setup, Marketplace months, Medicare/IRMAA pricing and warning gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [78, 170],
+      "lines": [
+        78,
+        170
+      ],
       "anchors": [
-        { "line": 78, "text": "const hc = input.plan.expenses.healthcare" },
-        { "line": 92, "text": "const lookbackPrimary = input.resolveMagiFor(input.year - 2)" },
-        { "line": 131, "text": "const marketplaceMonthsByPersonPosition = input.peopleStates.map((person) =>" },
-        { "line": 170, "text": "if (medicare.partDSurchargeUnverified) {" }
+        {
+          "line": 78,
+          "text": "const hc = input.plan.expenses.healthcare"
+        },
+        {
+          "line": 92,
+          "text": "const lookbackPrimary = input.resolveMagiFor(input.year - 2)"
+        },
+        {
+          "line": 131,
+          "text": "const marketplaceMonthsByPersonPosition = input.peopleStates.map((person) =>"
+        },
+        {
+          "line": 170,
+          "text": "if (medicare.partDSurchargeUnverified) {"
+        }
       ],
       "note": "The positional result retains one row per person-state while the keyed birth-month input deliberately preserves simulatePlan's last-wins duplicate-id lookup and January fallback; focused helper and differential fixtures pin both contracts. The warning condition is pinned at line 170; its body at lines 171-174 is simulator-unreachable with every published parameter pack because all shipped IRMAA tiers carry a verified Part D surcharge. The helper unit suite covers the defensive nullable-pack contract."
     },
@@ -42,11 +81,23 @@
       "id": "R.healthcare.helperContract",
       "label": "IRMAA threshold, example validation, contract folds and ACA support through duplicate gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [175, 322],
+      "lines": [
+        175,
+        322
+      ],
       "anchors": [
-        { "line": 175, "text": "const premium =" },
-        { "line": 199, "text": "const exampleContractInputMismatch =" },
-        { "line": 322, "text": "if (coveredIds.size !== acaContract.coveredMembers.length) {" }
+        {
+          "line": 175,
+          "text": "const premium ="
+        },
+        {
+          "line": 199,
+          "text": "const exampleContractInputMismatch ="
+        },
+        {
+          "line": 322,
+          "text": "if (coveredIds.size !== acaContract.coveredMembers.length) {"
+        }
       ],
       "note": "The duplicate-covered-member condition is pinned at line 322. Its body at lines 323-324 is unreachable from this validated corpus because acaYearContractSchema rejects duplicate covered person ids before simulation; the helper unit boundary remains defensive for direct typed callers."
     },
@@ -54,79 +105,193 @@
       "id": "R.healthcare.helperSupport",
       "label": "covered-member, tax-family, evidence and assertion support with complete result",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [325, 461],
+      "lines": [
+        325,
+        461
+      ],
       "anchors": [
-        { "line": 325, "text": "if (" },
-        { "line": 332, "text": "const marketplaceMonths = marketplaceMonthsByPersonPosition[personPosition]!" },
-        { "line": 437, "text": "return {" },
-        { "line": 461, "text": "}" }
+        {
+          "line": 325,
+          "text": "if ("
+        },
+        {
+          "line": 332,
+          "text": "const marketplaceMonths = marketplaceMonthsByPersonPosition[personPosition]!"
+        },
+        {
+          "line": 437,
+          "text": "return {"
+        },
+        {
+          "line": 461,
+          "text": "}"
+        }
       ]
     },
     {
-      "id": "R.guardrail.helper",
-      "label": "goal budget, positional portfolio fold, persistent anchors, decisions and ordered lifestyle funding",
+      "id": "R.guardrail.helper.setup",
+      "label": "goal budget, guardrail setup and positional cardinality guard",
       "file": "projection/internal/annualGuardrailFunding.ts",
-      "lines": [24, 159],
+      "lines": [
+        24,
+        76
+      ],
       "anchors": [
-        { "line": 24, "text": "readonly guardrailsActive: boolean" },
-        { "line": 48, "text": "const earlyPullGoalBudget = input.guardrailsActive" },
-        { "line": 159, "text": "}" }
+        {
+          "line": 24,
+          "text": "readonly guardrailsActive: boolean"
+        },
+        {
+          "line": 48,
+          "text": "const earlyPullGoalBudget = input.guardrailsActive"
+        },
+        {
+          "line": 76,
+          "text": "if (input.startOfYearBalances.length !== input.balances.length) {"
+        }
+      ],
+      "note": "The mismatch throw on lines 77-78 is excluded: simulatePlan supplies one opening value per physical balance, while focused helper tests pin fail-closed cardinality drift."
+    },
+    {
+      "id": "R.guardrail.helper.execution",
+      "label": "positional portfolio fold, persistent anchors, decisions and ordered lifestyle funding",
+      "file": "projection/internal/annualGuardrailFunding.ts",
+      "lines": [
+        79,
+        162
+      ],
+      "anchors": [
+        {
+          "line": 79,
+          "text": "let startPortfolio = 0"
+        },
+        {
+          "line": 81,
+          "text": "startPortfolio += input.startOfYearBalances[balanceIndex]!"
+        },
+        {
+          "line": 162,
+          "text": "}"
+        }
       ]
     },
     {
       "id": "R.debt.callsite",
       "label": "debt planner invocation, ordered balance writes, total fold and ledger publication",
       "file": "projection/simulate.ts",
-      "lines": [2548, 2561],
+      "lines": [
+        2566,
+        2579
+      ],
       "anchors": [
-        { "line": 2548, "text": "let debtService = 0" },
-        { "line": 2549, "text": "for (const row of annualDebtServiceRows({" },
-        { "line": 2561, "text": "}" }
+        {
+          "line": 2566,
+          "text": "let debtService = 0"
+        },
+        {
+          "line": 2567,
+          "text": "for (const row of annualDebtServiceRows({"
+        },
+        {
+          "line": 2579,
+          "text": "}"
+        }
       ]
     },
     {
       "id": "R.healthcare.callsite",
       "label": "healthcare planner invocation and complete result consumption",
       "file": "projection/simulate.ts",
-      "lines": [2562, 2611],
+      "lines": [
+        2580,
+        2629
+      ],
       "anchors": [
-        { "line": 2562, "text": "const healthcarePlan = annualHealthcareExpenses({" },
-        { "line": 2606, "text": "const marketplaceMonthsByPersonPosition =" },
-        { "line": 2608, "text": "if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')" },
-        { "line": 2611, "text": "for (const warning of healthcarePlan.warnings) warnings.add(warning)" }
+        {
+          "line": 2580,
+          "text": "const healthcarePlan = annualHealthcareExpenses({"
+        },
+        {
+          "line": 2624,
+          "text": "const marketplaceMonthsByPersonPosition ="
+        },
+        {
+          "line": 2626,
+          "text": "if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')"
+        },
+        {
+          "line": 2629,
+          "text": "for (const warning of healthcarePlan.warnings) warnings.add(warning)"
+        }
       ]
     },
     {
       "id": "R.healthcare.marketplacePublication",
       "label": "positional Marketplace publication and per-person premium fallback",
       "file": "projection/simulate.ts",
-      "lines": [8005, 8020],
+      "lines": [
+        8053,
+        8068
+      ],
       "anchors": [
-        { "line": 8005, "text": ": peopleStates" },
-        { "line": 8008, "text": "months: marketplaceMonthsByPersonPosition[position]!," },
-        { "line": 8020, "text": "})" }
+        {
+          "line": 8053,
+          "text": ": peopleStates"
+        },
+        {
+          "line": 8056,
+          "text": "months: marketplaceMonthsByPersonPosition[position]!,"
+        },
+        {
+          "line": 8068,
+          "text": "})"
+        }
       ]
     },
     {
       "id": "R.ltc.callsite",
       "label": "LTC planner invocation, benefit-year writes and reporting rows",
       "file": "projection/simulate.ts",
-      "lines": [2627, 2644],
+      "lines": [
+        2645,
+        2662
+      ],
       "anchors": [
-        { "line": 2627, "text": "const longTermCare = annualLongTermCarePlan({" },
-        { "line": 2639, "text": "for (const write of longTermCare.benefitYearWrites) {" },
-        { "line": 2644, "text": "}" }
+        {
+          "line": 2645,
+          "text": "const longTermCare = annualLongTermCarePlan({"
+        },
+        {
+          "line": 2657,
+          "text": "for (const write of longTermCare.benefitYearWrites) {"
+        },
+        {
+          "line": 2662,
+          "text": "}"
+        }
       ]
     },
     {
       "id": "R.guardrail.callsite",
       "label": "guardrail planner invocation and persistent/output state consumption",
       "file": "projection/simulate.ts",
-      "lines": [2680, 2710],
+      "lines": [
+        2698,
+        2728
+      ],
       "anchors": [
-        { "line": 2680, "text": "const guardrailFunding = annualGuardrailFundingPlan({" },
-        { "line": 2701, "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier" },
-        { "line": 2710, "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals" }
+        {
+          "line": 2698,
+          "text": "const guardrailFunding = annualGuardrailFundingPlan({"
+        },
+        {
+          "line": 2719,
+          "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier"
+        },
+        {
+          "line": 2728,
+          "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals"
+        }
       ]
     }
   ],

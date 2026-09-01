@@ -340,10 +340,11 @@ describe('simulatePlan delegates annual income setup', () => {
       accountId: 'annuity-yield-source',
       balance: 60_000,
     })
+    const taxableBalanceIndex = first.inputBalances.findIndex(
+      ({ accountId }) => accountId === 'annuity-yield-source',
+    )
     expect(
-      first.input.distributedYield.startOfYearBalance.get(
-        'annuity-yield-source',
-      ),
+      first.input.distributedYield.startOfYearBalances[taxableBalanceIndex],
     ).toBe(100_000)
     expect(first.natural.incomes.taxableInterest).toBe(10_000)
     expect(result.years[0]!.incomes.taxableInterest).toBe(10_000)
