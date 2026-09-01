@@ -296,6 +296,49 @@ describe('simulatePlan duplicate contribution account ids', () => {
     expect(year.investableTotal - Object.values(year.balances).reduce((sum, value) => sum + value, 0))
       .toBe(16_010)
 
+    const runtimeContributionOccurrences = year.retirementRuntimeSource!.runtimeOccurrences
+      .filter((occurrence) =>
+        occurrence.kind === 'employerPlanEmployeeContribution' ||
+        occurrence.kind === 'employerPlanEmployerMatch')
+    expect(runtimeContributionOccurrences.map((occurrence) => [
+      occurrence.kind,
+      occurrence.grossAmountPlanDollars,
+      occurrence.producerOccurrenceKey,
+    ])).toEqual([
+      [
+        'employerPlanEmployeeContribution',
+        1_000,
+        JSON.stringify(['employerPlanEmployeeContribution', 'distinct-employer', 2]),
+      ],
+      [
+        'employerPlanEmployeeContribution',
+        10_000,
+        JSON.stringify(['employerPlanEmployeeContribution', 'duplicate-employer', 1]),
+      ],
+      [
+        'employerPlanEmployeeContribution',
+        13_500,
+        JSON.stringify(['employerPlanEmployeeContribution', 'duplicate-employer', 3]),
+      ],
+      [
+        'employerPlanEmployerMatch',
+        1_000,
+        JSON.stringify(['employerPlanEmployerMatch', 'distinct-employer', 2]),
+      ],
+      [
+        'employerPlanEmployerMatch',
+        6_000,
+        JSON.stringify(['employerPlanEmployerMatch', 'duplicate-employer', 1]),
+      ],
+      [
+        'employerPlanEmployerMatch',
+        6_000,
+        JSON.stringify(['employerPlanEmployerMatch', 'duplicate-employer', 3]),
+      ],
+    ])
+    expect(new Set(runtimeContributionOccurrences.map((occurrence) =>
+      occurrence.producerOccurrenceKey)).size).toBe(6)
+
     expect(year.cashFlow!.useLines
       .filter((line) => line.kind === 'contribution')
       .map((line) => ({
