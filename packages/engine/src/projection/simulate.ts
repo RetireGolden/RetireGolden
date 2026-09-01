@@ -75,7 +75,10 @@ import { annualSeppDistributions } from './internal/annualSeppDistributions.js'
 import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
 import { annualSnapshot } from './internal/annualSnapshot.js'
 import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
-import { annualAggregateRothConversionPlan } from './internal/annualAggregateRothConversionPlan.js'
+import {
+  annualAggregateRothConversionPlan,
+  withAnnualAggregateRothConversionReservations,
+} from './internal/annualAggregateRothConversionPlan.js'
 import { distributedTaxableYieldRows } from './internal/distributedTaxableYieldRows.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
@@ -7181,6 +7184,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           iraRmdUnsatisfiedByOwner,
           desiredPlanDollars: desired,
           primaryPersonId: primary.id,
+          fundingTolerancePlanDollars: EPSILON,
           sourceContextForOwner: conversionSourceContextForOwner,
         })
         aggregateRothConversionAllocationBalances =
@@ -7189,13 +7193,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         // subtract/add round trip. The pure planner used private shadows, so
         // the caller alone mutates the live states, and restores them before
         // any conversion draw or publication below.
-        for (const reservation of plannedAllocation.reservations) {
-          reservation.state.balance -= reservation.amountPlanDollars
-        }
-        for (const reservation of plannedAllocation.reservations) {
-          reservation.state.balance += reservation.amountPlanDollars
-        }
-        const allocation = plannedAllocation.allocation
+        const allocation = withAnnualAggregateRothConversionReservations(
+          plannedAllocation.reservations,
+          () => plannedAllocation.allocation,
+        )
         if (allocation.status === 'refused') {
           warnings.add(allocation.reason === 'householdHoldsNoRothAccount'
             ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'

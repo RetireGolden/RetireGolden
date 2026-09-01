@@ -22,17 +22,21 @@ import {
   type AggregateRothConversionOwnerAllocation,
 } from '../../actions/aggregateRothConversionOwnerAllocation.js'
 import type { RothConversionSourceContext } from '../../strategies/accountEligibility.js'
-import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
+
+export interface AnnualAggregateRothConversionLiveBalance
+  extends Omit<AggregateRothConversionBalance, 'balance'> {
+  balance: number
+}
 
 interface PlanningBalance<
-  TBalance extends AggregateRothConversionBalance,
+  TBalance extends AnnualAggregateRothConversionLiveBalance,
 > extends AggregateRothConversionBalance {
   readonly sourceState: TBalance
   balance: number
 }
 
 export interface AnnualAggregateRothConversionReservation<
-  TBalance extends AggregateRothConversionBalance,
+  TBalance extends AnnualAggregateRothConversionLiveBalance,
 > {
   /** Caller-owned state whose subtract/add round trip must be replayed. */
   readonly state: TBalance
@@ -40,7 +44,7 @@ export interface AnnualAggregateRothConversionReservation<
 }
 
 export interface AnnualAggregateRothConversionPlanInput<
-  TBalance extends AggregateRothConversionBalance,
+  TBalance extends AnnualAggregateRothConversionLiveBalance,
 > {
   /** Caller-owned states in Plan order. */
   readonly balances: readonly TBalance[]
@@ -48,13 +52,99 @@ export interface AnnualAggregateRothConversionPlanInput<
   readonly iraRmdUnsatisfiedByOwner: ReadonlyMap<string, number>
   readonly desiredPlanDollars: number
   readonly primaryPersonId: string
+  /** Caller's annual-ledger residual threshold; one source owns both loops. */
+  readonly fundingTolerancePlanDollars: number
   readonly sourceContextForOwner: (
     ownerPersonId: string,
   ) => RothConversionSourceContext
 }
 
+/**
+ * Reproduce the former live-state reservation round trip as one protected
+ * scope. The callback is the only place an operation may run while balances
+ * are reserved; restoration is guaranteed even if that operation throws.
+ */
+export function withAnnualAggregateRothConversionReservations<
+  TBalance extends AnnualAggregateRothConversionLiveBalance,
+  TResult,
+>(
+  reservations: readonly AnnualAggregateRothConversionReservation<TBalance>[],
+  whileReserved: () => TResult,
+): TResult {
+  const applied: AnnualAggregateRothConversionReservation<TBalance>[] = []
+  try {
+    for (const reservation of reservations) {
+      reservation.state.balance -= reservation.amountPlanDollars
+      applied.push(reservation)
+    }
+    return whileReserved()
+  } finally {
+    for (const reservation of applied) {
+      reservation.state.balance += reservation.amountPlanDollars
+    }
+  }
+}
+
+/**
+ * Rebind a shadow-state allocation to the caller's live state identities.
+ */
+export function rebindAnnualAggregateRothConversionAllocation<
+  TBalance extends AnnualAggregateRothConversionLiveBalance,
+>(
+  planningAllocation: Extract<
+    AggregateRothConversionOwnerAllocation<PlanningBalance<TBalance>>,
+    { readonly status: 'allocated' }
+  >,
+): Extract<
+  AggregateRothConversionOwnerAllocation<TBalance>,
+  { readonly status: 'allocated' }
+> {
+  const destinationByPlanning = new Map<
+    AggregateRothConversionDestination<PlanningBalance<TBalance>>,
+    AggregateRothConversionDestination<TBalance>
+  >()
+  const destinations = planningAllocation.destinations.map((destination) => {
+    const rebound: AggregateRothConversionDestination<TBalance> = {
+      ownerPersonId: destination.ownerPersonId,
+      destinationState: destination.destinationState.sourceState,
+      destinationAccount: destination.destinationAccount,
+    }
+    destinationByPlanning.set(destination, rebound)
+    return rebound
+  })
+  const destinationFor = (
+    destination: AggregateRothConversionDestination<PlanningBalance<TBalance>>,
+  ): AggregateRothConversionDestination<TBalance> => {
+    const rebound = destinationByPlanning.get(destination)
+    if (rebound === undefined) {
+      throw new Error('aggregate Roth conversion destination left its allocation')
+    }
+    return rebound
+  }
+
+  return {
+    status: 'allocated',
+    slices: planningAllocation.slices.map((slice) => ({
+      ownerPersonId: slice.ownerPersonId,
+      slicePlanDollars: slice.slicePlanDollars,
+      destination: destinationFor(slice.destination),
+    })),
+    trims: planningAllocation.trims,
+    draws: planningAllocation.draws.map((draw) => ({
+      ownerPersonId: draw.ownerPersonId,
+      sourceState: draw.sourceState.sourceState,
+      sourceAccount: draw.sourceAccount,
+      destination: destinationFor(draw.destination),
+      amountPlanDollars: draw.amountPlanDollars,
+    })),
+    destinations,
+    convertibleTargetPlanDollars:
+      planningAllocation.convertibleTargetPlanDollars,
+  }
+}
+
 export interface AnnualAggregateRothConversionPlan<
-  TBalance extends AggregateRothConversionBalance,
+  TBalance extends AnnualAggregateRothConversionLiveBalance,
 > {
   /** Reservation operations in the legacy subtraction/restoration order. */
   readonly reservations: readonly AnnualAggregateRothConversionReservation<TBalance>[]
@@ -68,7 +158,7 @@ export interface AnnualAggregateRothConversionPlan<
  * Plan the RMD-reserved aggregate allocation without mutating live state.
  */
 export function annualAggregateRothConversionPlan<
-  TBalance extends AggregateRothConversionBalance,
+  TBalance extends AnnualAggregateRothConversionLiveBalance,
 >(
   input: AnnualAggregateRothConversionPlanInput<TBalance>,
 ): AnnualAggregateRothConversionPlan<TBalance> {
@@ -85,7 +175,7 @@ export function annualAggregateRothConversionPlan<
     let remaining = Math.max(0, unsatisfiedRmd)
     for (
       let index = planningBalances.length - 1;
-      index >= 0 && remaining > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS;
+      index >= 0 && remaining > input.fundingTolerancePlanDollars;
       index -= 1
     ) {
       const planningState = planningBalances[index]!
@@ -132,50 +222,11 @@ export function annualAggregateRothConversionPlan<
     }
   }
 
-  const destinationByPlanning = new Map<
-    AggregateRothConversionDestination<PlanningBalance<TBalance>>,
-    AggregateRothConversionDestination<TBalance>
-  >()
-  const destinations = planningAllocation.destinations.map((destination) => {
-    const rebound: AggregateRothConversionDestination<TBalance> = {
-      ownerPersonId: destination.ownerPersonId,
-      destinationState: destination.destinationState.sourceState,
-      destinationAccount: destination.destinationAccount,
-    }
-    destinationByPlanning.set(destination, rebound)
-    return rebound
-  })
-  const destinationFor = (
-    destination: AggregateRothConversionDestination<PlanningBalance<TBalance>>,
-  ): AggregateRothConversionDestination<TBalance> => {
-    const rebound = destinationByPlanning.get(destination)
-    if (rebound === undefined) {
-      throw new Error('aggregate Roth conversion destination left its allocation')
-    }
-    return rebound
-  }
-
   return {
     reservations,
     allocationBalances,
-    allocation: {
-      status: 'allocated',
-      slices: planningAllocation.slices.map((slice) => ({
-        ownerPersonId: slice.ownerPersonId,
-        slicePlanDollars: slice.slicePlanDollars,
-        destination: destinationFor(slice.destination),
-      })),
-      trims: planningAllocation.trims,
-      draws: planningAllocation.draws.map((draw) => ({
-        ownerPersonId: draw.ownerPersonId,
-        sourceState: draw.sourceState.sourceState,
-        sourceAccount: draw.sourceAccount,
-        destination: destinationFor(draw.destination),
-        amountPlanDollars: draw.amountPlanDollars,
-      })),
-      destinations,
-      convertibleTargetPlanDollars:
-        planningAllocation.convertibleTargetPlanDollars,
-    },
+    allocation: rebindAnnualAggregateRothConversionAllocation(
+      planningAllocation,
+    ),
   }
 }

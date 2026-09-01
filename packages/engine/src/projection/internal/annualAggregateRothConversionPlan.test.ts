@@ -3,12 +3,19 @@ import { describe, expect, it } from 'vitest'
 import type { Account } from '../../model/plan.js'
 import {
   annualAggregateRothConversionPlan,
+  rebindAnnualAggregateRothConversionAllocation,
+  withAnnualAggregateRothConversionReservations,
 } from './annualAggregateRothConversionPlan.js'
+import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
 
 interface State {
   readonly account: Account
   balance: number
   readonly marker: object
+}
+
+interface RothState extends State {
+  readonly account: Extract<Account, { type: 'roth' }> & { readonly kind: 'ira' }
 }
 
 function traditional(
@@ -34,7 +41,7 @@ function traditional(
   }
 }
 
-function roth(id: string, ownerPersonId: string, balance = 0): State {
+function roth(id: string, ownerPersonId: string, balance = 0): RothState {
   return {
     account: {
       type: 'roth',
@@ -87,6 +94,7 @@ describe('annualAggregateRothConversionPlan', () => {
       ]),
       desiredPlanDollars: 15,
       primaryPersonId: 'alex',
+      fundingTolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
       sourceContextForOwner,
     })
 
@@ -159,6 +167,7 @@ describe('annualAggregateRothConversionPlan', () => {
       iraRmdUnsatisfiedByOwner: new Map([['alex', 7]]),
       desiredPlanDollars: 25,
       primaryPersonId: 'alex',
+      fundingTolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
       sourceContextForOwner,
     })
 
@@ -189,6 +198,7 @@ describe('annualAggregateRothConversionPlan', () => {
       iraRmdUnsatisfiedByOwner: new Map([['alex', 0.03]]),
       desiredPlanDollars: 0.1,
       primaryPersonId: 'alex',
+      fundingTolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
       sourceContextForOwner,
     })
 
@@ -201,12 +211,10 @@ describe('annualAggregateRothConversionPlan', () => {
 
     // This is the legacy caller's exact mutation order. Replacing it with an
     // assignment back to the opening value would erase a real binary64 leaf.
-    for (const reservation of plan.reservations) {
-      reservation.state.balance -= reservation.amountPlanDollars
-    }
-    for (const reservation of plan.reservations) {
-      reservation.state.balance += reservation.amountPlanDollars
-    }
+    withAnnualAggregateRothConversionReservations(
+      plan.reservations,
+      () => undefined,
+    )
     expect(source.balance).toBe(0.30000000000000004)
     expect(Object.is(source.balance, 0.3)).toBe(false)
   })
@@ -220,6 +228,7 @@ describe('annualAggregateRothConversionPlan', () => {
       iraRmdUnsatisfiedByOwner: new Map(),
       desiredPlanDollars: 30,
       primaryPersonId: 'alex',
+      fundingTolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
       sourceContextForOwner,
     })
 
@@ -249,6 +258,7 @@ describe('annualAggregateRothConversionPlan', () => {
       iraRmdUnsatisfiedByOwner: new Map([['alex', 25]]),
       desiredPlanDollars: 50,
       primaryPersonId: 'alex',
+      fundingTolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
       sourceContextForOwner: () => {
         throw new Error('hostile source context')
       },
@@ -267,6 +277,7 @@ describe('annualAggregateRothConversionPlan', () => {
       ]),
       desiredPlanDollars: 25,
       primaryPersonId: 'primary',
+      fundingTolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
       sourceContextForOwner,
     })
 
@@ -280,5 +291,49 @@ describe('annualAggregateRothConversionPlan', () => {
       reason: 'householdHoldsNoRothAccount',
     })
     expect(source.balance).toBe(100)
+  })
+
+  it('restores every applied live reservation when work inside the reserved scope throws', () => {
+    const first = traditional('first', 'alex', 10)
+    const second = traditional('second', 'alex', 20)
+    const failure = new Error('hostile reserved operation')
+
+    expect(() => withAnnualAggregateRothConversionReservations([
+      { state: first, amountPlanDollars: 3 },
+      { state: second, amountPlanDollars: 5 },
+    ], () => {
+      expect([first.balance, second.balance]).toEqual([7, 15])
+      throw failure
+    })).toThrow(failure)
+    expect([first.balance, second.balance]).toEqual([10, 20])
+  })
+
+  it('rejects a shadow destination that is absent from the allocator destination inventory', () => {
+    const liveDestination = roth('roth', 'alex')
+    const destinationAccount = liveDestination.account
+    const planningDestinationState = {
+      account: destinationAccount,
+      balance: liveDestination.balance,
+      sourceState: liveDestination,
+    }
+    const listedDestination = {
+      ownerPersonId: 'alex',
+      destinationState: planningDestinationState,
+      destinationAccount,
+    }
+    const absentDestination = { ...listedDestination }
+
+    expect(() => rebindAnnualAggregateRothConversionAllocation({
+      status: 'allocated',
+      slices: [{
+        ownerPersonId: 'alex',
+        slicePlanDollars: 1,
+        destination: absentDestination,
+      }],
+      trims: [],
+      draws: [],
+      destinations: [listedDestination],
+      convertibleTargetPlanDollars: 1,
+    })).toThrow('aggregate Roth conversion destination left its allocation')
   })
 })

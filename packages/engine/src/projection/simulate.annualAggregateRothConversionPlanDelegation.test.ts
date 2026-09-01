@@ -11,17 +11,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  AnnualAggregateRothConversionLiveBalance,
   AnnualAggregateRothConversionPlan,
   AnnualAggregateRothConversionPlanInput,
 } from './internal/annualAggregateRothConversionPlan.js'
-import type { AggregateRothConversionBalance } from
-  '../actions/aggregateRothConversionOwnerAllocation.js'
 
 type PlannerInput = AnnualAggregateRothConversionPlanInput<
-  AggregateRothConversionBalance
+  AnnualAggregateRothConversionLiveBalance
 >
 type PlannerOutput = AnnualAggregateRothConversionPlan<
-  AggregateRothConversionBalance
+  AnnualAggregateRothConversionLiveBalance
 >
 type Mode = 'original' | 'snapshot' | 'draw' | 'reservation' | 'refusal'
 

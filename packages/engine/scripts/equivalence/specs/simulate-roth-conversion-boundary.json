@@ -1,57 +1,69 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-roth-conversion-boundary",
-  "why": "Measured reach for the pure aggregate Roth-conversion planner and the caller band that invokes it, publishes its snapshot and replays its temporary RMD reservation. Block T's four hostile members run in all four equivalence modes: T1 combines deferred-RMD Map owner order, a reverse Plan-order multi-account reserve, duplicate Roth ids with distinct opening balances, two-owner exact-cent allocation and ordered source/destination publication; T2 makes the required subtract/add restoration move a binary64 leaf and exercises counterfactual rollback/re-entry; T3 reaches household refusal; T4 reaches an allocated result with no convertible owner, slices or draws. Helper identity and the reservation stream's cross-owner operation order are guarded separately by the focused helper/delegation suites: a JSON dump can observe neither object identity nor the order of subtract/add operations on disjoint owner states when their final economic values agree.",
+  "why": "Measured reach for the pure aggregate Roth-conversion planner, its protected live-reservation replay and the caller band that invokes both, publishes the planner snapshot and consumes the allocation. Block T's four hostile members run in all four equivalence modes: T1 combines deferred-RMD Map owner order, a reverse Plan-order multi-account reserve, duplicate Roth ids with distinct opening balances, two-owner exact-cent allocation and ordered source/destination publication; T2 makes the required subtract/add restoration move a binary64 leaf and exercises counterfactual rollback/re-entry; T3 reaches household refusal; T4 reaches an allocated result with no convertible owner, slices or draws. Focused tests separately pin live object identity, cross-owner operation order, restoration after a deliberately thrown reserved-scope callback, and rejection of an injected destination identity absent from the allocator inventory: a JSON dump cannot observe those identity/order invariants when final economic values agree, and no validated Plan can make the production allocator return that hostile identity graph.",
   "entries": [
     {
-      "id": "A.shadows",
-      "label": "private Plan-order planning shadows and reservation stream",
+      "id": "A.replay",
+      "label": "protected live subtract/add replay",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [75, 82]
+      "lines": [74, 85]
     },
     {
-      "id": "B.reservations",
+      "id": "B.shadows",
+      "label": "private Plan-order planning shadows and reservation stream",
+      "file": "projection/internal/annualAggregateRothConversionPlan.ts",
+      "lines": [165, 172]
+    },
+    {
+      "id": "C.reservations",
       "label": "owner-order and reverse Plan-order deferred-RMD reservation",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [84, 110],
+      "lines": [174, 200],
       "note": "T1 reaches both owners, skips nontraditional and other-owner rows, exhausts p1's one-dollar tail, skips its zero-dollar IRA and continues into the earlier source. T2 supplies the cancellation-sensitive reservation. Inherited-account exclusion is pinned by the focused helper suite. The remaining cold nullish owner fallback is a supported structural contract but cannot be selected by corpus data because Plan validation requires every traditional account to name an individual owner."
     },
     {
-      "id": "C.snapshot-policy",
+      "id": "D.snapshot-policy",
       "label": "duplicate-id last-write snapshot and shared allocation invocation",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [112, 125]
+      "lines": [202, 215]
     },
     {
-      "id": "D.refusal",
+      "id": "E.refusal",
       "label": "household allocation refusal return",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [128, 132]
+      "lines": [217, 223]
     },
     {
-      "id": "E.destinations",
+      "id": "F.destinations",
       "label": "allocated destination identity rebound",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [135, 147]
+      "lines": [102, 114]
     },
     {
-      "id": "F.destination-lookup",
+      "id": "G.destination-lookup",
       "label": "allocation destination lookup",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [148, 151],
-      "note": "The missing-destination throw on lines 152-154 is excluded: it is a defensive invariant that would require the imported allocator to return a destination object absent from its own destinations array, so no Plan can select it. The allocator suite owns that graph construction, while the focused boundary suites pin the reachable lookup and exact rebound identities."
+      "lines": [115, 119],
+      "note": "The missing-destination throw on line 120 is excluded from Plan-driven reach because it requires an allocator result whose slice or draw destination object is absent from that same result's destination inventory; no validated Plan can select such a graph. The focused helper suite injects exactly that hostile allocation and asserts the throw, while the allocator and delegation suites pin the production inventory and exact rebound identities."
     },
     {
-      "id": "G.allocated-return",
+      "id": "H.allocated-return",
       "label": "allocated slices, draws, destinations and target rebound",
       "file": "projection/internal/annualAggregateRothConversionPlan.ts",
-      "lines": [155, 180]
+      "lines": [125, 143]
     },
     {
-      "id": "H.callsite",
+      "id": "I.planner-return",
+      "label": "planner return with rebound allocation",
+      "file": "projection/internal/annualAggregateRothConversionPlan.ts",
+      "lines": [225, 231]
+    },
+    {
+      "id": "J.callsite",
       "label": "caller invocation, exact snapshot publication and subtract/add replay",
       "file": "projection/simulate.ts",
-      "lines": [7173, 7193]
+      "lines": [7176, 7200]
     }
   ],
   "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every operand or branch sharing a physical line, so the report's cold sub-line regions and these notes must be read together with the focused helper and hostile delegation tests."

@@ -263,7 +263,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 730
+              "line": 733
             }
           ]
         }
@@ -389,7 +389,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 730
+              "line": 733
             }
           ]
         },
@@ -610,7 +610,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 730
+              "line": 733
             }
           ]
         }
@@ -713,7 +713,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 730
+              "line": 733
             }
           ]
         }
@@ -825,7 +825,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 730
+              "line": 733
             }
           ]
         },
@@ -1045,7 +1045,7 @@
           "functions": [
             {
               "name": "annualAggregateRothConversionPlan",
-              "line": 70
+              "line": 160
             }
           ]
         },
@@ -1063,7 +1063,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 730
+              "line": 733
             }
           ]
         }
