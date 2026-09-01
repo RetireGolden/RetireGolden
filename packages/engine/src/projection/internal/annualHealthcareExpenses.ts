@@ -43,7 +43,7 @@ export interface AnnualHealthcareExpensesResult {
   readonly irmaaLookbackMagiYear: number
   readonly irmaaNextTierThreshold: number | null
   readonly warnings: string[]
-  readonly marketplaceMonthsByPerson: ReadonlyMap<PersonYearState, number>
+  readonly marketplaceMonthsByPersonPosition: readonly number[]
   readonly pre65MonthlyPremiumPerPerson: number
 }
 
@@ -124,13 +124,10 @@ export function annualHealthcareExpenses(
           ? (input.birthMonthByPerson.get(person.personId) ?? 1) - 1
           : 0
   // Person ids are not globally unique unless a retirement action references
-  // them. Key by the positional state object so an accepted duplicate id never
+  // them. Keep one row per input position so an accepted duplicate id never
   // collapses another person's transition months in caller-side publication.
-  const marketplaceMonthsByPerson = new Map(
-    input.peopleStates.map((person) => [
-      person,
-      marketplaceMonthsBeforeMedicare(person),
-    ]),
+  const marketplaceMonthsByPersonPosition = input.peopleStates.map((person) =>
+    marketplaceMonthsBeforeMedicare(person),
   )
 
   for (const state of input.peopleStates) {
@@ -450,7 +447,7 @@ export function annualHealthcareExpenses(
     irmaaLookbackMagiYear,
     irmaaNextTierThreshold,
     warnings,
-    marketplaceMonthsByPerson,
+    marketplaceMonthsByPersonPosition,
     pre65MonthlyPremiumPerPerson: hc.pre65MonthlyPremiumPerPerson,
   }
 }

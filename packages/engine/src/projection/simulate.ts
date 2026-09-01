@@ -2603,8 +2603,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       healthcarePlan.irmaaLookbackMagiSource
     const irmaaLookbackMagiYear = healthcarePlan.irmaaLookbackMagiYear
     const irmaaNextTierThreshold = healthcarePlan.irmaaNextTierThreshold
-    const marketplaceMonthsByPerson =
-      healthcarePlan.marketplaceMonthsByPerson
+    const marketplaceMonthsByPersonPosition =
+      healthcarePlan.marketplaceMonthsByPersonPosition
+    if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')
     const pre65MonthlyPremiumPerPerson =
       healthcarePlan.pre65MonthlyPremiumPerPerson
     for (const warning of healthcarePlan.warnings) warnings.add(warning)
@@ -8002,12 +8003,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         : acaContractsForYear.length > 1
           ? []
           : peopleStates
-            .filter((person) => {
-              const months = marketplaceMonthsByPerson.get(person) ?? 0
-              return person.alive && months > 0 && pre65MonthlyPremiumPerPerson > 0
-            })
-            .map((person) => {
-              const months = marketplaceMonthsByPerson.get(person) ?? 0
+            .map((person, position) => ({
+              person,
+              months: marketplaceMonthsByPersonPosition[position]!,
+            }))
+            .filter(({ person, months }) =>
+              person.alive && months > 0 && pre65MonthlyPremiumPerPerson > 0)
+            .map(({ person, months }) => {
               const premium = pre65MonthlyPremiumPerPerson * healthInflFactor
               return {
                 personId: person.personId,

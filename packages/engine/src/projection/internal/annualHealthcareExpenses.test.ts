@@ -85,10 +85,7 @@ describe('annualHealthcareExpenses', () => {
     ]
     const result = run(plan, peopleStates)
 
-    expect([...result.marketplaceMonthsByPerson]).toStrictEqual([
-      [peopleStates[0], 12],
-      [peopleStates[1], 6],
-    ])
+    expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([12, 6])
     // p1 has 12 pre-65 months; p2 turns 65 in July and therefore has the
     // documented birthMonth - 1 = 6 Marketplace months plus 6 months of extras.
     expect(result.healthcare - result.medicarePremiums).toBe(1_860)
@@ -102,10 +99,7 @@ describe('annualHealthcareExpenses', () => {
     const second = { personId: 'p1', ageAttained: 66, alive: true }
     const result = run(plan, [first, second])
 
-    expect([...result.marketplaceMonthsByPerson]).toStrictEqual([
-      [first, 12],
-      [second, 0],
-    ])
+    expect(result.marketplaceMonthsByPersonPosition).toStrictEqual([12, 0])
   })
 
   it('keeps referenced duplicate person IDs first-wins like simulatePlan', () => {

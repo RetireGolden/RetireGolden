@@ -19,21 +19,21 @@
       "id": "R.healthcare.helperPricing",
       "label": "ACA setup, Marketplace months, Medicare/IRMAA pricing and warning gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [75, 168],
-      "note": "This begins on the function's first parameter line because V8 does not attribute execution to the preceding export declaration. The warning condition is pinned at line 168; its body at lines 169-172 is simulator-unreachable with every published parameter pack because all shipped IRMAA tiers carry a verified Part D surcharge. The helper unit suite covers the defensive nullable-pack contract."
+      "lines": [75, 165],
+      "note": "This begins on the function's first parameter line because V8 does not attribute execution to the preceding export declaration. The warning condition is pinned at line 165; its body at lines 166-169 is simulator-unreachable with every published parameter pack because all shipped IRMAA tiers carry a verified Part D surcharge. The helper unit suite covers the defensive nullable-pack contract."
     },
     {
       "id": "R.healthcare.helperContract",
       "label": "IRMAA threshold, example validation, contract folds and ACA support through duplicate gate",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [173, 318],
-      "note": "The duplicate-covered-member condition is pinned at line 318. Its body at lines 319-320 is unreachable from this validated corpus because acaYearContractSchema rejects duplicate covered person ids before simulation; the helper unit boundary remains defensive for direct typed callers."
+      "lines": [170, 315],
+      "note": "The duplicate-covered-member condition is pinned at line 315. Its body at lines 316-317 is unreachable from this validated corpus because acaYearContractSchema rejects duplicate covered person ids before simulation; the helper unit boundary remains defensive for direct typed callers."
     },
     {
       "id": "R.healthcare.helperSupport",
       "label": "covered-member, tax-family, evidence and assertion support with complete result",
       "file": "projection/internal/annualHealthcareExpenses.ts",
-      "lines": [321, 456]
+      "lines": [318, 453]
     },
     {
       "id": "R.guardrail.helper",
@@ -45,31 +45,57 @@
       "id": "R.debt.callsite",
       "label": "debt planner invocation, ordered balance writes, total fold and ledger publication",
       "file": "projection/simulate.ts",
-      "lines": [2623, 2636]
+      "lines": [2618, 2631],
+      "anchors": [
+        { "line": 2618, "text": "let debtService = 0" },
+        { "line": 2619, "text": "for (const row of annualDebtServiceRows({" },
+        { "line": 2631, "text": "}" }
+      ]
     },
     {
       "id": "R.healthcare.callsite",
       "label": "healthcare planner invocation and complete result consumption",
       "file": "projection/simulate.ts",
-      "lines": [2637, 2684]
+      "lines": [2632, 2681],
+      "anchors": [
+        { "line": 2632, "text": "const healthcarePlan = annualHealthcareExpenses({" },
+        { "line": 2676, "text": "const marketplaceMonthsByPersonPosition =" },
+        { "line": 2678, "text": "if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')" },
+        { "line": 2681, "text": "for (const warning of healthcarePlan.warnings) warnings.add(warning)" }
+      ]
     },
     {
       "id": "R.healthcare.marketplacePublication",
       "label": "positional Marketplace publication and per-person premium fallback",
       "file": "projection/simulate.ts",
-      "lines": [8101, 8115]
+      "lines": [8118, 8133],
+      "anchors": [
+        { "line": 8118, "text": ": peopleStates" },
+        { "line": 8121, "text": "months: marketplaceMonthsByPersonPosition[position]!," },
+        { "line": 8133, "text": "})" }
+      ]
     },
     {
       "id": "R.ltc.callsite",
       "label": "LTC planner invocation, benefit-year writes and reporting rows",
       "file": "projection/simulate.ts",
-      "lines": [2701, 2718]
+      "lines": [2697, 2714],
+      "anchors": [
+        { "line": 2697, "text": "const longTermCare = annualLongTermCarePlan({" },
+        { "line": 2709, "text": "for (const write of longTermCare.benefitYearWrites) {" },
+        { "line": 2714, "text": "}" }
+      ]
     },
     {
       "id": "R.guardrail.callsite",
       "label": "guardrail planner invocation and persistent/output state consumption",
       "file": "projection/simulate.ts",
-      "lines": [2754, 2784]
+      "lines": [2750, 2780],
+      "anchors": [
+        { "line": 2750, "text": "const guardrailFunding = annualGuardrailFundingPlan({" },
+        { "line": 2771, "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier" },
+        { "line": 2780, "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals" }
+      ]
     }
   ],
   "readingTheCounts": "A member count proves that at least one line in the named range executed. The reach command additionally fails on any cold executable whole line inside a reached range. JavaScript line coverage cannot distinguish every ternary, nullish, optional-chain, or compound-condition operand sharing one physical line, so cold sub-line regions and focused helper/delegation tests remain complementary evidence."

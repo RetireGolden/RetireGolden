@@ -19,6 +19,7 @@ const seam = vi.hoisted(() => ({
   debt: [] as Array<{ input: DebtInput; opening: number | undefined }>,
   ltc: [] as Array<{ input: LtcInput; opening: number | undefined }>,
   healthcare: [] as AnnualHealthcareExpensesInput[],
+  returnIncompleteMarketplaceMonths: false,
   guardrail: [] as GuardrailInput[],
   rollbacks: 0,
 }))
@@ -115,12 +116,15 @@ vi.mock('./internal/annualHealthcareExpenses.js', async (importOriginal) => {
       seam.healthcare.push(input)
       const natural = original.annualHealthcareExpenses(input)
       const healthcare = 17 + seam.healthcare.length - 1
-      return {
+      const result = {
         ...natural,
         healthcare,
         healthcareExcludingAcaEnrollment: healthcare,
         healthcareExcludingMarketplacePremium: healthcare,
       }
+      return seam.returnIncompleteMarketplaceMonths
+        ? { ...result, marketplaceMonthsByPersonPosition: [] }
+        : result
     },
   }
 })
@@ -171,6 +175,7 @@ describe('simulatePlan delegates the remaining annual expense band', () => {
     seam.debt.length = 0
     seam.ltc.length = 0
     seam.healthcare.length = 0
+    seam.returnIncompleteMarketplaceMonths = false
     seam.guardrail.length = 0
     seam.rollbacks = 0
     const plan = singlePersonPlan({ planningAge: 90 })
@@ -214,5 +219,19 @@ describe('simulatePlan delegates the remaining annual expense band', () => {
       { debt: 11, healthcare: 17, care: 13, benefit: 5, base: 42 },
       { debt: 12, healthcare: 18, care: 14, benefit: 6, base: 43 },
     ])
+  })
+
+  it('fails loudly when the healthcare planner breaks positional Marketplace alignment', () => {
+    seam.returnIncompleteMarketplaceMonths = true
+    const plan = singlePersonPlan({ planningAge: 61 })
+    plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 100
+
+    expect(() => simulatePlan(validatePlan(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+    })).toThrow('Healthcare planner person-row mismatch')
+
+    seam.returnIncompleteMarketplaceMonths = false
   })
 })
