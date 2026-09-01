@@ -230,11 +230,15 @@
     },
     "inputs": {
       "corpusSourceBlob": "2c2b9114053e7b583cb205ed48a1b1757b6e0f91",
+      "corpusIndexBlob": "3d434147ef86cac8116cefac867b2076256feb21",
+      "corpusExamplesBlob": "453bcb81103f490447d679276ca1a3ffbad9104a",
       "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
       "engineTreeLoaderBlob": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
+      "treeDescriberBlob": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
       "encoderBlob": "8bb6b7f19eb068444ee7fa6970a704945ab28f06",
       "modesBlob": "0c75aac27538942bf96517fd00c417fa8b967ab9",
       "reachRecorderBlob": "81d6c4cce57b40f770be21b7a89ea2da9c0c217d",
+      "typescriptSourceResolutionBlob": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a",
       "usageBlob": "0b3b3072c3e716d4bace88f6887a41bdda5d60d1",
       "specMeasurementSha256": "da83e39abf337b9ace364615b6a6b9a35268608d16b05efdeec5fcd7ab169c40"
     },

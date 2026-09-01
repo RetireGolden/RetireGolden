@@ -10,9 +10,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-import { diffEncoded } from './encode.mjs'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..', '..')
@@ -21,20 +19,21 @@ const repoDir = execFileSync('git', ['rev-parse', '--show-toplevel'], {
   encoding: 'utf8',
 }).trim()
 const equivalence = resolve(engineDir, 'scripts', 'equivalence.mjs')
-const specPath = resolve(
-  scriptDir,
-  'specs',
-  'simulate-inherited-ira-boundary.json',
-)
+const specRepoPath = 'packages/engine/scripts/equivalence/specs/simulate-inherited-ira-boundary.json'
+const specPath = resolve(repoDir, specRepoPath)
 const spec = JSON.parse(readFileSync(specPath, 'utf8'))
-const proof = spec.measuredProof
-
-if (proof === undefined) {
-  throw new Error('inherited-IRA spec has no measuredProof')
-}
 
 function gitObject(revision) {
   return execFileSync('git', ['rev-parse', revision], {
+    cwd: repoDir,
+    encoding: 'utf8',
+  }).trim()
+}
+
+function workingTreeBlob(path) {
+  // Apply the path's configured clean filter (notably CRLF normalization on
+  // Windows), then require the exact blob Git would commit from these bytes.
+  return execFileSync('git', ['hash-object', `--path=${path}`, '--', path], {
     cwd: repoDir,
     encoding: 'utf8',
   }).trim()
@@ -68,6 +67,18 @@ function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
 }
 
+// The proof document supplies every expected blob and output hash below. Refuse
+// to trust it unless Node read the exact bytes committed at HEAD.
+assertEqual(
+  workingTreeBlob(specRepoPath),
+  gitObject(`HEAD:${specRepoPath}`),
+  'proof spec working-tree input',
+)
+const proof = spec.measuredProof
+if (proof === undefined) {
+  throw new Error('inherited-IRA spec has no measuredProof')
+}
+
 // Pin every mutable measurement input independently of the recorded outputs.
 assertEqual(
   gitObject(`${proof.base.commit}:packages/engine/src`),
@@ -86,15 +97,21 @@ assertEqual(
 )
 const pinnedInputPaths = {
   corpusSourceBlob: 'packages/engine/scripts/equivalence/corpus/blocks.mjs',
+  corpusIndexBlob: 'packages/engine/scripts/equivalence/corpus/index.mjs',
+  corpusExamplesBlob: 'packages/engine/scripts/equivalence/corpus/examples.mjs',
   equivalenceRunnerBlob: 'packages/engine/scripts/equivalence.mjs',
   engineTreeLoaderBlob: 'packages/engine/scripts/equivalence/engine-tree.mjs',
+  treeDescriberBlob: 'packages/engine/scripts/equivalence/describe-tree.mjs',
   encoderBlob: 'packages/engine/scripts/equivalence/encode.mjs',
   modesBlob: 'packages/engine/scripts/equivalence/modes.mjs',
   reachRecorderBlob: 'packages/engine/scripts/equivalence/reach.mjs',
+  typescriptSourceResolutionBlob: 'packages/engine/scripts/typescript-source-resolution.mjs',
   usageBlob: 'packages/engine/scripts/equivalence/usage.mjs',
 }
 for (const [field, path] of Object.entries(pinnedInputPaths)) {
-  assertEqual(gitObject(`HEAD:${path}`), proof.inputs[field], `${field} input`)
+  const expected = proof.inputs[field]
+  assertEqual(gitObject(`HEAD:${path}`), expected, `${field} committed input`)
+  assertEqual(workingTreeBlob(path), expected, `${field} working-tree input`)
 }
 assertEqual(
   sha256(JSON.stringify({
@@ -105,6 +122,13 @@ assertEqual(
   })),
   proof.inputs.specMeasurementSha256,
   'reach spec measurement input',
+)
+
+// Load the encoder only after its committed and on-disk bytes have both been
+// authenticated. All other pinned modules are first executed by the child
+// equivalence process below, after the same checks have completed.
+const { diffEncoded } = await import(
+  pathToFileURL(resolve(repoDir, pinnedInputPaths.encoderBlob)).href
 )
 
 const scratch = mkdtempSync(join(tmpdir(), 'retiregolden-inherited-ira-proof-'))
