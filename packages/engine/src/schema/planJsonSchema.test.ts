@@ -47,6 +47,7 @@ import {
 // Import the public data surface through the zod-free barrel, and the whole
 // namespace so a test can assert the barrel does not re-expose the zod generator.
 import * as schemaBarrel from './index.js'
+import * as currentSchemaEntry from './current.js'
 import {
   planJsonSchema,
   planV1JsonSchema,
@@ -597,6 +598,23 @@ describe('schema barrel — zero-dependency data surface', () => {
     )
     expect('generatePlanJsonSchema' in schemaBarrel).toBe(false)
     expect(typeof planJsonSchema).toBe('object')
+  })
+})
+
+describe('current schema entry — common-case data surface', () => {
+  it('exposes only the current schema and metadata', () => {
+    expect(Object.keys(currentSchemaEntry).sort()).toEqual(
+      [
+        'PLAN_SCHEMA_ID',
+        'PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS',
+        'PLAN_SCHEMA_VERSION',
+        'planJsonSchema',
+      ].sort(),
+    )
+    expect(currentSchemaEntry.planJsonSchema).toBe(planJsonSchema)
+    expect(currentSchemaEntry.PLAN_SCHEMA_VERSION).toBe(PLAN_SCHEMA_VERSION)
+    expect('planV1JsonSchema' in currentSchemaEntry).toBe(false)
+    expect('generatePlanJsonSchema' in currentSchemaEntry).toBe(false)
   })
 })
 

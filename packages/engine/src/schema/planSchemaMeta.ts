@@ -2,11 +2,12 @@
  * Zod-free metadata for the Plan JSON Schema.
  *
  * This module deliberately imports NOTHING from `zod` or `../model/plan.js`, so
- * that the `@retiregolden/engine/schema` barrel — which re-exports these plus the
- * generated `planJsonSchema` constant — stays a pure data surface. A consumer
- * (the MCP) can import the schema and its version without dragging zod or the
- * plan model into its module graph. The zod-backed generator lives separately in
- * `./generate.ts` (reachable at `@retiregolden/engine/schema/generate`).
+ * that the `@retiregolden/engine/schema/current` entry point — which re-exports
+ * these plus the current generated `planJsonSchema` constant — stays a pure data
+ * surface. A consumer (the MCP) can import the schema and its version without
+ * dragging zod, the plan model, or historical schema modules into its module
+ * graph. The zod-backed generator lives separately in `./generate.ts`
+ * (reachable at `@retiregolden/engine/schema/generate`).
  *
  * `PLAN_SCHEMA_VERSION` is asserted to equal the plan model's
  * `CURRENT_PLAN_SCHEMA_VERSION` both at generation time (see `generatePlanJsonSchema`)

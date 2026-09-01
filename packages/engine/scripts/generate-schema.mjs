@@ -29,7 +29,7 @@ const pkgDir = resolve(scriptDir, '..')
 // Bump this in lockstep with a Plan schema-version bump AFTER retargeting every
 // place that hardcodes the current version:
 //   - package.json current `exports` key and `files` entry
-//   - src/schema/index.ts current barrel import
+//   - src/schema/current.ts current-only import and src/schema/index.ts legacy barrel
 //   - src/schema/planSchemaMeta.ts (`PLAN_SCHEMA_VERSION`)
 //   - scripts/pack-smoke.mjs (the `@retiregolden/engine/schema/plan.v<N>.json` read)
 //   - README.md usage examples / subpath table
@@ -54,7 +54,7 @@ try {
 if (PLAN_SCHEMA_VERSION !== EXPECTED_VERSION) {
   throw new Error(
     `Plan schema version is ${PLAN_SCHEMA_VERSION} but the versioned artifact paths still target v${EXPECTED_VERSION}. ` +
-      'Update package.json exports/files and src/schema/index.ts to the new plan.v<N>.* paths, then set EXPECTED_VERSION to match.',
+      'Update package.json exports/files plus src/schema/current.ts and src/schema/index.ts to the new plan.v<N>.* paths, then set EXPECTED_VERSION to match.',
   )
 }
 
