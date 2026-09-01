@@ -54,8 +54,8 @@
  * `scripts/equivalence/specs/simulate-contributions-boundary.json`,
  * `scripts/equivalence/specs/simulate-annuity-purchase-funding-boundary.json`,
  * `scripts/equivalence/specs/simulate-remaining-expense-boundaries.json`,
- * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`, and
- * `scripts/equivalence/specs/simulate-owner-rmd.json`, and
+ * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`,
+ * `scripts/equivalence/specs/simulate-owner-rmd.json`,
  * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
