@@ -53,6 +53,11 @@ function rule(selector: string, source = css): string {
   return ruleBodyAt(source, -1, selector)
 }
 
+/** Start offset of the shared .field text-input rule, or -1 when its selector list drifts. */
+function indexOfSharedFieldRule(): number {
+  return css.indexOf(".field input:not([type='checkbox']):not([type='radio']):not([type='range']),\n.field select {")
+}
+
 describe('Design-QA chrome pins', () => {
   it('plan-name input truncates with an ellipsis, not a mid-word clip (#431)', () => {
     const body = rule('.plan-name-input')
@@ -170,22 +175,49 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(select).toMatch(/background-image:\s*var\(--select-chevron\)/)
     expect(select).toMatch(/\bheight:\s*var\(--control-height\)/)
     expect(select).toMatch(/padding:\s*0\.45rem 2rem 0\.45rem 0\.55rem/)
-    // The token exists in the light block and both dark mechanisms.
+    // The token exists in the light block and both dark mechanisms, and its
+    // stroke is that block's --muted: a select cannot take currentColor on a
+    // background glyph, so the data URI carries the hex, and this is what
+    // keeps it from drifting when the palette moves.
     for (const block of [':root {', ":root[data-theme='dark'] {", ":root:not([data-theme='light']) {"]) {
       const at = indexCss.indexOf(block)
       expect(at, block).toBeGreaterThanOrEqual(0)
       const body = indexCss.slice(at, indexCss.indexOf('}', at))
-      expect(body, `${block} defines --select-chevron`).toMatch(/--select-chevron:\s*url\("data:image\/svg\+xml/)
+      const muted = body.match(/--muted:\s*#([0-9a-fA-F]{6})/)?.[1]?.toLowerCase()
+      const stroke = body.match(/--select-chevron:\s*url\("data:image\/svg\+xml[^"]*stroke='%23([0-9a-fA-F]{6})'/)?.[1]?.toLowerCase()
+      expect(muted, `${block} defines --muted`).toBeTruthy()
+      expect(stroke, `${block} defines --select-chevron with a stroke`).toBeTruthy()
+      expect(stroke, `${block}: chevron stroke equals --muted`).toBe(muted)
     }
-    // The field rule must not use the background shorthand, which would erase the chevron.
-    const shared = rule(".field input:not([type='checkbox']):not([type='radio']),\n.field select")
+    // The field rule must not use the background shorthand (it would erase the
+    // chevron) and must leave range sliders to the app-wide slider rule.
+    const shared = rule(".field input:not([type='checkbox']):not([type='radio']):not([type='range']),\n.field select")
     expect(shared).toMatch(/background-color:\s*var\(--surface-1\)/)
     expect(shared).not.toMatch(/\bbackground:\s/)
     expect(shared).toMatch(/\bheight:\s*var\(--control-height\)/)
+    expect(indexOfSharedFieldRule()).toBeGreaterThanOrEqual(0)
   })
 
-  it('range sliders paint the track and thumb from tokens', () => {
-    expect(rule("input[type='range']", indexCss)).toMatch(/appearance:\s*none/)
+  it('range sliders paint the track and thumb from tokens, inside .field too', () => {
+    const range = rule("input[type='range']", indexCss)
+    expect(range).toMatch(/appearance:\s*none/)
+    expect(range).toMatch(/background:\s*transparent/)
+    // No .field rule may re-box a slider: every .field input selector that
+    // sets height/padding/border excludes type=range (Monte Carlo and the SS
+    // Optimizer sliders sit inside .field and rendered as text boxes without this).
+    const fieldInputSelectors = [...css.matchAll(/^\.field[^{\n]*\binput\b[^{\n]*\{/gm)].map((m) => m[0])
+    expect(fieldInputSelectors.length).toBeGreaterThan(0)
+    for (const sel of fieldInputSelectors) {
+      if (/focus-visible|checkbox|\[type='radio'\]\s*\{|\[type='checkbox'\]\s*\{/.test(sel) && !/:not\(/.test(sel)) continue
+      const body = ruleBodyAt(css, css.indexOf(sel), sel)
+      if (/\b(height|padding|border)\s*:/.test(body)) {
+        expect(sel, `${sel} must exclude range`).toMatch(/:not\(\[type='range'\]\)/)
+      }
+    }
+    // High-contrast modes get the UA controls back instead of erased fills.
+    const forced = indexCss.slice(indexCss.indexOf('@media (forced-colors: active)'))
+    expect(forced).toMatch(/appearance:\s*auto/)
+    expect(forced).toMatch(/input\[type='checkbox'\]::before,\s*input\[type='radio'\]::before\s*\{\s*display:\s*none/)
     for (const thumb of ["input[type='range']::-webkit-slider-thumb", "input[type='range']::-moz-range-thumb"]) {
       const body = rule(thumb, indexCss)
       expect(body, thumb).toMatch(/background:\s*var\(--accent\)/)

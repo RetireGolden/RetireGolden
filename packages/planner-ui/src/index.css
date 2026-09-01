@@ -495,8 +495,8 @@ input[type='radio'] {
 input[type='checkbox']::before,
 input[type='radio']::before {
   content: '';
-  width: 0.62em;
-  height: 0.62em;
+  width: calc(var(--control-check-size) * 0.56);
+  height: calc(var(--control-check-size) * 0.56);
   transform: scale(0);
   transition: transform 120ms ease;
   background: currentColor;
@@ -508,8 +508,8 @@ input[type='checkbox']::before {
 
 input[type='radio']::before {
   border-radius: 50%;
-  width: 0.5em;
-  height: 0.5em;
+  width: calc(var(--control-check-size) * 0.45);
+  height: calc(var(--control-check-size) * 0.45);
 }
 
 input[type='checkbox']:checked,
@@ -640,6 +640,30 @@ input[type='range']:disabled::-webkit-slider-thumb {
 
 input[type='range']:disabled::-moz-range-thumb {
   background: var(--muted);
+}
+
+/* Windows High Contrast and other forced-color modes replace author colors,
+   which would erase the token fills and pseudo-element marks above. Give the
+   controls back to the UA there: system colors, system glyphs, and the focus
+   ring the platform draws. */
+@media (forced-colors: active) {
+  input[type='checkbox'],
+  input[type='radio'],
+  select,
+  input[type='range'],
+  input[type='number'] {
+    appearance: auto;
+    background-image: none;
+  }
+
+  input[type='checkbox']::before,
+  input[type='radio']::before {
+    display: none;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    appearance: auto;
+  }
 }
 
 .radio-stack {

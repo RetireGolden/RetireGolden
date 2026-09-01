@@ -781,7 +781,10 @@
   font-weight: 600;
 }
 
-.field input:not([type='checkbox']):not([type='radio']),
+/* Excludes range: a slider inside a .field keeps the app-wide slider
+   treatment from index.css (transparent, 1.25rem track box), not a text
+   field's border, padding, and height. */
+.field input:not([type='checkbox']):not([type='radio']):not([type='range']),
 .field select {
   padding: 0.45rem 0.55rem;
   border-radius: 8px;
@@ -880,7 +883,7 @@
    count) and sits later in the sheet, so it wins: the inner input must not
    also carry the token height, or the wrapper border adds 2px on top of it
    and affixed fields sit taller than plain ones. */
-.field .input-affix > input:not([type='checkbox']):not([type='radio']) {
+.field .input-affix > input:not([type='checkbox']):not([type='radio']):not([type='range']) {
   height: auto;
 }
 
