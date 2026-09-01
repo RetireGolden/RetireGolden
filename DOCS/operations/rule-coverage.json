@@ -254,7 +254,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-08-31",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, Medicare age-65, HSA family-limit"
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; residual 59½/HSA/Roth-five-year/Rule-of-55 proxies, inherited-Roth post-flip, HSA family-limit"
     },
     {
       "path": "rmd/applicableAge.ts",

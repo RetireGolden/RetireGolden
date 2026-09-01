@@ -49,6 +49,10 @@ describe('annual debt and long-term-care plans', () => {
       year: 2026,
     })
 
+    // Extraction seam contract: debt terms are Plan-entered planning inputs,
+    // not a statutory rounding formula. These exact binary64 leftovers pin the
+    // inline simulator's unrounded, left-associated yearly ledger arithmetic;
+    // they do not claim that a lender would round a contract to these ULPs.
     expect(result).toStrictEqual([
       {
         accountId: 'duplicate-debt',
@@ -111,24 +115,40 @@ describe('annual debt and long-term-care plans', () => {
     })
   })
 
-  it('does not allocate reporting maps when capture is disabled', () => {
+  it('omits active-event reporting rows when capture is disabled', () => {
+    const event: CareEvent = {
+      id: 'capture-off-care',
+      personId: 'p1',
+      startAge: 70,
+      durationYears: 1,
+      annualCost: 100,
+    }
+    const person: PersonYearState = {
+      personId: 'p1',
+      ageAttained: 70,
+      alive: true,
+    }
     const result = annualLongTermCarePlan({
-      careEvents: [],
-      policies: [],
+      careEvents: [event],
+      policies: [policy('capture-off-policy', 40 / 12, 1)],
       benefitYearsUsed: new Map(),
-      resolvePerson: () => {
-        throw new Error('unreachable')
-      },
+      resolvePerson: () => person,
       healthInflFactor: 1,
       year: 2026,
       startYear: 2026,
       capturePersonRows: false,
     })
 
+    expect(result.careCost).toBe(100)
+    expect(result.ltcBenefit).toBe(40)
+    expect(result.benefitYearWrites).toStrictEqual([{
+      policyId: 'capture-off-policy',
+      yearsUsed: 1,
+    }])
     expect(result.personRows).toStrictEqual([])
   })
 
-  it('preserves care-event order and floating-point association', () => {
+  it('preserves care-event order and extraction-time floating-point association', () => {
     const person: PersonYearState = {
       personId: 'p1',
       ageAttained: 70,
@@ -153,6 +173,8 @@ describe('annual debt and long-term-care plans', () => {
       capturePersonRows: true,
     })
 
+    // Like debt service above, this is an exact pre-extraction fold-order
+    // contract for Plan-entered amounts, not an external rounding rule.
     expect(result.careCost).toBe(10_000_000_000_000_002)
     expect(result.personRows[0]).toStrictEqual({
       personId: 'p1',

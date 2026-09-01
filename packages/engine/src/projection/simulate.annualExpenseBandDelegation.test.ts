@@ -141,6 +141,9 @@ vi.mock('./internal/annualGuardrailFunding.js', async (importOriginal) => {
       const ordinal = seam.guardrail.length - 1
       return {
         ...natural,
+        discretionaryMultiplier: 2 + ordinal,
+        startingWithdrawalRate: 0.02 + ordinal,
+        startingRealPortfolio: 300 + ordinal,
         targetLifestyleFunded: 19 + ordinal,
       }
     },
@@ -207,6 +210,25 @@ describe('simulatePlan delegates the remaining annual expense band', () => {
     expect(seam.ltc.map((call) => call.opening)).toStrictEqual([
       undefined,
       41,
+    ])
+    expect(seam.guardrail.map(({ discretionaryMultiplier,
+      startingWithdrawalRate,
+      startingRealPortfolio,
+    }) => ({
+      discretionaryMultiplier,
+      startingWithdrawalRate,
+      startingRealPortfolio,
+    }))).toStrictEqual([
+      {
+        discretionaryMultiplier: 1,
+        startingWithdrawalRate: null,
+        startingRealPortfolio: null,
+      },
+      {
+        discretionaryMultiplier: 2,
+        startingWithdrawalRate: 0.02,
+        startingRealPortfolio: 300,
+      },
     ])
 
     expect(result.years.map((year) => ({

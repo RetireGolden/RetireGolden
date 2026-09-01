@@ -129,6 +129,10 @@ describe('annualHealthcareExpenses', () => {
   })
 
   it('selects the prior-year SSA-44 MAGI only when it is active and lower', () => {
+    // 42 U.S.C. 1395r(i)(4)(B)-(C) establishes the two-year tax-year default
+    // and life-changing-event redetermination. Registry record
+    // usc-42-1395r-i-4-b-two-year-magi-lookback documents this planning-grade
+    // proxy: accept year-1 only when it is lower, so a tie keeps year-2.
     const plan = singlePersonPlan()
     const magiByYear = new Map([[2024, 120_000], [2025, 90_000]])
 
