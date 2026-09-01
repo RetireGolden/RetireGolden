@@ -6,6 +6,7 @@ import type {
   InheritedBeneficiary,
 } from '../../model/plan.js'
 import { packForYear } from '../../params/index.js'
+import { computeRmdShortfallExcise } from '../../rmd/rmdShortfallExcise.js'
 import { classifyInheritedRegime } from '../../strategies/inheritedIra.js'
 import {
   annualInheritedIraDistributions,
@@ -446,7 +447,7 @@ describe('annualInheritedIraDistributions', () => {
     ])
   })
 
-  it('discharges a sub-cent Roth final sweep and settles its Roth-specific obligation', () => {
+  it('keeps a lone sub-cent Roth final sweep as a Roth-plan shortfall', () => {
     const facts = inherited(2022, false, beneficiary({
       beneficiaryBirthYear: 1980,
       roth5YearStartYear: 2010,
@@ -475,7 +476,15 @@ describe('annualInheritedIraDistributions', () => {
       applicablePlan: { iraType: 'roth' },
       requirementKind: 'inheritedFinalSweep',
       requiredAmount: 0.004,
-      distributedByDeadline: 0.004,
+      distributedByDeadline: 0,
+    })
+    expect(computeRmdShortfallExcise(
+      result.rmdShortfallObligations[0]!,
+    )).toMatchObject({
+      shortfall: 0.004,
+      rate: 0.25,
+      tax: 0.001,
+      reason: 'default25Percent',
     })
   })
 
@@ -509,9 +518,17 @@ describe('annualInheritedIraDistributions', () => {
       requiredAmount: 0.012,
       distributedByDeadline: 0,
     })
+    expect(computeRmdShortfallExcise(
+      result.rmdShortfallObligations[0]!,
+    )).toMatchObject({
+      shortfall: 0.012,
+      rate: 0.25,
+      tax: 0.003,
+      reason: 'default25Percent',
+    })
   })
 
-  it('discharges only the zero-cent remainder of an aggregate plan shortfall', () => {
+  it('keeps a skipped zero-cent remainder as an aggregate plan shortfall', () => {
     const facts = inherited(2022, false, beneficiary({
       beneficiaryBirthYear: 1980,
       roth5YearStartYear: 2010,
@@ -538,7 +555,15 @@ describe('annualInheritedIraDistributions', () => {
     ])
     expect(result.rmdShortfallObligations[0]).toMatchObject({
       requiredAmount: 0.014,
-      distributedByDeadline: 0.014,
+      distributedByDeadline: 0.01,
+    })
+    expect(computeRmdShortfallExcise(
+      result.rmdShortfallObligations[0]!,
+    )).toMatchObject({
+      shortfall: 0.004,
+      rate: 0.25,
+      tax: 0.001,
+      reason: 'default25Percent',
     })
   })
 

@@ -356,6 +356,25 @@ describe('manifest rule projection contract', () => {
     }
   })
 
+  it('keeps inherited §4974 shortfalls outside the owner sub-cent discharge record', () => {
+    const inheritedPlanner =
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts'
+    const discharge = TAX_RULE_REGISTRY[
+      'treas-reg-1-408-8-projection-sub-cent-distribution-discharge'
+    ]
+    expect(discharge.implementedBy).not.toContain(inheritedPlanner)
+    expect(discharge.implementedByFunctions).not.toContain(
+      `${inheritedPlanner}#annualInheritedIraDistributions`,
+    )
+
+    const linkedRecords = Object.values(TAX_RULE_REGISTRY).filter((record) =>
+      record.implementedBy.includes(inheritedPlanner))
+    expect(linkedRecords).toHaveLength(12)
+    expect(COVERAGE_ATTESTATIONS[
+      'projection/internal/annualInheritedIraDistributions.ts'
+    ]?.note).toContain('Twelve inherited-RMD records name the helper.')
+  })
+
   // Published lines are deep-link anchors on the transparency page, so each
   // one is bound to the source text itself: the named line must contain the
   // symbol. A resolver that agreed with the builder but pointed at the wrong

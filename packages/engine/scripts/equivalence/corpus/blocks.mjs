@@ -3596,6 +3596,33 @@ function blockO() {
   }
 
   {
+    // A single inherited Roth residue is independently calibrated so a proof
+    // cannot hide a per-plan zero-movement discharge inside a multi-row case.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 80 })
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('o6-cash', 2_000_000),
+      qualified('roth', 'o6-lone-roth-dust', 0.004, {
+        inherited: {
+          decedentId: 'o6-lone-roth-decedent',
+          ownerDeathYear: 2022,
+          decedentHadStartedRmds: false,
+          beneficiary: inheritedBeneficiary({
+            beneficiaryBirthYear: 1970,
+            roth5YearStartYear: 2010,
+          }),
+        },
+      }),
+    ]
+    out.push(member(
+      'o6-singleRothSubCentShortfall',
+      'O: one zero-cent inherited Roth final-sweep residue remains a .004 applicable-plan shortfall with a .001 section 4974 excise',
+      plan,
+      { horizonEndYear: START_YEAR + 6 },
+    ))
+  }
+
+  {
     // Two compatible physical rows share one logical inherited IRA. The
     // selected facts are identical, first-ID order is stable, and the grouped
     // ledger must produce one requirement, one runtime occurrence, and one

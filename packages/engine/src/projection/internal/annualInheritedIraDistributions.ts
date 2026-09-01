@@ -420,10 +420,6 @@ export function annualInheritedIraDistributions(
       requirementKindsByApplicablePlan.get(applicablePlanKey)!
     const actuallyDistributed =
       distributedByApplicablePlan.get(applicablePlanKey) ?? 0
-    const aggregateShortfall = Math.max(
-      0,
-      requiredAmount - actuallyDistributed,
-    )
     rmdShortfallObligations.push({
       obligationId: rmdShortfallObligationId(applicablePlan, input.year),
       distributionCalendarYear: input.year,
@@ -434,11 +430,7 @@ export function annualInheritedIraDistributions(
         ? [...requirementKinds][0]!
         : 'mixedInheritedRequirements',
       requiredAmount,
-      distributedByDeadline:
-        aggregateShortfall > 0 &&
-        planDollarsMoveNoLedgerCent(aggregateShortfall)
-          ? requiredAmount
-          : actuallyDistributed,
+      distributedByDeadline: actuallyDistributed,
     })
   }
 
