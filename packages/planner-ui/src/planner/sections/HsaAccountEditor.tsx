@@ -3,8 +3,7 @@
 import type { Account } from '@retiregolden/engine/model/plan'
 
 import { CheckboxField, SelectField } from '../fields'
-
-type CommitAccountField = (key: string, value: unknown) => void
+import type { CommitAccountField } from './AccountEditorTypes'
 
 export function HsaAccountEditor({
   account,

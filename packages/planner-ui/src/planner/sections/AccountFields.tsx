@@ -30,7 +30,7 @@ function ownerOptions(plan: Plan, type: Account['type']) {
 
 const INHERITED_CONTRIBUTIONS_BLOCKED_HINT = 'Inherited accounts cannot receive contributions.'
 
-/** Contributions stay blocked on inherited Roth accounts and on treat-as-own traditional accounts. */
+/** Contributions stay blocked on inherited Roth accounts and on treat-as-own traditional accounts (WS5 residual). */
 function inheritedContributionsBlocked(account: Account): boolean {
   if (!('inherited' in account) || account.inherited === undefined) return false
   if (account.type === 'roth') return true

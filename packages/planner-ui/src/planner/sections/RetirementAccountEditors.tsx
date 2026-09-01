@@ -9,9 +9,8 @@ import { CheckboxField, DateField, MoneyField, NumberField, PercentField, Select
 import { LEARN } from '../learnLinks'
 import { usePlan } from '../planContextCore'
 import { currentStartYear } from '../useProjection'
+import type { CommitAccountField } from './AccountEditorTypes'
 import { localCalendarDateIso } from './sectionHelpers'
-
-type CommitAccountField = (key: string, value: unknown) => void
 
 type InheritedRetirementAccount = Extract<Account, { type: 'traditional' | 'roth' }>
 type InheritedDetails = NonNullable<InheritedRetirementAccount['inherited']>
@@ -154,13 +153,7 @@ function BeneficiaryDetails({
                 label="Sole beneficiary"
                 help="Whether this person is the sole beneficiary. If there are several beneficiaries, this planner does not model separate-account facts and will show that limitation instead of a classified schedule."
                 source={{ label: 'eCFR §1.401(a)(9)-8(a)', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-8' }}
-                value={
-                  beneficiary.soleBeneficiary === true
-                    ? 'true'
-                    : beneficiary.soleBeneficiary === false
-                      ? 'false'
-                      : ''
-                }
+                value={beneficiary.soleBeneficiary === true ? 'true' : beneficiary.soleBeneficiary === false ? 'false' : ''}
                 placeholder="Choose..."
                 options={[
                   { value: 'true', label: 'Yes, sole beneficiary' },
@@ -185,11 +178,7 @@ function BeneficiaryDetails({
                 <SelectField
                   label="Distribution election"
                   help="Record an explicit election only when it was made. The available choices depend on the beneficiary category; this planner does not infer an election from inaction. Spouse remain-beneficiary and treat-as-own elections are governed by Treas. Reg. §1.408-8(c); electing the 10-year rule is governed by Treas. Reg. §1.401(a)(9)-3(c)(5)(iii)."
-                  source={
-                    beneficiary.election === 'ten-year-election'
-                      ? TEN_YEAR_ELECTION_SOURCE
-                      : ELECTION_SOURCE
-                  }
+                  source={beneficiary.election === 'ten-year-election' ? TEN_YEAR_ELECTION_SOURCE : ELECTION_SOURCE}
                   value={beneficiary.election ?? 'none'}
                   options={[
                     { value: 'none', label: 'No separate election recorded' },
@@ -299,9 +288,7 @@ function BeneficiaryDetails({
                     { value: 'true', label: 'Yes, already taken' },
                     { value: 'false', label: 'No or not sure' },
                   ]}
-                  onCommit={(value) =>
-                    commit({ ...beneficiary, ownerYearOfDeathRmdSatisfied: value === 'true' })
-                  }
+                  onCommit={(value) => commit({ ...beneficiary, ownerYearOfDeathRmdSatisfied: value === 'true' })}
                 />
               ) : null}
               {account.type === 'roth' ? (
@@ -316,8 +303,7 @@ function BeneficiaryDetails({
                     max={2100}
                     onCommit={(value) => commit({ ...beneficiary, roth5YearStartYear: value ?? undefined })}
                   />
-                  {beneficiary.roth5YearStartYear !== undefined &&
-                  beneficiary.roth5YearStartYear + 4 >= planningYear ? (
+                  {beneficiary.roth5YearStartYear !== undefined && beneficiary.roth5YearStartYear + 4 >= planningYear ? (
                     <p className="field-hint" data-testid="roth-five-year-incomplete-hint">
                       {ROTH_FIVE_YEAR_INCOMPLETE_NOTE}
                     </p>
@@ -359,246 +345,244 @@ export function RetirementAccountEditor({
 
   return (
     <>
-{account.type === 'traditional' || account.type === 'roth' ? (
-  <SelectField
-    label="Kind"
-    value={account.kind}
-    options={[
-      { value: 'employer', label: '401(k)/403(b)' },
-      { value: 'ira', label: 'IRA' },
-    ]}
-    onCommit={(v) => set('kind', v)}
-  />
-) : null}
-{account.type === 'roth' && !account.inherited ? (
-  <MoneyField
-    label="Contribution basis"
-    help="Your total direct Roth contributions (today's dollars). Contributions come out tax- and penalty-free at any age, before conversions and earnings, so this is what you can tap penalty-free in early retirement. Leave blank to treat the whole current balance as contributions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks."
-    hint="Blank = treat whole balance as contributions."
-    value={account.contributionBasis ?? null}
-    allowNull
-    onCommit={(v) => set('contributionBasis', v ?? undefined)}
-  />
-) : null}
-{account.type === 'roth' && account.inherited ? (
-  <p className="field-hint" data-testid="inherited-roth-contribution-basis-hint">
-    {INHERITED_ROTH_CONTRIBUTION_BASIS_HINT}
-  </p>
-) : null}
-{account.type === 'traditional' && account.kind === 'ira' && !account.inherited ? (
-  <MoneyField
-    label="Nondeductible basis (Form 8606)"
-    help="Planning estimate for after-tax money already inside this traditional IRA. It affects projected withdrawals and Roth conversions under the owner-wide pro-rata rule, but it is not a complete annual tax record and cannot establish filing-grade action evidence. Leave blank if all your IRA money was pre-tax."
-    hint="Planning input only; blank = fully pre-tax IRA."
-    value={account.nondeductibleBasis ?? null}
-    allowNull
-    onCommit={(v) => set('nondeductibleBasis', v ?? undefined)}
-  />
-) : null}
-{account.type === 'traditional' && plan.household.people.length === 2 ? (
-  <CheckboxField
-    label="Spouse is sole beneficiary"
-    help="If checked and your spouse is more than 10 years younger, RMDs use the larger IRS Joint Life divisor. Leave unchecked when the beneficiary is a child, trust, estate, or split, RMDs then use the standard Uniform Lifetime Table."
-    value={account.spouseSoleBeneficiary === true}
-    onCommit={(v) => set('spouseSoleBeneficiary', v)}
-  />
-) : null}
-{account.type === 'traditional' || account.type === 'roth' ? (
-  <CheckboxField
-    label={account.type === 'roth' ? 'Inherited Roth account' : 'Inherited account'}
-    help={account.type === 'roth'
-      ? "An inherited Roth account follows beneficiary distribution rules and requires beneficiary details in this planner. The original Roth owner is treated as dying before the required beginning date."
-      : "An account inherited from its original owner. The distribution schedule depends on the beneficiary facts below: many beneficiaries must empty the account within 10 years, while a surviving spouse or other eligible beneficiary may follow a life-expectancy schedule. Distributions are taxable but never carry the 10% early-withdrawal penalty, and the account is exempt from your own age-based RMDs."}
-    value={account.inherited !== undefined}
-    onCommit={(v) => {
-      if (!v) {
-        set('inherited', undefined)
-        return
-      }
-      const inherited = {
-        ownerDeathYear: new Date().getFullYear() - 1,
-        decedentHadStartedRmds: false,
-      }
-      if (account.type === 'roth') {
-        update((draft) => {
-          const target = draft.accounts[index] as Extract<Account, { type: 'roth' }>
-          target.inherited = inherited
-          target.annualContribution = 0
-          target.contributionSchedule = undefined
-          target.contributionBasis = undefined
-        })
-        return
-      }
-      update((draft) => {
-        const target = draft.accounts[index] as Extract<Account, { type: 'traditional' }>
-        target.inherited = inherited
-        target.sepp = undefined
-      })
-    }}
-  />
-) : null}
-{(account.type === 'traditional' || account.type === 'roth') && account.inherited ? (
-  <>
-    <NumberField
-      label="Original owner's death year"
-      hint="Starts the distribution clock. What is due each year depends on the beneficiary facts below."
-      value={account.inherited.ownerDeathYear}
-      min={1990}
-      max={2100}
-      onCommit={(v) => set('inherited', { ...account.inherited, ownerDeathYear: Math.round(v ?? new Date().getFullYear() - 1) })}
-    />
-    {account.type === 'traditional' ? (
+      <SelectField
+        label="Kind"
+        value={account.kind}
+        options={[
+          { value: 'employer', label: '401(k)/403(b)' },
+          { value: 'ira', label: 'IRA' },
+        ]}
+        onCommit={(v) => set('kind', v)}
+      />
+      {account.type === 'roth' && !account.inherited ? (
+        <MoneyField
+          label="Contribution basis"
+          help="Your total direct Roth contributions (today's dollars). Contributions come out tax- and penalty-free at any age, before conversions and earnings, so this is what you can tap penalty-free in early retirement. Leave blank to treat the whole current balance as contributions (the safe default). Roth conversions made inside this app automatically start their own 5-year clocks."
+          hint="Blank = treat whole balance as contributions."
+          value={account.contributionBasis ?? null}
+          allowNull
+          onCommit={(v) => set('contributionBasis', v ?? undefined)}
+        />
+      ) : null}
+      {account.type === 'roth' && account.inherited ? (
+        <p className="field-hint" data-testid="inherited-roth-contribution-basis-hint">
+          {INHERITED_ROTH_CONTRIBUTION_BASIS_HINT}
+        </p>
+      ) : null}
+      {account.type === 'traditional' && account.kind === 'ira' && !account.inherited ? (
+        <MoneyField
+          label="Nondeductible basis (Form 8606)"
+          help="Planning estimate for after-tax money already inside this traditional IRA. It affects projected withdrawals and Roth conversions under the owner-wide pro-rata rule, but it is not a complete annual tax record and cannot establish filing-grade action evidence. Leave blank if all your IRA money was pre-tax."
+          hint="Planning input only; blank = fully pre-tax IRA."
+          value={account.nondeductibleBasis ?? null}
+          allowNull
+          onCommit={(v) => set('nondeductibleBasis', v ?? undefined)}
+        />
+      ) : null}
+      {account.type === 'traditional' && plan.household.people.length === 2 ? (
+        <CheckboxField
+          label="Spouse is sole beneficiary"
+          help="If checked and your spouse is more than 10 years younger, RMDs use the larger IRS Joint Life divisor. Leave unchecked when the beneficiary is a child, trust, estate, or split, RMDs then use the standard Uniform Lifetime Table."
+          value={account.spouseSoleBeneficiary === true}
+          onCommit={(v) => set('spouseSoleBeneficiary', v)}
+        />
+      ) : null}
       <CheckboxField
-        label="Owner had started RMDs"
-        help="If the original owner had reached their required beginning date, you must also take an annual RMD in years 1–9 of the window (based on your single life expectancy), not just empty it by year 10."
-        value={account.inherited!.decedentHadStartedRmds}
+        label={account.type === 'roth' ? 'Inherited Roth account' : 'Inherited account'}
+        help={
+          account.type === 'roth'
+            ? 'An inherited Roth account follows beneficiary distribution rules and requires beneficiary details in this planner. The original Roth owner is treated as dying before the required beginning date.'
+            : 'An account inherited from its original owner. The distribution schedule depends on the beneficiary facts below: many beneficiaries must empty the account within 10 years, while a surviving spouse or other eligible beneficiary may follow a life-expectancy schedule. Distributions are taxable but never carry the 10% early-withdrawal penalty, and the account is exempt from your own age-based RMDs.'
+        }
+        value={account.inherited !== undefined}
         onCommit={(v) => {
-          // The surrounding guard renders this control only when the
-          // inherited block exists; closures cannot carry the narrowing.
-          const inheritedBlock = account.inherited!
-          const ben = inheritedBlock.beneficiary
-          if (v || ben === undefined) {
-            if (v && ben?.election === 'ten-year-election') {
-              set('inherited', {
-                ...inheritedBlock,
-                decedentHadStartedRmds: true,
-                beneficiary: { ...ben, election: undefined },
-              })
-              return
-            }
-            set('inherited', { ...inheritedBlock, decedentHadStartedRmds: v })
+          if (!v) {
+            set('inherited', undefined)
             return
           }
-          // year-of-death RMD satisfaction only applies when the owner
-          // had started RMDs; keep the fact set parse-valid on toggle-off.
-          const nextBeneficiary = { ...inheritedBlock.beneficiary }
-          delete nextBeneficiary.ownerYearOfDeathRmdSatisfied
-          set('inherited', {
-            ...inheritedBlock,
+          const inherited = {
+            ownerDeathYear: new Date().getFullYear() - 1,
             decedentHadStartedRmds: false,
-            beneficiary: nextBeneficiary,
+          }
+          if (account.type === 'roth') {
+            update((draft) => {
+              const target = draft.accounts[index] as Extract<Account, { type: 'roth' }>
+              target.inherited = inherited
+              target.annualContribution = 0
+              target.contributionSchedule = undefined
+              target.contributionBasis = undefined
+            })
+            return
+          }
+          update((draft) => {
+            const target = draft.accounts[index] as Extract<Account, { type: 'traditional' }>
+            target.inherited = inherited
+            target.sepp = undefined
           })
         }}
       />
-    ) : null}
-    {account.kind === 'employer' && account.type === 'traditional' ? (
-      <p className="field-hint" data-testid="inherited-employer-hint">
-        Beneficiary details apply to inherited IRAs. Inherited workplace plans stay on the simpler planning estimate.
-      </p>
-    ) : (
-      <>
-        {account.kind === 'employer' ? (
-          <p className="field-hint" data-testid="inherited-roth-employer-hint">
-            {INHERITED_ROTH_EMPLOYER_HINT}
-          </p>
-        ) : null}
-        <BeneficiaryDetails
-          account={account}
-          inherited={account.inherited!}
-          planningYear={planningYear}
-          onCommit={(inherited) => {
-            const wasTreatAsOwn = account.inherited!.beneficiary?.election === 'treat-as-own'
-            const isTreatAsOwn = inherited.beneficiary?.election === 'treat-as-own'
-            if (account.type === 'traditional' && isTreatAsOwn && !wasTreatAsOwn) {
-              update((draft) => {
-                const target = draft.accounts[index] as Extract<Account, { type: 'traditional' }>
-                target.inherited = inherited
-                target.annualContribution = 0
-                target.contributionSchedule = undefined
-              })
-              return
-            }
-            set('inherited', inherited)
-          }}
-        />
-      </>
-    )}
-  </>
-) : null}
-{account.type === 'traditional' && !account.inherited ? (
-  <CheckboxField
-    label="72(t) SEPP (penalty-free early access)"
-    help="Substantially-equal periodic payments let you tap this account before 59½ without the 10% penalty, taken for the longer of 5 years or until 59½. The Rule of 55 already waives the penalty automatically on a 401(k) you separate from at 55+, so SEPP is mainly for IRAs or for access before 55."
-    value={account.sepp !== undefined}
-    onCommit={(v) => set('sepp', v ? { startAge: 55, method: 'rmd' } : undefined)}
-  />
-) : null}
-{account.type === 'traditional' && account.sepp && !account.inherited ? (
-  <>
-    <NumberField
-      label="SEPP start age"
-      hint="Under 59½. Payments run for the longer of 5 years or until 59½."
-      value={account.sepp.startAge}
-      min={40}
-      max={59}
-      onCommit={(v) => set('sepp', { ...account.sepp, startAge: Math.round(v ?? 55) })}
-    />
-    <SelectField
-      label="SEPP method"
-      value={account.sepp.method}
-      options={[
-        { value: 'rmd', label: 'RMD: recomputed yearly (smaller, flexible)' },
-        { value: 'amortization', label: 'Amortization: level payment (larger)' },
-      ]}
-      onCommit={(v) => set('sepp', { ...account.sepp, method: v })}
-    />
-  </>
-) : null}
-{(account.type === 'traditional' || account.type === 'roth') && account.kind === 'employer' ? (
-  <>
-  <MoneyField
-    label="Prior-year FICA wages (Box 3)"
-    help="Social Security wages from this plan's sponsoring employer for the calendar year before the contribution year (Form W-2 Box 3, IRC 3121(a)). Leave at $0 if this person had no FICA wages from that employer — a new hire or self-employment only. When the amount exceeds the IRS threshold ($150,000 for 2026), catch-up contributions must be designated Roth; if this same person has no Roth employer account of their own, that catch-up is $0. A spouse's Roth 401(k) does not count. This is not MAGI and not the highly compensated employee test."
-    hint="Blank or $0 = not subject to the Roth catch-up mandate."
-    source={{
-      label: 'IRC 414(v)(7)(A)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
-    }}
-    value={account.priorCalendarYearFicaWages ?? 0}
-    fractionDigits={2}
-    onCommit={(v) => set('priorCalendarYearFicaWages', v ?? 0)}
-  />
-  {account.employerMatch !== undefined ? (
-    <div className="nested-form-section field-span-full" data-testid="employer-match-panel">
-      <div className="form-grid nested-control-grid">
+      {account.inherited ? (
+        <>
+          <NumberField
+            label="Original owner's death year"
+            hint="Starts the distribution clock. What is due each year depends on the beneficiary facts below."
+            value={account.inherited.ownerDeathYear}
+            min={1990}
+            max={2100}
+            onCommit={(v) => set('inherited', { ...account.inherited, ownerDeathYear: Math.round(v ?? new Date().getFullYear() - 1) })}
+          />
+          {account.type === 'traditional' ? (
+            <CheckboxField
+              label="Owner had started RMDs"
+              help="If the original owner had reached their required beginning date, you must also take an annual RMD in years 1–9 of the window (based on your single life expectancy), not just empty it by year 10."
+              value={account.inherited!.decedentHadStartedRmds}
+              onCommit={(v) => {
+                // The surrounding guard renders this control only when the
+                // inherited block exists; closures cannot carry the narrowing.
+                const inheritedBlock = account.inherited!
+                const ben = inheritedBlock.beneficiary
+                if (v || ben === undefined) {
+                  if (v && ben?.election === 'ten-year-election') {
+                    set('inherited', {
+                      ...inheritedBlock,
+                      decedentHadStartedRmds: true,
+                      beneficiary: { ...ben, election: undefined },
+                    })
+                    return
+                  }
+                  set('inherited', { ...inheritedBlock, decedentHadStartedRmds: v })
+                  return
+                }
+                // year-of-death RMD satisfaction only applies when the owner
+                // had started RMDs; keep the fact set parse-valid on toggle-off.
+                const nextBeneficiary = { ...inheritedBlock.beneficiary }
+                delete nextBeneficiary.ownerYearOfDeathRmdSatisfied
+                set('inherited', {
+                  ...inheritedBlock,
+                  decedentHadStartedRmds: false,
+                  beneficiary: nextBeneficiary,
+                })
+              }}
+            />
+          ) : null}
+          {account.kind === 'employer' && account.type === 'traditional' ? (
+            <p className="field-hint" data-testid="inherited-employer-hint">
+              Beneficiary details apply to inherited IRAs. Inherited workplace plans stay on the simpler planning estimate.
+            </p>
+          ) : (
+            <>
+              {account.kind === 'employer' ? (
+                <p className="field-hint" data-testid="inherited-roth-employer-hint">
+                  {INHERITED_ROTH_EMPLOYER_HINT}
+                </p>
+              ) : null}
+              <BeneficiaryDetails
+                account={account}
+                inherited={account.inherited!}
+                planningYear={planningYear}
+                onCommit={(inherited) => {
+                  const wasTreatAsOwn = account.inherited!.beneficiary?.election === 'treat-as-own'
+                  const isTreatAsOwn = inherited.beneficiary?.election === 'treat-as-own'
+                  if (account.type === 'traditional' && isTreatAsOwn && !wasTreatAsOwn) {
+                    update((draft) => {
+                      const target = draft.accounts[index] as Extract<Account, { type: 'traditional' }>
+                      target.inherited = inherited
+                      target.annualContribution = 0
+                      target.contributionSchedule = undefined
+                    })
+                    return
+                  }
+                  set('inherited', inherited)
+                }}
+              />
+            </>
+          )}
+        </>
+      ) : null}
+      {account.type === 'traditional' && !account.inherited ? (
         <CheckboxField
-          label="Employer match"
-          help="Configure a first-class employer matching program for this payroll account. The match does not count against your employee elective contribution limit, but is constrained by the IRS Section 415(c) annual additions limit."
-          learn={LEARN.employerMatch}
-          value
-          onCommit={(v) => {
-            set('employerMatch', v ? { matchPct: 100, capPctOfPay: 4 } : undefined)
-          }}
+          label="72(t) SEPP (penalty-free early access)"
+          help="Substantially-equal periodic payments let you tap this account before 59½ without the 10% penalty, taken for the longer of 5 years or until 59½. The Rule of 55 already waives the penalty automatically on a 401(k) you separate from at 55+, so SEPP is mainly for IRAs or for access before 55."
+          value={account.sepp !== undefined}
+          onCommit={(v) => set('sepp', v ? { startAge: 55, method: 'rmd' } : undefined)}
         />
-        <PercentField
-          label="Match percent"
-          help="The percentage of your contributions the employer matches. E.g., 100% means a dollar-for-dollar match."
-          learn={LEARN.employerMatch}
-          value={account.employerMatch.matchPct}
-          onCommit={(v) => set('employerMatch', { ...account.employerMatch, matchPct: v ?? 100 })}
-        />
-        <PercentField
-          label="Up to % of wages"
-          help="The maximum employee pay percentage the employer will match. E.g., 4% means the employer matches contributions up to 4% of your salary."
-          learn={LEARN.employerMatch}
-          value={account.employerMatch.capPctOfPay}
-          onCommit={(v) => set('employerMatch', { ...account.employerMatch, capPctOfPay: v ?? 4 })}
-        />
-      </div>
-    </div>
-  ) : (
-    <CheckboxField
-      label="Employer match"
-      help="Configure a first-class employer matching program for this payroll account. The match does not count against your employee elective contribution limit, but is constrained by the IRS Section 415(c) annual additions limit."
-      learn={LEARN.employerMatch}
-      value={false}
-      onCommit={(v) => {
-        set('employerMatch', v ? { matchPct: 100, capPctOfPay: 4 } : undefined)
-      }}
-    />
-  )}
-  </>
-) : null}
+      ) : null}
+      {account.type === 'traditional' && account.sepp && !account.inherited ? (
+        <>
+          <NumberField
+            label="SEPP start age"
+            hint="Under 59½. Payments run for the longer of 5 years or until 59½."
+            value={account.sepp.startAge}
+            min={40}
+            max={59}
+            onCommit={(v) => set('sepp', { ...account.sepp, startAge: Math.round(v ?? 55) })}
+          />
+          <SelectField
+            label="SEPP method"
+            value={account.sepp.method}
+            options={[
+              { value: 'rmd', label: 'RMD: recomputed yearly (smaller, flexible)' },
+              { value: 'amortization', label: 'Amortization: level payment (larger)' },
+            ]}
+            onCommit={(v) => set('sepp', { ...account.sepp, method: v })}
+          />
+        </>
+      ) : null}
+      {account.kind === 'employer' ? (
+        <>
+          <MoneyField
+            label="Prior-year FICA wages (Box 3)"
+            help="Social Security wages from this plan's sponsoring employer for the calendar year before the contribution year (Form W-2 Box 3, IRC 3121(a)). Leave at $0 if this person had no FICA wages from that employer — a new hire or self-employment only. When the amount exceeds the IRS threshold ($150,000 for 2026), catch-up contributions must be designated Roth; if this same person has no Roth employer account of their own, that catch-up is $0. A spouse's Roth 401(k) does not count. This is not MAGI and not the highly compensated employee test."
+            hint="Blank or $0 = not subject to the Roth catch-up mandate."
+            source={{
+              label: 'IRC 414(v)(7)(A)',
+              url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section414&num=0&edition=prelim',
+            }}
+            value={account.priorCalendarYearFicaWages ?? 0}
+            fractionDigits={2}
+            onCommit={(v) => set('priorCalendarYearFicaWages', v ?? 0)}
+          />
+          {account.employerMatch !== undefined ? (
+            <div className="nested-form-section field-span-full" data-testid="employer-match-panel">
+              <div className="form-grid nested-control-grid">
+                <CheckboxField
+                  label="Employer match"
+                  help="Configure a first-class employer matching program for this payroll account. The match does not count against your employee elective contribution limit, but is constrained by the IRS Section 415(c) annual additions limit."
+                  learn={LEARN.employerMatch}
+                  value
+                  onCommit={(v) => {
+                    set('employerMatch', v ? { matchPct: 100, capPctOfPay: 4 } : undefined)
+                  }}
+                />
+                <PercentField
+                  label="Match percent"
+                  help="The percentage of your contributions the employer matches. E.g., 100% means a dollar-for-dollar match."
+                  learn={LEARN.employerMatch}
+                  value={account.employerMatch.matchPct}
+                  onCommit={(v) => set('employerMatch', { ...account.employerMatch, matchPct: v ?? 100 })}
+                />
+                <PercentField
+                  label="Up to % of wages"
+                  help="The maximum employee pay percentage the employer will match. E.g., 4% means the employer matches contributions up to 4% of your salary."
+                  learn={LEARN.employerMatch}
+                  value={account.employerMatch.capPctOfPay}
+                  onCommit={(v) => set('employerMatch', { ...account.employerMatch, capPctOfPay: v ?? 4 })}
+                />
+              </div>
+            </div>
+          ) : (
+            <CheckboxField
+              label="Employer match"
+              help="Configure a first-class employer matching program for this payroll account. The match does not count against your employee elective contribution limit, but is constrained by the IRS Section 415(c) annual additions limit."
+              learn={LEARN.employerMatch}
+              value={false}
+              onCommit={(v) => {
+                set('employerMatch', v ? { matchPct: 100, capPctOfPay: 4 } : undefined)
+              }}
+            />
+          )}
+        </>
+      ) : null}
     </>
   )
 }

@@ -1291,6 +1291,20 @@ describe('AccountFields extracted editor commit wiring', () => {
   })
 })
 
+describe('AccountFields retirement editor boundary', () => {
+  it('renders retirement inheritance fields without HSA-only fields', () => {
+    const fields = renderFields(planWithAccount(retirementAccount({
+      inherited: { ownerDeathYear: 2025, decedentHadStartedRmds: false },
+    })))
+
+    expect(controlByLabel(fields, 'Kind')).toBeTruthy()
+    expect(controlByLabel(fields, 'Inherited account')).toBeTruthy()
+    expect(controlByLabel(fields, 'Use beneficiary details')).toBeTruthy()
+    expect(() => controlByLabel(fields, 'Withdrawal treatment')).toThrow('no label "Withdrawal treatment"')
+    expect(() => controlByLabel(fields, 'Beneficiary')).toThrow('no label "Beneficiary"')
+  })
+})
+
 describe('AccountFields HSA editor boundary', () => {
   const hsaAccount = (overrides: Partial<Extract<Account, { type: 'hsa' }>> = {}): Extract<Account, { type: 'hsa' }> => ({
     type: 'hsa',
@@ -1329,7 +1343,7 @@ describe('AccountFields HSA editor boundary', () => {
     expect(account?.type).toBe('hsa')
     if (account?.type !== 'hsa') throw new Error('expected HSA')
     expect(account.withdrawalTreatment).toBe('assumeAllQualified')
-    expect(account.reimburseLater).toBeUndefined()
+    expect(account).toHaveProperty('reimburseLater', undefined)
     expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
   })
 })
