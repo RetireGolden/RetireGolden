@@ -3360,6 +3360,16 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const employerAllocationByOwner =
       contributionPlan.employerAllocationByOwner
     const iraProRata = new Map<string, IraProRataYear>()
+    const qcdProRataIdentityByReadSnapshot =
+      new WeakMap<IraProRataYear, IraProRataYear>()
+    const splitAnnualIraDistribution = (
+      readState: IraProRataYear,
+      amount: number,
+    ) => splitIraDistribution(
+      qcdProRataIdentityByReadSnapshot.get(readState) ?? readState,
+      amount,
+      readState,
+    )
     let conversionNontaxable = 0
 
     const runPostContributionAnnualPass = (
@@ -3658,7 +3668,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // assumed-basis verdict here (same silence as the annuity refused-settlement
       // site): the settlement never priced this transaction over the assumption.
       if (assumed === null) {
-        return splitIraDistribution(state, amount)
+        return splitAnnualIraDistribution(state, amount)
       }
       const split = {
         nontaxable: assumed.basisReturn,
@@ -4900,7 +4910,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         }
       }
       if (row.iraProRataWrite !== null) {
-        iraProRata.set(row.ownerId, row.iraProRataWrite)
+        const readSnapshot = row.iraProRataReadSnapshot!
+        iraProRata.set(row.ownerId, readSnapshot)
+        qcdProRataIdentityByReadSnapshot.set(
+          readSnapshot,
+          row.iraProRataWrite,
+        )
       }
     }
     /**
@@ -7073,7 +7088,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         const proRata = iraProRata.get(ownerPersonId)
         const split = proRata === undefined
           ? { nontaxable: 0, taxable: grossAmount }
-          : splitIraDistribution(proRata, grossAmount)
+          : splitAnnualIraDistribution(proRata, grossAmount)
         nontaxable += split.nontaxable
         const taxableFraction = grossAmount > 0
           ? split.taxable / grossAmount
@@ -8830,7 +8845,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         noteForm8606Taxable(ownerId, executedTaxable, 'distributions')
         const proRata = iraProRata.get(ownerId)
         if (proRata === undefined) continue
-        const split = splitIraDistribution(proRata, taken)
+        const split = splitAnnualIraDistribution(proRata, taken)
         iraBasisByOwner.set(ownerId, split.next.basis)
       }
       // Owners with open pro-rata but no need-based draw still need basis

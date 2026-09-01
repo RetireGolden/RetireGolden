@@ -45,13 +45,23 @@ export interface AnnualLegacyQcdOwnerCharacterRow {
   readonly nonQualifiedOrdinaryIncomeDelta: number
   /** Integer cents to write to the cross-year donor-offset ledger. */
   readonly qcdOffsetConsumedWrite: number | null
-  /** The exact object the caller must install into its mutable pro-rata map. */
+  /** The exact helper-owned object forwarded on the downstream identity channel. */
   readonly iraProRataWrite: IraProRataYear | null
   readonly cashFlowWrites: readonly LegacyQcdCashFlowWrite[]
 }
 
 export interface AnnualLegacyQcdOwnerCharacterPlanResult {
   readonly rows: readonly AnnualLegacyQcdOwnerCharacterRow[]
+}
+
+export interface MaterializedAnnualLegacyQcdOwnerCharacterRow
+  extends AnnualLegacyQcdOwnerCharacterRow {
+  /** Plain scalar snapshot used for all downstream math after mutation begins. */
+  readonly iraProRataReadSnapshot: IraProRataYear | null
+}
+
+export interface MaterializedAnnualLegacyQcdOwnerCharacterPlanResult {
+  readonly rows: readonly MaterializedAnnualLegacyQcdOwnerCharacterRow[]
 }
 
 /**
@@ -62,13 +72,14 @@ export interface AnnualLegacyQcdOwnerCharacterPlanResult {
  * expose getters or iterables. Consuming those lazily while mutating the annual
  * pass can leave a half-applied donor-offset or character map if a later read
  * throws. This creates caller-owned row/write arrays, reads every row scalar,
- * validates the closed write target union, and touches the exact pro-rata
- * object's scalar fields before returning it unchanged for downstream identity.
+ * validates the closed write target union, and snapshots the exact pro-rata
+ * object's scalar fields before returning that object only for identity and the
+ * plain snapshot for all downstream math.
  */
 export function materializeAnnualLegacyQcdOwnerCharacterPlanResult(
   result: Readonly<AnnualLegacyQcdOwnerCharacterPlanResult>,
   expectedOwnerIds: readonly string[],
-): AnnualLegacyQcdOwnerCharacterPlanResult {
+): MaterializedAnnualLegacyQcdOwnerCharacterPlanResult {
   const sourceRows = [...result.rows]
   const rows = sourceRows.map((row, index) => {
     const ownerId = row.ownerId
@@ -85,12 +96,12 @@ export function materializeAnnualLegacyQcdOwnerCharacterPlanResult(
       row.nonQualifiedOrdinaryIncomeDelta
     const qcdOffsetConsumedWrite = row.qcdOffsetConsumedWrite
     const iraProRataWrite = row.iraProRataWrite
-    if (iraProRataWrite !== null) {
-      // Pre-read hostile getters without rebuilding the exact object which the
-      // downstream split must receive.
-      void iraProRataWrite.basis
-      void iraProRataWrite.nontaxableFraction
-    }
+    const iraProRataReadSnapshot = iraProRataWrite === null
+      ? null
+      : {
+          basis: iraProRataWrite.basis,
+          nontaxableFraction: iraProRataWrite.nontaxableFraction,
+        }
     const sourceWrites = [...row.cashFlowWrites]
     const cashFlowWrites = sourceWrites.map((write) => {
       const writeOwnerId = write.ownerId
@@ -125,6 +136,7 @@ export function materializeAnnualLegacyQcdOwnerCharacterPlanResult(
       nonQualifiedOrdinaryIncomeDelta,
       qcdOffsetConsumedWrite,
       iraProRataWrite,
+      iraProRataReadSnapshot,
       cashFlowWrites,
     }
   })

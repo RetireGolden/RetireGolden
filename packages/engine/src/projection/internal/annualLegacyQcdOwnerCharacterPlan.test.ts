@@ -262,6 +262,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
       nonQualifiedOrdinaryIncomeDelta: 4,
       qcdOffsetConsumedWrite: 500,
       iraProRataWrite: proRata,
+      iraProRataReadSnapshot: { basis: 25, nontaxableFraction: 0.25 },
       cashFlowWrites: [{
         ownerId: 'owner', target: 'ordinaryBeyondRmd', value: 4,
       }],
@@ -269,6 +270,7 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
     expect(result.rows).not.toBe(row)
     expect(result.rows[0]!.cashFlowWrites).not.toBe(row.cashFlowWrites)
     expect(result.rows[0]!.iraProRataWrite).toBe(proRata)
+    expect(result.rows[0]!.iraProRataReadSnapshot).not.toBe(proRata)
   })
 
   it('rejects an unknown cash-flow target during materialization', () => {

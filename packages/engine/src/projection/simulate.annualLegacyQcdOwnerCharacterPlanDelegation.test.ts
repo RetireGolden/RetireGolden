@@ -16,7 +16,7 @@ type FailureMode =
   | 'proRataGetter'
   | 'unknownTarget'
 type ShapeMode = 'empty' | 'truncated' | 'reordered' | 'duplicate' | 'extra'
-type Mode = 'normal' | 'fp' | FailureMode | ShapeMode
+type Mode = 'normal' | 'fp' | 'proRataSecondRead' | FailureMode | ShapeMode
 
 interface Phase {
   readonly year: number
@@ -45,15 +45,21 @@ const seam = vi.hoisted(() => ({
   phases: [] as Phase[],
   splitProRataInputs: [] as IraProRataYear[],
   partialStateObservations: [] as (readonly (readonly [string, number])[])[],
+  secondReadProRataIdentity: null as IraProRataYear | null,
+  secondReadProRataCounts: { basis: 0, nontaxableFraction: 0 },
 }))
 
 vi.mock('../strategies/iraBasis.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('../strategies/iraBasis.js')>()
   return {
     ...original,
-    splitIraDistribution: (state: IraProRataYear, amount: number) => {
+    splitIraDistribution: (
+      state: IraProRataYear,
+      amount: number,
+      readState?: IraProRataYear,
+    ) => {
       seam.splitProRataInputs.push(state)
-      return original.splitIraDistribution(state, amount)
+      return original.splitIraDistribution(state, amount, readState)
     },
   }
 })
@@ -196,6 +202,36 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
         return { rows: [row] }
       }
 
+      if (seam.mode === 'proRataSecondRead') {
+        const hostileProRata: IraProRataYear = {
+          get basis(): number {
+            seam.secondReadProRataCounts.basis += 1
+            if (seam.secondReadProRataCounts.basis > 1) {
+              observe(input)
+              throw new Error('hostile second pro-rata basis read')
+            }
+            return 0
+          },
+          get nontaxableFraction(): number {
+            seam.secondReadProRataCounts.nontaxableFraction += 1
+            if (seam.secondReadProRataCounts.nontaxableFraction > 1) {
+              observe(input)
+              throw new Error('hostile second pro-rata fraction read')
+            }
+            return 0
+          },
+        }
+        seam.secondReadProRataIdentity = hostileProRata
+        return {
+          rows: [{
+            ...first!,
+            qualifiedFromRmd: 0,
+            qcdOffsetConsumedWrite: 12_345,
+            iraProRataWrite: hostileProRata,
+          }],
+        }
+      }
+
       if (seam.mode === 'unknownTarget') {
         const row = {
           ...first!,
@@ -318,6 +354,9 @@ function reset(mode: Mode): void {
   seam.phases.length = 0
   seam.splitProRataInputs.length = 0
   seam.partialStateObservations.length = 0
+  seam.secondReadProRataIdentity = null
+  seam.secondReadProRataCounts.basis = 0
+  seam.secondReadProRataCounts.nontaxableFraction = 0
 }
 
 function runNormal() {
@@ -452,6 +491,26 @@ describe('simulatePlan delegates grouped legacy QCD owner character', () => {
     expect(leftAssociated).not.toBe(regrouped)
     expect(year.magi).toBe(year.rmd + leftAssociated)
     expect(year.magi).not.toBe(year.rmd + regrouped)
+  })
+
+  it('uses the pre-read pro-rata snapshot while forwarding exact helper identity', () => {
+    reset('proRataSecondRead')
+    const result = simulatePlan(normalPlan(), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
+    })
+
+    expect(result.years).toHaveLength(1)
+    expect(seam.secondReadProRataCounts).toEqual({
+      basis: 1,
+      nontaxableFraction: 1,
+    })
+    expect(seam.partialStateObservations).toEqual([])
+    expect(seam.splitProRataInputs.some(
+      (state) => state === seam.secondReadProRataIdentity,
+    )).toBe(true)
   })
 
   it.each<FailureMode>([
