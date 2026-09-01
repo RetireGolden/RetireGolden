@@ -99,6 +99,10 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
 
 import type { Account, Plan } from '../model/plan.js'
 import { parseRetirementActionRequest } from '../actions/index.js'
+import {
+  ledgerCentsToPlanDollars,
+  planDollarsToLedgerCents,
+} from '../actions/planBalanceAdapter.js'
 import { singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
 import {
   simulatePlan,
@@ -106,6 +110,9 @@ import {
 } from './simulate.js'
 
 const START_YEAR = 2026
+const NAMED_CASH_OPENING_PLAN_DOLLARS = 1_000
+const NAMED_ORDINARY_AMOUNT_PLAN_DOLLARS = 100
+const AGGREGATE_CONVERSION_PLAN_DOLLARS = 200
 
 function parseAction(value: unknown) {
   const parsed = parseRetirementActionRequest(value)
@@ -157,7 +164,7 @@ function crossBoundaryPlan(): Plan {
       name: 'named-cash',
       ownerPersonId: 'p1',
       annualReturnPct: 0,
-      balance: 1_000,
+      balance: NAMED_CASH_OPENING_PLAN_DOLLARS,
       annualContribution: 0,
     },
     traditional('inherited', 10_000, true),
@@ -191,18 +198,25 @@ function crossBoundaryPlan(): Plan {
     year: START_YEAR,
     executionDate: `${START_YEAR}-01-15`,
     executionSequence: 1,
-    requestedAmount: 10_000,
+    requestedAmount: planDollarsToLedgerCents(
+      NAMED_ORDINARY_AMOUNT_PLAN_DOLLARS,
+    ),
     allocations: [{
       allocationId: 'named-ordinary-cash-allocation',
       sourceAccountId: 'named-cash',
-      requestedAmount: 10_000,
+      requestedAmount: planDollarsToLedgerCents(
+        NAMED_ORDINARY_AMOUNT_PLAN_DOLLARS,
+      ),
     }],
     purpose: { kind: 'spending' },
     provenance: { source: 'manual' },
   })]
   value.strategies.rothConversion = {
     mode: 'manual',
-    conversions: [{ year: START_YEAR, amount: 200 }],
+    conversions: [{
+      year: START_YEAR,
+      amount: AGGREGATE_CONVERSION_PLAN_DOLLARS,
+    }],
   }
   return validatePlan(value)
 }
@@ -332,32 +346,92 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
 
     const phases = phasesFor(START_YEAR)
     expect(phases).toHaveLength(1)
-    expect(result.years[0]!.retirementActionExecution).toMatchObject({
+    const execution = result.years[0]!.retirementActionExecution
+    const executionCash = execution?.balances.find(
+      (balance) => balance.accountId === 'named-cash',
+    )
+    expect(execution).toMatchObject({
       committed: true,
       balances: [{
         accountId: 'named-cash',
-        openingBalance: 100_000,
-        closingBalance: 90_000,
+        openingBalance: planDollarsToLedgerCents(
+          NAMED_CASH_OPENING_PLAN_DOLLARS,
+        ),
+        closingBalance: planDollarsToLedgerCents(
+          NAMED_CASH_OPENING_PLAN_DOLLARS -
+            NAMED_ORDINARY_AMOUNT_PLAN_DOLLARS,
+        ),
       }],
     })
-    expect(phases[0]!.openingByAccountId.get('named-cash')).toBe(900)
-    expect(phases[0]!.openingByAccountId.get('owned')).toBe(99_800)
-    expect(phases[0]!.openingByAccountId.get('roth')).toBe(200)
+    if (executionCash === undefined) throw new Error('expected named cash execution')
+    const cashAfterOrdinary = ledgerCentsToPlanDollars(
+      executionCash.closingBalance,
+    )
+    expect(phases[0]!.openingByAccountId.get('named-cash'))
+      .toBe(cashAfterOrdinary)
 
     const applications =
       result.years[0]!.retirementRuntimeApplicationSource?.applications ?? []
-    const conversion = applications.find(
+    const conversionDebit = applications.find(
       (application) =>
+        application.applicationKind === 'debit' &&
         application.simulatorPhase === 'legacyRothConversion' &&
         application.sourceAccountId === 'owned',
     )
+    const conversionCredit = applications.find(
+      (application) =>
+        application.applicationKind === 'aggregateRothDestinationCredit' &&
+        application.destinationRothAccountId === 'roth',
+    )
     const needBased = applications.find(
       (application) =>
+        application.applicationKind === 'debit' &&
         application.simulatorPhase === 'legacyNeedBasedWithdrawal' &&
         application.sourceAccountId === 'owned',
     )
-    expect(conversion).toBeDefined()
-    expect(needBased).toBeDefined()
-    expect(conversion!.mutationOrdinal).toBeLessThan(needBased!.mutationOrdinal)
+    if (conversionDebit?.applicationKind !== 'debit') {
+      throw new Error('expected aggregate conversion debit')
+    }
+    if (conversionCredit?.applicationKind !== 'aggregateRothDestinationCredit') {
+      throw new Error('expected aggregate conversion destination credit')
+    }
+    if (needBased?.applicationKind !== 'debit') {
+      throw new Error('expected owned need-based debit')
+    }
+    expect(conversionDebit).toMatchObject({
+      mutationOrdinal: 1,
+      sourceBalanceBeforePlanDollars: 100_000,
+      appliedAmountPlanDollars: AGGREGATE_CONVERSION_PLAN_DOLLARS,
+      sourceBalanceAfterPlanDollars:
+        100_000 - AGGREGATE_CONVERSION_PLAN_DOLLARS,
+    })
+    expect(conversionCredit).toMatchObject({
+      mutationOrdinal: 2,
+      destinationBalanceBeforePlanDollars: 0,
+      destinationCreditedAmountPlanDollars:
+        AGGREGATE_CONVERSION_PLAN_DOLLARS,
+      destinationBalanceAfterPlanDollars:
+        AGGREGATE_CONVERSION_PLAN_DOLLARS,
+    })
+
+    expect(phases[0]!.openingByAccountId.get('owned'))
+      .toBe(conversionDebit.sourceBalanceAfterPlanDollars)
+    expect(phases[0]!.openingByAccountId.get('roth'))
+      .toBe(conversionCredit.destinationBalanceAfterPlanDollars)
+    const cashOperation = phases[0]!.output.balanceOperations.find(
+      (operation) => operation.accountId === 'named-cash',
+    )
+    const ownedOperation = phases[0]!.output.balanceOperations.find(
+      (operation) => operation.accountId === 'owned',
+    )
+    expect(cashOperation?.sourceBalanceBefore).toBe(cashAfterOrdinary)
+    expect(ownedOperation?.sourceBalanceBefore)
+      .toBe(conversionDebit.sourceBalanceAfterPlanDollars)
+    expect(needBased).toMatchObject({
+      mutationOrdinal: 3,
+      sourceBalanceBeforePlanDollars: ownedOperation?.sourceBalanceBefore,
+      appliedAmountPlanDollars: ownedOperation?.taken,
+      sourceBalanceAfterPlanDollars: ownedOperation?.sourceBalanceAfter,
+    })
   })
 })

@@ -7,32 +7,75 @@
       "id": "W.helper.evidence",
       "label": "last-wins evidence-account index, post-flip suppression, and explicit voluntary writes",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
-      "lines": [74, 93]
+      "lines": [74, 93],
+      "anchors": [
+        { "line": 74, "text": "const balanceStateByAccountId = new Map(" },
+        { "line": 78, "text": "for (const [evidenceIndex, evidence] of input.inheritedEvidence.entries()) {" },
+        { "line": 85, "text": "isTreatAsOwnEffective(evidenceAccount, input.year)" },
+        { "line": 87, "text": "evidenceWrites.push({" },
+        { "line": 91, "text": "input.withdrawnByAccountId.get(evidence.accountId) ?? 0," },
+        { "line": 93, "text": "}" }
+      ]
     },
     {
       "id": "W.helper.shadowAndSelection",
       "label": "positional balance/basis shadow and positive-withdrawal selection",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
-      "lines": [95, 114]
+      "lines": [95, 114],
+      "anchors": [
+        { "line": 95, "text": "const shadowByState = new Map<" },
+        { "line": 104, "text": "const balanceOperations: AnnualWithdrawalBalanceOperation[] = []" },
+        { "line": 105, "text": "for (const [balanceIndex, state] of input.balances.entries()) {" },
+        { "line": 107, "text": "if (taken <= 0) continue" },
+        { "line": 108, "text": "const shadow = shadowByState.get(state)!" },
+        { "line": 113, "text": "if (state.account.type === 'taxable') {" },
+        { "line": 114, "text": "const sale = input.taxableSales.get(state.account.id)" }
+      ]
     },
     {
       "id": "W.helper.taxableSale",
       "label": "committed taxable-sale balance and basis result",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
       "lines": [119, 121],
+      "anchors": [
+        { "line": 119, "text": "costBasisAfter = sale.remainingCostBasis" },
+        { "line": 120, "text": "sourceBalanceAfter = sale.remainingFairMarketValue" },
+        { "line": 121, "text": "}" }
+      ],
       "note": "The missing-sale branch on lines 115-117 is excluded: planWithdrawals creates a taxableSales record whenever it allocates a positive taxable draw. The structural `else` line 118 is excluded because V8 maps its branch entry to the closing brace and reports that whole line cold even when the taxable body runs; lines 119-121 are the actual committed result reads. The helper's supported defensive missing-map input and the caller-timed failure are pinned by focused direct and delegation tests."
     },
     {
       "id": "W.helper.equityAndOrdinary",
       "label": "equity-compensation basis association and ordinary balance subtraction",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
-      "lines": [122, 137]
+      "lines": [122, 137],
+      "anchors": [
+        { "line": 122, "text": "} else if (" },
+        { "line": 123, "text": "state.account.type === 'equityComp' &&" },
+        { "line": 126, "text": "const basisRatio = Math.min(" },
+        { "line": 128, "text": "shadow.costBasis / sourceBalanceBefore," },
+        { "line": 130, "text": "costBasisAfter = Math.max(" },
+        { "line": 132, "text": "shadow.costBasis - taken * basisRatio," },
+        { "line": 134, "text": "sourceBalanceAfter = sourceBalanceBefore - taken" },
+        { "line": 136, "text": "sourceBalanceAfter = sourceBalanceBefore - taken" },
+        { "line": 137, "text": "}" }
+      ]
     },
     {
       "id": "W.helper.operations",
       "label": "ordered shadow writes, runtime/application verdicts, and complete result",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
-      "lines": [138, 155]
+      "lines": [138, 155],
+      "anchors": [
+        { "line": 138, "text": "shadow.balance = sourceBalanceAfter" },
+        { "line": 139, "text": "if (costBasisAfter !== null) shadow.costBasis = costBasisAfter" },
+        { "line": 140, "text": "balanceOperations.push({" },
+        { "line": 148, "text": "recordsTraditionalRuntimeOccurrence:" },
+        { "line": 150, "text": "recordsOwnedIraApplication:" },
+        { "line": 152, "text": "input.recordsOwnedIraApplicationFor(state.account)," },
+        { "line": 153, "text": "})" },
+        { "line": 155, "text": "return { evidenceWrites, balanceOperations }" }
+      ]
     },
     {
       "id": "W.callsite.invokeAndEvidenceSelect",
