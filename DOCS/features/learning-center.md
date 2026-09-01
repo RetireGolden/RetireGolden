@@ -252,6 +252,7 @@ packages/planner-ui/src/learn/
     FormulaBlock.tsx
     ScenarioCard.tsx
     SourceList.tsx
+    ExternalLink.tsx      # off-site link with the ↗ / "opens in a new tab" cue
     LearnLink.tsx
 ```
 

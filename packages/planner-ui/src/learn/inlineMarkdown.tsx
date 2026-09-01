@@ -10,6 +10,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
+import { ExternalLink } from './components/ExternalLink'
+
 // link [text](href) | bold **text** | italic *text* | inline code `code`
 // Bold precedes italic in the alternation so "**x**" never matches as italics.
 const INLINE_PATTERN = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*\n]+)\*/g
@@ -30,16 +32,17 @@ export function renderInline(text: string): ReactNode[] {
     const italicText = match[5]
 
     if (linkText !== undefined && href !== undefined) {
-      // Internal links use the router; external links open in a new tab.
+      // Internal links use the router; external links open in a new tab with
+      // the shared ↗ / "opens in a new tab" cue (#418).
       nodes.push(
         href.startsWith('/') ? (
           <Link key={key++} to={href}>
             {linkText}
           </Link>
         ) : (
-          <a key={key++} href={href} target="_blank" rel="noreferrer">
+          <ExternalLink key={key++} href={href}>
             {linkText}
-          </a>
+          </ExternalLink>
         ),
       )
     } else if (boldText !== undefined) {

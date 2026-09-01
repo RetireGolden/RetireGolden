@@ -56,7 +56,7 @@ function AssetClassAssumptions() {
           <div key={id} className="nested-form-section" data-testid={`asset-class-${id}`}>
             <h4>{p.label}</h4>
             <div className="form-grid nested-control-grid">
-              <PercentField label="Expected return" value={p.returnPct} onCommit={(v) => setParam(id, 'returnPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].returnPct)} />
+              <PercentField label="Expected return" help="Assumed average annual nominal return for this class. Accounts that model asset classes blend it by allocation into their growth in the steady projection; Monte Carlo shocks each year around it using the volatility below." learn={LEARN.investmentReturns} value={p.returnPct} onCommit={(v) => setParam(id, 'returnPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].returnPct)} />
               <PercentField label="Volatility" help="Annual standard deviation of returns; drives the size of this class's Monte Carlo shocks." value={p.volatilityPct} min={0} onCommit={(v) => setParam(id, 'volatilityPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].volatilityPct)} />
               {stockLike ? (
                 <>

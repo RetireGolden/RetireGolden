@@ -4,6 +4,22 @@ import type {
 } from '@retiregolden/engine/projection/optimizePlan'
 import { fmtMoney, fmtMoneyCompact } from './format'
 
+/**
+ * True when a run ended with nothing to recommend: the solver found no
+ * feasible schedule and no tournament candidate or readiness veto stands in
+ * for a result. The page shows "Couldn't optimize this plan" on exactly this
+ * condition, and the recommendation report must not be offered for it (#426).
+ * An incumbent-holds or no-beneficial-conversions outcome is still a
+ * recommendation ("no change"), so it stays reportable.
+ */
+export function optimizerProducedNoRecommendation(args: {
+  scheduleStatus: 'optimal' | 'feasible' | 'infeasible' | 'timeout' | null
+  candidateWins: boolean
+  readinessVeto: RetirementActionReadinessVetoSummary | null | undefined
+}): boolean {
+  return args.scheduleStatus === 'infeasible' && !args.candidateWins && !args.readinessVeto
+}
+
 /** Publication copy follows the readiness veto while retaining exact metrics. */
 export function publicationValidation(
   validation: ExactLedgerValidation,

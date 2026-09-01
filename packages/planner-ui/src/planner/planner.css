@@ -563,7 +563,11 @@
   border-radius: 8px;
   padding: 0.1rem 0.4rem;
   margin-left: -0.4rem;
-  max-width: 24rem;
+  width: 100%;
+  max-width: 30rem;
+  /* A name longer than the box truncates with a deliberate ellipsis instead
+     of a mid-word clip; the breadcrumb above carries the full name (#431). */
+  text-overflow: ellipsis;
 }
 
 .plan-name-input:hover,
@@ -1515,6 +1519,27 @@ html:has(.kpi-bar) {
   color: var(--muted);
 }
 
+/* Survivor transition (#431): seven columns with two-line cells. The floor
+   gives each header room to wrap on a word boundary at most once; below it
+   the .year-table-wrap scrolls. `.nowrap` keeps tokens like "(SSA-44)" and a
+   filing-status label whole; each timeline segment takes its own line. */
+.compare-table.survivor-table {
+  min-width: 66rem;
+}
+
+.compare-table.survivor-table thead th {
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.survivor-timeline-segment {
+  display: block;
+}
+
 .diff-chip {
   display: inline-block;
   font-size: 0.76rem;
@@ -1587,6 +1612,20 @@ html:has(.kpi-bar) {
 
 .empty-state h2 {
   color: var(--fg);
+}
+
+/* Chrome back link on a content page that is reached from another page
+   (How-tested → Disclaimer); mirrors the Learning Center's .learn-back. */
+.page-back {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.page-back:hover {
+  text-decoration: underline;
 }
 
 .app-footer {

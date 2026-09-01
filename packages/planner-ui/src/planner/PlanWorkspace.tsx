@@ -52,11 +52,9 @@ const SECTION_TITLES: Record<string, string> = {
   'assumptions-card': 'Assumptions card',
 }
 
-function sectionTitleOf(pathname: string): string | null {
-  // /plan/:planId/<section>[/...] — the segment after the plan id.
-  const segments = pathname.split('/').filter(Boolean)
-  const section = segments[2]
-  return section !== undefined ? (SECTION_TITLES[section] ?? null) : null
+/** /plan/:planId/<section>[/...] — the segment after the plan id. */
+function sectionSegmentOf(pathname: string): string | undefined {
+  return pathname.split('/').filter(Boolean)[2]
 }
 
 function SaveIndicator() {
@@ -213,7 +211,9 @@ function WorkspaceInner() {
   // Page identity: retitle the tab per section so history and multi-tab
   // comparison work, and give every plan page exactly one h1 (sr-only, the
   // visual header is the plan name + KPI bar).
-  const sectionTitle = sectionTitleOf(location.pathname)
+  const section = sectionSegmentOf(location.pathname)
+  const sectionTitle = section !== undefined ? (SECTION_TITLES[section] ?? null) : null
+  const onAssumptions = section === 'assumptions' || section === 'assumptions-card'
   useEffect(() => {
     document.title = sectionTitle ? `${sectionTitle} · ${plan.name} · RetireGolden` : `${plan.name} · RetireGolden`
   }, [sectionTitle, plan.name])
@@ -285,7 +285,16 @@ function WorkspaceInner() {
           <NavLink to="income-floor" className={railClass}>Income floor</NavLink>
           <NavLink to="spending" className={railClass}>Spending</NavLink>
           <NavLink to="strategy" className={railClass}>Strategy</NavLink>
-          <NavLink to="assumptions" className={railClass}>Assumptions</NavLink>
+          {/* The Assumptions card is a child surface without a rail item of
+              its own; keep Assumptions highlighted there (#425). NavLink only
+              marks its own route match, hence a plain Link with the state. */}
+          <Link
+            to="assumptions"
+            className={railClass({ isActive: onAssumptions })}
+            aria-current={onAssumptions ? 'page' : undefined}
+          >
+            Assumptions
+          </Link>
           <span className="rail-group">Optimize</span>
           <NavLink to="insights" className={railClass}>Insights</NavLink>
           <NavLink to="optimize" className={railClass}>Roth & Tax Optimizer</NavLink>

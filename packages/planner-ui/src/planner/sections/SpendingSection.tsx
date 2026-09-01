@@ -198,6 +198,10 @@ export function SpendingSection() {
           <LearnLink {...LEARN.spendingBudget} />
         </p>
         <div className="form-grid">
+          {/* Full-width: the option labels ("Fixed target (no guardrails)",
+              "Risk-based guardrails (success band)") clip to an ellipsis in a
+              one-column cell at the default workspace width (#423). */}
+          <div className="field-span-full">
           <SelectField
             label="Spending policy"
             help="Fixed target funds the whole budget every year (today's behavior). Withdrawal-rate guardrails ration the discretionary layer path by path based on how the current withdrawal rate compares to the starting rate. Risk-based guardrails trigger on dollar portfolio thresholds solved from your target probability-of-success band, cut only when the plan's odds actually leave the band, not on the withdrawal rate alone. Amortized spending (ABW) ignores the baseline and phases and spends each year's amortized payment: the actual start-of-year portfolio spread over the remaining horizon at an expected real return, so spending self-corrects after good or bad markets and the portfolio is designed to be spent down by the horizon."
@@ -216,6 +220,7 @@ export function SpendingSection() {
               })
             }
           />
+          </div>
           {e.spendingPolicy?.mode === 'withdrawalRateGuardrails' ? (
             <>
               <PercentField
@@ -564,7 +569,9 @@ export function SpendingSection() {
           <button type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.expenses.phases.push({ fromAge: 75, multiplier: 0.9 }))}>+ Phase</button>
         </div>
         <p className="field-hint" style={{ margin: '0.6rem 0 0.25rem' }}>
-          Profiles write ordinary phase rows you can edit afterwards{e.phases.length > 0 ? ' (replacing the phases above)' : ''}:{' '}<LearnLink {...LEARN.spendingProfiles} />
+          {/* The section blurb above already carries the spending-profiles
+              Learn link; one per destination in this section (#423). */}
+          Profiles write ordinary phase rows you can edit afterwards{e.phases.length > 0 ? ' (replacing the phases above)' : ''}:
         </p>
         <div className="add-row">
           <button type="button" className="btn btn-secondary btn-small" onClick={() => applyProfile('flat')}>

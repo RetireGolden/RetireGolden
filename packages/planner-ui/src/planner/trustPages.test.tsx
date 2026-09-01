@@ -95,4 +95,13 @@ describe('HowTestedPage', () => {
       expect(text).not.toContain(name)
     }
   })
+
+  it('offers a chrome back link to the Disclaimer it is reached from (#419)', () => {
+    const el = render(<HowTestedPage />)
+    const back = el.querySelector('a.page-back')
+    expect(back?.getAttribute('href')).toBe('/disclaimer')
+    expect(back?.textContent).toMatch(/← Disclaimer/)
+    // It sits above the h1 as page chrome, not inside the prose.
+    expect(back!.compareDocumentPosition(el.querySelector('h1')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })

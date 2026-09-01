@@ -153,6 +153,9 @@ export function IncomeSection() {
       <div className="card">
         <h2>Income</h2>
         <p className="card-hint">Wages run until each person's retirement age and drive contributions and the SS earnings test. Social Security uses monthly claiming factors.</p>
+        {/* Same empty-state line as Insurance, so an empty list reads as empty
+            rather than unfinished (#421). */}
+        {plan.incomes.length === 0 ? <div className="empty-state"><p>No income streams yet. Add one below.</p></div> : null}
         {plan.incomes.map((s, i) => (
           <div className="item-row" key={s.id}>
             <div className="item-row-head">

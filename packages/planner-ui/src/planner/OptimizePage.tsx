@@ -55,6 +55,7 @@ import {
   planWithWinningClaim,
 } from './optimizePageClaim'
 import {
+  optimizerProducedNoRecommendation,
   publicationValidation,
   recommendationBody,
   recommendationHeading,
@@ -380,12 +381,19 @@ export function OptimizePage() {
     incumbentHolds,
     displayedConversionCount,
   })
-  const recommendationReportIsAvailable = claimRecommendationReportAvailable({
-    claimChangeRecommended,
-    scheduleApplyAvailable,
-    incumbentHolds,
-    displayedConversionCount,
+  const noRecommendation = optimizerProducedNoRecommendation({
+    scheduleStatus: schedule?.status ?? null,
+    candidateWins,
+    readinessVeto: tournament?.retirementActionReadinessVeto,
   })
+  const recommendationReportIsAvailable =
+    !noRecommendation &&
+    claimRecommendationReportAvailable({
+      claimChangeRecommended,
+      scheduleApplyAvailable,
+      incumbentHolds,
+      displayedConversionCount,
+    })
 
   const chartRows = useMemo(
     () => buildOptimizeChartRows({
@@ -512,7 +520,9 @@ export function OptimizePage() {
             {!schedule && !running ? rerunButton(error ? 'Try again' : 'Run optimizer') : null}
             {/* Also disabled while re-running: the held result (and any claim
                 patch in it) describes the pre-edit plan, so a report downloaded
-                mid-run would mix live plan fields with stale recommendations. */}
+                mid-run would mix live plan fields with stale recommendations.
+                And disabled after a failed run (#426): recommendationReport-
+                IsAvailable is false when there is no recommendation to report. */}
             <button
               type="button"
               className="btn btn-secondary btn-small"
@@ -623,9 +633,7 @@ export function OptimizePage() {
             )}
             <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
           </div>
-        ) : schedule.status === 'infeasible' &&
-          !candidateWins &&
-          !tournament?.retirementActionReadinessVeto ? (
+        ) : noRecommendation ? (
           <div className="card">
             <h2>Couldn't optimize this plan</h2>
             <p className="muted">

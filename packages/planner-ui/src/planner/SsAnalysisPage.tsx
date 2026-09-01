@@ -7,6 +7,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import {
   CartesianGrid,
   Legend,
@@ -74,11 +75,17 @@ function heatColor(t: number): string {
   return `color-mix(in srgb, var(--good) ${Math.round(t * 70)}%, var(--surface-1))`
 }
 
-function EmptyState() {
+function EmptyState({ planId }: { planId: string }) {
   return (
     <div className="empty-state">
       <h2>No Social Security to analyze yet</h2>
       <p>Add a benefit for at least one person on the Social Security entry form, then come back here.</p>
+      {/* The recovery path is a chrome control, not a hunt through the rail (#427). */}
+      <p>
+        <Link to={`/plan/${planId}/social-security`} className="btn btn-secondary btn-small">
+          Add a Social Security benefit
+        </Link>
+      </p>
     </div>
   )
 }
@@ -93,7 +100,7 @@ export function SsAnalysisPage() {
       <section>
         <div className="card">
           <h2>Social Security Optimizer</h2>
-          <EmptyState />
+          <EmptyState planId={plan.id} />
         </div>
       </section>
     )
