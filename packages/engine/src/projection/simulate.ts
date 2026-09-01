@@ -82,7 +82,7 @@ import {
   annualAggregateRothConversionPlan,
   withAnnualAggregateRothConversionReservations,
 } from './internal/annualAggregateRothConversionPlan.js'
-import { distributedTaxableYieldRows } from './internal/distributedTaxableYieldRows.js'
+import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { propertyEventsAndGrowth } from './internal/propertyEventsAndGrowth.js'
 import { publishedEntityFacts } from './internal/publishedEntityFacts.js'
@@ -91,7 +91,6 @@ import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tips
 import { tipsLadderPurchaseFunding } from './internal/tipsLadderPurchaseFunding.js'
 import { fixedAssetDispositions } from './internal/fixedAssetDispositions.js'
 import { otherIncomeStreams } from './internal/otherIncomeStreams.js'
-import { wageIncomeStreams } from './internal/wageIncomeStreams.js'
 import { stateParamsFor } from '../params/state/index.js'
 import type { ParameterPack } from '../params/types.js'
 import { requiredMinimumDistribution } from '../rmd/rmd.js'
@@ -260,7 +259,6 @@ import {
   type TaxYearInput,
   type YearAcaResult,
   type AcaSupportCode,
-  type YearIncomes,
   type YearResult,
   type YearWithdrawals,
   type InheritedAccountYearEvidence,
@@ -2187,79 +2185,40 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       return [...ids]
     })()
 
-    // --- income ----------------------------------------------------------
-    const incomes: YearIncomes = {
-      wages: 0,
-      socialSecurity: 0,
-      pension: 0,
-      annuity: 0,
-      tipsLadder: 0,
-      recurring: 0,
-      oneTime: 0,
-      taxableInterest: 0,
-      ordinaryDividends: 0,
-      qualifiedDividends: 0,
-      taxableYield: 0,
-      taxExemptInterest: 0,
-      total: 0,
-    }
-    let ordinaryIncome = 0
+    // --- income setup: distributed yield, then wages --------------------
+    const incomeSetup = annualIncomeSetup({
+      distributedYield: {
+        states: balances,
+        startOfYearBalance,
+        allocationTrack,
+        classParams,
+      },
+      wages: {
+        incomes: plan.incomes,
+        personById,
+        stateOf,
+        year,
+        startYear,
+        inflFactor,
+      },
+      commitDistributedYield: yearSites === null
+        ? undefined
+        : (row) => yearSites.recordDistributedYield(row.record),
+      commitWage: yearSites === null
+        ? undefined
+        : (row) => yearSites.recordWages(row.record),
+    })
+    const {
+      incomes,
+      taxableYieldReinvested,
+      distributedYieldByAccountId,
+      wagesByPerson,
+    } = incomeSetup
+    let ordinaryIncome = incomeSetup.ordinaryIncome
     /** Subsets of income eligible for state retirement-income exclusions. */
     let privateRetirementOrdinary = 0
     let publicPensionOrdinary = 0
     let oneTimeGains = 0
-    let taxableYieldReinvested = 0
-    const distributedYieldByAccountId = new Map<string, { gross: number; distributedYieldPct: number; reinvest: boolean }>()
-    const wagesByPerson = new Map<string, number>()
-
-    // The helper returns one row per balance state, including explicit `none`
-    // rows. Folding each contributing row here preserves the original
-    // account-order IEEE-754 additions and last-write map behavior.
-    for (const row of distributedTaxableYieldRows({
-      states: balances,
-      startOfYearBalance,
-      allocationTrack,
-      classParams,
-    })) {
-      if (row.kind === 'none') continue
-      incomes.taxableInterest += row.interest
-      incomes.ordinaryDividends += row.ordinaryDividends
-      incomes.qualifiedDividends += row.qualified
-      incomes.taxableYield += row.taxableGross
-      incomes.taxExemptInterest += row.exempt
-      ordinaryIncome += row.interest + row.ordinaryDividends
-      if (row.reinvest) taxableYieldReinvested += row.gross
-      distributedYieldByAccountId.set(row.accountId, {
-        gross: row.gross,
-        distributedYieldPct: row.distributedYieldPct,
-        reinvest: row.reinvest,
-      })
-      yearSites?.recordDistributedYield(row.record)
-    }
-
-    // Pass 1: wages (must precede Social Security for the earnings test). The
-    // phase itself lives in `internal/wageIncomeStreams.ts`; folding row by row
-    // is load-bearing for ONE of these three accumulators and not for the other
-    // two, which is worth saying so nobody "tidies" the loop into a pre-sum.
-    // `ordinaryIncome` has exactly one earlier writer in the year — the
-    // distributed-yield pass above — so on a plan with a yielding taxable
-    // account this fold starts from a non-zero base, and IEEE-754 addition is
-    // not associative there. (Measured over the 77-member phase-4 differential
-    // corpus: 364 of 9788 year-runs fold two or more wage rows onto a non-zero
-    // base, and pre-summing lands on a different double in 104 of them.)
-    // `incomes.wages` and `wagesByPerson` are both ZERO-BASED — this phase is
-    // the sole writer of the first, and the map is rebuilt empty each year — so
-    // `0 + a + b` IS `0 + (a + b)` for them; injecting a per-person pre-sum
-    // moved 0 of 308 corpus entries. Both person lookups are handed over
-    // because they disagree under duplicate person ids: `personById` is
-    // last-wins, `stateOf` is first-wins, and unifying them moves 4 of 308.
-    for (const row of wageIncomeStreams({ incomes: plan.incomes, personById, stateOf, year, startYear, inflFactor })) {
-      incomes.wages += row.amount
-      ordinaryIncome += row.amount
-      wagesByPerson.set(row.personId, (wagesByPerson.get(row.personId) ?? 0) + row.amount)
-      yearSites?.recordWages(row.record)
-    }
-
     // Pass 2: other non-SS streams. The phase itself lives in
     // `internal/otherIncomeStreams.ts`; folding row by row, in row order, is
     // load-bearing here — recurring and one-time rows interleave in plan order,

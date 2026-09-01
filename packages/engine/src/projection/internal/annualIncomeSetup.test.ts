@@ -1,0 +1,349 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type {
+  RecordedDistributedYield,
+  RecordedWage,
+} from '../annualCashFlowYearSites.js'
+import type {
+  DistributedTaxableYieldInput,
+  DistributedTaxableYieldResultRow,
+} from './distributedTaxableYieldRows.js'
+import type { WageIncomeRow, WageIncomeYearInput } from './wageIncomeStreams.js'
+
+const seam = vi.hoisted(() => ({
+  yieldRows: [] as DistributedTaxableYieldResultRow[],
+  wageRows: [] as WageIncomeRow[],
+  yieldInputs: [] as DistributedTaxableYieldInput[],
+  wageInputs: [] as WageIncomeYearInput[],
+  events: [] as string[],
+}))
+
+vi.mock('./distributedTaxableYieldRows.js', () => ({
+  distributedTaxableYieldRows: (input: DistributedTaxableYieldInput) => {
+    seam.yieldInputs.push(input)
+    seam.events.push('yield-producer')
+    return seam.yieldRows
+  },
+}))
+
+vi.mock('./wageIncomeStreams.js', () => ({
+  wageIncomeStreams: (input: WageIncomeYearInput) => {
+    seam.wageInputs.push(input)
+    seam.events.push('wage-producer')
+    return seam.wageRows
+  },
+}))
+
+import { annualIncomeSetup } from './annualIncomeSetup.js'
+
+function yieldRow(input: {
+  accountId: string
+  interest?: number
+  ordinaryDividends?: number
+  qualified?: number
+  exempt?: number
+  gross: number
+  distributedYieldPct: number
+  reinvest: boolean
+}): DistributedTaxableYieldResultRow {
+  const interest = input.interest ?? 0
+  const ordinaryDividends = input.ordinaryDividends ?? 0
+  const qualified = input.qualified ?? 0
+  const exempt = input.exempt ?? 0
+  const taxableGross = interest + ordinaryDividends + qualified
+  const record: RecordedDistributedYield = {
+    accountId: input.accountId,
+    taxableGross,
+    interest,
+    ordinaryDividends,
+    qualified,
+    exempt,
+    reinvest: input.reinvest,
+  }
+  return {
+    kind: 'yield',
+    ...input,
+    interest,
+    ordinaryDividends,
+    qualified,
+    exempt,
+    taxableGross,
+    record,
+  }
+}
+
+function wageRow(personId: string, amount: number, id: string): WageIncomeRow {
+  const record: RecordedWage = { incomeStreamId: id, personId, amount }
+  return { personId, amount, record }
+}
+
+const distributedYieldInput = {} as DistributedTaxableYieldInput
+const wageInput = {} as WageIncomeYearInput
+
+describe('annualIncomeSetup', () => {
+  beforeEach(() => {
+    seam.yieldRows = []
+    seam.wageRows = []
+    seam.yieldInputs.length = 0
+    seam.wageInputs.length = 0
+    seam.events.length = 0
+  })
+
+  it('finishes the eager yield fold before producing wage rows', () => {
+    const ordered = yieldRow({
+      accountId: 'ordered',
+      interest: 1,
+      gross: 1,
+      distributedYieldPct: 1,
+      reinvest: false,
+    })
+    if (ordered.kind !== 'yield') throw new Error('expected yield row')
+    Object.defineProperty(ordered, 'interest', {
+      get: () => {
+        seam.events.push('yield-fold')
+        return 1
+      },
+    })
+    const record = ordered.record
+    Object.defineProperty(ordered, 'record', {
+      get: () => {
+        seam.events.push('yield-record-get')
+        return record
+      },
+    })
+    seam.yieldRows = [ordered]
+
+    annualIncomeSetup({
+      distributedYield: distributedYieldInput,
+      wages: wageInput,
+      commitDistributedYield: (row) => {
+        void row.record
+        seam.events.push('yield-commit')
+      },
+    })
+
+    expect(seam.events[0]).toBe('yield-producer')
+    expect(seam.events).toContain('yield-fold')
+    expect(seam.events).toContain('yield-commit')
+    expect(seam.events.indexOf('yield-fold')).toBeLessThan(
+      seam.events.indexOf('yield-record-get'),
+    )
+    expect(seam.events.indexOf('yield-record-get')).toBeLessThan(
+      seam.events.indexOf('yield-commit'),
+    )
+    expect(seam.events.indexOf('yield-commit')).toBeLessThan(
+      seam.events.indexOf('wage-producer'),
+    )
+    expect(seam.events.lastIndexOf('yield-fold')).toBeLessThan(
+      seam.events.indexOf('wage-producer'),
+    )
+  })
+
+  it('stops at the original transaction point when a yield commit throws', () => {
+    const row = yieldRow({
+      accountId: 'throwing-yield',
+      interest: 1,
+      gross: 1,
+      distributedYieldPct: 1,
+      reinvest: false,
+    })
+    seam.yieldRows = [row]
+    seam.wageRows = [wageRow('p1', 2, 'must-not-run')]
+
+    expect(() => annualIncomeSetup({
+      distributedYield: distributedYieldInput,
+      wages: wageInput,
+      commitDistributedYield: (committed) => {
+        expect(committed).toBe(row)
+        seam.events.push('yield-commit-throw')
+        throw new Error('yield recorder failed')
+      },
+      commitWage: () => seam.events.push('wage-commit'),
+    })).toThrow('yield recorder failed')
+
+    expect(seam.events).toEqual([
+      'yield-producer',
+      'yield-commit-throw',
+    ])
+  })
+
+  it('commits each wage immediately after its fold and stops before later rows', () => {
+    const first = wageRow('p1', 1, 'first')
+    const second = wageRow('p1', 2, 'second')
+    Object.defineProperty(first, 'amount', {
+      get: () => {
+        seam.events.push('wage-fold:first')
+        return 1
+      },
+    })
+    seam.wageRows = [first, second]
+
+    expect(() => annualIncomeSetup({
+      distributedYield: distributedYieldInput,
+      wages: wageInput,
+      commitWage: (row) => {
+        seam.events.push(`wage-commit:${row.record.incomeStreamId}`)
+        if (row === first) throw new Error('wage recorder failed')
+      },
+    })).toThrow('wage recorder failed')
+
+    expect(seam.events).toEqual([
+      'yield-producer',
+      'wage-producer',
+      'wage-fold:first',
+      'wage-fold:first',
+      'wage-fold:first',
+      'wage-commit:first',
+    ])
+  })
+
+  it('does not read recorder payload properties when no commit hook exists', () => {
+    const distributed = yieldRow({
+      accountId: 'no-capture-yield',
+      interest: 1,
+      gross: 1,
+      distributedYieldPct: 1,
+      reinvest: false,
+    })
+    const wage = wageRow('p1', 2, 'no-capture-wage')
+    Object.defineProperty(distributed, 'record', {
+      get: () => {
+        throw new Error('yield record was read eagerly')
+      },
+    })
+    Object.defineProperty(wage, 'record', {
+      get: () => {
+        throw new Error('wage record was read eagerly')
+      },
+    })
+    seam.yieldRows = [distributed]
+    seam.wageRows = [wage]
+
+    const result = annualIncomeSetup({
+      distributedYield: distributedYieldInput,
+      wages: wageInput,
+    })
+
+    expect(result.incomes.taxableInterest).toBe(1)
+    expect(result.incomes.wages).toBe(2)
+    expect(result.ordinaryIncome).toBe(3)
+  })
+
+  it('folds yield then wages in source order and preserves producer identity', () => {
+    const first = yieldRow({
+      accountId: 'duplicate',
+      interest: 10_000_000_000_000_000,
+      ordinaryDividends: 0.25,
+      qualified: 2,
+      exempt: 3,
+      gross: 10_000_000_000_000_004,
+      distributedYieldPct: 4,
+      reinvest: true,
+    })
+    const lastDuplicate = yieldRow({
+      accountId: 'duplicate',
+      ordinaryDividends: 0.5,
+      gross: 1,
+      distributedYieldPct: 5,
+      reinvest: false,
+    })
+    const secondAccount = yieldRow({
+      accountId: 'second',
+      interest: 0.5,
+      gross: 1,
+      distributedYieldPct: 6,
+      reinvest: true,
+    })
+    seam.yieldRows = [{ kind: 'none' }, first, lastDuplicate, secondAccount]
+    seam.wageRows = [
+      wageRow('p2', 1, 'wage-z'),
+      wageRow('p1', 1, 'wage-a'),
+      wageRow('p2', 2, 'wage-m'),
+    ]
+
+    const result = annualIncomeSetup({
+      distributedYield: distributedYieldInput,
+      wages: wageInput,
+    })
+
+    expect(seam.yieldInputs).toEqual([distributedYieldInput])
+    expect(seam.wageInputs).toEqual([wageInput])
+    expect(result.distributedYieldRows).toBe(seam.yieldRows)
+    expect(result.wageRows).toBe(seam.wageRows)
+    expect(result.distributedYieldRows[1]).toBe(first)
+    expect(result.wageRows[0]?.record).toBe(seam.wageRows[0]?.record)
+
+    let expectedOrdinary = 0
+    for (const row of [first, lastDuplicate, secondAccount]) {
+      if (row.kind === 'yield') {
+        expectedOrdinary += row.interest + row.ordinaryDividends
+      }
+    }
+    const ordinaryBeforeWages = expectedOrdinary
+    for (const row of seam.wageRows) expectedOrdinary += row.amount
+    expect(result.ordinaryIncome).toBe(expectedOrdinary)
+    let reversedWages = ordinaryBeforeWages
+    for (const row of [...seam.wageRows].reverse()) {
+      reversedWages += row.amount
+    }
+    expect(result.ordinaryIncome).not.toBe(reversedWages)
+    expect(result.ordinaryIncome).not.toBe(
+      ordinaryBeforeWages +
+        seam.wageRows.reduce((total, row) => total + row.amount, 0),
+    )
+
+    expect(result.incomes).toEqual({
+      wages: 4,
+      socialSecurity: 0,
+      pension: 0,
+      annuity: 0,
+      tipsLadder: 0,
+      recurring: 0,
+      oneTime: 0,
+      taxableInterest: 10_000_000_000_000_000,
+      ordinaryDividends: 0.75,
+      qualifiedDividends: 2,
+      taxableYield: 10_000_000_000_000_002,
+      taxExemptInterest: 3,
+      total: 0,
+    })
+    expect([...result.distributedYieldByAccountId]).toEqual([
+      ['duplicate', { gross: 1, distributedYieldPct: 5, reinvest: false }],
+      ['second', { gross: 1, distributedYieldPct: 6, reinvest: true }],
+    ])
+    expect([...result.wagesByPerson]).toEqual([['p2', 3], ['p1', 1]])
+    expect(result.taxableYieldReinvested).toBe(
+      10_000_000_000_000_004 + 1,
+    )
+  })
+
+  it('returns fresh annual containers and does not mutate producer arrays', () => {
+    const none: DistributedTaxableYieldResultRow = { kind: 'none' }
+    const zeroWage = wageRow('p1', 0, 'zero')
+    seam.yieldRows = [none]
+    seam.wageRows = [zeroWage]
+    const beforeYield = [...seam.yieldRows]
+    const beforeWages = [...seam.wageRows]
+
+    const first = annualIncomeSetup({
+      distributedYield: distributedYieldInput,
+      wages: wageInput,
+    })
+    const second = annualIncomeSetup({
+      distributedYield: distributedYieldInput,
+      wages: wageInput,
+    })
+
+    expect(first.incomes).not.toBe(second.incomes)
+    expect(first.distributedYieldByAccountId).not.toBe(
+      second.distributedYieldByAccountId,
+    )
+    expect(first.wagesByPerson).not.toBe(second.wagesByPerson)
+    expect(first.distributedYieldRows).toBe(seam.yieldRows)
+    expect(second.wageRows).toBe(seam.wageRows)
+    expect(seam.yieldRows).toEqual(beforeYield)
+    expect(seam.wageRows).toEqual(beforeWages)
+    expect(first.incomes.wages).toBe(0)
+    expect(first.ordinaryIncome).toBe(0)
+  })
+})
