@@ -109,10 +109,12 @@ export const requiredMinimumDistributionRecords = {
     implementedBy: [
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts#evaluateBeneficiarySpousalElection',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts#evaluateBeneficiaryTraditionalIraDeathPenalty',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
     ],
   },
 
@@ -975,12 +977,15 @@ export const requiredMinimumDistributionRecords = {
       // distribution block, the 72(t) and inherited loops, the aggregate gift
       // and conversion sweeps, and the need-based withdrawal planner.
       'packages/engine/src/projection/simulate.ts',
+      // Where an annual SEPP payment applies the same no-ledger-cent discharge.
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts',
       // Where "rounds to zero whole cents" is defined, against the same
       // conversion every journal consumer measures a movement with.
       'packages/engine/src/actions/planBalanceAdapter.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/planBalanceAdapter.ts#planDollarsMoveNoLedgerCent',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
