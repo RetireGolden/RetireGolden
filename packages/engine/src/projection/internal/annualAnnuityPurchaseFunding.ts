@@ -12,6 +12,7 @@ import {
   latestQlacAnnuityStartAge,
 } from '../../model/plan.js'
 import { isSpendableInYear } from '../../strategies/accountEligibility.js'
+import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import { aggregateBasisSale } from '../../tax/aggregateBasisSale.js'
 import type { RecordedAnnuityPurchase } from '../annualCashFlowYearSites.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
@@ -66,14 +67,6 @@ export type AnnualAnnuityPurchaseFundingRow =
       }> | null
     }>
 
-function birthYear(person: Readonly<Person>): number {
-  return Number(person.dob.slice(0, 4))
-}
-
-function birthMonth(person: Readonly<Person>): number {
-  return Number(person.dob.slice(5, 7))
-}
-
 /** One position-keyed row per Plan account, in Plan order. */
 export function annualAnnuityPurchaseFunding(
   input: AnnualAnnuityPurchaseFundingInput,
@@ -124,13 +117,16 @@ export function annualAnnuityPurchaseFunding(
         account.ownerPersonId ?? input.primaryPerson.id,
       ) ?? input.primaryPerson
       if (account.purchase.qlac === true) {
-        if (account.startAge > latestQlacAnnuityStartAge(birthMonth(owner))) {
+        if (
+          account.startAge >
+          latestQlacAnnuityStartAge(socialSecurityDobParts(owner).m)
+        ) {
           warnings.push(LATE_QLAC_START_WARNING)
         }
       } else if (
         account.startAge >
         latestNonQlacQualifiedAnnuityStartAge(
-          birthYear(owner),
+          socialSecurityDobParts(owner).y,
           account.purchase.year,
         )
       ) {

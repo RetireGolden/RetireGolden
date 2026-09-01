@@ -2278,7 +2278,7 @@ function blockV() {
 
   {
     // Positive but unvested equity is deliberately unspendable. The purchase
-    // remains a real row with a zero gain/basis write and a shortfall warning,
+    // remains a real row with a zero gain, unchanged basis write and a shortfall warning,
     // but emits no optimizer debit and carries no investment into its payout.
     const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 75 })
     plan.assumptions.defaultReturnPct = 0

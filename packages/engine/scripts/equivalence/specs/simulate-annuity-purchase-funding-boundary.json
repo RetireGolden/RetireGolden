@@ -5,53 +5,53 @@
   "entries": [
     {
       "id": "V.helper.ownerBirthYear",
-      "label": "qualified-purchase owner birth-year decomposition",
+      "label": "qualified non-QLAC owner birth-year selection through the shared civil-date parser",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
-      "lines": [69, 71]
+      "lines": [126, 131]
     },
     {
       "id": "V.helper.ownerBirthMonth",
-      "label": "QLAC owner birth-month decomposition",
+      "label": "QLAC owner birth-month selection through the shared civil-date parser",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
-      "lines": [73, 75]
+      "lines": [119, 123]
     },
     {
       "id": "V.helper.select",
       "label": "positional overlay setup, account selection and first funding-position lookup",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
-      "lines": [81, 99],
-      "note": "The missing-funding body on lines 100-102 is excluded: parsePlan requires every annuity purchase fundingAccountId to resolve to a supported funding account. The helper unit suite covers the structural missing-id input and first-position behavior directly; validated Plan input also rejects a duplicate id once an annuity purchase references it."
+      "lines": [74, 92],
+      "note": "The missing-funding body on lines 93-95 is excluded: parsePlan requires every annuity purchase fundingAccountId to resolve to a supported funding account. The helper unit suite covers the structural missing-id input and first-position behavior directly; validated Plan input also rejects a duplicate id once an annuity purchase references it."
     },
     {
       "id": "V.helper.qualification",
       "label": "qualified owner fallback and QLAC/non-QLAC ceiling selection",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
-      "lines": [105, 127],
-      "note": "The late-QLAC warning body on lines 128-129 and late non-QLAC body on line 137 are excluded. parsePlan refuses both late-start shapes before corpus capture, while simulatePlan's public TypeScript signature still permits a caller-built in-memory Plan; focused unit tests directly pin both warnings and their order."
+      "lines": [102, 123],
+      "note": "The late-QLAC warning body on lines 124-125 and late non-QLAC body on line 133 are excluded. parsePlan refuses both late-start shapes before corpus capture, while simulatePlan's public TypeScript signature still permits a caller-built in-memory Plan; focused unit tests directly pin both warnings and their order."
     },
     {
       "id": "V.helper.nonQlacCeiling",
       "label": "qualified non-QLAC required-beginning-date ceiling calculation",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
-      "lines": [130, 136]
+      "lines": [126, 132]
     },
     {
       "id": "V.helper.capAndFunding",
       "label": "QLAC cap, spendability, premium funding and shortfall warning",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
-      "lines": [140, 154]
+      "lines": [136, 150]
     },
     {
       "id": "V.helper.basisAndShadow",
       "label": "taxable/equity basis arithmetic and positional shadow update",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
-      "lines": [156, 181]
+      "lines": [152, 177]
     },
     {
       "id": "V.helper.rows",
       "label": "fresh ledger/debit payloads, positional purchase rows and return",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
-      "lines": [182, 204]
+      "lines": [178, 200]
     },
     {
       "id": "V.callsite.invoke",
