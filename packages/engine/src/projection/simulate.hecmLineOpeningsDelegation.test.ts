@@ -333,13 +333,10 @@ describe('simulatePlan delegates the HECM line open', () => {
     expect(youngResult.warnings.filter((w) => w === AGE_62_WARNING).length).toBe(1)
   })
 
-  // G3c — THE OPEN-AS-YOU-GO RULE, from published output. Two property
-  // accounts may legally share an id, and the inlined phase let the FIRST open
-  // the line while the second met its own already-open guard. `propertyValues`
-  // is seeded last-write-wins by id, so the line opens against the SECOND
-  // account's value with the FIRST account's percentages — a quirk the
-  // extraction preserves rather than repairs.
-  it('opens ONE line for two property accounts sharing an id', () => {
+  // G3c — the simulation boundary selects the last row once for an
+  // unreferenced duplicate id, so this phase sees one internally coherent
+  // property value and HECM contract rather than facts spliced across rows.
+  it('opens one line from the canonical last property row', () => {
     const plan = shell()
     plan.accounts = [
       property('twin', 320_000, { principalLimitPct: 42, upfrontCostPct: 2 }),
@@ -349,10 +346,7 @@ describe('simulatePlan delegates the HECM line open', () => {
     const { result, phases } = run(validatePlan(plan))
     noDrawsHappened(result)
     expect(phases[0]?.rows.length).toBe(1)
-    // FIRST account's upfront percentage, SECOND account's value — and ONE
-    // annual growth multiplication on the single line keyed by this id. The
-    // second property row is not a second HECM state.
-    expect(yearOf(result, START_YEAR).hecmLoanBalance).toBe(expectedLoanBalance(2, 275_000, 1))
+    expect(yearOf(result, START_YEAR).hecmLoanBalance).toBe(expectedLoanBalance(4, 275_000, 1))
   })
 
   // G4 — THE ONE ORDER-SENSITIVE THING THIS PHASE CONTROLS, and its limit. The

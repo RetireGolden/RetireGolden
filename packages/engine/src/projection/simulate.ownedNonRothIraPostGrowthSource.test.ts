@@ -138,7 +138,7 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       .toBe(JSON.stringify(sourceOf(run(firstPlan)[0]!)))
   })
 
-  it('retains and canonicalizes duplicate raw account facts for later validation', () => {
+  it('publishes only the canonical last row of duplicate raw account facts', () => {
     const firstPlan = singlePersonPlan({ planningAge: 60 })
     firstPlan.id = 'post-growth-duplicate-raw-facts'
     firstPlan.accounts = [
@@ -150,12 +150,14 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
 
     const first = sourceOf(run(firstPlan)[0]!)
     const second = sourceOf(run(secondPlan)[0]!)
-    expect(second).toEqual(first)
     expect(first.ownerPools[0]!.accountBalances).toEqual([
       { sourceAccountId: 'duplicate-ira', balancePlanDollars: 10 },
+    ])
+    expect(second.ownerPools[0]!.accountBalances).toEqual([
       { sourceAccountId: 'duplicate-ira', balancePlanDollars: 20 },
     ])
     expect(first.annualObservationValidation).toBe('notRun')
+    expect(second.annualObservationValidation).toBe('notRun')
   })
 
   it('captures the live ledger after annual transactions and each growth pass', () => {

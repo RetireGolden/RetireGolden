@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import { parsePlan, type Account } from '../model/plan.js'
-import { packForYear } from '../params/index.js'
-import { requiredMinimumDistribution } from '../rmd/rmd.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   cashAccount,
@@ -13,8 +11,8 @@ import { simulatePlan } from './simulate.js'
 
 const YEAR = 2026
 
-describe('simulatePlan owner RMD duplicate account IDs', () => {
-  it('uses the last ID row once while a distinct account still distributes', () => {
+describe('simulatePlan duplicate account-ID canonicalization', () => {
+  it('uses the last ID row once without moving its first plan-order position', () => {
     // Unreferenced duplicate account IDs are intentionally parseable. Every
     // ID-keyed annual state channel is last-wins: the prior-Dec-31 balance Map
     // and published balance record therefore select the second duplicate row.
@@ -35,8 +33,8 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     selectedDuplicate.name = 'Last duplicate row'
     plan.accounts = [
       firstDuplicate,
-      selectedDuplicate,
       traditionalAccount('distinct-ira', 79_500, 'p1', 'ira'),
+      selectedDuplicate,
       cashAccount('cash', 0),
     ]
 
@@ -45,27 +43,15 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
     expect(parsed.plan.accounts.map((account) => account.id)).toEqual([
       'duplicate-ira',
-      'duplicate-ira',
       'distinct-ira',
+      'duplicate-ira',
       'cash',
     ])
 
-    const owner = parsed.plan.household.people[0]!
-    const pack = packForYear(YEAR).pack
-    const duplicateObligation = requiredMinimumDistribution(
-      pack,
-      1953,
-      73,
-      53_000,
-      { ownerSex: owner.sex },
-    )
-    const distinctObligation = requiredMinimumDistribution(
-      pack,
-      1953,
-      73,
-      79_500,
-      { ownerSex: owner.sex },
-    )
+    // Pub. 590-B (2025), Uniform Lifetime Table: age 73 divisor = 26.5.
+    // These are hand worksheets, independent of the engine's RMD helper.
+    const duplicateObligation = 53_000 / 26.5
+    const distinctObligation = 79_500 / 26.5
     expect(duplicateObligation).toBe(2_000)
     expect(distinctObligation).toBe(3_000)
 
@@ -161,36 +147,14 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
 
-    const pack = packForYear(YEAR).pack
-    const owner = parsed.plan.household.people[0]!
-    const duplicateDeferred = requiredMinimumDistribution(
-      pack,
-      1953,
-      73,
-      2_000,
-      { ownerSex: owner.sex },
-    )
-    const distinctDeferred = requiredMinimumDistribution(
-      pack,
-      1953,
-      73,
-      79_500,
-      { ownerSex: owner.sex },
-    )
-    const duplicateCurrent = requiredMinimumDistribution(
-      pack,
-      1953,
-      74,
-      2_000,
-      { ownerSex: owner.sex },
-    )
-    const distinctCurrent = requiredMinimumDistribution(
-      pack,
-      1953,
-      74,
-      79_500,
-      { ownerSex: owner.sex },
-    )
+    // Pub. 590-B Uniform Lifetime Table divisors are 26.5 at age 73 and
+    // 25.5 at age 74. Returns are zero, so both worksheets use the entered
+    // balances: the first pair is deferred to April 1 and the second pair is
+    // separately due by December 31 of the same year.
+    const duplicateDeferred = 2_000 / 26.5
+    const distinctDeferred = 79_500 / 26.5
+    const duplicateCurrent = 2_000 / 25.5
+    const distinctCurrent = 79_500 / 25.5
 
     const result = simulatePlan(parsed.plan, {
       startYear: YEAR,
@@ -261,6 +225,90 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
       reasonCodes: [],
       diagnostics: [],
     })
+  })
+
+  it('uses only the selected row for the QCD ceiling and Form 8606 basis pool', () => {
+    const plan = singlePersonPlan({
+      dob: '1950-01-01',
+      planningAge: 90,
+      retirementAge: null,
+    })
+    plan.id = 'duplicate-account-id-qcd-basis'
+    const superseded = traditionalAccount('duplicate-ira', 1_000_000, 'p1', 'ira')
+    const selected = traditionalAccount('duplicate-ira', 100_000, 'p1', 'ira')
+    if (selected.type !== 'traditional') {
+      throw new Error('fixture did not create a traditional account')
+    }
+    selected.nondeductibleBasis = 60_000
+    plan.accounts = [
+      superseded,
+      selected,
+      cashAccount('cash', 50_000),
+    ]
+    plan.strategies.qcdAnnual = 50_000
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const year = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+    }).years[0]!
+
+    // Pub. 590-B gives age 76 a 23.7 Uniform Lifetime divisor. Under
+    // §408(d)(8)(D), the selected row's aggregate includible pool is only
+    // 100,000 - 60,000 = 40,000. The other 10,000 of the requested gift stays
+    // in Form 8606 line 7; after it and the RMD return basis, 50,000 remains.
+    expect(year.rmd).toBeCloseTo(100_000 / 23.7, 10)
+    expect(year.qcd).toBe(50_000)
+    expect(
+      year.ownedNonRothIraAnnualReplay?.annualReplay.ownerReplays[0]
+        ?.nextYearOpeningBasisAmount,
+    ).toBe(5_000_000)
+    expect(year.ownedTraditionalIraAggregateActivity ?? []).toEqual([])
+  })
+
+  it('executes an active SEPP once from the selected row', () => {
+    const plan = singlePersonPlan({
+      dob: '1970-03-15',
+      planningAge: 70,
+      retirementAge: 56,
+    })
+    plan.id = 'duplicate-account-id-sepp'
+    const superseded = traditionalAccount('duplicate-ira', 612_000, 'p1', 'ira')
+    const selected = traditionalAccount('duplicate-ira', 306_000, 'p1', 'ira')
+    if (superseded.type !== 'traditional' || selected.type !== 'traditional') {
+      throw new Error('fixture did not create traditional accounts')
+    }
+    superseded.sepp = { startAge: 56, method: 'rmd' }
+    selected.sepp = { startAge: 56, method: 'rmd' }
+    plan.accounts = [superseded, selected, cashAccount('cash', 0)]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const year = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+    }).years[0]!
+
+    // Notice 2022-6 permits the Single Life Table; its age-56 divisor is 30.6.
+    expect(year.sepp).toBe(10_000)
+    expect(year.balances['duplicate-ira']).toBe(296_000)
+    expect(
+      year.retirementRuntimeSource?.runtimeOccurrences.filter(
+        (occurrence) => occurrence.kind === 'automaticSeppDistribution',
+      ),
+    ).toEqual([expect.objectContaining({
+      producerOccurrenceKey: JSON.stringify([
+        'automaticSeppDistribution',
+        'duplicate-ira',
+      ]),
+      grossAmountPlanDollars: 10_000,
+      sourceAccountId: 'duplicate-ira',
+    })])
   })
 
   it('selects the same last row once on the inherited RMD path', () => {

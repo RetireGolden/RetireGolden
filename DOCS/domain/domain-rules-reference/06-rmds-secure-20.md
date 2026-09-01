@@ -37,6 +37,14 @@
   regulation permits, chosen for determinism. Only IRAs held **as owner** aggregate: an inherited IRA, a spouse's
   IRA, and an employer plan each stand outside the sum and must distribute their own amount
   (`treas-reg-1-408-8-e-1-i-aggregate-ira-rmd-sum`).
+- **Duplicate account IDs are a Plan-data convention, not an RMD rule.** An unreferenced duplicate ID remains
+  loadable for backward compatibility. Before any annual phase runs, the simulator selects the last account row
+  carrying that ID as the account of record, while retaining the ID's first position in plan order. That one
+  canonical row supplies every balance and fact channel, including RMDs, April 1 capacity, inherited schedules,
+  SEPP, QCD/Form 8606 aggregation, conversions, withdrawals, and published balances. A retirement action,
+  pension rollover, or annuity purchase that references a duplicated account ID is ambiguous and is rejected by
+  Plan validation instead of relying on this selection convention. The regression suite is
+  [`simulate.duplicateAccountId.test.ts`](../../../packages/engine/src/projection/simulate.duplicateAccountId.test.ts).
 - **QCD:** direct IRA-to-charity from age 70½, excluded from income, counting toward an RMD when one is due; 2026
   limit $111,000, and that figure is one donor's. A QCD is **not** conditional on an RMD — 408(d)(8) turns on the donor's age and nothing in it
   references section 401(a)(9) — and the ledger now models that. The pre-RMD window from 70½ to the applicable age

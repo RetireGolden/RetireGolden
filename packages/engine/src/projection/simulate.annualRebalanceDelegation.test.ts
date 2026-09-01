@@ -395,16 +395,10 @@ describe('simulatePlan delegates the annual rebalance to target', () => {
     ])
   })
 
-  // G3b — FIXTURE-DERIVED, and the only guard that pins the RETARGET-AS-YOU-GO
-  // rule from published output. `model/plan.ts` raises `duplicate account id`
-  // only when a retirement action references the id, so two taxable accounts
-  // may legally share one and both resolve to the SAME allocation track. The
-  // inlined phase snapped that track inside its own loop, so the second account
-  // measured turnover against the target and sold nothing: ONE ledger line, not
-  // two, and a total that is neither one account's nor two accounts' worth. An
-  // eager helper reading every track before the caller wrote any would produce
-  // the two-line answer.
-  it('gives a second account sharing an id the first one’s retarget, not a second sale', () => {
+  // G3b — the simulation boundary canonicalizes an unreferenced duplicate id
+  // before this phase. The last row is the account of record, so the delegated
+  // helper must receive and rebalance exactly one state for that id.
+  it('rebalances only the canonical last row for a duplicate account id', () => {
     const twinPlan = (ids: readonly string[]): Plan => {
       const plan = quiet(singlePersonPlan({ dob: DOB, planningAge: PLANNING_AGE }))
       plan.accounts = ids.map((id) => allocatedTaxable(id, 200_000, 100_000, policy('annual')))
@@ -413,13 +407,7 @@ describe('simulatePlan delegates the annual rebalance to target', () => {
     const dup = simulatePlan(twinPlan(['dup', 'dup']), { startYear: START_YEAR, taxCalculator: zeroTax, captureAnnualCashFlow: true })
     const one = simulatePlan(twinPlan(['brok']), { startYear: START_YEAR, taxCalculator: zeroTax, captureAnnualCashFlow: true })
     expect(rebalanceLineIds(dup.years[1]!)).toEqual(['metadata:capitalGain:rebalancing:dup'])
-    // Not two accounts' worth, and not one account's worth either: the prior
-    // year's drift also runs twice against the one shared track, which is
-    // OUTSIDE this phase and unchanged by the extraction. The measured value is
-    // pinned exactly so a change in either direction is visible.
-    expect(dup.years[1]!.realizedGains).toBe(1577.880080844382)
-    expect(dup.years[1]!.realizedGains).not.toBe(2 * one.years[1]!.realizedGains)
-    expect(dup.years[1]!.realizedGains).not.toBe(one.years[1]!.realizedGains)
+    expect(dup.years[1]!.realizedGains).toBe(one.years[1]!.realizedGains)
   })
 
   // G3c — FIXTURE-DERIVED, and the ONLY guard that can see a helper which
