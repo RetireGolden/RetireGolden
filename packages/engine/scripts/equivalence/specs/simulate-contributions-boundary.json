@@ -414,22 +414,22 @@
     },
     {
       "id": "U.snapshot.maps",
-      "label": "caller-owned string-number map snapshot",
+      "label": "complete caller-owned string-number map snapshot function",
       "file": "projection/simulate.ts",
-      "lines": [515, 521],
+      "lines": [512, 522],
       "anchors": [
-        { "line": 515, "text": "const snapshot = new Map<string, number>()" },
-        { "line": 521, "text": "return snapshot" }
+        { "line": 512, "text": "function snapshotStringNumberMap(" },
+        { "line": 522, "text": "}" }
       ]
     },
     {
       "id": "U.snapshot.allocation",
-      "label": "caller-owned employer allocation scalar and nested-map snapshot",
+      "label": "complete caller-owned employer allocation scalar and nested-map snapshot function",
       "file": "projection/simulate.ts",
-      "lines": [527, 535],
+      "lines": [524, 536],
       "anchors": [
-        { "line": 527, "text": "return {" },
-        { "line": 535, "text": "}" }
+        { "line": 524, "text": "function snapshotEmployerElectiveAllocation(" },
+        { "line": 536, "text": "}" }
       ]
     },
     {
@@ -455,12 +455,12 @@
     },
     {
       "id": "U.snapshot.resultChannels",
-      "label": "single-read emitted/expected identity, totals, and owner-allocation snapshots",
+      "label": "single-read emitted/expected identity, totals, owner-allocation, and detached-result snapshot",
       "file": "projection/simulate.ts",
-      "lines": [636, 674],
+      "lines": [636, 683],
       "anchors": [
         { "line": 636, "text": "const snapshotOperationIdentity = (" },
-        { "line": 674, "text": "}" }
+        { "line": 683, "text": "}" }
       ]
     },
     {
@@ -655,22 +655,25 @@
     },
     {
       "id": "U.callsite.apply",
-      "label": "ordered commit of cached warnings, balances, basis, runtime, QCD, records, and matches",
+      "label": "entire ordered commit loop for cached warnings, balances, basis, runtime, QCD, records, and matches",
       "file": "projection/simulate.ts",
       "lines": [3301, 3348],
       "anchors": [
         { "line": 3301, "text": "for (const operation of contributionPlan.operations) {" },
+        { "line": 3343, "text": "yearSites?.recordEmployerMatch(operation.record)" },
+        { "line": 3344, "text": "state.balance = operation.balanceAfter" },
+        { "line": 3346, "text": "recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)" },
         { "line": 3348, "text": "}" }
       ]
     },
     {
       "id": "U.callsite.totals",
-      "label": "complete reconciled totals and detached downstream owner allocations",
+      "label": "complete reconciled totals, detached downstream owner allocations, and IRA handoff",
       "file": "projection/simulate.ts",
-      "lines": [3349, 3359],
+      "lines": [3349, 3360],
       "anchors": [
         { "line": 3349, "text": "const {" },
-        { "line": 3359, "text": "contributionPlan.employerAllocationByOwner" }
+        { "line": 3360, "text": "const iraProRata = new Map<string, IraProRataYear>()" }
       ]
     }
   ],
