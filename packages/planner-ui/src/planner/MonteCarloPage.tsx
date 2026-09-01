@@ -301,7 +301,16 @@ export function MonteCarloPage() {
                 <span className="field-label">Return volatility: {returnVolPct}%</span>
                 <HelpTip text="How wildly returns swing year to year (one standard deviation). ~10% resembles a balanced 60/40 portfolio, ~15% a mostly-stock portfolio, ~20% all stocks. Higher volatility means more sequence-of-returns risk: the same average return with bigger swings fails more often." />
               </span>
-              <input type="range" min={5} max={25} step={1} value={returnVolPct} onChange={(e) => setReturnVolPct(Number(e.target.value))} />
+              <input
+                type="range"
+                min={5}
+                max={25}
+                step={1}
+                value={returnVolPct}
+                aria-label="Return volatility"
+                aria-valuetext={`${returnVolPct}%`}
+                onChange={(e) => setReturnVolPct(Number(e.target.value))}
+              />
             </div>
           ) : (
             <div className="field">
@@ -309,7 +318,16 @@ export function MonteCarloPage() {
                 <span className="field-label">Equity weight: {equityWeightPct}/{100 - equityWeightPct}</span>
                 <HelpTip text="The stock/bond mix used when sampling historical years (e.g. 60/40 = 60% S&P 500, 40% 10-year Treasuries). It shapes how volatile the resampled history is; your accounts' expected returns still come from the Accounts/Assumptions forms." />
               </span>
-              <input type="range" min={0} max={100} step={5} value={equityWeightPct} onChange={(e) => setEquityWeightPct(Number(e.target.value))} />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={equityWeightPct}
+                aria-label="Equity weight"
+                aria-valuetext={`${equityWeightPct}% stocks, ${100 - equityWeightPct}% bonds`}
+                onChange={(e) => setEquityWeightPct(Number(e.target.value))}
+              />
             </div>
           )}
           <div className="field">

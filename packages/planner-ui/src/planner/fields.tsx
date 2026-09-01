@@ -433,6 +433,7 @@ export function SelectField<T extends string>({
         value={value}
         required={placeholder !== undefined}
         aria-describedby={describedBy}
+        title={options.find((o) => o.value === value)?.label}
         onChange={(e) => {
           const v = e.target.value
           // With a placeholder, '' is the disabled not-yet-answered option —

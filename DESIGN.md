@@ -264,6 +264,13 @@ transitions, restrained hover states that shift a border or tint a background by
   hover/focus reveals its field chrome — inline editing without a form feel.
 - **Help ladder:** label → one-line hint → a single `HelpTip` (ⓘ) → "Learn more" link. Never
   stack more than one tip on a field.
+- **Native controls are styled once, app-wide.** Checkboxes, radios, selects, range sliders, and
+  number inputs take the shared treatment in `index.css`: `appearance: none`, Slate Border box
+  on Surface White, Ledger Gold fill when checked or as the slider thumb, the muted-color chevron
+  on selects (an inline SVG token, mirrored per theme), no UA spin buttons, the 2px gold focus
+  ring, and the flat disabled tokens. Text inputs, selects, and affixed inputs share one height
+  (`--control-height`) so a row of mixed fields sits on one baseline. No screen restyles a
+  control locally; if one looks native, the shared rule is where the fix goes.
 
 ### Navigation
 - **Top nav** (`.nav-link`): muted text, 6px radius, hover tints 6% Ink; active is 600 weight on

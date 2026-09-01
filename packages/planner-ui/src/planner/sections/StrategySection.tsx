@@ -241,7 +241,9 @@ export function StrategySection() {
             />
             {rc.target !== 'acaCliff' ? (
               <NumberField
-                label={rc.target === 'topOfBracket' ? 'Bracket (%)' : rc.target === 'irmaaTier' ? 'Tier index' : 'MAGI ($)'}
+                label={rc.target === 'topOfBracket' ? 'Bracket' : rc.target === 'irmaaTier' ? 'Tier index' : 'MAGI ($)'}
+                // The unit rides in the affix like every other percent field (#451).
+                suffix={rc.target === 'topOfBracket' ? '%' : undefined}
                 value={rc.targetValue}
                 allowNull
                 onCommit={(v) =>
