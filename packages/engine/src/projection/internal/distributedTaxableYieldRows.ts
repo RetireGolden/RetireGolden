@@ -4,7 +4,7 @@
  *
  * The helper returns exactly one row per balance state, in balance order. It
  * deliberately does not fold income totals, update the last-wins
- * `distributedYieldByAccountId` map, reinvest anything, or publish ledger
+ * distributed-yield maps, reinvest anything, or publish ledger
  * entries. Those effects remain in the caller and are applied one row at a
  * time, preserving both IEEE-754 addition order and duplicate-account-id
  * behavior.
@@ -12,7 +12,7 @@
  * `startOfYearBalances` and `allocationTrack` are supplied by the caller rather
  * than reconstructed here. Opening balances are positional so duplicate IDs
  * retain each physical row's own economic principal; allocation policy remains
- * the existing ID-keyed last-write view. A row is keyed by position, never
+ * positional too. A row is keyed by position, never
  * reconciled by account ID.
  */
 import {
@@ -38,7 +38,7 @@ export interface DistributedTaxableYieldInput {
   readonly states: readonly DistributedTaxableYieldState[]
   /** One start-of-year value per physical state, in the same order. */
   readonly startOfYearBalances: readonly number[]
-  /** Allocation tracks keyed by account id, also last-wins. */
+  /** Allocation tracks keyed by physical balance index. */
   readonly allocationTrack: ReadonlyMap<string, DistributedTaxableYieldAllocationTrack>
   /** Resolved class parameters for this projection. */
   readonly classParams: Record<AssetClassId, AssetClassParams>
@@ -59,6 +59,7 @@ export interface NoDistributedTaxableYieldRow {
  */
 export interface DistributedTaxableYieldRow {
   readonly kind: 'yield'
+  readonly balanceIndex: number
   readonly accountId: string
   readonly interest: number
   readonly ordinaryDividends: number
@@ -100,7 +101,8 @@ export function distributedTaxableYieldRows(
 
     // An allocated brokerage account derives its yield fields from the class
     // blend; explicit account-level fields still override that blend.
-    const track = allocationTrack.get(account.id)
+    const track = allocationTrack.get(String(stateIndex)) ??
+      allocationTrack.get(account.id)
     const blendedYield = track ? blendedTaxableYield(track.weights, classParams) : null
     const interestYieldPct = Math.max(0, account.interestYieldPct ?? blendedYield?.interestYieldPct ?? 0)
     const dividendYieldPct = Math.max(0, account.dividendYieldPct ?? blendedYield?.dividendYieldPct ?? 0)
@@ -132,6 +134,7 @@ export function distributedTaxableYieldRows(
 
     rows.push({
       kind: 'yield',
+      balanceIndex: stateIndex,
       accountId: account.id,
       interest,
       ordinaryDividends,

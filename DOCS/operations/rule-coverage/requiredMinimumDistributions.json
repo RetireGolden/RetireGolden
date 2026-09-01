@@ -383,7 +383,7 @@
           "functions": [
             {
               "name": "rothBridgeHeadroom",
-              "line": 4
+              "line": 5
             }
           ]
         },
@@ -2860,7 +2860,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2489
+              "line": 2698
             }
           ]
         },

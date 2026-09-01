@@ -95,15 +95,15 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
     expect(fallback.interest).toBe(70)
   })
 
-  it('keeps duplicate account ids as separate positional rows while both maps stay last-wins', () => {
+  it('keeps duplicate account ids as separate positional rows', () => {
     const first = taxable('dup', { interestYieldPct: 1, dividendYieldPct: 0 })
     const second = taxable('dup', { interestYieldPct: 2, dividendYieldPct: 0 })
     const rows = distributedTaxableYieldRows(input({
       states: [state(first, 10), state(second, 20)],
       startOfYearBalances: [1_000, 2_000],
       allocationTrack: new Map([
-        ['dup', { weights: [0, 0, 1, 0] }],
-        ['dup', { weights: [1, 0, 0, 0] }],
+        ['0', { weights: [0, 0, 1, 0] }],
+        ['1', { weights: [1, 0, 0, 0] }],
       ]),
     }))
 
@@ -114,21 +114,21 @@ describe('distributedTaxableYieldRows — selection and positional contract', ()
     ])
   })
 
-  it('uses the one last-wins allocation-track value for every duplicate state sharing its id', () => {
+  it('uses each duplicate state’s physical allocation track', () => {
     const classParams = params()
     classParams.usStocks = { ...classParams.usStocks, interestYieldPct: 1, dividendYieldPct: 0 }
     classParams.bonds = { ...classParams.bonds, interestYieldPct: 7, dividendYieldPct: 0 }
     const rows = distributedTaxableYieldRows(input({
       states: [state(taxable('dup')), state(taxable('dup'))],
       startOfYearBalances: [1_000, 1_000],
-      // allocationTrack is already a last-wins map by the time the helper
-      // receives it. A second dead Map-constructor entry would not exercise
-      // helper behavior; the duplicate *states* below do.
-      allocationTrack: new Map([['dup', { weights: [1, 0, 0, 0] }]]),
+      allocationTrack: new Map([
+        ['0', { weights: [1, 0, 0, 0] }],
+        ['1', { weights: [0, 0, 1, 0] }],
+      ]),
       classParams,
     }))
 
-    expect(rows.map((row) => row.kind === 'yield' ? row.interest : null)).toEqual([10, 10])
+    expect(rows.map((row) => row.kind === 'yield' ? row.interest : null)).toEqual([10, 70])
   })
 })
 

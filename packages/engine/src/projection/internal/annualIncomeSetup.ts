@@ -47,6 +47,14 @@ export interface AnnualIncomeSetupResult {
       reinvest: boolean
     }>
   >
+  readonly distributedYieldByBalanceIndex: ReadonlyMap<
+    number,
+    Readonly<{
+      gross: number
+      distributedYieldPct: number
+      reinvest: boolean
+    }>
+  >
   readonly wagesByPerson: ReadonlyMap<string, number>
   /** Original producer arrays and record objects, unreconstructed. */
   readonly distributedYieldRows: readonly DistributedTaxableYieldResultRow[]
@@ -81,6 +89,10 @@ export function annualIncomeSetup(
     string,
     { gross: number; distributedYieldPct: number; reinvest: boolean }
   >()
+  const distributedYieldByBalanceIndex = new Map<
+    number,
+    { gross: number; distributedYieldPct: number; reinvest: boolean }
+  >()
   const wagesByPerson = new Map<string, number>()
   const distributedYieldRows = distributedTaxableYieldRows(
     input.distributedYield,
@@ -89,7 +101,9 @@ export function annualIncomeSetup(
   // The producer emits one row per balance state, including explicit `none`
   // rows. Each contributing field stays in account order: regrouping changes
   // IEEE-754 results. Duplicate account ids deliberately retain their first
-  // map position while the last row replaces the economic value.
+  // map position. Physical rows retain their own yield facts by balance index;
+  // the ID-keyed view aggregates only reinvested gross because its downstream
+  // consumer commits one logical grouped credit.
   for (const row of distributedYieldRows) {
     if (row.kind === 'none') continue
     incomes.taxableInterest += row.interest
@@ -99,10 +113,18 @@ export function annualIncomeSetup(
     incomes.taxExemptInterest += row.exempt
     ordinaryIncome += row.interest + row.ordinaryDividends
     if (row.reinvest) taxableYieldReinvested += row.gross
-    distributedYieldByAccountId.set(row.accountId, {
+    distributedYieldByBalanceIndex.set(row.balanceIndex, {
       gross: row.gross,
       distributedYieldPct: row.distributedYieldPct,
       reinvest: row.reinvest,
+    })
+    const priorYield = distributedYieldByAccountId.get(row.accountId)
+    const reinvestedGrossForId =
+      (priorYield?.gross ?? 0) + (row.reinvest ? row.gross : 0)
+    distributedYieldByAccountId.set(row.accountId, {
+      gross: reinvestedGrossForId,
+      distributedYieldPct: row.distributedYieldPct,
+      reinvest: reinvestedGrossForId > 0,
     })
     input.commitDistributedYield?.(row)
   }
@@ -127,6 +149,7 @@ export function annualIncomeSetup(
     ordinaryIncome,
     taxableYieldReinvested,
     distributedYieldByAccountId,
+    distributedYieldByBalanceIndex,
     wagesByPerson,
     distributedYieldRows,
     wageRows,

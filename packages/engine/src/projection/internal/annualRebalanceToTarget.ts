@@ -37,29 +37,9 @@
  * discriminate a different summation ORDER or GROUPING — rows reversed, grouped
  * by account type, right-associated. That is the whole of the claim.
  *
- * THE RETARGET-AS-YOU-GO RULE, and why an eager helper needs it. The inlined
- * phase wrote `track.weights = target` INSIDE its loop, and `allocationTrack`
- * is keyed by ACCOUNT ID. Account ids are not globally unique in a valid
- * `Plan`: `model/plan.ts` raises `duplicate account id` only when a retirement
- * action references the id, so two taxable accounts may legally share one, and
- * both `BalanceState`s then resolve to the SAME track object. The second one
- * therefore measured its turnover against weights the FIRST one had already
- * snapped to target — turnover 0, no sale. A helper that read every track
- * before the caller wrote any would hand that second account a sale the inlined
- * loop never gave it. So this module keeps a private map of the targets it has
- * already assigned during THIS call and measures turnover against
- * `retargeted.get(id) ?? track.weights`, exactly the shape
- * `internal/fixedAssetDispositions.ts` uses for its `closed` set. The caller
- * still performs the write; it is told what to write, and in what order.
- *
- * (MEASURED, on two identical allocated taxable accounts — 200k balance / 100k
- * basis, static 50/50, `rebalancing: 'annual'`, zero-tax, 2026 start. DISTINCT
- * ids: 2 rebalancing ledger lines and `years[1].realizedGains`
- * 1578.1990521326807. DUPLICATE ids: 1 ledger line and 1577.880080844382. The
- * duplicate figure is not half the distinct one because the PRIOR year's drift
- * also runs twice against the one shared track — that double-drift is outside
- * this phase and unchanged by this extraction, and is noted only so the two
- * numbers are not misread as this module's doing.)
+ * Allocation tracks are keyed by physical balance index. Duplicate account IDs
+ * therefore retain independent return-mix state and cannot drift or rebalance
+ * one shared mutable track multiple times.
  *
  * IT ALLOCATES MORE THAN THE INLINED PHASE DID, on the default path. The
  * `{ accountId, realizedCapitalGainOrLoss }` literal used to be built INSIDE
@@ -121,7 +101,7 @@ export interface AnnualRebalanceYearInput {
    * published `metadata:capitalGain:rebalancing:*` ledger lines.
    */
   readonly states: readonly AnnualRebalanceAccountState[]
-  /** `allocationTrack`, by account id. See the retarget-as-you-go rule. */
+  /** `allocationTrack`, by stringified physical balance index. */
   readonly allocationTrack: ReadonlyMap<string, AnnualRebalanceTrack>
   /** The projected calendar year. */
   readonly year: number
@@ -172,20 +152,16 @@ export function annualRebalanceToTarget(
 ): readonly AnnualRebalanceRow[] {
   const { states, allocationTrack, year, startYear } = input
   const rows: AnnualRebalanceRow[] = []
-  // Targets already assigned during THIS call, by account id. See the
-  // retarget-as-you-go rule in the module header.
-  const retargeted = new Map<string, number[]>()
-  for (const state of states) {
-    const track = allocationTrack.get(state.account.id)
+  for (const [balanceIndex, state] of states.entries()) {
+    const track = allocationTrack.get(String(balanceIndex)) ??
+      allocationTrack.get(state.account.id)
     if (year <= startYear || !track || track.policy.rebalancing === 'none') {
       rows.push({ kind: 'none' })
       continue
     }
     const accountId = state.account.id
     const target = targetWeightsAt(track.policy, year)
-    const current = retargeted.get(accountId) ?? track.weights
-    const turnover = rebalanceTurnoverFraction(current, target)
-    retargeted.set(accountId, target)
+    const turnover = rebalanceTurnoverFraction(track.weights, target)
     if (turnover > 1e-9 && state.account.type === 'taxable' && state.balance > 0) {
       // Normalized floating-point weights can sum a few ulps above 1.
       // Keep the strict sale helper strict and contain that noise here.

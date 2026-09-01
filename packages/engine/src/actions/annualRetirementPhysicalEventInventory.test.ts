@@ -867,7 +867,7 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     ])
   })
 
-  it('rejects duplicate unreferenced Plan account identifiers before indexing', () => {
+  it('indexes compatible duplicate unreferenced Plan accounts as one logical identity', () => {
     const plan = basePlan()
     const sibling = plan.accounts.find(
       (account) => account.id === siblingIraId,
@@ -875,13 +875,8 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     if (sibling === undefined) throw new Error('fixture drift')
     plan.accounts.push({ ...sibling })
 
-    const result = buildAnnualRetirementPhysicalEventInventory(input(plan))
-    expect(result.status).toBe('annualPhysicalEventInventoryIncomplete')
-    expect(result.issues).toContainEqual(expect.objectContaining({
-      kind: 'identifierCollision',
-      recordId: siblingIraId,
-      sourceAccountId: siblingIraId,
-    }))
+    const result = built(input(plan))
+    expect(result.issues).toEqual([])
   })
 
   it('rejects duplicate unreferenced household person identifiers before indexing', () => {

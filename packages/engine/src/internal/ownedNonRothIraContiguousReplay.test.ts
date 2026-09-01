@@ -310,6 +310,9 @@ describe('private contiguous owned-IRA basis replay', () => {
     ;(year.ownedNonRothIraBalancesBeforeGrowth as {
       ira: number
     }).ira = 0
+    ;(year.ownedNonRothIraPhysicalBalancesBeforeGrowth![0] as {
+      balancePlanDollars: number
+    }).balancePlanDollars = 0
     ;(year.ownedNonRothIraPostGrowthSource!.ownerPools[0]!.accountBalances[0]! as {
       balancePlanDollars: number
     }).balancePlanDollars = 0

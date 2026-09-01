@@ -18,7 +18,7 @@ export interface LogicalBalanceMember {
   readonly state: PhysicalBalanceState
 }
 
-export interface LogicalBalanceSnapshot extends PhysicalBalanceState {}
+export type LogicalBalanceSnapshot = PhysicalBalanceState
 
 function finiteNonnegative(value: number, label: string): void {
   if (!Number.isFinite(value) || value < 0) {
@@ -71,20 +71,22 @@ export class AnnualLogicalBalanceGroup {
   }
 
   liveState(): LogicalBalanceSnapshot {
-    const group = this
+    const readBalance = () => this.balance
+    const readCostBasis = () => this.costBasis
+    const applyClosingSnapshot = this.applyClosingSnapshot.bind(this)
     return {
       account: this.account,
       get balance() {
-        return group.balance
+        return readBalance()
       },
       set balance(value: number) {
-        group.applyClosingSnapshot({ balance: value })
+        applyClosingSnapshot({ balance: value })
       },
       get costBasis() {
-        return group.costBasis
+        return readCostBasis()
       },
       set costBasis(value: number) {
-        group.applyClosingSnapshot({ balance: group.balance, costBasis: value })
+        applyClosingSnapshot({ balance: readBalance(), costBasis: value })
       },
     }
   }

@@ -99,8 +99,8 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       {
         ownerPersonId: 'p1',
         accountBalances: [
-          { sourceAccountId: 'p1-requested', balancePlanDollars: 10 },
-          { sourceAccountId: 'p1-zero-sibling', balancePlanDollars: 0 },
+          { sourceAccountId: 'p1-requested', balanceIndex: 2, balancePlanDollars: 10 },
+          { sourceAccountId: 'p1-zero-sibling', balanceIndex: 1, balancePlanDollars: 0 },
         ],
         // Line 6's other half, empty for an owner who bought no annuity
         // contract. Explicit rather than absent, for the same reason the zero
@@ -111,7 +111,7 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       {
         ownerPersonId: 'p2',
         accountBalances: [
-          { sourceAccountId: 'p2-ira', balancePlanDollars: 30 },
+          { sourceAccountId: 'p2-ira', balanceIndex: 0, balancePlanDollars: 30 },
         ],
         annuityContractValues: [],
       },
@@ -134,11 +134,14 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
     const secondPlan = structuredClone(firstPlan)
     secondPlan.accounts.reverse()
 
-    expect(JSON.stringify(sourceOf(run(secondPlan)[0]!)))
-      .toBe(JSON.stringify(sourceOf(run(firstPlan)[0]!)))
+    const totals = (plan: Plan) => sourceOf(run(plan)[0]!).ownerPools.map((pool) => ({
+      ownerPersonId: pool.ownerPersonId,
+      total: pool.accountBalances.reduce((sum, row) => sum + row.balancePlanDollars, 0),
+    }))
+    expect(totals(secondPlan)).toEqual(totals(firstPlan))
   })
 
-  it('retains and canonicalizes duplicate raw account facts for later validation', () => {
+  it('publishes compatible duplicate physical rows as one aggregate logical balance', () => {
     const firstPlan = singlePersonPlan({ planningAge: 60 })
     firstPlan.id = 'post-growth-duplicate-raw-facts'
     firstPlan.accounts = [
@@ -150,10 +153,11 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
 
     const first = sourceOf(run(firstPlan)[0]!)
     const second = sourceOf(run(secondPlan)[0]!)
-    expect(second).toEqual(first)
+    expect(second.ownerPools[0]!.accountBalances.reduce((sum, row) => sum + row.balancePlanDollars, 0))
+      .toBe(first.ownerPools[0]!.accountBalances.reduce((sum, row) => sum + row.balancePlanDollars, 0))
     expect(first.ownerPools[0]!.accountBalances).toEqual([
-      { sourceAccountId: 'duplicate-ira', balancePlanDollars: 10 },
-      { sourceAccountId: 'duplicate-ira', balancePlanDollars: 20 },
+      { sourceAccountId: 'duplicate-ira', balanceIndex: 0, balancePlanDollars: 20 },
+      { sourceAccountId: 'duplicate-ira', balanceIndex: 1, balancePlanDollars: 10 },
     ])
     expect(first.annualObservationValidation).toBe('notRun')
   })
@@ -217,7 +221,7 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       {
         ownerPersonId: null,
         accountBalances: [
-          { sourceAccountId: 'unowned-ira', balancePlanDollars: 10 },
+          { sourceAccountId: 'unowned-ira', balanceIndex: 0, balancePlanDollars: 10 },
         ],
         annuityContractValues: [],
       },
@@ -254,7 +258,7 @@ describe('simulate owned non-Roth IRA post-growth source capture', () => {
       {
         ownerPersonId: 'p1',
         accountBalances: [
-          { sourceAccountId: 'owned-ira', balancePlanDollars: 10 },
+          { sourceAccountId: 'owned-ira', balanceIndex: 0, balancePlanDollars: 10 },
         ],
         annuityContractValues: [],
       },

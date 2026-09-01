@@ -459,7 +459,7 @@ describe('simulator owned non-Roth IRA annual observation', () => {
     })
   })
 
-  it('rejects ambiguous unrequested sibling account identities', () => {
+  it('observes compatible duplicate sibling rows as one logical account', () => {
     const value = input()
     ;(value.plan as Plan).accounts.push(
       traditionalAccount('ira-zero-sibling', 300, 'p1'),
@@ -470,11 +470,8 @@ describe('simulator owned non-Roth IRA annual observation', () => {
     ]
 
     expect(buildSimulatorOwnedNonRothIraAnnualObservation(value)).toMatchObject({
-      status: 'annualObservationBlocked',
-      issues: [{
-        kind: 'identifierCollision',
-        identifier: 'ira-zero-sibling',
-      }],
+      status: 'annualObservationBuilt',
+      issues: [],
     })
   })
 

@@ -44,11 +44,11 @@
   planning/character/penalty/commit, Form 8606 pool evidence and ending basis, and optimizer evidence—use aggregate
   balance and basis. A logical debit or credit is applied once, allocated pro rata across the group's positive physical
   rows with an exact final residual, and published once as an aggregate `balances[id]` value. No physical wealth is
-  hidden from an ID-keyed withdrawal. Positional economics remain explicit: every row contributes and grows, dividend
-  reinvestment visits every row under its established last-ID yield policy, and annual investable totals see every row.
-  Contribution occurrence keys include the physical balance-row index. The guardrail opening signal counts each row
-  once while retaining its historical exclusion of unassigned cash, and the owned-IRA post-growth observation retains
-  every raw row for evidence validation. Duplicate
+  hidden from an ID-keyed withdrawal. Positional economics remain explicit: every row contributes, owns an independent
+  allocation track, derives and reinvests its own distributed yield, and grows; annual investable totals see every row.
+  Contribution occurrence/application keys include the physical balance-row index. Exact owned-IRA replay validates
+  physical opening, contribution, pre-growth, and post-growth rows before folding one aggregate Form 8606 member per ID.
+  The guardrail opening signal counts each row once while retaining its historical exclusion of unassigned cash. Duplicate
   retirement rows whose account type, retirement kind, owner, inherited, SEPP, or other
   forced-distribution facts disagree, and decision-bearing
   retirement actions, pension lump sums, and annuity purchases, reject duplicate IDs as ambiguous. This convention

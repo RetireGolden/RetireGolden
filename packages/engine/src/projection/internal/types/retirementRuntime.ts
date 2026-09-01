@@ -149,6 +149,8 @@ interface SimulatorRetirementRuntimeApplicationBase {
   /** Raw Plan identity is preserved; later replay rejects missing/invalid facts. */
   readonly ownerPersonId: string | null
   readonly sourceAccountId: string | null
+  /** Physical balance row for positional contributions; absent otherwise. */
+  readonly balanceIndex?: number
   readonly sourceBalanceBeforePlanDollars: number
   readonly sourceBalanceAfterPlanDollars: number
 }

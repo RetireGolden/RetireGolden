@@ -1,4 +1,4 @@
-import { planSchema, type Plan } from '../model/plan.js'
+import { planSchema, selectedLogicalBalanceAccounts, type Plan } from '../model/plan.js'
 import {
   accountIdSchema,
   personIdSchema,
@@ -308,7 +308,7 @@ function claimPlanIdentifiers(
   for (const person of plan.household.people) {
     claim(person.id, 'personId', [planId, person], `person ID ${person.id}`)
   }
-  for (const account of plan.accounts) {
+  for (const account of selectedLogicalBalanceAccounts(plan.accounts)) {
     claim(account.id, 'accountId', [planId, account], `account ID ${account.id}`)
   }
   for (const action of plan.strategies.retirementActions) {
@@ -429,7 +429,7 @@ function ownedIraSourceIds(
   ownerPersonId: PersonId,
   taxYear: number,
 ): AccountId[] {
-  return plan.accounts
+  return selectedLogicalBalanceAccounts(plan.accounts)
     .filter((account) =>
       account.type === 'traditional' &&
       account.kind === 'ira' &&

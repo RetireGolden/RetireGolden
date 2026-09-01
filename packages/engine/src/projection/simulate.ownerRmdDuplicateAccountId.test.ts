@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { parsePlan, type Account } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
+import { validateOwnedNonRothIraRuntimeSourceSeries } from '../internal/ownedNonRothIraRuntimeSourceSeries.js'
 import {
   cashAccount,
   singlePersonPlan,
@@ -455,6 +456,8 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     }
     first.annualContribution = 3_000
     second.annualContribution = 3_000
+    first.nondeductibleBasis = 100
+    second.nondeductibleBasis = 50
     plan.accounts = [first, second, cashAccount('cash', 0)]
     plan.incomes = [{
       type: 'wages',
@@ -477,6 +480,16 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     // Both positional rows contribute. A global last-row canonicalization
     // would report only 3,000 and breaks the held-contribution occurrence key.
     expect(year.contributions).toBe(6_000)
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(parsed.plan, YEAR, [year]))
+      .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesComplete', issues: [] })
+    expect(year.ownedNonRothIraAnnualReplay).toMatchObject({
+      status: 'committedOwnedNonRothIraAnnualReplay',
+      settlement: 'exactReplayEffectsMatched',
+    })
+    expect(year.ownedNonRothIraPhysicalBalancesBeforeGrowth).toEqual([
+      { sourceAccountId: 'duplicate-ira', balanceIndex: 0, balancePlanDollars: 3_000 },
+      { sourceAccountId: 'duplicate-ira', balanceIndex: 1, balancePlanDollars: 3_000 },
+    ])
   })
 
   it('preserves positional growth and investable wealth across duplicate rows', () => {
@@ -531,6 +544,38 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     // opening (110,000) for both physical rows would incorrectly report 3,300.
     expect(year.taxableYield).toBe(1_200)
     expect(year.advisoryFederalTax?.input.taxableInterestIncome).toBe(1_200)
+  })
+
+  it('reinvests each duplicate taxable row’s own distributed yield without losing wealth', () => {
+    const plan = singlePersonPlan({ planningAge: 70 })
+    const first = taxableAccount('duplicate-taxable', 200, 100)
+    const second = taxableAccount('duplicate-taxable', 100, 50)
+    if (first.type !== 'taxable' || second.type !== 'taxable') throw new Error('fixture drift')
+    first.annualReturnPct = 0
+    first.interestYieldPct = 10
+    first.dividendYieldPct = 0
+    first.reinvestDividends = true
+    second.annualReturnPct = 0
+    second.interestYieldPct = 20
+    second.dividendYieldPct = 0
+    second.reinvestDividends = true
+    plan.accounts = [first, second]
+
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const year = simulatePlan(parsed.plan, {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+      captureAnnualCashFlow: true,
+    }).years[0]!
+
+    expect(year.taxableYield).toBe(40)
+    expect(year.balances['duplicate-taxable']).toBe(300)
+    expect(year.investableTotal).toBe(300)
+    expect(year.cashFlow?.transferLines.filter((line) => line.kind === 'reinvestedYield'))
+      .toMatchObject([{ debitPlanDollars: 40, creditPlanDollars: 40 }])
   })
 
   it('counts each positional opening row once in the guardrail signal', () => {
@@ -604,10 +649,8 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
     expect(year.penalties).toBeCloseTo(taxable * 0.1, 2)
     expect(year.balances['duplicate-ira']).toBeCloseTo(110_000 - gross, 2)
     expect(year.investableTotal).toBeCloseTo(110_000 - gross, 2)
-    expect(result.endingNondeductibleIraBasis).toBeCloseTo(
-      82_000 - gross * (82_000 / 110_000),
-      2,
-    )
+    // Exact-cent Form 8606 allocation rounds the returned basis before carry.
+    expect(result.endingNondeductibleIraBasis).toBe(78_175.38)
     expect(
       year.retirementRuntimeApplicationSource?.applications.filter(
         (application) =>

@@ -1348,7 +1348,27 @@ export function duplicateAccountIdentityFacts(
     beneficiary?.ownerBirthDay ?? null,
     beneficiary?.ownerYearOfDeathRmdSatisfied ?? false,
     beneficiary?.roth5YearStartYear ?? null,
+    account.type === 'equityComp' ? account.vestingMode : null,
+    account.type === 'equityComp' ? account.vestDate : null,
+    account.type === 'hsa' ? account.withdrawalTreatment ?? null : null,
+    account.type === 'hsa' ? account.reimburseLater ?? false : null,
+    account.type === 'hsa' ? account.beneficiary ?? 'spouse' : null,
   ]
+}
+
+/** Last facts and first insertion order for each balance-bearing logical ID. */
+export function selectedLogicalBalanceAccounts(
+  accounts: readonly Account[],
+): Account[] {
+  const selected = new Map<string, Account>()
+  for (const account of accounts) {
+    if (account.type === 'cash' || account.type === 'taxable' ||
+        account.type === 'equityComp' || account.type === 'traditional' ||
+        account.type === 'roth' || account.type === 'hsa') {
+      selected.set(account.id, account)
+    }
+  }
+  return [...selected.values()]
 }
 
 // ---------------------------------------------------------------------------

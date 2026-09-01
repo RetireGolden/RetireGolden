@@ -22,6 +22,8 @@ import type { CompleteSimulatorOwnedNonRothIraAnnualObservation } from
 
 export interface SimulatorOwnedNonRothIraPostGrowthAccountBalanceSource {
   readonly sourceAccountId: string
+  /** Physical balance-row identity; optional only for legacy external fixtures. */
+  readonly balanceIndex?: number
   readonly balancePlanDollars: number
 }
 

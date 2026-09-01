@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { planSchema, type Plan } from '../model/plan.js'
+import { planSchema, selectedLogicalBalanceAccounts, type Plan } from '../model/plan.js'
 import { packForYear, rmdStartAgeForBirthYear } from '../params/index.js'
 import {
   classifyInheritedRegime,
@@ -1395,9 +1395,6 @@ export function buildAnnualRetirementPhysicalEventInventory(
   const duplicatePersonIds = sortedDuplicates(
     plan.household.people.map((person) => person.id),
   )
-  const duplicateAccountIds = sortedDuplicates(
-    plan.accounts.map((account) => account.id),
-  )
   for (const personId of duplicatePersonIds) {
     inventoryIssues.push(issue(
       'identifierCollision',
@@ -1405,21 +1402,15 @@ export function buildAnnualRetirementPhysicalEventInventory(
       { recordId: personId },
     ))
   }
-  for (const accountId of duplicateAccountIds) {
-    inventoryIssues.push(issue(
-      'identifierCollision',
-      `Plan account ID ${accountId} is ambiguous`,
-      { recordId: accountId, sourceAccountId: accountIdSchema.parse(accountId) },
-    ))
-  }
   if (inventoryIssues.length > 0) return incomplete(inventoryIssues)
 
   const people = new Set(plan.household.people.map((person) => person.id))
+  const logicalAccounts = selectedLogicalBalanceAccounts(plan.accounts)
   const accountById = new Map(
-    plan.accounts.map((account) => [account.id, account] as const),
+    logicalAccounts.map((account) => [account.id, account] as const),
   )
   const traditionalById = new Map(
-    plan.accounts
+    logicalAccounts
       .filter((account): account is TraditionalAccount =>
         account.type === 'traditional',
       )

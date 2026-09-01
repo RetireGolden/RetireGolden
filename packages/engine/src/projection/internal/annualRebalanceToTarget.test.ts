@@ -222,44 +222,25 @@ describe('annualRebalanceToTarget — the sale arithmetic', () => {
   })
 })
 
-describe('annualRebalanceToTarget — the retarget-as-you-go rule', () => {
-  it('gives a second state sharing an account id the FIRST one’s retarget', () => {
-    // `model/plan.ts` raises `duplicate account id` only when a retirement
-    // action references the id, so two taxable accounts may legally share one
-    // and both BalanceStates then resolve to the SAME track object. The inlined
-    // phase snapped that track's weights inside its own loop, so the second
-    // account measured turnover against the target and sold nothing.
-    const shared = driftedTrack()
+describe('annualRebalanceToTarget — positional duplicate tracks', () => {
+  it('rebalances both physical states sharing an account id independently', () => {
     const rows = annualRebalanceToTarget({
       states: [state('dup', 'taxable', 211_000, 100_000), state('dup', 'taxable', 211_000, 100_000)],
-      allocationTrack: trackMap(['dup', shared]),
+      allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()]),
       year: YEAR,
       startYear: START_YEAR,
     })
-    expect(rows.map((r) => r.kind)).toEqual(['sale', 'retarget'])
-    // Distinct ids on the same inputs give TWO sales, so the assertion above is
-    // about the shared track rather than about a fixture that only ever sells once.
-    const distinct = annualRebalanceToTarget({
-      states: [state('one', 'taxable', 211_000, 100_000), state('two', 'taxable', 211_000, 100_000)],
-      allocationTrack: trackMap(['one', driftedTrack()], ['two', driftedTrack()]),
-      year: YEAR,
-      startYear: START_YEAR,
-    })
-    expect(distinct.map((r) => r.kind)).toEqual(['sale', 'sale'])
+    expect(rows.map((r) => r.kind)).toEqual(['sale', 'sale'])
   })
 
-  it('records the retarget for a NON-taxable first row too, not just for sales', () => {
-    // The inlined phase wrote `track.weights = target` on EVERY non-skipped
-    // row, sale or not, so a traditional account ahead of a taxable one sharing
-    // its id must still suppress the taxable sale.
-    const shared = driftedTrack()
+  it('does not let a non-taxable alias suppress a taxable row’s sale', () => {
     const rows = annualRebalanceToTarget({
       states: [state('dup', 'traditional', 211_000, 0), state('dup', 'taxable', 211_000, 100_000)],
-      allocationTrack: trackMap(['dup', shared]),
+      allocationTrack: trackMap(['0', driftedTrack()], ['1', driftedTrack()]),
       year: YEAR,
       startYear: START_YEAR,
     })
-    expect(rows.map((r) => r.kind)).toEqual(['retarget', 'retarget'])
+    expect(rows.map((r) => r.kind)).toEqual(['retarget', 'sale'])
   })
 })
 

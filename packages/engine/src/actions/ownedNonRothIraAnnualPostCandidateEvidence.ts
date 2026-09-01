@@ -1,4 +1,4 @@
-import { planSchema, type Plan } from '../model/plan.js'
+import { planSchema, selectedLogicalBalanceAccounts, type Plan } from '../model/plan.js'
 import type { AnnualIraBasisAllocationEntryInput } from './annualIraBasisAllocation.js'
 import {
   buildAnnualRetirementPhysicalEventInventory,
@@ -979,7 +979,8 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
     allowReference,
     allowSameRoleDifferentBinding,
   )
-  const accountsById = new Map(plan.accounts.map((account) => [account.id, account] as const))
+  const logicalAccounts = selectedLogicalBalanceAccounts(plan.accounts)
+  const accountsById = new Map(logicalAccounts.map((account) => [account.id, account] as const))
   const actionsById = new Map(plan.strategies.retirementActions.map((action) => [action.actionId, action] as const))
   const allocationsByAction = new Map<ActionId, Map<AllocationId, unknown>>()
 
@@ -987,7 +988,7 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
   for (const person of plan.household.people) {
     claim(person.id, 'personId', [planId, person], `person ID ${person.id}`)
   }
-  for (const account of plan.accounts) {
+  for (const account of logicalAccounts) {
     claim(account.id, 'accountId', [planId, account], `account ID ${account.id}`)
   }
   for (const action of plan.strategies.retirementActions) {

@@ -12,7 +12,7 @@ import {
   type SustainableSpendingOptions,
   type SustainableSpendingResult,
 } from '../decisions/spendingSolver.js'
-import type { Plan } from '../model/plan.js'
+import { selectedLogicalBalanceAccounts, type Plan } from '../model/plan.js'
 import type { LtcShockParams } from '../montecarlo/ltcShock.js'
 import type { MarketModelConfig } from '../montecarlo/marketModels.js'
 import {
@@ -389,7 +389,7 @@ function endingByCategory(plan: Plan, result: ProjectionResult) {
   const values = { cash: 0, taxable: 0, traditional: 0, roth: 0, hsa: 0 }
   const last = result.years.at(-1)
   if (!last) return values
-  for (const account of plan.accounts) {
+  for (const account of selectedLogicalBalanceAccounts(plan.accounts)) {
     const category = account.type === 'equityComp' ? 'taxable' : account.type
     if (category in values) {
       values[category as keyof typeof values] += last.balances[account.id] ?? 0

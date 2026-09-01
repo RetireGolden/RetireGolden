@@ -1567,6 +1567,56 @@ describe('Plan retirement-action persistence', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
+  it('rejects duplicate equity-comp IDs whose vesting facts disagree', () => {
+    const plan = validCouplePlan()
+    const base = {
+      type: 'equityComp' as const,
+      id: 'duplicate-equity',
+      name: 'Equity row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      costBasis: 5_000,
+      annualContribution: 0,
+      vestingMode: 'final' as const,
+      vestDate: null,
+    }
+    plan.accounts = [base, {
+      ...base,
+      name: 'Conflicting cliff row',
+      vestingMode: 'cliff',
+      vestDate: '2028-01-01',
+    }]
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "duplicate-equity"')
+  })
+
+  it('rejects duplicate HSA IDs whose withdrawal or estate tax facts disagree', () => {
+    const plan = validCouplePlan()
+    const base = {
+      type: 'hsa' as const,
+      id: 'duplicate-hsa',
+      name: 'HSA row',
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance: 10_000,
+      annualContribution: 0,
+      withdrawalTreatment: 'assumeAllQualified' as const,
+      beneficiary: 'spouse' as const,
+    }
+    plan.accounts = [base, {
+      ...base,
+      name: 'Conflicting HSA row',
+      withdrawalTreatment: 'capByMedicalExpenses',
+      reimburseLater: true,
+      beneficiary: 'nonSpouse',
+    }]
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain('duplicate account id "duplicate-hsa"')
+  })
+
   it('rejects cross-type duplicate IDs when both rows become financial balances', () => {
     const plan = validCouplePlan()
     plan.accounts.push({

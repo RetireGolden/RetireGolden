@@ -1099,10 +1099,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // dollars) is exact under that assumption. Accounts without an allocation are
   // untouched (feature-off is unchanged).
   const classParams = resolveAssetClassParams(plan.assumptions.assetClassParams)
+  // Allocation state belongs to the physical balance row. Compatible duplicate
+  // IDs may still carry different principal, and sharing one mutable track
+  // would drift/rebalance that track once per alias.
   const allocationTrack = new Map<string, { policy: AssetAllocationPolicy; weights: number[] }>()
-  for (const state of balances) {
+  for (const [balanceIndex, state] of balances.entries()) {
     const policy = accountAllocation(state.account)
-    if (policy) allocationTrack.set(state.account.id, { policy, weights: targetWeightsAt(policy, startYear) })
+    if (policy) allocationTrack.set(String(balanceIndex), { policy, weights: targetWeightsAt(policy, startYear) })
   }
   // Permanent-life cash values, grown/interpolated each year; an asset on the
   // balance sheet but held out of withdrawals (no surrender/loan in v1).
@@ -1754,7 +1757,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         yearSites?.recordRebalancingGain(row.record)
         balances[i]!.costBasis = row.closingCostBasis
       }
-      allocationTrack.get(row.accountId)!.weights = row.targetWeights
+      allocationTrack.get(String(i))!.weights = row.targetWeights
     }
 
     /** Contract-value credits, held back so the phase runs contiguously. */
@@ -2233,6 +2236,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes,
       taxableYieldReinvested,
       distributedYieldByAccountId,
+      distributedYieldByBalanceIndex,
       wagesByPerson,
     } = incomeSetup
     let ordinaryIncome = incomeSetup.ordinaryIncome
@@ -3176,6 +3180,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             simulatorPhase: 'employeeContribution',
             ownerPersonId: account.ownerPersonId,
             sourceAccountId: account.id,
+            balanceIndex,
             sourceBalanceBeforePlanDollars: contributionBalanceBefore,
             creditedAmountPlanDollars: allowed,
             sourceBalanceAfterPlanDollars: state.balance,
@@ -3661,7 +3666,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Year-scoped omitted-basis owners: same aggregation membership the
     // Form 8606 settlement uses this year (includes post-election treat-as-own).
     ownersWithOmittedNondeductibleBasis.clear()
-    for (const { account } of rmdBalances) {
+    for (const { account } of balances) {
       if (!isAggregatedIraThisYear(account)) continue
       // isAggregatedIraThisYear is not a type predicate (S2 post-flip accounts
       // stay TraditionalAccount with inherited set); re-narrow for basis field.
@@ -9050,23 +9055,32 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       insuranceCashValues.set(transition.policyId, transition.cashValue)
     }
 
-    const ownedNonRothIraBalanceBeforeGrowthByState =
-      new Map<BalanceState, number>()
-    for (const state of balances) {
-      // S2 post-election joins owner-side post-growth / application sources.
-      if (isAggregatedIraThisYear(state.account)) {
-        ownedNonRothIraBalanceBeforeGrowthByState.set(state, state.balance)
-      }
-    }
     const ownedNonRothIraBalancesBeforeGrowth = Object.freeze(
       Object.fromEntries(
-        balances
+        annualIdKeyedBalances
           .filter((state) => isAggregatedIraThisYear(state.account))
-          .map((state) => [
-            state.account.id,
-            ownedNonRothIraBalanceBeforeGrowthByState.get(state)!,
-          ]),
+          .map((state) => [state.account.id, state.balance]),
       ),
+    )
+    const ownedNonRothIraPhysicalBalancesBeforeGrowth = Object.freeze(
+      balances.flatMap((state, balanceIndex) =>
+        isAggregatedIraThisYear(state.account)
+          ? [Object.freeze({
+              sourceAccountId: state.account.id,
+              balanceIndex,
+              balancePlanDollars: state.balance,
+            })]
+          : []),
+    )
+    const ownedNonRothIraPhysicalOpeningBalances = Object.freeze(
+      balances.flatMap((state, balanceIndex) =>
+        isAggregatedIraThisYear(state.account)
+          ? [Object.freeze({
+              sourceAccountId: state.account.id,
+              balanceIndex,
+              balancePlanDollars: startOfYearPositionalBalances[balanceIndex]!,
+            })]
+          : []),
     )
 
     const shockPct = returnShockAt(year)
@@ -9076,9 +9090,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // is the realized portfolio return, not the raw additive shock.
     let returnWeightedSum = 0
     let returnWeightBase = 0
-    for (const state of balances) {
-      const distributedYieldPct = state.account.type === 'taxable' ? (distributedYieldByAccountId.get(state.account.id)?.distributedYieldPct ?? 0) : 0
-      const track = allocationTrack.get(state.account.id)
+    for (const [balanceIndex, state] of balances.entries()) {
+      const distributedYieldPct = state.account.type === 'taxable' ? (distributedYieldByBalanceIndex.get(balanceIndex)?.distributedYieldPct ?? 0) : 0
+      const track = allocationTrack.get(String(balanceIndex))
       if (track) {
         // Allocated account: growth is the class blend at this year's weights
         // (superseding annualReturnPct); distributed yield is carved
@@ -9101,8 +9115,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       state.balance *= Math.max(0, 1 + ratePct / 100)
     }
     priorYearPortfolioReturnPct = returnWeightBase > 0 ? returnWeightedSum / returnWeightBase : 0
-    for (const state of balances) {
-      const distributedYield = distributedYieldByAccountId.get(state.account.id)
+    for (const [balanceIndex, state] of balances.entries()) {
+      const distributedYield = distributedYieldByBalanceIndex.get(balanceIndex)
       if (!distributedYield?.reinvest || distributedYield.gross <= 0) continue
       state.balance += distributedYield.gross
       if (state.account.type === 'taxable') state.costBasis += distributedYield.gross
@@ -9110,9 +9124,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const ownedNonRothIraBalancesByOwner = new Map<
       string | null,
-      Array<{ sourceAccountId: string; balancePlanDollars: number }>
+      Array<{ sourceAccountId: string; balanceIndex: number; balancePlanDollars: number }>
     >()
-    for (const state of balances) {
+    for (const [balanceIndex, state] of balances.entries()) {
       if (!isAggregatedIraThisYear(state.account)) continue
       // A validated Plan always supplies an owner here. Preserve null on a
       // malformed direct simulatePlan call so this raw, not-yet-validated
@@ -9121,6 +9135,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       const accountBalances = ownedNonRothIraBalancesByOwner.get(ownerPersonId) ?? []
       accountBalances.push({
         sourceAccountId: state.account.id,
+        balanceIndex,
         balancePlanDollars: state.balance,
       })
       ownedNonRothIraBalancesByOwner.set(ownerPersonId, accountBalances)
@@ -9174,7 +9189,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
                   compareUtf16CodeUnits(
                     left.sourceAccountId,
                     right.sourceAccountId,
-                  ) || left.balancePlanDollars - right.balancePlanDollars,
+                  ) || left.balanceIndex - right.balanceIndex,
                 )
                 .map((balance) => Object.freeze({ ...balance })),
             ),
@@ -9569,6 +9584,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       contributions,
       ownedNonRothIraContributions,
       ownedNonRothIraBalancesBeforeGrowth,
+      ownedNonRothIraPhysicalBalancesBeforeGrowth,
+      ownedNonRothIraPhysicalOpeningBalances,
       ownedRothIraPoolActivity,
       employerRothAccountActivity,
       ownedTraditionalIraAggregateActivity,
@@ -9963,6 +9980,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     const basisSeededOwners = new Set<string>()
+    const settlementOpeningByAccount = new Map<Account, number>(
+      balances.map((state, balanceIndex) => [
+        state.account,
+        startOfYearPositionalBalances[balanceIndex]!,
+      ]),
+    )
     // Seed nondeductible basis with the same year-aware aggregation the ledger
     // uses inside the pass (`isAggregatedIraThisYear`), so an S2-flipped
     // account is in the settlement pool the same way it is in the live
@@ -9981,7 +10004,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const annualSettlementPlan: Plan = {
       ...plan,
       accounts: plan.accounts.map((account): Account => {
-        const openingBalance = startOfYearBalance.get(account.id)
+        const openingBalance = settlementOpeningByAccount.get(account)
         const annualAccount = openingBalance === undefined
           ? account
           : { ...account, balance: openingBalance }

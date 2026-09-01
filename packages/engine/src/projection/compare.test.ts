@@ -52,6 +52,34 @@ describe('summarizeProjection', () => {
     expect(summary.depletionYear).toBeNull()
   })
 
+  it('counts an aggregate duplicate balance once in category and estate summaries', () => {
+    const plan = conversionPlan()
+    const first = plan.accounts[1]!
+    if (first.type !== 'traditional') throw new Error('fixture drift')
+    plan.accounts = [
+      { ...first, id: 'duplicate-trad', name: 'First row', balance: 100_000 },
+      { ...first, id: 'duplicate-trad', name: 'Selected row', balance: 50_000 },
+    ]
+    plan.strategies.rothConversion = { mode: 'none' }
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const result = simulatePlan(parsed.plan, {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+    const summary = summarizeProjection(parsed.plan, result)
+    const closing = result.years[0]!.balances['duplicate-trad']!
+    expect(summary.endingByCategory.traditional).toBe(closing)
+    expect(summary.estateBreakdown).toHaveLength(1)
+    expect(summary.estateBreakdown[0]).toMatchObject({
+      accountId: 'duplicate-trad',
+      name: 'Selected row',
+      grossBalance: closing,
+    })
+  })
+
   it('haircuts only the traditional balance for the after-tax estate', () => {
     const plan = conversionPlan()
     plan.assumptions.heirTaxRatePct = 25

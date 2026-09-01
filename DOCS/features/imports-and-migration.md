@@ -59,10 +59,11 @@ optimizer consumers use the rows' aggregate capacity and basis. One logical debi
 allocated pro rata across the positive physical rows (with an exact final residual), and the public
 `balances[id]` value is the aggregate closing balance.
 
-The physical rows still matter. Contributions, annual growth, reinvestment, and investable totals
-visit every row, so different row-level contribution and return assumptions remain visible in wealth.
-Contribution runtime identity includes the balance-row index, and the owned-IRA post-growth evidence
-source preserves every physical row. The guardrail opening signal likewise counts each balance row
+The physical rows still matter. Contributions, allocation drift/rebalancing, distributed yield,
+annual growth, reinvestment, and investable totals visit every row, so different row-level assumptions
+remain visible in wealth. Contribution runtime identity and the owned-IRA pre-growth/post-growth
+evidence sources include the balance-row index; exact replay validates those physical contribution
+chains before aggregating the ID once for Form 8606. The guardrail opening signal counts each balance row
 once while retaining its historical exclusion of unassigned cash. The logical mutation layer makes
 all that positional wealth reachable through ID-keyed operations; it is a compatibility model, not a
 reason to create aliases. Imported real accounts should always receive unique IDs.

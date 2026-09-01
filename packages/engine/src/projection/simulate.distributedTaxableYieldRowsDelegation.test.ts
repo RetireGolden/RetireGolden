@@ -46,6 +46,7 @@ type SyntheticYieldScalars = Omit<
 // per-account map's last-write contract visible in growth and reinvestment.
 const SYNTHETIC_ROWS: readonly SyntheticYieldScalars[] = [
   {
+    balanceIndex: 0,
     accountId: 'tax-a',
     interest: 3_000,
     ordinaryDividends: 5_000,
@@ -57,6 +58,7 @@ const SYNTHETIC_ROWS: readonly SyntheticYieldScalars[] = [
     reinvest: false,
   },
   {
+    balanceIndex: 1,
     accountId: 'tax-b',
     interest: 2 ** -42,
     ordinaryDividends: 2 ** -41,
@@ -68,6 +70,7 @@ const SYNTHETIC_ROWS: readonly SyntheticYieldScalars[] = [
     reinvest: true,
   },
   {
+    balanceIndex: 2,
     accountId: 'tax-c',
     interest: 2 ** -42,
     ordinaryDividends: 2 ** -41,
@@ -79,6 +82,7 @@ const SYNTHETIC_ROWS: readonly SyntheticYieldScalars[] = [
     reinvest: true,
   },
   {
+    balanceIndex: 3,
     accountId: 'tax-a',
     interest: 1 / 7,
     ordinaryDividends: 1 / 7,
@@ -248,7 +252,7 @@ describe('simulatePlan delegates distributed taxable yields', () => {
       expect(phase.stateIdsAtCall).toEqual(['cash', 'tax-a', 'tax-b', 'tax-c'])
       expect(phase.rows).toHaveLength(phase.stateIdsAtCall.length)
       expect(phase.startBalancesAtCall).toEqual(phase.stateBalancesAtCall)
-      expect(phase.input.allocationTrack.has('tax-a')).toBe(true)
+      expect(phase.input.allocationTrack.has('1')).toBe(true)
     }
 
     // balances and allocationTrack are the long-lived simulation objects;
@@ -358,27 +362,28 @@ describe('simulatePlan delegates distributed taxable yields', () => {
         year.incomes.total - reversedReinvestedGross,
       )
 
-      // tax-a appears twice. Its final row must win both the growth carve-out
-      // and reinvestment map; using the first row would apply 7% and no credit.
-      const finalTaxA = yieldRows[3]!
+      // Growth and reinvestment consume the row at the same physical balance
+      // index. The mocked account ID is deliberately unrelated, so an ID join
+      // would apply the final tax-a row here instead.
+      const physicalTaxA = yieldRows[1]!
       const taxAStart = phase.stateBalancesAtCall[1]!
       const usStockReturnPct = phase.input.classParams.usStocks.returnPct
       const expectedTaxABalance = taxAStart * Math.max(
         0,
-        1 + (usStockReturnPct - finalTaxA.distributedYieldPct) / 100,
-      ) + finalTaxA.gross
-      expect(year.balances['tax-a'], `tax-a last-write growth/reinvest ${year.year}`).toBe(expectedTaxABalance)
+        1 + (usStockReturnPct - physicalTaxA.distributedYieldPct) / 100,
+      ) + physicalTaxA.gross
+      expect(year.balances['tax-a'], `tax-a positional growth/reinvest ${year.year}`).toBe(expectedTaxABalance)
 
       const reinvested = year.cashFlow.transferLines.filter((line) => line.kind === 'reinvestedYield')
       expect(reinvested.map((line) => [line.destination.entityKind === 'account' ? line.destination.accountId : null, line.debitPlanDollars])).toEqual([
-        ['tax-a', finalTaxA.gross],
+        ['tax-a', yieldRows[3]!.gross],
         ['tax-b', yieldRows[1]!.gross],
         ['tax-c', yieldRows[2]!.gross],
       ])
       expect(reinvested[0]?.taxCharacter).toEqual([
-        { kind: 'ordinaryIncome', amountPlanDollars: finalTaxA.interest + finalTaxA.ordinaryDividends },
-        { kind: 'qualifiedDividend', amountPlanDollars: finalTaxA.qualified },
-        { kind: 'taxExemptIncome', amountPlanDollars: finalTaxA.exempt },
+        { kind: 'ordinaryIncome', amountPlanDollars: yieldRows[3]!.interest + yieldRows[3]!.ordinaryDividends },
+        { kind: 'qualifiedDividend', amountPlanDollars: yieldRows[3]!.qualified },
+        { kind: 'taxExemptIncome', amountPlanDollars: yieldRows[3]!.exempt },
       ])
 
       const spendableYield = year.cashFlow.sourceLines.filter((line) =>

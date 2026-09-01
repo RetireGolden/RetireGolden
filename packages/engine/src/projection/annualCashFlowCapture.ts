@@ -1353,9 +1353,27 @@ function collectTransferLines(
     }
   }
 
-  const distributedYieldSitesByAccountId = new Map(
-    yearSites.distributedYield.map((row) => [row.accountId, row]),
-  )
+  const distributedYieldSitesByAccountId = new Map<string, {
+    interest: number
+    ordinaryDividends: number
+    qualified: number
+    exempt: number
+  }>()
+  for (const row of yearSites.distributedYield) {
+    if (!row.reinvest) continue
+    const prior = distributedYieldSitesByAccountId.get(row.accountId) ?? {
+      interest: 0,
+      ordinaryDividends: 0,
+      qualified: 0,
+      exempt: 0,
+    }
+    distributedYieldSitesByAccountId.set(row.accountId, {
+      interest: prior.interest + row.interest,
+      ordinaryDividends: prior.ordinaryDividends + row.ordinaryDividends,
+      qualified: prior.qualified + row.qualified,
+      exempt: prior.exempt + row.exempt,
+    })
+  }
   for (const [accountId, row] of input.distributedYieldByAccountId) {
     if (!row.reinvest || row.gross <= 0) continue
     const site = distributedYieldSitesByAccountId.get(accountId)

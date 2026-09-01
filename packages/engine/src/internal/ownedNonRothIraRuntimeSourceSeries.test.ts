@@ -554,7 +554,7 @@ describe('private owned-IRA runtime source-series validation', () => {
       })
   })
 
-  it('fails closed before map construction when owned IRA IDs are duplicated', () => {
+  it('replays compatible duplicate owned IRA rows as one logical source account', () => {
     const plan = singlePersonPlan({ planningAge: 60 })
     plan.id = 'duplicate-owned-ira-id'
     plan.accounts = [
@@ -569,11 +569,8 @@ describe('private owned-IRA runtime source-series validation', () => {
 
     expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
       .toMatchObject({
-        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
-        issues: [{
-          kind: 'sourceIdentityInvalid',
-          sourceAccountId: 'duplicate-ira',
-        }],
+        status: 'ownedNonRothIraRuntimeSourceSeriesComplete',
+        issues: [],
       })
   })
 
