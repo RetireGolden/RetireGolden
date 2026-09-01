@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-income-setup-boundary",
-  "why": "Measured reach for the annual income-setup extraction. Two dedicated P block members exercise fresh annual containers, explicit none and contributing distributed-yield rows, every income channel, paid and reinvested yield, duplicate-account last-write map behavior, the yield-before-wages floating-point boundary, repeated per-person wages, ordered record forwarding, downstream map consumption, and multi-year re-entry in all four equivalence modes.",
+  "why": "Measured reach for the annual income-setup extraction. Three dedicated P block members exercise fresh annual containers, explicit none and contributing distributed-yield rows, every income channel, paid and reinvested yield, duplicate-account last-write map behavior, the yield-before-wages floating-point boundary, repeated per-person wages, the legacy LAST-wins person/FIRST-wins annual-state lookup asymmetry, ordered record forwarding, downstream map consumption, and multi-year re-entry in all four equivalence modes.",
   "entries": [
     {
       "id": "P.helper.initializationAndYield",

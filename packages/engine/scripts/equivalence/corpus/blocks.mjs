@@ -2222,6 +2222,40 @@ function blockP() {
     )
   }
 
+  {
+    // The two person lookups intentionally disagree when an otherwise valid
+    // plan repeats a person id: `personById` is LAST-wins, while the annual
+    // `stateOf` lookup is FIRST-wins. In 2026 the first row is age 65 and the
+    // last row's retirement age is 60, so the wage is stopped. Replacing the
+    // state lookup with LAST-wins observes age 50 instead and pays the wage.
+    // No retirement action references the duplicate id, which keeps this
+    // legacy parseable shape inside the corpus rather than only in a unit test.
+    const plan = couplePlan({
+      p1Dob: '1961-01-01',
+      p2Dob: '1976-01-01',
+      p1PlanningAge: 90,
+      p2PlanningAge: 90,
+      p1RetirementAge: 70,
+      p2RetirementAge: 60,
+    })
+    plan.household.people[1] = {
+      ...plan.household.people[1],
+      id: 'p1',
+      name: 'Duplicate p1, last map entry',
+    }
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [cash('p3-duplicate-person-cash', 100_000)]
+    plan.incomes = [wages('p3-first-state-last-person', 'p1', 40_000)]
+    out.push(
+      member(
+        'p3-duplicatePersonLookupAsymmetry',
+        'P: duplicate person id preserves LAST-wins retirement-age lookup and FIRST-wins annual state lookup',
+        plan,
+        { horizonEndYear: START_YEAR },
+      ),
+    )
+  }
+
   return out
 }
 
