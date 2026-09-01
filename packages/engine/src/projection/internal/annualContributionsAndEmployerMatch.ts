@@ -210,7 +210,7 @@ export function annualContributionsAndEmployerMatch(
   let taxableInflow = 0
   const groupUsed = new Map<string, number>()
   const addition415cUsed = new Map<string, number>()
-  const iraCompensationIsShared =
+  const iraCompensationIsShared = // IRC 219(b)(1)/(c): share compensation only for living MFJ spouses.
     input.filingStatus === 'marriedFilingJointly' && input.aliveCount === 2
   const iraCompensationRemaining = new Map<string, number>()
   if (iraCompensationIsShared) {
@@ -222,7 +222,7 @@ export function annualContributionsAndEmployerMatch(
       iraCompensationRemaining.set(personId, wages)
     }
   }
-
+  // IRC 414(v)(2): ordinary 50+ uses limitGrowth; 60-63 indexes the greater-of output with statutory rounding.
   const employerCatchUpForAge = (age: number): number =>
     age >= 60 && age <= 63
       ? input.indexWithStatutoryRounding(
@@ -233,8 +233,8 @@ export function annualContributionsAndEmployerMatch(
         ? input.pack.contributionLimits.catchUp50 * input.limitGrowth
         : 0
 
-  // Contribution rows are positional even when public account ids collide.
-  // Never use an id-keyed map to decide what a row requested or received.
+  // A zero-scheduled Roth employer row must enter 414(v)(7) so redirected catch-up has a Roth destination.
+  // Contribution rows stay positional when public ids collide; never key a request by id.
   const desiredByBalanceIndex = new Map<number, number>()
   const employerRowKey = (balanceIndex: number): string => String(balanceIndex)
   for (const [balanceIndex, state] of input.balances.entries()) {
@@ -360,13 +360,13 @@ export function annualContributionsAndEmployerMatch(
       (account.type === 'traditional' || account.type === 'roth') &&
       account.kind === 'ira'
     ) {
-      groupKey = `${ownerId}:ira`
+      groupKey = `${ownerId}:ira` // IRC 408A(c)(2): traditional and Roth share the owner's limit.
       const catchUp = age >= 50 ? input.pack.contributionLimits.iraCatchUp50 : 0
       limit = (input.pack.contributionLimits.ira + catchUp) * input.limitGrowth
       compensationKey = iraCompensationIsShared
         ? input.iraHouseholdCompensationKey
         : ownerId
-    } else if (account.type === 'hsa') {
+    } else if (account.type === 'hsa') { // IRC 223(b)(5) divides one family base but not either spouse's whole (b)(3) catch-up; 223(g)(1) indexes only the base.
       groupKey = `${ownerId}:hsa`
       const hasFamilyCoverage = input.peopleCount === 2
       const dividesFamilyLimit = hasFamilyCoverage &&
@@ -384,7 +384,7 @@ export function annualContributionsAndEmployerMatch(
       const used = groupUsed.get(groupKey) ?? 0
       allowed = Math.max(0, Math.min(desired, limit - used))
     }
-
+    // IRC 415(c)(1)-(2) charges non-catch-up deferrals first; 414(v)(3)(A) excludes catch-up from the lesser-of-dollar-or-pay cap.
     const used415c = addition415cUsed.get(ownerId) ?? 0
     let countableEmployee = 0
     if (isEmployerAccount) {
@@ -578,7 +578,7 @@ export function annualContributionsAndEmployerMatch(
       emit({ kind: 'warning', message: CONTRIBUTION_LIMIT_WARNING })
     }
   }
-
+  // Employer match lands after deferrals and consumes only the remaining IRC 415(c) room.
   for (
     let balanceIndex = 0;
     balanceIndex < input.balances.length;
