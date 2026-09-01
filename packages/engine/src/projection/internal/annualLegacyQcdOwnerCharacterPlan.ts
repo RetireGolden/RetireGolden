@@ -55,6 +55,89 @@ export interface AnnualLegacyQcdOwnerCharacterPlanResult {
 }
 
 /**
+ * Finish every helper-owned read before simulatePlan starts applying writes.
+ *
+ * The production planner returns plain materialized arrays, but the delegation
+ * boundary is deliberately defensive: a mocked or later implementation may
+ * expose getters or iterables. Consuming those lazily while mutating the annual
+ * pass can leave a half-applied donor-offset or character map if a later read
+ * throws. This creates caller-owned row/write arrays, reads every row scalar,
+ * validates the closed write target union, and touches the exact pro-rata
+ * object's scalar fields before returning it unchanged for downstream identity.
+ */
+export function materializeAnnualLegacyQcdOwnerCharacterPlanResult(
+  result: Readonly<AnnualLegacyQcdOwnerCharacterPlanResult>,
+  expectedOwnerIds: readonly string[],
+): AnnualLegacyQcdOwnerCharacterPlanResult {
+  const sourceRows = [...result.rows]
+  const rows = sourceRows.map((row, index) => {
+    const ownerId = row.ownerId
+    if (ownerId !== expectedOwnerIds[index]) {
+      throw new Error(
+        `Legacy QCD owner-character row ${index} has owner ${JSON.stringify(ownerId)}; ` +
+        `expected ${JSON.stringify(expectedOwnerIds[index])}`,
+      )
+    }
+    const qualifiedFromRmd = row.qualifiedFromRmd
+    const nonQualifiedBeyondRmd = row.nonQualifiedBeyondRmd
+    const incomeOffsetDelta = row.incomeOffsetDelta
+    const nonQualifiedOrdinaryIncomeDelta =
+      row.nonQualifiedOrdinaryIncomeDelta
+    const qcdOffsetConsumedWrite = row.qcdOffsetConsumedWrite
+    const iraProRataWrite = row.iraProRataWrite
+    if (iraProRataWrite !== null) {
+      // Pre-read hostile getters without rebuilding the exact object which the
+      // downstream split must receive.
+      void iraProRataWrite.basis
+      void iraProRataWrite.nontaxableFraction
+    }
+    const sourceWrites = [...row.cashFlowWrites]
+    const cashFlowWrites = sourceWrites.map((write) => {
+      const writeOwnerId = write.ownerId
+      if (writeOwnerId !== ownerId) {
+        throw new Error(
+          `Legacy QCD cash-flow write owner ${JSON.stringify(writeOwnerId)} ` +
+          `does not match row owner ${JSON.stringify(ownerId)}`,
+        )
+      }
+      const target = write.target
+      const value = write.value
+      switch (target) {
+        case 'exclusionFromRmd':
+        case 'ordinaryFromRmd':
+        case 'exclusionBeyondRmd':
+        case 'ordinaryBeyondRmd':
+          break
+        default: {
+          const exhaustive: never = target
+          throw new Error(
+            `Unknown legacy QCD cash-flow target: ${String(exhaustive)}`,
+          )
+        }
+      }
+      return { ownerId: writeOwnerId, target, value }
+    })
+    return {
+      ownerId,
+      qualifiedFromRmd,
+      nonQualifiedBeyondRmd,
+      incomeOffsetDelta,
+      nonQualifiedOrdinaryIncomeDelta,
+      qcdOffsetConsumedWrite,
+      iraProRataWrite,
+      cashFlowWrites,
+    }
+  })
+  if (rows.length !== expectedOwnerIds.length) {
+    throw new Error(
+      `Legacy QCD owner-character rows lost cardinality: ` +
+      `expected ${expectedOwnerIds.length}, got ${rows.length}`,
+    )
+  }
+  return { rows }
+}
+
+/**
  * IRC 408(d)(8)(D) makes the gift the first character step for the owner-year.
  * Its ceiling is the owner's aggregate includible IRA amount (pre-distribution
  * owned-IRA balance less aggregate basis), not the taxable fraction of the

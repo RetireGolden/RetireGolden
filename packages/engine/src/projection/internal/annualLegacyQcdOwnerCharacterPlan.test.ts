@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   annualLegacyQcdOwnerCharacterPlan,
+  materializeAnnualLegacyQcdOwnerCharacterPlanResult,
   type AnnualLegacyQcdOwnerCharacterPlanInput,
+  type AnnualLegacyQcdOwnerCharacterRow,
 } from './annualLegacyQcdOwnerCharacterPlan.js'
 
 function call(
@@ -173,5 +175,150 @@ describe('annualLegacyQcdOwnerCharacterPlan', () => {
       'small-b',
     ])
     expect(leftAssociated).not.toBe(regrouped)
+  })
+
+  it('materializes hostile row/write iterables before returning caller-owned arrays', () => {
+    const reads: string[] = []
+    const proRata = {
+      get basis() {
+        reads.push('proRata.basis')
+        return 25
+      },
+      get nontaxableFraction() {
+        reads.push('proRata.nontaxableFraction')
+        return 0.25
+      },
+    }
+    const row = {
+      get ownerId() { reads.push('row.ownerId'); return 'owner' },
+      get qualifiedFromRmd() { reads.push('row.qualified'); return 10 },
+      get nonQualifiedBeyondRmd() { reads.push('row.nonQualified'); return 2 },
+      get incomeOffsetDelta() { reads.push('row.offset'); return 3 },
+      get nonQualifiedOrdinaryIncomeDelta() {
+        reads.push('row.ordinary')
+        return 4
+      },
+      get qcdOffsetConsumedWrite() { reads.push('row.consumed'); return 500 },
+      get iraProRataWrite() { reads.push('row.proRata'); return proRata },
+      get cashFlowWrites() {
+        reads.push('row.writes')
+        return {
+          *[Symbol.iterator]() {
+            reads.push('writes.iterate')
+            yield {
+              get ownerId() { reads.push('write.ownerId'); return 'owner' },
+              get target() {
+                reads.push('write.target')
+                return 'ordinaryBeyondRmd' as const
+              },
+              get value() { reads.push('write.value'); return 4 },
+            }
+          },
+        }
+      },
+    } as unknown as AnnualLegacyQcdOwnerCharacterRow
+    const result = materializeAnnualLegacyQcdOwnerCharacterPlanResult({
+      rows: {
+        *[Symbol.iterator]() {
+          reads.push('rows.iterate')
+          yield row
+        },
+      } as unknown as readonly AnnualLegacyQcdOwnerCharacterRow[],
+    }, ['owner'])
+
+    expect(reads).toEqual([
+      'rows.iterate',
+      'row.ownerId',
+      'row.qualified',
+      'row.nonQualified',
+      'row.offset',
+      'row.ordinary',
+      'row.consumed',
+      'row.proRata',
+      'proRata.basis',
+      'proRata.nontaxableFraction',
+      'row.writes',
+      'writes.iterate',
+      'write.ownerId',
+      'write.target',
+      'write.value',
+    ])
+    expect(result.rows).toEqual([{
+      ownerId: 'owner',
+      qualifiedFromRmd: 10,
+      nonQualifiedBeyondRmd: 2,
+      incomeOffsetDelta: 3,
+      nonQualifiedOrdinaryIncomeDelta: 4,
+      qcdOffsetConsumedWrite: 500,
+      iraProRataWrite: proRata,
+      cashFlowWrites: [{
+        ownerId: 'owner', target: 'ordinaryBeyondRmd', value: 4,
+      }],
+    }])
+    expect(result.rows).not.toBe(row)
+    expect(result.rows[0]!.cashFlowWrites).not.toBe(row.cashFlowWrites)
+    expect(result.rows[0]!.iraProRataWrite).toBe(proRata)
+  })
+
+  it('rejects an unknown cash-flow target during materialization', () => {
+    const row = call({
+      qcdGrossByOwner: new Map([['owner', 1]]),
+      preDistributionAggregateIraBalance: new Map([['owner', 1]]),
+      publishCashFlow: true,
+    }).rows[0]!
+    const hostile = {
+      ...row,
+      cashFlowWrites: [{
+        ownerId: 'owner', target: 'future-target', value: 1,
+      }],
+    } as unknown as AnnualLegacyQcdOwnerCharacterRow
+
+    expect(() => materializeAnnualLegacyQcdOwnerCharacterPlanResult({
+      rows: [hostile],
+    }, ['owner'])).toThrow('Unknown legacy QCD cash-flow target: future-target')
+  })
+
+  it.each([
+    ['empty', [], ['p1']],
+    ['truncated', [{ ownerId: 'p1' }], ['p1', 'p2']],
+    ['reordered', [{ ownerId: 'p2' }, { ownerId: 'p1' }], ['p1', 'p2']],
+    ['duplicate', [{ ownerId: 'p1' }, { ownerId: 'p1' }], ['p1', 'p2']],
+    ['extra', [{ ownerId: 'p1' }, { ownerId: 'p2' }, { ownerId: 'p3' }], ['p1', 'p2']],
+  ])('rejects %s owner rows before publication', (_name, shapes, expected) => {
+    const rows = shapes.map(({ ownerId }) => ({
+      ownerId,
+      qualifiedFromRmd: 0,
+      nonQualifiedBeyondRmd: 0,
+      incomeOffsetDelta: 0,
+      nonQualifiedOrdinaryIncomeDelta: 0,
+      qcdOffsetConsumedWrite: 100,
+      iraProRataWrite: null,
+      cashFlowWrites: [],
+    }))
+
+    expect(() => materializeAnnualLegacyQcdOwnerCharacterPlanResult(
+      { rows },
+      expected,
+    )).toThrow(/Legacy QCD owner-character row|lost cardinality/u)
+  })
+
+  it('rejects a cash-flow write attributed to another owner', () => {
+    const row = {
+      ownerId: 'p1',
+      qualifiedFromRmd: 0,
+      nonQualifiedBeyondRmd: 0,
+      incomeOffsetDelta: 0,
+      nonQualifiedOrdinaryIncomeDelta: 0,
+      qcdOffsetConsumedWrite: null,
+      iraProRataWrite: null,
+      cashFlowWrites: [{
+        ownerId: 'p2', target: 'exclusionFromRmd' as const, value: 1,
+      }],
+    }
+
+    expect(() => materializeAnnualLegacyQcdOwnerCharacterPlanResult(
+      { rows: [row] },
+      ['p1'],
+    )).toThrow('does not match row owner')
   })
 })

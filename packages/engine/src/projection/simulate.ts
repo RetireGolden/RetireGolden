@@ -68,7 +68,10 @@ import {
   annualOrdinaryWithdrawalBoundary,
   type AnnualOrdinaryWithdrawalBoundaryResult,
 } from './internal/annualOrdinaryWithdrawalBoundary.js'
-import { annualLegacyQcdOwnerCharacterPlan } from './internal/annualLegacyQcdOwnerCharacterPlan.js'
+import {
+  annualLegacyQcdOwnerCharacterPlan,
+  materializeAnnualLegacyQcdOwnerCharacterPlanResult,
+} from './internal/annualLegacyQcdOwnerCharacterPlan.js'
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import {
@@ -4845,16 +4848,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // leftover is not booked here.
     const qcdQualifiedFromRmdByOwner = new Map<string, number>()
     const qcdNonQualifiedBeyondRmdByOwner = new Map<string, number>()
-    const qcdOwnerCharacterPlan = annualLegacyQcdOwnerCharacterPlan({
-      qcdGrossByOwner,
-      qcdFromRmdByOwner,
-      iraBasisByOwner,
-      preDistributionAggregateIraBalance,
-      qcdSection219ByDonor,
-      qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor,
-      preProjectionQcdOffsetUnprovable,
-      publishCashFlow,
-    })
+    const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())
+    for (const [ownerId, basis] of iraBasisByOwner) {
+      if (basis > 0) expectedQcdOwnerIds.add(ownerId)
+    }
+    const qcdOwnerCharacterPlan =
+      materializeAnnualLegacyQcdOwnerCharacterPlanResult(
+        annualLegacyQcdOwnerCharacterPlan({
+          qcdGrossByOwner,
+          qcdFromRmdByOwner,
+          iraBasisByOwner,
+          preDistributionAggregateIraBalance,
+          qcdSection219ByDonor,
+          qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor,
+          preProjectionQcdOffsetUnprovable,
+          publishCashFlow,
+        }),
+        [...expectedQcdOwnerIds],
+      )
     for (const row of qcdOwnerCharacterPlan.rows) {
       if (row.qcdOffsetConsumedWrite !== null) {
         namedQcdOffsetConsumedByDonor.set(
@@ -4886,12 +4897,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           case 'ordinaryBeyondRmd':
             qcdOrdinaryBeyondRmdByOwner!.set(write.ownerId, write.value)
             break
-          default: {
-            const exhaustive: never = write.target
-            throw new Error(
-              `Unknown legacy QCD cash-flow target: ${String(exhaustive)}`,
-            )
-          }
         }
       }
       if (row.iraProRataWrite !== null) {
