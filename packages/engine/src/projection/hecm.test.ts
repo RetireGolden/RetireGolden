@@ -223,6 +223,167 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
     for (const y of result.years.slice(0, 5)) expect(y.hecmDraw).toBe(0)
   })
 
+  it('counts each remaining coordinated-line capacity once across repeated down years', () => {
+    // Independent repository-model worksheet. `DOCS/features/README.md`
+    // defines a HECM line as a coordinated buffer after a down-market year;
+    // `DOCS/features/year-cash-flow.md` requires accepted draws to publish as
+    // property-attributed `loanProceeds`, paired economically with debt.
+    //
+    //   home1: 40% × $100,000 = $40,000 line capacity. Its duplicate row
+    //          shares that one id-keyed line and adds no second capacity.
+    //   home2: 10% × $100,000 = $10,000 independent line capacity.
+    //   2027: $30,000 spending consumes $30,000 of home1.
+    //   2028: home1 has $10,000 remaining and home2 has $10,000, so accepted
+    //         loan proceeds / debt increase are $20,000 and the remaining
+    //         portfolio funding is $30,000 − $20,000 = $10,000.
+    //
+    // The distinct second line also distinguishes per-line-id admission from
+    // an incorrect plan-wide "first coordinated line only" boolean.
+    const plan = basePlan(64)
+    plan.expenses.baseAnnual = 30_000
+    const sharedLine = home({
+      openYear: 2025,
+      principalLimitPct: 40,
+      growthRatePct: 0,
+      upfrontCostPct: 0,
+      drawPolicy: 'coordinated',
+    }, 100_000)
+    const distinctLine = {
+      ...home({
+        openYear: 2025,
+        principalLimitPct: 10,
+        growthRatePct: 0,
+        upfrontCostPct: 0,
+        drawPolicy: 'coordinated',
+      }, 100_000),
+      id: 'home2',
+      name: 'Independent second HECM line',
+    }
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'brok1',
+        name: 'Brokerage',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 1_000_000,
+        costBasis: 1_000_000,
+        annualContribution: 0,
+      },
+      sharedLine,
+      { ...sharedLine, name: 'Duplicate property row sharing the HECM line' },
+      distinctLine,
+    ]
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    expect(
+      parsed.plan.accounts
+        .filter((account) => account.type === 'property')
+        .map((account) => account.id),
+    ).toEqual(['home1', 'home1', 'home2'])
+
+    const result = simulatePlan(parsed.plan, {
+      startYear: 2026,
+      horizonEndYear: 2028,
+      taxCalculator: noTax,
+      market: { returnShockPct: [-10, -10, 0] },
+      captureAnnualCashFlow: true,
+    })
+    const firstDrawYear = result.years.find((candidate) => candidate.year === 2027)!
+    const secondDrawYear = result.years.find((candidate) => candidate.year === 2028)!
+    const firstSources = firstDrawYear.cashFlow!.sourceLines.filter(
+      (line) => line.kind === 'hecmCoordinatedDraw',
+    )
+    const secondSources = secondDrawYear.cashFlow!.sourceLines.filter(
+      (line) => line.kind === 'hecmCoordinatedDraw',
+    )
+
+    expect(firstDrawYear.hecmDraw).toBe(30_000)
+    expect(firstDrawYear.hecmLoanBalance).toBe(30_000)
+    expect(firstDrawYear.withdrawals.total).toBe(0)
+    expect(firstSources).toEqual([
+      {
+        id: 'source:hecmCoordinatedDraw:home1',
+        kind: 'hecmCoordinatedDraw',
+        role: 'loanProceeds',
+        amountPlanDollars: 30_000,
+        identities: [
+          { entityKind: 'propertyAccount', propertyAccountId: 'home1' },
+        ],
+      },
+    ])
+    expect(secondDrawYear.hecmDraw).toBe(20_000)
+    expect(secondDrawYear.hecmLoanBalance).toBe(50_000)
+    expect(secondDrawYear.withdrawals.total).toBe(10_000)
+    expect(secondDrawYear.shortfall).toBe(0)
+    expect(secondSources).toEqual([
+      {
+        id: 'source:hecmCoordinatedDraw:home1',
+        kind: 'hecmCoordinatedDraw',
+        role: 'loanProceeds',
+        amountPlanDollars: 10_000,
+        identities: [
+          { entityKind: 'propertyAccount', propertyAccountId: 'home1' },
+        ],
+      },
+      {
+        id: 'source:hecmCoordinatedDraw:home2',
+        kind: 'hecmCoordinatedDraw',
+        role: 'loanProceeds',
+        amountPlanDollars: 10_000,
+        identities: [
+          { entityKind: 'propertyAccount', propertyAccountId: 'home2' },
+        ],
+      },
+    ])
+    expect(firstDrawYear.cashFlow!.reconciliation.status).toBe('reconciled')
+    expect(secondDrawYear.cashFlow!.reconciliation.cash.differencePlanDollars).toBe(0)
+    expect(secondDrawYear.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('uses the first HECM-bearing duplicate row as the shared line policy', () => {
+    // Duplicate ids alias one line. The row that first supplies that line's
+    // HECM configuration is therefore authoritative for both annual growth and
+    // draw policy; a later alias cannot opt the shared line into coordinated
+    // draws. This is the same first-row rule documented by hecmLineOpenings and
+    // propertyEventsAndGrowth.
+    const plan = basePlan(64)
+    plan.expenses.baseAnnual = 30_000
+    const lastResortLine = home({
+      openYear: 2025,
+      principalLimitPct: 40,
+      growthRatePct: 0,
+      upfrontCostPct: 0,
+      drawPolicy: 'lastResort',
+    }, 100_000) as Extract<Account, { type: 'property' }>
+    plan.accounts = [
+      {
+        type: 'taxable',
+        id: 'brok1',
+        name: 'Brokerage',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        balance: 1_000_000,
+        costBasis: 1_000_000,
+        annualContribution: 0,
+      },
+      lastResortLine,
+      {
+        ...lastResortLine,
+        name: 'Later alias with divergent policy',
+        hecm: { ...lastResortLine.hecm!, drawPolicy: 'coordinated' },
+      },
+    ]
+
+    const result = run(plan, {
+      horizonEndYear: 2027,
+      market: { returnShockPct: [-10, 0] },
+    })
+
+    expect(result.years.find((candidate) => candidate.year === 2027)!.hecmDraw).toBe(0)
+  })
+
   it('a mildly negative shock in a positive-return year does not trigger a coordinated draw', () => {
     // −1 shock on a +6% expected return is still a +5% portfolio year: the
     // coordinated policy keys on the realized portfolio return, not the raw

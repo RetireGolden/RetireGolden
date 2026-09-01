@@ -8223,16 +8223,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // losing year, so coordinated draws are Monte Carlo / scenario behavior;
     // the last-resort backstop below works everywhere.
     let hecmDraw = 0
-    const coordinatedHecmAccounts: Extract<Account, { type: 'property' }>[] = []
+    const coordinatedHecmLineIds: string[] = []
     let coordinatedHecmCapacity = 0
     if (anyAlive && year > startYear && priorYearPortfolioReturnPct < 0) {
+      // Unreferenced duplicate account ids are valid, but `hecmStates` is keyed
+      // by id: every matching property row therefore points at the same line.
+      // The first HECM-bearing row owns that line's policy, matching the
+      // first-row configuration rule used by line growth; later aliases cannot
+      // replace it merely by carrying a different drawPolicy.
+      const visitedHecmLineIds = new Set<string>()
       for (const account of plan.accounts) {
-        if (account.type !== 'property' || account.hecm?.drawPolicy !== 'coordinated') continue
+        if (account.type !== 'property' || !account.hecm) continue
+        if (visitedHecmLineIds.has(account.id)) continue
+        visitedHecmLineIds.add(account.id)
+        if (account.hecm.drawPolicy !== 'coordinated') continue
         const line = hecmStates.get(account.id)
         if (!line) continue
         const available = Math.max(0, line.principalLimit - line.loanBalance)
         if (available <= 0) continue
-        coordinatedHecmAccounts.push(account)
+        coordinatedHecmLineIds.push(account.id)
         coordinatedHecmCapacity += available
       }
     }
@@ -8908,15 +8917,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // funding solve. Capacity was measured before probing and no line balance
     // has changed since, so allocation is deterministic across multiple lines.
     let remainingCoordinatedDraw = hecmDraw
-    for (const account of coordinatedHecmAccounts) {
+    for (const propertyAccountId of coordinatedHecmLineIds) {
       if (remainingCoordinatedDraw <= EPSILON) break
-      const line = hecmStates.get(account.id)
+      const line = hecmStates.get(propertyAccountId)
       if (!line) continue
       const draw = Math.min(remainingCoordinatedDraw, Math.max(0, line.principalLimit - line.loanBalance))
       if (draw <= 0) continue
       line.loanBalance += draw
       remainingCoordinatedDraw -= draw
-      hecmCoordinatedByProperty?.set(account.id, draw)
+      hecmCoordinatedByProperty?.set(propertyAccountId, draw)
     }
     // Any open HECM line backstops a true portfolio shortfall regardless of
     // draw policy — no borrower defaults on spending with credit available.
@@ -8924,8 +8933,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     let hecmShortfallDraw = 0
     if (withdrawalPlan.shortfall > EPSILON && anyAlive) {
       let remaining = withdrawalPlan.shortfall
+      const visitedHecmLineIds = new Set<string>()
       for (const account of plan.accounts) {
         if (account.type !== 'property' || !account.hecm) continue
+        if (visitedHecmLineIds.has(account.id)) continue
+        visitedHecmLineIds.add(account.id)
         const line = hecmStates.get(account.id)
         if (!line) continue
         const draw = Math.min(remaining, Math.max(0, line.principalLimit - line.loanBalance))
