@@ -21,23 +21,23 @@
       "id": "B.ordered-row-fold",
       "label": "fresh logical distribution operations and ordered character totals",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [139, 159],
+      "lines": [142, 162],
       "anchors": [
-        { "line": 140, "text": "if (executed > 0) {" },
-        { "line": 141, "text": "const sourceBalanceAfter = state.balance - executed" },
-        { "line": 150, "text": "if (state.account.type === 'roth') rothForced += executed" },
-        { "line": 154, "text": "rows.push({" }
+        { "line": 143, "text": "if (executed > 0) {" },
+        { "line": 144, "text": "const sourceBalanceAfter = state.balance - executed" },
+        { "line": 153, "text": "if (state.account.type === 'roth') rothForced += executed" },
+        { "line": 157, "text": "rows.push({" }
       ]
     },
     {
       "id": "C.death-gates",
       "label": "logical account gates, cache lookup, and dead-beneficiary successor evidence",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [162, 182],
+      "lines": [165, 185],
       "anchors": [
-        { "line": 162, "text": "for (const [balanceIndex, state] of input.balances.entries()) {" },
-        { "line": 168, "text": "const cache = input.classCache.get(state.account.id)" },
-        { "line": 174, "text": "if (!beneficiaryState.alive) {" }
+        { "line": 165, "text": "for (const [balanceIndex, state] of input.balances.entries()) {" },
+        { "line": 171, "text": "const cache = input.classCache.get(state.account.id)" },
+        { "line": 177, "text": "if (!beneficiaryState.alive) {" }
       ],
       "note": "The impossible final unsupported union fallback is excluded; classifier output is exhaustively regime or refusal."
     },
@@ -45,12 +45,12 @@
       "id": "C2.death-evidence",
       "label": "dead-beneficiary identity, successor disclosure, and cached citations",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [184, 198],
+      "lines": [187, 201],
       "anchors": [
-        { "line": 184, "text": "matrixRow: primaryClass?.row ??" },
-        { "line": 190, "text": "'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope'," },
-        { "line": 195, "text": "disclosures: ['successor-clock-out-of-scope']," },
-        { "line": 196, "text": "citations: primaryClass?.citations ??" }
+        { "line": 187, "text": "matrixRow: primaryClass?.row ??" },
+        { "line": 193, "text": "'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope'," },
+        { "line": 198, "text": "disclosures: ['successor-clock-out-of-scope']," },
+        { "line": 199, "text": "citations: primaryClass?.citations ??" }
       ],
       "note": "Raw fallback citations are excluded because an inherited classifier result cannot be neither regime nor refusal."
     },
@@ -58,21 +58,21 @@
       "id": "C3.death-completion",
       "label": "dead-beneficiary row completion keeps account order",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [203, 204],
+      "lines": [206, 207],
       "anchors": [
-        { "line": 203, "text": "}, 0)" },
-        { "line": 204, "text": "continue" }
+        { "line": 206, "text": "}, 0)" },
+        { "line": 207, "text": "continue" }
       ]
     },
     {
       "id": "D.effective-s2",
       "label": "post-election S2 zero-requirement evidence and pre-horizon limitation",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [207, 220],
+      "lines": [210, 223],
       "anchors": [
-        { "line": 207, "text": "if (isTreatAsOwnEffective(state.account, input.year)) {" },
-        { "line": 212, "text": "const preHorizonLimitation =" },
-        { "line": 217, "text": "addRow(balanceIndex, state, {" }
+        { "line": 210, "text": "if (isTreatAsOwnEffective(state.account, input.year)) {" },
+        { "line": 215, "text": "const preHorizonLimitation =" },
+        { "line": 220, "text": "addRow(balanceIndex, state, {" }
       ],
       "note": "Effective S2 rows always carry a regime primary; refusal and unsupported identity fallbacks remain defensively typed but are structurally unreachable."
     },
@@ -80,44 +80,44 @@
       "id": "D2.effective-s2-classification",
       "label": "effective S2 publishes the cached settled classification",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [226, 227],
+      "lines": [229, 230],
       "anchors": [
-        { "line": 226, "text": "...(primaryClass !== undefined" },
-        { "line": 227, "text": "? { classification: primaryClass.classification }" }
+        { "line": 229, "text": "...(primaryClass !== undefined" },
+        { "line": 230, "text": "? { classification: primaryClass.classification }" }
       ]
     },
     {
       "id": "D3.effective-s2-zero-row",
       "label": "effective S2 has no inherited requirement and preserves limitations/disclosures",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [229, 237],
+      "lines": [232, 240],
       "anchors": [
-        { "line": 229, "text": "requirementKind: 'none'," },
-        { "line": 233, "text": "...(preHorizonLimitation !== undefined" },
-        { "line": 236, "text": "disclosures: primaryClass?.disclosures ?? []," }
+        { "line": 232, "text": "requirementKind: 'none'," },
+        { "line": 236, "text": "...(preHorizonLimitation !== undefined" },
+        { "line": 239, "text": "disclosures: primaryClass?.disclosures ?? []," }
       ]
     },
     {
       "id": "D4.effective-s2-completion",
       "label": "effective S2 completes one ordered zero row",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [239, 240],
+      "lines": [242, 243],
       "anchors": [
-        { "line": 239, "text": "}, 0)" },
-        { "line": 240, "text": "continue" }
+        { "line": 242, "text": "}, 0)" },
+        { "line": 243, "text": "continue" }
       ]
     },
     {
       "id": "E.legacy",
       "label": "aggregate opening selection and labeled legacy/refusal requirement",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [243, 277],
+      "lines": [246, 280],
       "anchors": [
-        { "line": 243, "text": "const priorYearEndBalance =" },
-        { "line": 260, "text": "if (cache.path === 'legacy' || cache.schedule === undefined) {" },
-        { "line": 261, "text": "take = inheritedForcedAmount({" },
-        { "line": 272, "text": "requirementKind = 'legacy'" },
-        { "line": 273, "text": "if (cache.primary.kind === 'refusal') {" }
+        { "line": 246, "text": "const priorYearEndBalance =" },
+        { "line": 263, "text": "if (cache.path === 'legacy' || cache.schedule === undefined) {" },
+        { "line": 264, "text": "take = inheritedForcedAmount({" },
+        { "line": 275, "text": "requirementKind = 'legacy'" },
+        { "line": 276, "text": "if (cache.primary.kind === 'refusal') {" }
       ],
       "note": "The synthetic-S2 classifier-refusal fallback is retained defensively and pinned in focused helper construction; no validated corpus plan can produce it from current classifier unions."
     },
@@ -125,52 +125,66 @@
       "id": "F.classified",
       "label": "classified and synthetic-S0 requirement selection including final sweep",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [285, 321],
+      "lines": [288, 324],
       "anchors": [
-        { "line": 285, "text": "const scheduleClass = cache.schedule" },
-        { "line": 286, "text": "const inheritedForReq =" },
-        { "line": 296, "text": "const req = inheritedRequirementForYear({" },
-        { "line": 309, "text": "if (req.kind === 'final-sweep') {" },
-        { "line": 314, "text": "take = Math.min(req.requiredAmount, state.balance)" }
+        { "line": 288, "text": "const scheduleClass = cache.schedule" },
+        { "line": 289, "text": "const inheritedForReq =" },
+        { "line": 299, "text": "const req = inheritedRequirementForYear({" },
+        { "line": 312, "text": "if (req.kind === 'final-sweep') {" },
+        { "line": 317, "text": "take = Math.min(req.requiredAmount, state.balance)" }
       ]
     },
     {
       "id": "G.identity-and-execution",
       "label": "death-year S2 identity, pre-horizon limitation, exact-cent discharge, and evidence",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [324, 366],
+      "lines": [327, 369],
       "anchors": [
-        { "line": 324, "text": "const beneficiaryForIdentity = state.account.inherited.beneficiary" },
-        { "line": 333, "text": "regime = cache.primary.regime" },
-        { "line": 343, "text": "limitation = 'pre-horizon-year-of-death-rmd-unresolved'" },
-        { "line": 346, "text": "const executed =" },
-        { "line": 348, "text": "addRow(balanceIndex, state, {" }
+        { "line": 327, "text": "const beneficiaryForIdentity = state.account.inherited.beneficiary" },
+        { "line": 336, "text": "regime = cache.primary.regime" },
+        { "line": 346, "text": "limitation = 'pre-horizon-year-of-death-rmd-unresolved'" },
+        { "line": 349, "text": "const executed =" },
+        { "line": 351, "text": "addRow(balanceIndex, state, {" }
       ]
     },
     {
       "id": "H.section-4974",
       "label": "logical-row applicable-plan grouping, sub-cent settlement, mixed kinds, and obligations",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [369, 427],
+      "lines": [372, 434],
       "anchors": [
-        { "line": 376, "text": "for (const { evidence, balanceIndex } of rows) {" },
-        { "line": 384, "text": "const applicablePlan = rmdApplicablePlanForAccount(" },
-        { "line": 398, "text": "(planDollarsMoveNoLedgerCent(evidence.requiredAmount)" },
-        { "line": 416, "text": "for (const [applicablePlanKey, requiredAmount] of requiredByApplicablePlan) {" },
-        { "line": 426, "text": "requirementKind: requirementKinds.size === 1" }
+        { "line": 379, "text": "for (const { evidence, balanceIndex } of rows) {" },
+        { "line": 387, "text": "const applicablePlan = rmdApplicablePlanForAccount(" },
+        { "line": 398, "text": "distributedByApplicablePlan.set(" },
+        { "line": 417, "text": "for (const [applicablePlanKey, requiredAmount] of requiredByApplicablePlan) {" },
+        { "line": 421, "text": "const actuallyDistributed =" },
+        { "line": 423, "text": "const aggregateShortfall = Math.max(" },
+        { "line": 433, "text": "requirementKind: requirementKinds.size === 1" }
       ],
       "note": "Validated accounts in one inherited applicable-plan pool must carry consistent schedule facts, so mixed requirement kinds cannot arise end to end; focused helper tests inject the cross-layer defensive case."
     },
     {
       "id": "H2.section-4974-result",
-      "label": "deadline settlement and fresh grouped obligations/result containers",
+      "label": "aggregate shortfall and zero-ledger-cent settlement predicate",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [429, 438],
+      "lines": [436, 439],
       "anchors": [
-        { "line": 429, "text": "requiredAmount," },
-        { "line": 430, "text": "distributedByDeadline:" },
-        { "line": 435, "text": "return {" },
-        { "line": 438, "text": "rmdShortfallObligations," }
+        { "line": 436, "text": "requiredAmount," },
+        { "line": 437, "text": "distributedByDeadline:" },
+        { "line": 438, "text": "aggregateShortfall > 0 &&" },
+        { "line": 439, "text": "planDollarsMoveNoLedgerCent(aggregateShortfall)" }
+      ],
+      "note": "The focused helper matrix pins the true zero-cent aggregate-discharge arm; the immutable corpus pins the above-cent aggregate-shortfall arm."
+    },
+    {
+      "id": "H3.section-4974-result",
+      "label": "actual-distribution result and fresh grouped output containers",
+      "file": "projection/internal/annualInheritedIraDistributions.ts",
+      "lines": [441, 448],
+      "anchors": [
+        { "line": 441, "text": ": actuallyDistributed," },
+        { "line": 445, "text": "return {" },
+        { "line": 448, "text": "rmdShortfallObligations," }
       ]
     },
     {
@@ -219,17 +233,17 @@
     }
   ],
   "measuredProof": {
-    "method": "The blocks corpus and both engine source trees are materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. The verifier pins every mutable equivalence input plus a canonical hash of this spec's schema/name/why/entries measurement input before recomputing corpus, captures, structural comparison, reach, and all recorded hashes. The extraction intentionally corrects one grouped sub-cent final-sweep settlement member: the verifier therefore requires the generic comparator's DIFFERENT exit, then admits exactly four named O3 mode entries and pins each entry's complete before/after hash plus a canonical hash of every changed leaf.",
+    "method": "The blocks corpus and both engine source trees are materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. The verifier authenticates the proof spec and every transitive mutable equivalence input against both HEAD and the path-normalized working tree before execution, then recomputes corpus, captures, structural comparison, reach, and all recorded hashes. The generic comparator must report IDENTICAL and the independent entry walk must find zero moved entries.",
     "base": {
       "commit": "df896740af6ef75e01931720abcbc1074e428570",
       "engineSourceTree": "d8e8d22f1bd0931f79bca576612b66a60e430987"
     },
     "head": {
-      "observedAtCommit": "fc804466afba04690444a1a73e2e15023d4bdc54",
-      "engineSourceTree": "2c5123501390bd3a7633c9d2ae5727485dcae0b6"
+      "observedAtCommit": "7401ac2aa50a2f3e37fd126062bf4a93516a1236",
+      "engineSourceTree": "8727b04105d5461b42ab10e758bd79069cae0a40"
     },
     "inputs": {
-      "corpusSourceBlob": "2c2b9114053e7b583cb205ed48a1b1757b6e0f91",
+      "corpusSourceBlob": "088473e53347e03f065b0d1fd8128894396b8d10",
       "corpusIndexBlob": "3d434147ef86cac8116cefac867b2076256feb21",
       "corpusExamplesBlob": "453bcb81103f490447d679276ca1a3ffbad9104a",
       "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
@@ -240,102 +254,32 @@
       "reachRecorderBlob": "81d6c4cce57b40f770be21b7a89ea2da9c0c217d",
       "typescriptSourceResolutionBlob": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a",
       "usageBlob": "0b3b3072c3e716d4bace88f6887a41bdda5d60d1",
-      "specMeasurementSha256": "da83e39abf337b9ace364615b6a6b9a35268608d16b05efdeec5fcd7ab169c40"
+      "specMeasurementSha256": "6aa1faf1f994c3706356256bb0bb7ef0cdf563926ba611e0f057592b87d408e6"
     },
     "corpus": {
       "name": "blocks",
       "members": 109,
-      "membersSha256": "720903fcf154c8029aeacfa498da289f0604c94e5aed8028d648b2e6d88776d4",
+      "membersSha256": "5745bde66b28c949de3abe7bcbd8c052c809b8499c0772793c39775cdd0cf4d3",
       "entries": 436
     },
     "capture": {
-      "baseDumpSha256": "aa0dc62e33d1aa28f5a1ee3072522180ac5d920fdf62f7e5572d1180327c8209",
-      "headDumpSha256": "8f3992e5c45ab323fa97035a07fdca855f4421fbb618c087e3dea0c6eb97f658",
+      "baseDumpSha256": "ead27c4b6e518b950e80d823fcde102500e117a7889f6cec9f0b36036cd4f1ea",
+      "headDumpSha256": "ead27c4b6e518b950e80d823fcde102500e117a7889f6cec9f0b36036cd4f1ea",
       "baseOverallSha256": "b77aaa2de9155ec2d521adbcf36f97c1a5c86ae1e21e6487ca4d33a28f4bf510",
-      "headOverallSha256": "b126e183f8bda37314982532f0fd8cf5e48c23225cd61517df6d0526c01b29d7",
-      "entriesMoved": 4,
-      "entriesIdentical": 432,
-      "result": "DIFFERENT_WITH_EXACT_ALLOWLIST"
+      "headOverallSha256": "b77aaa2de9155ec2d521adbcf36f97c1a5c86ae1e21e6487ca4d33a28f4bf510",
+      "entriesMoved": 0,
+      "entriesIdentical": 436,
+      "result": "IDENTICAL"
     },
-    "allowedMovedEntries": [
-      {
-        "id": "blocks:o3-finalSweepSubCentAggregationAndDeath/default",
-        "baseSha256": "dfb67ee02be3cc17d30ff2cbd546eb859aecf4de2a6bd1c0b87169df5f73de7e",
-        "headSha256": "dce695afd4f91e64282b14d23758ed2903c4733fe851a2812483e6fa56309976",
-        "leafMismatches": 14,
-        "mismatchSha256": "d14bd9737617057932c0349c1cafca26d4912956c8800c63916e68dddbc430b4"
-      },
-      {
-        "id": "blocks:o3-finalSweepSubCentAggregationAndDeath/cashFlow",
-        "baseSha256": "78ea8d9d10af0e8929247709e25f56026cae9f2576cfbfaaa002b14eabf83a8a",
-        "headSha256": "14951229927c72990f7e0c4d9889ba4421d9b634ebb07cb9c0d071e0c68e951d",
-        "leafMismatches": 29,
-        "mismatchSha256": "1b472a1bb4c84ede90ff50a0a7a43462853cd63991a53a2ae3590027dae29ba0"
-      },
-      {
-        "id": "blocks:o3-finalSweepSubCentAggregationAndDeath/optimizerProbe",
-        "baseSha256": "d06f6c4deb9af3765473828fe2a67137f9f90988608035b3a0ebf98452c13006",
-        "headSha256": "2b255dfd1abffe91c68238fb936d506fc03c94dae05f0d549c0629b268cd9a4f",
-        "leafMismatches": 29,
-        "mismatchSha256": "1b472a1bb4c84ede90ff50a0a7a43462853cd63991a53a2ae3590027dae29ba0"
-      },
-      {
-        "id": "blocks:o3-finalSweepSubCentAggregationAndDeath/counterfactual",
-        "baseSha256": "7f6f759c4024f85382d83ef6ad912f4b1ac451f99a92bdaf71b805969ba3061f",
-        "headSha256": "b3450be8b2796dc7f4e9d994bb1d57c041a453878d5633710f9c7a9d83be4665",
-        "leafMismatches": 32,
-        "mismatchSha256": "bfb75ee89710263fa46220e6c6810946849bac3eaa29796212c5bffa9f74df35"
-      }
-    ],
-    "sharedMovementFacts": [
-      {
-        "path": "$.result.years[6].rmdShortfallExciseTax",
-        "base": "0.003",
-        "head": "0"
-      },
-      {
-        "path": "$.result.years[6].rmdShortfallExciseDetails[0].distributedByDeadline",
-        "base": "0",
-        "head": "0.012"
-      },
-      {
-        "path": "$.result.years[6].rmdShortfallExciseDetails[0].shortfall",
-        "base": "0.012",
-        "head": "0"
-      },
-      {
-        "path": "$.result.years[6].rmdShortfallExciseDetails[0].rate",
-        "base": "0.25",
-        "head": "0"
-      },
-      {
-        "path": "$.result.years[6].rmdShortfallExciseDetails[0].tax",
-        "base": "0.003",
-        "head": "0"
-      },
-      {
-        "path": "$.result.years[6].rmdShortfallExciseDetails[0].reason",
-        "base": "\"default25Percent\"",
-        "head": "\"noShortfall\""
-      },
-      {
-        "path": "$.result.years[6].penalties",
-        "base": "0.003",
-        "head": "0"
-      },
-      {
-        "path": "$.result.years[6].surplusInvested",
-        "base": "1000.122",
-        "head": "1000.125"
-      }
-    ],
+    "allowedMovedEntries": [],
+    "sharedMovementFacts": [],
     "reach": {
-      "entries": 17,
+      "entries": 18,
       "unreached": 0,
       "entriesWithColdWholeLines": 0,
-      "entriesWithReportedColdSubLineRegions": 9
+      "entriesWithReportedColdSubLineRegions": 8
     },
-    "scope": "The only admitted output movement is the O3 final-sweep member in all four modes. Three individually sub-cent Roth rows sharing one applicable-plan identity aggregate to 0.012 plan dollars. The extracted grouped planner settles that exact aggregate by the deadline, so section 4974 shortfall, 25-percent rate, 0.003 excise tax, and penalty disappear; the same 0.003 remains available to the cash ledger. Every other corpus member and mode is byte-identical. Focused helper/delegation tests separately pin immutable snapshotting, grouped duplicate identities, ordered single-write application, runtime journaling, evidence and obligation publication, and hostile failure before caller mutation."
+    "scope": "Every blocks-corpus member is byte-identical in all four modes. In O3, three individually zero-cent Roth residues sharing one applicable-plan identity aggregate to a 0.012 plan-dollar shortfall; the grouped planner reports zero actually distributed, preserving the 0.003 section 4974 excise and cash-ledger result from the immutable base. Focused helper tests separately pin the bounded convention: one 0.004 aggregate shortfall is discharged, a 0.01 actual distribution plus a 0.004 aggregate remainder is treated as fully settled, and three 0.004 residues remain a 0.012 shortfall. Delegation tests pin immutable snapshotting, grouped duplicate identities, ordered single-write application, runtime journaling, evidence and obligation publication, and hostile failure before caller mutation."
   },
   "readingTheCounts": "Member counts prove execution and the reach command additionally fails on cold executable whole lines. JavaScript line coverage cannot distinguish every operand sharing a line, so the report must be read with focused helper, hostile delegation, grouped-duplicate integration, and calibrated-mutation tests."
 }
