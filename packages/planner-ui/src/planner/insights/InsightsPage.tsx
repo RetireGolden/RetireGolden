@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { usePlan } from '../planContextCore'
 import { useProjection } from '../useProjection'
@@ -51,16 +51,47 @@ export function InsightsPage() {
   // Screen-reader announcement for dismiss/restore (visual change is otherwise silent).
   const [liveMessage, setLiveMessage] = useState('')
 
+  // Dismissing unmounts the control that had focus, which dropped keyboard
+  // focus to <body> (#505). Record where focus should land before the card
+  // goes, then move it once the new list has rendered: the next card in the
+  // group, else the previous one, else the group heading, else Restore.
+  const pageRef = useRef<HTMLElement>(null)
+  const pendingFocus = useRef<{ nextId: string | null; prevId: string | null; category: InsightCategory } | null>(null)
+
   // Save dismissed cards to localStorage
-  const dismissCard = (cardId: string) => {
+  const dismissCard = (card: InsightCard, siblings: InsightCard[]) => {
+    const at = siblings.findIndex((c) => c.id === card.id)
+    pendingFocus.current = {
+      nextId: siblings[at + 1]?.id ?? null,
+      prevId: at > 0 ? (siblings[at - 1]?.id ?? null) : null,
+      category: card.category,
+    }
     const nextMap = {
       ...dismissedMap,
-      [plan.id]: [...(dismissedMap[plan.id] ?? []), cardId],
+      [plan.id]: [...(dismissedMap[plan.id] ?? []), card.id],
     }
     setDismissedMap(nextMap)
     writeLocal(STORAGE_KEYS.insightsDismissed, JSON.stringify(nextMap))
     setLiveMessage(`Insight dismissed. ${nextMap[plan.id]!.length} dismissed on this plan.`)
   }
+
+  useLayoutEffect(() => {
+    const pending = pendingFocus.current
+    if (!pending) return
+    pendingFocus.current = null
+    const page = pageRef.current
+    if (!page) return
+    const escape = (value: string) =>
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&')
+    const dismissOf = (id: string | null) =>
+      id ? page.querySelector<HTMLElement>(`[data-insight-id="${escape(id)}"] .insight-dismiss`) : null
+    const target =
+      dismissOf(pending.nextId) ??
+      dismissOf(pending.prevId) ??
+      page.querySelector<HTMLElement>(`[data-insight-category="${escape(pending.category)}"] .insight-category-header`) ??
+      page.querySelector<HTMLElement>('[data-insight-restore]')
+    target?.focus()
+  }, [dismissedMap])
 
   // Restore all dismissed cards for this plan
   const restoreDismissed = () => {
@@ -116,7 +147,7 @@ export function InsightsPage() {
   }
 
   return (
-    <section>
+    <section ref={pageRef}>
       <LiveStatus message={liveMessage} />
       <div className="card">
         <h2>Insights</h2>
@@ -160,7 +191,7 @@ export function InsightsPage() {
             Your plan already covers the big levers or no new opportunities were detected. Try adjusting your strategy or assumptions.
           </p>
           {planDismissed.length > 0 && (
-            <button type="button" className="btn btn-secondary btn-small" onClick={restoreDismissed}>
+            <button type="button" className="btn btn-secondary btn-small" data-insight-restore onClick={restoreDismissed}>
               Restore dismissed insights
             </button>
           )}
@@ -171,7 +202,7 @@ export function InsightsPage() {
             const category = cat as InsightCategory
             const isCollapsed = collapsedCategories[category] ?? false
             return (
-              <div key={category} className="insight-category-group">
+              <div key={category} className="insight-category-group" data-insight-category={category}>
                 <h2 className="insight-category-heading">
                   <button
                     type="button"
@@ -200,7 +231,7 @@ export function InsightsPage() {
                 {!isCollapsed && (
                   <div className="insight-cards-list">
                     {cards!.map((card) => (
-                      <InsightCardView key={insightRenderKey(card)} card={card} onDismiss={() => dismissCard(card.id)} />
+                      <InsightCardView key={insightRenderKey(card)} card={card} onDismiss={() => dismissCard(card, cards!)} />
                     ))}
                   </div>
                 )}
@@ -210,7 +241,7 @@ export function InsightsPage() {
 
           {planDismissed.length > 0 && (
             <div className="insight-restore-row">
-              <button type="button" className="btn btn-secondary btn-small" onClick={restoreDismissed}>
+              <button type="button" className="btn btn-secondary btn-small" data-insight-restore onClick={restoreDismissed}>
                 Restore dismissed insights ({planDismissed.length})
               </button>
             </div>

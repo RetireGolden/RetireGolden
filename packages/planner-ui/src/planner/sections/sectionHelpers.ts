@@ -28,6 +28,16 @@ export const MONTH_OPTIONS = [
   'December',
 ].map((label, i) => ({ value: String(i + 1), label }))
 
+/**
+ * What an unnamed person is shown as (#523): the role, which the Household
+ * card chip, the household map, and the attention list already speak, rather
+ * than a literal "Person" that could not be told from someone named Person.
+ * The schema requires a non-empty name, so a cleared field has to store one.
+ */
+export function fallbackPersonName(index: number): string {
+  return index === 0 ? 'Primary' : 'Partner'
+}
+
 export function isIndividuallyOwnedAccount(type: Account['type']): boolean {
   return type === 'traditional' || type === 'roth' || type === 'hsa'
 }

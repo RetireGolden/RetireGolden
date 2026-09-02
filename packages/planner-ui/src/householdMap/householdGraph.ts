@@ -278,6 +278,30 @@ const ESTATE_LABELS: Record<EstateDestinationId, string> = {
 
 const INVESTABLE_TYPES = new Set<Account['type']>(['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'])
 
+/**
+ * Sums of *entered* values over a set of account nodes — the graph's own
+ * totals and, on the map page, the totals of whatever the person focus and
+ * group filters leave on screen (#506), so one reading of the stored figures
+ * serves both. Exact sums of stored figures only, keyed by the node kind the
+ * account union maps to (`accountKind`): investable accounts carry a
+ * 'balance', property a 'value', debt an 'owed' figure; pensions, annuities,
+ * ladders, and insurance are never balance-sheet lines here.
+ */
+export function sumEnteredTotals(
+  nodes: readonly Pick<HouseholdNode, 'kind' | 'amount' | 'amountKind'>[],
+): HouseholdGraphTotals {
+  const totals: HouseholdGraphTotals = { investable: 0, property: 0, assets: 0, liabilities: 0, netWorth: 0 }
+  for (const n of nodes) {
+    if (n.amount === null) continue
+    if (n.kind === 'account' && n.amountKind === 'balance') totals.investable += n.amount
+    else if (n.kind === 'property' && n.amountKind === 'value') totals.property += n.amount
+    else if (n.kind === 'debt' && n.amountKind === 'owed') totals.liabilities += n.amount
+  }
+  totals.assets = totals.investable + totals.property
+  totals.netWorth = totals.assets - totals.liabilities
+  return totals
+}
+
 // ---------------------------------------------------------------------------
 // Selector
 // ---------------------------------------------------------------------------
@@ -505,7 +529,6 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
   })
 
   // --- accounts (incl. pensions, annuities, property, debts) ---------------
-  const totals: HouseholdGraphTotals = { investable: 0, property: 0, assets: 0, liabilities: 0, netWorth: 0 }
   const spouseCanExist = people.length === 2
   plan.accounts.forEach((a, i) => {
     const claimed = claimNodeId(accountNodeId(a.id))
@@ -557,11 +580,6 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       edges.push(edge('owns', personNodeId(pid), id, a.ownerPersonId === null && personIds.length > 1 ? { joint: true } : undefined))
     }
 
-    // Totals: exact sums of stored figures only.
-    if (INVESTABLE_TYPES.has(a.type) && 'balance' in a) totals.investable += a.balance
-    if (a.type === 'property') totals.property += a.value
-    if (a.type === 'debt') totals.liabilities += a.balance
-
     if (destination === 'charity') {
       const pct = a.estateBeneficiary?.charityPct ?? 0
       referenceEstate('charity', destinationSource, 'accounts')
@@ -605,8 +623,6 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
       )
     }
   })
-  totals.assets = totals.investable + totals.property
-  totals.netWorth = totals.assets - totals.liabilities
 
   // --- insurance ------------------------------------------------------------
   plan.insurance.forEach((p, i) => {
@@ -679,5 +695,6 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
     })
   }
 
-  return { nodes, edges, totals, unsupported: UNSUPPORTED_RELATIONSHIPS }
+  // Totals: exact sums of stored figures only (account nodes carry them).
+  return { nodes, edges, totals: sumEnteredTotals(nodes), unsupported: UNSUPPORTED_RELATIONSHIPS }
 }

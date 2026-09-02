@@ -16,7 +16,7 @@ import { usePlan } from '../planner/planContextCore'
 import { usePrivacy } from '../planner/privacyContextCore'
 import type { MapColumnId } from './layout'
 import { MAP_COLUMN_LABELS } from './layout'
-import { buildMapViewModel, EDIT_SURFACE_ROUTES, type MapNodeVM } from './mapViewModel'
+import { buildMapViewModel, type MapNodeVM } from './mapViewModel'
 
 const ZOOM_STEPS = [0.75, 1, 1.25, 1.5] as const
 
@@ -97,7 +97,12 @@ export function HouseholdMapPage() {
     [graph, hideAmounts, focusPersonId, hiddenColumns],
   )
 
-  const attention = useMemo(() => graph.nodes.filter((n) => n.completeness.missing.length > 0), [graph])
+  // Scoped with the diagram (#506): the focus and group filters decide what
+  // "this view" is, and the totals line and attention panel describe it.
+  const attention = useMemo(() => vm.nodes.filter((n) => n.missing.length > 0), [vm])
+  const focusPersonName = plan.household.people.find((p) => p.id === focusPersonId)?.name ?? null
+  const scopeLabel =
+    vm.scope === 'household' ? null : focusPersonName && hiddenColumns.length === 0 ? `for ${focusPersonName}` : 'for the items shown'
   const printScale = Math.min(1, PRINT_WIDTH_PX / vm.width, PRINT_HEIGHT_PX / vm.height)
 
   // Arrow keys move focus between cards (grid-wise); Tab order stays the
@@ -198,7 +203,7 @@ export function HouseholdMapPage() {
         <p className="map-totals" role="status">
           {vm.totals ? (
             <>
-              As entered: assets <strong>{vm.totals.assetsText}</strong> · debts{' '}
+              As entered{scopeLabel ? ` ${scopeLabel}` : ''}: assets <strong>{vm.totals.assetsText}</strong> · debts{' '}
               <strong>{vm.totals.liabilitiesText}</strong> · net <strong>{vm.totals.netWorthText}</strong>
             </>
           ) : (
@@ -310,13 +315,14 @@ export function HouseholdMapPage() {
           <h3 style={{ marginTop: 0 }}>What needs attention</h3>
           <p className="card-hint">
             Facts the plan could carry but doesn't yet. Filling them in sharpens the projection and the estate picture.
+            {scopeLabel ? ` Listed ${scopeLabel}; clear Focus and the group filters to see the whole household.` : ''}
           </p>
           <ul className="map-attention-list">
             {attention.map((n) => (
               <li key={n.id}>
-                <Link to={`../${EDIT_SURFACE_ROUTES[n.editSurface]}`}>{n.label}</Link>
+                <Link to={`../${n.to}`}>{n.label}</Link>
                 {': '}
-                <span className="muted">{n.completeness.missing.join('; ')}</span>
+                <span className="muted">{n.missing.join('; ')}</span>
               </li>
             ))}
           </ul>

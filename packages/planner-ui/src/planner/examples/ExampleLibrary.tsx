@@ -32,7 +32,25 @@ function householdFacts(example: ExamplePlan): string {
   return `${filing} · ${plan.household.state} · ${people} ${people === 1 ? 'person' : 'people'}`
 }
 
-function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (msg: string) => void }) {
+type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4'
+
+/** The group heading and card title levels under each section level (#519). */
+const HEADING_LEVELS: Record<'h1' | 'h2', { group: HeadingTag; card: HeadingTag }> = {
+  h1: { group: 'h2', card: 'h3' },
+  h2: { group: 'h3', card: 'h4' },
+}
+
+function ExampleCard({
+  example,
+  onNotice,
+  headingTag,
+}: {
+  example: ExamplePlan
+  onNotice: (msg: string) => void
+  /** The card title's level: one below the group heading it sits under (#519). */
+  headingTag: HeadingTag
+}) {
+  const CardHeading = headingTag
   const navigate = useNavigate()
   const store = usePlanStore()
   const { homeLabel } = usePlannerEdition()
@@ -116,10 +134,11 @@ function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (m
 
   // A list item with a heading (#478): assistive tech navigates card by card,
   // and every action names its example so twenty-nine "Open" buttons are not
-  // one identical name.
+  // one identical name. The heading level follows the group heading above the
+  // list (#519), so the outline is section > group > card, not a flat wall.
   return (
     <li className="plan-card example-card">
-      <h2 className="plan-card-name">{example.title}</h2>
+      <CardHeading className="plan-card-name">{example.title}</CardHeading>
       <span className="plan-card-meta">{householdFacts(example)}</span>
       <p className="example-card-teaches">{example.teaches}</p>
       {/* Each action names its example so no two cards share a name (#478).
@@ -170,6 +189,8 @@ export function ExampleLibrary({
   headingLevel?: 'h1' | 'h2'
 }) {
   const Heading = headingLevel
+  const GroupHeading = HEADING_LEVELS[headingLevel].group
+  const cardHeading = HEADING_LEVELS[headingLevel].card
   const { homeLabel } = usePlannerEdition()
   // First-time visitors see the three starters; anyone who expanded the full
   // grid before keeps it open (stored per-device, cleared by "Clear all data").
@@ -197,20 +218,36 @@ export function ExampleLibrary({
         Explore curated households in the full planner. Examples stay out of {homeLabel} until you save one. Edit
         freely and refresh without cluttering your own list.
       </p>
-      {/* role="list" restores list semantics WebKit drops for list-style: none. */}
-      <ul className="plan-grid" role="list" aria-label="Featured examples">
+      {/* Each list sits under a real group heading (#519): the outline is
+          section > group > card, and the lists are labelled by those headings.
+          role="list" restores list semantics WebKit drops for list-style: none. */}
+      <GroupHeading className="example-group-heading" id="examples-featured-heading">
+        Featured examples
+      </GroupHeading>
+      <ul className="plan-grid" role="list" aria-labelledby="examples-featured-heading">
         {FEATURED.map((example) => (
-          <ExampleCard key={example.id} example={example} onNotice={onNotice} />
+          <ExampleCard key={example.id} example={example} onNotice={onNotice} headingTag={cardHeading} />
         ))}
       </ul>
 
-      {expanded ? (
-        <ul className="plan-grid" id="examples-full-grid" role="list" aria-label="All other examples">
-          {REST.map((example) => (
-            <ExampleCard key={example.id} example={example} onNotice={onNotice} />
-          ))}
-        </ul>
-      ) : null}
+      {/* The controlled region stays in the DOM while collapsed — hidden, and
+          with no cards mounted — so the toggle's aria-controls always points
+          at an element that exists (#519; #445 had dropped the attribute
+          instead, which left an expandable with no target). */}
+      <div id="examples-full-grid" hidden={!expanded}>
+        {expanded ? (
+          <>
+            <GroupHeading className="example-group-heading" id="examples-rest-heading">
+              All other examples
+            </GroupHeading>
+            <ul className="plan-grid" role="list" aria-labelledby="examples-rest-heading">
+              {REST.map((example) => (
+                <ExampleCard key={example.id} example={example} onNotice={onNotice} headingTag={cardHeading} />
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </div>
       {/* The toggle changes 3 cards to 29 (and back) without moving focus;
           announce it so a screen-reader user hears what happened (#478). */}
       <p className="sr-only" role="status" aria-live="polite">
@@ -225,7 +262,7 @@ export function ExampleLibrary({
           type="button"
           className="btn btn-secondary"
           aria-expanded={expanded}
-          aria-controls={expanded ? 'examples-full-grid' : undefined}
+          aria-controls="examples-full-grid"
           onClick={toggle}
         >
           {expanded ? 'Show fewer examples' : `Show all ${EXAMPLE_PLANS.length} examples`}

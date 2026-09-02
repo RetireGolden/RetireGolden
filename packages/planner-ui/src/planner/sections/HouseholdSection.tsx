@@ -11,7 +11,7 @@ import { LongevityModal } from '../LongevityModal'
 import { SurvivalPercentileModal } from '../SurvivalPercentileModal'
 import { US_STATES } from '../usStates'
 import { Issues } from './shared'
-import { MONTH_OPTIONS, newId } from './sectionHelpers'
+import { fallbackPersonName, MONTH_OPTIONS, newId } from './sectionHelpers'
 
 // ---------------------------------------------------------------------------
 // Household
@@ -72,8 +72,10 @@ export function HouseholdSection() {
           <div className="item-row" key={person.id} style={{ marginTop: '1rem' }}>
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">{i === 0 ? 'Primary' : 'Partner'}</span>
-                {person.name}
+                <span className="type-chip">{fallbackPersonName(i)}</span>
+                {/* An unnamed person is already announced by the role chip;
+                    repeating it would read "Partner Partner". */}
+                {person.name === fallbackPersonName(i) ? null : person.name}
               </span>
               {i === 1 ? (
                 <button
@@ -86,7 +88,12 @@ export function HouseholdSection() {
               ) : null}
             </div>
             <div className="form-grid">
-              <TextField label="Name" value={person.name} onCommit={(v) => update((d) => void (d.household.people[i]!.name = v || 'Person'))} />
+              <TextField
+                label="Name"
+                hint={`Blank = shown as ${fallbackPersonName(i)}.`}
+                value={person.name}
+                onCommit={(v) => update((d) => void (d.household.people[i]!.name = v || fallbackPersonName(i)))}
+              />
               <DateField
                 label="Date of birth"
                 value={person.dob}

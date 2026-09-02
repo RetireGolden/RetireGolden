@@ -129,7 +129,11 @@ CSS-escaped, so ids containing quotes can't break navigation), a "Text list of t
 equivalent, a "What needs attention" panel (every `missing` fact with a link to fix it), and the
 out-of-model panel from `UNSUPPORTED_RELATIONSHIPS`. Edge annotations ("joint", survivor %,
 marriage years) render on the diagram, so joint holding is visually distinct from two individual
-ownership edges. Totals are labeled "as entered" to keep them distinct from the projection.
+ownership edges. Totals are labeled "as entered" to keep them distinct from the projection. The
+person focus and the group filters scope the whole view, not only the diagram: the view model's
+`scope` flips to `'shown'`, its totals are `sumEnteredTotals` over the nodes left on screen (the
+same reading of stored figures the whole-household graph uses), the totals line says "As entered
+for Sam" / "for the items shown", and the attention panel lists only the shown items and says so.
 
 **Person-focus traversal rule** (`connectedNodeIds`): seed with edges touching the focus person
 directly (what they own/receive; what covers, names, or unlocks them), then grow to a fixpoint

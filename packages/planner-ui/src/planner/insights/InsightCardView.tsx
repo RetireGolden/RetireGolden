@@ -189,13 +189,15 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
   const confidence = confidenceChips[card.confidence]
 
   return (
-    <div className="card insight-card">
+    <div className="card insight-card" data-insight-id={card.id}>
+      {/* The accessible name carries the insight title (#505): with several
+          findings on screen, "Dismiss this insight" was one name repeated. */}
       <button
         type="button"
         className="btn-ghost insight-dismiss"
         onClick={onDismiss}
-        aria-label="Dismiss this insight"
-        title="Dismiss this insight"
+        aria-label={`Dismiss insight: ${card.title}`}
+        title={`Dismiss insight: ${card.title}`}
       >
         <svg
           viewBox="0 0 24 24"

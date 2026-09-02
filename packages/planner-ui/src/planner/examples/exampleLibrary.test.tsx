@@ -58,17 +58,24 @@ describe('example library page', () => {
     )
     expect(browse, 'a Show-all control should be one interaction away').toBeDefined()
     expect(browse!.getAttribute('aria-expanded')).toBe('false')
-    // Collapsed, there is no grid to point at, so aria-controls is absent (#445 review).
-    expect(browse!.getAttribute('aria-controls')).toBeNull()
+    // Collapsed, the controlled region is still in the DOM (hidden, no cards
+    // mounted), so aria-controls always resolves (#519; #445 had dropped it).
+    expect(browse!.getAttribute('aria-controls')).toBe('examples-full-grid')
+    const region = container.querySelector<HTMLElement>('#examples-full-grid')!
+    expect(region).not.toBeNull()
+    expect(region.hidden).toBe(true)
+    expect(region.querySelectorAll('.example-card')).toHaveLength(0)
   })
 
   it('renders cards as a labelled list with headings and per-example action names (#478)', async () => {
     await renderExamples()
-    const grid = container.querySelector('ul.plan-grid[role="list"][aria-label="Featured examples"]')!
+    const grid = container.querySelector('ul.plan-grid[role="list"][aria-labelledby="examples-featured-heading"]')!
     expect(grid).not.toBeNull()
+    expect(container.querySelector('#examples-featured-heading')?.textContent).toBe('Featured examples')
     const cards = [...grid.querySelectorAll(':scope > li.example-card')]
     expect(cards).toHaveLength(3)
-    const titles = cards.map((c) => c.querySelector('h2.plan-card-name')?.textContent)
+    // Under the page h1 and the group h2, a card title is an h3 (#519).
+    const titles = cards.map((c) => c.querySelector('h3.plan-card-name')?.textContent)
     expect(titles.every(Boolean)).toBe(true)
     // Every action names its example, so no two cards share an accessible name,
     // and the visible label stays a contiguous prefix of that name (Label in Name).
@@ -88,7 +95,8 @@ describe('example library page', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     expect(status.textContent).toMatch(/^Showing all \d+ examples\.$/)
-    expect(container.querySelector('ul#examples-full-grid[role="list"][aria-label="All other examples"]')).not.toBeNull()
+    expect(container.querySelector('#examples-full-grid ul[role="list"][aria-labelledby="examples-rest-heading"]')).not.toBeNull()
+    expect(container.querySelector('#examples-rest-heading')?.textContent).toBe('All other examples')
     // Uniqueness holds across the whole expanded library, not just the three starters.
     const allNames = actionNames([...container.querySelectorAll('.example-card')])
     expect(allNames).toHaveLength(EXAMPLE_PLANS.length * 3)
@@ -115,9 +123,30 @@ describe('example library page', () => {
       browse.click()
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
-    expect(container.querySelector('#examples-full-grid')).toBeNull()
+    // The region stays (hidden) so aria-controls keeps a valid target (#519).
+    const collapsed = container.querySelector<HTMLElement>('#examples-full-grid')!
+    expect(collapsed.hidden).toBe(true)
+    expect(collapsed.querySelector('.example-card')).toBeNull()
     expect(document.activeElement).toBe(browse)
-    expect(browse.getAttribute('aria-controls')).toBeNull()
+    expect(browse.getAttribute('aria-controls')).toBe('examples-full-grid')
+  })
+
+  it('keeps one outline: h1 section, h2 groups, h3 cards, and no skipped level (#519)', async () => {
+    await renderExamples()
+    const browse = Array.from(container.querySelectorAll('button')).find((b) =>
+      /Show all \d+ examples/.test(b.textContent ?? ''),
+    )!
+    await act(async () => {
+      browse.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const levels = [...container.querySelectorAll('h1, h2, h3, h4, h5, h6')].map((h) => Number(h.tagName[1]))
+    expect(levels.filter((l) => l === 1)).toHaveLength(1)
+    expect(levels.filter((l) => l === 2)).toHaveLength(2)
+    expect(levels.filter((l) => l === 3)).toHaveLength(EXAMPLE_PLANS.length)
+    for (let i = 1; i < levels.length; i++) {
+      expect(levels[i]! - levels[i - 1]!, `heading skip at ${i}: ${levels.join(',')}`).toBeLessThanOrEqual(1)
+    }
   })
 
   it('reveals all examples one click away and remembers the preference', async () => {

@@ -293,7 +293,10 @@ function EstateBeneficiaryFields({
       <SelectField
         label="Estate beneficiary"
         help="Who inherits this account's balance. Spouse: rolls over untaxed (spousal IRA rollover or HSA inheritance). Non-spouse: the balance is taxed at the heir tax rate for this account class. Charity: passes untaxed and leaves the heirs' estate entirely. Default treats each account by its type, traditional (and a non-spouse HSA) pass to a non-spouse heir taxed at the heir rate; cash, taxable, and Roth pass through untaxed."
-        hint="Blank = default by account type."
+        // An HSA also carries the older Beneficiary shorthand above; the engine
+        // lets an explicit estate destination win and otherwise follows the
+        // shorthand, and the two hints say so (#516).
+        hint={account.type === 'hsa' ? 'Blank = follows the Beneficiary above.' : 'Blank = default by account type.'}
         value={account.estateBeneficiary?.destination ?? ''}
         options={[
           { value: '', label: 'Default (by account type)' },

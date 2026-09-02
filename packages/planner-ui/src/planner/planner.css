@@ -3212,3 +3212,72 @@ html:has(.kpi-bar) {
   margin: 0.75rem 0 0;
 }
 
+/* --- Design QA cluster B (#507, #516, #519, #521, #525) ----------------------
+   Appended as one block; pinned by designQa.clusterB.test.ts. */
+
+/* Import source cards (#507): "Choose a different source" hands focus back to
+   the card that was opened, by script, after a pointer click — which is the
+   one case :focus-visible does not mark. Ring the card on any focus here so
+   the restored card is the marked one, not whichever card the idle pointer
+   happens to rest on (its hover border is the plan-card affordance, and it
+   read as a selection). Mouse users never see this ring linger: opening a
+   card unmounts the grid at once. */
+.import-page .home-path-card:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Checkbox fields inside a subgridded form row (#516): the box is a third the
+   height of a text input, and pinned to the top of the control track it sat
+   ~9px above the neighbouring input text. Centre it in the track instead; the
+   shared -0.45rem pull-up stays, so the visual centre lands on the inputs'. */
+@supports (grid-template-rows: subgrid) {
+  .form-grid > .field--checkbox > input[type='checkbox'] {
+    align-self: center;
+  }
+}
+
+/* Example groups (#519): the two lists get real headings so the outline is
+   h1 > h2 (group) > h3 (card) instead of twenty-nine sibling h2s, and the
+   card title keeps its card-name size at either level. */
+.example-group-heading {
+  margin: 1.25rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.plan-grid h3.plan-card-name,
+.plan-grid h4.plan-card-name {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* Nested form groups (#521): the asset-class blocks on Assumptions read as
+   one field soup behind a 3px accent stripe (faint in Light). Bound each
+   group as a well — full 1px border and a 3% ink tint, the .empty-state
+   treatment without the dash — so four groups read as four. The gold stripe
+   goes: gold marks action, selection, and focus, not grouping (DESIGN.md
+   Golden Thread and side-stripe rules). */
+.nested-form-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--fg) 3%, transparent);
+  padding: 0.75rem 1rem 0.85rem;
+  margin: 0.5rem 0;
+}
+
+.form-grid > .nested-form-section {
+  grid-column: 1 / -1;
+}
+
+/* Optimizer failure wells (#525): a completed re-run moves focus here, so the
+   well needs the app focus ring and must not show the UA one. */
+.optimizer-failure:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.optimizer-failure:focus:not(:focus-visible) {
+  outline: none;
+}
+

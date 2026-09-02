@@ -160,7 +160,8 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     const box = rule("input[type='checkbox'],\ninput[type='radio']", indexCss)
     expect(box).toMatch(/appearance:\s*none/)
     expect(box).toMatch(/width:\s*var\(--control-check-size\)/)
-    expect(box).toMatch(/border:\s*1px solid var\(--border\)/)
+    // The box edge is its own token (#521): --border is ~1.3:1 on white.
+    expect(box).toMatch(/border:\s*1px solid var\(--control-border\)/)
     expect(box).toMatch(/background:\s*var\(--surface-1\)/)
     const checked = rule("input[type='checkbox']:checked,\ninput[type='radio']:checked", indexCss)
     expect(checked).toMatch(/background:\s*var\(--accent\)/)
