@@ -255,13 +255,15 @@ describe('Insurance care events (#489)', () => {
     const warnings = [...host.querySelectorAll('.callout--warn')]
     expect(warnings).toHaveLength(1)
     expect(warnings[0]!.textContent).toContain(`${primary!.name} has 2 care events starting at age 85`)
-    expect(warnings[0]!.textContent).toContain('counts that cost twice')
+    // No promise of a live readout: the stress test may be paused.
+    expect(warnings[0]!.textContent).toContain('All 2 count toward the care cost the stress test prices when it runs')
     // A fifth makes three: the copy follows the count.
     await act(async () => add.click())
     const again = [...host.querySelectorAll('.callout--warn')]
     expect(again).toHaveLength(1)
     expect(again[0]!.textContent).toContain(`${primary!.name} has 3 care events starting at age 85`)
-    expect(again[0]!.textContent).toContain('counts that cost 3 times')
+    expect(again[0]!.textContent).toContain('All 3 count toward')
+    expect(again[0]!.textContent).toContain('remove the extras if they were added by mistake')
   })
 
   it('warns once per person even when two people share a name', async () => {
@@ -341,26 +343,14 @@ describe('Insurance care events (#489)', () => {
     expect(two.querySelector('.callout--warn')!.textContent).toContain('Ages 65 and 70 each appear more than once')
   })
 
-  it('past the schema cap a new row takes a free age; with every age taken the add control disables', async () => {
-    const atCap = await mount(schedulePlan([{ age: 120, value: 0 }]), <InsuranceSection />)
+  it('once the schedule reaches the schema ceiling the add control disables instead of wrapping to low ages', async () => {
+    const atCap = await mount(schedulePlan([{ age: 65, value: 0 }, { age: 120, value: 0 }]), <InsuranceSection />)
     const add = [...atCap.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Schedule row')!
-    expect(add.disabled).toBe(false)
+    expect(add.disabled).toBe(true)
+    expect(add.title).toContain('already reaches age 120')
     await act(async () => add.click())
-    const ages = [...atCap.querySelectorAll<HTMLLabelElement>('label.field-label')]
-      .filter((l) => l.textContent === 'Age')
-      .map((l) => atCap.querySelector<HTMLInputElement>(`[id="${l.htmlFor}"]`)!.value)
-    expect(ages).toEqual(['120', '0'])
-    expect(atCap.querySelectorAll('.callout--warn')).toHaveLength(0)
-    await act(async () => root!.unmount())
-    root = null
-    container?.remove()
-    const full = await mount(
-      schedulePlan(Array.from({ length: 121 }, (_, age) => ({ age, value: 0 }))),
-      <InsuranceSection />,
-    )
-    const addFull = [...full.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Schedule row')!
-    expect(addFull.disabled).toBe(true)
-    expect(addFull.title).toContain('already has a row')
+    const ages = [...atCap.querySelectorAll<HTMLLabelElement>('label.field-label')].filter((l) => l.textContent === 'Age')
+    expect(ages).toHaveLength(2)
   })
 })
 
@@ -386,6 +376,7 @@ describe('Insurance LTC stress (#517)', () => {
     ])
     expect(host.querySelector('table.compare-table')).toBeNull()
     expect(host.textContent).toContain('Paused: the plan has 2 entries to fix')
+    expect(host.textContent).toContain('The issue lists on Accounts and Spending name the fields.')
   })
 })
 
@@ -403,8 +394,13 @@ describe('Income orphaned Social Security row (#462 review)', () => {
     const orphanRow = ssRows.find((r) => r.querySelector('.callout--warn') !== null)!
     expect(orphanRow.textContent).toContain('no longer in the household')
     expect([...orphanRow.querySelectorAll('button')].map((b) => b.textContent)).toContain('Remove')
+    // The Social Security step cannot show this stream, so the row does not
+    // send the reader there; it links Household, where the person can return.
+    expect(orphanRow.textContent).not.toContain('managed on the')
+    expect([...orphanRow.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toContain('/household')
     const healthyRow = ssRows.find((r) => r !== orphanRow)!
     expect([...healthyRow.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Remove')
+    expect(healthyRow.textContent).toContain('managed on the')
     // Removing it drops the row.
     const remove = [...orphanRow.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
     await act(async () => remove.click())
@@ -455,6 +451,17 @@ describe('Income floor (#512)', () => {
     // reads the same projection pause together.
     expect(host.textContent).toContain('Funded ratio')
     expect(host.textContent).not.toMatch(/Counted from \d{4} through|the ratio reads low/)
+    // The pause names and links the section the entry lives on, which is
+    // what makes it actionable where no issue list renders (Results).
+    const fundedCard = [...host.querySelectorAll('.card')].find((c) => c.querySelector('h2')?.textContent === 'Funded ratio')!
+    expect(fundedCard.textContent).toContain('The issue list on Income floor names the field.')
+    expect([...fundedCard.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toContain('/income-floor')
+  })
+
+  it('an issue on the ladder list itself pauses every ladder quote', async () => {
+    const host = await mount(ladderPlan(), <IncomeFloorSection />, ['incomeFloor.ladders: at most one ladder per purpose'])
+    expect(host.textContent).toContain('Quote paused')
+    expect(host.textContent).not.toContain('Quoted cost')
   })
 
   it('the paused card never projects, so a draft the engine would throw on cannot crash or empty it', async () => {
@@ -472,10 +479,17 @@ describe('Income floor (#512)', () => {
   })
 
   it('an issue elsewhere in the plan pauses the ratio (a full projection) but not this ladder\'s quote (its own rungs)', async () => {
-    const host = await mount(ladderPlan(), <IncomeFloorSection />, ['expenses.baseAnnual: Invalid input'])
+    const host = await mount(ladderPlan(), <IncomeFloorSection />, [
+      'expenses.baseAnnual: Invalid input',
+      'accounts.0.balance: Invalid input',
+    ])
     expect(host.textContent).toContain('Quoted cost')
     expect(host.textContent).not.toContain('Quote paused')
     expect(host.querySelector('.stat-grid')).toBeNull()
-    expect(host.textContent).toContain('Paused: the plan has an entry to fix')
+    expect(host.textContent).toContain('Paused: the plan has 2 entries to fix')
+    expect(host.textContent).toContain('The issue lists on Accounts and Spending name the fields.')
+    const hrefs = [...host.querySelectorAll('a')].map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/accounts')
+    expect(hrefs).toContain('/spending')
   })
 })

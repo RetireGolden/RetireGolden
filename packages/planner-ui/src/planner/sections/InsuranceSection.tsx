@@ -11,8 +11,9 @@ import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
 import { fmtMoneyCompact } from '../format'
 import { currentStartYear, taxCalculatorFor } from '../useProjection'
-import { Issues } from './shared'
+import { IssueSectionsSentence, Issues } from './shared'
 import {
+  MAX_SCHEDULE_AGE,
   duplicateCareEvents,
   duplicateScheduleAges,
   formatAgeList,
@@ -149,14 +150,18 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
                   per age so the illustration reads as one line.
                 </div>
               ) : null}
-              {/* A new row opens at an age no row holds yet (one past the latest
-                  while that fits), so a click never creates a repeat; with
-                  every age taken there is nothing to add (#489). */}
+              {/* A new row opens one past the latest, so a click never creates a
+                  repeat; once the schedule reaches the schema's highest age
+                  there is nothing left to add (#489). */}
               <button
                 type="button"
                 className="btn btn-secondary btn-small"
                 disabled={nextAge === null}
-                title={nextAge === null ? 'Every age from 0 to 120 already has a row.' : undefined}
+                title={
+                  nextAge === null
+                    ? `The schedule already reaches age ${MAX_SCHEDULE_AGE}, the highest age an illustration can hold.`
+                    : undefined
+                }
                 onClick={() =>
                   update((d) => {
                     const p = d.insurance[index]
@@ -293,8 +298,7 @@ function LtcStressPanel() {
         <h3>LTC stress test</h3>
         <div className="callout callout--warn" role="status">
           Paused: the plan has {issues.length === 1 ? 'an entry' : `${issues.length} entries`} to fix before these
-          scenarios can be re-run, so the last result no longer applies. The issue list on the page with the entry names
-          the field{issues.length === 1 ? '' : 's'}.
+          scenarios can be re-run, so the last result no longer applies. <IssueSectionsSentence />
         </div>
       </div>
     )
@@ -412,9 +416,9 @@ export function InsuranceSection() {
         ))}
         {duplicateCareEvents(plan).map((dupe) => (
           <div className="callout callout--warn" role="status" key={`${dupe.personId}@${dupe.startAge}`}>
-            {dupe.name} has {dupe.count} care events starting at age {dupe.startAge}. All {dupe.count} are modeled, so the
-            stress test below counts that cost {dupe.count === 2 ? 'twice' : `${dupe.count} times`}; remove the extra
-            {dupe.count === 2 ? '' : 's'} if {dupe.count === 2 ? 'it was' : 'they were'} added by mistake.
+            {dupe.name} has {dupe.count} care events starting at age {dupe.startAge}. All {dupe.count} count toward the
+            care cost the stress test prices when it runs; remove the extra{dupe.count === 2 ? '' : 's'} if{' '}
+            {dupe.count === 2 ? 'it was' : 'they were'} added by mistake.
           </div>
         ))}
         <div className="add-row">

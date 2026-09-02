@@ -8,38 +8,32 @@ import {
   ANNUITY_MAX_START_AGE,
   latestNonQlacQualifiedAnnuityStartAge,
   latestQlacAnnuityStartAge,
+  permanentLifePolicySchema,
 } from '@retiregolden/engine/model/plan'
 import { ANNUITY_MIN_START_AGE } from '../../accountStartAgeBounds'
 
 export const newId = () => crypto.randomUUID()
 
 /**
- * Whether any validation issue sits at or under one of the given plan paths.
- * Issue strings are `path.segments: message` (engine `parsePlan`), so a panel
- * derived from `careEvents` or `incomeFloor.ladders.2` can tell when the
- * entries it reads are the ones currently failing, and go on hold instead of
- * presenting a number computed from them as authoritative (#512, #517).
+ * The highest age an illustration-schedule row may carry, read off the
+ * engine schema so the editor can never offer an age the plan would refuse.
  */
-export function hasIssueUnder(issues: readonly string[], ...paths: readonly string[]): boolean {
-  return issues.some((issue) => paths.some((path) => issue === path || issue.startsWith(`${path}.`) || issue.startsWith(`${path}:`)))
-}
-
-/** The schema's ceiling on an illustration-schedule age. */
-const MAX_SCHEDULE_AGE = 120
+export const MAX_SCHEDULE_AGE: number = (() => {
+  const max = permanentLifePolicySchema.shape.cashValueSchedule.unwrap().element.shape.age.maxValue
+  if (max === null) throw new Error('cashValueSchedule age schema carries no maximum')
+  return max
+})()
 
 /**
- * The age a new illustration row opens at: 65 for an empty schedule, one past
- * the latest row while that fits the schema's 120, otherwise the lowest age
- * no row holds yet; null once every age is taken, which is when the add
- * control disables rather than appending a row that repeats one (#489).
+ * The age a new illustration row opens at: 65 for an empty schedule,
+ * otherwise one past the latest row; null once the schedule already reaches
+ * the schema's ceiling, which is when the add control disables instead of
+ * appending a row that repeats one or reaches past the range (#489).
  */
 export function nextScheduleAge(schedule: ReadonlyArray<{ age: number }>): number | null {
   if (schedule.length === 0) return 65
-  const taken = new Set(schedule.map((row) => row.age))
-  const past = Math.max(...taken) + 1
-  if (past <= MAX_SCHEDULE_AGE) return past
-  for (let age = 0; age <= MAX_SCHEDULE_AGE; age++) if (!taken.has(age)) return age
-  return null
+  const past = Math.max(...schedule.map((row) => row.age)) + 1
+  return past <= MAX_SCHEDULE_AGE ? past : null
 }
 
 /** Ages that more than one schedule row carries, ascending, each once. */

@@ -75,7 +75,8 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
       )
     }
     case 'socialSecurity': {
-      const ssPerson = plan.household.people.find((p) => p.id === stream.personId)
+      const orphan = isOrphanStream(plan, stream)
+      const ssPerson = orphan ? undefined : plan.household.people.find((p) => p.id === stream.personId)
       const resolved = ssPerson ? resolvePia(ssPerson, stream) : null
       const pia = resolved?.piaMonthly ?? stream.piaMonthly
       const sourceLabel = stream.piaMonthly === null ? 'earnings record' : 'quick PIA'
@@ -87,18 +88,23 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
             <ReadonlyField label="PIA (monthly at FRA)" value={pia != null ? `${fmtMoney(pia)} (${sourceLabel})` : 'Not set'} />
             <ReadonlyField label="Claim age" value={claim} />
           </div>
-          {ssPerson ? null : (
+          {/* The Social Security step renders one card per household member,
+              so an orphaned stream cannot be reached there: this row is the
+              only place it can be removed, and the usual pointer would send
+              the reader to a surface that does not show it. */}
+          {orphan ? (
             <div className="callout callout--warn" role="status">
               This benefit belongs to a person who is no longer in the household, so the plan cannot be stored until it
-              is removed here or the person is added back on the Household page.
+              is removed here or the person is added back on the <Link to="../household">Household</Link> page.
             </div>
+          ) : (
+            <p className="field-hint">
+              Social Security is managed on the <Link to="../social-security">Social Security</Link> step so the
+              earnings-derived benefit stays in one place. Edit the benefit and claim age there; the{' '}
+              <Link to="../social-security-analysis">Social Security analysis</Link> can apply the top-ranked claim age
+              for the objective you pick there.
+            </p>
           )}
-          <p className="field-hint">
-            Social Security is managed on the <Link to="../social-security">Social Security</Link> step so the
-            earnings-derived benefit stays in one place. Edit the benefit and claim age there; the{' '}
-            <Link to="../social-security-analysis">Social Security analysis</Link> can apply the top-ranked claim age
-            for the objective you pick there.
-          </p>
         </>
       )
     }

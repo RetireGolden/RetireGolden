@@ -60,18 +60,40 @@ function rule(selector: string, source = css): string {
   return ruleBodyAt(source, -1, selector)
 }
 
+/** [open-brace, close-brace] offsets of every block introduced by `prelude`, matched by brace depth. */
+function atRuleBlocks(source: string, prelude: string): Array<[number, number]> {
+  const blocks: Array<[number, number]> = []
+  let from = 0
+  while (from < source.length) {
+    const at = source.indexOf(prelude, from)
+    if (at < 0) break
+    const open = source.indexOf('{', at + prelude.length)
+    if (open < 0) break
+    let depth = 1
+    let i = open + 1
+    while (depth > 0 && i < source.length) {
+      if (source[i] === '{') depth++
+      if (source[i] === '}') depth--
+      i++
+    }
+    blocks.push([open, i - 1])
+    from = i
+  }
+  return blocks
+}
+
 describe('Design-QA chrome pins: cluster C', () => {
   it('a form-grid checkbox centres on the row control midline under subgrid (#467, #473)', () => {
     const selector = ".form-grid > .field--checkbox > input[type='checkbox']"
     const body = rule(selector)
     expect(body).toMatch(/align-self:\s*center/)
     // Only inside the subgrid feature query: in the flex fallback the same
-    // declaration would centre the box horizontally under its label.
+    // declaration would centre the box horizontally under its label. The
+    // block is found by matching its braces, not by how it is formatted.
     const at = css.indexOf(selector)
-    const supportsAt = css.lastIndexOf('@supports (grid-template-rows: subgrid)', at)
-    expect(supportsAt, 'rule sits inside a subgrid @supports block').toBeGreaterThanOrEqual(0)
-    const closeAt = css.indexOf('\n}\n', supportsAt)
-    expect(closeAt).toBeGreaterThan(at)
+    expect(atRuleBlocks(css, '@supports (grid-template-rows: subgrid)').some(([open, close]) => open < at && at < close)).toBe(
+      true,
+    )
     // It outranks the app-wide checkbox placement without an !important:
     // that rule is one class + one attribute + one element (0,2,1); this one
     // is two classes + one attribute + one element (0,3,1).

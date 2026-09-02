@@ -6,12 +6,15 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { permanentLifePolicySchema } from '@retiregolden/engine/model/plan'
+
 import { createSamplePlan } from '../../testSupport/samplePlan'
+import { hasIssueAt, hasIssueUnder, parseIssue, sectionsWithIssues } from '../validationIssues'
 import {
+  MAX_SCHEDULE_AGE,
   duplicateCareEvents,
   duplicateScheduleAges,
   formatAgeList,
-  hasIssueUnder,
   makeCareEvent,
   nextScheduleAge,
 } from './sectionHelpers'
@@ -23,13 +26,18 @@ describe('illustration schedule rows (#489)', () => {
     expect(nextScheduleAge([{ age: 70 }, { age: 65 }])).toBe(71)
   })
 
-  it('never opens a repeat: past the schema cap it takes the lowest free age, and null once every age is taken', () => {
-    expect(nextScheduleAge([{ age: 120 }])).toBe(0)
-    expect(nextScheduleAge([{ age: 120 }, { age: 0 }])).toBe(1)
-    expect(nextScheduleAge([{ age: 120 }, { age: 0 }, { age: 1 }, { age: 3 }])).toBe(2)
-    const full = Array.from({ length: 121 }, (_, age) => ({ age }))
-    expect(nextScheduleAge(full)).toBeNull()
-    expect(nextScheduleAge(full.filter((row) => row.age !== 77))).toBe(77)
+  it('has nothing to open once the schedule reaches the schema ceiling', () => {
+    expect(nextScheduleAge([{ age: MAX_SCHEDULE_AGE }])).toBeNull()
+    expect(nextScheduleAge([{ age: 65 }, { age: MAX_SCHEDULE_AGE }])).toBeNull()
+    expect(nextScheduleAge([{ age: MAX_SCHEDULE_AGE - 1 }])).toBe(MAX_SCHEDULE_AGE)
+  })
+
+  it('reads the ceiling off the engine schema, which admits it and refuses the next age', () => {
+    // Oracle: the schema itself, not the constant.
+    const scheduleRow = { age: MAX_SCHEDULE_AGE, value: 0 }
+    const policy = { ...createSamplePlan().insurance.find((i) => i.kind === 'permanentLife')!, cashValueMode: 'schedule' as const }
+    expect(permanentLifePolicySchema.safeParse({ ...policy, cashValueSchedule: [scheduleRow] }).success).toBe(true)
+    expect(permanentLifePolicySchema.safeParse({ ...policy, cashValueSchedule: [{ ...scheduleRow, age: MAX_SCHEDULE_AGE + 1 }] }).success).toBe(false)
   })
 
   it('names each repeated age once, ascending', () => {
@@ -82,26 +90,53 @@ describe('care events (#489)', () => {
   })
 })
 
-describe('hasIssueUnder (#512, #517)', () => {
+describe('validation issues (#512, #517)', () => {
   const issues = [
-    'incomeFloor.ladders.0.endYear: a ladder must end in or after its first payout year',
+    'incomeFloor.ladders.10.endYear: a ladder must end in or after its first payout year',
     'careEvents.1.durationYears: Invalid input',
     'insurance: at least one policy is malformed',
+    '(root): something plan-wide',
   ]
 
-  it('matches a path prefix at a segment boundary only', () => {
+  it('parses path segments and the message', () => {
+    expect(parseIssue(issues[0]!)).toEqual({
+      path: ['incomeFloor', 'ladders', '10', 'endYear'],
+      message: 'a ladder must end in or after its first payout year',
+    })
+    expect(parseIssue(issues[3]!)).toEqual({ path: [], message: 'something plan-wide' })
+    expect(parseIssue('no separator here')).toEqual({ path: [], message: 'no separator here' })
+  })
+
+  it('matches whole segments, so ladder 1 is not covered by an issue on ladder 10', () => {
     expect(hasIssueUnder(issues, 'incomeFloor')).toBe(true)
-    expect(hasIssueUnder(issues, 'incomeFloor.ladders.0')).toBe(true)
+    expect(hasIssueUnder(issues, 'incomeFloor.ladders.10')).toBe(true)
     expect(hasIssueUnder(issues, 'incomeFloor.ladders.1')).toBe(false)
-    expect(hasIssueUnder(issues, 'incomeFloor.ladders.0.endYear')).toBe(true)
+    expect(hasIssueUnder(issues, ['incomeFloor', 'ladders', '1'])).toBe(false)
+    expect(hasIssueUnder(issues, 'incomeFloor.ladders.10.endYear')).toBe(true)
     expect(hasIssueUnder(issues, 'income')).toBe(false)
     expect(hasIssueUnder(issues, 'careEvents')).toBe(true)
     expect(hasIssueUnder(issues, 'careEvents.0')).toBe(false)
   })
 
-  it('matches an issue reported on the path itself and takes several paths', () => {
+  it('matches an issue reported on the path itself, exactly or as a prefix, and takes several paths', () => {
     expect(hasIssueUnder(issues, 'insurance')).toBe(true)
     expect(hasIssueUnder(issues, 'expenses', 'insurance')).toBe(true)
     expect(hasIssueUnder([], 'insurance')).toBe(false)
+    expect(hasIssueAt(issues, 'insurance')).toBe(true)
+    expect(hasIssueAt(issues, 'careEvents')).toBe(false)
+    expect(hasIssueAt(issues, ['careEvents', '1', 'durationYears'])).toBe(true)
+  })
+
+  it('names the planner sections the failing entries live on, once each, in rail order', () => {
+    expect(sectionsWithIssues(issues)).toEqual([
+      { segment: 'insurance', title: 'Insurance' },
+      { segment: 'income-floor', title: 'Income floor' },
+    ])
+    expect(sectionsWithIssues(['expenses.baseAnnual: x', 'household.filingStatus: y', 'careEvents.0.personId: z'])).toEqual([
+      { segment: 'household', title: 'Household' },
+      { segment: 'insurance', title: 'Insurance' },
+      { segment: 'spending', title: 'Spending' },
+    ])
+    expect(sectionsWithIssues(['(root): x', 'updatedAtIso: y'])).toEqual([])
   })
 })
