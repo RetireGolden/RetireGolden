@@ -219,6 +219,7 @@ function FieldShell({
 }: BaseProps & { id: string; error?: string | null; children: ReactNode }) {
   return (
     <div className={error ? 'field field--invalid' : 'field'}>
+      {/* .field--invalid tints the caption; the control itself carries aria-invalid. */}
       <span className="field-label-row">
         <label className="field-label" htmlFor={id}>
           {label}
@@ -376,13 +377,17 @@ export function NumberField({
 }: NumericProps & { suffix?: string; step?: number; min?: number; max?: number }) {
   const id = useId()
   const { text, setText, setFocused } = useLocalText(value === null ? '' : String(value))
-  // A typed value outside the field's own min/max is flagged beside the field
-  // and the nearest allowed value is what the plan receives (#476, #494): the
-  // engine is never handed an age or rate it cannot model, the message says
-  // why, and on leaving the field the text snaps to the value the plan holds.
+  // While typing, a value outside the field's own min/max (or an emptied
+  // required field) is flagged beside the field and commits nothing, so an
+  // intermediate keystroke never stores a bound the person did not choose and
+  // the engine is never handed an age or rate it cannot model (#476, #494).
+  // On leaving the field the nearest allowed value is committed and the note
+  // says what was adjusted; an emptied required field goes back to its value.
   const [rangeError, setRangeError] = useState<string | null>(null)
   const issue = useFieldIssue(path)
   const error = rangeError ?? issue?.advice ?? null
+  const outOfRange = (n: number): 'low' | 'high' | null =>
+    min !== undefined && n < min ? 'low' : max !== undefined && n > max ? 'high' : null
   // The suffix names the unit ("%"); it is the input's description, not
   // decoration, so a screen reader announces "22, percent" and not just "22".
   const suffixId = suffix ? `${id}-unit` : undefined
@@ -400,22 +405,39 @@ export function NumberField({
       onFocus={() => setFocused(true)}
       onBlur={() => {
         setFocused(false)
-        setRangeError(null)
+        const trimmed = text.trim()
+        const n = Number(trimmed)
+        if (trimmed === '' && !allowNull) {
+          // Nothing was committed for the empty text; show the value the plan kept.
+          setText(value === null ? '' : String(value))
+          setRangeError(null)
+          return
+        }
+        const side = trimmed !== '' && Number.isFinite(n) ? outOfRange(n) : null
+        if (side === null) {
+          setRangeError(null)
+          return
+        }
+        const bound = side === 'low' ? min! : max!
+        onCommit(bound)
+        setText(String(bound))
+        setRangeError(`Adjusted to ${bound}, the ${side === 'low' ? 'lowest' : 'highest'} allowed`)
       }}
       onChange={(e) => {
         setText(e.target.value)
         const n = Number(e.target.value)
         if (e.target.value.trim() === '') {
-          setRangeError(null)
-          onCommit(allowNull ? null : 0)
-        } else if (Number.isFinite(n)) {
-          if (min !== undefined && n < min) {
-            setRangeError(`Must be at least ${min}`)
-            onCommit(min)
-          } else if (max !== undefined && n > max) {
-            setRangeError(`Must be at most ${max}`)
-            onCommit(max)
+          if (allowNull) {
+            setRangeError(null)
+            onCommit(null)
           } else {
+            setRangeError('Enter a value')
+          }
+        } else if (Number.isFinite(n)) {
+          const side = outOfRange(n)
+          if (side === 'low') setRangeError(`Must be at least ${min}`)
+          else if (side === 'high') setRangeError(`Must be at most ${max}`)
+          else {
             setRangeError(null)
             onCommit(n)
           }

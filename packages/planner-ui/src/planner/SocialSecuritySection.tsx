@@ -30,6 +30,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney } from './format'
 import { dobParts, resolvePia } from './ssAnalysis'
 import { PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
+import { Issues } from './sections/shared'
 
 const newId = () => crypto.randomUUID()
 
@@ -539,10 +540,13 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
 }
 
 export function SocialSecuritySection() {
+  // Claim ages, PIA, and earnings are edited here, so their engine issues are
+  // listed here (#476, #511), not on the Income page.
   const { plan } = usePlan()
   const couple = plan.household.people.length === 2
   return (
     <section>
+      <Issues section="social-security" />
       <div className="card">
         <h2>Social Security</h2>
         <p className="card-hint">

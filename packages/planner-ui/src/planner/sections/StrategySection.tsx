@@ -49,6 +49,9 @@ export function StrategySection() {
   const retirementActionsCardShown = retirementActionsCardParts(plan, currentStartYear()).mounts
   return (
     <section>
+      {/* Above the cards, not inside one: a strategy issue belongs to the
+          section, and the card it names may be any of the ones below. */}
+      <Issues section="strategy" />
       <div className="card">
         <h2>Withdrawal strategy</h2>
         <p className="card-hint">How the engine drains accounts when spending exceeds income. RMDs always come first.</p>
@@ -339,7 +342,6 @@ export function StrategySection() {
             {QCD_SCALAR_HISTORY_NOTE}
           </div>
         ) : null}
-        <Issues section="strategy" />
       </div>
 
       <div className="card">

@@ -24,6 +24,7 @@ import { successBand } from './successBand'
 import { useMcSuccessRateState } from './useMcSuccessRate'
 import { useProjection } from './useProjection'
 import { SECTION_TITLES } from './sectionTitles'
+import { SECTION_ROUTE, firstIssueSection, focusIssueTarget } from './issueJump'
 
 const railClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'rail-link rail-link--active' : 'rail-link')
 
@@ -35,6 +36,7 @@ function sectionSegmentOf(pathname: string): string | undefined {
 
 function SaveIndicator() {
   const { plan, saveState, issues } = usePlan()
+  const navigate = useNavigate()
   const readOnly = useWorkspaceReadOnly()
   const { homeLabel, storageTooltip } = usePlannerEdition()
   const isExample = plan.origin === 'example'
@@ -64,19 +66,36 @@ function SaveIndicator() {
     ? `This example is saved on this device under its own slot: your edits stick across reloads, but it stays out of ${homeLabel} until you use 'Save to my plans'. 'Load a fresh copy' resets it.`
     : storageTooltip
   if (saveState === 'invalid') {
-    // The chip names the count; the button takes you to the first field
-    // marked invalid, else to the first card's issue list (#494).
+    // The chip names the count (the live region announces it); the button
+    // takes you to the first invalid control on this page, else to the issue
+    // list of the section that owns the first issue, navigating there when
+    // that is another section (#494).
     const jump = () => {
-      const target = document.querySelector<HTMLElement>('[aria-invalid="true"], .issue-list')
-      target?.scrollIntoView?.({ block: 'center' })
-      target?.focus?.()
+      const section = firstIssueSection(issues)
+      if (focusIssueTarget(document, section)) return
+      const route = section ? SECTION_ROUTE[section] : null
+      if (!route) return
+      navigate(`/plan/${plan.id}/${route}`)
+      // The target renders after navigation; look for it over the next frames.
+      let tries = 0
+      const look = () => {
+        if (focusIssueTarget(document, section) || tries++ > 30) return
+        requestAnimationFrame(look)
+      }
+      requestAnimationFrame(look)
     }
     return (
       <>
         <span className="sr-only" role="status" aria-live="polite">
           {text}
         </span>
-        <button type="button" className="save-state save-state--error save-state--button" title="Show what to fix" onClick={jump}>
+        <button
+          type="button"
+          className="save-state save-state--error save-state--button"
+          aria-label={`${text}. Show what to fix`}
+          title={title}
+          onClick={jump}
+        >
           {text}
         </button>
       </>

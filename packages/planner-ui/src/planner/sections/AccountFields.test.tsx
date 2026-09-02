@@ -1236,6 +1236,8 @@ describe('AccountFields extracted editor commit wiring', () => {
       if (!valueSetter) throw new Error('missing input value setter')
       valueSetter.call(startAge, typed)
       startAge.dispatchEvent(new Event('input', { bubbles: true }))
+      // Out-of-range text is only clamped on leaving the field.
+      startAge.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
 
     const account = mounted.plan.accounts[0]
@@ -1270,6 +1272,8 @@ describe('AccountFields extracted editor commit wiring', () => {
       if (!valueSetter) throw new Error('missing input value setter')
       valueSetter.call(startAge, typed)
       startAge.dispatchEvent(new Event('input', { bubbles: true }))
+      // Out-of-range text is only clamped on leaving the field.
+      startAge.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
 
     const account = mounted.plan.accounts[0]

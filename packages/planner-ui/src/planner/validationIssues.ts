@@ -33,14 +33,19 @@ export type IssueSection =
   | 'spending'
   | 'accounts'
   | 'income'
+  | 'social-security'
   | 'insurance'
   | 'income-floor'
   | 'unknown'
 
-/** Split an engine issue string at its first `: ` (the path never contains one). */
+/**
+ * Split an engine issue string at its first `: ` (the path never contains
+ * one). `(root)` and `$` both mean the plan as a whole.
+ */
 export function parseIssue(issue: string): ParsedIssue {
   const at = issue.indexOf(': ')
-  const path = at < 0 ? '(root)' : issue.slice(0, at)
+  const rawPath = at < 0 ? '(root)' : issue.slice(0, at)
+  const path = rawPath === '$' ? '(root)' : rawPath
   const message = at < 0 ? issue : issue.slice(at + 2)
   return { path, message, section: sectionOfPath(path), label: labelOfPath(path), advice: adviceOf(message) }
 }
@@ -61,8 +66,13 @@ const SECTION_BY_ROOT: Record<string, IssueSection> = {
   incomeFloor: 'income-floor',
 }
 
+/** Income-stream leaves that are edited on the Social Security page, not the Income page. */
+const SOCIAL_SECURITY_LEAVES = new Set(['claimAge', 'piaMonthly', 'earnings', 'deceasedClaimAge', 'remarriedAtAge', 'survivorRecords', 'disability'])
+
 export function sectionOfPath(path: string): IssueSection {
-  const root = path.split('.')[0] ?? ''
+  const segments = path.split('.')
+  const root = segments[0] ?? ''
+  if (root === 'incomes' && segments[2] !== undefined && SOCIAL_SECURITY_LEAVES.has(segments[2])) return 'social-security'
   return SECTION_BY_ROOT[root] ?? 'unknown'
 }
 
@@ -83,23 +93,24 @@ const ITEM_NAMES: Record<string, string> = {
 
 /** Leaves whose camelCase does not read well split, or that carry an acronym or unit. */
 const LEAF_LABELS: Record<string, string> = {
-  qcdAnnual: 'QCD annual amount',
+  // These read exactly as the card labels do, so a person can find the field.
+  qcdAnnual: "QCD per year (today's $)",
   taxableSafetyNetFloor: 'Taxable safety-net floor',
-  stateAndLocalTaxes: 'State and local taxes',
-  localIncomeTaxPct: 'Local income tax %',
+  stateAndLocalTaxes: 'State & local taxes (SALT)',
+  localIncomeTaxPct: 'Local income tax',
   stateEffectiveTaxPctOverride: 'State effective tax % (override)',
   inflationPct: 'Inflation %',
   healthcareInflationPct: 'Healthcare extra inflation %',
   defaultReturnPct: 'Default return %',
   heirTaxRatePct: 'Heir tax rate %',
   cashValueSchedule: 'Cash value schedule',
-  cashValueGrowthPct: 'Cash value growth %',
+  cashValueGrowthPct: 'Cash value growth',
   premiumEndAge: 'Premium end age',
   planningAge: 'Planning age',
   retirementAge: 'Retirement age',
   annualGross: 'Annual gross',
-  realRaisePct: 'Real raise rate %',
-  endAge: 'End age',
+  realRaisePct: 'Real raise rate',
+  endAge: 'Stop age',
   startAge: 'Start age',
   startYear: 'Start year',
   endYear: 'End year',
@@ -140,8 +151,17 @@ const GROUP_LABELS: Record<string, string> = {
   survivor: 'Survivor',
 }
 
+/** Acronyms a fallback label keeps in capitals. */
+const ACRONYMS = new Set(['hsa', 'ira', 'rmd', 'qcd', 'magi', 'agi', 'pia', 'fra', 'ss', 'aca', 'irmaa', 'ltc', 'tips', 'salt', 'cola', 'niit', 'ptc', 'sepp', 'amt'])
+
 function words(camel: string): string {
-  const spaced = camel.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase()
+  const tokens = camel
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .split(' ')
+    .map((t) => (ACRONYMS.has(t) ? t.toUpperCase() : t))
+  const spaced = tokens.join(' ')
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
@@ -152,30 +172,41 @@ function words(camel: string): string {
  * the prefix; a bare root ("Assumptions") is the prefix when there is none.
  */
 export function labelOfPath(path: string): string {
-  if (path === '(root)' || path === '') return 'Plan'
+  if (path === '(root)' || path === '$' || path === '') return 'Plan'
   const segments = path.split('.')
   // A numbered item ("Person 2") is the card the field sits on and wins; with
-  // no item, the last named group ("Itemized deductions") is the card.
+  // no item, the last named group ("Itemized deductions") is the card. Any
+  // object segments between the card and the leaf are kept ("Claim age ›
+  // Years"), so a nested field is not mistaken for a top-level one.
   let item: string | null = null
   let group: string | null = null
+  const trail: string[] = []
   const leaf = segments[segments.length - 1] ?? ''
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i]!
     const next = segments[i + 1]!
-    if (/^\d+$/.test(next) && ITEM_NAMES[seg]) {
-      item = `${ITEM_NAMES[seg]} ${Number(next) + 1}`
+    if (/^\d+$/.test(next)) {
+      // A numeric segment is an index only inside a known list; elsewhere it is
+      // a key (a year, an age) and is shown as itself.
+      item = ITEM_NAMES[seg] ? `${ITEM_NAMES[seg]} ${Number(next) + 1}` : `${words(seg)} ${next}`
+      trail.length = 0
       i++
       continue
     }
-    if (GROUP_LABELS[seg]) group = GROUP_LABELS[seg]
+    if (GROUP_LABELS[seg]) {
+      group = GROUP_LABELS[seg]
+      trail.length = 0
+      continue
+    }
+    if (i > 0 || !SECTION_BY_ROOT[seg]) trail.push(LEAF_LABELS[seg] ?? words(seg))
   }
   const prefix = item ?? group
   if (/^\d+$/.test(leaf)) {
     // A whole numbered item is wrong ("insurance.0"): name the item itself.
     const container = segments[segments.length - 2] ?? ''
-    return `${ITEM_NAMES[container] ?? words(container)} ${Number(leaf) + 1}`
+    return ITEM_NAMES[container] ? `${ITEM_NAMES[container]} ${Number(leaf) + 1}` : `${words(container)} ${leaf}`
   }
-  const field = LEAF_LABELS[leaf] ?? words(leaf)
+  const field = [...trail, LEAF_LABELS[leaf] ?? words(leaf)].join(' › ')
   return prefix && prefix !== field ? `${prefix}: ${field}` : field
 }
 
@@ -190,7 +221,8 @@ export function adviceOf(message: string): string {
   if ((m = message.match(/^Too small: expected .* to be >(-?[\d.]+)/))) return `Must be more than ${m[1]}`
   if ((m = message.match(/^Too big: expected .* to be <=(-?[\d.]+)/))) return `Must be at most ${m[1]}`
   if ((m = message.match(/^Too big: expected .* to be <(-?[\d.]+)/))) return `Must be less than ${m[1]}`
-  if (/^Too small: expected (array|string) /.test(message)) return 'Add at least one entry'
+  if (/^Too small: expected array /.test(message)) return 'Add at least one entry'
+  if (/^Too small: expected string /.test(message)) return 'Enter a value'
   if (/^Invalid input: expected number/.test(message)) return 'Enter a number'
   if (/^Invalid input: expected string/.test(message)) return 'Enter a value'
   if (/^Invalid input: expected boolean/.test(message)) return 'Choose on or off'

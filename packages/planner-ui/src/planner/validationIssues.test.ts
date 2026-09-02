@@ -1,13 +1,41 @@
 /**
  * Validation issues for people: the engine's exact `path: message` strings
  * become a section, a field label, and advice, without ever deciding what is
- * valid. Fixtures are real parser output from packages/engine (parsePlan on
- * a plan with a planning age of 9, a QCD of -5, and inflation of -999), plus
- * the paths the Design QA walk cited.
+ * valid. The first block round-trips a real `parsePlan` failure so a change
+ * in the engine's (Zod's) wording fails here instead of silently leaving raw
+ * messages on screen; the rest use the paths the Design QA walk cited.
  */
 import { describe, expect, it } from 'vitest'
 
+import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
+
 import { adviceOf, issuesForSection, labelOfPath, parseIssue, parseIssues, sectionOfPath } from './validationIssues'
+
+describe('real engine output', () => {
+  it('translates what parsePlan actually reports for a planning age of 9, a QCD of -5, and inflation of -999', () => {
+    const plan = createEmptyPlan({ newId: () => 'id-' + Math.random().toString(36).slice(2, 8) })
+    plan.assumptions.inflationPct = -999
+    plan.strategies.qcdAnnual = -5
+    plan.household.people[0] = { ...plan.household.people[0]!, longevity: { planningAge: 9, source: 'manual' } }
+    const r = parsePlan(plan)
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    const byPath = Object.fromEntries(parseIssues(r.issues).map((i) => [i.path, i]))
+    expect(byPath['household.people.0.longevity.planningAge']).toMatchObject({
+      section: 'household',
+      label: 'Person 1: Planning age',
+      advice: 'Must be at least 60',
+    })
+    expect(byPath['strategies.qcdAnnual']).toMatchObject({
+      section: 'strategy',
+      label: "Strategy: QCD per year (today's $)",
+      advice: 'Must be at least 0',
+    })
+    expect(byPath['assumptions.inflationPct']).toMatchObject({ section: 'assumptions', advice: 'Must be more than -100' })
+    // Every real message was translated: none passes through as Zod wording.
+    for (const i of Object.values(byPath)) expect(i.advice, i.message).not.toMatch(/^(Too small|Too big|Invalid input)/)
+  })
+})
 
 describe('parseIssue', () => {
   it('splits the engine string at the first colon-space and keeps both halves exact', () => {
@@ -19,36 +47,41 @@ describe('parseIssue', () => {
     expect(p.advice).toBe('Must be at least 60')
   })
 
-  it('treats a string with no path as a plan-level issue', () => {
+  it('treats a string with no path, or a $ path, as a plan-level issue', () => {
     const p = parseIssue('Something is off')
     expect(p.path).toBe('(root)')
     expect(p.label).toBe('Plan')
     expect(p.section).toBe('unknown')
+    expect(parseIssue('$: Invalid input').path).toBe('(root)')
   })
 })
 
 describe('labelOfPath', () => {
   it.each([
-    ['strategies.qcdAnnual', 'Strategy: QCD annual amount'],
+    ['strategies.qcdAnnual', "Strategy: QCD per year (today's $)"],
     ['strategies.taxableSafetyNetFloor', 'Strategy: Taxable safety-net floor'],
-    ['strategies.itemizedDeductions.stateAndLocalTaxes', 'Itemized deductions: State and local taxes'],
-    ['assumptions.localIncomeTaxPct', 'Assumptions: Local income tax %'],
+    ['strategies.itemizedDeductions.stateAndLocalTaxes', 'Itemized deductions: State & local taxes (SALT)'],
+    ['assumptions.localIncomeTaxPct', 'Assumptions: Local income tax'],
     ['assumptions.inflationPct', 'Assumptions: Inflation %'],
     ['incomes.0.annualGross', 'Income 1: Annual gross'],
-    ['incomes.0.endAge', 'Income 1: End age'],
+    ['incomes.0.endAge', 'Income 1: Stop age'],
     ['accounts.2.balance', 'Account 3: Balance'],
     ['accounts.4.plannedSaleYear', 'Account 5: Planned sale year'],
     ['insurance.0.cashValueSchedule', 'Insurance policy 1: Cash value schedule'],
     ['insurance.0.premiumEndAge', 'Insurance policy 1: Premium end age'],
-    ['insurance.0.cashValueGrowthPct', 'Insurance policy 1: Cash value growth %'],
+    ['insurance.0.cashValueGrowthPct', 'Insurance policy 1: Cash value growth'],
     ['careEvents.0.durationYears', 'Care event 1: Duration (years)'],
     ['incomeFloor.ladders.0.endYear', 'TIPS ladder 1: End year'],
     ['expenses.phases.0.multiplier', 'Phase 1: Multiplier'],
     ['expenses.baseAnnual', 'Spending: Baseline annual spending'],
     ['household.people.1.retirementAge', 'Person 2: Retirement age'],
-    ['incomes.1.claimAge.years', 'Income 2: Years'],
+    ['incomes.1.claimAge.years', 'Income 2: Claim age › Years'],
+    ['assumptions.ssHaircut.cutPct', 'Assumptions: Social Security haircut › Cut pct'],
     ['insurance.0', 'Insurance policy 1'],
     ['assumptions.someNewFieldPct', 'Assumptions: Some new field pct'],
+    ['accounts.0.hsaContributionAnnual', 'Account 1: HSA contribution annual'],
+    ['someMap.2024.value', 'Some map 2024: Value'],
+    ['$', 'Plan'],
   ])('%s → %s', (path, label) => {
     expect(labelOfPath(path)).toBe(label)
   })
@@ -62,6 +95,8 @@ describe('sectionOfPath', () => {
     ['expenses.phases.0.multiplier', 'spending'],
     ['accounts.0.balance', 'accounts'],
     ['incomes.0.annualGross', 'income'],
+    ['incomes.1.claimAge.years', 'social-security'],
+    ['incomes.1.piaMonthly', 'social-security'],
     ['insurance.0.premiumEndAge', 'insurance'],
     ['careEvents.0.durationYears', 'insurance'],
     ['incomeFloor.ladders.0.endYear', 'income-floor'],
@@ -79,6 +114,8 @@ describe('adviceOf', () => {
     ['Too big: expected number to be <1', 'Must be less than 1'],
     ['Invalid input: expected number, received NaN', 'Enter a number'],
     ['Invalid input', 'Enter a valid value'],
+    ['Too small: expected string to have >=1 characters', 'Enter a value'],
+    ['Too small: expected array to have >=1 items', 'Add at least one entry'],
     ["cashValueSchedule is required when cashValueMode is 'schedule'", "cashValueSchedule is required when cashValueMode is 'schedule'"],
   ])('%s → %s', (message, advice) => {
     expect(adviceOf(message)).toBe(advice)

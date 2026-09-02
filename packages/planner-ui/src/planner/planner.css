@@ -3438,11 +3438,22 @@ html:has(.kpi-bar) {
 
 .save-state--button {
   appearance: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--bad);
   font: inherit;
   cursor: pointer;
 }
 
-.issue-list:focus-visible {
+/* The caption of an invalid field reads in the danger token too. */
+.field--invalid > .field-label-row > .field-label {
+  color: var(--bad);
+}
+
+/* Focus arrives here programmatically from the save chip, including after a
+   mouse click, so the outline is not left to :focus-visible alone. */
+.issue-list:focus {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

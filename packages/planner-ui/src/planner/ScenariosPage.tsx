@@ -28,12 +28,6 @@ import { MoneyField, NumberField, PercentField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { ScrollRegion } from './ScrollRegion'
 import { scenarioPatchSignature, uniqueScenarioName, withDistinctNames } from './scenarioNames'
-import { labelOfPath } from './validationIssues'
-
-/** A JSON-pointer or dotted plan path as a person reads it: `/assumptions/ssHaircut` → "Assumptions: Social Security haircut". */
-function fieldName(path: string): string {
-  return labelOfPath(path.replace(/\/-$/, '').replace(/^\//, '').replace(/\//g, '.'))
-}
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
@@ -56,6 +50,22 @@ import {
 } from './scenarioComparisonView'
 import { currentStartYear, seedFromPlanId, taxCalculatorFor } from './useProjection'
 import { US_STATES } from './usStates'
+import { labelOfPath } from './validationIssues'
+
+/**
+ * A JSON-pointer or dotted plan path as a person reads it:
+ * `/assumptions/ssHaircut` → "Assumptions: Social Security haircut". Pointer
+ * escapes are decoded (~1 is /, ~0 is ~) and a trailing `/-` (append) names the list.
+ */
+function fieldName(path: string): string {
+  const dotted = path
+    .replace(/\/-$/, '')
+    .replace(/^\//, '')
+    .split('/')
+    .map((seg) => seg.replace(/~1/g, '/').replace(/~0/g, '~'))
+    .join('.')
+  return labelOfPath(dotted)
+}
 
 const newId = () => crypto.randomUUID()
 const LEVER_PREVIEW_DEBOUNCE_MS = 50

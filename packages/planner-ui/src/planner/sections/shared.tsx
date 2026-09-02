@@ -16,8 +16,8 @@ export function Issues({ section }: { section: IssueSection }) {
   if (mine.length === 0) return null
   return (
     <ul className="issue-list" id={`plan-issues-${section}`} tabIndex={-1} aria-label="Fix these to store the plan">
-      {mine.map((i) => (
-        <li key={`${i.path}:${i.message}`} title={`${i.path}: ${i.message}`}>
+      {mine.map((i, n) => (
+        <li key={`${n}:${i.path}`} title={`${i.path}: ${i.message}`}>
           <strong>{i.label}</strong>: {i.advice}
         </li>
       ))}
