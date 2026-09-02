@@ -103,6 +103,10 @@ import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountG
 import { annualRetirementActionSettlementPublication } from './internal/annualRetirementActionSettlementPublication.js'
 import { annualYearResultAssembly } from './internal/annualYearResultAssembly.js'
 import {
+  annualFundingFixedPoint,
+  type AnnualFundingFixedPointEvaluationRequest,
+} from './internal/annualFundingFixedPoint.js'
+import {
   annualDebtServiceRows,
   annualLongTermCarePlan,
 } from './internal/annualDebtAndLongTermCare.js'
@@ -739,9 +743,6 @@ function canonicalRuntimeOccurrenceOrder(
     || compareNullableNumber(left.executionSequence, right.executionSequence)
     || compareNullableUtf16(left.movementAuthorityId, right.movementAuthorityId)
 }
-const MAX_TAX_ITERATIONS = 8
-const MAX_ACA_FIXED_POINT_EVALUATIONS = 160
-
 type BalanceState = PhysicalBalanceState
 
 interface WithdrawalPlanResult {
@@ -6381,7 +6382,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // withdrawal flow. Deterministic runs (no market series) never have a
     // losing year, so coordinated draws are Monte Carlo / scenario behavior;
     // the last-resort backstop below works everywhere.
-    let hecmDraw = 0
+    let hecmDraw: number
     const coordinatedHecm = annualCoordinatedHecmEligibility({
       accounts: plan.accounts,
       hecmStates,
@@ -6404,7 +6405,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       inheritedTotal +
       propertySaleProceedsTotal +
       retirementActionProceeds
-    let cashInflows = baseCashInflows
 
     // Resolve the year's withdrawal strategy. Bracket targeting reuses the
     // conversion solver to size remaining ordinary-income headroom.
@@ -6649,10 +6649,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // iteration); netting reduces ordinary + gains before both federal and state
     // tax so the AGI cascade (taxable SS, IRMAA, ACA, state) falls out for free.
     const lossOffsetLimit = pack.federalTax.capitalLossOrdinaryOffsetLimit
-    let spendingNeedBeforeTax = Math.max(0, expenses.total + contributions - cashInflows)
-    let acaEvaluationCount = 0
-    const evaluateWithdrawalNeed = (need: number, forceGrossAca = false) => {
-      acaEvaluationCount++
+    const evaluateWithdrawalNeed = ({
+      need,
+      forceGrossAca,
+      cashInflows: candidateCashInflows,
+    }: AnnualFundingFixedPointEvaluationRequest) => {
       const withdrawalPlan = planWithdrawals(
         need,
         rmdBalances,
@@ -6815,7 +6816,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             contributions +
             tax +
             penalties -
-            cashInflows,
+            candidateCashInflows,
         ),
         acaMagiProbe,
         acaQuote,
@@ -6824,230 +6825,42 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         hsaQualifiedCap: candidateHsaCap,
       }
     }
+    // The selected plan, tax, and premium stay paired; never recompute from accepted cash.
+    const fundingFixedPoint = annualFundingFixedPoint({
+      spendingUsesBeforeTax: expenses.total + contributions,
+      baseCashInflows,
+      currentHealthcare: healthcare,
+      coordinatedHecmCapacity: coordinatedHecm.capacity,
+      acaActive,
+      acaGrossEnrollmentPremium,
+      acaInitialSupportCodeCount: acaInitialSupportCodes.length,
+      tolerancePlanDollars: EPSILON,
+      evaluate: evaluateWithdrawalNeed,
+    })
+    const cashInflows = fundingFixedPoint.acceptedCashInflows
+    hecmDraw = fundingFixedPoint.acceptedCoordinatedHecmDraw
+    const {
+      evaluation,
+      converged,
+      acaFixedPointFailed,
+      acaConflictingCliffBasins,
+      evaluationCount: acaEvaluationCount,
+      maxEvaluationCount,
+    } = fundingFixedPoint
 
-    // Fully solve the one-dimensional funding equation. The quick pass handles
-    // ordinary cases; bracket expansion and bisection cover slower tax feedback
-    // without allowing a provisional withdrawal plan to escape into the ledger.
-    const solveFundingRoot = (
-      initialNeed: number,
-      forceGrossAca = false,
-      maxEvaluations = MAX_ACA_FIXED_POINT_EVALUATIONS,
-      directIterationLimit = MAX_TAX_ITERATIONS,
-    ) => {
-      const evaluationLimit = acaEvaluationCount + maxEvaluations
-      let need = initialNeed
-      let evaluation = evaluateWithdrawalNeed(need, forceGrossAca)
-      let converged = Math.abs(evaluation.requiredNeed - need) <= EPSILON
-      for (
-        let i = 1;
-        i < directIterationLimit && !converged && acaEvaluationCount < evaluationLimit;
-        i++
-      ) {
-        need = evaluation.requiredNeed
-        evaluation = evaluateWithdrawalNeed(need, forceGrossAca)
-        converged = Math.abs(evaluation.requiredNeed - need) <= EPSILON
-      }
-      if (converged) {
-        return { evaluation, need, converged, closestResidual: 0 }
-      }
-
-      // A finite portfolio brackets the root: once all spendable balances are
-      // exhausted, requiredNeed is bounded while the candidate keeps growing.
-      let lowerNeed = 0
-      let lower = evaluateWithdrawalNeed(lowerNeed, forceGrossAca)
-      let upperNeed = Math.max(1, need, evaluation.requiredNeed)
-      let upper = evaluateWithdrawalNeed(upperNeed, forceGrossAca)
-      let upperResidual = upper.requiredNeed - upperNeed
-      for (
-        let i = 0;
-        i < 64 &&
-        upperResidual > EPSILON &&
-        upper.withdrawalPlan.shortfall <= EPSILON &&
-        acaEvaluationCount < evaluationLimit;
-        i++
-      ) {
-        upperNeed *= 2
-        upper = evaluateWithdrawalNeed(upperNeed, forceGrossAca)
-        upperResidual = upper.requiredNeed - upperNeed
-      }
-
-      // Once withdrawals are exhausted, jump to the bounded requirement rather
-      // than doubling through inputs that cannot change the withdrawal mix.
-      if (
-        upperResidual > EPSILON &&
-        upper.withdrawalPlan.shortfall > EPSILON &&
-        acaEvaluationCount < evaluationLimit
-      ) {
-        upperNeed = Math.max(upperNeed, upper.requiredNeed)
-        upper = evaluateWithdrawalNeed(upperNeed, forceGrossAca)
-        upperResidual = upper.requiredNeed - upperNeed
-      }
-
-      if (Math.abs(upperResidual) <= EPSILON) {
-        return { evaluation: upper, need: upperNeed, converged: true, closestResidual: 0 }
-      }
-
-      // Tax rules can contain hard steps. Bisection therefore requires a true
-      // sign-change bracket and retains the closest endpoint if none is exact.
-      for (
-        let i = 0;
-        i < 64 &&
-        upperResidual <= 0 &&
-        acaEvaluationCount < evaluationLimit;
-        i++
-      ) {
-        const midpointNeed = (lowerNeed + upperNeed) / 2
-        const midpoint = evaluateWithdrawalNeed(midpointNeed, forceGrossAca)
-        const residual = midpoint.requiredNeed - midpointNeed
-        if (Math.abs(residual) <= EPSILON) {
-          return { evaluation: midpoint, need: midpointNeed, converged: true, closestResidual: 0 }
-        }
-        if (residual > 0) {
-          lowerNeed = midpointNeed
-          lower = midpoint
-        } else {
-          upperNeed = midpointNeed
-          upper = midpoint
-          upperResidual = residual
-        }
-        if (upperNeed - lowerNeed <= EPSILON) break
-      }
-
-      const lowerResidual = Math.abs(lower.requiredNeed - lowerNeed)
-      const closestResidual = Math.min(lowerResidual, Math.abs(upperResidual))
-      return {
-        evaluation: lowerResidual <= Math.abs(upperResidual) ? lower : upper,
-        need: lowerResidual <= Math.abs(upperResidual) ? lowerNeed : upperNeed,
-        converged: false,
-        closestResidual,
-      }
+    if (acaFixedPointFailed) {
+      warnings.add(
+        `ACA premium, tax, and withdrawals did not reach a stable subsidized fixed point for ${year}; gross enrollment premium was funded.`,
+      )
+    } else if (!converged) {
+      warnings.add(
+        `Tax and withdrawal funding could not reconcile within half a cent for ${year}; the closest result differs by $${fundingFixedPoint.closestResidual.toFixed(2)}.`,
+      )
     }
-
-    // A coordinated HECM draw changes withdrawals, withdrawals change ACA
-    // MAGI, and the reconciled premium changes the pre-tax cash need the draw
-    // is intended to cover. Solve that small outer fixed point with the same
-    // evaluator used by the final ledger. The line itself remains untouched
-    // during probing, so failed or oscillating probes cannot create debt.
-    if (coordinatedHecm.capacity > EPSILON && spendingNeedBeforeTax > EPSILON) {
-      let candidateDraw = 0
-      let coordinatedDrawConverged = false
-      for (let drawPass = 0; drawPass < 16; drawPass++) {
-        cashInflows = baseCashInflows + candidateDraw
-        const probe = solveFundingRoot(
-          Math.max(0, expenses.total + contributions - cashInflows),
-        )
-        if (!probe.converged) break
-
-        const postCreditPreTaxNeed = Math.max(
-          0,
-          expenses.total +
-            (probe.evaluation.healthcare - healthcare) +
-            contributions -
-            baseCashInflows,
-        )
-        const nextDraw = Math.min(coordinatedHecm.capacity, postCreditPreTaxNeed)
-        if (Math.abs(nextDraw - candidateDraw) <= EPSILON) {
-          hecmDraw = nextDraw
-          coordinatedDrawConverged = true
-          break
-        }
-        candidateDraw = nextDraw
-      }
-      if (!coordinatedDrawConverged) hecmDraw = 0
-      cashInflows = baseCashInflows + hecmDraw
-      spendingNeedBeforeTax = Math.max(0, expenses.total + contributions - cashInflows)
-      // Probes are implementation detail; convergence diagnostics describe the
-      // accepted final funding solve only.
-      acaEvaluationCount = 0
-    }
-
-    // Keep the accepted withdrawal plan paired with the tax and premium result
-    // that produced it.
-    const fundingRoot = solveFundingRoot(spendingNeedBeforeTax)
-    let evaluation = fundingRoot.evaluation
-    let converged = fundingRoot.converged
-    let acaFixedPointFailed = false
-
-    if (!converged) {
-      if (acaActive) {
-        // A discontinuous cliff can leave no subsidized fixed point. Never
-        // retain the cheaper provisional credit: restart from gross premium
-        // with the same bounded solver and make the ACA result non-actionable.
-        acaFixedPointFailed = true
-        const grossRoot = solveFundingRoot(Math.max(0, evaluation.requiredNeed), true)
-        evaluation = grossRoot.evaluation
-        converged = grossRoot.converged
-        warnings.add(
-          `ACA premium, tax, and withdrawals did not reach a stable subsidized fixed point for ${year}; gross enrollment premium was funded.`,
-        )
-      } else {
-        warnings.add(
-          `Tax and withdrawal funding could not reconcile within half a cent for ${year}; the closest result differs by $${fundingRoot.closestResidual.toFixed(2)}.`,
-        )
-      }
-    }
-
-    // The ACA cliff can create two self-consistent funding basins: a gross
-    // premium draw that pushes MAGI over the cliff, and a subsidized draw that
-    // remains below it. A single locally stable root is not enough evidence to
-    // choose between them. Probe the opposite basin deterministically and fail
-    // closed to the gross result when both roots exist.
-    let acaConflictingCliffBasins = false
-    if (
-      acaActive &&
-      converged &&
-      !acaFixedPointFailed &&
-      acaInitialSupportCodes.length === 0 &&
-      evaluation.acaQuote !== null
-    ) {
-      if (evaluation.acaQuote.overCliff) {
-        const lowRoot = solveFundingRoot(
-          Math.max(0, spendingNeedBeforeTax - acaGrossEnrollmentPremium),
-          false,
-          MAX_ACA_FIXED_POINT_EVALUATIONS,
-          MAX_ACA_FIXED_POINT_EVALUATIONS,
-        )
-        const lowEvaluation = lowRoot.evaluation
-        if (
-          lowRoot.converged &&
-          lowEvaluation.acaSupportCodes.length === 0 &&
-          lowEvaluation.acaQuote !== null &&
-          !lowEvaluation.acaQuote.overCliff &&
-          lowEvaluation.healthcare + EPSILON < evaluation.healthcare
-        ) {
-          acaConflictingCliffBasins = true
-        }
-      } else {
-        // A forced-gross solve locates the high-premium candidate without
-        // letting the provisional credit pull it back into the subsidized
-        // basin. Re-evaluate the exact same candidate need under normal ACA
-        // pricing before accepting it: only a state-paired, independently
-        // self-consistent over-cliff result proves the second basin exists.
-        const grossRoot = solveFundingRoot(
-          spendingNeedBeforeTax,
-          true,
-          MAX_ACA_FIXED_POINT_EVALUATIONS,
-          MAX_ACA_FIXED_POINT_EVALUATIONS,
-        )
-        if (grossRoot.converged) {
-          const grossEvaluation = evaluateWithdrawalNeed(grossRoot.need)
-          if (
-            Math.abs(grossEvaluation.requiredNeed - grossRoot.need) <= EPSILON &&
-            grossEvaluation.acaSupportCodes.length === 0 &&
-            grossEvaluation.acaQuote?.overCliff &&
-            grossEvaluation.healthcare > evaluation.healthcare + EPSILON
-          ) {
-            evaluation = grossEvaluation
-            converged = true
-            acaConflictingCliffBasins = true
-          }
-        }
-      }
-      if (acaConflictingCliffBasins) {
-        warnings.add(
-          `ACA funding has conflicting subsidized and gross-premium fixed points for ${year}; gross enrollment premium was funded.`,
-        )
-      }
+    if (acaConflictingCliffBasins) {
+      warnings.add(
+        `ACA funding has conflicting subsidized and gross-premium fixed points for ${year}; gross enrollment premium was funded.`,
+      )
     }
 
     const healthcareDelta = evaluation.healthcare - healthcare
@@ -7415,8 +7228,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         cliffState,
         convergence: {
           converged: actionable && converged && !acaFixedPointFailed,
-          iterations: Math.min(acaEvaluationCount, MAX_ACA_FIXED_POINT_EVALUATIONS),
-          maxIterations: MAX_ACA_FIXED_POINT_EVALUATIONS,
+          iterations: Math.min(acaEvaluationCount, maxEvaluationCount),
+          maxIterations: maxEvaluationCount,
           residualDollars: Math.abs(
             evaluation.requiredNeed -
               (evaluation.withdrawalPlan.byCategory.total + evaluation.withdrawalPlan.shortfall),

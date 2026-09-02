@@ -99,18 +99,18 @@
       "id": "AC.callsite.inputs",
       "label": "settled annual inputs grouped at the final-publication callsite",
       "file": "projection/simulate.ts",
-      "lines": [8678, 8765],
+      "lines": [8491, 8578],
       "anchors": [
         {
-          "line": 8678,
+          "line": 8491,
           "text": "const yearResult = annualYearResultAssembly({"
         },
         {
-          "line": 8719,
+          "line": 8532,
           "text": "settlement: settlementPublication,"
         },
         {
-          "line": 8760,
+          "line": 8573,
           "text": "balanceSheet: {"
         }
       ]
@@ -119,18 +119,18 @@
       "id": "AC.callsite.cashFlow",
       "label": "cash-flow publication gate and pass-local evidence handoff",
       "file": "projection/simulate.ts",
-      "lines": [8766, 8859],
+      "lines": [8579, 8672],
       "anchors": [
         {
-          "line": 8766,
+          "line": 8579,
           "text": "...(publishCashFlow"
         },
         {
-          "line": 8769,
+          "line": 8582,
           "text": "yearSites: yearSites!,"
         },
         {
-          "line": 8856,
+          "line": 8669,
           "text": "shortfallAfterHecm,"
         }
       ]

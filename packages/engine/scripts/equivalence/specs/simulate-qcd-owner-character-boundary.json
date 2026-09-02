@@ -172,25 +172,25 @@
       "id": "Y.callsite.invoke",
       "label": "owner-character invocation with grouped annual state snapshots",
       "file": "projection/simulate.ts",
-      "lines": [4265, 4284],
+      "lines": [4266, 4285],
       "anchors": [
-        { "line": 4265, "text": "const qcdQualifiedFromRmdByOwner = new Map<string, number>()" },
-        { "line": 4267, "text": "const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())" },
-        { "line": 4272, "text": "materializeAnnualLegacyQcdOwnerCharacterPlanResult(" },
-        { "line": 4273, "text": "annualLegacyQcdOwnerCharacterPlan({" },
-        { "line": 4277, "text": "preDistributionAggregateIraBalance," },
-        { "line": 4279, "text": "qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor," },
-        { "line": 4283, "text": "[...expectedQcdOwnerIds]," }
+        { "line": 4266, "text": "const qcdQualifiedFromRmdByOwner = new Map<string, number>()" },
+        { "line": 4268, "text": "const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())" },
+        { "line": 4273, "text": "materializeAnnualLegacyQcdOwnerCharacterPlanResult(" },
+        { "line": 4274, "text": "annualLegacyQcdOwnerCharacterPlan({" },
+        { "line": 4278, "text": "preDistributionAggregateIraBalance," },
+        { "line": 4280, "text": "qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor," },
+        { "line": 4284, "text": "[...expectedQcdOwnerIds]," }
       ]
     },
     {
       "id": "Y.callsite.applyRows",
       "label": "ordered owner-row iteration and contradiction selection",
       "file": "projection/simulate.ts",
-      "lines": [4285, 4286],
+      "lines": [4286, 4287],
       "anchors": [
-        { "line": 4285, "text": "for (const row of qcdOwnerCharacterPlan.rows) {" },
-        { "line": 4286, "text": "if (row.contradictoryOffsetLedger) {" }
+        { "line": 4286, "text": "for (const row of qcdOwnerCharacterPlan.rows) {" },
+        { "line": 4287, "text": "if (row.contradictoryOffsetLedger) {" }
       ],
       "note": "The contradictory-ledger warning body is intentionally outside measured valid-plan reach and is pinned by the focused delegation fixture; the conditional itself remains measured for every corpus member."
     },
@@ -198,31 +198,31 @@
       "id": "Y.callsite.applyCharacterRows",
       "label": "ordered owner offset, character and income folds",
       "file": "projection/simulate.ts",
-      "lines": [4292, 4307],
+      "lines": [4293, 4308],
       "anchors": [
-        { "line": 4292, "text": "if (row.qcdOffsetConsumedWrite !== null) {" },
-        { "line": 4293, "text": "namedQcdOffsetConsumedByDonor.set(" },
-        { "line": 4296, "text": ")" },
-        { "line": 4298, "text": "qcdQualifiedFromRmdByOwner.set(row.ownerId, row.qualifiedFromRmd)" },
-        { "line": 4303, "text": "qcdIncomeOffset += row.incomeOffsetDelta" },
-        { "line": 4304, "text": "if (row.nonQualifiedOrdinaryIncomeDelta > 0) {" },
-        { "line": 4306, "text": "row.nonQualifiedOrdinaryIncomeDelta" },
-        { "line": 4307, "text": "}" }
+        { "line": 4293, "text": "if (row.qcdOffsetConsumedWrite !== null) {" },
+        { "line": 4294, "text": "namedQcdOffsetConsumedByDonor.set(" },
+        { "line": 4297, "text": ")" },
+        { "line": 4299, "text": "qcdQualifiedFromRmdByOwner.set(row.ownerId, row.qualifiedFromRmd)" },
+        { "line": 4304, "text": "qcdIncomeOffset += row.incomeOffsetDelta" },
+        { "line": 4305, "text": "if (row.nonQualifiedOrdinaryIncomeDelta > 0) {" },
+        { "line": 4307, "text": "row.nonQualifiedOrdinaryIncomeDelta" },
+        { "line": 4308, "text": "}" }
       ]
     },
     {
       "id": "Y.callsite.cashFlowWrites",
       "label": "all four closed-union cash-flow publications",
       "file": "projection/simulate.ts",
-      "lines": [4308, 4321],
+      "lines": [4309, 4322],
       "anchors": [
-        { "line": 4308, "text": "for (const write of row.cashFlowWrites) {" },
-        { "line": 4309, "text": "switch (write.target) {" },
-        { "line": 4310, "text": "case 'exclusionFromRmd':" },
-        { "line": 4313, "text": "case 'ordinaryFromRmd':" },
-        { "line": 4316, "text": "case 'exclusionBeyondRmd':" },
-        { "line": 4319, "text": "case 'ordinaryBeyondRmd':" },
-        { "line": 4321, "text": "break" }
+        { "line": 4309, "text": "for (const write of row.cashFlowWrites) {" },
+        { "line": 4310, "text": "switch (write.target) {" },
+        { "line": 4311, "text": "case 'exclusionFromRmd':" },
+        { "line": 4314, "text": "case 'ordinaryFromRmd':" },
+        { "line": 4317, "text": "case 'exclusionBeyondRmd':" },
+        { "line": 4320, "text": "case 'ordinaryBeyondRmd':" },
+        { "line": 4322, "text": "break" }
       ],
       "note": "The materializer rejects targets outside LegacyQcdCashFlowWrite's closed union before caller mutation, and the caller carries an independent never-guard outside this naturally reached range. The hostile delegation test injects and observes exact identity/value publication for all four supported targets."
     },
@@ -230,15 +230,15 @@
       "id": "Y.callsite.proRataApply",
       "label": "exact helper-owned pro-rata object publication",
       "file": "projection/simulate.ts",
-      "lines": [4328, 4336],
+      "lines": [4329, 4337],
       "anchors": [
-        { "line": 4328, "text": "if (row.iraProRataWrite !== null) {" },
-        { "line": 4329, "text": "const readSnapshot = row.iraProRataReadSnapshot!" },
-        { "line": 4330, "text": "iraProRata.set(row.ownerId, readSnapshot)" },
-        { "line": 4331, "text": "qcdProRataIdentityByReadSnapshot.set(" },
-        { "line": 4333, "text": "row.iraProRataWrite," },
-        { "line": 4335, "text": "}" },
-        { "line": 4336, "text": "}" }
+        { "line": 4329, "text": "if (row.iraProRataWrite !== null) {" },
+        { "line": 4330, "text": "const readSnapshot = row.iraProRataReadSnapshot!" },
+        { "line": 4331, "text": "iraProRata.set(row.ownerId, readSnapshot)" },
+        { "line": 4332, "text": "qcdProRataIdentityByReadSnapshot.set(" },
+        { "line": 4334, "text": "row.iraProRataWrite," },
+        { "line": 4336, "text": "}" },
+        { "line": 4337, "text": "}" }
       ],
       "note": "The hostile delegation test observes the exact returned object on the wrapped downstream identity channel while a second-read-throwing object proves all arithmetic uses the immutable scalar snapshot."
     }
@@ -250,14 +250,14 @@
       "engineSourceTree": "dc89890dd2e4dd4eabc14bd20bb27fe551535d35"
     },
     "head": {
-      "observedAtCommit": "7d40e32bfdcfe4540f23d1097ea3636a53e6da14",
-      "engineSourceTree": "12290cbfcbdeed13ff2d3db9ab45dd296252217c"
+      "observedAtCommit": "f2aed8f4cc4339b07489a7abf89d94bd511ca784",
+      "engineSourceTree": "e03dc321659e16cc284802e8acaf18f428d4ea2e"
     },
     "inputs": {
-      "corpusSourceBlob": "a2523025a943122d0fc5b23d7af67a9e39892d36",
+      "corpusSourceBlob": "1986b9c4f02e5cec9e48cf11e7788dcee30ca983",
       "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
       "engineTreeLoaderBlob": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
-      "specMeasurementSha256": "0e83a8ada864a99c6809b8e41d35266b7d2817296b20754fcb6fa1ff6185f907"
+      "specMeasurementSha256": "d898b5e76d5a51919b2e21aec5a72bc9fe70e0abf5527508ebb83062cb1997e8"
     },
     "corpus": {
       "members": 120,

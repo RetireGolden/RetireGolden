@@ -63,13 +63,14 @@
  * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`,
  * `scripts/equivalence/specs/simulate-pension-annuity-income-boundary.json`,
  * `scripts/equivalence/specs/simulate-retirement-action-settlement-publication-boundary.json`,
- * and `scripts/equivalence/specs/simulate-year-result-assembly-boundary.json`
+ * `scripts/equivalence/specs/simulate-year-result-assembly-boundary.json`,
+ * and `scripts/equivalence/specs/simulate-funding-fixed-point-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
- * The YearResult assembly boundary has no dedicated corpus block: its
- * `simulate-year-result-assembly-boundary.json` spec measures the existing full
- * corpus and uses `AC` only as its reach-entry namespace.
+ * The YearResult assembly and funding-fixed-point boundaries have no dedicated
+ * corpus blocks: their specs measure the existing full corpus and use `AC` and
+ * `AD` only as reach-entry namespaces.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so
  * this tier has no dependency outside the engine package. Plans are

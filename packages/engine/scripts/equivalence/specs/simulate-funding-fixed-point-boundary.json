@@ -1,0 +1,144 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-funding-fixed-point-boundary",
+  "why": "Measured reach for the annual tax/withdrawal/ACA funding-control extraction. The full corpus measures ordinary root setup, bounded upper expansion, sign-change bisection, coordinated HECM multi-probe sizing, ACA actionable and fail-closed inputs, annual-pass re-entry, and all four equivalence modes. A direct request-sequence oracle separately pins the finite-portfolio exhaustion jump because equivalent corpus members cannot guarantee every defensive control arm.",
+  "entries": [
+    {
+      "id": "AD.helper.root",
+      "label": "bounded funding-root setup, direct iteration, and accepted-root identity",
+      "file": "projection/internal/annualFundingFixedPoint.ts",
+      "lines": [96, 117],
+      "anchors": [
+        {
+          "line": 96,
+          "text": "const solveFundingRoot = ("
+        },
+        {
+          "line": 105,
+          "text": "let evaluation = evaluate(need, forceGrossAca, cashInflows)"
+        },
+        {
+          "line": 116,
+          "text": "if (converged) {"
+        }
+      ]
+    },
+    {
+      "id": "AD.helper.bracket",
+      "label": "finite-portfolio bracket setup and bounded upper expansion",
+      "file": "projection/internal/annualFundingFixedPoint.ts",
+      "lines": [120, 139],
+      "anchors": [
+        {
+          "line": 120,
+          "text": "// A finite portfolio brackets the root: once all spendable balances are"
+        },
+        {
+          "line": 124,
+          "text": "let upperNeed = Math.max(1, need, evaluation.requiredNeed)"
+        },
+        {
+          "line": 135,
+          "text": "upperNeed *= 2"
+        }
+      ]
+    },
+    {
+      "id": "AD.helper.bisection",
+      "label": "sign-change bisection and closest bracket updates",
+      "file": "projection/internal/annualFundingFixedPoint.ts",
+      "lines": [156, 184],
+      "anchors": [
+        {
+          "line": 156,
+          "text": "// Tax rules can contain hard steps. Bisection therefore requires a true"
+        },
+        {
+          "line": 165,
+          "text": "const midpointNeed = (lowerNeed + upperNeed) / 2"
+        },
+        {
+          "line": 184,
+          "text": "if (upperNeed - lowerNeed <= tolerance) break"
+        }
+      ]
+    },
+    {
+      "id": "AD.helper.hecm",
+      "label": "coordinated-HECM outer probes and accepted cash-input reset",
+      "file": "projection/internal/annualFundingFixedPoint.ts",
+      "lines": [197, 248],
+      "anchors": [
+        {
+          "line": 197,
+          "text": "let acceptedCoordinatedHecmDraw = 0"
+        },
+        {
+          "line": 215,
+          "text": "const probe = solveFundingRoot("
+        },
+        {
+          "line": 247,
+          "text": "evaluationCount = 0"
+        }
+      ]
+    },
+    {
+      "id": "AD.helper.acceptedRoot",
+      "label": "final accepted funding root before caller-owned commits",
+      "file": "projection/internal/annualFundingFixedPoint.ts",
+      "lines": [250, 256],
+      "anchors": [
+        {
+          "line": 250,
+          "text": "const fundingRoot = solveFundingRoot("
+        },
+        {
+          "line": 254,
+          "text": "let evaluation = fundingRoot.evaluation"
+        }
+      ]
+    },
+    {
+      "id": "AD.callsite.inputs",
+      "label": "settled annual funding facts grouped at the coordinator callsite",
+      "file": "projection/simulate.ts",
+      "lines": [6829, 6839],
+      "anchors": [
+        {
+          "line": 6829,
+          "text": "const fundingFixedPoint = annualFundingFixedPoint({"
+        },
+        {
+          "line": 6830,
+          "text": "spendingUsesBeforeTax: expenses.total + contributions,"
+        },
+        {
+          "line": 6838,
+          "text": "evaluate: evaluateWithdrawalNeed,"
+        }
+      ]
+    },
+    {
+      "id": "AD.callsite.outputs",
+      "label": "accepted cash, HECM, evaluation, and convergence handoff",
+      "file": "projection/simulate.ts",
+      "lines": [6840, 6849],
+      "anchors": [
+        {
+          "line": 6840,
+          "text": "const cashInflows = fundingFixedPoint.acceptedCashInflows"
+        },
+        {
+          "line": 6841,
+          "text": "hecmDraw = fundingFixedPoint.acceptedCoordinatedHecmDraw"
+        },
+        {
+          "line": 6847,
+          "text": "evaluationCount: acaEvaluationCount,"
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The direct coordinator tests pin the exact bracket/exhaustion-jump/bisection request sequence, discontinuity nonconvergence, gross ACA fallback, both conflicting-basin directions, HECM probe reset, frozen root/ACA/HECM inputs, and exact selected-object identity. The hostile delegation test separately injects non-economic accepted evaluation, cash, HECM, convergence, residual, and ACA-flag values and proves simulatePlan consumes the coordinator result instead of recomputing the root."
+}
