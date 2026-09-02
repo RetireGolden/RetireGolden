@@ -99,6 +99,8 @@ import {
 } from './internal/annualAggregateRothConversionPlan.js'
 import { annualAggregateRothConversionTargetPlan } from
   './internal/annualAggregateRothConversionTargetPlan.js'
+import { annualRetirementActionPreflight } from
+  './internal/annualRetirementActionPreflight.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountGrowth.js'
@@ -177,9 +179,7 @@ import {
   asAccountId,
   asPersonId,
   asUsdCents,
-  assessConversionLinkedWithdrawalGroups,
   evaluateAnnualQcdExecutionPrerequisites,
-  evaluateRetirementActionSchedule,
   executeAnnualQcds,
   executeRothConversions,
   ledgerCentsToPlanDollars,
@@ -191,13 +191,11 @@ import {
   type ActionId,
   type AnnualQcdRmdPoolOpeningSnapshot,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
-  type ConversionLinkedWithdrawalGroupAuthorization,
   type ConversionLinkedWithdrawalGroupLiabilityRun,
   type ExecuteAnnualQcdsResult,
   type ExecuteRothConversionsResult,
   type PersonId,
   type QualifiedCharitableDistributionRequest,
-  type RetirementActionRequest,
 } from '../actions/index.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
 import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
@@ -1848,9 +1846,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // first; writes are committed pro rata back to every physical member.
     const annualLogicalBalanceLedger = new AnnualLogicalBalanceLedger(balances)
     const annualIdKeyedBalances = annualLogicalBalanceLedger.liveStates()
-    const annualBalanceByAccountId = new Map(
-      annualIdKeyedBalances.map((state) => [state.account.id, state] as const),
-    )
     const startOfYearPositionalBalances = balances.map((state) => state.balance)
     const startOfYearBalance = new Map(
       annualIdKeyedBalances.map((state) => [state.account.id, state.balance]),
@@ -4642,233 +4637,32 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // The exact-cent executor owns current-year action ordering and debits named
     // sources here. Its movement remains outside the legacy withdrawal map so
     // the final legacy apply loop cannot debit an action source a second time.
-    const currentYearActions = passRetirementActions.filter(
-      (request) => request.year === year,
-    )
-    const currentYearOrdinaryActions = currentYearActions.filter(
-      (request) => request.kind === 'ordinaryWithdrawal',
-    )
-    const currentYearConversionActions = currentYearActions.filter(
-      (request) => request.kind === 'rothConversion',
-    )
-    const currentYearNonConversionActions = currentYearActions.filter(
-      (request) => request.kind !== 'rothConversion',
-    )
-    const currentYearSchedule = evaluateRetirementActionSchedule(
-      year,
-      currentYearActions,
-    )
+    const retirementActionPreflight = annualRetirementActionPreflight({
+      taxYear: year,
+      retirementActions: passRetirementActions,
+      balances: annualIdKeyedBalances.map((state) => ({
+        accountId: state.account.id,
+        balancePlanDollars: state.balance,
+      })),
+      annualLiabilityBaseline:
+        annualLiabilityBaseline === null ? 'unavailable' : 'read',
+      linkedGroupRelease,
+    })
+    const currentYearOrdinaryActions = retirementActionPreflight.ordinaryActions
+    const currentYearConversionActions =
+      retirementActionPreflight.conversionActions
+    const currentYearQcdExecutionActions =
+      retirementActionPreflight.qcdExecutionActions
+    const currentYearOrdinaryExecutionActions =
+      retirementActionPreflight.ordinaryExecutionActions
     const mixedKindScheduleBlocked =
-      currentYearSchedule.scheduleIssues.length > 0 &&
-      currentYearNonConversionActions.length > 0 &&
-      currentYearConversionActions.length > 0
-    const currentYearQcdActions = currentYearActions.filter(
-      (request): request is QualifiedCharitableDistributionRequest =>
-        request.kind === 'qcd',
-    )
-    // The annual publication coordinator excuses a schedule collision only
-    // between records of the same executor source
-    // (`annualRetirementActionPublication.ts` `diagnosedWithinSource`), so a QCD
-    // sharing a slot with a non-QCD action has to stay with the ordinary
-    // executor: split across two sources the same collision would abort the
-    // whole publication instead of being reported. This is decided per action,
-    // not per year -- the whole colliding slot moves, and a QCD scheduled
-    // elsewhere is untouched by someone else's collision. A QCD-only slot needs
-    // no exception, because both sides of it publish through the qcdExecutor,
-    // which reports the collision through its own schedule diagnostics.
-    const currentYearQcdActionIds = new Set(
-      currentYearQcdActions.map((request) => request.actionId),
-    )
-    const crossKindCollidingQcdActionIds = new Set(
-      currentYearSchedule.scheduleIssues.flatMap((issue) =>
-        issue.kind === 'executionSequenceConflict' &&
-        issue.collidingActionIds.some((actionId) =>
-          !currentYearQcdActionIds.has(actionId))
-          ? issue.collidingActionIds.filter((actionId) =>
-              currentYearQcdActionIds.has(actionId))
-          : []),
-    )
-    const currentYearQcdExecutionActions = currentYearQcdActions.filter(
-      (request) => !crossKindCollidingQcdActionIds.has(request.actionId),
-    )
-    // A named QCD leaves the ordinary executor's scope because its own executor
-    // publishes it, and `publishAnnualRetirementActions` throws when two
-    // executors publish the same action.
-    const currentYearOrdinaryExecutionActions = (mixedKindScheduleBlocked
-      ? currentYearActions
-      : currentYearNonConversionActions
-    ).filter((request) =>
-      request.kind !== 'qcd' ||
-      crossKindCollidingQcdActionIds.has(request.actionId))
-    // One conversion-linked withdrawal group decision for the whole annual
-    // pass, taken here because this is the only place every request set is
-    // visible at once. Neither executor sees the same set: the conversion
-    // executor is handed conversions alone, and the withdrawal executor is
-    // handed non-conversion actions -- except when `mixedKindScheduleBlocked`,
-    // where it receives the whole schedule including conversions. So neither
-    // can derive the same groups the other would, and a group spanning a Plan
-    // action and an in-flight one is visible to neither. Both are given this
-    // one verdict so the pair cannot be answered two ways within a year.
-    // The Plan half of this set is `currentYearActions` — `passRetirementActions`
-    // narrowed to this year — and both halves of that matter.
-    //
-    // It is `passRetirementActions` rather than the Plan's own array because a
-    // counterfactual that removed a conversion from the executors but left it
-    // visible here would still have its group assessed, and the group verdict
-    // is what both executors answer to.
-    //
-    // It is narrowed to this year because a pass may only answer for the year
-    // it is running. `assessConversionLinkedWithdrawalGroups` has no year
-    // predicate of its own — membership is read off the conversion side alone —
-    // so handing it the Plan's whole multi-year array made every year's groups
-    // a member of every year's annual group. Two independent consequences
-    // followed and either alone was fatal: another year's conversion has no
-    // execution evidence in this one, so its `allocationWeight` is null and the
-    // whole annual evaluation refuses `allocationWeightUnavailable`; and the
-    // release is all-or-nothing across the candidate set, so the other year's
-    // pair had to be authorized too, whereupon `withdrawalLegsMovedWhole` found
-    // no withdrawal evidence for it and revoked every release. A plan holding
-    // one self-funding pair in each of two years could therefore never move
-    // either of them. The all-or-nothing rule is right and stays; it is a rule
-    // about one filing unit in one year, and the set was what was wrong.
-    //
-    // This is also what makes the omission set above honest. It is already
-    // keyed on `request.year === year`, and its docblock claims the assessment
-    // "reads the same conversions out of the same array" — a claim that was
-    // false for exactly as long as this set was unscoped.
-    //
-    // The baseline's availability is what decides between the two funding
-    // reason codes. A run that read a `T0` held the inputs the funding question
-    // needs, so a group it refuses is refused on the merits; a run that did not
-    // is declining to answer, which is what `unsupported` says.
-    const linkedGroupAssessmentRequests = [
-      ...currentYearActions,
-      ...currentYearOrdinaryExecutionActions,
-      ...currentYearConversionActions,
-    ]
-    const observedLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups(
-      linkedGroupAssessmentRequests,
-      {
-        annualLiabilityBaseline:
-          annualLiabilityBaseline === null ? 'unavailable' : 'read',
-      },
-    )
-    /**
-     * Can this action's every allocation be funded from the balances standing
-     * here, in whole cents the ledger can actually move?
-     *
-     * Floored rather than rounded, which is the discipline every capacity read
-     * in this engine answers to: half-up rounding can report up to half a cent
-     * more than an account holds, and a leg released against that figure would
-     * be released against a cent the balance cannot cover. Truncating cannot,
-     * so a movement sized against this is always fundable.
-     *
-     * Read at the seam and not at each executor's own call site, because the
-     * question a staging release has to answer is about *both* legs before
-     * *either* moves.
-     *
-     * Be precise about what this read is and is not. It is **per action**, and
-     * it is **not aggregated** — not across a group's two legs, and not across
-     * groups. Disjointness holds between one group's own two legs, because a
-     * conversion may only source an owned non-inherited traditional IRA and an
-     * ordinary withdrawal may only source cash, equity compensation or taxable;
-     * that is what makes each leg's answer independent of the other's movement.
-     * It does not extend to a year holding two groups whose withdrawals draw on
-     * one cash account: each can be individually fundable while their sum is
-     * not, and this read will say yes to both.
-     *
-     * So this is a *precondition for staging*, never a proof of movement. What
-     * actually makes the release safe is that the staging run then moves the
-     * legs for real and is read for what happened: a withdrawal the account
-     * could not cover comes back short or refused,
-     * `withdrawalLegsMovedWhole` revokes, `movementCoherent` goes false, and
-     * `authorizeConversionLinkedWithdrawalGroups` withholds. The seam read
-     * earns its place by turning the common case into a clean refusal instead
-     * of a staging run that has to be discarded through a throw — not by
-     * deciding anything on its own.
-     */
-    const legFundableFromCurrentBalances = (
-      request: Readonly<RetirementActionRequest>,
-    ): boolean => {
-      if (request.kind !== 'rothConversion' &&
-          request.kind !== 'ordinaryWithdrawal') return false
-      const requestedBySourceAccountId = new Map<string, number>()
-      for (const allocation of request.allocations) {
-        requestedBySourceAccountId.set(
-          allocation.sourceAccountId,
-          (requestedBySourceAccountId.get(allocation.sourceAccountId) ?? 0) +
-            allocation.requestedAmount,
-        )
-      }
-      for (const [accountId, requested] of requestedBySourceAccountId) {
-        const state = annualBalanceByAccountId.get(accountId)
-        if (state === undefined) return false
-        try {
-          if (planDollarsToFlooredLedgerCents(state.balance) < requested) {
-            return false
-          }
-        } catch {
-          // A Plan balance outside the exact-cent safe range is a capacity
-          // nobody here can state, and an unstateable capacity is not a proof
-          // of fundability.
-          return false
-        }
-      }
-      return true
-    }
-    /**
-     * The groups a staging run provisionally releases, with the hypothesis it
-     * is testing written into their figures.
-     *
-     * The required and funded amounts are both the withdrawal's own authored
-     * cents, which is exactly the claim under test: *this* withdrawal, moving
-     * whole, funds *this* conversion's share of the unit's annual liability.
-     * The staging run then computes the real allocation from two real
-     * liabilities and either agrees with the claim or does not. Nothing else in
-     * the run reads these two figures — the conversion executor republishes
-     * them and the run is discarded — so the hypothesis is stated where it can
-     * be read rather than left implicit in a placeholder.
-     */
-    const provisionalLinkedGroupAuthorizations = ():
-      readonly Readonly<ConversionLinkedWithdrawalGroupAuthorization>[] => {
-      const requestByActionId = new Map(
-        linkedGroupAssessmentRequests.map((request) =>
-          [request.actionId, request] as const),
-      )
-      const authorizations: ConversionLinkedWithdrawalGroupAuthorization[] = []
-      for (const group of observedLinkedWithdrawalGroups.groups) {
-        if (group.refusalKind === 'sharedFundingWithdrawal') continue
-        const conversion = requestByActionId.get(group.conversionActionId)
-        const withdrawal = requestByActionId.get(group.withdrawalActionId)
-        if (
-          conversion?.kind !== 'rothConversion' ||
-          withdrawal?.kind !== 'ordinaryWithdrawal' ||
-          !legFundableFromCurrentBalances(conversion) ||
-          !legFundableFromCurrentBalances(withdrawal)
-        ) continue
-        authorizations.push({
-          conversionActionId: group.conversionActionId,
-          withdrawalActionId: group.withdrawalActionId,
-          funding: {
-            requiredFundingAmount: asUsdCents(withdrawal.requestedAmount),
-            fundedAmount: asUsdCents(withdrawal.requestedAmount),
-          },
-        })
-      }
-      return authorizations
-    }
-    const linkedGroupAuthorizations = linkedGroupRelease.kind === 'proven'
-      ? linkedGroupRelease.authorizations
-      : linkedGroupRelease.kind === 'stageProvisionally'
-        ? provisionalLinkedGroupAuthorizations()
-        : []
-    const conversionLinkedWithdrawalGroups = linkedGroupAuthorizations.length === 0
-      ? observedLinkedWithdrawalGroups
-      : assessConversionLinkedWithdrawalGroups(linkedGroupAssessmentRequests, {
-        annualLiabilityBaseline:
-          annualLiabilityBaseline === null ? 'unavailable' : 'read',
-        authorizedGroups: linkedGroupAuthorizations,
-      })
+      retirementActionPreflight.mixedKindScheduleBlocked
+    const linkedGroupAssessmentRequests =
+      retirementActionPreflight.linkedGroupAssessmentRequests
+    const observedLinkedWithdrawalGroups =
+      retirementActionPreflight.observedConversionLinkedWithdrawalGroups
+    const conversionLinkedWithdrawalGroups =
+      retirementActionPreflight.conversionLinkedWithdrawalGroups
     /**
      * The verdict as the rest of the year reads it, which is the released one
      * until the withdrawal leg fails to arrive.
