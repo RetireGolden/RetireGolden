@@ -150,8 +150,8 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
       </div>
       {onHold ? (
         <div className="callout callout--warn" role="status">
-          Quote paused: an entry on this ladder is invalid, so it cannot be priced yet. The list below names the field;
-          the last quoted cost no longer applies.
+          Quote paused: an entry on this ladder is invalid, so it cannot be priced yet. The issue list at the end of this
+          section names the field; the last quoted cost no longer applies.
         </div>
       ) : quote ? (
         <>
@@ -197,15 +197,47 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
   )
 }
 
-/** Funded-ratio card, shared with the Results page (step 4 of the plan). */
+function FundedRatioIntro() {
+  return (
+    <>
+      <h2>Funded ratio</h2>
+      <p className="card-hint">
+        Pension accounting for your household: essential spending valued on the TIPS curve vs. the guaranteed income
+        dedicated to it. <LearnLink {...LEARN.fundedRatio} />
+      </p>
+    </>
+  )
+}
+
+/**
+ * Funded-ratio card, shared with the Results page (step 4 of the plan).
+ *
+ * The ratio is read off a full projection, so while any entry in the plan is
+ * invalid (a ladder's, or one on another page) that projection would run on a
+ * plan the engine has refused to store. The card then pauses without
+ * projecting at all: the readout component, which owns the projection hook,
+ * is not mounted, so an invalid draft can neither throw out of the card nor
+ * leave it empty (#512). Shared with Results, so the copy points at the
+ * header count, not at a control "above".
+ */
 export function FundedRatioCard() {
-  const { plan, issues } = usePlan()
-  // The ratio is read off a full projection, so while any entry in the plan
-  // is invalid (a ladder's, or one on another page) that projection runs on a
-  // plan the engine has refused to store; the readout pauses rather than
-  // presenting it as authoritative (#512). Shared with Results, so the copy
-  // points at the header count, not at a control "above".
-  const onHold = issues.length > 0
+  const { issues } = usePlan()
+  if (issues.length === 0) return <FundedRatioReadout />
+  return (
+    <div className="card">
+      <FundedRatioIntro />
+      <div className="callout callout--warn" role="status">
+        Paused: the plan has {issues.length === 1 ? 'an entry' : `${issues.length} entries`} to fix before the ratio can
+        be re-computed, so the last readout no longer applies. The issue list on the page with the entry names the
+        field{issues.length === 1 ? '' : 's'}.
+      </div>
+    </div>
+  )
+}
+
+/** The live readout: projects the (valid) plan and renders nothing when it has no measurable essential spending. */
+function FundedRatioReadout() {
+  const { plan } = usePlan()
   const { result, deflate } = useProjection(plan)
   const startYear = result.startYear
   const fr = useMemo(() => {
@@ -224,47 +256,32 @@ export function FundedRatioCard() {
   if (!fr) return null
   return (
     <div className="card">
-      <h2>Funded ratio</h2>
+      <FundedRatioIntro />
+      <div className="stat-grid">
+        <div>
+          <div className={`stat-value ${fr.fundedRatioPct >= 100 ? 'stat-value--good' : 'stat-value--neutral'}`}>
+            {Math.round(fr.fundedRatioPct)}%
+          </div>
+          <div className="muted">of the essential floor is funded by guaranteed income</div>
+        </div>
+        <div>
+          <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.essentialSpendingPv)}</div>
+          <div className="muted">essential spending, valued today</div>
+        </div>
+        <div>
+          <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.guaranteedIncomePv)}</div>
+          <div className="muted">guaranteed income, valued today</div>
+        </div>
+        <div>
+          <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.unfundedPv)}</div>
+          <div className="muted">gap riding on the portfolio</div>
+        </div>
+      </div>
       <p className="card-hint">
-        Pension accounting for your household: essential spending valued on the TIPS curve vs. the guaranteed income
-        dedicated to it. <LearnLink {...LEARN.fundedRatio} />
+        {plan.expenses.requiredAnnual === undefined
+          ? 'Tip: you have not separated required spending from lifestyle on the Spending page, so the "floor" here is your whole budget and the ratio reads low.'
+          : `Counted from ${fr.fromYear} through ${fr.toYear}, discounted at Treasury real yields as of ${CURVE.asOfIso}.`}
       </p>
-      {onHold ? (
-        <div className="callout callout--warn" role="status">
-          Paused: the plan has {issues.length === 1 ? 'an entry' : `${issues.length} entries`} to fix before the ratio can
-          be re-computed, so the last readout no longer applies. The issue list on the page with the entry names the
-          field{issues.length === 1 ? '' : 's'}.
-        </div>
-      ) : (
-        <div className="stat-grid">
-          <div>
-            <div className={`stat-value ${fr.fundedRatioPct >= 100 ? 'stat-value--good' : 'stat-value--neutral'}`}>
-              {Math.round(fr.fundedRatioPct)}%
-            </div>
-            <div className="muted">of the essential floor is funded by guaranteed income</div>
-          </div>
-          <div>
-            <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.essentialSpendingPv)}</div>
-            <div className="muted">essential spending, valued today</div>
-          </div>
-          <div>
-            <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.guaranteedIncomePv)}</div>
-            <div className="muted">guaranteed income, valued today</div>
-          </div>
-          <div>
-            <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.unfundedPv)}</div>
-            <div className="muted">gap riding on the portfolio</div>
-          </div>
-        </div>
-      )}
-      {/* The footer reads the same projection as the ratio, so it pauses with it. */}
-      {onHold ? null : (
-        <p className="card-hint">
-          {plan.expenses.requiredAnnual === undefined
-            ? 'Tip: you have not separated required spending from lifestyle on the Spending page, so the "floor" here is your whole budget and the ratio reads low.'
-            : `Counted from ${fr.fromYear} through ${fr.toYear}, discounted at Treasury real yields as of ${CURVE.asOfIso}.`}
-        </p>
-      )}
     </div>
   )
 }

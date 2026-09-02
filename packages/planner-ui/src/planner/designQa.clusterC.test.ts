@@ -1,5 +1,7 @@
 /**
- * Design-QA chrome pins, cluster C (#467, #473). Pin the CSS, not a jsdom
+ * Design-QA chrome pins, cluster C (#467, #473). The checkbox-midline rule
+ * landed on main through cluster B as well (#516), so the sheet carries one
+ * copy and both pin files hold it. Pin the CSS, not a jsdom
  * visual: jsdom computes no layout, so a checkbox sitting on the row's
  * control midline is only observable in the stylesheet. The markup half of
  * this cluster lives in designQa.clusterC.markup.test.tsx.

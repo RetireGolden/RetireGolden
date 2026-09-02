@@ -35,6 +35,20 @@ vi.mock('../mc/pool', async (importOriginal) => {
 import * as pool from '../mc/pool'
 const actualPool = await vi.importActual<typeof import('../mc/pool')>('../mc/pool')
 
+// The funded-ratio pause must not depend on the projection at all: one test
+// makes the projection hook throw, the way an invalid draft can.
+const projectionThrows = { on: false }
+vi.mock('./useProjection', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./useProjection')>()
+  return {
+    ...original,
+    useProjection: (...args: Parameters<typeof original.useProjection>) => {
+      if (projectionThrows.on) throw new Error('simulatePlan refused the draft')
+      return original.useProjection(...args)
+    },
+  }
+})
+
 let root: Root | null = null
 let container: HTMLDivElement | null = null
 
@@ -430,6 +444,9 @@ describe('Income floor (#512)', () => {
       'incomeFloor.ladders.0.endYear: a ladder must end in or after its first payout year',
     ])
     expect(host.textContent).toContain('Quote paused')
+    // Issues render once, at the end of the section, after every ladder and
+    // the add control: the copy says so instead of "below".
+    expect(host.textContent).toContain('The issue list at the end of this section names the field')
     expect(host.textContent).not.toContain('Quoted cost')
     expect(host.textContent).not.toContain('Set an amount and a payout window')
     expect(host.textContent).toContain('Paused: the plan has an entry to fix')
@@ -438,6 +455,20 @@ describe('Income floor (#512)', () => {
     // reads the same projection pause together.
     expect(host.textContent).toContain('Funded ratio')
     expect(host.textContent).not.toMatch(/Counted from \d{4} through|the ratio reads low/)
+  })
+
+  it('the paused card never projects, so a draft the engine would throw on cannot crash or empty it', async () => {
+    // The projection hook throws (an invalid draft can); the paused card is
+    // untouched because it does not mount the readout that owns the hook.
+    projectionThrows.on = true
+    try {
+      const guarded = await mount(ladderPlan(), <IncomeFloorSection />, ['accounts.0.balance: Invalid input'])
+      expect(guarded.textContent).toContain('Funded ratio')
+      expect(guarded.textContent).toContain('Paused: the plan has an entry to fix')
+      expect(guarded.querySelector('.stat-grid')).toBeNull()
+    } finally {
+      projectionThrows.on = false
+    }
   })
 
   it('an issue elsewhere in the plan pauses the ratio (a full projection) but not this ladder\'s quote (its own rungs)', async () => {
