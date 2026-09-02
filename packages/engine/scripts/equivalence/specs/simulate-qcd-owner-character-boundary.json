@@ -172,25 +172,25 @@
       "id": "Y.callsite.invoke",
       "label": "owner-character invocation with grouped annual state snapshots",
       "file": "projection/simulate.ts",
-      "lines": [4279, 4298],
+      "lines": [4265, 4284],
       "anchors": [
-        { "line": 4279, "text": "const qcdQualifiedFromRmdByOwner = new Map<string, number>()" },
-        { "line": 4281, "text": "const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())" },
-        { "line": 4286, "text": "materializeAnnualLegacyQcdOwnerCharacterPlanResult(" },
-        { "line": 4287, "text": "annualLegacyQcdOwnerCharacterPlan({" },
-        { "line": 4291, "text": "preDistributionAggregateIraBalance," },
-        { "line": 4293, "text": "qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor," },
-        { "line": 4297, "text": "[...expectedQcdOwnerIds]," }
+        { "line": 4265, "text": "const qcdQualifiedFromRmdByOwner = new Map<string, number>()" },
+        { "line": 4267, "text": "const expectedQcdOwnerIds = new Set<string>(qcdGrossByOwner.keys())" },
+        { "line": 4272, "text": "materializeAnnualLegacyQcdOwnerCharacterPlanResult(" },
+        { "line": 4273, "text": "annualLegacyQcdOwnerCharacterPlan({" },
+        { "line": 4277, "text": "preDistributionAggregateIraBalance," },
+        { "line": 4279, "text": "qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor," },
+        { "line": 4283, "text": "[...expectedQcdOwnerIds]," }
       ]
     },
     {
       "id": "Y.callsite.applyRows",
       "label": "ordered owner-row iteration and contradiction selection",
       "file": "projection/simulate.ts",
-      "lines": [4299, 4300],
+      "lines": [4285, 4286],
       "anchors": [
-        { "line": 4299, "text": "for (const row of qcdOwnerCharacterPlan.rows) {" },
-        { "line": 4300, "text": "if (row.contradictoryOffsetLedger) {" }
+        { "line": 4285, "text": "for (const row of qcdOwnerCharacterPlan.rows) {" },
+        { "line": 4286, "text": "if (row.contradictoryOffsetLedger) {" }
       ],
       "note": "The contradictory-ledger warning body is intentionally outside measured valid-plan reach and is pinned by the focused delegation fixture; the conditional itself remains measured for every corpus member."
     },
@@ -198,31 +198,31 @@
       "id": "Y.callsite.applyCharacterRows",
       "label": "ordered owner offset, character and income folds",
       "file": "projection/simulate.ts",
-      "lines": [4306, 4321],
+      "lines": [4292, 4307],
       "anchors": [
-        { "line": 4306, "text": "if (row.qcdOffsetConsumedWrite !== null) {" },
-        { "line": 4307, "text": "namedQcdOffsetConsumedByDonor.set(" },
-        { "line": 4310, "text": ")" },
-        { "line": 4312, "text": "qcdQualifiedFromRmdByOwner.set(row.ownerId, row.qualifiedFromRmd)" },
-        { "line": 4317, "text": "qcdIncomeOffset += row.incomeOffsetDelta" },
-        { "line": 4318, "text": "if (row.nonQualifiedOrdinaryIncomeDelta > 0) {" },
-        { "line": 4320, "text": "row.nonQualifiedOrdinaryIncomeDelta" },
-        { "line": 4321, "text": "}" }
+        { "line": 4292, "text": "if (row.qcdOffsetConsumedWrite !== null) {" },
+        { "line": 4293, "text": "namedQcdOffsetConsumedByDonor.set(" },
+        { "line": 4296, "text": ")" },
+        { "line": 4298, "text": "qcdQualifiedFromRmdByOwner.set(row.ownerId, row.qualifiedFromRmd)" },
+        { "line": 4303, "text": "qcdIncomeOffset += row.incomeOffsetDelta" },
+        { "line": 4304, "text": "if (row.nonQualifiedOrdinaryIncomeDelta > 0) {" },
+        { "line": 4306, "text": "row.nonQualifiedOrdinaryIncomeDelta" },
+        { "line": 4307, "text": "}" }
       ]
     },
     {
       "id": "Y.callsite.cashFlowWrites",
       "label": "all four closed-union cash-flow publications",
       "file": "projection/simulate.ts",
-      "lines": [4322, 4335],
+      "lines": [4308, 4321],
       "anchors": [
-        { "line": 4322, "text": "for (const write of row.cashFlowWrites) {" },
-        { "line": 4323, "text": "switch (write.target) {" },
-        { "line": 4324, "text": "case 'exclusionFromRmd':" },
-        { "line": 4327, "text": "case 'ordinaryFromRmd':" },
-        { "line": 4330, "text": "case 'exclusionBeyondRmd':" },
-        { "line": 4333, "text": "case 'ordinaryBeyondRmd':" },
-        { "line": 4335, "text": "break" }
+        { "line": 4308, "text": "for (const write of row.cashFlowWrites) {" },
+        { "line": 4309, "text": "switch (write.target) {" },
+        { "line": 4310, "text": "case 'exclusionFromRmd':" },
+        { "line": 4313, "text": "case 'ordinaryFromRmd':" },
+        { "line": 4316, "text": "case 'exclusionBeyondRmd':" },
+        { "line": 4319, "text": "case 'ordinaryBeyondRmd':" },
+        { "line": 4321, "text": "break" }
       ],
       "note": "The materializer rejects targets outside LegacyQcdCashFlowWrite's closed union before caller mutation, and the caller carries an independent never-guard outside this naturally reached range. The hostile delegation test injects and observes exact identity/value publication for all four supported targets."
     },
@@ -230,15 +230,15 @@
       "id": "Y.callsite.proRataApply",
       "label": "exact helper-owned pro-rata object publication",
       "file": "projection/simulate.ts",
-      "lines": [4342, 4350],
+      "lines": [4328, 4336],
       "anchors": [
-        { "line": 4342, "text": "if (row.iraProRataWrite !== null) {" },
-        { "line": 4343, "text": "const readSnapshot = row.iraProRataReadSnapshot!" },
-        { "line": 4344, "text": "iraProRata.set(row.ownerId, readSnapshot)" },
-        { "line": 4345, "text": "qcdProRataIdentityByReadSnapshot.set(" },
-        { "line": 4347, "text": "row.iraProRataWrite," },
-        { "line": 4349, "text": "}" },
-        { "line": 4350, "text": "}" }
+        { "line": 4328, "text": "if (row.iraProRataWrite !== null) {" },
+        { "line": 4329, "text": "const readSnapshot = row.iraProRataReadSnapshot!" },
+        { "line": 4330, "text": "iraProRata.set(row.ownerId, readSnapshot)" },
+        { "line": 4331, "text": "qcdProRataIdentityByReadSnapshot.set(" },
+        { "line": 4333, "text": "row.iraProRataWrite," },
+        { "line": 4335, "text": "}" },
+        { "line": 4336, "text": "}" }
       ],
       "note": "The hostile delegation test observes the exact returned object on the wrapped downstream identity channel while a second-read-throwing object proves all arithmetic uses the immutable scalar snapshot."
     }
@@ -250,24 +250,24 @@
       "engineSourceTree": "dc89890dd2e4dd4eabc14bd20bb27fe551535d35"
     },
     "head": {
-      "observedAtCommit": "1565dacc947d5a4454656fb3ad2d73e55186e8db",
-      "engineSourceTree": "cb355e9536e02b141a8c7f92aaceda5694e9b61b"
+      "observedAtCommit": "5c805b12e76b47da286244e642beae1e078b99c2",
+      "engineSourceTree": "bf4733926ef1968234a8609bedb4feeb98452c18"
     },
     "inputs": {
-      "corpusSourceBlob": "2d554c3de6905b8a07e849f84b38160ba7ffc229",
+      "corpusSourceBlob": "7b09026ed0949344283f64b62d6dac6baa63dda8",
       "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
       "engineTreeLoaderBlob": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
-      "specMeasurementSha256": "4511be19e3e2d6311b4ade3aebe4bdd3a6758acad474fdd7a679e1d1ea566cf1"
+      "specMeasurementSha256": "0e83a8ada864a99c6809b8e41d35266b7d2817296b20754fcb6fa1ff6185f907"
     },
     "corpus": {
-      "members": 118,
-      "membersSha256": "c4081f83c329eac576a75eb6a7ea6224e0fd8b7e73aec920bc810c008868bd9b",
-      "entries": 472
+      "members": 120,
+      "membersSha256": "083021042951c31d4891ec6480d38f831900bc2b00ca9eac64587b6c8e3c777a",
+      "entries": 480
     },
     "capture": {
-      "baseDumpSha256": "013965585b44eefbf5c80cfe5f38e1ef1b87233bccd9f83348b0a80be9389dd3",
-      "headDumpSha256": "013965585b44eefbf5c80cfe5f38e1ef1b87233bccd9f83348b0a80be9389dd3",
-      "overallSha256": "2f6633e8abc56f036b81491613b84915d035c96e36ed65bcfa95c00c0e421bcc",
+      "baseDumpSha256": "526fafbcda1eb4ed612b1b84a98ab9196d1f072ae061cd6abe408737935260d9",
+      "headDumpSha256": "526fafbcda1eb4ed612b1b84a98ab9196d1f072ae061cd6abe408737935260d9",
+      "overallSha256": "5a1f1fd50b0a7b2e39db3f0d2a15d58c08a6b74b7c45f7d6a0fd234e6a1f7494",
       "entriesMoved": 0,
       "result": "IDENTICAL"
     },

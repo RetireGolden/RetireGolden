@@ -1,0 +1,152 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-retirement-action-settlement-publication-boundary",
+  "why": "Measured reach for the retirement-action settlement-publication extraction. The full corpus exercises ordinary, named Roth-conversion, QCD, linked-group, diagnostics-only, settled-liability, annual-pass re-entry, and all four equivalence modes.",
+  "entries": [
+    {
+      "id": "AB.helper.sources",
+      "label": "publication eligibility, QCD selection, and ordered request/source joins",
+      "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
+      "lines": [89, 136],
+      "anchors": [
+        {
+          "line": 89,
+          "text": "const ordinaryPublicationEligibility ="
+        },
+        {
+          "line": 110,
+          "text": "const qcdActionPrerequisites ="
+        }
+      ]
+    },
+    {
+      "id": "AB.helper.requests",
+      "label": "executor request ordering for canonical publication",
+      "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
+      "lines": [138, 142],
+      "anchors": [
+        {
+          "line": 138,
+          "text": "const retirementActionPublicationRequests = ["
+        }
+      ]
+    },
+    {
+      "id": "AB.helper.liability",
+      "label": "settled candidate liability and exact funding-vector identity",
+      "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
+      "lines": [155, 158],
+      "anchors": [
+        {
+          "line": 155,
+          "text": "const liability = exactAnnualLiabilityFromPlanDollars("
+        }
+      ]
+    },
+    {
+      "id": "AB.helper.liabilityIdentity",
+      "label": "executed-funding vector and candidate T1 identity publication",
+      "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
+      "lines": [160, 191],
+      "anchors": [
+        {
+          "line": 164,
+          "text": "const fundingVector = input.linkedWithdrawalGroups.groups.map((group) => ["
+        },
+        {
+          "line": 169,
+          "text": "const minted = mintAnnualLiabilityRunIdentity({"
+        }
+      ]
+    },
+    {
+      "id": "AB.helper.linkedGroups",
+      "label": "linked-group movement and Form 8606 member evidence",
+      "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
+      "lines": [201, 260],
+      "anchors": [
+        {
+          "line": 201,
+          "text": "const conversionLinkedWithdrawalGroupExecution ="
+        },
+        {
+          "line": 211,
+          "text": "movements: input.linkedWithdrawalGroups.groups.map("
+        },
+        {
+          "line": 245,
+          "text": "members: input.linkedWithdrawalGroups.groups.map("
+        }
+      ]
+    },
+    {
+      "id": "AB.helper.linkedUnknownCharacter",
+      "label": "executed conversion whose Form 8606 character remains unknown",
+      "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
+      "lines": [262, 266],
+      "anchors": [
+        {
+          "line": 262,
+          "text": ": conversionEvidence.outcome === 'executed'"
+        },
+        {
+          "line": 265,
+          "text": "? (conversionEvidence.taxableConvertedAmount === null"
+        }
+      ]
+    },
+    {
+      "id": "AB.helper.linkedFunding",
+      "label": "nonexecuted character and withdrawal-funded amount evidence",
+      "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
+      "lines": [270, 277],
+      "anchors": [
+        {
+          "line": 270,
+          "text": ": asUsdCents(0),"
+        },
+        {
+          "line": 271,
+          "text": "fundedAmount: asUsdCents("
+        }
+      ]
+    },
+    {
+      "id": "AB.helper.publication",
+      "label": "canonical annual publication and optional output channels",
+      "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
+      "lines": [278, 304],
+      "anchors": [
+        {
+          "line": 278,
+          "text": "const retirementActionPublication ="
+        },
+        {
+          "line": 294,
+          "text": "return {"
+        }
+      ]
+    },
+    {
+      "id": "AB.callsite",
+      "label": "post-settlement invocation before entity facts and YearResult publication",
+      "file": "projection/simulate.ts",
+      "lines": [8656, 8674],
+      "anchors": [
+        {
+          "line": 8660,
+          "text": "} = annualRetirementActionSettlementPublication({"
+        },
+        {
+          "line": 8663,
+          "text": "taxPlanDollars: tax,"
+        },
+        {
+          "line": 8673,
+          "text": "annualLiabilityNonGroupTaxInputs,"
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The omitted single-line arms are defensive: total publication ineligibility and a blocked identity mint. Direct coordinator tests pin empty and fail-closed paths, retained group evidence, publication eligibility and legacy gating, QCD committed-source precedence, executor request/source order, candidate-liability and funding-vector identity, exact movement/member construction, and input purity. Existing full-simulator linked-group tests exercise a settled non-null Form 8606 character; the hostile delegation test separately injects non-economic objects and proves exact YearResult publication without caller-side rebuilding."
+}

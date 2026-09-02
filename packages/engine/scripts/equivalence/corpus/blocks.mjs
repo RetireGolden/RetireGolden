@@ -28,6 +28,7 @@
  *   X  annual owner-RMD planning and deferral lifecycle
  *   Y  legacy aggregate QCD owner-character plan
  *   Z  annual pension and annuity income
+ *   AB retirement-action settlement publication
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -37,8 +38,8 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through O, plus P, R, T, U, V, W, X, Y and Z, each have a phase-specific reach
- * spec beside the earlier batch instruments.
+ * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z and AB, each have a
+ * phase-specific reach spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
@@ -59,8 +60,9 @@
  * `scripts/equivalence/specs/simulate-apply-flows-boundary.json`,
  * `scripts/equivalence/specs/simulate-owner-rmd.json`,
  * `scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json`,
- * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`, and
- * `scripts/equivalence/specs/simulate-pension-annuity-income-boundary.json`
+ * `scripts/equivalence/specs/simulate-inherited-ira-boundary.json`,
+ * `scripts/equivalence/specs/simulate-pension-annuity-income-boundary.json`,
+ * and `scripts/equivalence/specs/simulate-retirement-action-settlement-publication-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
@@ -4427,6 +4429,126 @@ function blockZ() {
   return out
 }
 
+// ---------------------------------------------------------------------------
+// AB — retirement-action settlement publication
+// ---------------------------------------------------------------------------
+
+function blockAB() {
+  const out = []
+
+  {
+    // The linked pair forces a real counterfactual baseline and a settled
+    // candidate liability through the annual-pass attempt driver. The named
+    // conversion also reaches the Roth executor/publication source while an
+    // unrelated ordinary action keeps that source independently nonempty.
+    const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 60 })
+    plan.id = 'ab1-linked-settlement-publication'
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('ab1-cash', 1_000_000, { ownerPersonId: 'p1', annualReturnPct: 0 }),
+      qualified('traditional', 'ab1-ira', 400_000, {
+        annualReturnPct: 0,
+        nondeductibleBasis: 20_000,
+      }),
+      qualified('roth', 'ab1-roth', 0, { annualReturnPct: 0 }),
+    ]
+    plan.expenses.baseAnnual = 0
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        evidenceId: 'ab1-ira-classification',
+        provenance: { source: 'manual' },
+        sourceAccountId: 'ab1-ira',
+        subtype: 'traditional',
+      }],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [],
+    }
+    plan.strategies.retirementActions = [
+      ordinaryWithdrawal('ab1-linked-withdrawal', 1, [{
+        sourceAccountId: 'ab1-cash',
+        requestedAmount: 8_000_00,
+      }], {
+        executionDate: `${START_YEAR}-06-14`,
+        purpose: { kind: 'taxPayment', referenceId: 'ab1-conversion' },
+      }),
+      {
+        actionId: 'ab1-conversion',
+        kind: 'rothConversion',
+        personId: 'p1',
+        year: START_YEAR,
+        executionDate: `${START_YEAR}-06-15`,
+        executionSequence: 2,
+        requestedAmount: 40_000_00,
+        allocations: [{
+          allocationId: 'ab1-conversion-allocation',
+          sourceAccountId: 'ab1-ira',
+          requestedAmount: 40_000_00,
+        }],
+        destinationRothAccountId: 'ab1-roth',
+        taxFunding: {
+          kind: 'linkedWithdrawal',
+          withdrawalActionId: 'ab1-linked-withdrawal',
+        },
+        provenance: { source: 'manual' },
+      },
+      ordinaryWithdrawal('ab1-unrelated-withdrawal', 9, [{
+        sourceAccountId: 'ab1-cash',
+        requestedAmount: 1_000_00,
+      }], { executionDate: `${START_YEAR}-03-01` }),
+    ]
+    out.push(member(
+      'ab1-linkedSettlementPublication',
+      'AB: ordinary and named-Roth executor sources plus linked-group baseline/candidate liability identity and zero-movement evidence',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  {
+    // A current-year named QCD reaches the evaluated prerequisite source and
+    // the committed executor-source precedence arm at publication time.
+    const plan = singlePersonPlan({ dob: '1953-01-01', planningAge: 95 })
+    plan.id = 'ab2-named-qcd-publication'
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      cash('ab2-cash', 0),
+      qualified('traditional', 'ab2-ira', 265_000, { annualReturnPct: 0 }),
+    ]
+    plan.expenses.baseAnnual = 0
+    plan.strategies.retirementActions = [
+      preStartNamedQcd('ab2-ira', START_YEAR),
+    ]
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications: [{
+        sourceAccountId: 'ab2-ira',
+        subtype: 'traditional',
+        evidenceId: 'ab2-traditional-classification',
+        provenance: { source: 'manual' },
+      }],
+      sepSimpleActivities: [],
+      // A 1953-01-01 donor reaches age 70 1/2 on 2023-07-01. Eligibility
+      // requires one donor-specific fact for every threshold-through-action
+      // tax year; explicit zero rows establish known absence rather than an
+      // omitted/unknown contribution history.
+      deductibleIraContributions: [2023, 2024, 2025, 2026].map((taxYear) => ({
+        donorPersonId: 'p1',
+        taxYear,
+        amountCents: 0,
+        evidenceId: `ab2-contribution-${taxYear}`,
+        provenance: { source: 'manual', sourceId: `ab2-ledger-${taxYear}` },
+      })),
+    }
+    out.push(member(
+      'ab2-namedQcdSettlementPublication',
+      'AB: evaluated named-QCD prerequisites and committed executor source join into canonical annual publication',
+      plan,
+      { horizonEndYear: START_YEAR },
+    ))
+  }
+
+  return out
+}
+
 /** @returns {Promise<object[]>} every member in this tier, in a stable order. */
 export async function blockMembers() {
   fixtures = await import('@retiregolden/engine/testing/planFixtures')
@@ -4457,5 +4579,6 @@ export async function blockMembers() {
     ...blockX(),
     ...blockY(),
     ...blockZ(),
+    ...blockAB(),
   ]
 }
