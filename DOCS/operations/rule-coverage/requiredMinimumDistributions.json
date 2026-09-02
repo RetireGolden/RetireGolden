@@ -2997,6 +2997,7 @@
         "packages/engine/src/actions/planBalanceAdapter.ts",
         "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
         "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+        "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -3024,6 +3025,15 @@
             {
               "name": "annualSeppDistributions",
               "line": 87
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
+          "functions": [
+            {
+              "name": "annualWithdrawalPlan",
+              "line": 132
             }
           ]
         },

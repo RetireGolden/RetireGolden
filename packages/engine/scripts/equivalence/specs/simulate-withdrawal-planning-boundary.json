@@ -80,23 +80,23 @@
       "id": "AL.helper.basis",
       "label": "one aggregate taxable sale per account",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [286, 300],
+      "lines": [286, 302],
       "anchors": [
-        { "line": 288, "text": "for (const state of states) {" },
-        { "line": 294, "text": "const sale = aggregateBasisSale({" },
-        { "line": 300, "text": "realizedGains += sale.realizedCapitalGainOrLoss" }
+        { "line": 290, "text": "for (const state of states) {" },
+        { "line": 296, "text": "const sale = aggregateBasisSale({" },
+        { "line": 302, "text": "realizedGains += sale.realizedCapitalGainOrLoss" }
       ]
     },
     {
       "id": "AL.helper.result",
       "label": "complete candidate category, identity, basis, shortfall, and reserve result",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [303, 316],
+      "lines": [305, 318],
       "anchors": [
-        { "line": 303, "text": "byCategory.total =" },
-        { "line": 309, "text": "return {" },
-        { "line": 314, "text": "shortfall: Math.max(0, remaining)," },
-        { "line": 315, "text": "reserveUsed," }
+        { "line": 305, "text": "byCategory.total =" },
+        { "line": 311, "text": "return {" },
+        { "line": 316, "text": "shortfall: Math.max(0, remaining)," },
+        { "line": 317, "text": "reserveUsed," }
       ]
     },
     {

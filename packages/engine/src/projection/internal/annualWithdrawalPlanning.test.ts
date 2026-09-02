@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { packForYear } from '../../params/index.js'
-import type { ConversionSizingInput } from '../../strategies/rothConversion.js'
+import {
+  sizeRothConversion,
+  type ConversionSizingInput,
+} from '../../strategies/rothConversion.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
 import {
   annualWithdrawalPlan,
@@ -86,6 +89,47 @@ function roth(id: string, balance: number): PhysicalBalanceState {
   }
 }
 
+function equityComp(
+  id: string,
+  balance: number,
+  costBasis: number,
+  vestingMode: 'final' | 'cliff' = 'final',
+  vestDate: string | null = null,
+): PhysicalBalanceState {
+  return {
+    account: {
+      type: 'equityComp',
+      id,
+      name: id,
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance,
+      costBasis,
+      annualContribution: 0,
+      vestingMode,
+      vestDate,
+    },
+    balance,
+    costBasis,
+  }
+}
+
+function hsa(id: string, balance: number): PhysicalBalanceState {
+  return {
+    account: {
+      type: 'hsa',
+      id,
+      name: id,
+      ownerPersonId: 'p1',
+      annualReturnPct: 0,
+      balance,
+      annualContribution: 0,
+    },
+    balance,
+    costBasis: 0,
+  }
+}
+
 function sizing(
   ordinaryIncomeBase = 0,
 ): Readonly<ConversionSizingInput> {
@@ -142,15 +186,28 @@ describe('annualWithdrawalStrategy', () => {
       mode: 'bracketTargeted' as const,
       bracketPct: 10,
     }
+    const sizingInput = sizing()
+    const expected = sizeRothConversion(
+      {
+        mode: 'fillToTarget',
+        target: 'topOfBracket',
+        targetValue: configured.bracketPct,
+        startYear: YEAR,
+        endYear: YEAR,
+      },
+      sizingInput,
+    )
+    if (!expected.ok) throw new Error(`expected valid bracket sizing: ${expected.reason}`)
+
     const resolved = annualWithdrawalStrategy({
       withdrawalOrder: configured,
       year: YEAR,
-      readSizing: () => sizing(),
+      readSizing: () => sizingInput,
     })
     expect(resolved.warning).toBeNull()
     expect(resolved.strategy.mode).toBe('bracketTargeted')
     if (resolved.strategy.mode !== 'bracketTargeted') return
-    expect(resolved.strategy.traditionalCap).toBeGreaterThan(0)
+    expect(resolved.strategy.traditionalCap).toBe(expected.amount)
 
     expect(annualWithdrawalStrategy({
       withdrawalOrder: configured,
@@ -222,6 +279,29 @@ describe('annualWithdrawalPlan', () => {
     expect(result.byCategory.traditional).toBe(150)
     expect(result.byCategory.total).toBe(200)
     expect(result.shortfall).toBe(0)
+  })
+
+  it('skips unvested equity, characterizes vested gains, and drains HSA last', () => {
+    const result = plan(
+      150,
+      [
+        equityComp('unvested', 100, 20, 'cliff', '2027-03-15'),
+        equityComp('vested', 100, 40),
+        hsa('hsa', 100),
+      ],
+      { mode: 'proportional' },
+    )
+
+    expect(result.byCategory).toMatchObject({
+      taxable: 100,
+      hsa: 50,
+      total: 150,
+    })
+    expect([...result.byAccountId]).toEqual([
+      ['vested', 100],
+      ['hsa', 50],
+    ])
+    expect(result.realizedGains).toBe(60)
   })
 
   it('honors the first traditional cap before later fallback sources', () => {

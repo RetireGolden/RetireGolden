@@ -283,8 +283,10 @@ export function annualWithdrawalPlan(
     reserveUsed = before - remaining
   }
 
-  // Proportional planning may visit one taxable account more than once. Settle
-  // its final aggregate sale once so the later commit uses identical basis math.
+  // Proportional planning may revisit a taxable account, and reserve release
+  // may visit a protected account once more. Settle the final aggregate sale
+  // once so the later commit uses identical basis math and cannot overdraw the
+  // strict sale boundary through floating-point accumulation.
   for (const state of states) {
     if (state.account.type !== 'taxable') continue
     const saleProceeds = Math.min(

@@ -99,7 +99,7 @@
           "text": "}"
         }
       ],
-      "note": "The missing-sale branch on lines 115-117 is excluded: planWithdrawals creates a taxableSales record whenever it allocates a positive taxable draw. The structural `else` line 118 is excluded because V8 maps its branch entry to the closing brace and reports that whole line cold even when the taxable body runs; lines 119-121 are the actual committed result reads. The helper's supported defensive missing-map input and the caller-timed failure are pinned by focused direct and delegation tests."
+      "note": "The missing-sale branch on lines 115-117 is excluded: annualWithdrawalPlan creates a taxableSales record whenever it allocates a positive taxable draw. The structural `else` line 118 is excluded because V8 maps its branch entry to the closing brace and reports that whole line cold even when the taxable body runs; lines 119-121 are the actual committed result reads. The helper's supported defensive missing-map input and the caller-timed failure are pinned by focused direct and delegation tests."
     },
     {
       "id": "W.helper.equityAndOrdinary",

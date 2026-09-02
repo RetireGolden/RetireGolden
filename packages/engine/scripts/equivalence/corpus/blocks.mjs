@@ -32,6 +32,11 @@
  *   AE annual funding withdrawal effects
  *   AF annual funding candidate evaluation
  *   AG conversion-linked withdrawal funding coordination
+ *   AH aggregate Roth-conversion target planning
+ *   AI retirement-action preflight
+ *   AJ named-QCD execution input
+ *   AK named-Roth-conversion execution input
+ *   AL annual withdrawal planning
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -41,8 +46,9 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z, AB, AE, AF and AG, each have a
- * phase-specific reach spec beside the earlier batch instruments.
+ * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z, AB, AE, AF, AG, AH,
+ * AI, AJ, AK and AL, each have a phase-specific reach spec beside the earlier
+ * batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
  * but NONE of them carries a HECM line or a pension lump-sum election — grepped,
@@ -74,13 +80,14 @@
  * `scripts/equivalence/specs/simulate-aggregate-roth-conversion-target-boundary.json`,
  * `scripts/equivalence/specs/simulate-retirement-action-preflight-boundary.json`,
  * `scripts/equivalence/specs/simulate-qcd-execution-input-boundary.json`,
- * and `scripts/equivalence/specs/simulate-roth-conversion-execution-input-boundary.json`
+ * `scripts/equivalence/specs/simulate-roth-conversion-execution-input-boundary.json`,
+ * and `scripts/equivalence/specs/simulate-withdrawal-planning-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  * Several extracted boundaries have no dedicated corpus blocks: their specs
  * measure the existing full corpus and use `AC`, `AD`, `AF`, `AG`, `AH`, `AI`,
- * `AJ`, and `AK` only as reach-entry namespaces. Block AE pins the otherwise-cold
+ * `AJ`, `AK`, and `AL` only as reach-entry namespaces. Block AE pins the otherwise-cold
  * multi-account Roth-pool accumulation in the withdrawal-effects coordinator.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so
