@@ -17,6 +17,7 @@ import {
 import { normalizePlansForImport, parseV2Backup, serializeV2Backup } from '../../data/v2Backup'
 import { type Plan } from '@retiregolden/engine/model/plan'
 import { useDialogs } from '../dialogs'
+import { duplicateNameDefault, duplicateNameFor, PLAN_NAME_MAX_LENGTH } from '../planName'
 import { importErrorMessage } from './importErrorMessage'
 
 export function useHomeData() {
@@ -126,11 +127,12 @@ export function useHomeData() {
     const name = await prompt({
       title: 'Duplicate plan',
       label: 'Name for the duplicated plan',
-      defaultValue: `Copy of ${s.name}`,
+      defaultValue: duplicateNameDefault(s.name),
+      maxLength: PLAN_NAME_MAX_LENGTH,
       confirmLabel: 'Duplicate',
     })
     if (name === null) return
-    const r = await duplicatePlanVia(store, s.id, { name })
+    const r = await duplicatePlanVia(store, s.id, { name: duplicateNameFor(name, s.name) })
     if (r.ok) {
       setNotice(`Duplicated "${s.name}" as "${r.plan.name}".`)
       refresh()

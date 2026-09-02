@@ -1,6 +1,6 @@
 /** Insurance section: policies, care events, LTC stress. */
 
-import { useId, useMemo } from 'react'
+import { useEffect, useId, useMemo, useRef } from 'react'
 
 import {
   ltcPolicySchema,
@@ -29,12 +29,16 @@ import {
   newId,
   nextCareEvent,
   nextScheduleAge,
+  ordinalSuffixes,
 } from './sectionHelpers'
 
 const INSURANCE_LABEL: Record<InsurancePolicy['kind'], string> = {
   permanentLife: 'Permanent life',
   ltc: 'Long-term care',
 }
+
+/** Display order of the policy kinds: the add-button order above. */
+const INSURANCE_KIND_ORDER = Object.keys(INSURANCE_LABEL) as InsurancePolicy['kind'][]
 
 function personOptions(plan: Plan) {
   return plan.household.people.map((p) => ({ value: p.id, label: p.name }))
@@ -423,8 +427,55 @@ function LtcStressPanel() {
 export function InsuranceSection() {
   const { plan, update } = usePlan()
   const firstPerson = plan.household.people[0]!.id
+  // Policies are shown grouped by kind, in the add-button order, whatever
+  // order they were added in (#550). The plan array is untouched: each card
+  // keeps its stored index for edits and removal; the stored index is also
+  // the tiebreaker, so the added order within a kind never depends on the
+  // sort being stable.
+  const policies = plan.insurance
+    .map((policy, index) => ({ policy, index }))
+    .sort(
+      (a, b) =>
+        INSURANCE_KIND_ORDER.indexOf(a.policy.kind) - INSURANCE_KIND_ORDER.indexOf(b.policy.kind) || a.index - b.index,
+    )
+  // Keyed by kind and name because the displayed title is the kind chip
+  // plus the name: two "Whole life" policies of one kind repeat and get
+  // ordinals; an LTC and a permanent-life policy that share a name do not,
+  // since their chips already tell them apart. If the chip ever left the
+  // title, the key would have to drop the kind with it.
+  const policyOrdinals = ordinalSuffixes(policies.map(({ policy }) => `${policy.kind} ${policy.name}`))
+  // Grouping means a new card lands in its kind's group, which can be well
+  // above the add row when the other kind fills the list; focus and view
+  // follow it there so the add never looks like it did nothing (#550 review).
+  // A ref, not state: the add is consumed once the card exists and nothing
+  // renders from it, so no re-render is owed when it is set or cleared. It
+  // remembers the control that was clicked, so focus is moved only while it
+  // is still there (or nowhere): a person who has already moved on to
+  // another field between the click and this effect keeps their place.
+  const sectionRef = useRef<HTMLElement>(null)
+  const addedPolicy = useRef<{ id: string; trigger: HTMLElement } | null>(null)
+  useEffect(() => {
+    const added = addedPolicy.current
+    if (added === null) return
+    // One attempt per add, found or not: a row that is not in this section
+    // by the time the plan holds it is never going to be, so the ref must
+    // not keep retrying on every later change.
+    addedPolicy.current = null
+    const row = sectionRef.current?.querySelector<HTMLElement>(`[data-policy-id="${added.id}"]`)
+    if (!row) return
+    const active = document.activeElement
+    if (active !== null && active !== document.body && active !== added.trigger) return
+    row.querySelector<HTMLElement>('input, select')?.focus()
+    row.scrollIntoView?.({ block: 'nearest' })
+  }, [plan.insurance])
+  // Two events for the same person at the same age would read identically;
+  // the ordinal keeps the cards and their Remove buttons apart (#541).
+  const careTitles = plan.careEvents.map(
+    (c) => `${plan.household.people.find((p) => p.id === c.personId)?.name ?? 'Care'} · age ${c.startAge}`,
+  )
+  const careOrdinals = ordinalSuffixes(careTitles)
   return (
-    <section>
+    <section ref={sectionRef}>
       <div className="card">
         <h2>Insurance</h2>
         <p className="card-hint">
@@ -433,14 +484,19 @@ export function InsuranceSection() {
           test whether an LTC policy offsets a late-life care shock. <LearnLink {...LEARN.insuranceOverview} />
         </p>
         {plan.insurance.length === 0 ? <div className="empty-state"><p>No policies yet. Add one below.</p></div> : null}
-        {plan.insurance.map((p, i) => (
-          <div className="item-row" key={p.id}>
+        {policies.map(({ policy: p, index: i }, position) => (
+          <div className="item-row" key={p.id} data-testid="insurance-row" data-insurance-kind={p.kind} data-policy-id={p.id}>
             <div className="item-row-head">
               <span className="item-row-title">
                 <span className="type-chip">{INSURANCE_LABEL[p.kind]}</span>
-                {p.name}
+                <span>{`${p.name}${policyOrdinals[position]}`}</span>
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.insurance.splice(i, 1))}>
+              <button
+                type="button"
+                className="btn-ghost btn-ghost-danger"
+                aria-label={`Remove ${INSURANCE_LABEL[p.kind]} ${p.name}${policyOrdinals[position]}`}
+                onClick={() => update((d) => void d.insurance.splice(i, 1))}
+              >
                 Remove
               </button>
             </div>
@@ -449,7 +505,16 @@ export function InsuranceSection() {
         ))}
         <div className="add-row">
           {(Object.keys(INSURANCE_LABEL) as InsurancePolicy['kind'][]).map((k) => (
-            <button key={k} type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.insurance.push(makeInsurance(k, firstPerson)))}>
+            <button
+              key={k}
+              type="button"
+              className="btn btn-secondary btn-small"
+              onClick={(e) => {
+                const policy = makeInsurance(k, firstPerson)
+                addedPolicy.current = { id: policy.id, trigger: e.currentTarget }
+                update((d) => void d.insurance.push(policy))
+              }}
+            >
               + {INSURANCE_LABEL[k]}
             </button>
           ))}
@@ -461,13 +526,18 @@ export function InsuranceSection() {
           Add one to see the stress test below. <LearnLink {...LEARN.ltcCosts} />
         </p>
         {plan.careEvents.map((c, i) => (
-          <div className="item-row" key={c.id}>
+          <div className="item-row" key={c.id} data-testid="care-event-row">
             <div className="item-row-head">
               <span className="item-row-title">
                 <span className="type-chip">Care</span>
-                {plan.household.people.find((p) => p.id === c.personId)?.name ?? 'Care'} · age {c.startAge}
+                <span>{`${careTitles[i]}${careOrdinals[i]}`}</span>
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.careEvents.splice(i, 1))}>
+              <button
+                type="button"
+                className="btn-ghost btn-ghost-danger"
+                aria-label={`Remove care event ${careTitles[i]}${careOrdinals[i]}`}
+                onClick={() => update((d) => void d.careEvents.splice(i, 1))}
+              >
                 Remove
               </button>
             </div>

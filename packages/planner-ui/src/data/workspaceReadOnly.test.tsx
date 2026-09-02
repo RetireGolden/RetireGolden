@@ -307,7 +307,7 @@ describe('read-only hides discrete write actions', () => {
     expect(buttonTexts(ro.container)).not.toContain('Duplicate')
     expect(buttonTexts(ro.container)).not.toContain('Delete')
     // The plan is still openable (read path).
-    expect(ro.container.querySelector('[aria-label="Open plan Plan one"]')).not.toBeNull()
+    expect([...ro.container.querySelectorAll('button.plan-card-open')].some((b) => b.textContent?.startsWith('Plan one'))).toBe(true)
     await ro.unmount()
 
     const rw = await render(yp, false)

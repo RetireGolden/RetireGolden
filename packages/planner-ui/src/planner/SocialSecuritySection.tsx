@@ -16,6 +16,7 @@ import {
   replaceZeroYearGain,
   summarizeComputation,
 } from '../socialSecurity/explain'
+import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { parseSsaStatementXml } from '../socialSecurity/ssaStatementXml'
@@ -29,8 +30,19 @@ import { CheckboxField, DateField, NumberField, MoneyField, SelectField } from '
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney } from './format'
 import { dobParts, resolvePia } from './ssAnalysis'
-import { PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
+import { ordinalSuffixes, PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
 import { Issues } from './sections/shared'
+
+/**
+ * The survivor floor as people read it, in one unit: months when the engine's
+ * value is a whole number of months (the statutory wording), else years
+ * exactly as the engine states it, so the copy never rounds the floor to
+ * something the engine does not apply.
+ */
+function survivorFloorLabel(): string {
+  const months = SURVIVOR_MIN_MARRIAGE_YEARS * 12
+  return Number.isInteger(months) ? `${months} months` : `${SURVIVOR_MIN_MARRIAGE_YEARS} years`
+}
 
 const newId = () => crypto.randomUUID()
 
@@ -101,8 +113,11 @@ function EligibilityNote({ stream, onCommitCredits }: { stream: SsStream; onComm
   )
 }
 
-/** Editor for divorced-spousal / survivor benefit records on a former spouse's PIA. */
-function FormerSpousesEditor({
+/**
+ * Editor for divorced-spousal / survivor benefit records on a former spouse's
+ * PIA. Exported for its own rendering test (#535); the section renders it.
+ */
+export function FormerSpousesEditor({
   stream,
   setStream,
   householdIsSingle,
@@ -112,6 +127,9 @@ function FormerSpousesEditor({
   householdIsSingle: boolean
 }) {
   const records = stream.formerSpouses ?? []
+  // Two records of the same kind carry only a chip for a title; the ordinal
+  // keeps them and their Remove buttons apart (same family as #541, #549).
+  const ordinals = ordinalSuffixes(records.map((r) => r.relationship))
   const add = (relationship: 'divorced' | 'deceased') =>
     setStream((s) => {
       const list = s.formerSpouses ?? (s.formerSpouses = [])
@@ -120,7 +138,11 @@ function FormerSpousesEditor({
         relationship,
         dob: '1960-01-01',
         piaMonthly: 0,
-        marriageYears: relationship === 'divorced' ? 10 : 1,
+        // A new divorced record opens at the engine's own floor (the statute
+        // lives there, not here); a deceased record keeps its long-standing
+        // one-year default, which is above the survivor floor. The fields
+        // below say so while a value sits under either floor.
+        marriageYears: relationship === 'divorced' ? DIVORCED_MIN_MARRIAGE_YEARS : 1,
         remarriedAtAge: null,
       })
     })
@@ -138,96 +160,151 @@ function FormerSpousesEditor({
     <div style={{ marginTop: '0.8rem' }}>
       <h4 style={{ margin: '0 0 0.3rem' }}>Former spouses</h4>
       <p className="card-hint">
-        A 10+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
+        A {DIVORCED_MIN_MARRIAGE_YEARS}+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
         half their benefit; a deceased former spouse can pay a survivor benefit. You receive whichever is largest of your
         own, spousal, and survivor benefits, so add any that might apply.
       </p>
-      {records.map((r) => (
-        <div key={r.id} className="item-row">
-          <div className="item-row-head">
-            <span className="item-row-title">
-              <span className="type-chip">{r.relationship === 'divorced' ? 'Divorced ex' : 'Survivor'}</span>
-            </span>
-            <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => remove(r.id)}>
-              Remove
-            </button>
-          </div>
-          <div className="form-grid">
-            <SelectField
-              label="Type"
-              value={r.relationship}
-              options={[
-                { value: 'divorced', label: 'Living ex (divorced-spousal)' },
-                { value: 'deceased', label: 'Deceased (survivor)' },
-              ]}
-              onCommit={(v) => updateRecord(r.id, (x) => (x.relationship = v as FormerSpouse['relationship']))}
-            />
-            <DateField label="Their date of birth" value={r.dob} onCommit={(v) => updateRecord(r.id, (x) => (x.dob = v))} />
-            <MoneyField
-              label={`Their ${PIA_MONTHLY_AT_FRA_LABEL}`}
-              help="Your estimate of the ex/deceased spouse's monthly benefit at their full retirement age, today's dollars."
-              value={r.piaMonthly}
-              onCommit={(v) => updateRecord(r.id, (x) => (x.piaMonthly = v ?? 0))}
-            />
-            <NumberField
-              label="Years married"
-              hint={r.relationship === 'divorced' ? '10+ for divorced-spousal.' : '9 months (0.75) minimum.'}
-              value={r.marriageYears}
-              min={0}
-              max={75}
-              step={r.relationship === 'divorced' ? 1 : 0.25}
-              onCommit={(v) => updateRecord(r.id, (x) => (x.marriageYears = v ?? 0))}
-            />
-            {r.relationship === 'deceased' ? (
-              <NumberField
-                label="Age you remarried"
-                help="Remarrying before 60 forfeits this survivor benefit; at or after 60 preserves it. Leave blank if you didn't remarry after this spouse died."
-                value={r.remarriedAtAge}
-                allowNull
-                min={0}
-                max={120}
-                onCommit={(v) => updateRecord(r.id, (x) => (x.remarriedAtAge = v === null ? null : Math.round(v)))}
+      {records.map((r, i) => {
+        // A divorced-spousal record cannot pay while a partner is on the plan
+        // (the engine returns nothing for it), so the card says so in its
+        // title and its amount fields are disabled rather than left looking
+        // live; the type select stays live so the record can be changed or
+        // the card removed, and every control is described by the note (#535).
+        const inapplicable = r.relationship === 'divorced' && !householdIsSingle
+        // Each kind has its own floor in the engine (maritalBenefitFor returns
+        // nothing under it); the note names the one that applies.
+        const minYears = r.relationship === 'divorced' ? DIVORCED_MIN_MARRIAGE_YEARS : SURVIVOR_MIN_MARRIAGE_YEARS
+        const underMinYears = r.marriageYears < minYears
+        // Both conditions can hold at once; each has its own note so the
+        // ten-year floor is disclosed even while the partner rule applies.
+        const partnerNoteId = `former-spouse-${r.id}-partner-note`
+        const yearsNoteId = `former-spouse-${r.id}-years-note`
+        const describedBy =
+          [inapplicable ? partnerNoteId : '', underMinYears ? yearsNoteId : ''].filter(Boolean).join(' ') || undefined
+        const kindLabel = r.relationship === 'divorced' ? 'Divorced ex' : 'Survivor'
+        return (
+          <div key={r.id} className="item-row">
+            <div className="item-row-head">
+              <span className="item-row-title">
+                {/* Chip and ordinal share one box, so the flex gap falls only
+                    before the "Not applied" chip; the box carries the
+                    direct-child chip protection (item-row-kind). */}
+                <span className="item-row-kind">
+                  <span className="type-chip">{kindLabel}</span>
+                  {ordinals[i]}
+                </span>
+                {inapplicable ? <span className="type-chip type-chip--muted">Not applied</span> : null}
+              </span>
+              <button
+                type="button"
+                className="btn-ghost btn-ghost-danger"
+                aria-label={`Remove ${kindLabel.toLowerCase()} record${ordinals[i]}`}
+                onClick={() => remove(r.id)}
+              >
+                Remove
+              </button>
+            </div>
+            <div className="form-grid">
+              <SelectField
+                label="Type"
+                value={r.relationship}
+                options={[
+                  { value: 'divorced', label: 'Living ex (divorced-spousal)' },
+                  { value: 'deceased', label: 'Deceased (survivor)' },
+                ]}
+                describedBy={describedBy}
+                onCommit={(v) => updateRecord(r.id, (x) => (x.relationship = v as FormerSpouse['relationship']))}
               />
-            ) : null}
-            {r.relationship === 'deceased' ? (
+              <DateField
+                label="Their date of birth"
+                value={r.dob}
+                disabled={inapplicable}
+                describedBy={describedBy}
+                onCommit={(v) => updateRecord(r.id, (x) => (x.dob = v))}
+              />
+              <MoneyField
+                label={`Their ${PIA_MONTHLY_AT_FRA_LABEL}`}
+                help="Your estimate of the ex/deceased spouse's monthly benefit at their full retirement age, today's dollars."
+                value={r.piaMonthly}
+                disabled={inapplicable}
+                describedBy={describedBy}
+                onCommit={(v) => updateRecord(r.id, (x) => (x.piaMonthly = v ?? 0))}
+              />
               <NumberField
-                label="When they claimed (age)"
-                hint="Leave blank if they claimed at/after FRA."
-                help="The age the deceased claimed their own benefit. If they claimed early (before FRA), the widow's-limit (RIB-LIM) caps your survivor benefit at the larger of their reduced benefit or 82.5% of their PIA, usually higher than their reduced amount. Leave blank if they claimed at or after FRA (the safe default)."
-                value={r.deceasedClaimAge?.years ?? null}
-                allowNull
-                min={62}
-                max={70}
-                onCommit={(v) =>
-                  updateRecord(r.id, (x) => {
-                    if (v === null) x.deceasedClaimAge = null
-                    else x.deceasedClaimAge = { years: Math.round(v), months: x.deceasedClaimAge?.months ?? 0 }
-                  })
+                label="Years married"
+                hint={
+                  r.relationship === 'divorced'
+                    ? `${DIVORCED_MIN_MARRIAGE_YEARS}+ for divorced-spousal.`
+                    : `${survivorFloorLabel()} minimum.`
                 }
-              />
-            ) : null}
-            {r.relationship === 'deceased' && r.deceasedClaimAge ? (
-              <NumberField
-                label="When they claimed (+ months)"
-                value={r.deceasedClaimAge.months}
+                value={r.marriageYears}
                 min={0}
-                max={11}
-                onCommit={(v) =>
-                  updateRecord(r.id, (x) => {
-                    if (x.deceasedClaimAge) x.deceasedClaimAge = { ...x.deceasedClaimAge, months: Math.round(v ?? 0) }
-                  })
-                }
+                max={75}
+                step={r.relationship === 'divorced' ? 1 : 0.25}
+                disabled={inapplicable}
+                describedBy={describedBy}
+                onCommit={(v) => updateRecord(r.id, (x) => (x.marriageYears = v ?? 0))}
               />
+              {r.relationship === 'deceased' ? (
+                <NumberField
+                  label="Age you remarried"
+                  help="Remarrying before 60 forfeits this survivor benefit; at or after 60 preserves it. Leave blank if you didn't remarry after this spouse died."
+                  value={r.remarriedAtAge}
+                  allowNull
+                  min={0}
+                  max={120}
+                  onCommit={(v) => updateRecord(r.id, (x) => (x.remarriedAtAge = v === null ? null : Math.round(v)))}
+                />
+              ) : null}
+              {r.relationship === 'deceased' ? (
+                <NumberField
+                  label="When they claimed (age)"
+                  hint="Leave blank if they claimed at/after FRA."
+                  help="The age the deceased claimed their own benefit. If they claimed early (before FRA), the widow's-limit (RIB-LIM) caps your survivor benefit at the larger of their reduced benefit or 82.5% of their PIA, usually higher than their reduced amount. Leave blank if they claimed at or after FRA (the safe default)."
+                  value={r.deceasedClaimAge?.years ?? null}
+                  allowNull
+                  min={62}
+                  max={70}
+                  onCommit={(v) =>
+                    updateRecord(r.id, (x) => {
+                      if (v === null) x.deceasedClaimAge = null
+                      else x.deceasedClaimAge = { years: Math.round(v), months: x.deceasedClaimAge?.months ?? 0 }
+                    })
+                  }
+                />
+              ) : null}
+              {r.relationship === 'deceased' && r.deceasedClaimAge ? (
+                <NumberField
+                  label="When they claimed (+ months)"
+                  value={r.deceasedClaimAge.months}
+                  min={0}
+                  max={11}
+                  onCommit={(v) =>
+                    updateRecord(r.id, (x) => {
+                      if (x.deceasedClaimAge) x.deceasedClaimAge = { ...x.deceasedClaimAge, months: Math.round(v ?? 0) }
+                    })
+                  }
+                />
+              ) : null}
+            </div>
+            {inapplicable ? (
+              <p id={partnerNoteId} className="field-hint" style={{ color: 'var(--warn)' }}>
+                Divorced-spousal needs you to be currently unmarried. With a partner on this plan it won't apply (you'd get
+                the current-spouse top-up instead). The record is kept; its date, benefit, and years fields are off while a
+                partner is on the plan. Change its type, or remove it.
+              </p>
+            ) : null}
+            {underMinYears ? (
+              <p id={yearsNoteId} className="field-hint" style={{ color: 'var(--warn)' }}>
+                {r.relationship === 'divorced'
+                  ? `A divorced-spousal benefit needs a marriage of ${DIVORCED_MIN_MARRIAGE_YEARS} or more years.`
+                  : `A survivor benefit needs a marriage of at least ${survivorFloorLabel()}.`}{' '}
+                Under that, this record pays nothing.
+              </p>
             ) : null}
           </div>
-          {r.relationship === 'divorced' && !householdIsSingle ? (
-            <p className="field-hint" style={{ color: 'var(--warn)' }}>
-              Divorced-spousal needs you to be currently unmarried. With a partner on this plan it won't apply (you'd get
-              the current-spouse top-up instead).
-            </p>
-          ) : null}
-        </div>
-      ))}
+        )
+      })}
       <div className="add-row">
         <button type="button" className="btn btn-secondary btn-small" onClick={() => add('divorced')}>
           + Divorced ex-spouse

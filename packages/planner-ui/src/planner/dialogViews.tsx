@@ -30,6 +30,8 @@ export interface PromptOptions {
   defaultValue?: string
   confirmLabel?: string
   cancelLabel?: string
+  /** Cap on the typed value (a native `maxlength`); the default should already fit it. */
+  maxLength?: number
 }
 
 export interface AlertOptions {
@@ -102,6 +104,10 @@ export function PromptDialog({ opts, onResult }: { opts: PromptOptions; onResult
   const [value, setValue] = useState(opts.defaultValue ?? '')
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
+  // The default is selected for replacement on the first focus only: a
+  // person who clicks back into the box to fix one character keeps their
+  // caret, rather than having the whole name selected again.
+  const selectedDefault = useRef(false)
   return (
     <Modal title={opts.title} onClose={() => onResult(null)} initialFocus={inputRef}>
       <form
@@ -119,9 +125,24 @@ export function PromptDialog({ opts, onResult }: { opts: PromptOptions; onResult
             ref={inputRef}
             type="text"
             value={value}
+            maxLength={opts.maxLength}
             autoComplete="off"
             onChange={(e) => setValue(e.target.value)}
-            onFocus={(e) => e.target.select()}
+            onFocus={(e) => {
+              if (selectedDefault.current) return
+              selectedDefault.current = true
+              // Select the default so typing replaces it, with the selection
+              // running backward so its focus point (what the box scrolls to
+              // keep in view) is the start of the text, not the end. select()
+              // anchors at the start and focuses at the end, which for a long
+              // "Copy of …" default showed only the tail (#533); a backward
+              // range is the same selection with the box scrolled to its
+              // start, with no frame timing to lose. The scrollLeft reset is
+              // belt and braces for the same layout pass.
+              const input = e.target
+              input.setSelectionRange(0, input.value.length, 'backward')
+              input.scrollLeft = 0
+            }}
           />
         </div>
         <div className="dialog-actions">

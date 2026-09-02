@@ -178,6 +178,24 @@ export function duplicateCareEvents(plan: Plan): RepeatedCareEvents[] {
   return [...groups.values()].filter((g) => g.count > 1)
 }
 
+/**
+ * A " (n)" ordinal for each card title that another card in the same list
+ * repeats, empty for a title that is unique, so two "Mortgage" debts or two
+ * "Riley · age 85" care events stay distinguishable by eye and by accessible
+ * name (#541, #549). Presentation only: the stored names are untouched.
+ */
+export function ordinalSuffixes(keys: readonly string[]): string[] {
+  const counts = new Map<string, number>()
+  for (const key of keys) counts.set(key, (counts.get(key) ?? 0) + 1)
+  const seen = new Map<string, number>()
+  return keys.map((key) => {
+    if ((counts.get(key) ?? 0) < 2) return ''
+    const n = (seen.get(key) ?? 0) + 1
+    seen.set(key, n)
+    return ` (${n})`
+  })
+}
+
 export const MONTH_OPTIONS = [
   'January',
   'February',

@@ -35,17 +35,19 @@ export function YourPlans({ plans, headingLevel = 'h2', actions, onOpenPlan, onD
       </div>
       <div className="plan-grid">
         {plans.map((s) => (
-          /* The open action is a real button stretched over the card via CSS
-             (::after), so the whole card stays clickable without nesting the
-             Duplicate/Delete buttons inside another interactive element. */
+          /* The open action is a real button that holds the visible name and
+             is stretched over the whole card by its ::after, so the card
+             stays clickable without nesting the Duplicate/Delete buttons
+             inside another interactive element. The name is a block-level
+             box inside the button (not a flex item of the card), which is
+             where its two-line clamp lives (#533); the button's accessible
+             name is that text, whole, so no aria-label repeats it. */
           <div key={s.id} className="plan-card">
-            <button
-              type="button"
-              className="plan-card-open"
-              aria-label={`Open plan ${s.name}`}
-              onClick={() => onOpenPlan(s.id)}
-            >
+            <button type="button" className="plan-card-open" onClick={() => onOpenPlan(s.id)}>
               <span className="plan-card-name">{s.name}</span>
+              {/* The verb, after the name so voice control still matches on
+                  the visible text; Duplicate and Delete carry theirs too. */}
+              <span className="sr-only">, open plan</span>
             </button>
             <span className="plan-card-meta">{fmtUpdated(s.updatedAtIso)}</span>
             {/* Duplicate/Delete write through the seam — hidden when read-only.

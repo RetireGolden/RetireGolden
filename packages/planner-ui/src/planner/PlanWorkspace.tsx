@@ -4,7 +4,7 @@
  * deterministic projection live as the plan changes.
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
@@ -23,6 +23,7 @@ import { fmtMoneyCompact } from './format'
 import { successBand } from './successBand'
 import { useMcSuccessRateState } from './useMcSuccessRate'
 import { useProjection } from './useProjection'
+import { duplicateNameDefault, duplicateNameFor, PLAN_NAME_MAX_LENGTH, planNameForTitle } from './planName'
 import { SECTION_TITLES } from './sectionTitles'
 import { firstIssue, focusIssueTarget, retryFocus, routeForIssues, workspaceRoot } from './issueJump'
 
@@ -239,11 +240,26 @@ function KpiBar() {
 function PlanName() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
+  // The cap is for what is typed, never for what is stored: a name that is
+  // already past it (imported, or saved before the cap) keeps its full
+  // length here, or the first keystroke would persist it silently
+  // truncated. While the name is over the cap the limit is the longest
+  // over-cap length this plan has been seen with (so a Backspace does not
+  // shrink it and the character can be typed back, and a longer name that
+  // arrives on a reload raises it); once the name is back within the cap
+  // the ordinary limit applies from then on, as in every other name flow
+  // (review of #533). Derived during render, the way fields.tsx adopts an
+  // external value, rather than in an effect.
+  const [overCapLength, setOverCapLength] = useState(() => (plan.name.length > PLAN_NAME_MAX_LENGTH ? plan.name.length : 0))
+  if (plan.name.length > PLAN_NAME_MAX_LENGTH && plan.name.length > overCapLength) setOverCapLength(plan.name.length)
+  if (plan.name.length <= PLAN_NAME_MAX_LENGTH && overCapLength !== 0) setOverCapLength(0)
+  const nameCap = overCapLength || PLAN_NAME_MAX_LENGTH
   return (
     <input
       className="plan-name-input"
       value={plan.name}
       aria-label="Plan name"
+      maxLength={nameCap}
       disabled={readOnly}
       onChange={(e) =>
         update((d) => {
@@ -295,7 +311,10 @@ function WorkspaceInner() {
   const sectionTitle = section !== undefined ? (SECTION_TITLES[section] ?? null) : null
   const onAssumptions = section === 'assumptions' || section === 'assumptions-card'
   useEffect(() => {
-    document.title = sectionTitle ? `${sectionTitle} · ${plan.name} · RetireGolden` : `${plan.name} · RetireGolden`
+    // The tab carries a shortened name: a very long one would fill the tab
+    // strip and hide the section and brand (#533).
+    const name = planNameForTitle(plan.name)
+    document.title = sectionTitle ? `${sectionTitle} · ${name} · RetireGolden` : `${name} · RetireGolden`
   }, [sectionTitle, plan.name])
   // Reset only when leaving the workspace entirely. A per-change cleanup
   // would churn the title through 'RetireGolden' between sections.
@@ -309,12 +328,13 @@ function WorkspaceInner() {
     const name = await prompt({
       title: 'Duplicate plan',
       label: 'Name for the duplicated plan',
-      defaultValue: `Copy of ${plan.name}`,
+      defaultValue: duplicateNameDefault(plan.name),
+      maxLength: PLAN_NAME_MAX_LENGTH,
       confirmLabel: 'Duplicate',
     })
     if (name === null) return
     if (plan.origin === 'example') discardPendingSave()
-    const r = await duplicatePlanVia(store, plan.id, { name, source: plan })
+    const r = await duplicatePlanVia(store, plan.id, { name: duplicateNameFor(name, plan.name), source: plan })
     if (r.ok) navigate(`/plan/${r.plan.id}/results`)
     else await alert({ title: 'Duplicate plan', body: `Could not duplicate this plan: ${r.issues.join('; ')}` })
   }
@@ -333,7 +353,7 @@ function WorkspaceInner() {
               <li aria-current="page">{plan.name}</li>
             </ol>
           </nav>
-          <PlanName />
+          <PlanName key={plan.id} />
         </div>
         <div className="workspace-head-actions">
           {readOnly ? null : (

@@ -36,7 +36,7 @@ app/
 ├── package.json          deps + scripts; engines: node >=24
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
-├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, sitemap generator, license notices)
+├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, `check-css-clamp.mjs` + `cssClamp.mjs` (post-build: the plan-card name clamp survived CSS minification, #533), sitemap generator, license notices)
 ├── public/                staticwebapp.config.json (SPA fallback), import-feature.json (no-store file-import incident switch), PWA manifest/icons
 ├── e2e/                   Playwright browser specs
 └── src/                   host source (below)
@@ -50,7 +50,9 @@ app/
   into `PlannerApp`.
 - `cases/` — the exact-ledger case runner, manifest diffing, Owl parity harness, and the standalone
   report regression test (`pnpm cases`, `pnpm cases:diff`, `pnpm owl-parity`).
-- Host-level guards: `staticwebapp.config.test.ts` (SWA routing config) and
+- Host-level guards: `staticwebapp.config.test.ts` (SWA routing config),
+  `themeBootstrap.test.ts` (the pre-React theme paint: `public/theme-bootstrap.js` reads the switcher's
+  storage key, is loaded from the shell head, and is served on a plan deep link, #538), and
   `docsConsistency.test.ts` (docs ↔ tree drift).
 
 ## `packages/engine/` — `@retiregolden/engine`, pure domain math
@@ -94,7 +96,8 @@ Top level of `src/`: `index.ts` (public API: `PlannerApp`, the `PlanStore` seam,
 `ReportBrandingProvider`, and `PlannerEditionProvider` / `usePlannerEdition` — route-group hosts
 override the home label and the two host-specific Disclaimer sections via
 `planner/editionContext.ts`), `App.tsx` (app shell: chrome + theme + `useRoutes` over the exported
-route groups), `routes/` (`groups.tsx` — the exported `plannerWorkspaceRoutes` /
+route groups), `routeTitles.ts` (the non-plan tab titles, shared by the shell and the workspace
+not-found page's site-level escapes so the two never drift, #536), `routes/` (`groups.tsx` — the exported `plannerWorkspaceRoutes` /
 `plannerContentRoutes` / `plannerHomeRoutes` route-object arrays: `/` plan picker + `/import` in
 home; `/plan/*` via lazy `routes/PlanRoutes` + `/compare` in workspace; `/examples`, `/learn/*`
 via lazy `routes/LearnRoutes`, `/sources` (redirects to `/learn/sources`), `/disclaimer`,
@@ -105,8 +108,13 @@ per lazy route, so bare route-group hosts recover too — so a deploy that repla
 under an open tab reloads once instead of dead-ending on "Failed to fetch dynamically imported
 module"),
 `index.css` (the design-token layer, exported as
-`@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke`
-test files.
+`@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke` /
+`appShell.theme` test files. The Design-QA chrome pins live beside the planner as
+`planner/designQa.*.test.ts` (`chrome`, `clusterA`, `clusterB`, `clusterC`, `clusterE`, `clusterF`,
+`clusterH`, `validation`): each reads the stylesheet block its cluster appended rather than rendering it,
+since jsdom computes no layout. A cluster's rendered checks sit in a sibling file named for what they
+render: `designQa.clusterC.markup.test.tsx` and `designQa.clusterH.markup.test.tsx` (markup) and
+`designQa.clusterE.dom.test.tsx` (DOM). The list is by hand; `ls planner/designQa.*` is the truth.
 
 | Folder (`src/`) | What's here |
 |--------|-------------|
@@ -198,7 +206,7 @@ these across all three workspace packages (engine, then planner-ui, then app); t
 | Command (repo root) | Does |
 |---------|------|
 | `pnpm dev` | Vite dev server (app) |
-| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build`, the bundle budget, and sitemap generation → `app/dist/` |
+| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build`, the bundle budget, the CSS clamp gate (`check-css-clamp.mjs`), and sitemap generation → `app/dist/` |
 | `pnpm test` | Vitest in every workspace (co-located `*.test.ts(x)`) |
 | `pnpm test:coverage` | Vitest with the coverage thresholds CI enforces (per workspace) |
 | `pnpm lint` | ESLint in every workspace (incl. the engine-purity rule) |

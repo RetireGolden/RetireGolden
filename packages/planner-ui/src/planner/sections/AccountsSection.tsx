@@ -2,10 +2,9 @@
 
 import type { Account } from '@retiregolden/engine/model/plan'
 import { AccountFields } from './AccountFields'
-import { ACCOUNT_LABEL, isIndividuallyOwnedAccount } from './sectionHelpers'
+import { ACCOUNT_LABEL, isIndividuallyOwnedAccount, newId, ordinalSuffixes } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
 import { Issues } from './shared'
-import { newId } from './sectionHelpers'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
 import { removeAccount } from '../eligibilityFactActions'
 
@@ -49,6 +48,9 @@ function makeAccount(type: Account['type'], primaryPersonId: string): Account {
 export function AccountsSection() {
   const { plan, update } = usePlan()
   const primaryPersonId = plan.household.people[0]!.id
+  // A second "Mortgage" or "Home" reads the same as the first; the ordinal
+  // keeps sibling cards and their Remove buttons apart (#549).
+  const ordinals = ordinalSuffixes(plan.accounts.map((a) => `${a.type} ${a.name}`))
   return (
     <section>
       <div className="card">
@@ -60,9 +62,14 @@ export function AccountsSection() {
             <div className="item-row-head">
               <span className="item-row-title">
                 <span className="type-chip">{ACCOUNT_LABEL[a.type]}</span>
-                {a.name}
+                <span>{`${a.name}${ordinals[i]}`}</span>
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => removeAccount(d, i))}>
+              <button
+                type="button"
+                className="btn-ghost btn-ghost-danger"
+                aria-label={`Remove ${ACCOUNT_LABEL[a.type]} ${a.name}${ordinals[i]}`}
+                onClick={() => update((d) => removeAccount(d, i))}
+              >
                 Remove
               </button>
             </div>

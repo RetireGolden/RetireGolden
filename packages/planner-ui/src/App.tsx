@@ -8,35 +8,11 @@ import { PlanStoreProvider } from './data/PlanStoreProvider'
 import { ReportBrandingContext } from './report/brandingContext'
 import type { ReportBranding } from './report/reportHtml'
 import { ImportAvailabilityProvider } from './import/ImportAvailabilityProvider'
+import { routeTitleOf } from './routeTitles'
 import './planner/planner.css'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'nav-link nav-link--active' : 'nav-link'
-
-/** Tab/history titles for non-plan routes; plan routes are owned by PlanWorkspace.
- *  `/` is owned here (PlannerApp), not by PlanPickerPage, so hosts that mount
- *  `plannerHomeRoutes` under their own chrome do not have their title overwritten. */
-const ROUTE_TITLES: ReadonlyArray<[prefix: string, title: string]> = [
-  ['/examples', 'Examples'],
-  ['/import', 'Import & migrate'],
-  ['/compare', 'Compare plans'],
-  // Learn routes each get their own name so tabs and history can tell the
-  // landing, glossary, sources, and articles apart (#417). Longer prefixes
-  // sit first: the match is first-wins. An article's title is resolved from
-  // the registry asynchronously (see learnArticleSlugOf).
-  ['/learn/glossary', 'Glossary'],
-  ['/learn/sources', 'Sources & review methodology'],
-  ['/learn', 'Learning Center'],
-  ['/disclaimer', 'Disclaimer'],
-  ['/how-tested', 'How RetireGolden is tested'],
-]
-
-function routeTitleOf(pathname: string): string | null {
-  for (const [prefix, title] of ROUTE_TITLES) {
-    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return title
-  }
-  return null
-}
 
 /** `/learn/<slug>` for an article route; null for the landing, glossary, and sources. */
 function learnArticleSlugOf(pathname: string): string | null {
@@ -141,9 +117,14 @@ export function App({
   // How-tested is reached from Disclaimer and has no nav item of its own, so
   // Disclaimer stays the active place while it is open (#419). NavLink only
   // sets aria-current for its own route match, hence a plain Link below.
-  const disclaimerActive = ['/disclaimer', '/how-tested'].some(
-    (p) => location.pathname === p || location.pathname.startsWith(`${p}/`),
-  )
+  // The highlight is the same on both routes; the aria-current token is not:
+  // `page` only on /disclaimer itself, `location` on /how-tested, which is
+  // the token for "the current place within this area" — a screen reader
+  // must not be told Disclaimer is the page it is on (#537).
+  const isUnder = (p: string) => location.pathname === p || location.pathname.startsWith(`${p}/`)
+  const onDisclaimer = isUnder('/disclaimer')
+  const disclaimerActive = onDisclaimer || isUnder('/how-tested')
+  const disclaimerCurrent = onDisclaimer ? 'page' : disclaimerActive ? 'location' : undefined
   const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialThemeMode)
   const isFirstRoute = useRef(true)
 
@@ -264,7 +245,7 @@ export function App({
                   <Link
                     to="/disclaimer"
                     className={navClass({ isActive: disclaimerActive })}
-                    aria-current={disclaimerActive ? 'page' : undefined}
+                    aria-current={disclaimerCurrent}
                   >
                     Disclaimer
                   </Link>

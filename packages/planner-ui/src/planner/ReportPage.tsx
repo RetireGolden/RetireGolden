@@ -9,6 +9,7 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { ScrollRegion } from './ScrollRegion'
+import { planNameForTitle } from './planName'
 import { usePlannerEdition } from './editionContext'
 import {
   Area,
@@ -107,7 +108,7 @@ function ReportBody() {
   // The report route sits outside the workspace shell, so it names its own
   // tab: plan + report context, like the rail screens (#430).
   useEffect(() => {
-    document.title = `${plan.name} · Report · RetireGolden`
+    document.title = `${planNameForTitle(plan.name)} · Report · RetireGolden`
   }, [plan.name])
   useEffect(
     () => () => {
