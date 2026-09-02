@@ -501,6 +501,10 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
       // A frame tag may span lines; a tag never contains < or >.
       const tags = [...text.matchAll(/<div\b[^<>]*className="chart-frame[^"]*"[^<>]*>/g)]
       expect(tags.length, rel).toBeGreaterThan(0)
+      // Every frame in the file was matched as a tag; an attribute expression
+      // with a > before className would otherwise let one slip past unchecked.
+      const occurrences = text.match(/className="chart-frame/g) ?? []
+      expect(tags.length, `${rel}: every chart-frame occurrence is a checked tag`).toBe(occurrences.length)
       for (const tag of tags) {
         const frame = tag[0]
         expect(frame, `${rel}: ${frame}`).toMatch(/role="figure"/)
@@ -525,6 +529,8 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
   })
 
   it('the help bubble reads the KPI bar of its own workspace (#469); behaviour is in helpTipClamp.test.tsx', () => {
-    expect(src('./fields.tsx')).toContain("button.closest('.workspace')?.querySelector('.kpi-bar')?.getBoundingClientRect().bottom")
+    const fields = src('./fields.tsx')
+    expect(fields).toContain("while (scope && !scope.querySelector('.kpi-bar')) scope = scope.parentElement")
+    expect(fields).not.toContain("button.closest('.workspace')")
   })
 })

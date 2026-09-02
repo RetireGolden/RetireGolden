@@ -86,8 +86,12 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
         Math.min(btn.left + btn.width / 2 - bub.width / 2, window.innerWidth - bub.width - margin),
       )
       // The sticky KPI bar owns the top of the viewport inside a plan; a bubble
-      // that would open under it flips below its trigger instead (#469).
-      const barBottom = button.closest('.workspace')?.querySelector('.kpi-bar')?.getBoundingClientRect().bottom ?? 0
+      // that would open under it flips below its trigger instead (#469). The
+      // bar is a sibling of the workspace outlet, so walk up to the nearest
+      // ancestor that contains one rather than assuming where it sits.
+      let scope: HTMLElement | null = button.parentElement
+      while (scope && !scope.querySelector('.kpi-bar')) scope = scope.parentElement
+      const barBottom = scope?.querySelector('.kpi-bar')?.getBoundingClientRect().bottom ?? 0
       const minTop = Math.max(margin, barBottom + margin)
       const above = btn.top - bub.height - margin
       bubble.style.left = `${left}px`

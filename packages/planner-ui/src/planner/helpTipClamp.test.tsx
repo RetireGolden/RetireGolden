@@ -40,12 +40,15 @@ describe('HelpTip clamp', () => {
     Element.prototype.getBoundingClientRect = original
   })
 
+  // The bar is a sibling of the workspace outlet, as in PlanWorkspace.
   const mount = async (withBar: boolean) => {
     await act(async () => {
       root.render(
-        <div className="workspace">
+        <div className="plan">
           {withBar ? <div className="kpi-bar" /> : null}
-          <HelpTip text="What this means" />
+          <div className="workspace">
+            <HelpTip text="What this means" />
+          </div>
         </div>,
       )
     })

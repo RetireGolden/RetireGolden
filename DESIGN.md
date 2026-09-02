@@ -288,8 +288,9 @@ transitions, restrained hover states that shift a border or tint a background by
   that move with the chips, ink-tinted edge shadows that stay), snaps to chip starts, renders group
   headers after the first as separators with a left rule, and scrolls itself, never the window, to
   bring the active chip into view after a navigation or a resize (the snap then settles it).
-- **Header between 641px and 880px:** the brand stays the top-left anchor, the nav stays on one
-  line beside it, and only the theme cluster wraps below. Under 640px the phone layout applies.
+- **Header between 641px and 880px:** the header is top-aligned so the brand stays the top-left
+  anchor whatever else moves; the nav sits beside it and may wrap or shrink at the low end of the
+  range, and the theme cluster wraps below. Under 640px the phone layout applies.
 - **Breadcrumbs:** muted with `/` separators; current page is Ink at 550.
 
 ### Forms and figures
