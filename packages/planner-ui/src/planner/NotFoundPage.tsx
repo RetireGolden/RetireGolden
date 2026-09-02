@@ -38,17 +38,43 @@ export function NotFoundPage() {
   )
 }
 
+/**
+ * Site-level pages a plan URL is likely to be guessed for (#536): the rail's
+ * "Compare plans" sits among the plan links, so `/plan/:id/compare` is a
+ * natural miss, and `/plan/:id/import` the same for the import wizard. The
+ * label matches the destination's own title (App.tsx ROUTE_TITLES).
+ */
+const SITE_LEVEL_ESCAPES: Readonly<Record<string, { to: string; label: string }>> = {
+  compare: { to: '/compare', label: 'Compare plans' },
+  import: { to: '/import', label: 'Import & migrate' },
+  examples: { to: '/examples', label: 'Examples' },
+  learn: { to: '/learn', label: 'Learning Center' },
+}
+
 export function WorkspaceNotFound() {
-  const { planId } = useParams()
+  const { planId, '*': splat } = useParams()
+  const segment = splat?.split('/').filter(Boolean)[0] ?? ''
+  const escape = Object.hasOwn(SITE_LEVEL_ESCAPES, segment) ? SITE_LEVEL_ESCAPES[segment] : undefined
   return (
     <div className="card empty-state">
       <h2>This plan has no such section</h2>
-      <p className="muted">
-        The address names a section that is not part of the planner. Every section is listed in the rail; Household
-        is the first.
-      </p>
+      {escape ? (
+        <p className="muted">
+          {escape.label} is not a section of this plan; it has its own page outside the plan workspace.
+        </p>
+      ) : (
+        <p className="muted">
+          The address names a section that is not part of the planner. Every section is listed in the rail; Household
+          is the first.
+        </p>
+      )}
       <div className="picker-actions">
-        <Link to={`/plan/${planId}/household`} className="btn btn-primary">
+        {escape ? (
+          <Link to={escape.to} className="btn btn-primary">
+            Go to {escape.label}
+          </Link>
+        ) : null}
+        <Link to={`/plan/${planId}/household`} className={escape ? 'btn btn-secondary' : 'btn btn-primary'}>
           Go to Household
         </Link>
         <Link to={`/plan/${planId}/results`} className="btn btn-secondary">

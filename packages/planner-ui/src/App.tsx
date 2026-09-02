@@ -141,9 +141,14 @@ export function App({
   // How-tested is reached from Disclaimer and has no nav item of its own, so
   // Disclaimer stays the active place while it is open (#419). NavLink only
   // sets aria-current for its own route match, hence a plain Link below.
-  const disclaimerActive = ['/disclaimer', '/how-tested'].some(
-    (p) => location.pathname === p || location.pathname.startsWith(`${p}/`),
-  )
+  // The highlight is the same on both routes; the aria-current token is not:
+  // `page` only on /disclaimer itself, `location` on /how-tested, which is
+  // the token for "the current place within this area" — a screen reader
+  // must not be told Disclaimer is the page it is on (#537).
+  const isUnder = (p: string) => location.pathname === p || location.pathname.startsWith(`${p}/`)
+  const onDisclaimer = isUnder('/disclaimer')
+  const disclaimerActive = onDisclaimer || isUnder('/how-tested')
+  const disclaimerCurrent = onDisclaimer ? 'page' : disclaimerActive ? 'location' : undefined
   const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialThemeMode)
   const isFirstRoute = useRef(true)
 
@@ -264,7 +269,7 @@ export function App({
                   <Link
                     to="/disclaimer"
                     className={navClass({ isActive: disclaimerActive })}
-                    aria-current={disclaimerActive ? 'page' : undefined}
+                    aria-current={disclaimerCurrent}
                   >
                     Disclaimer
                   </Link>

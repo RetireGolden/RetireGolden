@@ -30,6 +30,8 @@ export interface PromptOptions {
   defaultValue?: string
   confirmLabel?: string
   cancelLabel?: string
+  /** Cap on the typed value (a native `maxlength`); the default should already fit it. */
+  maxLength?: number
 }
 
 export interface AlertOptions {
@@ -119,9 +121,21 @@ export function PromptDialog({ opts, onResult }: { opts: PromptOptions; onResult
             ref={inputRef}
             type="text"
             value={value}
+            maxLength={opts.maxLength}
             autoComplete="off"
             onChange={(e) => setValue(e.target.value)}
-            onFocus={(e) => e.target.select()}
+            onFocus={(e) => {
+              // Select the default so typing replaces it, then show its start:
+              // a selection scrolls the box to its end, which for a long
+              // "Copy of …" default hid what was being named (#533). The
+              // reset waits a frame because the selection's own scroll can
+              // land on a later layout pass and undo a synchronous one.
+              const input = e.target
+              input.select()
+              requestAnimationFrame(() => {
+                input.scrollLeft = 0
+              })
+            }}
           />
         </div>
         <div className="dialog-actions">

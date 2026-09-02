@@ -600,7 +600,8 @@
   width: 100%;
   max-width: 30rem;
   /* A name longer than the box truncates with a deliberate ellipsis instead
-     of a mid-word clip; the breadcrumb above carries the full name (#431). */
+     of a mid-word clip (#431). The breadcrumb crumb above truncates the same
+     way (#501); the whole name stays in the DOM, the input, and the sr-only h1. */
   text-overflow: ellipsis;
 }
 
@@ -3523,3 +3524,122 @@ html:has(.kpi-bar) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* --- Design QA cluster E (#533, #534, #535) ---------------------------------
+   Appended as one block after cluster A; pinned by designQa.clusterE.test.ts.
+   The #501 breadcrumb truncation this cluster once carried is cluster A's
+   above, for the workspace crumb and the report's linked crumb alike. */
+
+/* A long plan name clamps to two lines on its card, so one card never runs to
+   three times its siblings' height and pushes the grid rows apart (#533). The
+   open button still carries the whole name as its accessible name. The clamp
+   needs the -webkit-box display and orientation pair; the web build's
+   minifier keeps it (app/src/plannerCssMinify.test.ts runs the same
+   lightningcss over this rule and checks). */
+.plan-card-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* The Learn search box ends in a real clear button (#534). The UA's own
+   search cancel glyph is neither keyboard-reachable nor named, so it is
+   hidden and the button takes its place. The right padding that makes room
+   for the button exists only while the button does (the page adds the
+   modifier with the first character), so an idle box keeps its own edge;
+   the text start is untouched either way. The two-class selector outranks
+   the learn.css rule that the Learn chunk loads after this sheet. */
+.learn-search {
+  position: relative;
+}
+
+.learn-search--has-query .learn-search-input {
+  padding-right: 2.75rem;
+}
+
+/* One rule per engine pseudo-element: an unknown one in a shared selector
+   list would drop the whole rule. Chromium, Safari, and Edge draw the cancel
+   glyph (and Safari a decoration) through the -webkit- pair; legacy Edge and
+   IE through ::-ms-clear; Firefox draws no cancel control on type=search. */
+.learn-search .learn-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.learn-search .learn-search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.learn-search .learn-search-input::-ms-clear {
+  display: none;
+}
+
+/* A disabled text field takes the flat disabled tokens buttons and selects
+   already use (index.css) instead of painting live, so the divorced-ex
+   card's amount fields read as off, not broken (#535). The selector repeats
+   the shared .field rule's shape so it outranks it; tokens keep the light
+   and dark themes in parity. */
+.field input:not([type='checkbox']):not([type='radio']):not([type='range']):disabled {
+  background-color: var(--surface-2);
+  color: var(--muted);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+/* The affixed box carries a money field's chrome; it takes the same fill
+   when its input is disabled (the inner input stays transparent). */
+.field .input-affix:has(> input:disabled) {
+  background: var(--surface-2);
+  cursor: not-allowed;
+}
+
+.learn-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.learn-search-clear:hover {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.learn-search-clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (pointer: coarse) {
+  .learn-search-clear {
+    width: 2.75rem;
+    height: 2.75rem;
+    right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learn-search-clear {
+    transition: none;
+  }
+}
+

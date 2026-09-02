@@ -23,6 +23,7 @@ import { fmtMoneyCompact } from './format'
 import { successBand } from './successBand'
 import { useMcSuccessRateState } from './useMcSuccessRate'
 import { useProjection } from './useProjection'
+import { duplicateNameDefault, duplicateNameFor, PLAN_NAME_MAX_LENGTH, planNameForTitle } from './planName'
 import { SECTION_TITLES } from './sectionTitles'
 import { firstIssue, focusIssueTarget, retryFocus, routeForIssues, workspaceRoot } from './issueJump'
 
@@ -244,6 +245,11 @@ function PlanName() {
       className="plan-name-input"
       value={plan.name}
       aria-label="Plan name"
+      // The cap is for what is typed, never for what is stored: a name that
+      // is already past it (imported, or saved before the cap) keeps its full
+      // length here, or the first keystroke would persist it silently
+      // truncated (review of #533).
+      maxLength={plan.name.length <= PLAN_NAME_MAX_LENGTH ? PLAN_NAME_MAX_LENGTH : undefined}
       disabled={readOnly}
       onChange={(e) =>
         update((d) => {
@@ -295,7 +301,10 @@ function WorkspaceInner() {
   const sectionTitle = section !== undefined ? (SECTION_TITLES[section] ?? null) : null
   const onAssumptions = section === 'assumptions' || section === 'assumptions-card'
   useEffect(() => {
-    document.title = sectionTitle ? `${sectionTitle} · ${plan.name} · RetireGolden` : `${plan.name} · RetireGolden`
+    // The tab carries a shortened name: a very long one would fill the tab
+    // strip and hide the section and brand (#533).
+    const name = planNameForTitle(plan.name)
+    document.title = sectionTitle ? `${sectionTitle} · ${name} · RetireGolden` : `${name} · RetireGolden`
   }, [sectionTitle, plan.name])
   // Reset only when leaving the workspace entirely. A per-change cleanup
   // would churn the title through 'RetireGolden' between sections.
@@ -309,12 +318,13 @@ function WorkspaceInner() {
     const name = await prompt({
       title: 'Duplicate plan',
       label: 'Name for the duplicated plan',
-      defaultValue: `Copy of ${plan.name}`,
+      defaultValue: duplicateNameDefault(plan.name),
+      maxLength: PLAN_NAME_MAX_LENGTH,
       confirmLabel: 'Duplicate',
     })
     if (name === null) return
     if (plan.origin === 'example') discardPendingSave()
-    const r = await duplicatePlanVia(store, plan.id, { name, source: plan })
+    const r = await duplicatePlanVia(store, plan.id, { name: duplicateNameFor(name, plan.name), source: plan })
     if (r.ok) navigate(`/plan/${r.plan.id}/results`)
     else await alert({ title: 'Duplicate plan', body: `Could not duplicate this plan: ${r.issues.join('; ')}` })
   }

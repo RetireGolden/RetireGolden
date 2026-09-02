@@ -139,7 +139,7 @@ describe('App shell smoke', () => {
     await unmount()
   })
 
-  it('keeps Disclaimer the active header item on /how-tested (#419)', async () => {
+  it('keeps Disclaimer the active header item on /how-tested, as the current location, not page (#419, #537)', async () => {
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
@@ -151,7 +151,10 @@ describe('App shell smoke', () => {
       )
     })
     const nav = container.querySelector('nav[aria-label="Primary"]')!
-    const active = Array.from(nav.querySelectorAll('a')).filter((a) => a.getAttribute('aria-current') === 'page')
+    const links = Array.from(nav.querySelectorAll('a'))
+    // Nothing claims to be the page the reader is on: How-tested has no item.
+    expect(links.filter((a) => a.getAttribute('aria-current') === 'page')).toEqual([])
+    const active = links.filter((a) => a.getAttribute('aria-current') === 'location')
     expect(active.map((a) => a.textContent)).toEqual(['Disclaimer'])
     expect(active[0]!.className).toContain('nav-link--active')
     expect(active[0]!.getAttribute('href')).toBe('/disclaimer')

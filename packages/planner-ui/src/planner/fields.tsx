@@ -257,7 +257,15 @@ function describedBy(...ids: Array<string | undefined | false | null>): string |
   return list.length > 0 ? list.join(' ') : undefined
 }
 
-interface NumericProps extends BaseProps {
+/** Control-level state a caller may set on an input field. */
+interface ControlProps {
+  /** Disable the control (the label and help stay readable). */
+  disabled?: boolean
+  /** Id of an element that describes the control, e.g. a note on why it is disabled. */
+  describedBy?: string
+}
+
+interface NumericProps extends BaseProps, ControlProps {
   value: number | null
   onCommit: (value: number | null) => void
   /** When false (default for most), clearing the field commits 0 instead of null. */
@@ -300,6 +308,8 @@ export function MoneyField({
   onInvalid,
   fractionDigits,
   placeholder,
+  disabled,
+  describedBy: describedById,
 }: MoneyFieldProps) {
   const id = useId()
   // The engine's range for this path, so a money field refuses what the schema
@@ -363,8 +373,9 @@ export function MoneyField({
           autoCorrect="off"
           spellCheck={false}
           placeholder={placeholder}
+          disabled={disabled}
           aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy(error ? `${id}-error` : notKept && `${id}-note`)}
+          aria-describedby={describedBy(describedById, error ? `${id}-error` : notKept && `${id}-note`)}
           data-path={path}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.preventDefault()
@@ -415,6 +426,8 @@ export function NumberField({
   step,
   min,
   max,
+  disabled,
+  describedBy: describedById,
 }: NumericProps & { suffix?: string; step?: number; min?: number; max?: number }) {
   const id = useId()
   const { text, setText, setFocused } = useLocalText(value === null ? '' : String(value))
@@ -454,8 +467,9 @@ export function NumberField({
       step={step}
       min={nativeMin(bounds)}
       max={nativeMax(bounds)}
+      disabled={disabled}
       aria-invalid={error ? true : undefined}
-      aria-describedby={describedBy(suffixId, error ? `${id}-error` : adjustedNote && `${id}-note`)}
+      aria-describedby={describedBy(suffixId, describedById, error ? `${id}-error` : adjustedNote && `${id}-note`)}
       data-path={path}
       onFocus={() => setFocused(true)}
       onBlur={(e) => {
@@ -569,7 +583,9 @@ export function DateField({
   path,
   value,
   onCommit,
-}: BaseProps & { value: string; onCommit: (v: string) => void }) {
+  disabled,
+  describedBy: describedById,
+}: BaseProps & ControlProps & { value: string; onCommit: (v: string) => void }) {
   const id = useId()
   const error = useFieldIssue(path)?.advice ?? null
   return (
@@ -579,9 +595,10 @@ export function DateField({
         type="date"
         min="1900-01-01"
         max="9999-12-31"
+        disabled={disabled}
         value={capIsoDateYear(value)}
         aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(error && `${id}-error`)}
+        aria-describedby={describedBy(describedById, error && `${id}-error`)}
         data-path={path}
         onChange={(e) => onCommit(capIsoDateYear(e.target.value))}
       />

@@ -29,12 +29,16 @@ import {
   newId,
   nextCareEvent,
   nextScheduleAge,
+  ordinalSuffixes,
 } from './sectionHelpers'
 
 const INSURANCE_LABEL: Record<InsurancePolicy['kind'], string> = {
   permanentLife: 'Permanent life',
   ltc: 'Long-term care',
 }
+
+/** Display order of the policy kinds: the add-button order above. */
+const INSURANCE_KIND_ORDER = Object.keys(INSURANCE_LABEL) as InsurancePolicy['kind'][]
 
 function personOptions(plan: Plan) {
   return plan.household.people.map((p) => ({ value: p.id, label: p.name }))
@@ -423,6 +427,24 @@ function LtcStressPanel() {
 export function InsuranceSection() {
   const { plan, update } = usePlan()
   const firstPerson = plan.household.people[0]!.id
+  // Policies are shown grouped by kind, in the add-button order, whatever
+  // order they were added in (#550). The plan array is untouched: each card
+  // keeps its stored index for edits and removal; the stored index is also
+  // the tiebreaker, so the added order within a kind never depends on the
+  // sort being stable.
+  const policies = plan.insurance
+    .map((policy, index) => ({ policy, index }))
+    .sort(
+      (a, b) =>
+        INSURANCE_KIND_ORDER.indexOf(a.policy.kind) - INSURANCE_KIND_ORDER.indexOf(b.policy.kind) || a.index - b.index,
+    )
+  const policyOrdinals = ordinalSuffixes(policies.map(({ policy }) => `${policy.kind} ${policy.name}`))
+  // Two events for the same person at the same age would read identically;
+  // the ordinal keeps the cards and their Remove buttons apart (#541).
+  const careTitles = plan.careEvents.map(
+    (c) => `${plan.household.people.find((p) => p.id === c.personId)?.name ?? 'Care'} · age ${c.startAge}`,
+  )
+  const careOrdinals = ordinalSuffixes(careTitles)
   return (
     <section>
       <div className="card">
@@ -433,14 +455,19 @@ export function InsuranceSection() {
           test whether an LTC policy offsets a late-life care shock. <LearnLink {...LEARN.insuranceOverview} />
         </p>
         {plan.insurance.length === 0 ? <div className="empty-state"><p>No policies yet. Add one below.</p></div> : null}
-        {plan.insurance.map((p, i) => (
-          <div className="item-row" key={p.id}>
+        {policies.map(({ policy: p, index: i }, position) => (
+          <div className="item-row" key={p.id} data-testid="insurance-row" data-insurance-kind={p.kind}>
             <div className="item-row-head">
               <span className="item-row-title">
                 <span className="type-chip">{INSURANCE_LABEL[p.kind]}</span>
-                {p.name}
+                <span>{`${p.name}${policyOrdinals[position]}`}</span>
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.insurance.splice(i, 1))}>
+              <button
+                type="button"
+                className="btn-ghost btn-ghost-danger"
+                aria-label={`Remove ${INSURANCE_LABEL[p.kind]} ${p.name}${policyOrdinals[position]}`}
+                onClick={() => update((d) => void d.insurance.splice(i, 1))}
+              >
                 Remove
               </button>
             </div>
@@ -461,13 +488,18 @@ export function InsuranceSection() {
           Add one to see the stress test below. <LearnLink {...LEARN.ltcCosts} />
         </p>
         {plan.careEvents.map((c, i) => (
-          <div className="item-row" key={c.id}>
+          <div className="item-row" key={c.id} data-testid="care-event-row">
             <div className="item-row-head">
               <span className="item-row-title">
                 <span className="type-chip">Care</span>
-                {plan.household.people.find((p) => p.id === c.personId)?.name ?? 'Care'} · age {c.startAge}
+                <span>{`${careTitles[i]}${careOrdinals[i]}`}</span>
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.careEvents.splice(i, 1))}>
+              <button
+                type="button"
+                className="btn-ghost btn-ghost-danger"
+                aria-label={`Remove care event ${careTitles[i]}${careOrdinals[i]}`}
+                onClick={() => update((d) => void d.careEvents.splice(i, 1))}
+              >
                 Remove
               </button>
             </div>
