@@ -101,6 +101,8 @@ import { annualAggregateRothConversionTargetPlan } from
   './internal/annualAggregateRothConversionTargetPlan.js'
 import { annualRetirementActionPreflight } from
   './internal/annualRetirementActionPreflight.js'
+import { annualQcdExecutionInput } from
+  './internal/annualQcdExecutionInput.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountGrowth.js'
@@ -179,7 +181,6 @@ import {
   asAccountId,
   asPersonId,
   asUsdCents,
-  evaluateAnnualQcdExecutionPrerequisites,
   executeAnnualQcds,
   executeRothConversions,
   ledgerCentsToPlanDollars,
@@ -187,18 +188,13 @@ import {
   planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   signedLedgerCentTotalToPlanDollars,
-  stageAnnualQcdPhysicalExecution,
   type ActionId,
-  type AnnualQcdRmdPoolOpeningSnapshot,
-  type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   type ConversionLinkedWithdrawalGroupLiabilityRun,
   type ExecuteAnnualQcdsResult,
   type ExecuteRothConversionsResult,
   type PersonId,
-  type QualifiedCharitableDistributionRequest,
 } from '../actions/index.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
-import type { NonpersistedPriorQcdOffsetEvidence } from '../strategies/accountEligibility.js'
 import {
   compareUtf16CodeUnits,
 } from '../actions/structuralId.js'
@@ -4676,9 +4672,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * vector, and the group executor that publishes the year's answer.
      */
     let effectiveLinkedWithdrawalGroups = conversionLinkedWithdrawalGroups
-    // The ordinary and QCD executors are handed disjoint request sets, so the
-    // one alive fact a request carries is minted here rather than per executor:
-    // a request must not change identity by moving between the two.
+    // The ordinary executor still mints its alive facts at the caller boundary;
+    // named-QCD evidence is now prepared by `annualQcdExecutionInput` below.
     const actionPersonAliveEvidence = (
       actionId: ActionId,
       personId: PersonId,
@@ -4696,80 +4691,53 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       actionDate,
       alive: stateOf(personId).alive,
     })
-    /**
-     * The donor's own prior consumption of the post-70½ deductible-contribution
-     * offset, or nothing when this run cannot state it.
-     *
-     * Two routes reach a provable answer, and neither invents a zero. When the
-     * donor made no deductible IRA contribution at or after 70½ there is no
-     * offset in existence, so no earlier gift can have consumed one and the
-     * figure is zero by arithmetic. Otherwise the figure is what this run's own
-     * committed gifts consumed, which is only the whole answer when no gift
-     * outside the run could have consumed any -- the condition
-     * `namedQcdOffsetHistoryUnprovable` records. Omitting the evidence is what
-     * fails the action closed: the eligibility predicate then refuses
-     * `qcd-contribution-history-unknown` and no dollar moves.
-     */
-    const priorQcdOffsetEvidenceFor = (
-      request: QualifiedCharitableDistributionRequest,
-    ): NonpersistedPriorQcdOffsetEvidence | null => {
-      const donor = people.find((person) => person.id === request.donorPersonId)
-      const thresholdDate = donor === undefined
-        ? null
-        : addCalendarMonths(donor.dob, 846)
-      if (thresholdDate === null) return null
-      const thresholdYear = Number(thresholdDate.slice(0, 4))
-      const offsetTotalCents = (
-        plan.retirementActionEligibilityFacts?.deductibleIraContributions ?? []
-      ).filter((record) =>
-        record.donorPersonId === request.donorPersonId &&
-        record.taxYear >= thresholdYear && record.taxYear <= request.year)
-        .reduce((sum, record) => sum + BigInt(record.amountCents), 0n)
-      const consumed = namedQcdOffsetConsumedByDonor.get(request.donorPersonId) ?? 0
-      if (offsetTotalCents > 0n &&
-          namedQcdOffsetHistoryUnprovable.has(request.donorPersonId)) {
-        return null
-      }
-      const actionDate = request.executionDate ?? null
-      return {
-        evidenceId: `projection-prior-qcd-offset:${JSON.stringify([
-          request.actionId,
-          request.donorPersonId,
-          year,
-          actionDate,
-        ])}`,
-        actionId: request.actionId,
-        donorPersonId: request.donorPersonId,
-        actionYear: year,
-        actionDate,
-        priorOffsetApplied: asUsdCents(offsetTotalCents === 0n ? 0 : consumed),
-      }
-    }
-    // Identity and legal preflight for every named QCD, published as its own
-    // executor source. Nothing here settles a balance, satisfies an RMD, or
-    // derives an exclusion; the annual QCD executor below reads this batch and
-    // decides whether any of it may move.
-    const qcdActionPrerequisiteResult =
-      currentYearQcdExecutionActions.length === 0
-        ? undefined
-        : evaluateAnnualQcdExecutionPrerequisites({
-            taxYear: year,
-            plan: passPlan,
-            requests: currentYearQcdExecutionActions,
-            runtimeEvidence: {
-              personAliveEvidence: currentYearQcdExecutionActions.map((request) =>
-                actionPersonAliveEvidence(
-                  request.actionId,
-                  request.donorPersonId,
-                  request.executionDate ?? null,
-                )),
-              priorQcdOffsetEvidence: currentYearQcdExecutionActions
-                .flatMap((request) => {
-                  const evidence = priorQcdOffsetEvidenceFor(request)
-                  return evidence === null ? [] : [evidence]
-                }),
-            },
-          })
+    // Identity/legal preflight, runtime evidence, exact-cent source/RMD
+    // snapshots, and complete Form 8606 pool inputs are one immutable
+    // preparation boundary. The executor and every economic write stay here.
+    const qcdExecutionInput = annualQcdExecutionInput(Object.freeze({
+      taxYear: year,
+      plan: passPlan,
+      primaryPersonId: primary.id,
+      requests: currentYearQcdExecutionActions,
+      people: Object.freeze(people.map((person) => Object.freeze({
+        personId: person.id,
+        dob: person.dob,
+        alive: stateOf(person.id).alive,
+      }))),
+      balances: Object.freeze(rmdBalances.map((state) => Object.freeze({
+        accountId: state.account.id,
+        ownerPersonId: state.account.ownerPersonId ?? null,
+        isAggregatedIra: isAggregatedIra(state.account),
+        balancePlanDollars: state.balance,
+        preDistributionBalancePlanDollars:
+          preDistributionOwnedIraBalance.get(state.account.id) ?? 0,
+      }))),
+      ownerRmd: Object.freeze([...new Set(
+        currentYearQcdExecutionActions.map((request) =>
+          String(request.donorPersonId)),
+      )].map((ownerPersonId) => Object.freeze({
+        ownerPersonId,
+        requiredPlanDollars: iraRmdRequiredByOwner.get(ownerPersonId) ?? 0,
+        unsatisfiedPlanDollars:
+          iraRmdUnsatisfiedByOwner.get(ownerPersonId) ?? 0,
+      }))),
+      ownerBasis: Object.freeze([...iraBasisByOwner].map(
+        ([ownerPersonId, basisPlanDollars]) => Object.freeze({
+          ownerPersonId,
+          basisPlanDollars,
+        }),
+      )),
+      priorOffsets: Object.freeze([...namedQcdOffsetConsumedByDonor].map(
+        ([donorPersonId, consumedAmountCents]) => Object.freeze({
+          donorPersonId,
+          consumedAmountCents,
+        }),
+      )),
+      offsetHistoryUnprovableDonorIds: Object.freeze([
+        ...namedQcdOffsetHistoryUnprovable,
+      ]),
+    }))
+    const qcdActionPrerequisiteResult = qcdExecutionInput.prerequisite
     /**
      * The named charitable gift, settled and committed at phase rank 6.
      *
@@ -4810,168 +4778,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     let namedQcdRmdSatisfied = 0
     let namedQcdIncomeOffset = 0
-    if (qcdActionPrerequisiteResult?.status === 'evaluated') {
-      const qcdRequests = qcdActionPrerequisiteResult.requests
-      const qcdDonorIds = [...new Set(qcdRequests.map((request) =>
-        String(request.donorPersonId)))].sort(compareUtf16CodeUnits)
-      const qcdSourceIds = new Set(qcdRequests.map((request) =>
-        String(request.allocation.sourceAccountId)))
-      // Truncated, not rounded. This snapshot is a spending capacity: the
-      // executor sizes the gift as `min(requested, openingBalance)`, and the
-      // commit below subtracts the result from the live balance, which the
-      // runtime journal then validates as an exact before/amount/after chain.
-      // Half-up rounding can report up to half a cent more than the account
-      // holds, so a gift that drains its source would authorise a cent that is
-      // not there and drive the balance negative -- permanently, since nothing
-      // downstream rebuilds it. Truncating makes the overdraw unreachable
-      // instead of detecting it afterwards.
-      const openingBalances = rmdBalances
-        .filter((state) => qcdSourceIds.has(state.account.id))
-        .map((state) => ({
-          accountId: asAccountId(state.account.id),
-          openingBalance: planDollarsToFlooredLedgerCents(state.balance),
-        }))
-      // The owner's Treas. Reg. 1.408-8(e)(1)(i) sum and how much of it the
-      // owner's own IRAs have already distributed by the time the gift is
-      // sized. Read from the same two maps the conversion executor reads, so
-      // the two executors cannot disagree about one owner's year.
-      const rmdPools: AnnualQcdRmdPoolOpeningSnapshot[] = qcdDonorIds.map((donorId) => {
-        const required = planDollarsToLedgerCents(iraRmdRequiredByOwner.get(donorId) ?? 0)
-        const remaining = planDollarsToLedgerCents(
-          Math.min(iraRmdUnsatisfiedByOwner.get(donorId) ?? 0, iraRmdRequiredByOwner.get(donorId) ?? 0),
-        )
-        const sourceAccountIds = rmdBalances
-          .map((state) => state.account)
-          .filter((account) => isAggregatedIra(account) &&
-            (account.ownerPersonId ?? primary.id) === donorId)
-          .map((account) => asAccountId(account.id))
-          .sort(compareUtf16CodeUnits)
-        return {
-          predicate: 'annualQcdOwnedIraRmdPoolOpeningSnapshot' as const,
-          poolId: `projection-owned-ira-rmd-pool:${JSON.stringify([plan.id, donorId, year])}`,
-          taxYear: year,
-          donorPersonId: asPersonId(donorId),
-          scope: 'ownedIra' as const,
-          sourceAccountIds: sourceAccountIds as [ReturnType<typeof asAccountId>, ...ReturnType<typeof asAccountId>[]],
-          rmdRequiredAmount: required,
-          rmdSatisfiedBefore: asUsdCents(Number(BigInt(required) - BigInt(remaining))),
-          rmdRemainingBefore: remaining,
-          upstreamEvidenceId:
-            `projection-owner-ira-rmd-satisfaction:${JSON.stringify([plan.id, donorId, year])}`,
-        }
-      })
-      const physicalInput = {
-        prerequisite: qcdActionPrerequisiteResult,
-        plan: passPlan,
-        runtimeEvidence: {
-          personAliveEvidence: qcdRequests.map((request) =>
-            actionPersonAliveEvidence(
-              request.actionId,
-              request.donorPersonId,
-              request.executionDate ?? null,
-            )),
-          priorQcdOffsetEvidence: qcdRequests.flatMap((request) => {
-            const evidence = priorQcdOffsetEvidenceFor(request)
-            return evidence === null ? [] : [evidence]
-          }),
-        },
-        openingBalances,
-        rmdPools,
-      }
-      // Staged once here only to learn what each source can actually cover, so
-      // the pool statement below can name the gift it is about. The executor
-      // rebuilds the same staging from the same input, so the two agree by
-      // construction rather than by being passed along.
-      const staging = stageAnnualQcdPhysicalExecution(physicalInput)
-      const stagedGiftByAccount = new Map<string, number>()
-      if (staging.status === 'annualQcdPhysicalExecutionStaged') {
-        for (const application of staging.applications) {
-          const accountId = String(application.request.allocation.sourceAccountId)
-          stagedGiftByAccount.set(
-            accountId,
-            (stagedGiftByAccount.get(accountId) ?? 0) + application.executedAmount,
-          )
-        }
-      }
-      // One complete owned-IRA pool per donor, stated as of the year's Form
-      // 8606 seed and net of the gift the post-pass adds back. Lines 7 and 8
-      // are empty because this stage inventories the gift alone: the year's
-      // other IRA activity is still ahead of it, and the denominator does not
-      // care -- every later distribution moves a dollar from the balance to a
-      // line and leaves the sum where it is. What reaches published evidence is
-      // that invariant sum and the basis numerator, never these two components.
-      const poolCapacityInputs: ClassifyOwnedNonRothIraAnnualWithdrawalsInput[] =
-        qcdDonorIds.map((donorId) => {
-          const poolAccounts = rmdBalances
-            .map((state) => state.account)
-            .filter((account) => isAggregatedIra(account) &&
-              (account.ownerPersonId ?? primary.id) === donorId)
-            .sort((left, right) => compareUtf16CodeUnits(left.id, right.id))
-          const subtypeById = new Map(
-            (plan.retirementActionEligibilityFacts?.iraClassifications ?? [])
-              .map((record) => [String(record.sourceAccountId), record.subtype] as const),
-          )
-          const poolMembers = poolAccounts.map((account) => {
-            const preDistribution = planDollarsToLedgerCents(
-              preDistributionOwnedIraBalance.get(account.id) ?? 0,
-            )
-            const gift = stagedGiftByAccount.get(account.id) ?? 0
-            return {
-              sourceAccountId: asAccountId(account.id),
-              ownerPersonId: asPersonId(donorId),
-              accountType: 'traditional' as const,
-              accountKind: 'ira' as const,
-              inheritanceStatus: 'owned' as const,
-              // The Plan types every owned IRA as `traditional` and carries a
-              // SEP/SIMPLE subtype only where the household attested one, so
-              // the attestation is authoritative where it exists and the
-              // Plan's own classification stands where it does not.
-              subtype: subtypeById.get(account.id) ?? 'traditional' as const,
-              yearEndApplicableBalanceAmount: asUsdCents(
-                Number(BigInt(preDistribution) - BigInt(Math.min(gift, preDistribution))),
-              ),
-              iraClassificationEvidenceId:
-                `projection-owned-ira-classification:${JSON.stringify([plan.id, account.id, year])}`,
-              accountOwnershipEvidenceId:
-                `projection-owned-ira-ownership:${JSON.stringify([plan.id, account.id, year])}`,
-            }
-          })
-          const poolBalance = asUsdCents(Number(poolMembers.reduce(
-            (sum, member) => sum + BigInt(member.yearEndApplicableBalanceAmount), 0n)))
-          const poolId = `projection-owned-ira-pool:${JSON.stringify([plan.id, donorId, year])}`
-          return {
-            ownerPersonId: asPersonId(donorId),
-            ownerWideNonRothIraPoolId: poolId,
-            completePoolEvidence: {
-              predicate: 'completeOwnedNonRothIraPoolForOwnerAndTaxYear' as const,
-              ownerPersonId: asPersonId(donorId),
-              ownerWideNonRothIraPoolId: poolId,
-              taxYear: year,
-              accountIds: poolMembers.map((member) => member.sourceAccountId) as
-                [ReturnType<typeof asAccountId>, ...ReturnType<typeof asAccountId>[]],
-              yearEndApplicablePoolBalanceAmount: poolBalance,
-              evidenceId:
-                `projection-owned-ira-pool-evidence:${JSON.stringify([plan.id, donorId, year])}`,
-            },
-            annualBasisRecordEvidenceId:
-              `projection-owned-ira-annual-basis:${JSON.stringify([plan.id, donorId, year])}`,
-            taxYear: year,
-            poolMembers,
-            annualFacts: {
-              openingBasisAmount: planDollarsToLedgerCents(iraBasisByOwner.get(donorId) ?? 0),
-              taxYearNondeductibleContributionAmount: asUsdCents(0),
-              postYearNondeductibleContributionExcludedAmount: asUsdCents(0),
-              yearEndApplicablePoolBalanceAmount: poolBalance,
-              outstandingRolloverAmount: asUsdCents(0),
-              rolloverRepaymentAdjustmentAmount: asUsdCents(0),
-              form8606Line7DistributionAmount: asUsdCents(0),
-              form8606Line8NetConversionAmount: asUsdCents(0),
-            },
-            line7Distributions: [],
-            line8Conversions: [],
-          }
-        })
-      qcdActionExecution = executeAnnualQcds({ physicalInput, poolCapacityInputs })
+    if (qcdExecutionInput.status === 'ready') {
+      qcdActionExecution = executeAnnualQcds(qcdExecutionInput.executorInput)
       if (qcdActionExecution.committed) {
         const accountOrder = new Map(
           plan.accounts.map((account, index) => [account.id, index] as const),
