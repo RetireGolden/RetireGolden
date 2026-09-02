@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
@@ -17,7 +18,7 @@ import { LearnLink } from '../learn/LearnLink'
 import { LEARN } from './learnLinks'
 import { ScrollRegion } from './ScrollRegion'
 import { fmtMoney, fmtMoneyCompact } from './format'
-import { currentStartYear, taxCalculatorFor } from './useProjection'
+import { currentStartYear, taxCalculatorFor, useProjection } from './useProjection'
 import {
   buildSurvivorAnalysis,
   type SurvivorAnalysis,
@@ -56,7 +57,31 @@ function TimelineCell({ row }: { row: SurvivorScenarioRow }) {
   )
 }
 
-function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; personName: string }) {
+/**
+ * Death timings the plan can still observe: those before the steady-market
+ * projection runs out of money. A row whose death falls after depletion is
+ * exact for its timing, but every figure on it is a $0 → $0 of an already
+ * empty ledger, which read as confident survivor results (#513).
+ */
+function partitionByDepletion(rows: SurvivorScenarioRow[], depletionYear: number | null) {
+  if (depletionYear === null) return { live: rows, afterDepletion: [] as SurvivorScenarioRow[] }
+  return {
+    live: rows.filter((r) => r.deathYear < depletionYear),
+    afterDepletion: rows.filter((r) => r.deathYear >= depletionYear),
+  }
+}
+
+function ScenarioTable({
+  rows,
+  personName,
+  planId,
+  depletionYear,
+}: {
+  rows: SurvivorScenarioRow[]
+  personName: string
+  planId: string
+  depletionYear: number | null
+}) {
   if (rows.length === 0) {
     return (
       <p className="small">
@@ -65,7 +90,21 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
       </p>
     )
   }
+  const { live, afterDepletion } = partitionByDepletion(rows, depletionYear)
+  if (live.length === 0) {
+    return (
+      <div className="empty-state" data-survivor-empty="depleted">
+        <p>
+          Every death timing here for {personName} ({rows[0]!.deathYear}–{rows[rows.length - 1]!.deathYear}) falls
+          after {depletionYear}, when this plan's steady-market projection runs out of money. A survivor transition
+          cannot be observed on an already-empty ledger, so these rows are not shown.{' '}
+          <Link to={`/plan/${planId}/insights`}>See what would change this in Insights</Link>.
+        </p>
+      </div>
+    )
+  }
   return (
+    <>
     <ScrollRegion label={`Death-timing scenarios for ${personName}`} grow style={{ border: 'none' }}>
       {/* survivor-table: a column floor so headers wrap on word boundaries at
           most once, and the wrap scrolls instead of stacking them (#431). */}
@@ -84,7 +123,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {live.map((row) => (
             <tr key={`${row.deceasedPersonId}-${row.deathAge}`}>
               <td>
                 <strong>{row.deathAge}</strong>
@@ -161,6 +200,14 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
         </tbody>
       </table>
     </ScrollRegion>
+    {afterDepletion.length > 0 ? (
+      <p className="small" data-survivor-omitted={afterDepletion.length}>
+        {afterDepletion.length} later timing{afterDepletion.length === 1 ? '' : 's'} (dies at{' '}
+        {afterDepletion.map((r) => r.deathAge).join(', ')}) not shown: the plan runs out of money in {depletionYear},
+        before {afterDepletion.length === 1 ? 'it happens' : 'they happen'}.
+      </p>
+    ) : null}
+    </>
   )
 }
 
@@ -172,6 +219,9 @@ export function SurvivorTransitionPage() {
   // against an edited plan through the debounce window.
   const [snapshot, setSnapshot] = useState<{ plan: typeof plan; analysis: SurvivorAnalysis } | null>(null)
   const eligible = plan.household.filingStatus === 'marriedFilingJointly' && plan.household.people.length === 2
+  // The same memoized deterministic projection the KPI bar reads; its
+  // depletion year gates which timings are worth a row (#513).
+  const { summary } = useProjection(plan)
 
   // Each timing runs a handful of full ledger simulations; debounce off the
   // keystroke path like the Scenarios page does.
@@ -292,7 +342,12 @@ export function SurvivorTransitionPage() {
           {plan.household.people.map((person) => (
             <div className="card" key={person.id}>
               <h3 style={{ marginTop: 0 }}>If {person.name} dies first</h3>
-              <ScenarioTable rows={analysis.rows.filter((r) => r.deceasedPersonId === person.id)} personName={person.name} />
+              <ScenarioTable
+                rows={analysis.rows.filter((r) => r.deceasedPersonId === person.id)}
+                personName={person.name}
+                planId={plan.id}
+                depletionYear={summary.depletionYear}
+              />
             </div>
           ))}
         </>

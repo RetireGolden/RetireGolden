@@ -26,6 +26,7 @@ import { HelpTip, NumberField, PercentField, SelectField } from './fields'
 import { fmtMoney, fmtPct } from './format'
 import { LEARN } from './learnLinks'
 import { buildModel } from './marketModelPicker'
+import { ScrollRegion } from './ScrollRegion'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { currentStartYear, seedFromPlanId } from './useProjection'
@@ -90,13 +91,14 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
     )
   }
   return (
-    <div className="table-scroll">
+    <>
+      <ScrollRegion label={`Drivers for ${f.stateName}`}>
       <table>
         <thead>
           <tr>
-            <th style={{ textAlign: 'left' }}>Driver ({f.stateName})</th>
-            <th style={{ textAlign: 'right' }}>Lifetime state tax it saves</th>
-            <th style={{ textAlign: 'left' }}>Rule</th>
+            <th scope="col" style={{ textAlign: 'left' }}>Driver ({f.stateName})</th>
+            <th scope="col" style={{ textAlign: 'right' }}>Lifetime state tax it saves</th>
+            <th scope="col" style={{ textAlign: 'left' }}>Rule</th>
           </tr>
         </thead>
         <tbody>
@@ -138,12 +140,13 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
           />
         </tbody>
       </table>
+      </ScrollRegion>
       <p className="field-hint" style={{ marginTop: '0.5rem' }}>
         Each figure re-prices every ledger year with that one rule neutralized, so the figures explain, but need not
         sum to, the {fmtMoney(d.totalStateLocalTax)} lifetime state+local tax this row actually paid (top marginal
         rate {f.topRatePct}%). A negative figure means the rule costs more than the benchmark.
       </p>
-    </div>
+    </>
   )
 }
 
@@ -390,20 +393,23 @@ export function RelocationComparePage() {
               onCommit={setRankBy}
             />
           </div>
-          <div className="table-scroll">
+          {/* A named scroll region, not a bare div: the six-column results
+              table clipped its Success rate column flush at the card edge
+              and squeezed Δ / Ending estate (#514). */}
+          <ScrollRegion label="Ranked relocation results">
             <table>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'left' }}>Residence</th>
-                  <th style={{ textAlign: 'right' }}>
+                  <th scope="col" style={{ textAlign: 'left' }}>Residence</th>
+                  <th scope="col" style={{ textAlign: 'right' }}>
                     Lifetime state+local tax <HelpTip text="Sum of the ledger's per-year state and local income-tax lines over the whole projection (nominal). The drill-down explains which state rules drive it." />
                   </th>
-                  <th style={{ textAlign: 'right' }}>
+                  <th scope="col" style={{ textAlign: 'right' }}>
                     Lifetime taxes & penalties <HelpTip text="Federal + state + local + penalties over the whole projection (nominal), the ranking default, since a state change also moves federal interactions like deduction and bracket timing." />
                   </th>
-                  <th style={{ textAlign: 'right' }}>Δ vs staying</th>
-                  <th style={{ textAlign: 'right' }}>Ending after-tax estate (today&apos;s $)</th>
-                  {result.monteCarlo ? <th style={{ textAlign: 'right' }}>Success rate</th> : null}
+                  <th scope="col" className="nowrap" style={{ textAlign: 'right' }}>Δ vs staying</th>
+                  <th scope="col" style={{ textAlign: 'right' }}>Ending after-tax estate (today&apos;s $)</th>
+                  {result.monteCarlo ? <th scope="col" style={{ textAlign: 'right' }}>Success rate</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -442,7 +448,7 @@ export function RelocationComparePage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           {[baseline, ...rankedCandidates]
             .filter((row) => !row.error)
             .map((row) => (

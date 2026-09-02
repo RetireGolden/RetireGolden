@@ -467,7 +467,10 @@ export function SpendingSolverPage() {
                 <th style={{ textAlign: 'left' }}>Rule</th>
                 <th style={{ textAlign: 'right' }}>Rate</th>
                 <th style={{ textAlign: 'right' }}>Spending/yr</th>
-                <th style={{ textAlign: 'left' }}>On your plan</th>
+                {/* Each row is the plan spending only this rule's dollars, so the
+                    header says so: it is not the plan's own path, which the KPI
+                    bar's "Money lasts" already reports (#510). */}
+                <th style={{ textAlign: 'left' }}>If your plan spent only this</th>
                 <th style={{ textAlign: 'right' }}>Ending estate (today&apos;s $)</th>
               </tr>
             </thead>

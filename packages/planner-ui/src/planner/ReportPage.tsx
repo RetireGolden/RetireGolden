@@ -272,7 +272,8 @@ function ReportBody() {
           {plan.household.filingStatus === 'marriedFilingJointly' ? 'Married filing jointly' : 'Single'} · {stateName(plan.household.state)}
         </p>
         <table className="report-table">
-          <thead><tr><th>Person</th><th>Date of birth</th><th>Retirement age</th><th>Planning age</th></tr></thead>
+          <caption className="sr-only">Household members</caption>
+          <thead><tr><th scope="col">Person</th><th scope="col">Date of birth</th><th scope="col">Retirement age</th><th scope="col">Planning age</th></tr></thead>
           <tbody>
             {plan.household.people.map((p) => (
               <tr key={p.id}>
@@ -289,7 +290,8 @@ function ReportBody() {
       <section className="report-section">
         <h2>Accounts</h2>
         <table className="report-table">
-          <thead><tr><th>Account</th><th>Type</th><th>Owner</th><th style={{ textAlign: 'right' }}>Balance</th><th style={{ textAlign: 'right' }}>Return</th></tr></thead>
+          <caption className="sr-only">Accounts</caption>
+          <thead><tr><th scope="col">Account</th><th scope="col">Type</th><th scope="col">Owner</th><th scope="col" style={{ textAlign: 'right' }}>Balance</th><th scope="col" style={{ textAlign: 'right' }}>Return</th></tr></thead>
           <tbody>
             {plan.accounts.map((a) => (
               <tr key={a.id}>
@@ -308,7 +310,8 @@ function ReportBody() {
       <section className="report-section">
         <h2>Income</h2>
         <table className="report-table">
-          <thead><tr><th>Source</th><th>Detail</th></tr></thead>
+          <caption className="sr-only">Income sources</caption>
+          <thead><tr><th scope="col">Source</th><th scope="col">Detail</th></tr></thead>
           <tbody>
             {plan.incomes.map((s) => (
               <tr key={s.id}><td style={td}>{incomeLabel(plan, s)}</td><td style={td}>{incomeDetail(s)}</td></tr>
@@ -321,6 +324,7 @@ function ReportBody() {
       <section className="report-section">
         <h2>Spending &amp; strategy</h2>
         <table className="report-table">
+          <caption className="sr-only">Spending and strategy</caption>
           <tbody>
             <tr><td style={td}>Baseline annual spending</td><td style={{ ...td, textAlign: 'right' }}>{fmtMoney(plan.expenses.baseAnnual)} (today's $)</td></tr>
             <tr><td style={td}>Retirement phases</td><td style={{ ...td, textAlign: 'right' }}>{plan.expenses.phases.length ? plan.expenses.phases.map((p) => `${p.multiplier}× from ${p.fromAge}`).join(', ') : 'none'}</td></tr>
@@ -337,14 +341,15 @@ function ReportBody() {
         <section className="report-section">
           <h2>ACA current-year ledger</h2>
           <table className="report-table">
+            <caption className="sr-only">ACA current-year ledger</caption>
             <thead>
               <tr>
-                <th>Year</th>
-                <th>Gross enrollment premium</th>
-                <th>Applicable SLCSP</th>
-                <th>Modeled allowable PTC</th>
-                <th>Economic net premium</th>
-                <th>Readiness</th>
+                <th scope="col">Year</th>
+                <th scope="col">Gross enrollment premium</th>
+                <th scope="col">Applicable SLCSP</th>
+                <th scope="col">Modeled allowable PTC</th>
+                <th scope="col">Economic net premium</th>
+                <th scope="col">Readiness</th>
               </tr>
             </thead>
             <tbody>
@@ -366,6 +371,7 @@ function ReportBody() {
       <section className="report-section">
         <h2>Assumptions</h2>
         <table className="report-table">
+          <caption className="sr-only">Assumptions</caption>
           <tbody>
             <tr><td style={td}>General inflation</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.inflationPct / 100, 1)}</td></tr>
             <tr><td style={td}>Healthcare extra inflation</td><td style={{ ...td, textAlign: 'right' }}>{fmtPct(plan.assumptions.healthcareExtraInflationPct / 100, 1)}</td></tr>
@@ -398,13 +404,14 @@ function ReportBody() {
         <h2>Year-by-year appendix (nominal $)</h2>
         <ScrollRegion label="Year-by-year appendix" grow>
           <table className="report-table report-appendix-table">
+            <caption className="sr-only">Year-by-year appendix, nominal dollars</caption>
           <thead>
             <tr>
-              <th>Year</th><th>Age</th><th style={{ textAlign: 'right' }}>Income</th><th style={{ textAlign: 'right' }}>Expenses</th>
-              <th style={{ textAlign: 'right' }}>Contrib.</th><th style={{ textAlign: 'right' }}>Match</th>
-              <th style={{ textAlign: 'right' }}>RMD</th><th style={{ textAlign: 'right' }}>Conv.</th><th style={{ textAlign: 'right' }}>Tax</th>
-              {hasCarryforward ? <th style={{ textAlign: 'right' }}>Loss CF</th> : null}
-              <th style={{ textAlign: 'right' }}>Investable</th><th style={{ textAlign: 'right' }}>Net worth</th>
+              <th scope="col">Year</th><th scope="col">Age</th><th scope="col" style={{ textAlign: 'right' }}>Income</th><th scope="col" style={{ textAlign: 'right' }}>Expenses</th>
+              <th scope="col" style={{ textAlign: 'right' }}>Contrib.</th><th scope="col" style={{ textAlign: 'right' }}>Match</th>
+              <th scope="col" style={{ textAlign: 'right' }}>RMD</th><th scope="col" style={{ textAlign: 'right' }}>Conv.</th><th scope="col" style={{ textAlign: 'right' }}>Tax</th>
+              {hasCarryforward ? <th scope="col" style={{ textAlign: 'right' }}>Loss CF</th> : null}
+              <th scope="col" style={{ textAlign: 'right' }}>Investable</th><th scope="col" style={{ textAlign: 'right' }}>Net worth</th>
             </tr>
           </thead>
           <tbody>
@@ -461,12 +468,13 @@ function ReportBody() {
               {account.needsProfessionalConfirmation ? <ProfessionalConfirmationMarker compact /> : null}
               <ScrollRegion label={`${account.accountName} schedule`} grow>
                 <table className="report-table report-appendix-table">
+                  <caption className="sr-only">{`${account.accountName} distribution schedule`}</caption>
                 <thead>
                   <tr>
-                    <th>Year</th>
-                    <th>Kind</th>
-                    <th style={{ textAlign: 'right' }}>Required</th>
-                    <th style={{ textAlign: 'right' }}>Executed</th>
+                    <th scope="col">Year</th>
+                    <th scope="col">Kind</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>Required</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>Executed</th>
                   </tr>
                 </thead>
                 <tbody>

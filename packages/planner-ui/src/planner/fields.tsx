@@ -224,6 +224,11 @@ interface MoneyFieldProps extends NumericProps {
   onInvalid?: () => void
   /** Omit for the existing whole-dollar display; use 2 for exact-cent inputs. */
   fractionDigits?: 0 | 2
+  /**
+   * What a blank means, shown inside the empty box (e.g. "No floor") so an
+   * optional field never reads as a value that failed to render (#518).
+   */
+  placeholder?: string
 }
 
 function useLocalText(formatted: string) {
@@ -249,6 +254,7 @@ export function MoneyField({
   allowNull,
   onInvalid,
   fractionDigits,
+  placeholder,
 }: MoneyFieldProps) {
   const id = useId()
   const formatted = value === null
@@ -288,6 +294,7 @@ export function MoneyField({
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
+          placeholder={placeholder}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.preventDefault()
           }}

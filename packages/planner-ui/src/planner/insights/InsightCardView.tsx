@@ -181,6 +181,20 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
     )
   }
 
+  // A Monte Carlo delta under half a point is "no change": the sign of 0.0
+  // must not paint it in a verdict color (#527).
+  const mcFlat = mcDelta !== null && Math.abs(mcDelta) < 0.05
+  // Every exact delta is zero and the base plan already runs out of money:
+  // say why the numbers are flat instead of leaving "no change" to look like
+  // a finding about a plan that works.
+  const baseDepletionYear = projectionView.summary.depletionYear
+  const allFlat =
+    exactImpact !== null &&
+    !loadingMc &&
+    (exactImpact.endingAfterTaxEstateDelta === undefined || exactImpact.endingAfterTaxEstateDelta === 0) &&
+    (exactImpact.lifetimeTaxDelta === undefined || exactImpact.lifetimeTaxDelta === 0) &&
+    (mcDelta === null || mcFlat)
+
   const confidenceChips = {
     high: { className: 'type-chip type-chip--good', label: 'High Confidence' },
     medium: { className: 'type-chip type-chip--warn', label: 'Medium Confidence' },
@@ -226,7 +240,11 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
 
       {/* Impact Section */}
       <div className="insight-impact-box">
-        {expanded && exactImpact ? (
+        {expanded && loadingExact && !exactImpact ? (
+          // The wait shows where the numbers will land, as a shimmer, not as
+          // a greyed button elsewhere on the card (#527).
+          <div className="skeleton" style={{ height: '3.5rem' }} role="status" aria-label="Re-simulating this plan" />
+        ) : expanded && exactImpact ? (
           <div>
             {exactImpact.qualitative ? <p>{exactImpact.qualitative}</p> : null}
             <div className="insight-impact-grid">
@@ -246,20 +264,32 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 <div>
                   <span className="muted">Monte Carlo success:</span>{' '}
                   {loadingMc ? (
-                    <span className="muted">calculating…</span>
-                  ) : mcDelta !== null ? (
-                    <span className={mcDelta >= 0 ? 'delta-pos' : 'delta-neg'}>
-                      {mcDelta > 0 ? '+' : ''}
-                      {mcDelta.toFixed(1)}%
+                    <span className="muted" role="status" aria-busy="true">
+                      still simulating…
                     </span>
+                  ) : mcDelta !== null ? (
+                    mcFlat ? (
+                      'no change'
+                    ) : (
+                      <span className={mcDelta > 0 ? 'delta-pos' : 'delta-neg'}>
+                        {mcDelta > 0 ? '+' : ''}
+                        {mcDelta.toFixed(1)} pts
+                      </span>
+                    )
                   ) : (
-                    '--'
+                    '—'
                   )}
                 </div>
               )}
             </div>
+            {allFlat && baseDepletionYear !== null ? (
+              <p className="small muted insight-flat-note">
+                The plan runs out of money in {baseDepletionYear} with or without this change, so every delta is zero.
+              </p>
+            ) : null}
             <div className="insight-impact-note">
               * Calculated by running a full plan re-simulation side-by-side.
+              {loadingMc ? ' The Monte Carlo line is still running; the dollar deltas above are final.' : ''}
             </div>
           </div>
         ) : (
@@ -306,8 +336,9 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 className="btn btn-secondary btn-small"
                 onClick={handleToggleExpand}
                 disabled={loadingExact}
+                aria-busy={loadingExact || undefined}
               >
-                {loadingExact ? 'Loading…' : expanded ? 'Hide preview' : 'Preview impact'}
+                {loadingExact ? 'Previewing…' : expanded ? 'Hide preview' : 'Preview impact'}
               </button>
               {expanded && exactImpact && (
                 <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={handleAddScenario}>

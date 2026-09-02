@@ -79,7 +79,9 @@ function SaveIndicator() {
 function KpiBar() {
   const { plan } = usePlan()
   const { result, summary, deflate } = useProjection(plan)
-  const { rate: mcRate, status: mcStatus } = useMcSuccessRateState(plan, !isPlanIncomplete(plan))
+  // The path count rides with the rate: after a 10,000-path run on the Monte
+  // Carlo page, the KPI quotes that count, not the default one (#497).
+  const { rate: mcRate, status: mcStatus, pathCount: mcPathCount } = useMcSuccessRateState(plan, !isPlanIncomplete(plan))
   // While a page has Hide amounts active (the Household map's screen-share
   // toggle), the KPI bar masks every dollar it would otherwise show — the
   // chrome must not leak what the page below is hiding. The literal "$" unit
@@ -133,7 +135,7 @@ function KpiBar() {
             className="kpi-value kpi-value-link"
             style={{ color: successBand(mcRate).color }}
             to="monte-carlo"
-            title={`Share of ${DEFAULT_PATH_COUNT.toLocaleString()} varied-market simulations where the money lasts. Open Monte Carlo for the full picture`}
+            title={`Share of ${mcPathCount.toLocaleString()} varied-market simulations where the money lasts. Open Monte Carlo for the full picture`}
           >
             {Math.round(mcRate * 100)}%
           </Link>
@@ -151,7 +153,7 @@ function KpiBar() {
             instead of staying busy forever (#453). */}
         <span className="kpi-sub">
           {mcRate !== null
-            ? `of ${DEFAULT_PATH_COUNT.toLocaleString()} varied markets`
+            ? `of ${mcPathCount.toLocaleString()} varied markets`
             : mcStatus === 'failed'
               ? 'simulation unavailable · open Monte Carlo to retry'
               : `simulating ${DEFAULT_PATH_COUNT.toLocaleString()} markets…`}

@@ -3314,3 +3314,82 @@ html:has(.kpi-bar) {
   outline-offset: 2px;
 }
 
+
+/* --- Design QA cluster A (#501, #504, #518) ---------------------------------
+   Appended as one block; nothing above is reordered. */
+
+/* Plan header breadcrumb (#501): the current-page crumb truncates with an
+   ellipsis like the plan-name input under it, instead of wrapping a long name
+   onto a second line with the "/" separator orphaned at its start. The home
+   crumb never shrinks; a linked crumb (the report's plan-name crumb) clips on
+   the anchor itself so its focus ring is never cut by an ancestor. */
+.workspace-breadcrumb ol {
+  flex-wrap: nowrap;
+}
+
+.workspace-breadcrumb li:first-child {
+  flex: 0 0 auto;
+}
+
+.workspace-breadcrumb li + li {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.workspace-breadcrumb li + li > a {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-breadcrumb li[aria-current='page'] {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Optional money fields (#518): the blank box says what blank means, in the
+   muted token in both themes. */
+.input-affix > input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+/* Print (#504): the theme tokens are set on :root[data-theme='dark'] and, for
+   a system-dark preference, :root:not([data-theme='light']) (both 0,2,0), so
+   the plain :root print override above never won and a dark-theme report
+   printed as a black page. These selectors are one step more specific and
+   restate the whole light palette from index.css, so paper is light and its
+   verdict and chart colors are the light-theme ones whatever the app theme. */
+@media print {
+  html:root,
+  html:root[data-theme='dark'],
+  html:root:not([data-theme='light']) {
+    color-scheme: light;
+    --bg: #fff;
+    --fg: #111;
+    --muted: #555;
+    --border: #bbb;
+    --surface-1: #fff;
+    --surface-2: #f2f2f2;
+    --accent: #84620f;
+    --accent-soft: #d9a521;
+    --accent-fg: #fff;
+    --good: #157a3a;
+    --warn: #a84e08;
+    --bad: #b91c1c;
+    --chart-1: #b8860b;
+    --chart-2: #6366f1;
+    --chart-3: #0c8f66;
+    --chart-4: #db2777;
+    --chart-5: #64748b;
+    --chart-6: #7c3aed;
+    --chart-7: #0891b2;
+    --chart-8: #b91c1c;
+    --shadow-card: none;
+  }
+}

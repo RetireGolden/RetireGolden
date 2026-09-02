@@ -24,7 +24,6 @@ import {
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
-import { DEFAULT_PATH_COUNT } from '../mc/pool'
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { serializeSinglePlan } from '../data/planFormat'
 import { CopyButton } from './CopyButton'
@@ -48,7 +47,7 @@ import { FundedRatioCard } from './sections/IncomeFloorSection'
 import { chartTooltipStyle } from './chartStyle'
 import { NonZeroTooltipContent } from './chartTooltip'
 import { frameH } from './chartFrame'
-import { useMcSuccessRate } from './useMcSuccessRate'
+import { useMcSuccessRateState } from './useMcSuccessRate'
 import {
   capitalLossCarryforwardHighlight,
   hasCapitalLossCarryforward,
@@ -341,13 +340,14 @@ function InheritedAccountSchedule({
       ) : null}
       <ScrollRegion label="Roth conversion details" style={{ border: 'none', marginTop: '0.5rem' }}>
         <table className="year-table">
+          <caption className="sr-only">Roth conversion details by year</caption>
           <thead>
             <tr>
-              <th>Year</th>
-              <th>Kind</th>
-              <th>Required</th>
-              <th>Executed</th>
-              <th>Voluntary</th>
+              <th scope="col">Year</th>
+              <th scope="col">Kind</th>
+              <th scope="col">Required</th>
+              <th scope="col">Executed</th>
+              <th scope="col">Voluntary</th>
             </tr>
           </thead>
           <tbody>
@@ -391,7 +391,6 @@ const tooltipProps = {
 const stackTooltipProps = { ...tooltipProps, content: NonZeroTooltipContent } as const
 
 /** "1,000", keeps verdict copy in sync if the default path count changes. */
-const PATH_COUNT_LABEL = DEFAULT_PATH_COUNT.toLocaleString()
 
 /**
  * The FIRE metrics + FI-target chart. Rendered as the leading card only for
@@ -556,33 +555,34 @@ export function YearByYearLedger({
       ) : null}
       <ScrollRegion label="Year-by-year table">
         <table className="year-table">
+          <caption className="sr-only">Year-by-year projection, one row per plan year</caption>
           <thead>
             <tr>
-              <th>Year</th>
-              <th>Age</th>
-              <th>Income</th>
-              <th>Expenses</th>
-              {hasLayeredSpending ? <th title="Must-fund floor spending, including required lifestyle and system costs.">Required</th> : null}
-              {hasLayeredSpending ? <th title="Required plus target lifestyle spending before ideal/excess upside.">Target</th> : null}
-              {hasLayeredSpending ? <th title="Ideal and excess spending intended above target.">Upside</th> : null}
-              <th>Contrib.</th>
-              <th>Match</th>
-              <th>RMD</th>
-              <th>Conversion</th>
-              <th>Withdrawals</th>
-              <th>Tax</th>
-              {hasAmt ? <th title="Federal alternative minimum tax included in Tax.">AMT</th> : null}
-              <th title="Displayed in the active dollar mode. IRMAA and ACA threshold checks use the nominal dollars for each rule.">
+              <th scope="col">Year</th>
+              <th scope="col">Age</th>
+              <th scope="col">Income</th>
+              <th scope="col">Expenses</th>
+              {hasLayeredSpending ? <th scope="col" title="Must-fund floor spending, including required lifestyle and system costs.">Required</th> : null}
+              {hasLayeredSpending ? <th scope="col" title="Required plus target lifestyle spending before ideal/excess upside.">Target</th> : null}
+              {hasLayeredSpending ? <th scope="col" title="Ideal and excess spending intended above target.">Upside</th> : null}
+              <th scope="col">Contrib.</th>
+              <th scope="col">Match</th>
+              <th scope="col">RMD</th>
+              <th scope="col">Conversion</th>
+              <th scope="col">Withdrawals</th>
+              <th scope="col">Tax</th>
+              {hasAmt ? <th scope="col" title="Federal alternative minimum tax included in Tax.">AMT</th> : null}
+              <th scope="col" title="Displayed in the active dollar mode. IRMAA and ACA threshold checks use the nominal dollars for each rule.">
                 MAGI ({dollarLabel})
               </th>
-              <th title="Additional long-term gains you could realize this year at $0 federal tax: your remaining loss carryforward absorbs gains dollar-for-dollar, then the 0% long-term bracket covers more on top.">Tax-free gains room</th>
-              {hasCarryforward ? <th title="Capital-loss carryforward remaining at year end.">Loss carryf'd</th> : null}
-              <th>Shortfall</th>
-              {hasLayeredSpending ? <th title="Required-floor shortfall / target-lifestyle shortfall / upside miss.">Layer miss</th> : null}
-              {hasLayeredSpending ? <th title="Guardrail action and flexible goal outcomes.">Guardrails</th> : null}
-              <th>Investable</th>
-              <th>Net worth</th>
-              <th className="year-table-flow">Flow</th>
+              <th scope="col" title="Additional long-term gains you could realize this year at $0 federal tax: your remaining loss carryforward absorbs gains dollar-for-dollar, then the 0% long-term bracket covers more on top.">Tax-free gains room</th>
+              {hasCarryforward ? <th scope="col" title="Capital-loss carryforward remaining at year end.">Loss carryf'd</th> : null}
+              <th scope="col">Shortfall</th>
+              {hasLayeredSpending ? <th scope="col" title="Required-floor shortfall / target-lifestyle shortfall / upside miss.">Layer miss</th> : null}
+              {hasLayeredSpending ? <th scope="col" title="Guardrail action and flexible goal outcomes.">Guardrails</th> : null}
+              <th scope="col">Investable</th>
+              <th scope="col">Net worth</th>
+              <th scope="col" className="year-table-flow">Flow</th>
             </tr>
           </thead>
           <tbody>
@@ -834,7 +834,9 @@ export function ResultsPage() {
   // Same debounced, plan-keyed run the KPI bar uses (shared in-flight, so this
   // never adds a second simulation) — the verdict must speak with both of the
   // engine's voices, not just the steady-markets ledger.
-  const mcRate = useMcSuccessRate(plan, !isPlanIncomplete(plan))
+  // The verdict quotes the same run and path count as the KPI bar (#497).
+  const { rate: mcRate, pathCount: mcPathCount } = useMcSuccessRateState(plan, !isPlanIncomplete(plan))
+  const pathCountLabel = mcPathCount.toLocaleString()
   // The first full year after depletion shows what the ledger already knows:
   // guaranteed income keeps flowing, and the uncovered gap is the engine's own
   // shortfall figure — no recomputation here. When depletion lands in the
@@ -890,7 +892,7 @@ export function ResultsPage() {
                 {mcRate !== null ? (
                   <>
                     {' '}
-                    Across {PATH_COUNT_LABEL} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
+                    Across {pathCountLabel} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
                     time, <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
                   </>
                 ) : null}{' '}
@@ -903,7 +905,7 @@ export function ResultsPage() {
                 {mcRate !== null ? (
                   <>
                     {' '}
-                    Across {PATH_COUNT_LABEL} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
+                    Across {pathCountLabel} varied markets, this plan succeeds {Math.round(mcRate * 100)}% of the
                     time, <Link to={`/plan/${plan.id}/monte-carlo`}>see Monte Carlo</Link>.
                   </>
                 ) : null}{' '}

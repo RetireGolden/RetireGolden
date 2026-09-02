@@ -52,6 +52,7 @@ import {
   type ModelKind,
 } from './marketModelPicker'
 import { currentStartYear, seedFromPlanId } from './useProjection'
+import { isHeadlineMcConfig, publishMcHeadline } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
 import { successBand } from './successBand'
 import { frameH } from './chartFrame'
@@ -154,6 +155,11 @@ export function MonteCarloPage() {
             setStatusMessage(
               `Simulation complete. ${Math.round(s.successRate * 100)} percent of markets sustain the plan.`,
             )
+            // The same simulation at higher precision is the headline number
+            // too: the KPI bar and Results quote this run and its count (#497).
+            if (isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })) {
+              publishMcHeadline(plan, { rate: s.successRate, pathCount: s.pathCount })
+            }
           }
         })
         .catch((e: unknown) => {
@@ -166,7 +172,7 @@ export function MonteCarloPage() {
           if (token === runToken.current) setRunning(false)
         })
     },
-    [plan, seed, model, stochasticLongevity, ltcShock],
+    [plan, seed, model, modelKind, returnVolPct, equityWeightPct, stochasticLongevity, ltcShock],
   )
 
   const runFrontiers = useCallback(() => {
@@ -252,7 +258,8 @@ export function MonteCarloPage() {
         <h2>Market model</h2>
         <p className="card-hint">
           Your deterministic projection assumes the same return and inflation every year. Monte Carlo replays the exact
-          same plan a thousand times with markets that vary year to year, then reports how often the money lasts. The
+          same plan {(summary?.pathCount ?? DEFAULT_PATH_COUNT).toLocaleString()} times with markets that vary year to
+          year, then reports how often the money lasts. The
           model below controls <em>how</em> those markets are generated, your expected returns and inflation from
           Assumptions stay the center of the distribution either way.
         </p>
@@ -334,7 +341,7 @@ export function MonteCarloPage() {
           <div className="field">
             <span className="field-label-row">
               <span className="field-label">Market draw</span>
-              <HelpTip text="The random sequence is reproducible: the same draw always produces the same thousand markets, so results don't jump around as you edit the plan. Re-roll to check the conclusion holds under a different draw, if success swings more than a point or two, run 10,000 paths. The exact seed number is under Advanced models." />
+              <HelpTip text="The random sequence is reproducible: the same draw always produces the same markets, so results don't jump around as you edit the plan. Re-roll to check the conclusion holds under a different draw, if success swings more than a point or two, run 10,000 paths. The exact seed number is under Advanced models." />
             </span>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => setSeed((Math.random() * 0xffffffff) >>> 0)}>
               Re-roll markets

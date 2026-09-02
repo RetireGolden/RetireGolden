@@ -15,6 +15,8 @@ import {
   QCD_SCALAR_HISTORY_NOTE,
   QCD_SECTION_HEADING,
 } from '../retirementActionQcdSchedule'
+import { retirementActionsCardParts } from '../retirementActionsCardVisibility'
+import { currentStartYear } from '../useProjection'
 import { Issues } from './shared'
 
 const RetirementActionsEditor = lazy(async () => {
@@ -41,6 +43,10 @@ export function StrategySection() {
   const orderDetailId = useId()
   const thisYear = new Date().getFullYear()
   const scheduledGiftYears = namedQcdYears(plan)
+  // The Retirement actions card mounts only with an IRA, donor, gift, or
+  // migrated action to show; the charitable copy must not point at it
+  // otherwise (#518).
+  const retirementActionsCardShown = retirementActionsCardParts(plan, currentStartYear()).mounts
   return (
     <section>
       <div className="card">
@@ -79,6 +85,7 @@ export function StrategySection() {
             label="Taxable safety-net floor"
             help="An optional minimum cash + taxable reserve (today's dollars) the plan tries to keep liquid. Spending is funded from other accounts first so this cushion stays intact, and fill-to-target Roth conversions are trimmed so their tax bill never forces you below the floor. It is only dipped into as a last resort. Leave blank for no floor."
             hint="Blank = no floor."
+            placeholder="No floor"
             value={plan.strategies.taxableSafetyNetFloor ?? null}
             allowNull
             onCommit={(v) => update((d) => void (d.strategies.taxableSafetyNetFloor = v ?? undefined))}
@@ -88,6 +95,7 @@ export function StrategySection() {
               label="Survivor reserve target (today's $)"
               help="The minimum investable balance the surviving spouse should have in the first survivor year, in today's dollars (deflated by inflation). Used as a hard constraint by the decision engine's protect-survivor-liquidity objective, candidates whose survivor-year investable falls below this target are disqualified. Leave blank for no reserve constraint."
               hint="Blank = no survivor reserve constraint."
+              placeholder="No reserve"
               value={plan.strategies.survivorReserveTarget ?? null}
               allowNull
               onCommit={(v) => update((d) => void (d.strategies.survivorReserveTarget = v ?? undefined))}
@@ -300,9 +308,19 @@ export function StrategySection() {
             this recurring amount down for its year. Both surfaces say it. */}
         <p className="card-hint">
           This recurring amount gives every year from age 70½, with no charity, date, or source
-          IRA behind it. To schedule one specific gift, use{' '}
-          <strong>{QCD_SECTION_HEADING}</strong> in the <strong>Retirement actions</strong> card
-          above. {QCD_NAMED_STANDS_DOWN_SCALAR}
+          IRA behind it.{' '}
+          {retirementActionsCardShown ? (
+            <>
+              To schedule one specific gift, use <strong>{QCD_SECTION_HEADING}</strong> in the{' '}
+              <strong>Retirement actions</strong> card above.
+            </>
+          ) : (
+            <>
+              Scheduling one specific gift needs an owned traditional IRA on the plan: once Accounts has one, a{' '}
+              <strong>Retirement actions</strong> card appears above with <strong>{QCD_SECTION_HEADING}</strong>.
+            </>
+          )}{' '}
+          {QCD_NAMED_STANDS_DOWN_SCALAR}
         </p>
         {plan.strategies.qcdAnnual > 0 && scheduledGiftYears.length > 0 ? (
           <div className="callout callout--warn" role="status">

@@ -15,6 +15,7 @@ import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
 import { projectPlan, type ProjectionView } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
+import { ageDelta, deterministicSuccessPct, formatDelta, moneyLastsDeltaYears, type DeltaUnit } from './compareDeltas'
 
 const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
 
@@ -27,10 +28,10 @@ function resultLabel(summary: ProjectionSummary, endYear: number): string {
   return summary.depletionYear === null ? `Full plan through ${endYear}` : `Depletes in ${summary.depletionYear}`
 }
 
-function primaryAgeIn(plan: Plan, year: number | null): string {
-  if (year === null) return '—'
+function primaryAgeIn(plan: Plan, year: number | null): number | null {
+  if (year === null) return null
   const dobYear = Number(plan.household.people[0]?.dob.slice(0, 4))
-  return Number.isFinite(dobYear) ? String(year - dobYear) : '—'
+  return Number.isFinite(dobYear) ? year - dobYear : null
 }
 
 function deltaClass(value: number): string | undefined {
@@ -38,32 +39,35 @@ function deltaClass(value: number): string | undefined {
   return value > 0 ? 'delta-pos' : 'delta-neg'
 }
 
-function moneyDelta(value: number): string {
-  const sign = value > 0 ? '+' : ''
-  return `${sign}${fmtMoneyCompact(value)}`
-}
-
+/**
+ * One metric row. Every row that differs gets a formatted delta, not only the
+ * money rows: years, ages, and percentage points are the largest differences
+ * a diff page can show (#499). `delta` null means the difference is undefined
+ * for this pair (one side never depletes), and the cell says so with a dash.
+ */
 function MetricRow({
   label,
   a,
   b,
   delta,
+  unit = 'money',
   higherIsGood = true,
 }: {
   label: string
   a: string
   b: string
-  delta?: number
+  delta: number | null
+  unit?: DeltaUnit
   higherIsGood?: boolean
 }) {
-  const adjustedDelta = delta === undefined ? undefined : higherIsGood ? delta : -delta
+  const adjustedDelta = delta === null ? null : higherIsGood ? delta : -delta
   return (
     <tr>
-      <th>{label}</th>
+      <th scope="row">{label}</th>
       <td>{a}</td>
       <td>{b}</td>
-      <td className={adjustedDelta === undefined ? undefined : deltaClass(adjustedDelta)}>
-        {delta === undefined ? '—' : moneyDelta(delta)}
+      <td className={adjustedDelta === null ? undefined : deltaClass(adjustedDelta)}>
+        {delta === null ? '—' : formatDelta(delta, unit)}
       </td>
     </tr>
   )
@@ -110,11 +114,23 @@ export function ComparePlansPage() {
 
   const options = summaries ?? []
   const canCompare = left !== null && right !== null && left.plan.id !== right.plan.id
-  const rows = useMemo(() => {
+  const rows = useMemo((): Parameters<typeof MetricRow>[0][] => {
     if (!canCompare) return []
     const l = left.view.summary
     const r = right.view.summary
+    const ageA = primaryAgeIn(left.plan, l.depletionYear)
+    const ageB = primaryAgeIn(right.plan, r.depletionYear)
     return [
+      {
+        label: 'Money lasts',
+        a: resultLabel(l, left.view.result.endYear),
+        b: resultLabel(r, right.view.result.endYear),
+        delta: moneyLastsDeltaYears(
+          { depletionYear: l.depletionYear, endYear: left.view.result.endYear },
+          { depletionYear: r.depletionYear, endYear: right.view.result.endYear },
+        ),
+        unit: 'years',
+      },
       {
         label: 'Ending net worth',
         a: fmtMoneyCompact(l.endingNetWorth),
@@ -135,13 +151,17 @@ export function ComparePlansPage() {
       },
       {
         label: 'Success % (deterministic)',
-        a: l.depletionYear === null ? '100%' : '0%',
-        b: r.depletionYear === null ? '100%' : '0%',
+        a: `${deterministicSuccessPct(l.depletionYear)}%`,
+        b: `${deterministicSuccessPct(r.depletionYear)}%`,
+        delta: deterministicSuccessPct(r.depletionYear) - deterministicSuccessPct(l.depletionYear),
+        unit: 'pp',
       },
       {
         label: 'Depletion age (primary)',
-        a: primaryAgeIn(left.plan, l.depletionYear),
-        b: primaryAgeIn(right.plan, r.depletionYear),
+        a: ageA === null ? '—' : String(ageA),
+        b: ageB === null ? '—' : String(ageB),
+        delta: ageDelta(ageA, ageB),
+        unit: 'years',
       },
       {
         label: 'Lifetime tax + penalties',
@@ -197,27 +217,31 @@ export function ComparePlansPage() {
           {!canCompare ? (
             <div className="callout callout--info">{SAME_PLAN_NOTICE}</div>
           ) : (
-            <ScrollRegion label="Plan comparison">
-              <table className="year-table compare-table">
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    <th className="compare-table-plan-name">{left.plan.name}</th>
-                    <th className="compare-table-plan-name">{right.plan.name}</th>
-                    <th>Plan B − Plan A</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th>Money lasts</th>
-                    <td>{resultLabel(left.view.summary, left.view.result.endYear)}</td>
-                    <td>{resultLabel(right.view.summary, right.view.result.endYear)}</td>
-                    <td>—</td>
-                  </tr>
-                  {rows.map((row) => <MetricRow key={row.label} {...row} />)}
-                </tbody>
-              </table>
-            </ScrollRegion>
+            <>
+              <ScrollRegion label="Plan comparison">
+                <table className="year-table compare-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Metric</th>
+                      <th scope="col" className="compare-table-plan-name">{left.plan.name}</th>
+                      <th scope="col" className="compare-table-plan-name">{right.plan.name}</th>
+                      <th scope="col">Plan B − Plan A</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => <MetricRow key={row.label} {...row} />)}
+                  </tbody>
+                </table>
+              </ScrollRegion>
+              {/* The delta colors are a verdict on Plan B, so the page says
+                  which way each row reads (#499): lifetime tax is "lower is
+                  better", everything else "higher or later is better". */}
+              <p className="field-hint compare-delta-legend">
+                Plan B − Plan A: <span className="delta-pos">green</span> means Plan B does better on that row,{' '}
+                <span className="delta-neg">red</span> means worse. Lifetime tax reads lower as better; every other row
+                reads higher or later as better. A dash means the difference is undefined for this pair.
+              </p>
+            </>
           )}
         </>
       )}
