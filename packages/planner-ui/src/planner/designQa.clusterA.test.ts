@@ -17,6 +17,11 @@ function sheet(relative: string): string {
   return readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
 }
 
+/** The same, for an absolute path (the source sweeps). */
+function text(path: string): string {
+  return readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
+}
+
 const css = sheet('./planner.css')
 const indexCss = sheet('../index.css')
 // Everything this cluster added sits in one commented block at the end of the sheet.
@@ -320,7 +325,7 @@ describe('Design-QA cluster A: source pins', () => {
     const srcDir = fileURLToPath(new URL('..', import.meta.url))
     const bare = (readdirSync(srcDir, { recursive: true }) as string[])
       .filter((f: string) => /\.(tsx?|css)$/.test(f) && !/\.test\.tsx?$/.test(f))
-      .filter((f: string) => readFileSync(`${srcDir}/${f}`, 'utf8').includes('table-scroll'))
+      .filter((f: string) => text(`${srcDir}/${f}`).includes('table-scroll'))
     expect(bare).toEqual([])
     // The converted tables keep the full-height, boxless rendering the bare
     // div had (`grow`, no border): only horizontal scrolling and its cue are new.
@@ -369,5 +374,15 @@ describe('Design-QA cluster A: source pins', () => {
     const mcPair = card.indexOf('await Promise.all([')
     expect(release).toBeGreaterThan(0)
     expect(mcPair).toBeGreaterThan(release)
+  })
+})
+
+describe('Design-QA cluster A: pin hygiene', () => {
+  it('reads every file through a CRLF-normalising helper, so the pins hold on a Windows checkout', () => {
+    for (const file of ['./designQa.clusterA.test.ts', './designQa.chrome.test.ts']) {
+      const reads = sheet(file).split('\n').filter((line) => line.includes('readFileSync' + '('))
+      expect(reads.length, file).toBeGreaterThan(0)
+      for (const line of reads) expect(line, `${file}: ${line.trim()}`).toContain(".replace(/\\r\\n/g, '\\n')")
+    }
   })
 })
