@@ -448,7 +448,7 @@ export function InsuranceSection() {
         </div>
 
         <LtcStressPanel />
-        <Issues />
+        <Issues section="insurance" />
       </div>
       <LearnAboutScreen route="/plan/:planId/insurance" />
     </section>

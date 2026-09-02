@@ -11,6 +11,8 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
+import { useFieldIssue } from './useFieldIssue'
+
 import { LearnLink, type LearnHook } from '../learn/LearnLink'
 import { capIsoDateYear, editingMoneyText, nextMoneyFieldText } from './fieldInput'
 import { fmtMoney, parseAmount } from './format'
@@ -24,6 +26,12 @@ export interface SourceLink {
 
 interface BaseProps {
   label: string
+  /**
+   * Schema path of the value this field edits (`strategies.qcdAnnual`,
+   * `incomes.0.endAge`). When the engine rejects the plan at that path, the
+   * field shows the issue inline instead of leaving it to a card-level list.
+   */
+  path?: string
   /** Short inline note shown below the field — only for things that change what you type. */
   hint?: string
   /** Longer explanation behind an ⓘ help button (hover/focus/click). Prefer this over hint for background detail. */
@@ -199,9 +207,18 @@ export function ReadonlyField({ label, help, learn, value }: BaseProps & { value
   )
 }
 
-function FieldShell({ label, hint, help, learn, source, id, children }: BaseProps & { id: string; children: ReactNode }) {
+function FieldShell({
+  label,
+  hint,
+  help,
+  learn,
+  source,
+  id,
+  error,
+  children,
+}: BaseProps & { id: string; error?: string | null; children: ReactNode }) {
   return (
-    <div className="field">
+    <div className={error ? 'field field--invalid' : 'field'}>
       <span className="field-label-row">
         <label className="field-label" htmlFor={id}>
           {label}
@@ -209,8 +226,21 @@ function FieldShell({ label, hint, help, learn, source, id, children }: BaseProp
         {help || hint || learn || source ? <HelpTip text={help} hint={hint} learn={learn} source={source} id={`${id}-help`} /> : null}
       </span>
       {children}
+      {/* The message the input's aria-describedby points at; rendered only
+          while there is one, so nothing announces on a valid field. */}
+      {error ? (
+        <p className="field-error" id={`${id}-error`}>
+          {error}
+        </p>
+      ) : null}
     </div>
   )
+}
+
+/** aria-describedby from the ids that exist. */
+function describedBy(...ids: Array<string | undefined | false | null>): string | undefined {
+  const list = ids.filter((x): x is string => typeof x === 'string' && x !== '')
+  return list.length > 0 ? list.join(' ') : undefined
 }
 
 interface NumericProps extends BaseProps {
@@ -335,6 +365,7 @@ export function NumberField({
   help,
   learn,
   source,
+  path,
   value,
   onCommit,
   allowNull,
@@ -345,6 +376,13 @@ export function NumberField({
 }: NumericProps & { suffix?: string; step?: number; min?: number; max?: number }) {
   const id = useId()
   const { text, setText, setFocused } = useLocalText(value === null ? '' : String(value))
+  // A typed value outside the field's own min/max is flagged beside the field
+  // and the nearest allowed value is what the plan receives (#476, #494): the
+  // engine is never handed an age or rate it cannot model, the message says
+  // why, and on leaving the field the text snaps to the value the plan holds.
+  const [rangeError, setRangeError] = useState<string | null>(null)
+  const issue = useFieldIssue(path)
+  const error = rangeError ?? issue?.advice ?? null
   // The suffix names the unit ("%"); it is the input's description, not
   // decoration, so a screen reader announces "22, percent" and not just "22".
   const suffixId = suffix ? `${id}-unit` : undefined
@@ -357,19 +395,36 @@ export function NumberField({
       step={step}
       min={min}
       max={max}
-      aria-describedby={suffixId}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={describedBy(suffixId, error && `${id}-error`)}
       onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
+      onBlur={() => {
+        setFocused(false)
+        setRangeError(null)
+      }}
       onChange={(e) => {
         setText(e.target.value)
         const n = Number(e.target.value)
-        if (e.target.value.trim() === '') onCommit(allowNull ? null : 0)
-        else if (Number.isFinite(n)) onCommit(n)
+        if (e.target.value.trim() === '') {
+          setRangeError(null)
+          onCommit(allowNull ? null : 0)
+        } else if (Number.isFinite(n)) {
+          if (min !== undefined && n < min) {
+            setRangeError(`Must be at least ${min}`)
+            onCommit(min)
+          } else if (max !== undefined && n > max) {
+            setRangeError(`Must be at most ${max}`)
+            onCommit(max)
+          } else {
+            setRangeError(null)
+            onCommit(n)
+          }
+        }
       }}
     />
   )
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
       {suffix ? (
         <div className="input-affix">
           {input}

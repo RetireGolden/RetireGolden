@@ -338,7 +338,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     expect(select).toBeTruthy()
     expect(select!.options).toHaveLength(16)
     expect(container.textContent).toContain('Fields this scenario changes:')
-    expect(container.textContent).toContain('/household/people')
+    expect(container.textContent).toContain('Household: People')
 
     await act(async () => {
       select!.value = 'pension'
@@ -410,7 +410,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       taxCalculatorFor,
     )
     expect(add.disabled).toBe(false)
-    expect(container.textContent).toContain('/expenses/baseAnnual')
+    expect(container.textContent).toContain('Spending: Baseline annual spending')
 
     await act(async () => add.click())
 
@@ -487,7 +487,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     const fieldset = container.querySelector('fieldset.editable-region')
     expect(fieldset?.hasAttribute('disabled')).toBe(true)
     expect(container.textContent).toContain('Fields this scenario changes:')
-    expect(container.textContent).toContain('/household/people')
+    expect(container.textContent).toContain('Household: People')
   })
 
   it('requires a care recipient for couples and exposes modeled relocation states as options', async () => {
@@ -517,7 +517,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     })
     await advanceLeverPreview()
     expect(add?.disabled).toBe(false)
-    expect(container.textContent).toContain('/careEvents')
+    expect(container.textContent).toContain('Care events')
 
     await act(async () => {
       leverSelect!.value = 'relocation'
@@ -580,7 +580,7 @@ describe('ScenariosPage comparison lifecycle', () => {
         (label) => label.textContent === 'Care recipient',
       ),
     ).toBe(false)
-    expect(container.textContent).toContain('/careEvents')
+    expect(container.textContent).toContain('Care events')
     const add = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent?.includes('Add scenario'),
     )
@@ -704,7 +704,7 @@ describe('ScenariosPage comparison lifecycle', () => {
         (label) => label.textContent === 'Property to sell',
       ),
     ).toBe(false)
-    expect(container.textContent).toContain('/accounts')
+    expect(container.textContent).toContain('Accounts')
     const add = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent?.includes('Add scenario'),
     )

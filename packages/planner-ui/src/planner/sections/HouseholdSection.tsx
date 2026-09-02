@@ -300,7 +300,7 @@ export function HouseholdSection() {
           </button>
         </div>
 
-        <Issues />
+        <Issues section="household" />
       </div>
     </section>
   )

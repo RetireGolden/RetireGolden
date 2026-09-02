@@ -1,25 +1,223 @@
 /**
- * The engine's validation issues as the UI reads them. `parsePlan` reports
- * each issue as `path.segments: message` (`(root)` for a plan-level one);
- * a derived panel asks here whether the entries it prices are the ones
- * failing, and which planner sections the failing entries live on, instead
- * of matching the strings itself (#512, #517, review rounds 2 and 3).
+ * Validation issues as people read them (#452, #459, #489–#495, #500, #502,
+ * #503, #511, #512, #517, #523, #526, #530, #531).
+ *
+ * The engine reports a failed parse as `path: message` strings, where the
+ * path is the schema path (`strategies.qcdAnnual`, `incomes.0.endAge`) and
+ * the message is Zod's ("Too small: expected number to be >=0"). Those are
+ * exact and stable, and they are what a developer wants. A person wants the
+ * section, the field's label, and what to do about it, and wants the note
+ * beside the field or at least in the right card. This module turns the
+ * strings into that; it never decides what is valid (the engine does).
  */
 
 import { SECTION_TITLES } from './sectionTitles'
 
 export interface ParsedIssue {
-  /** Path segments, e.g. ['incomeFloor', 'ladders', '10', 'endYear']; empty for a plan-level issue. */
-  path: string[]
+  /** Raw schema path, dot-joined, as the engine reported it (`(root)` for a top-level issue). */
+  path: string
+  /** Raw message as the engine reported it. */
   message: string
+  /** Where the field lives, for scoping card-level lists. */
+  section: IssueSection
+  /** "Income 1: End age" — the section item and the field, for people. */
+  label: string
+  /** "Must be at least 60" — the message, for people. */
+  advice: string
 }
 
-/** Split `a.b.0: message` into its segments and message; a string with no separator is all message. */
+export type IssueSection =
+  | 'household'
+  | 'assumptions'
+  | 'strategy'
+  | 'spending'
+  | 'accounts'
+  | 'income'
+  | 'insurance'
+  | 'income-floor'
+  | 'unknown'
+
+/** Split an engine issue string at its first `: ` (the path never contains one). */
 export function parseIssue(issue: string): ParsedIssue {
-  const sep = issue.indexOf(': ')
-  if (sep < 0) return { path: [], message: issue }
-  const path = issue.slice(0, sep)
-  return { path: path === '(root)' ? [] : path.split('.'), message: issue.slice(sep + 2) }
+  const at = issue.indexOf(': ')
+  const path = at < 0 ? '(root)' : issue.slice(0, at)
+  const message = at < 0 ? issue : issue.slice(at + 2)
+  return { path, message, section: sectionOfPath(path), label: labelOfPath(path), advice: adviceOf(message) }
+}
+
+export function parseIssues(issues: readonly string[]): ParsedIssue[] {
+  return issues.map(parseIssue)
+}
+
+const SECTION_BY_ROOT: Record<string, IssueSection> = {
+  household: 'household',
+  assumptions: 'assumptions',
+  strategies: 'strategy',
+  expenses: 'spending',
+  accounts: 'accounts',
+  incomes: 'income',
+  insurance: 'insurance',
+  careEvents: 'insurance',
+  incomeFloor: 'income-floor',
+}
+
+export function sectionOfPath(path: string): IssueSection {
+  const root = path.split('.')[0] ?? ''
+  return SECTION_BY_ROOT[root] ?? 'unknown'
+}
+
+/** Containers that hold a numbered list of items, and what one item is called. */
+const ITEM_NAMES: Record<string, string> = {
+  people: 'Person',
+  accounts: 'Account',
+  incomes: 'Income',
+  insurance: 'Insurance policy',
+  careEvents: 'Care event',
+  ladders: 'TIPS ladder',
+  phases: 'Phase',
+  goals: 'Goal',
+  scenarios: 'Scenario',
+  earnings: 'Earnings year',
+  cashValueSchedule: 'Schedule year',
+}
+
+/** Leaves whose camelCase does not read well split, or that carry an acronym or unit. */
+const LEAF_LABELS: Record<string, string> = {
+  qcdAnnual: 'QCD annual amount',
+  taxableSafetyNetFloor: 'Taxable safety-net floor',
+  stateAndLocalTaxes: 'State and local taxes',
+  localIncomeTaxPct: 'Local income tax %',
+  stateEffectiveTaxPctOverride: 'State effective tax % (override)',
+  inflationPct: 'Inflation %',
+  healthcareInflationPct: 'Healthcare extra inflation %',
+  defaultReturnPct: 'Default return %',
+  heirTaxRatePct: 'Heir tax rate %',
+  cashValueSchedule: 'Cash value schedule',
+  cashValueGrowthPct: 'Cash value growth %',
+  premiumEndAge: 'Premium end age',
+  planningAge: 'Planning age',
+  retirementAge: 'Retirement age',
+  annualGross: 'Annual gross',
+  realRaisePct: 'Real raise rate %',
+  endAge: 'End age',
+  startAge: 'Start age',
+  startYear: 'Start year',
+  endYear: 'End year',
+  fromAge: 'From age',
+  toAge: 'To age',
+  durationYears: 'Duration (years)',
+  multiplier: 'Multiplier',
+  baseAnnual: 'Baseline annual spending',
+  payoffYear: 'Payoff year',
+  plannedSaleYear: 'Planned sale year',
+  interestRatePct: 'Interest rate %',
+  dividendYieldPct: 'Dividend yield %',
+  qualifiedDividendPct: 'Qualified dividend %',
+  piaMonthly: 'PIA (monthly)',
+  claimAge: 'Claim age',
+  years: 'Years',
+  months: 'Months',
+  dob: 'Date of birth',
+  ssHaircut: 'Social Security haircut',
+  magiTarget: 'MAGI target',
+  balance: 'Balance',
+  amount: 'Amount',
+  year: 'Year',
+}
+
+/** Roots and mid-path objects that name a card rather than a list. */
+const GROUP_LABELS: Record<string, string> = {
+  household: 'Household',
+  assumptions: 'Assumptions',
+  strategies: 'Strategy',
+  expenses: 'Spending',
+  incomeFloor: 'Income floor',
+  itemizedDeductions: 'Itemized deductions',
+  longevity: 'Longevity',
+  rothConversion: 'Roth conversion',
+  withdrawal: 'Withdrawal strategy',
+  charitable: 'Charitable giving',
+  survivor: 'Survivor',
+}
+
+function words(camel: string): string {
+  const spaced = camel.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase()
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
+/**
+ * `incomes.0.endAge` → "Income 1: End age"; `household.people.1.longevity.planningAge`
+ * → "Person 2: Planning age"; `strategies.itemizedDeductions.stateAndLocalTaxes`
+ * → "Itemized deductions: State and local taxes". The last numbered item wins as
+ * the prefix; a bare root ("Assumptions") is the prefix when there is none.
+ */
+export function labelOfPath(path: string): string {
+  if (path === '(root)' || path === '') return 'Plan'
+  const segments = path.split('.')
+  // A numbered item ("Person 2") is the card the field sits on and wins; with
+  // no item, the last named group ("Itemized deductions") is the card.
+  let item: string | null = null
+  let group: string | null = null
+  const leaf = segments[segments.length - 1] ?? ''
+  for (let i = 0; i < segments.length - 1; i++) {
+    const seg = segments[i]!
+    const next = segments[i + 1]!
+    if (/^\d+$/.test(next) && ITEM_NAMES[seg]) {
+      item = `${ITEM_NAMES[seg]} ${Number(next) + 1}`
+      i++
+      continue
+    }
+    if (GROUP_LABELS[seg]) group = GROUP_LABELS[seg]
+  }
+  const prefix = item ?? group
+  if (/^\d+$/.test(leaf)) {
+    // A whole numbered item is wrong ("insurance.0"): name the item itself.
+    const container = segments[segments.length - 2] ?? ''
+    return `${ITEM_NAMES[container] ?? words(container)} ${Number(leaf) + 1}`
+  }
+  const field = LEAF_LABELS[leaf] ?? words(leaf)
+  return prefix && prefix !== field ? `${prefix}: ${field}` : field
+}
+
+/**
+ * Zod's wording, translated. Custom engine messages (anything not in Zod's
+ * "Too small" / "Too big" / "Invalid input" family) pass through unchanged,
+ * since those were written for people already.
+ */
+export function adviceOf(message: string): string {
+  let m: RegExpMatchArray | null
+  if ((m = message.match(/^Too small: expected .* to be >=(-?[\d.]+)/))) return `Must be at least ${m[1]}`
+  if ((m = message.match(/^Too small: expected .* to be >(-?[\d.]+)/))) return `Must be more than ${m[1]}`
+  if ((m = message.match(/^Too big: expected .* to be <=(-?[\d.]+)/))) return `Must be at most ${m[1]}`
+  if ((m = message.match(/^Too big: expected .* to be <(-?[\d.]+)/))) return `Must be less than ${m[1]}`
+  if (/^Too small: expected (array|string) /.test(message)) return 'Add at least one entry'
+  if (/^Invalid input: expected number/.test(message)) return 'Enter a number'
+  if (/^Invalid input: expected string/.test(message)) return 'Enter a value'
+  if (/^Invalid input: expected boolean/.test(message)) return 'Choose on or off'
+  if (/^Invalid option/.test(message)) return 'Choose one of the listed options'
+  if (/^Invalid input$/.test(message)) return 'Enter a valid value'
+  if (/^Invalid date/.test(message)) return 'Enter a valid date'
+  return message
+}
+
+/** The issues that belong to one section's card, plus any the router cannot place. */
+export function issuesForSection(issues: readonly ParsedIssue[], section: IssueSection): ParsedIssue[] {
+  return issues.filter((i) => i.section === section || i.section === 'unknown')
+}
+
+// ---------------------------------------------------------------------------
+// Path predicates and section links (#512, #517, PR #547)
+//
+// A derived panel asks whether the entries it prices are the ones failing, and
+// which planner pages those entries live on, rather than matching the issue
+// strings itself. These read the same paths the labels above do, so there is
+// one parser for both.
+// ---------------------------------------------------------------------------
+
+/** An issue's path as segments: `incomeFloor.ladders.10.endYear` → four of them, a plan-level issue → none. */
+export function issuePathSegments(issue: string): string[] {
+  const { path } = parseIssue(issue)
+  return path === '(root)' ? [] : path.split('.')
 }
 
 const toSegments = (path: string | readonly string[]): string[] =>
@@ -32,7 +230,7 @@ const toSegments = (path: string | readonly string[]): string[] =>
  */
 export function hasIssueUnder(issues: readonly string[], ...paths: readonly (string | readonly string[])[]): boolean {
   return issues.some((issue) => {
-    const { path } = parseIssue(issue)
+    const path = issuePathSegments(issue)
     return paths.some((p) => {
       const want = toSegments(p)
       return want.length <= path.length && want.every((segment, i) => path[i] === segment)
@@ -44,7 +242,7 @@ export function hasIssueUnder(issues: readonly string[], ...paths: readonly (str
 export function hasIssueAt(issues: readonly string[], path: string | readonly string[]): boolean {
   const want = toSegments(path)
   return issues.some((issue) => {
-    const { path: got } = parseIssue(issue)
+    const got = issuePathSegments(issue)
     return got.length === want.length && want.every((segment, i) => got[i] === segment)
   })
 }
@@ -52,7 +250,9 @@ export function hasIssueAt(issues: readonly string[], path: string | readonly st
 /**
  * The planner section (route segment under /plan/:id/) that edits each
  * top-level plan key, in rail order. A key with no editing section maps to
- * nothing and the caller falls back to generic wording.
+ * nothing and the caller falls back to generic wording. This is a wider map
+ * than `SECTION_BY_ROOT` above, which names only the cards that carry a
+ * scoped issue list; a key here need only have a page to link to.
  */
 const SECTION_BY_PLAN_KEY: Record<string, string> = {
   household: 'household',
@@ -71,18 +271,21 @@ const SECTION_BY_PLAN_KEY: Record<string, string> = {
 
 const RAIL_ORDER = Object.keys(SECTION_TITLES)
 
-export interface IssueSection {
+export interface IssueSectionLink {
   /** Route segment, e.g. 'income-floor'; link to it as `../${segment}` from any plan page. */
   segment: string
   title: string
 }
 
 /** The sections the issues' entries live on, each once, in rail order; empty when none is known. */
-export function sectionsWithIssues(issues: readonly string[]): IssueSection[] {
+export function sectionsWithIssues(issues: readonly string[]): IssueSectionLink[] {
   const segments = new Set<string>()
   for (const issue of issues) {
-    const key = parseIssue(issue).path[0]
-    const segment = key === undefined ? undefined : SECTION_BY_PLAN_KEY[key]
+    // A Social Security stream lives in `incomes` but is edited on its own
+    // page, so the router's answer wins wherever it can place the path.
+    const routed = sectionOfPath(parseIssue(issue).path)
+    const key = issuePathSegments(issue)[0]
+    const segment = routed === 'social-security' ? 'social-security' : key === undefined ? undefined : SECTION_BY_PLAN_KEY[key]
     if (segment !== undefined) segments.add(segment)
   }
   return RAIL_ORDER.filter((s) => segments.has(s)).map((segment) => ({ segment, title: SECTION_TITLES[segment]! }))
@@ -96,7 +299,7 @@ export function sectionsWithIssues(issues: readonly string[]): IssueSection[] {
 export function withoutIssuesBeyond(issues: readonly string[], listPath: string | readonly string[], length: number): string[] {
   const list = toSegments(listPath)
   return issues.filter((issue) => {
-    const { path } = parseIssue(issue)
+    const path = issuePathSegments(issue)
     if (path.length <= list.length || !list.every((segment, i) => path[i] === segment)) return true
     const index = Number(path[list.length])
     return !Number.isInteger(index) || index < length

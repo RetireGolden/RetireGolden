@@ -339,7 +339,7 @@ export function StrategySection() {
             {QCD_SCALAR_HISTORY_NOTE}
           </div>
         ) : null}
-        <Issues />
+        <Issues section="strategy" />
       </div>
 
       <div className="card">

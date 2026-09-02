@@ -28,6 +28,12 @@ import { MoneyField, NumberField, PercentField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { ScrollRegion } from './ScrollRegion'
 import { scenarioPatchSignature, uniqueScenarioName, withDistinctNames } from './scenarioNames'
+import { labelOfPath } from './validationIssues'
+
+/** A JSON-pointer or dotted plan path as a person reads it: `/assumptions/ssHaircut` → "Assumptions: Social Security haircut". */
+function fieldName(path: string): string {
+  return labelOfPath(path.replace(/\/-$/, '').replace(/^\//, '').replace(/\//g, '.'))
+}
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
@@ -407,7 +413,7 @@ function AddScenario() {
       ) : preview?.ok ? (
         <p className="card-hint">
           <strong>Fields this scenario changes:</strong>{' '}
-          <code>{preview.operationPaths.join(', ')}</code>
+          {preview.operationPaths.map(fieldName).join('; ')}
         </p>
       ) : null}
       {saveError ? <p className="card-hint" role="alert">{saveError}</p> : null}
@@ -1055,7 +1061,7 @@ function ComparableScenariosPage() {
                       <td style={{ maxWidth: '16rem', textAlign: 'left' }}>
                         {row.diff.slice(0, 4).map((d) => (
                           <span key={d.path} className="diff-chip" title={`${d.path}: ${JSON.stringify(d.baseValue)} → ${JSON.stringify(d.scenarioValue)}`}>
-                            {d.path.split('.').slice(-2).join('.')}
+                            {fieldName(d.path)}
                           </span>
                         ))}
                         {row.diff.length > 4 ? <span className="diff-chip">+{row.diff.length - 4} more</span> : null}

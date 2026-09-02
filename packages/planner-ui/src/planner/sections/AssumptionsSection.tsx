@@ -242,7 +242,7 @@ export function AssumptionsSection() {
           {LATEST_PACK_YEAR} figures. <Link to="/disclaimer">See where the numbers come from →</Link>{' '}
           <Link to={`/plan/${plan.id}/assumptions-card`}>See every live assumption on one card →</Link>
         </p>
-        <Issues />
+        <Issues section="assumptions" />
       </div>
       <LearnAboutScreen route="/plan/:planId/assumptions" limit={10} />
     </section>

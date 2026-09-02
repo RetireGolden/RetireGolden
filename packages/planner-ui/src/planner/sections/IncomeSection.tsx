@@ -220,7 +220,7 @@ export function IncomeSection() {
               </button>
             ))}
         </div>
-        <Issues />
+        <Issues section="income" />
       </div>
     </section>
   )
