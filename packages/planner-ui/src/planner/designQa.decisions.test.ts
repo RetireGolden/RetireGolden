@@ -56,8 +56,16 @@ describe('D9 (#465): one fixed column rhythm for every form grid', () => {
   })
 
   it('a nested well no longer sets a third column width of its own', () => {
-    expect(css).not.toMatch(/\.nested-control-grid,\n\.nested-phase-grid \{\s*grid-template-columns/)
     expect(css).not.toMatch(/repeat\(auto-fit, minmax\(11\.5rem, 1fr\)\)/)
+    // The two marker classes carried nothing but that override, so they are
+    // gone from the markup rather than left dangling with no rule behind them.
+    expect(css).not.toContain('nested-control-grid')
+    expect(css).not.toContain('nested-phase-grid')
+    for (const file of ['AllocationPanel', 'AssumptionsSection', 'RetirementAccountEditors', 'AccountEditorSharedFields']) {
+      const source = sheet(`./sections/${file}.tsx`)
+      expect(source, file).not.toContain('nested-control-grid')
+      expect(source, file).not.toContain('nested-phase-grid')
+    }
   })
 })
 

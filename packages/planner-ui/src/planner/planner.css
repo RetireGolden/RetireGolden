@@ -905,9 +905,12 @@
 }
 
 /* A nested well is a form grid too, and it is inset again inside the item row
-   that already inset it, so its flexible tracks were the third width on the
-   page. It inherits the shared fixed track from `.form-grid` (#465, D9); only
-   the count differs, which is what a narrower container is supposed to change. */
+   that already inset it, so its own `auto-fit` tracks were the third field
+   width on one page. It now takes the shared fixed track from `.form-grid`
+   (#465, D9) — only the count differs, which is what a narrower container is
+   supposed to change. The two marker classes the wells used to carry held
+   nothing but that override, so they are gone from the markup as well. The
+   phase-row rule below is a separator, not a grid, and stays. */
 
 .nested-phase-row {
   border-bottom: 1px dashed var(--border);

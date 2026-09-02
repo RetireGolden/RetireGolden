@@ -102,7 +102,7 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
   return (
     <div className="nested-form-section field-span-full">
       {title ? <h4>{title}</h4> : null}
-      <div className="form-grid nested-control-grid">
+      <div className="form-grid">
         {ASSET_CLASS_IDS.map((id) => (
           <PercentField
             key={id}
@@ -156,7 +156,7 @@ export function AllocationPanel({ account, plan, onCommit }: { account: Allocata
 
   return (
     <div className="nested-form-section field-span-full" data-testid="allocation-panel">
-      <div className="form-grid nested-control-grid">
+      <div className="form-grid">
         <SelectField
           label="Allocation over time"
           help="Static holds one target mix. A linear glidepath slides from a starting mix to an ending mix between two years. Staged jumps to a new mix in given years; custom targets interpolate between the mixes you set."
@@ -185,7 +185,7 @@ export function AllocationPanel({ account, plan, onCommit }: { account: Allocata
       ) : null}
       {policy.mode === 'linear' ? (
         <>
-          <div className="form-grid nested-control-grid">
+          <div className="form-grid">
             <NumberField label="From year" value={policy.startYear} min={1900} max={2200} onCommit={(v) => onCommit({ ...policy, startYear: Math.round(v ?? year) })} />
             <NumberField label="To year" value={policy.endYear} min={1900} max={2200} onCommit={(v) => onCommit({ ...policy, endYear: Math.round(v ?? year + 20) })} />
           </div>
@@ -204,7 +204,7 @@ export function AllocationPanel({ account, plan, onCommit }: { account: Allocata
             const rowYear = 'fromYear' in row ? row.fromYear : row.year
             return (
               <div key={i} className="nested-phase-row">
-                <div className="form-grid nested-phase-grid">
+                <div className="form-grid">
                   <NumberField
                     label={policy.mode === 'staged' ? 'From year' : 'Target year'}
                     value={rowYear}

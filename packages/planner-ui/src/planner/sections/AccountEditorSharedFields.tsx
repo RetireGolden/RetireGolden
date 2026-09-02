@@ -217,7 +217,7 @@ function ContributionFields({
             }
             return (
               <div key={phaseIndex} className="nested-phase-row">
-                <div className="form-grid nested-phase-grid">
+                <div className="form-grid">
                   <MoneyField
                     label="Amount / year"
                     value={phase.annualAmount}

@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { displayScaleFor } from './validationIssues'
 import { bandForPath, warningFor, warnedPaths, WARNING_THRESHOLDS } from './warnings'
 
 describe('the thresholds are the ones decided on #495', () => {
@@ -33,6 +34,16 @@ describe('the thresholds are the ones decided on #495', () => {
     expect(bandForPath('expenses.phases.1.multiplier')).toBe('phaseZero')
     expect(bandForPath('expenses.oneTimeGoals.0.year')).toBe('pastYear')
     expect(bandForPath('household.people.0.retirementAge')).toBeUndefined()
+  })
+
+  it('no warned path is shown in a different unit from the one the plan stores', () => {
+    // The thresholds are compared against the number typed into the field. That
+    // is only sound while every warned path stores what it displays; a scaled
+    // path (the brokerage qualified-dividend share) would need its threshold
+    // converted the way `boundsForPath` converts the engine's bound.
+    for (const path of warnedPaths()) {
+      expect(displayScaleFor(path.replace(/\bN\b/g, '0')), path).toBe(1)
+    }
   })
 })
 

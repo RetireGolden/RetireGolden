@@ -92,7 +92,7 @@ function BeneficiaryDetails({
         <p className="field-hint">Inherited Roth accounts need beneficiary details; the simpler planning estimate never covered Roth.</p>
       )}
       {showDetails ? (
-        <div className="form-grid nested-control-grid">
+        <div className="form-grid">
           <SelectField
             label="Beneficiary class"
             help="Choose the person or legal recipient named for this account at the owner's death. Estate, trust, entity, and successor cases are recorded but not modeled; the planner shows the limitation rather than guessing a schedule."
@@ -544,7 +544,7 @@ export function RetirementAccountEditor({
           />
           {account.employerMatch !== undefined ? (
             <div className="nested-form-section field-span-full" data-testid="employer-match-panel">
-              <div className="form-grid nested-control-grid">
+              <div className="form-grid">
                 <CheckboxField
                   label="Employer match"
                   help="Configure a first-class employer matching program for this payroll account. The match does not count against your employee elective contribution limit, but is constrained by the IRS Section 415(c) annual additions limit."

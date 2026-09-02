@@ -12,7 +12,12 @@
  *
  * Money math stays in the engine (AGENTS.md): the only arithmetic here is
  * comparing the number a person typed against a threshold. Nothing is scaled,
- * converted, or projected.
+ * converted, or projected. That holds only because no warned path is one the
+ * card shows in a different unit from the one the plan stores — `DISPLAY_SCALE`
+ * in validationIssues.ts names exactly one such path today (the brokerage
+ * qualified-dividend share) and it is not in the table below. Adding a scaled
+ * path here would need the threshold expressed in the field's own unit, the way
+ * `boundsForPath` converts the engine's bound.
  *
  * The thresholds are the decision, verbatim (#495, comment of 2026-09-02):
  *
