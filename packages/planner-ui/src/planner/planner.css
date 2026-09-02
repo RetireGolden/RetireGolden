@@ -1032,10 +1032,22 @@
 .item-row-title {
   font-weight: 650;
   display: flex;
-  align-items: center;
+  /* The chip shares the text's baseline. Centred, a chip beside a two-line
+     title floated between the lines, and the head (whose baseline is the
+     chip's) put Remove there too. */
+  align-items: baseline;
   gap: 0.5rem;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* `overflow-wrap: anywhere` inherits, and it counts every character as a
+   break opportunity when a flex item's minimum width is measured, so the
+   chip would shrink and wrap "GOAL" onto two lines beside a long title. The
+   chip keeps its width; only the title text breaks. */
+.item-row-title > .type-chip {
+  flex-shrink: 0;
+  overflow-wrap: normal;
 }
 
 .type-chip {

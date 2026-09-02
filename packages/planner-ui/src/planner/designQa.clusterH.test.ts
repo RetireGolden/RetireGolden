@@ -73,6 +73,12 @@ describe('row head with a wrapping title (#526)', () => {
     const head = rule('.item-row-head')
     expect(head).toMatch(/align-items: baseline;/)
     expect(head).not.toMatch(/align-items: center;/)
+    // The head's baseline is its first item's, the title's, whose baseline is
+    // its chip's: centred, the chip beside a two-line title sat between the
+    // lines and took Remove with it, so the title is baseline-aligned too.
+    const title = rule('.item-row-title')
+    expect(title).toMatch(/align-items: baseline;/)
+    expect(title).not.toMatch(/align-items: center;/)
   })
 
   it('lets the title wrap inside its own box instead of pushing the control out of the row', () => {
@@ -83,8 +89,13 @@ describe('row head with a wrapping title (#526)', () => {
     expect(title).toMatch(/min-width: 0;/)
     expect(title).not.toMatch(/flex-wrap: wrap;/)
     expect(title).toMatch(/overflow-wrap: anywhere;/)
-    // The control keeps its width when the title is long.
+    // The control keeps its width when the title is long, and so does the
+    // chip: `overflow-wrap: anywhere` inherits and would otherwise let the
+    // chip shrink to a character and wrap "GOAL" onto two lines.
     expect(rule('.item-row-head > .btn-ghost')).toMatch(/flex-shrink: 0;/)
+    const chip = rule('.item-row-title > .type-chip')
+    expect(chip).toMatch(/flex-shrink: 0;/)
+    expect(chip).toMatch(/overflow-wrap: normal;/)
   })
 })
 
