@@ -180,6 +180,18 @@ looks clean while some of the numbers came from different bytes.
   green `reach` means "every line of every named range ran", never "every branch inside them was taken" — and
   never that a constant's neighborhood was straddled, which stays a unit test's job.
 
+Committed reach specs still store positional `lines` plus exact trimmed `{ line, text }` anchors. Before
+coverage runs, `reach` (and the committed-spec Vitest guard) **content-locate** each entry: every candidate
+occurrence of the first anchor's text implies one line delta, and that delta is accepted only when every
+anchor matches at its recorded line plus the same delta and the shifted range stays valid. A valid recorded
+location wins; otherwise exactly one relocated delta is required — zero matches, ambiguous locations,
+inconsistent relative anchor layout, or an
+invalid shifted range fail closed. An unchanged file therefore resolves at delta zero; insertions or
+deletions above a block resolve without rewriting the JSON, while a verbatim move only needs the entry's
+`file` changed rather than every stored line. Edits that change relative anchor spacing inside the measured
+block still fail. Do not add marker comments
+throughout production source to make ranges relocatable.
+
 [`scripts/equivalence/specs/simulate-batch.json`](../packages/engine/scripts/equivalence/specs/simulate-batch.json)
 is the worked example of a spec, and
 [`scripts/equivalence/corpus/blocks.mjs`](../packages/engine/scripts/equivalence/corpus/blocks.mjs) of a

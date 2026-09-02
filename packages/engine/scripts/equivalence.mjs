@@ -104,6 +104,7 @@ import {
   modesFromFlag,
   assertReachEntryAnchors,
   assertReachSpecSchema,
+  resolveReachSpecEntries,
 } from './equivalence/usage.mjs'
 
 const SCHEMA = 'retiregolden.equivalence-dump/1'
@@ -501,11 +502,16 @@ async function commandReach(argv) {
 
   const spec = readJson(opts.spec)
   assertReachSpecSchema(spec, opts.spec)
-  const entries = spec.entries.map((entry) => ({
+  const readSource = (file) => readFileSync(file, 'utf8')
+  const pathResolved = spec.entries.map((entry) => ({
     ...entry,
     file: resolve(src, entry.file).split('\\').join('/'),
   }))
-  assertReachEntryAnchors(entries, opts.spec, (file) => readFileSync(file, 'utf8'))
+  // Content-locate each range by a unique anchor delta before coverage runs so
+  // insertions above a block (or a verbatim move) do not silently measure the
+  // wrong lines, and so relative-anchor edits still fail closed.
+  const entries = resolveReachSpecEntries(pathResolved, opts.spec, readSource)
+  assertReachEntryAnchors(entries, opts.spec, readSource)
   // The recorder attaches its debugger BEFORE the engine is imported (that is
   // when `scriptParsed` names the compiled script), verifies offsets, and only
   // then starts counting — so no count here belongs to module top-level work.

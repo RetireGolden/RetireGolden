@@ -10,6 +10,7 @@ import {
   assertReachEntryAnchors,
   assertReachSpecSchema,
   modesFromFlag,
+  resolveReachSpecEntries,
 } from '../../scripts/equivalence/usage.mjs'
 
 describe('equivalence CLI: operator-input failures', () => {
@@ -31,7 +32,7 @@ describe('equivalence CLI: operator-input failures', () => {
     ).not.toThrow()
   })
 
-  it('reach refuses a positional range when an exact content anchor drifts', () => {
+  it('reach content-locates a positional range, then refuses when an anchor drifts', () => {
     const entries = [{
       id: 'phase',
       file: 'phase.ts',
@@ -41,25 +42,25 @@ describe('equivalence CLI: operator-input failures', () => {
         { line: 3, text: 'return 1' },
       ],
     }]
-    expect(() => assertReachEntryAnchors(
-      entries,
-      'spec.json',
-      () => ['header', 'const phase = () => {', 'return 1', '}'].join('\n'),
-    )).not.toThrow()
-    expect(() => assertReachEntryAnchors(
+    const unchanged = ['header', 'const phase = () => {', 'return 1', '}'].join('\n')
+    const resolved = resolveReachSpecEntries(entries, 'spec.json', () => unchanged)
+    expect(resolved[0].lines).toEqual([2, 4])
+    expect(() => assertReachEntryAnchors(resolved, 'spec.json', () => unchanged)).not.toThrow()
+
+    const inserted = ['inserted', 'header', 'const phase = () => {', 'return 1', '}'].join('\n')
+    const shifted = resolveReachSpecEntries(entries, 'spec.json', () => inserted)
+    expect(shifted[0].lines).toEqual([3, 5])
+    expect(() => assertReachEntryAnchors(shifted, 'spec.json', () => inserted)).not.toThrow()
+
+    expect(() => resolveReachSpecEntries(
       entries,
       'spec.json',
       () => ['header', 'const phase = () => {', 'return 2', '}'].join('\n'),
-    )).toThrow(/spec\.json entry "phase" is stale at phase\.ts:3/u)
-    expect(() => assertReachEntryAnchors(
-      entries,
-      'spec.json',
-      () => ['inserted', 'header', 'const phase = () => {', 'return 1', '}'].join('\n'),
-    )).toThrow(/spec\.json entry "phase" is stale at phase\.ts:2/u)
+    )).toThrow(/spec\.json entry "phase" has inconsistent relative anchor layout/u)
   })
 
   it('reach refuses every unanchored positional source range', () => {
-    expect(() => assertReachEntryAnchors(
+    expect(() => resolveReachSpecEntries(
       [{ id: 'phase', file: 'phase.ts', lines: [2, 4] }],
       'spec.json',
       () => ['header', 'const phase = () => {', 'return 1', '}'].join('\n'),
