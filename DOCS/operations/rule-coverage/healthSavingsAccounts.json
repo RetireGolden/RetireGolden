@@ -41,17 +41,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2442,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 685,
           "note": null,
           "tests": [
             {
               "title": "reduces realized MAGI and ACA household MAGI by the allowed HSA contribution",
-              "line": 2449
+              "line": 692
             }
           ]
         }
@@ -193,17 +193,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2370,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 613,
           "note": null,
           "tests": [
             {
               "title": "reads the 2026 self-only and family limits from the parameter pack",
-              "line": 2380
+              "line": 623
             }
           ]
         }
@@ -274,17 +274,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 1901,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 144,
           "note": null,
           "tests": [
             {
               "title": "keeps the catch-up flat while the base limit grows",
-              "line": 1905
+              "line": 148
             }
           ]
         }
@@ -340,25 +340,25 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 1947,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 190,
           "note": null,
           "tests": [
             {
               "title": "halves the family base between spouses but leaves each catch-up whole",
-              "line": 1955
+              "line": 198
             },
             {
               "title": "leaves a one-person household on the undivided self-only limit",
-              "line": 1996
+              "line": 239
             },
             {
               "title": "leaves an unmarried two-person household a whole family limit each",
-              "line": 2017
+              "line": 260
             }
           ]
         }

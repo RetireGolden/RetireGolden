@@ -244,20 +244,30 @@
     }
   ],
   "measuredProof": {
-    "method": "The blocks corpus and both engine source trees were materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. The verifier pins the corpus source blob, the equivalence runner/loader blobs, and a canonical hash of this spec's schema/name/why/entries measurement input before recomputing the proof. It also materializes the immutable head tree, replaces the helper's sole section 219 read with zero, captures that mutant, and asserts the recorded calibration movement.",
+    "method": "The blocks corpus and both engine source trees are materialized from immutable Git objects, then captured in default, cashFlow, optimizerProbe, and counterfactual modes. Before executing the harness, the verifier authenticates this spec against its path-aware working-tree and immutable HEAD blobs, derives the complete local transitive import closure from committed source, requires every closure member to match both its pinned HEAD blob and clean-filter working-tree blob, and materializes those authenticated committed sources into a private scratch harness before any child process runs. It then recomputes corpus, captures, structural comparison, reach, and all recorded hashes. The verifier also materializes the immutable head tree, replaces the helper's sole section 219 read with zero, captures that mutant, and asserts the recorded calibration movement.",
     "base": {
       "commit": "5f7106e749a5d568baab836bcab95f4640a2d801",
       "engineSourceTree": "dc89890dd2e4dd4eabc14bd20bb27fe551535d35"
     },
     "head": {
-      "observedAtCommit": "8a99bb95dc3aaf4d2ae5f4fea966339eb90405c8",
-      "engineSourceTree": "87e8d425122f645066a70407300f4a8d9decd212"
+      "observedAtCommit": "c86d7f648521f88c805ac5032ea2d87a8581dfd6",
+      "engineSourceTree": "cdc617aa4d9f5cd68135ad94b0e79892d793d373"
     },
     "inputs": {
-    "corpusSourceBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
-      "equivalenceRunnerBlob": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
-      "engineTreeLoaderBlob": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
-    "specMeasurementSha256": "e5d2edc03c4f38206000f7c086d4a5dbb4cab647c532eeea40e4bd7484bd5d44"
+      "harnessBlobs": {
+        "packages/engine/scripts/equivalence.mjs": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+        "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
+        "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
+        "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
+        "packages/engine/scripts/equivalence/encode.mjs": "8bb6b7f19eb068444ee7fa6970a704945ab28f06",
+        "packages/engine/scripts/equivalence/engine-tree.mjs": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
+        "packages/engine/scripts/equivalence/modes.mjs": "0c75aac27538942bf96517fd00c417fa8b967ab9",
+        "packages/engine/scripts/equivalence/reach.mjs": "81d6c4cce57b40f770be21b7a89ea2da9c0c217d",
+        "packages/engine/scripts/equivalence/usage.mjs": "c5206bc5ec7719595a05b24e757e96babf45079a",
+        "packages/engine/scripts/typescript-source-resolution.mjs": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a"
+      },
+      "specMeasurementSha256": "e5d2edc03c4f38206000f7c086d4a5dbb4cab647c532eeea40e4bd7484bd5d44"
     },
     "corpus": {
       "members": 121,

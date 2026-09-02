@@ -7,10 +7,11 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { authenticateObservedEngineTree } from './proof-git-provenance.mjs'
@@ -21,18 +22,9 @@ const repoDir = execFileSync('git', ['rev-parse', '--show-toplevel'], {
   cwd: engineDir,
   encoding: 'utf8',
 }).trim()
-const equivalence = resolve(engineDir, 'scripts', 'equivalence.mjs')
-const specPath = resolve(
-  scriptDir,
-  'specs',
-  'simulate-qcd-owner-character-boundary.json',
-)
-const spec = JSON.parse(readFileSync(specPath, 'utf8'))
-const proof = spec.measuredProof
-
-if (proof === undefined) {
-  throw new Error('QCD owner-character spec has no measuredProof')
-}
+const specRepoPath =
+  'packages/engine/scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json'
+const equivalenceRepoPath = 'packages/engine/scripts/equivalence.mjs'
 
 function gitObject(revision) {
   return execFileSync('git', ['rev-parse', revision], {
@@ -41,9 +33,28 @@ function gitObject(revision) {
   }).trim()
 }
 
-function runEquivalence(args) {
-  execFileSync(process.execPath, [equivalence, ...args], {
+function gitBlobText(blob) {
+  return execFileSync('git', ['cat-file', 'blob', blob], {
     cwd: repoDir,
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+  })
+}
+
+// Resolve the moving ref exactly once. Every committed byte read below is then
+// addressed through this immutable commit or a blob ID authenticated from it.
+const headCommit = gitObject('HEAD^{commit}')
+
+function workingTreeBlob(path) {
+  return execFileSync('git', ['hash-object', `--path=${path}`, '--', path], {
+    cwd: repoDir,
+    encoding: 'utf8',
+  }).trim()
+}
+
+function runEquivalence(equivalence, args, cwd) {
+  execFileSync(process.execPath, [equivalence, ...args], {
+    cwd,
     stdio: 'inherit',
   })
 }
@@ -60,7 +71,83 @@ function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
 }
 
-// Pin every mutable measurement input independently of the recorded outputs.
+function authenticateSpec() {
+  const committedBlob = gitObject(`${headCommit}:${specRepoPath}`)
+  assertEqual(
+    workingTreeBlob(specRepoPath),
+    committedBlob,
+    'proof spec working-tree input',
+  )
+  return gitBlobText(committedBlob)
+}
+
+const specBody = authenticateSpec()
+const spec = JSON.parse(specBody)
+const proof = spec.measuredProof
+
+if (proof === undefined) {
+  throw new Error('QCD owner-character spec has no measuredProof')
+}
+
+function localImportSpecifiers(source) {
+  const found = new Set()
+  for (const pattern of [
+    /\bfrom\s*['"]([^'"]+)['"]/gu,
+    /\bimport\s*['"]([^'"]+)['"]/gu,
+    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gu,
+  ]) {
+    for (const match of source.matchAll(pattern)) found.add(match[1])
+  }
+  return [...found]
+}
+
+function resolveLocalImport(fromPath, specifier) {
+  if (!specifier.startsWith('.')) return null
+  const resolved = posix.normalize(posix.join(posix.dirname(fromPath), specifier))
+  if (resolved.startsWith('../') || posix.isAbsolute(resolved)) {
+    throw new Error(`local harness import escapes repository: ${fromPath} -> ${specifier}`)
+  }
+  return resolved
+}
+
+function authenticateHarnessClosure() {
+  const expectedBlobs = proof.inputs.harnessBlobs
+  if (expectedBlobs === undefined || Array.isArray(expectedBlobs)) {
+    throw new Error('QCD owner-character proof has no harnessBlobs map')
+  }
+  const pending = [equivalenceRepoPath]
+  const seen = new Set()
+  const authenticatedSources = new Map()
+  while (pending.length > 0) {
+    const path = pending.pop()
+    if (seen.has(path)) continue
+    seen.add(path)
+    const expected = expectedBlobs[path]
+    if (expected === undefined) {
+      throw new Error(`unrecorded transitive harness input: ${path}`)
+    }
+    assertEqual(gitObject(`${headCommit}:${path}`), expected, `${path} committed input`)
+    assertEqual(workingTreeBlob(path), expected, `${path} working-tree input`)
+    const source = gitBlobText(expected)
+    authenticatedSources.set(path, source)
+    for (const specifier of localImportSpecifiers(source)) {
+      const dependency = resolveLocalImport(path, specifier)
+      if (dependency !== null) pending.push(dependency)
+    }
+  }
+  assertEqual(
+    JSON.stringify([...seen].sort()),
+    JSON.stringify(Object.keys(expectedBlobs).sort()),
+    'complete transitive harness closure',
+  )
+  return authenticatedSources
+}
+
+// Capture the complete local harness closure from immutable HEAD blobs before
+// executing any of it. The captured sources are materialized below so no child
+// process can race a later edit to the shared working tree.
+const authenticatedHarnessSources = authenticateHarnessClosure()
+
 assertEqual(
   gitObject(`${proof.base.commit}:packages/engine/src`),
   proof.base.engineSourceTree,
@@ -72,21 +159,6 @@ authenticateObservedEngineTree({
   engineSourceTree: proof.head.engineSourceTree,
   label: 'observed head',
 })
-assertEqual(
-  gitObject('HEAD:packages/engine/scripts/equivalence/corpus/blocks.mjs'),
-  proof.inputs.corpusSourceBlob,
-  'blocks corpus source blob',
-)
-assertEqual(
-  gitObject('HEAD:packages/engine/scripts/equivalence.mjs'),
-  proof.inputs.equivalenceRunnerBlob,
-  'equivalence runner blob',
-)
-assertEqual(
-  gitObject('HEAD:packages/engine/scripts/equivalence/engine-tree.mjs'),
-  proof.inputs.engineTreeLoaderBlob,
-  'engine-tree loader blob',
-)
 assertEqual(
   sha256(JSON.stringify({
     schema: spec.schema,
@@ -103,8 +175,12 @@ try {
   const baseSrc = join(scratch, 'base-src')
   const headSrc = join(scratch, 'head-src')
   const mutantSrc = join(scratch, 'mutant-src')
+  const harnessRoot = join(scratch, 'harness')
+  const harnessEngineDir = join(harnessRoot, 'packages', 'engine')
+  const authenticatedEquivalence = join(harnessRoot, ...equivalenceRepoPath.split('/'))
   const baseTar = join(scratch, 'base.tar')
   const headTar = join(scratch, 'head.tar')
+  const authenticatedSpec = join(scratch, 'spec.json')
   const corpus = join(scratch, 'corpus.json')
   const baseDump = join(scratch, 'base.json')
   const headDump = join(scratch, 'head.json')
@@ -113,6 +189,16 @@ try {
   mkdirSync(baseSrc)
   mkdirSync(headSrc)
   mkdirSync(mutantSrc)
+  for (const [path, source] of authenticatedHarnessSources) {
+    const destination = join(harnessRoot, ...path.split('/'))
+    mkdirSync(dirname(destination), { recursive: true })
+    writeFileSync(destination, source)
+  }
+  // Bare dependencies intentionally come from this exact installed engine
+  // package for both compared trees; preserve that established resolver input
+  // while keeping every local harness module immutable.
+  symlinkSync(resolve(engineDir, 'node_modules'), join(harnessEngineDir, 'node_modules'), 'junction')
+  writeFileSync(authenticatedSpec, specBody)
 
   execFileSync(
     'git',
@@ -141,41 +227,45 @@ try {
   assertEqual(mutationCount, 1, 'section 219 calibration mutation site count')
   writeFileSync(mutantHelper, helperSource.replace(section219Read, 'const section219 = 0'))
 
-  runEquivalence([
+  runEquivalence(authenticatedEquivalence, [
     'corpus',
     '--name', 'blocks',
     '--out', corpus,
     '--engine-src', headSrc,
-  ])
-  runEquivalence([
+  ], harnessRoot)
+  runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', mutantDump,
     '--engine-src', mutantSrc,
     '--engine-label', 'calibration-ignore-qcd-section219',
-  ])
-  runEquivalence([
+  ], harnessRoot)
+  runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', baseDump,
     '--engine-src', baseSrc,
     '--engine-label', proof.base.engineSourceTree,
-  ])
-  runEquivalence([
+  ], harnessRoot)
+  runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', headDump,
     '--engine-src', headSrc,
     '--engine-label', proof.head.engineSourceTree,
-  ])
-  runEquivalence(['compare', '--base', baseDump, '--head', headDump])
-  runEquivalence([
+  ], harnessRoot)
+  runEquivalence(
+    authenticatedEquivalence,
+    ['compare', '--base', baseDump, '--head', headDump],
+    harnessRoot,
+  )
+  runEquivalence(authenticatedEquivalence, [
     'reach',
     '--corpus', corpus,
-    '--spec', specPath,
+    '--spec', authenticatedSpec,
     '--engine-src', headSrc,
     '--out', reach,
-  ])
+  ], harnessRoot)
 
   const corpusBody = JSON.parse(readFileSync(corpus, 'utf8'))
   const baseManifest = JSON.parse(readFileSync(`${baseDump}.manifest.json`, 'utf8'))

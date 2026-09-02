@@ -46,7 +46,7 @@
  *   the gate was hoisted above both arms             helper's `pays nothing of
  *                                                    either kind once no one is
  *                                                    alive`, and BOTH of
- *                                                    simulate.test.ts's
+ *                                                    simulate.foundation.test.ts's
  *                                                    `income survivorship`
  *                                                    cases. G3, G4a, G4b, G5
  *                                                    all PASS, and that is the

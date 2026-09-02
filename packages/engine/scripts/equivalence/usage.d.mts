@@ -18,6 +18,11 @@ export interface AnchoredReachEntry {
   lines: [number, number]
   anchors?: readonly ReachEntryAnchor[]
 }
+export declare function resolveReachSpecEntries(
+  entries: readonly AnchoredReachEntry[],
+  path: string,
+  readSource: (file: string) => string,
+): AnchoredReachEntry[]
 export declare function assertReachEntryAnchors(
   entries: readonly AnchoredReachEntry[],
   path: string,

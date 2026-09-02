@@ -707,17 +707,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.healthcare.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 4161,
+          "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
+          "line": 1140,
           "note": "foreign-exclusion addback raises ACA MAGI but not IRMAA magiHistory",
           "tests": [
             {
               "title": "raises ACA household MAGI by the known foreign-exclusion addback without moving IRMAA MAGI history",
-              "line": 4170
+              "line": 1149
             }
           ]
         }
@@ -758,17 +758,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.healthcare.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 4104,
+          "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
+          "line": 1083,
           "note": null,
           "tests": [
             {
               "title": "carries known tax-exempt interest into later IRMAA MAGI without taxing it as ordinary income",
-              "line": 4111
+              "line": 1090
             }
           ]
         }
@@ -824,17 +824,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.healthcare.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 4047,
+          "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
+          "line": 1026,
           "note": null,
           "tests": [
             {
               "title": "raises Medicare premiums two years after an income spike",
-              "line": 4054
+              "line": 1033
             }
           ]
         }
