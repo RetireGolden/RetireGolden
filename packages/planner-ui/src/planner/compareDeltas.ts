@@ -15,17 +15,24 @@ export function deterministicSuccessPct(depletionYear: number | null): number {
 }
 
 /**
- * Money-lasts delta in years: the last funded year of each plan (its
- * depletion year, or the plan's end year when it never depletes), B − A.
- * Null when both plans run the full course: there is no gap to quote, and the
- * row already reads "Full plan" on both sides.
+ * The last year a plan is fully funded. The engine's `depletionYear` is the
+ * first year with any shortfall, so a plan that "Depletes in 2054" was funded
+ * through 2053; a plan that never depletes is funded through its end year.
+ */
+export function lastFundedYear(plan: { depletionYear: number | null; endYear: number }): number {
+  return plan.depletionYear === null ? plan.endYear : plan.depletionYear - 1
+}
+
+/**
+ * Money-lasts delta in years, B − A, on last funded years. Always a number:
+ * "Depletes in 2054" vs "Full plan through 2054" is one year, and two full
+ * plans with different horizons differ by the horizon gap.
  */
 export function moneyLastsDeltaYears(
   a: { depletionYear: number | null; endYear: number },
   b: { depletionYear: number | null; endYear: number },
-): number | null {
-  if (a.depletionYear === null && b.depletionYear === null) return null
-  return (b.depletionYear ?? b.endYear) - (a.depletionYear ?? a.endYear)
+): number {
+  return lastFundedYear(b) - lastFundedYear(a)
 }
 
 /** Age delta, B − A; null when either side has no depletion age to compare. */

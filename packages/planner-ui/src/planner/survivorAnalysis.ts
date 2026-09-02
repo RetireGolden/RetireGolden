@@ -90,6 +90,32 @@ export interface SurvivorScenarioRow {
   } | null
 }
 
+const nearZero = (v: number) => Math.abs(v) < 0.5
+
+/**
+ * A timing with nothing on either side of the transition: no Social Security
+ * before or after the death, no tax or MAGI in the last joint or first
+ * survivor year, no surviving balance, no estate, no premium to relieve. Such
+ * a row is exact for its timing but reads as a confident survivor result
+ * ("$0 → $0", "no surcharge to relieve") beside a red shortfall count (#513).
+ * A plan that runs short of money but still has guaranteed income is NOT
+ * degenerate: its filing-status, Social Security, tax, and IRMAA columns are
+ * exactly what the survivor page exists to show, so those rows stay.
+ */
+export function isDegenerateTiming(row: SurvivorScenarioRow): boolean {
+  return (
+    nearZero(row.ssBeforeDeath) &&
+    nearZero(row.ssAfterDeath) &&
+    nearZero(row.lastJointYear.tax) &&
+    nearZero(row.firstSurvivorYear.tax) &&
+    nearZero(row.lastJointYear.magi) &&
+    nearZero(row.firstSurvivorYear.magi) &&
+    nearZero(row.minSurvivorInvestable) &&
+    nearZero(row.ssa44PremiumSavings) &&
+    nearZero(row.baseEndingAfterTaxEstate)
+  )
+}
+
 export interface SurvivorAnalysis {
   /** False for plans that are not a two-adult married-filing-jointly household. */
   eligible: boolean

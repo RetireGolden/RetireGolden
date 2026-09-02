@@ -285,7 +285,11 @@ export function MoneyField({
   return (
     <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
       <div className="input-affix">
-        <span aria-hidden>$</span>
+        {/* A blank optional field is a non-amount state, so the unit chip steps
+            back while the placeholder is showing; it returns on focus (#518). */}
+        <span aria-hidden className={placeholder !== undefined && value === null && !focused ? 'input-affix-unit--blank' : undefined}>
+          $
+        </span>
         <input
           ref={inputRef}
           id={id}

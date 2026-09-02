@@ -2,11 +2,12 @@
  * Compare-plans delta formatting (#499): the finding was Depletion age 65 vs
  * 86 and Money lasts 2030 vs 2051 both rendering "—", and 0% vs 0% success
  * rendering "—" instead of 0 pp. Presentation arithmetic on engine years and
- * ages, never dollars.
+ * ages, never dollars. The engine's `depletionYear` is the first year with a
+ * shortfall, so the last funded year is the one before it.
  */
 import { describe, expect, it } from 'vitest'
 
-import { ageDelta, deterministicSuccessPct, formatDelta, moneyLastsDeltaYears } from './compareDeltas'
+import { ageDelta, deterministicSuccessPct, formatDelta, lastFundedYear, moneyLastsDeltaYears } from './compareDeltas'
 
 describe('compareDeltas (#499)', () => {
   it('formats the year gaps the finding named', () => {
@@ -18,11 +19,18 @@ describe('compareDeltas (#499)', () => {
     expect(ageDelta(65, null)).toBeNull()
   })
 
-  it('money lasts compares last funded years, and reads full-vs-full as no gap', () => {
+  it('money lasts compares last funded years, so distinct labels never collapse to "same"', () => {
+    // "Depletes in 2054" was funded through 2053; "Full plan through 2054" through 2054.
+    expect(lastFundedYear({ depletionYear: 2054, endYear: 2054 })).toBe(2053)
+    expect(lastFundedYear({ depletionYear: null, endYear: 2054 })).toBe(2054)
+    expect(moneyLastsDeltaYears({ depletionYear: 2054, endYear: 2054 }, { depletionYear: null, endYear: 2054 })).toBe(1)
+    // The finding's pair: depletes 2030 vs 2051.
     expect(moneyLastsDeltaYears({ depletionYear: 2030, endYear: 2060 }, { depletionYear: 2051, endYear: 2060 })).toBe(21)
     // Plan B never depletes: its last funded year is its end year.
-    expect(moneyLastsDeltaYears({ depletionYear: 2030, endYear: 2060 }, { depletionYear: null, endYear: 2060 })).toBe(30)
-    expect(moneyLastsDeltaYears({ depletionYear: null, endYear: 2060 }, { depletionYear: null, endYear: 2062 })).toBeNull()
+    expect(moneyLastsDeltaYears({ depletionYear: 2030, endYear: 2060 }, { depletionYear: null, endYear: 2060 })).toBe(31)
+    // Two full plans with different horizons differ by the horizon gap; equal horizons are "same".
+    expect(moneyLastsDeltaYears({ depletionYear: null, endYear: 2060 }, { depletionYear: null, endYear: 2062 })).toBe(2)
+    expect(formatDelta(moneyLastsDeltaYears({ depletionYear: null, endYear: 2060 }, { depletionYear: null, endYear: 2060 }), 'years')).toBe('same')
   })
 
   it('deterministic success deltas are percentage points, zero included', () => {

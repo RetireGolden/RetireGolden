@@ -14,6 +14,7 @@ import { LearnLink } from '../../learn/LearnLink'
 import { sectionTitleOf } from '../sectionTitles'
 import { fmtMoney, fmtMoneyCompact } from '../format'
 import { uniqueScenarioName } from '../scenarioNames'
+import { formatMcDelta } from './mcDeltaFormat'
 
 function makeScenarioId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -91,6 +92,10 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 evalResult.impact?.qualitative ? { ...impact, qualitative: evalResult.impact.qualitative } : impact,
               )
               setExactAction(evalResult.action)
+              // The exact dollar deltas are final here: release the button so
+              // the reader can hide the preview while the slower Monte Carlo
+              // pair below is still running (#527).
+              setLoadingExact(false)
 
               // If it impacts Monte Carlo success rate, run async MC pool query
               if (card.impact.successRateDeltaPct !== undefined) {
@@ -181,9 +186,10 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
     )
   }
 
-  // A Monte Carlo delta under half a point is "no change": the sign of 0.0
-  // must not paint it in a verdict color (#527).
-  const mcFlat = mcDelta !== null && Math.abs(mcDelta) < 0.05
+  // A Monte Carlo delta the one-decimal display would print as 0.0 is "no
+  // change": its sign must not paint it in a verdict color (#527).
+  const mcLabel = mcDelta === null ? null : formatMcDelta(mcDelta)
+  const mcFlat = mcLabel !== null && mcLabel.flat
   // Every exact delta is zero and the base plan already runs out of money:
   // say why the numbers are flat instead of leaving "no change" to look like
   // a finding about a plan that works.
@@ -241,9 +247,12 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
       {/* Impact Section */}
       <div className="insight-impact-box">
         {expanded && loadingExact && !exactImpact ? (
-          // The wait shows where the numbers will land, as a shimmer, not as
-          // a greyed button elsewhere on the card (#527).
-          <div className="skeleton" style={{ height: '3.5rem' }} role="status" aria-label="Re-simulating this plan" />
+          // The wait shows where the numbers will land, as a shimmer with a
+          // visible caption, not as a greyed button elsewhere on the card (#527).
+          <div className="insight-preview-wait" role="status">
+            <div className="skeleton" style={{ height: '2.5rem' }} aria-hidden="true" />
+            <p className="small muted">Re-simulating this plan…</p>
+          </div>
         ) : expanded && exactImpact ? (
           <div>
             {exactImpact.qualitative ? <p>{exactImpact.qualitative}</p> : null}
@@ -267,14 +276,11 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                     <span className="muted" role="status" aria-busy="true">
                       still simulating…
                     </span>
-                  ) : mcDelta !== null ? (
-                    mcFlat ? (
+                  ) : mcLabel !== null ? (
+                    mcLabel.flat ? (
                       'no change'
                     ) : (
-                      <span className={mcDelta > 0 ? 'delta-pos' : 'delta-neg'}>
-                        {mcDelta > 0 ? '+' : ''}
-                        {mcDelta.toFixed(1)} pts
-                      </span>
+                      <span className={mcLabel.good ? 'delta-pos' : 'delta-neg'}>{mcLabel.text}</span>
                     )
                   ) : (
                     '—'

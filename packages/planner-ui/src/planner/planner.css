@@ -3393,3 +3393,10 @@ html:has(.kpi-bar) {
     --shadow-card: none;
   }
 }
+
+/* Optional money fields, continued (#518 review): while the placeholder is
+   showing, the unit chip steps back so the box reads as a non-amount state
+   rather than "$ No floor"; it keeps its width and returns on focus. */
+.input-affix > span.input-affix-unit--blank {
+  visibility: hidden;
+}

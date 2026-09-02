@@ -54,6 +54,18 @@ function rule(selector: string, source = css): string {
   return ruleBodyAt(source, -1, selector)
 }
 
+/**
+ * The six-digit hex value a custom property takes in `source`, found by plain
+ * scanning (no dynamic RegExp): `#fff` and `#ffffff` are the same color.
+ */
+function hexOf(source: string, token: string): string | undefined {
+  const at = source.indexOf(`${token}:`)
+  if (at < 0) return undefined
+  const raw = source.slice(at + token.length + 1).match(/^\s*#([0-9a-fA-F]{3,6})\b/)?.[1]?.toLowerCase()
+  if (raw === undefined) return undefined
+  return raw.length === 3 ? raw.replace(/./g, (c) => c + c) : raw
+}
+
 /** Every `<th` inside a `<thead>` of the file carries scope="col". */
 function unscopedHeaderCells(source: string): string[] {
   const out: string[] = []
@@ -99,9 +111,9 @@ describe('Design-QA cluster A: stylesheet pins', () => {
     const selector = "html:root,\n  html:root[data-theme='dark'],\n  html:root:not([data-theme='light'])"
     const body = rule(selector, print)
     expect(body).toMatch(/color-scheme:\s*light/)
-    expect(body).toMatch(/--bg:\s*#fff\b/)
-    expect(body).toMatch(/--fg:\s*#111\b/)
-    expect(body).toMatch(/--surface-1:\s*#fff\b/)
+    expect(hexOf(body, '--bg')).toBe('ffffff')
+    expect(hexOf(body, '--fg')).toBe('111111')
+    expect(hexOf(body, '--surface-1')).toBe('ffffff')
     // Both dark mechanisms in index.css are (0,2,0); the print selectors are
     // (0,2,1), so they win regardless of sheet order.
     expect(indexCss).toMatch(/^:root\[data-theme='dark'\] \{/m)
@@ -109,14 +121,9 @@ describe('Design-QA cluster A: stylesheet pins', () => {
     // The verdict and chart tokens on paper are the light-theme values, not
     // the brightened dark ones: parsed from index.css, not restated by hand.
     const lightRoot = indexCss.slice(indexCss.indexOf(':root {'), indexCss.indexOf(":root[data-theme='light']"))
-    // #fff and #ffffff are the same color; compare the six-digit form.
-    const hex = (source: string, token: string): string | undefined => {
-      const raw = source.match(new RegExp(`${token}:\\s*#([0-9a-fA-F]{3,6})\\b`))?.[1]?.toLowerCase()
-      return raw === undefined ? undefined : raw.length === 3 ? raw.replace(/./g, (c) => c + c) : raw
-    }
     for (const token of ['--accent', '--accent-soft', '--accent-fg', '--good', '--warn', '--bad', ...Array.from({ length: 8 }, (_, i) => `--chart-${i + 1}`)]) {
-      const light = hex(lightRoot, token)
-      const paper = hex(body, token)
+      const light = hexOf(lightRoot, token)
+      const paper = hexOf(body, token)
       expect(light, `${token} in index.css light root`).toBeTruthy()
       expect(paper, `${token} on paper`).toBe(light)
     }
@@ -124,19 +131,26 @@ describe('Design-QA cluster A: stylesheet pins', () => {
     expect(css.slice(0, clusterAt)).toMatch(/@media print \{\s*:root \{\s*--bg: #fff;/)
   })
 
-  it('optional money fields show their blank meaning in the muted token (#518)', () => {
+  it('optional money fields show their blank meaning in the muted token, without a unit chip (#518)', () => {
     const body = rule('.input-affix > input::placeholder', clusterA)
     expect(body).toMatch(/color:\s*var\(--muted\)/)
     expect(body).toMatch(/opacity:\s*1\b/)
+    // The chip keeps its width (visibility, not display) so the box does not jump on focus.
+    const blank = rule('.input-affix > span.input-affix-unit--blank', clusterA)
+    expect(blank).toMatch(/visibility:\s*hidden/)
+    expect(blank).not.toMatch(/display/)
     // Screen rules in the block use tokens only; the print palette is the one
     // place a hex literal belongs (comments stripped: they cite issue numbers).
-    const screen = clusterA.slice(clusterA.indexOf('*/') + 2, clusterA.indexOf('@media print')).replace(/\/\*[\s\S]*?\*\//g, '')
+    const screen = clusterA
+      .slice(clusterA.indexOf('*/') + 2)
+      .replace(/@media print \{[\s\S]*?\n\}/, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
     expect(screen).not.toMatch(/#[0-9a-f]{3,6}\b/i)
   })
 })
 
 describe('Design-QA cluster A: source pins', () => {
-  it('the Market success KPI and the Results verdict quote the run they show (#497)', () => {
+  it('the Market success KPI, the Results verdict, and the MC page quote one run (#497)', () => {
     const workspace = read('./PlanWorkspace.tsx')
     expect(workspace).toContain('of ${mcPathCount.toLocaleString()} varied markets')
     expect(workspace).toContain('Share of ${mcPathCount.toLocaleString()} varied-market simulations')
@@ -147,8 +161,16 @@ describe('Design-QA cluster A: source pins', () => {
     expect(results).toContain('Across {pathCountLabel} varied markets')
     expect(results).not.toContain('PATH_COUNT_LABEL')
     const mc = read('./MonteCarloPage.tsx')
-    expect(mc).toContain('publishMcHeadline(plan, { rate: s.successRate, pathCount: s.pathCount })')
+    expect(mc).toContain('publishMcHeadline(plan, s)')
     expect(mc).toMatch(/isHeadlineMcConfig\(plan, \{ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock \}\)/)
+    // The page's controls start on the one constant that defines the headline
+    // configuration: no second copy of lognormal / 12 / 60 to drift.
+    expect(mc).toContain('useState<ModelKind>(HEADLINE_MC_MODEL.kind)')
+    expect(mc).toContain('useState<number>(HEADLINE_MC_MODEL.returnVolPct)')
+    expect(mc).toContain('useState<number>(HEADLINE_MC_MODEL.equityWeightPct)')
+    expect(mc).not.toMatch(/useState<ModelKind>\('lognormal'\)|useState\(12\)|useState\(60\)/)
+    // On mount the page adopts the published run instead of replacing it with a coarser one.
+    expect(mc).toContain('? publishedMcSummary(plan)')
     // No literal "thousand" survives: the intro and the seed tip follow the run.
     expect(mc).not.toMatch(/a thousand times|same thousand markets/)
     expect(mc).toContain('same plan {(summary?.pathCount ?? DEFAULT_PATH_COUNT).toLocaleString()} times')
@@ -169,10 +191,14 @@ describe('Design-QA cluster A: source pins', () => {
     expect(solver).not.toContain('>On your plan<')
   })
 
-  it('survivor timings after depletion are not shown as results (#513)', () => {
+  it('survivor timings with nothing on either side are not shown as results (#513)', () => {
     const survivor = read('./SurvivorTransitionPage.tsx')
-    expect(survivor).toContain('data-survivor-empty="depleted"')
-    expect(survivor).toContain('const { summary } = useProjection(plan)')
+    expect(survivor).toContain('data-survivor-empty="degenerate"')
+    expect(read('./survivorAnalysis.ts')).toContain('export function isDegenerateTiming(row: SurvivorScenarioRow): boolean')
+    expect(survivor).toContain('live: rows.filter((r) => !isDegenerateTiming(r))')
+    // The gate is the row's own content, never the base plan's depletion year:
+    // a depleted plan with Social Security keeps its rows.
+    expect(survivor).not.toMatch(/deathYear\s*[<>]=?\s*depletionYear/)
     expect(survivor).toMatch(/className="empty-state" data-survivor-empty/)
   })
 
@@ -195,10 +221,17 @@ describe('Design-QA cluster A: source pins', () => {
     expect(editor).toContain('if (!mounts) return null')
     const fields = read('./fields.tsx')
     expect(fields).toContain('placeholder={placeholder}')
+    expect(fields).toContain("placeholder !== undefined && value === null && !focused ? 'input-affix-unit--blank' : undefined")
   })
 
   it('wide tables carry a caption and scoped header cells (#504, #522)', () => {
-    for (const file of ['./ReportPage.tsx', './ResultsPage.tsx', './RelocationComparePage.tsx', './ComparePlansPage.tsx']) {
+    for (const file of [
+      './ReportPage.tsx',
+      './ResultsPage.tsx',
+      './RelocationComparePage.tsx',
+      './ComparePlansPage.tsx',
+      './SurvivorTransitionPage.tsx',
+    ]) {
       expect(unscopedHeaderCells(read(file)), file).toEqual([])
     }
     const report = read('./ReportPage.tsx')
@@ -212,13 +245,20 @@ describe('Design-QA cluster A: source pins', () => {
 
   it('the Insights preview paints no verdict color on a flat Monte Carlo delta and labels its wait (#527)', () => {
     const card = read('./insights/InsightCardView.tsx')
-    expect(card).toContain('const mcFlat = mcDelta !== null && Math.abs(mcDelta) < 0.05')
+    expect(card).toContain('const mcLabel = mcDelta === null ? null : formatMcDelta(mcDelta)')
     expect(card).not.toContain("mcDelta >= 0 ? 'delta-pos'")
-    expect(card).toMatch(/mcFlat \? \(\s*'no change'\s*\) : \(\s*<span className=\{mcDelta > 0 \? 'delta-pos' : 'delta-neg'\}>/)
+    expect(card).toMatch(/mcLabel\.flat \? \(\s*'no change'\s*\) : \(\s*<span className=\{mcLabel\.good \? 'delta-pos' : 'delta-neg'\}>\{mcLabel\.text\}<\/span>/)
     expect(card).toContain('<span className="muted" role="status" aria-busy="true">')
     expect(card).toContain("{loadingExact ? 'Previewing…' : expanded ? 'Hide preview' : 'Preview impact'}")
     expect(card).toContain('aria-busy={loadingExact || undefined}')
-    expect(card).toContain('aria-label="Re-simulating this plan"')
+    // The wait has visible text, not only an aria-label.
+    expect(card).toContain('<p className="small muted">Re-simulating this plan…</p>')
     expect(card).toContain('with or without this change, so every delta is zero')
+    // The button is released once the exact dollar deltas land, before the
+    // slower Monte Carlo pair starts.
+    const release = card.indexOf('setLoadingExact(false)')
+    const mcPair = card.indexOf('await Promise.all([')
+    expect(release).toBeGreaterThan(0)
+    expect(mcPair).toBeGreaterThan(release)
   })
 })

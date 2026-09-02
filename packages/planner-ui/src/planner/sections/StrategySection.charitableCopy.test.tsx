@@ -77,5 +77,12 @@ describe('StrategySection charitable copy (#518)', () => {
     const input = document.getElementById(floor.htmlFor) as HTMLInputElement
     expect(input.value).toBe('')
     expect(input.placeholder).toBe('No floor')
+    // While the placeholder shows, the "$" chip steps back so the box does not
+    // read "$ No floor"; a required money field keeps its chip.
+    expect(input.parentElement!.querySelector('span')!.className).toBe('input-affix-unit--blank')
+    const qcd = [...container.querySelectorAll('label')].find((l) => l.textContent === "QCD per year (today's $)")!
+    const qcdInput = document.getElementById(qcd.htmlFor) as HTMLInputElement
+    expect(qcdInput.value).toBe('0')
+    expect(qcdInput.parentElement!.querySelector('span')!.className).toBe('')
   })
 })

@@ -21,6 +21,7 @@ import { fmtMoney, fmtMoneyCompact } from './format'
 import { currentStartYear, taxCalculatorFor, useProjection } from './useProjection'
 import {
   buildSurvivorAnalysis,
+  isDegenerateTiming,
   type SurvivorAnalysis,
   type SurvivorScenarioRow,
 } from './survivorAnalysis'
@@ -58,16 +59,13 @@ function TimelineCell({ row }: { row: SurvivorScenarioRow }) {
 }
 
 /**
- * Death timings the plan can still observe: those before the steady-market
- * projection runs out of money. A row whose death falls after depletion is
- * exact for its timing, but every figure on it is a $0 → $0 of an already
- * empty ledger, which read as confident survivor results (#513).
+ * Rows with nothing on either side of the transition are shown as an empty
+ * state, not as confident results (#513); see `isDegenerateTiming`.
  */
-function partitionByDepletion(rows: SurvivorScenarioRow[], depletionYear: number | null) {
-  if (depletionYear === null) return { live: rows, afterDepletion: [] as SurvivorScenarioRow[] }
+function partitionByContent(rows: SurvivorScenarioRow[]) {
   return {
-    live: rows.filter((r) => r.deathYear < depletionYear),
-    afterDepletion: rows.filter((r) => r.deathYear >= depletionYear),
+    live: rows.filter((r) => !isDegenerateTiming(r)),
+    degenerate: rows.filter((r) => isDegenerateTiming(r)),
   }
 }
 
@@ -90,14 +88,15 @@ function ScenarioTable({
       </p>
     )
   }
-  const { live, afterDepletion } = partitionByDepletion(rows, depletionYear)
+  const { live, degenerate } = partitionByContent(rows)
   if (live.length === 0) {
     return (
-      <div className="empty-state" data-survivor-empty="depleted">
+      <div className="empty-state" data-survivor-empty="degenerate">
         <p>
-          Every death timing here for {personName} ({rows[0]!.deathYear}–{rows[rows.length - 1]!.deathYear}) falls
-          after {depletionYear}, when this plan's steady-market projection runs out of money. A survivor transition
-          cannot be observed on an already-empty ledger, so these rows are not shown.{' '}
+          Every death timing here for {personName} (dies at {rows.map((r) => r.deathAge).join(', ')}) shows no
+          income, tax, or balance on either side of the transition: Social Security $0 → $0, no tax, no surviving
+          balance, no estate. This plan has nothing for a survivor transition to model at those timings
+          {depletionYear !== null ? <>; its steady-market projection runs out of money in {depletionYear}</> : null}.{' '}
           <Link to={`/plan/${planId}/insights`}>See what would change this in Insights</Link>.
         </p>
       </div>
@@ -111,15 +110,15 @@ function ScenarioTable({
       <table className="compare-table survivor-table">
         <thead>
           <tr>
-            <th>Dies at</th>
-            <th>Filing status</th>
-            <th>Household Social Security</th>
-            <th>Tax around the transition</th>
-            <th>
+            <th scope="col">Dies at</th>
+            <th scope="col">Filing status</th>
+            <th scope="col">Household Social Security</th>
+            <th scope="col">Tax around the transition</th>
+            <th scope="col">
               IRMAA relief <span className="nowrap">(SSA-44)</span>
             </th>
-            <th>Survivor spending</th>
-            <th>Convert-early lever</th>
+            <th scope="col">Survivor spending</th>
+            <th scope="col">Convert-early lever</th>
           </tr>
         </thead>
         <tbody>
@@ -200,11 +199,11 @@ function ScenarioTable({
         </tbody>
       </table>
     </ScrollRegion>
-    {afterDepletion.length > 0 ? (
-      <p className="small" data-survivor-omitted={afterDepletion.length}>
-        {afterDepletion.length} later timing{afterDepletion.length === 1 ? '' : 's'} (dies at{' '}
-        {afterDepletion.map((r) => r.deathAge).join(', ')}) not shown: the plan runs out of money in {depletionYear},
-        before {afterDepletion.length === 1 ? 'it happens' : 'they happen'}.
+    {degenerate.length > 0 ? (
+      <p className="small" data-survivor-omitted={degenerate.length}>
+        {degenerate.length} timing{degenerate.length === 1 ? '' : 's'} (dies at{' '}
+        {degenerate.map((r) => r.deathAge).join(', ')}) not shown: no income, tax, or balance on either side of that
+        transition.
       </p>
     ) : null}
     </>
@@ -220,7 +219,7 @@ export function SurvivorTransitionPage() {
   const [snapshot, setSnapshot] = useState<{ plan: typeof plan; analysis: SurvivorAnalysis } | null>(null)
   const eligible = plan.household.filingStatus === 'marriedFilingJointly' && plan.household.people.length === 2
   // The same memoized deterministic projection the KPI bar reads; its
-  // depletion year gates which timings are worth a row (#513).
+  // depletion year is named in the degenerate-timings empty state (#513).
   const { summary } = useProjection(plan)
 
   // Each timing runs a handful of full ledger simulations; debounce off the

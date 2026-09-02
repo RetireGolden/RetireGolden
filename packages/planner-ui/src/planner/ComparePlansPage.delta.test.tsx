@@ -130,8 +130,8 @@ describe('ComparePlansPage delta column (#499)', () => {
     await settle()
     await waitFor(() => container.querySelector('.compare-table tbody') !== null, { what: 'compare table' })
     expect(rowByLabel('Success % (deterministic)')[2]).toBe('0 pp')
-    // Both full plan: no gap to quote, so the cell is a dash by design.
-    expect(rowByLabel('Money lasts')[2]).toBe('—')
+    // Both full plan through the same year: the same last funded year.
+    expect(rowByLabel('Money lasts')[2]).toBe('same')
     expect(rowByLabel('Ending net worth')[2]).toBe('$0')
   })
 })

@@ -52,7 +52,7 @@ import {
   type ModelKind,
 } from './marketModelPicker'
 import { currentStartYear, seedFromPlanId } from './useProjection'
-import { isHeadlineMcConfig, publishMcHeadline } from './useMcSuccessRate'
+import { HEADLINE_MC_MODEL, isHeadlineMcConfig, publishMcHeadline, publishedMcSummary } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
 import { successBand } from './successBand'
 import { frameH } from './chartFrame'
@@ -94,13 +94,17 @@ function SuccessGauge({ rate, pathCount }: { rate: number; pathCount: number }) 
 
 export function MonteCarloPage() {
   const { plan } = usePlan()
-  const [modelKind, setModelKind] = useState<ModelKind>('lognormal')
-  const [returnVolPct, setReturnVolPct] = useState(12)
-  const [equityWeightPct, setEquityWeightPct] = useState(60)
+  // The controls start on the headline configuration the KPI bar runs, from
+  // the one constant that defines it, so a run here is the headline run until
+  // the reader changes something (#497).
+  const [modelKind, setModelKind] = useState<ModelKind>(HEADLINE_MC_MODEL.kind)
+  const [returnVolPct, setReturnVolPct] = useState<number>(HEADLINE_MC_MODEL.returnVolPct)
+  const [equityWeightPct, setEquityWeightPct] = useState<number>(HEADLINE_MC_MODEL.equityWeightPct)
   const [seed, setSeed] = useState(() => seedFromPlanId(plan.id))
   const [stochasticLongevity, setStochasticLongevity] = useState(false)
   const [ltcShock, setLtcShock] = useState(false)
-  const [summary, setSummary] = useState<MonteCarloSummary | null>(null)
+  // The page's own latest run; `summary` below prefers a published headline run.
+  const [ownSummary, setSummary] = useState<MonteCarloSummary | null>(null)
   const [frontier, setFrontier] = useState<{
     plan: Plan
     model: MarketModelConfig
@@ -155,10 +159,10 @@ export function MonteCarloPage() {
             setStatusMessage(
               `Simulation complete. ${Math.round(s.successRate * 100)} percent of markets sustain the plan.`,
             )
-            // The same simulation at higher precision is the headline number
-            // too: the KPI bar and Results quote this run and its count (#497).
+            // A headline-configuration run is the headline number too: the KPI
+            // bar and Results quote this run and its count (#497).
             if (isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })) {
-              publishMcHeadline(plan, { rate: s.successRate, pathCount: s.pathCount })
+              publishMcHeadline(plan, s)
             }
           }
         })
@@ -218,11 +222,24 @@ export function MonteCarloPage() {
       .finally(() => setHistoricalRunning(false))
   }, [plan, equityWeightPct])
 
-  // Auto-run 1k paths whenever the plan, seed, or model changes (debounced).
+  // Under the headline configuration, the latest run published for this exact
+  // plan object (a 10,000-path one, typically) is what the page shows, so the
+  // gauge here and the KPI bar can never quote different runs (#497). Read
+  // during render: the store changes only when a run completes, which also
+  // sets `ownSummary`, so the two stay in step without a subscription.
+  const cachedHeadline = isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
+    ? publishedMcSummary(plan)
+    : undefined
+  const summary = cachedHeadline ?? ownSummary
+
+  // Auto-run 1k paths whenever the plan, seed, or model changes (debounced),
+  // unless a published run is already on show: a coarser fresh run must not
+  // replace it.
   useEffect(() => {
+    if (cachedHeadline !== undefined) return undefined
     const t = window.setTimeout(() => run(DEFAULT_PATH_COUNT), 250)
     return () => window.clearTimeout(t)
-  }, [run])
+  }, [run, cachedHeadline])
 
   const fanRows = useMemo(() => summary?.fan ?? [], [summary])
   const histRows = useMemo(() => {

@@ -9,23 +9,30 @@
  * so the KPI bar and the verdict never trigger two identical 1,000-path
  * simulations for the same plan.
  *
- * When the Monte Carlo page runs the same configuration at higher precision
- * (Run 10,000 paths), it publishes that result here, and every headline
- * surface adopts it — one run, one count, everywhere it is quoted (#497). A
- * run under a different model, seed, or shock is a different simulation and
- * stays on the Monte Carlo page.
+ * Every run the Monte Carlo page completes under the headline configuration
+ * (Run 10,000 paths included) is published here, and every headline surface
+ * adopts the latest one — one run, one count, everywhere it is quoted (#497).
+ * The Monte Carlo page reads the same store on mount, so it shows the
+ * published run instead of starting a fresh default one, and the two can
+ * never disagree. A run under a different model, seed, or shock is a
+ * different simulation and stays on the Monte Carlo page.
  */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
 import { buildModel, type ModelKind } from './marketModelPicker'
 import { currentStartYear, seedFromPlanId } from './useProjection'
 
 const MC_DEBOUNCE_MS = 1200
 
-/** The model settings the headline run uses; the Monte Carlo page starts on the same ones. */
+/**
+ * The model settings the headline run uses. The Monte Carlo page initialises
+ * its controls from this same constant, so the publish predicate below
+ * compares like with like.
+ */
 export const HEADLINE_MC_MODEL = { kind: 'lognormal' as ModelKind, returnVolPct: 12, equityWeightPct: 60 } as const
 
 export interface McHeadlineConfig {
@@ -49,25 +56,24 @@ export function isHeadlineMcConfig(plan: Plan, config: McHeadlineConfig): boolea
   )
 }
 
-export interface McHeadline {
-  rate: number
-  pathCount: number
-}
-
 const inflight = new WeakMap<Plan, Promise<number>>()
-// Published higher-precision results, keyed like the in-flight map: an edit
-// produces a new plan object, so a stale headline can never outlive its plan.
-const published = new WeakMap<Plan, McHeadline>()
+// The latest completed headline-configuration run per plan object, keyed
+// like the in-flight map: an edit produces a new plan object, so a published
+// run can never outlive its plan.
+const published = new WeakMap<Plan, MonteCarloSummary>()
 const listeners = new Set<() => void>()
 
 /** Adopt a completed headline-configuration run for every subscriber of this plan object. */
-export function publishMcHeadline(plan: Plan, headline: McHeadline): void {
-  const current = published.get(plan)
-  // Never trade precision away: a later 1,000-path auto-run must not replace
-  // a 10,000-path result for the same plan object.
-  if (current !== undefined && current.pathCount > headline.pathCount) return
-  published.set(plan, headline)
+export function publishMcHeadline(plan: Plan, summary: MonteCarloSummary): void {
+  // Latest wins, whatever its path count: the Monte Carlo page shows its
+  // latest run, and the headline must show the same one.
+  published.set(plan, summary)
   for (const listener of listeners) listener()
+}
+
+/** The latest published headline run for this plan object, if any. */
+export function publishedMcSummary(plan: Plan): MonteCarloSummary | undefined {
+  return published.get(plan)
 }
 
 function subscribe(listener: () => void): () => void {
@@ -125,9 +131,9 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   // object via structuredClone, so reference identity is the right key).
   const [snapshot, setSnapshot] = useState<{ plan: Plan; rate: number | null; failed: boolean } | null>(null)
   const runToken = useRef(0)
-  // A published higher-precision run for this exact plan object wins over the
-  // hook's own default run; the store hands back the same object until the
-  // next publish, so this subscription never re-renders on its own.
+  // A run the Monte Carlo page published for this exact plan object wins over
+  // the hook's own default run; the store hands back the same object until
+  // the next publish, so this subscription never re-renders on its own.
   const headline = useSyncExternalStore(subscribe, () => published.get(plan), () => undefined)
   useEffect(() => {
     if (!enabled) return undefined
@@ -155,7 +161,7 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
       window.clearTimeout(t)
     }
   }, [plan, enabled])
-  if (enabled && headline !== undefined) return { rate: headline.rate, status: 'done', pathCount: headline.pathCount }
+  if (enabled && headline !== undefined) return { rate: headline.successRate, status: 'done', pathCount: headline.pathCount }
   const current = enabled && snapshot !== null && snapshot.plan === plan ? snapshot : null
   const status: McSuccessRateStatus = !enabled ? 'idle' : current === null ? 'running' : current.failed ? 'failed' : 'done'
   return { rate: current?.rate ?? null, status, pathCount: DEFAULT_PATH_COUNT }
