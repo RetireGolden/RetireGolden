@@ -16,10 +16,10 @@ import { MemoryRouter } from 'react-router'
 import type { IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import { App } from '../App.tsx'
 import type { PlanStore } from '../data/planStoreContext'
-import { LearningCenterPage } from '../learn/LearningCenterPage'
+import { LearningCenterPage, SEARCH_ANNOUNCE_DELAY_MS } from '../learn/LearningCenterPage'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport/lazyRoutes'
-import { waitFor, waitForText } from '../testSupport/settle'
+import { advanceBy, waitFor, waitForText } from '../testSupport/settle'
 import { PromptDialog } from './dialogViews'
 import { PlanCtx } from './planContextCore'
 import { PLAN_NAME_MAX_LENGTH, PLAN_NAME_TITLE_MAX_LENGTH } from './planName'
@@ -55,10 +55,10 @@ function storeFor(plan: Plan): PlanStore {
   }
 }
 
-function mountApp(path: string, store: PlanStore) {
+function mountApp(path: string, store: PlanStore, props: { importEnabled?: boolean } = {}) {
   return mount(
     <MemoryRouter initialEntries={[path]}>
-      <App planStore={store} />
+      <App planStore={store} {...props} />
     </MemoryRouter>,
   )
 }
@@ -124,7 +124,7 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     await unmount()
   })
 
-  it('shortens a long plan name in the tab title and leaves a stored name past the cap uncapped in the header', async () => {
+  it('shortens a long plan name in the tab title; a stored name past the cap can be edited but not lengthened', async () => {
     const plan = createSamplePlan()
     plan.name = `${'Long name '.repeat(19)}end`
     expect(plan.name.length).toBeGreaterThan(PLAN_NAME_MAX_LENGTH)
@@ -132,11 +132,12 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     await waitFor(() => document.title.startsWith('Household · '), { what: 'the workspace title' })
     expect(document.title).toBe(`Household · ${plan.name.slice(0, PLAN_NAME_TITLE_MAX_LENGTH).trimEnd()}… · RetireGolden`)
     const nameInput = container.querySelector<HTMLInputElement>('.plan-name-input')!
-    // No maxlength on a name already past the cap: the first keystroke must
-    // not persist it truncated. The stored name is untouched: the breadcrumb
-    // crumb and the input carry it whole (its truncation is cluster A's #501
-    // rule, pinned in designQa.clusterA.test.ts).
-    expect(nameInput.getAttribute('maxlength')).toBeNull()
+    // A name already past the cap is not capped at 120 (the first keystroke
+    // must not persist it truncated) but at its own length, so it can be
+    // edited or shortened and never grow. The stored name is untouched: the
+    // breadcrumb crumb and the input carry it whole (its truncation is
+    // cluster A's #501 rule, pinned in designQa.clusterA.test.ts).
+    expect(nameInput.getAttribute('maxlength')).toBe(String(plan.name.length))
     expect(nameInput.value).toBe(plan.name)
     expect(container.querySelector('.workspace-breadcrumb [aria-current="page"]')!.textContent).toBe(plan.name)
     await unmount()
@@ -160,6 +161,7 @@ describe('Learn search (#534)', () => {
     )
     const input = container.querySelector<HTMLInputElement>('.learn-search-input')!
     const status = container.querySelector<HTMLElement>('[role="status"]')!
+    const settle = () => advanceBy(SEARCH_ANNOUNCE_DELAY_MS + 50)
     expect(status.getAttribute('aria-live')).toBe('polite')
     expect(status.textContent).toBe('')
     // The controlled region exists whether or not a query is typed.
@@ -171,11 +173,25 @@ describe('Learn search (#534)', () => {
     const box = container.querySelector('.learn-search')!
     expect(box.classList.contains('learn-search--has-query')).toBe(false)
 
-    await typeInto(input, 'zzzz-no-such-topic')
-    expect(status.textContent).toBe('0 results for “zzzz-no-such-topic”')
-    expect(controlled.querySelector('h2')!.textContent).toBe(status.textContent)
+    // Spaces alone are not a query: no results, no button, no reserved room.
+    await typeInto(input, '   ')
+    expect(box.classList.contains('learn-search--has-query')).toBe(false)
+    expect(container.querySelector('.learn-search-clear')).toBeNull()
+    expect(controlled.querySelector('section[aria-label="Browse by category"]')).not.toBeNull()
+    await settle()
+    expect(status.textContent).toBe('')
 
+    await typeInto(input, 'zzzz-no-such-topic')
+    // The heading follows at once; the live region waits for the query to rest.
+    expect(controlled.querySelector('h2')!.textContent).toBe('0 results for “zzzz-no-such-topic”')
+    expect(status.textContent).toBe('')
+    await settle()
+    expect(status.textContent).toBe('0 results for “zzzz-no-such-topic”')
+
+    // Mid-word values are never spoken: 'ro' is replaced before it rests.
+    await typeInto(input, 'ro')
     await typeInto(input, 'roth')
+    await settle()
     expect(status.textContent).toMatch(/^\d+ results? for “roth”$/)
     expect(controlled.querySelector('section[aria-label="Search results"]')).not.toBeNull()
 
@@ -185,6 +201,7 @@ describe('Learn search (#534)', () => {
     expect(clear.getAttribute('type')).toBe('button')
     await act(async () => clear.click())
     expect(input.value).toBe('')
+    await settle()
     expect(status.textContent).toBe('')
     expect(document.activeElement).toBe(input)
     expect(container.querySelector('.learn-search-clear')).toBeNull()
@@ -299,6 +316,17 @@ describe('Plan-scoped site-level paths (#536)', () => {
       expect(household.getAttribute('href')).toBe(`/plan/${plan.id}/household`)
       await unmount()
     }
+  })
+
+  it('withholds the import escape while the host has import switched off', async () => {
+    const plan = createSamplePlan()
+    const { container, unmount } = await mountApp(`/plan/${plan.id}/import`, storeFor(plan), { importEnabled: false })
+    await waitForText(container, 'This plan has no such section')
+    expect([...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to Import & migrate')).toBe(false)
+    expect(container.textContent).not.toContain('is not a section of this plan')
+    const household = [...container.querySelectorAll('a')].find((a) => a.textContent === 'Go to Household')!
+    expect(household.className).toContain('btn-primary')
+    await unmount()
   })
 
   it('keeps the plain not-found copy for a segment with no site-level twin', async () => {

@@ -5,7 +5,7 @@
  * the glossary and sources.
  */
 
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import {
   articlesInCategory,
@@ -16,6 +16,13 @@ import {
 } from './learningRegistry'
 import { ArticleCard } from './LearnCards'
 
+/**
+ * How long the query rests before the live region speaks. A screen reader
+ * would otherwise hear a count for every keystroke, mid-word included; the
+ * visible heading still follows each one (#534 review).
+ */
+export const SEARCH_ANNOUNCE_DELAY_MS = 400
+
 export function LearningCenterPage() {
   const [query, setQuery] = useState('')
   const searchInputId = useId()
@@ -24,9 +31,17 @@ export function LearningCenterPage() {
   // resolves (#534).
   const resultsId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
+  // One notion of "a query is active", from the trimmed text: a box holding
+  // only spaces gets no clear button, no reserved room, and no results.
   const trimmed = query.trim()
-  const results = trimmed ? searchArticles(trimmed) : null
+  const active = trimmed.length > 0
+  const results = active ? searchArticles(trimmed) : null
   const resultsSummary = results ? `${results.length} result${results.length === 1 ? '' : 's'} for “${trimmed}”` : ''
+  const [announced, setAnnounced] = useState('')
+  useEffect(() => {
+    const timer = setTimeout(() => setAnnounced(resultsSummary), SEARCH_ANNOUNCE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [resultsSummary])
 
   const featured = featuredArticles()
 
@@ -38,7 +53,7 @@ export function LearningCenterPage() {
         more. Read a topic, then come back to the planner with a clearer picture.
       </p>
 
-      <div className={query ? 'learn-search learn-search--has-query' : 'learn-search'}>
+      <div className={active ? 'learn-search learn-search--has-query' : 'learn-search'}>
         <label htmlFor={searchInputId} className="sr-only">
           Search the Learning Center
         </label>
@@ -55,7 +70,7 @@ export function LearningCenterPage() {
         {/* A real button, so the clear affordance is reachable from the
             keyboard and named for a screen reader; the UA's own search
             cancel glyph is neither, and is hidden in CSS (#534). */}
-        {query ? (
+        {active ? (
           <button
             type="button"
             className="learn-search-clear"
@@ -69,9 +84,10 @@ export function LearningCenterPage() {
           </button>
         ) : null}
         {/* Always mounted so the announcement lands when the results change;
-            the visible count below is a heading, which is not announced. */}
+            the visible count below is a heading, which is not announced. It
+            speaks the settled summary, not every keystroke's. */}
         <p className="sr-only" role="status" aria-live="polite">
-          {resultsSummary}
+          {announced}
         </p>
       </div>
 

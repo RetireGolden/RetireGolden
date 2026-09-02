@@ -129,11 +129,15 @@ export function PromptDialog({ opts, onResult }: { opts: PromptOptions; onResult
               // a selection scrolls the box to its end, which for a long
               // "Copy of …" default hid what was being named (#533). The
               // reset waits a frame because the selection's own scroll can
-              // land on a later layout pass and undo a synchronous one.
+              // land on a later layout pass and undo a synchronous one, and
+              // repeats on the frame after in case that pass is the second.
               const input = e.target
               input.select()
               requestAnimationFrame(() => {
                 input.scrollLeft = 0
+                requestAnimationFrame(() => {
+                  input.scrollLeft = 0
+                })
               })
             }}
           />

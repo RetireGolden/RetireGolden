@@ -248,8 +248,9 @@ function PlanName() {
       // The cap is for what is typed, never for what is stored: a name that
       // is already past it (imported, or saved before the cap) keeps its full
       // length here, or the first keystroke would persist it silently
-      // truncated (review of #533).
-      maxLength={plan.name.length <= PLAN_NAME_MAX_LENGTH ? PLAN_NAME_MAX_LENGTH : undefined}
+      // truncated; the box's limit is then that length, so the name can be
+      // edited in place or shortened but never grow (review of #533).
+      maxLength={Math.max(PLAN_NAME_MAX_LENGTH, plan.name.length)}
       disabled={readOnly}
       onChange={(e) =>
         update((d) => {

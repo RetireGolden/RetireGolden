@@ -92,7 +92,9 @@ describe('Design-QA cluster E chrome pins', () => {
   it('a plan card clamps a long name to two lines instead of growing past its siblings (#533)', () => {
     const body = lastRule('.plan-card-name')
     expect(body).toMatch(/-webkit-line-clamp:\s*2/)
+    // The clamp is inert without both halves of the -webkit-box pair.
     expect(body).toMatch(/display:\s*-webkit-box/)
+    expect(body).toMatch(/-webkit-box-orient:\s*vertical/)
     expect(body).toMatch(/overflow:\s*hidden/)
     // A 182-character run with no spaces must still break inside the card.
     expect(body).toMatch(/overflow-wrap:\s*anywhere/)

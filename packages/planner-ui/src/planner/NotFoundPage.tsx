@@ -9,6 +9,7 @@
 
 import { Link, useParams } from 'react-router'
 
+import { useImportAvailability } from '../import/importAvailability'
 import { usePlannerEdition } from './editionContext'
 
 export function NotFoundPage() {
@@ -53,8 +54,18 @@ const SITE_LEVEL_ESCAPES: Readonly<Record<string, { to: string; label: string }>
 
 export function WorkspaceNotFound() {
   const { planId, '*': splat } = useParams()
+  const importAvailability = useImportAvailability()
   const segment = splat?.split('/').filter(Boolean)[0] ?? ''
-  const escape = Object.hasOwn(SITE_LEVEL_ESCAPES, segment) ? SITE_LEVEL_ESCAPES[segment] : undefined
+  // The import wizard is a host capability: while the host has it switched
+  // off (or has not yet said), the plain copy applies instead of a primary
+  // action into an unavailable page. Whether a host mounts the route at all
+  // is not knowable from here; the same is true of every /import link in the
+  // package, and a host without the route answers with its own not-found.
+  const importOffered = importAvailability.enabled && importAvailability.resolved
+  const escape =
+    Object.hasOwn(SITE_LEVEL_ESCAPES, segment) && (segment !== 'import' || importOffered)
+      ? SITE_LEVEL_ESCAPES[segment]
+      : undefined
   return (
     <div className="card empty-state">
       <h2>This plan has no such section</h2>
