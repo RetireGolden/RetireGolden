@@ -17,6 +17,7 @@ import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
 import { fmtMoneyCompact } from '../format'
+import { TypeChip } from '../TypeChip'
 import { currentStartYear, taxCalculatorFor } from '../useProjection'
 import { IssueSectionsSentence, Issues } from './shared'
 import {
@@ -488,7 +489,7 @@ export function InsuranceSection() {
           <div className="item-row" key={p.id} data-testid="insurance-row" data-insurance-kind={p.kind} data-policy-id={p.id}>
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">{INSURANCE_LABEL[p.kind]}</span>
+                <TypeChip>{INSURANCE_LABEL[p.kind]}</TypeChip>
                 <span>{`${p.name}${policyOrdinals[position]}`}</span>
               </span>
               <button
@@ -529,7 +530,7 @@ export function InsuranceSection() {
           <div className="item-row" key={c.id} data-testid="care-event-row">
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">Care</span>
+                <TypeChip>Care</TypeChip>
                 <span>{`${careTitles[i]}${careOrdinals[i]}`}</span>
               </span>
               <button

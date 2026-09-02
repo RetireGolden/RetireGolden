@@ -26,6 +26,7 @@ import {
   useImportAvailability,
 } from '../import/importAvailability'
 import { usePlan } from './planContextCore'
+import { TypeChip } from './TypeChip'
 import { CheckboxField, DateField, NumberField, MoneyField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney } from './format'
@@ -190,10 +191,10 @@ export function FormerSpousesEditor({
                     before the "Not applied" chip; the box carries the
                     direct-child chip protection (item-row-kind). */}
                 <span className="item-row-kind">
-                  <span className="type-chip">{kindLabel}</span>
+                  <TypeChip>{kindLabel}</TypeChip>
                   {ordinals[i]}
                 </span>
-                {inapplicable ? <span className="type-chip type-chip--muted">Not applied</span> : null}
+                {inapplicable ? <TypeChip className="type-chip--muted">Not applied</TypeChip> : null}
               </span>
               <button
                 type="button"
@@ -330,7 +331,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
       <div className="item-row">
         <div className="item-row-head">
           <span className="item-row-title">
-            <span className="type-chip">{personIndex === 0 ? 'Primary' : 'Partner'}</span>
+            <TypeChip>{personIndex === 0 ? 'Primary' : 'Partner'}</TypeChip>
             {person.name}
           </span>
         </div>
@@ -392,7 +393,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
     <div className="item-row">
       <div className="item-row-head">
         <span className="item-row-title">
-          <span className="type-chip">{personIndex === 0 ? 'Primary' : 'Partner'}</span>
+          <TypeChip>{personIndex === 0 ? 'Primary' : 'Partner'}</TypeChip>
           {person.name}: full retirement age {fra.years}
           {fra.extraMonths > 0 ? `y ${fra.extraMonths}m` : ''}
         </span>

@@ -11,6 +11,7 @@ import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
 import { fmtMoney } from '../format'
 import { buildModel } from '../marketModelPicker'
+import { TypeChip } from '../TypeChip'
 import { currentStartYear, seedFromPlanId } from '../useProjection'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
@@ -538,7 +539,7 @@ export function SpendingSection() {
         {e.phases.map((p, i) => (
           <div className="item-row" key={i}>
             <div className="item-row-head">
-              <span className="item-row-title"><span className="type-chip">Phase</span>from age {p.fromAge}</span>
+              <span className="item-row-title"><TypeChip>Phase</TypeChip>from age {p.fromAge}</span>
               <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.expenses.phases.splice(i, 1))}>Remove</button>
             </div>
             <div className="form-grid">
@@ -690,7 +691,7 @@ export function SpendingSection() {
         {e.oneTimeGoals.map((g, i) => (
           <div className="item-row" key={g.id}>
             <div className="item-row-head">
-              <span className="item-row-title"><span className="type-chip">Goal</span>{g.label}</span>
+              <span className="item-row-title"><TypeChip>Goal</TypeChip>{g.label}</span>
               <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.expenses.oneTimeGoals.splice(i, 1))}>Remove</button>
             </div>
             <div className="form-grid">

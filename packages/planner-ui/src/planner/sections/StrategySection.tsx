@@ -9,6 +9,7 @@ import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
 import { fmtMoney } from '../format'
 import { provenanceSource } from '../provenanceLinks'
+import { TypeChip } from '../TypeChip'
 import {
   namedQcdYears,
   QCD_NAMED_STANDS_DOWN_SCALAR,
@@ -174,7 +175,7 @@ export function StrategySection() {
             {rc.conversions.map((c, i) => (
               <div className="item-row" key={i}>
                 <div className="item-row-head">
-                  <span className="item-row-title"><span className="type-chip">Convert</span>{c.year}</span>
+                  <span className="item-row-title"><TypeChip>Convert</TypeChip>{c.year}</span>
                   <button
                     type="button"
                     className="btn-ghost btn-ghost-danger"

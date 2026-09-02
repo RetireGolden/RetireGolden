@@ -24,6 +24,7 @@ import { usePlan } from '../planContextCore'
 import { currentStartYear, taxCalculatorFor } from '../useProjection'
 import { CheckboxField, DateField, MoneyField, SelectField, TextField } from '../fields'
 import { formatPositiveUsdCents } from '../retirementActionManualEditor'
+import { TypeChip } from '../TypeChip'
 import {
   buildQcdAuthoringIntent,
   emptyQcdAuthoringDraft,
@@ -168,7 +169,7 @@ function ScheduledGiftRow({
     <div className="item-row" data-qcd-gift-id={gift.actionId}>
       <div className="item-row-head">
         <span className="item-row-title">
-          <span className="type-chip">Scheduled gift</span>
+          <TypeChip>Scheduled gift</TypeChip>
           Qualified charitable distribution · {gift.year} ·{' '}
           {formatPositiveUsdCents(gift.requestedAmount)}
         </span>
@@ -256,7 +257,7 @@ function GiftDraftForm({
     <div className="item-row" data-qcd-gift-draft="new">
       <div className="item-row-head">
         <span className="item-row-title">
-          <span className="type-chip">New gift</span>
+          <TypeChip>New gift</TypeChip>
           Schedule a charitable gift
         </span>
         <button type="button" className="btn-ghost btn-ghost-danger" onClick={onClose}>

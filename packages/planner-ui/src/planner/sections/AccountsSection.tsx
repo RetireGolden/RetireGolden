@@ -4,6 +4,7 @@ import type { Account } from '@retiregolden/engine/model/plan'
 import { AccountFields } from './AccountFields'
 import { ACCOUNT_LABEL, isIndividuallyOwnedAccount, newId, ordinalSuffixes } from './sectionHelpers'
 import { usePlan } from '../planContextCore'
+import { TypeChip } from '../TypeChip'
 import { Issues } from './shared'
 import { UpdateBalancesPanel } from './UpdateBalancesPanel'
 import { removeAccount } from '../eligibilityFactActions'
@@ -61,7 +62,7 @@ export function AccountsSection() {
           <div className="item-row" key={a.id} data-testid="account-row" data-account-type={a.type} data-account-name={a.name}>
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">{ACCOUNT_LABEL[a.type]}</span>
+                <TypeChip>{ACCOUNT_LABEL[a.type]}</TypeChip>
                 <span>{`${a.name}${ordinals[i]}`}</span>
               </span>
               <button

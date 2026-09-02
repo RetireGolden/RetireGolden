@@ -268,6 +268,34 @@ export interface GenericCsvDraft {
 export type GenericCsvDraftResult = { ok: true } & GenericCsvDraft | { ok: false; message: string }
 
 /**
+ * Roles assigned to more than one column, in header order.
+ *
+ * Every role but `ignore` is single-valued: the mapper reads one name column,
+ * one balance column, and so on with `roles.indexOf`, so a second column
+ * carrying the same role was read by nothing and its data vanished with no
+ * message (#569). "Ignore" is the one role a whole sheet can share.
+ */
+export function duplicateColumnRoles(roles: ColumnRole[]): ColumnRole[] {
+  const seen = new Set<ColumnRole>()
+  const duplicated = new Set<ColumnRole>()
+  for (const role of roles) {
+    if (role === 'ignore') continue
+    if (seen.has(role)) duplicated.add(role)
+    else seen.add(role)
+  }
+  return [...duplicated]
+}
+
+/** The wizard's inline warning and the mapper's refusal say the same thing. */
+export function duplicateRoleMessage(duplicated: ColumnRole[]): string {
+  const named = duplicated.map((r) => `“${COLUMN_ROLE_LABEL[r]}”`).join(', ')
+  return (
+    `Two columns are set to the same role (${named}). Only the first would be read and the rest would be dropped ` +
+    'without a trace, so give each column its own role, or set the extra ones to “Ignore”.'
+  )
+}
+
+/**
  * Map data rows onto a draft plan using the (possibly user-corrected) column
  * roles. Rows without a readable balance are reported and skipped; account
  * types come from the type column when present, else from the name, else
@@ -278,6 +306,10 @@ export function draftPlanFromGenericCsv(
   roles: ColumnRole[],
   newId: () => string = () => crypto.randomUUID(),
 ): GenericCsvDraftResult {
+  // Checked before anything is read: a duplicate role is a silent data loss,
+  // not a row-level skip the checklist can report afterwards.
+  const duplicated = duplicateColumnRoles(roles)
+  if (duplicated.length > 0) return { ok: false, message: duplicateRoleMessage(duplicated) }
   const nameCol = roles.indexOf('name')
   const balanceCol = roles.indexOf('balance')
   if (balanceCol === -1) {

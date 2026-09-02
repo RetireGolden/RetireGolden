@@ -15,12 +15,23 @@ const COMPACT_TIERS = [
 ] as const
 
 /**
+ * The last readable rung. Once the T mantissa would round to 1000 there is no
+ * unit left to name the magnitude, so the reader gets an open-ended bound
+ * ("$999T+", "−$999T+") rather than a raw JS exponent. It is a display
+ * ceiling on the *label*, not a bound on the value: nothing is clamped, the
+ * engine still computes and stores what it computed, and what a plan is
+ * allowed to contain stays the schema's decision.
+ */
+const COMPACT_CEILING = '999T+'
+
+/**
  * Compact KPI form: $1.24M, $310k, −$82k, and past a billion $2.50B / $1.20T,
  * so an absurd balance never renders a six-digit mantissa in millions or a
  * raw JS exponent with a unit behind it (#495, #548). A mantissa never reaches
  * four digits: $999k hands off to $1.00M, and once the T mantissa would round
- * to 1000 there is no readable unit left, so the value is a bare exponent
- * ($1.00e+15, $1.18e+37) that stays short instead of overflowing the cell.
+ * to 1000 the value degrades to the `$999T+` ceiling (#572) — "more than I can
+ * name" is honest and short, where `$1.18e+37` is neither readable by this
+ * audience nor bounded in width.
  */
 export function fmtMoneyCompact(v: number): string {
   if (!Number.isFinite(v)) return '—'
@@ -32,7 +43,7 @@ export function fmtMoneyCompact(v: number): string {
       const mantissa = Math.round((a / scale) * 100) / 100
       if (mantissa < 1000) return `${sign}$${mantissa.toFixed(2)}${suffix}`
     }
-    return `${sign}$${a.toExponential(2)}`
+    return `${sign}$${COMPACT_CEILING}`
   }
   if (a >= 10_000) return `${sign}$${Math.round(a / 1000)}k`
   return `${sign}$${Math.round(a).toLocaleString('en-US')}`

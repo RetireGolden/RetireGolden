@@ -131,6 +131,10 @@ lines, a megabyte cell, or a hundred-column row is still counted without becomin
 nothing maps, the failure message still names the set-aside rows; a sheet whose header has no dollar
 value below it fails with a message that names every other row, above the header as well as below,
 calling the row a header only when its labels named columns the analyzer recognises.
+Every role but `ignore` is single-valued — the mapper reads one column per role — so two columns on
+the same role is a mapping error, not a preference: `duplicateColumnRoles` names the clash, the
+mapping step warns inline and holds Continue, and `draftPlanFromGenericCsv` refuses the same
+mapping rather than reading the first column and dropping the rest.
 
 ### 1040 guided seed — `tenForty.ts`
 
@@ -144,7 +148,10 @@ calling the row a header only when its labels named columns the analyzer recogni
   (`ASSUMED_TAXABLE_YIELD_PCT`), with the qualified ratio from 3a/3b — flagged as an estimate to
   replace with the real balance. On a Single return the account is owned by the primary (Joint
   is a couple label and would be wrong for a one-person household). On MFJ the estimate stays
-  Joint because the 1040 lines are the combined total.
+  Joint because the 1040 lines are the combined total. Line 3a only sets the qualified *share* of
+  line 3b, so a 3a with 3b at zero sizes nothing: it gets its own **not-imported** row naming the
+  reason, and a 3a larger than 3b (impossible on a filed return) says the share was capped at 100%
+  rather than claiming it was kept.
 - 4b IRA distributions → unmapped pointer (withdrawals are modeled from balances, not history).
 - 5b pensions → a pension account paying that amount monthly starting now (COLA/survivor defaults
   flagged).

@@ -17,6 +17,7 @@ import { parseCivilIsoDate } from '@retiregolden/engine/actions/civilDate'
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
 
 import { usePlan } from '../planContextCore'
+import { TypeChip } from '../TypeChip'
 import { currentStartYear } from '../useProjection'
 import { DateField, MoneyField, SelectField } from '../fields'
 import {
@@ -55,7 +56,7 @@ function accountLabel(account: Account): string {
 }
 
 function Chip({ recorded }: { recorded: boolean }) {
-  return <span className="type-chip">{recorded ? ON_RECORD : NOT_ON_RECORD}</span>
+  return <TypeChip>{recorded ? ON_RECORD : NOT_ON_RECORD}</TypeChip>
 }
 
 function RowIssue({ issue }: { issue: string | null }) {

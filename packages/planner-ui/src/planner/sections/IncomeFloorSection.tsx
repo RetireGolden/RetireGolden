@@ -31,6 +31,7 @@ import { usePlan } from '../planContextCore'
 import { provenanceSource } from '../provenanceLinks'
 import { CheckboxField, MoneyField, NumberField, SelectField, TextField } from '../fields'
 import { fmtMoney, fmtMoneyCompact } from '../format'
+import { TypeChip } from '../TypeChip'
 import { currentStartYear, useProjection } from '../useProjection'
 import { IssueSectionsSentence, Issues } from './shared'
 import { hasIssueAt, hasIssueUnder, withoutIssuesBeyond } from '../validationIssues'
@@ -88,7 +89,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
     <div className="item-row">
       <div className="item-row-head">
         <span className="item-row-title">
-          <span className="type-chip">{ladder.purpose === 'bridge' ? 'Bridge' : 'Floor'}</span>
+          <TypeChip>{ladder.purpose === 'bridge' ? 'Bridge' : 'Floor'}</TypeChip>
           {ladder.name}
         </span>
         <button

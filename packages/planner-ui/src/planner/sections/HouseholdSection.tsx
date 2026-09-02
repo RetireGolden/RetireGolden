@@ -10,6 +10,7 @@ import { CheckboxField, DateField, NumberField, SelectField, TextField } from '.
 import { LEARN } from '../learnLinks'
 import { LongevityModal } from '../LongevityModal'
 import { SurvivalPercentileModal } from '../SurvivalPercentileModal'
+import { TypeChip } from '../TypeChip'
 import { US_STATES } from '../usStates'
 import { Issues } from './shared'
 import { fallbackPersonName, MONTH_OPTIONS, newId } from './sectionHelpers'
@@ -100,7 +101,7 @@ export function HouseholdSection() {
                     when the name is the placeholder, which already states the
                     role: "PARTNER Unnamed partner" would say it twice (#523). */}
                 {person.name === fallbackPersonName(i) ? null : (
-                  <span className="type-chip">{i === 0 ? 'Primary' : 'Partner'}</span>
+                  <TypeChip>{i === 0 ? 'Primary' : 'Partner'}</TypeChip>
                 )}
                 {person.name}
               </span>
@@ -250,7 +251,7 @@ export function HouseholdSection() {
           <div className="item-row" key={i}>
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">Move</span>to {US_STATES.find((s) => s.value === move.state)?.label ?? move.state} in {MONTH_OPTIONS.find((m) => m.value === String(move.fromMonth))?.label ?? 'July'} {move.fromYear}
+                <TypeChip>Move</TypeChip>to {US_STATES.find((s) => s.value === move.state)?.label ?? move.state} in {MONTH_OPTIONS.find((m) => m.value === String(move.fromMonth))?.label ?? 'July'} {move.fromYear}
               </span>
               <button
                 type="button"

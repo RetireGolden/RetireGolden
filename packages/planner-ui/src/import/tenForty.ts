@@ -215,10 +215,38 @@ export function seedPlanFromTenForty(
       detail:
         `Your $${investmentIncome.toLocaleString('en-US')} of interest + dividends implies roughly a ` +
         `$${estimatedBalance.toLocaleString('en-US')} taxable balance at a ${ASSUMED_TAXABLE_YIELD_PCT}% yield, an estimate to replace ` +
-        'with the real balance and cost basis on the Accounts screen. The qualified-dividend share was kept.',
+        'with the real balance and cost basis on the Accounts screen. ' +
+        // Line 3a is the qualified *portion* of line 3b, so 3a > 3b cannot
+        // happen on a filed return. The account still takes a ratio (capped at
+        // 100%), but saying "the share was kept" would be false for a capped
+        // one — the honest line names the cap and points back at the return.
+        (inputs.qualifiedDividends > inputs.ordinaryDividends
+          ? `Line 3a ($${inputs.qualifiedDividends.toLocaleString('en-US')}) is larger than line 3b ` +
+            `($${inputs.ordinaryDividends.toLocaleString('en-US')}), and 3a is the qualified portion of 3b, so the qualified share ` +
+            'was capped at 100%. Check both lines on your return, and the qualified share on the Accounts screen.'
+          : 'The qualified-dividend share was kept.'),
       locator: { kind: 'derived', from: [form1040('2b'), form1040('3a'), form1040('3b')], note: `balance implied by a ${ASSUMED_TAXABLE_YIELD_PCT}% yield` },
       confidence: 'estimated',
       target: `accounts[${plan.accounts.length - 1}]`,
+    })
+  }
+
+  // --- Line 3a with no line 3b: nothing to attach it to ---------------------
+  // The estimate is sized from line 2b + line 3b. Line 3a only sets the
+  // qualified *share* of 3b, so qualified dividends with a 3b of zero size
+  // nothing and set nothing — and used to leave the review checklist silent,
+  // which the "nothing imports silently" promise cannot carry (#568).
+  if (inputs.qualifiedDividends > 0 && inputs.ordinaryDividends === 0) {
+    review.push({
+      status: 'unmapped',
+      source: 'From your 1040, line 3a (qualified dividends)',
+      detail:
+        `$${inputs.qualifiedDividends.toLocaleString('en-US')} of qualified dividends with line 3b (ordinary dividends) at $0. ` +
+        'Line 3a is the qualified portion of line 3b, so with 3b empty there is no dividend total to size a taxable balance from ' +
+        'and nothing was brought over. Check line 3b on your return, then add the brokerage account with its real balance and ' +
+        'qualified share on the Accounts screen.',
+      locator: form1040('3a'),
+      confidence: 'unmapped',
     })
   }
 
