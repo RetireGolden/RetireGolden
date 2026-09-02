@@ -58,13 +58,13 @@
       "id": "AG.callsite.attempt",
       "label": "frozen annual contract sharing one settlement-assumption vector",
       "file": "projection/simulate.ts",
-      "lines": [8265, 8284],
+      "lines": [8266, 8285],
       "anchors": [
-        { "line": 8265, "text": "const linkedGroupFundingForAttempt = (" },
-        { "line": 8268, "text": ") => annualConversionLinkedWithdrawalFunding(Object.freeze({" },
-        { "line": 8273, "text": "omitActionIds: annualLinkedGroupOmissionIds," },
-        { "line": 8275, "text": "runPass: (" },
-        { "line": 8277, "text": ") => runPostContributionAnnualPass(" }
+        { "line": 8266, "text": "const linkedGroupFundingForAttempt = (" },
+        { "line": 8269, "text": ") => annualConversionLinkedWithdrawalFunding(Object.freeze({" },
+        { "line": 8274, "text": "omitActionIds: annualLinkedGroupOmissionIds," },
+        { "line": 8276, "text": "runPass: (" },
+        { "line": 8278, "text": ") => runPostContributionAnnualPass(" }
       ]
     }
   ],

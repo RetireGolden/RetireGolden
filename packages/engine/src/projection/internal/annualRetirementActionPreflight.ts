@@ -59,6 +59,19 @@ export interface AnnualRetirementActionPreflightResult {
     Readonly<ConversionLinkedWithdrawalGroupAssessment>
 }
 
+/** Materialize the discriminant once and detach any caller-owned array. */
+function snapshotLinkedGroupRelease(
+  release: Readonly<AnnualConversionLinkedWithdrawalRelease>,
+): Readonly<AnnualConversionLinkedWithdrawalRelease> {
+  const kind = release.kind
+  return kind === 'proven'
+    ? Object.freeze({
+        kind,
+        authorizations: Object.freeze([...release.authorizations]),
+      })
+    : Object.freeze({ kind })
+}
+
 /**
  * Can every allocation of one group leg be funded from the annual snapshot?
  *
@@ -87,6 +100,9 @@ function legFundableFromSnapshot(
   }
   for (const [accountId, requested] of requestedBySourceAccountId) {
     const balancePlanDollars = balancePlanDollarsByAccountId.get(accountId)
+    // This explicit guard is also the type-narrowing boundary for the exact-
+    // cent conversion below. Removing it is a compile error, not an alternate
+    // path that can silently turn an absent balance into capacity.
     if (balancePlanDollars === undefined) return false
     try {
       if (planDollarsToFlooredLedgerCents(balancePlanDollars) < requested) {
@@ -123,6 +139,10 @@ function provisionalLinkedGroupAuthorizations(
       conversionActionId: group.conversionActionId,
       withdrawalActionId: group.withdrawalActionId,
       funding: {
+        // These deliberately duplicate the withdrawal's authored cents. The
+        // provisional run is testing the hypothesis that this exact withdrawal
+        // can fund this conversion; the discarded run later computes the real
+        // liability allocation and either proves or rejects that hypothesis.
         requiredFundingAmount: asUsdCents(withdrawal.requestedAmount),
         fundedAmount: asUsdCents(withdrawal.requestedAmount),
       },
@@ -134,21 +154,26 @@ function provisionalLinkedGroupAuthorizations(
 /** Route named actions and publish one pre-execution linked-group verdict. */
 export function annualRetirementActionPreflight(
   input: Readonly<AnnualRetirementActionPreflightInput>,
-): AnnualRetirementActionPreflightResult {
-  const currentYearActions = input.retirementActions.filter(
+): Readonly<AnnualRetirementActionPreflightResult> {
+  const linkedGroupRelease = snapshotLinkedGroupRelease(input.linkedGroupRelease)
+  // The assessor has no year predicate of its own. Scope the entire shared
+  // request union here so another year's unexecuted pair cannot poison this
+  // year's all-or-nothing release, including counterfactual passes that omit a
+  // request from the annual action array.
+  const currentYearActions = Object.freeze(input.retirementActions.filter(
     (request) => request.year === input.taxYear,
-  )
-  const ordinaryActions = currentYearActions.filter(
+  ))
+  const ordinaryActions = Object.freeze(currentYearActions.filter(
     (request): request is OrdinaryWithdrawalRequest =>
       request.kind === 'ordinaryWithdrawal',
-  )
-  const conversionActions = currentYearActions.filter(
+  ))
+  const conversionActions = Object.freeze(currentYearActions.filter(
     (request): request is RothConversionRequest =>
       request.kind === 'rothConversion',
-  )
-  const nonConversionActions = currentYearActions.filter(
+  ))
+  const nonConversionActions = Object.freeze(currentYearActions.filter(
     (request) => request.kind !== 'rothConversion',
-  )
+  ))
   const schedule = evaluateRetirementActionSchedule(
     input.taxYear,
     currentYearActions,
@@ -157,10 +182,10 @@ export function annualRetirementActionPreflight(
     schedule.scheduleIssues.length > 0 &&
     nonConversionActions.length > 0 &&
     conversionActions.length > 0
-  const qcdActions = currentYearActions.filter(
+  const qcdActions = Object.freeze(currentYearActions.filter(
     (request): request is QualifiedCharitableDistributionRequest =>
       request.kind === 'qcd',
-  )
+  ))
 
   // A QCD colliding with a non-QCD stays with the ordinary executor so one
   // source owns both sides of the diagnostic. A QCD-only collision remains in
@@ -174,22 +199,25 @@ export function annualRetirementActionPreflight(
             qcdActionIds.has(actionId))
         : []),
   )
-  const qcdExecutionActions = qcdActions.filter(
+  const qcdExecutionActions = Object.freeze(qcdActions.filter(
     (request) => !crossKindCollidingQcdActionIds.has(request.actionId),
-  )
-  const ordinaryExecutionActions = (
+  ))
+  const ordinaryExecutionActions = Object.freeze((
     mixedKindScheduleBlocked ? currentYearActions : nonConversionActions
   ).filter((request) =>
     request.kind !== 'qcd' ||
-    crossKindCollidingQcdActionIds.has(request.actionId))
+    crossKindCollidingQcdActionIds.has(request.actionId)))
 
   // The group decision needs the annual union visible across both disjoint
   // executors. Duplicates are intentional and collapse in the assessor.
-  const linkedGroupAssessmentRequests = [
+  const linkedGroupAssessmentRequests = Object.freeze([
     ...currentYearActions,
     ...ordinaryExecutionActions,
     ...conversionActions,
-  ]
+  ])
+  // A baseline that was read lets the assessor refuse on the funding merits.
+  // An unavailable baseline means this run cannot answer the liability
+  // question, so the assessor must publish the distinct unsupported reason.
   const observedLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups(
     linkedGroupAssessmentRequests,
     { annualLiabilityBaseline: input.annualLiabilityBaseline },
@@ -201,9 +229,9 @@ export function annualRetirementActionPreflight(
     ] as const),
   )
   const linkedGroupAuthorizations =
-    input.linkedGroupRelease.kind === 'proven'
-      ? input.linkedGroupRelease.authorizations
-      : input.linkedGroupRelease.kind === 'stageProvisionally'
+    linkedGroupRelease.kind === 'proven'
+      ? linkedGroupRelease.authorizations
+      : linkedGroupRelease.kind === 'stageProvisionally'
         ? provisionalLinkedGroupAuthorizations(
             linkedGroupAssessmentRequests,
             observedLinkedWithdrawalGroups,
@@ -221,7 +249,7 @@ export function annualRetirementActionPreflight(
           },
         )
 
-  return {
+  return Object.freeze({
     ordinaryActions,
     conversionActions,
     qcdExecutionActions,
@@ -230,5 +258,5 @@ export function annualRetirementActionPreflight(
     linkedGroupAssessmentRequests,
     observedConversionLinkedWithdrawalGroups: observedLinkedWithdrawalGroups,
     conversionLinkedWithdrawalGroups,
-  }
+  })
 }

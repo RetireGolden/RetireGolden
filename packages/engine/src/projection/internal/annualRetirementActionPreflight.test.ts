@@ -96,6 +96,7 @@ function conversion(
 function qcd(
   id: string,
   options: Readonly<{
+    year?: number
     date?: string
     sequence?: number
   }> = {},
@@ -104,8 +105,8 @@ function qcd(
   return {
     actionId: asActionId(id),
     kind: 'qcd',
-    year: YEAR,
-    executionDate: options.date ?? `${YEAR}-08-01`,
+    year: options.year ?? YEAR,
+    executionDate: options.date ?? `${options.year ?? YEAR}-08-01`,
     executionSequence: options.sequence ?? 3,
     requestedAmount: amount,
     provenance: { source: 'manual' },
@@ -154,23 +155,42 @@ describe('annualRetirementActionPreflight', () => {
   it('scopes every executor and group decision to the current year', () => {
     const currentWithdrawal = ordinary('withdrawal')
     const currentConversion = conversion('conversion', 'withdrawal')
+    const currentQcd = qcd('qcd')
     const futureWithdrawal = ordinary('future-withdrawal', { year: YEAR + 1 })
     const futureConversion = conversion('future-conversion', 'future-withdrawal', {
       year: YEAR + 1,
     })
+    const futureQcd = qcd('future-qcd', { year: YEAR + 1 })
 
     const result = annualRetirementActionPreflight(input([
       currentWithdrawal,
       currentConversion,
+      currentQcd,
       futureWithdrawal,
       futureConversion,
+      futureQcd,
     ]))
 
     expect(result.ordinaryActions).toEqual([currentWithdrawal])
     expect(result.conversionActions).toEqual([currentConversion])
+    expect(result.qcdExecutionActions).toEqual([currentQcd])
     expect(result.linkedGroupAssessmentRequests).not.toContain(futureWithdrawal)
     expect(result.linkedGroupAssessmentRequests).not.toContain(futureConversion)
+    expect(result.linkedGroupAssessmentRequests).not.toContain(futureQcd)
     expect(result.conversionLinkedWithdrawalGroups.groups).toHaveLength(1)
+  })
+
+  it('publishes a frozen result envelope and request arrays', () => {
+    const result = annualRetirementActionPreflight(input([ordinary('withdrawal')]))
+
+    expect(Object.isFrozen(result)).toBe(true)
+    expect([
+      result.ordinaryActions,
+      result.conversionActions,
+      result.qcdExecutionActions,
+      result.ordinaryExecutionActions,
+      result.linkedGroupAssessmentRequests,
+    ].every(Object.isFrozen)).toBe(true)
   })
 
   it('keeps a cross-kind QCD collision in the ordinary executor source', () => {
@@ -264,6 +284,28 @@ describe('annualRetirementActionPreflight', () => {
     })
   })
 
+  it('fails provisional release closed when the conversion source is one cent short', () => {
+    const withdrawal = ordinary('withdrawal', { conversionId: 'conversion' })
+    const linkedConversion = conversion('conversion', 'withdrawal')
+
+    const result = annualRetirementActionPreflight(input(
+      [withdrawal, linkedConversion],
+      {
+        balances: [
+          { accountId: CASH_ID, balancePlanDollars: 1_000 },
+          { accountId: IRA_ID, balancePlanDollars: 499.999 },
+        ],
+        linkedGroupRelease: stagingRelease(),
+      },
+    ))
+
+    expect(result.conversionLinkedWithdrawalGroups.groups[0]).toMatchObject({
+      disposition: 'refusedPendingGroupExecution',
+      reasonCode: 'conversion-tax-funding-unallocated',
+      fundingAuthority: null,
+    })
+  })
+
   it.each([
     ['missing', []],
     ['outside the exact-cent safe range', [
@@ -319,25 +361,33 @@ describe('annualRetirementActionPreflight', () => {
   it('forwards a proven pair without re-litigating current snapshot capacity', () => {
     const withdrawal = ordinary('withdrawal', { conversionId: 'conversion' })
     const linkedConversion = conversion('conversion', 'withdrawal')
+    let kindReads = 0
+    const linkedGroupRelease = Object.defineProperty({
+      authorizations: [{
+        conversionActionId: linkedConversion.actionId,
+        withdrawalActionId: withdrawal.actionId,
+        funding: {
+          requiredFundingAmount: asUsdCents(9_000),
+          fundedAmount: asUsdCents(9_000),
+        },
+      }],
+    }, 'kind', {
+      enumerable: true,
+      get: () => {
+        kindReads += 1
+        return kindReads === 1 ? 'proven' : 'refuseAll'
+      },
+    }) as unknown as AnnualConversionLinkedWithdrawalRelease
 
     const result = annualRetirementActionPreflight(input(
       [withdrawal, linkedConversion],
       {
         balances: [],
-        linkedGroupRelease: {
-          kind: 'proven',
-          authorizations: [{
-            conversionActionId: linkedConversion.actionId,
-            withdrawalActionId: withdrawal.actionId,
-            funding: {
-              requiredFundingAmount: asUsdCents(9_000),
-              fundedAmount: asUsdCents(9_000),
-            },
-          }],
-        },
+        linkedGroupRelease,
       },
     ))
 
+    expect(kindReads).toBe(1)
     expect(result.conversionLinkedWithdrawalGroups.groups[0]).toMatchObject({
       disposition: 'executedAsAtomicGroup',
       fundingAuthority: {

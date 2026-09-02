@@ -4019,11 +4019,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // unnoticed; simulate.qcdNamedSuppression.test.ts now does, and fails
     // without the condition below.
     //
-    // Counted here from the Plan rather than reusing `currentYearActions`,
-    // which is not filtered until well below this block. Moving this block down
-    // to reach it would reorder the balance mutations that the owned-IRA
-    // runtime source series validates in mutation order, which is a much larger
-    // change than the guard is worth.
+    // Counted directly from this pass's action array rather than waiting for
+    // the annual retirement-action preflight boundary below. Moving this block
+    // down to reuse the preflight result would reorder the balance mutations
+    // that the owned-IRA runtime source series validates in mutation order,
+    // which is a much larger change than the guard is worth.
     //
     // This suppressed nothing when it was written — the QCD executor published
     // a named request's prerequisite and nothing else — and it is load-bearing
@@ -4637,17 +4637,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // The exact-cent executor owns current-year action ordering and debits named
     // sources here. Its movement remains outside the legacy withdrawal map so
     // the final legacy apply loop cannot debit an action source a second time.
-    const retirementActionPreflight = annualRetirementActionPreflight({
+    const retirementActionPreflight = annualRetirementActionPreflight(Object.freeze({
       taxYear: year,
-      retirementActions: passRetirementActions,
-      balances: annualIdKeyedBalances.map((state) => ({
-        accountId: state.account.id,
-        balancePlanDollars: state.balance,
-      })),
+      retirementActions: Object.freeze([...passRetirementActions]),
+      balances: Object.freeze(annualIdKeyedBalances.map((state) =>
+        Object.freeze({
+          accountId: state.account.id,
+          balancePlanDollars: state.balance,
+        }))),
       annualLiabilityBaseline:
         annualLiabilityBaseline === null ? 'unavailable' : 'read',
       linkedGroupRelease,
-    })
+    }))
     const currentYearOrdinaryActions = retirementActionPreflight.ordinaryActions
     const currentYearConversionActions =
       retirementActionPreflight.conversionActions

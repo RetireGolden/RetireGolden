@@ -76,9 +76,9 @@
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
- * The YearResult assembly and funding-fixed-point boundaries have no dedicated
- * corpus blocks: their specs measure the existing full corpus and use `AC`,
- * `AD`, `AF`, `AG`, `AH`, and `AI` only as reach-entry namespaces. Block AE pins the otherwise-cold
+ * Several extracted boundaries have no dedicated corpus blocks: their specs
+ * measure the existing full corpus and use `AC`, `AD`, `AF`, `AG`, `AH`, and
+ * `AI` only as reach-entry namespaces. Block AE pins the otherwise-cold
  * multi-account Roth-pool accumulation in the withdrawal-effects coordinator.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so
