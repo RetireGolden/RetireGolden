@@ -22,6 +22,10 @@ interface WithdrawalEffectsCall {
 const seam = vi.hoisted(() => ({
   inject: false,
   calls: [] as WithdrawalEffectsCall[],
+  rothNext: {
+    contributionBasis: 777,
+    conversionLayers: [{ year: 2026, amount: 33, taxableAmount: 22 }],
+  },
 }))
 
 vi.mock(
@@ -45,18 +49,18 @@ vi.mock(
               hsa: {
                 rows: [{
                   sourceAccountId: 'hsa',
-                  taken: 0,
-                  qualified: 0,
+                  taken: 30,
+                  qualified: 30,
                   nonQualified: 17,
                   taxableOrdinary: 17,
                   penalty: 20,
-                  capConsumed: 0,
+                  capConsumed: 30,
                 }],
                 taxableOrdinary: 17,
                 penalty: 20,
-                qualified: 0,
+                qualified: 30,
                 nonQualified: 17,
-                capConsumed: 0,
+                capConsumed: 30,
               },
               roth: {
                 rows: [{
@@ -69,7 +73,7 @@ vi.mock(
                     earnings: 0,
                     penalty: 53,
                     taxableOrdinary: 29,
-                    next: { contributionBasis: 0, conversionLayers: [] },
+                    next: seam.rothNext,
                   },
                 }],
                 taxableOrdinary: 29,
@@ -130,6 +134,8 @@ describe('simulatePlan annual funding-withdrawal-effects delegation', () => {
         annualReturnPct: 0,
         balance: 0,
         annualContribution: 0,
+        withdrawalTreatment: 'capByMedicalExpenses',
+        reimburseLater: true,
       },
       {
         type: 'roth',
@@ -144,6 +150,13 @@ describe('simulatePlan annual funding-withdrawal-effects delegation', () => {
       },
     ] satisfies Account[]
     plan.incomes = []
+    plan.careEvents = [{
+      id: 'medical',
+      personId: 'p1',
+      startAge: 50,
+      durationYears: 1,
+      annualCost: 100,
+    }]
     plan.expenses.baseAnnual = 0
     plan.expenses.healthcare = {
       pre65MonthlyPremiumPerPerson: 0,
@@ -164,7 +177,7 @@ describe('simulatePlan annual funding-withdrawal-effects delegation', () => {
 
     const result = simulatePlan(validatePlan(plan), {
       startYear: START_YEAR,
-      horizonEndYear: START_YEAR,
+      horizonEndYear: START_YEAR + 1,
       taxCalculator,
       captureAnnualCashFlow: true,
     })
@@ -172,10 +185,16 @@ describe('simulatePlan annual funding-withdrawal-effects delegation', () => {
 
     expect(seam.calls.length).toBeGreaterThan(0)
     expect(seam.calls.every((call) => call.output !== call.original)).toBe(true)
+    expect(seam.calls.some((call) =>
+      call.input.year === START_YEAR + 1 &&
+      call.input.rothBasisByPool.get('rothira:p1')?.contributionBasis ===
+        seam.rothNext.contributionBasis &&
+      call.input.hsaQualifiedCap === 70
+    )).toBe(true)
     expect(taxInputs.some((input) => input.ordinaryIncome === 46)).toBe(true)
     expect(year.tax).toBe(46)
     expect(year.penalties).toBe(123)
-    expect(year.balances.cash).toBe(1_000 - 46 - 123)
+    expect(year.balances.cash).toBe(1_000 - 100 - 46 - 123)
     expect(result.warnings).toContain(
       'Early-withdrawal penalties were charged (pre-59½ traditional or pre-65 HSA).',
     )

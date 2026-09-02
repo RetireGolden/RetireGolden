@@ -7,107 +7,119 @@
       "id": "AE.helper.traditional",
       "label": "ordered traditional taxable-share penalty characterization",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [123, 143],
+      "lines": [210, 230],
       "anchors": [
-        { "line": 123, "text": "for (const row of input.accounts) {" },
-        { "line": 127, "text": "if (row.kind === 'traditional') {" },
-        { "line": 141, "text": "traditionalRows.push({ sourceAccountId: row.sourceAccountId, amount })" }
+        { "line": 210, "text": "for (const row of input.accounts) {" },
+        { "line": 214, "text": "if (row.kind === 'traditional') {" },
+        { "line": 228, "text": "traditionalRows.push({ sourceAccountId: row.sourceAccountId, amount })" }
       ]
     },
     {
       "id": "AE.helper.hsaCap",
       "label": "ordered HSA medical-cap allocation and pre-65 penalty",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [146, 157],
+      "lines": [120, 134],
       "anchors": [
-        { "line": 146, "text": "if (row.kind === 'hsa') {" },
-        { "line": 151, "text": "if (row.withdrawalTreatment === 'capByMedicalExpenses') {" },
-        { "line": 157, "text": "nonQualified * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)" }
+        { "line": 120, "text": "for (const row of input.accounts) {" },
+        { "line": 128, "text": "if (row.withdrawalTreatment === 'capByMedicalExpenses') {" },
+        { "line": 134, "text": "nonQualified * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)" }
       ]
     },
     {
       "id": "AE.helper.hsaLegacyAndRows",
       "label": "legacy HSA treatment and complete ordered row/total accumulation",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [164, 182],
+      "lines": [141, 158],
       "anchors": [
-        { "line": 164, "text": "qualified = taken" },
-        { "line": 167, "text": "penalty = taken * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)" },
-        { "line": 173, "text": "hsaRows.push({" }
+        { "line": 141, "text": "qualified = taken" },
+        { "line": 144, "text": "penalty = taken * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)" },
+        { "line": 150, "text": "rows.push({" }
+      ]
+    },
+    {
+      "id": "AE.helper.hsaResult",
+      "label": "complete ordered HSA result and cap consumption",
+      "file": "projection/internal/annualFundingWithdrawalEffects.ts",
+      "lines": [161, 168],
+      "anchors": [
+        { "line": 161, "text": "return {" },
+        { "line": 167, "text": "capConsumed: input.hsaQualifiedCap - capLeft," }
       ]
     },
     {
       "id": "AE.helper.rothPoolSelection",
-      "label": "inherited Roth exclusion and pool lookup",
+      "label": "inherited Roth exclusion, pool lookup, and multi-account accumulation",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [185, 187],
+      "lines": [238, 241],
       "anchors": [
-        { "line": 185, "text": "if (row.poolKey === null) continue" },
-        { "line": 186, "text": "const pool = rothPools.get(row.poolKey)" }
+        { "line": 238, "text": "if (row.poolKey === null) continue" },
+        { "line": 239, "text": "const pool = rothPools.get(row.poolKey)" },
+        { "line": 241, "text": "pool.taken += taken" }
       ]
     },
     {
       "id": "AE.helper.rothPoolFirstSeen",
       "label": "first-seen Roth pool identity and age snapshot",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [190, 195],
+      "lines": [243, 248],
       "anchors": [
-        { "line": 190, "text": "rothPools.set(row.poolKey, {" }
+        { "line": 243, "text": "rothPools.set(row.poolKey, {" }
       ]
     },
     {
       "id": "AE.helper.rothSplitSetup",
       "label": "ordered Roth-pool split setup and basis selection",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [197, 202],
+      "lines": [250, 255],
       "anchors": [
-        { "line": 200, "text": "for (const [poolKey, { taken, ownerAgeAttained }] of rothPools) {" },
-        { "line": 202, "text": "const split = basis === undefined" }
+        { "line": 253, "text": "for (const [poolKey, { taken, ownerAgeAttained }] of rothPools) {" },
+        { "line": 255, "text": "const split = basis === undefined" }
       ]
     },
     {
       "id": "AE.helper.rothSplitCharacter",
       "label": "Roth split invocation and aggregate character",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [204, 215],
+      "lines": [257, 268],
       "anchors": [
-        { "line": 204, "text": ": splitRothWithdrawal(" },
-        { "line": 214, "text": "rothRows.push({ poolKey, taken, ownerAgeAttained, split })" }
+        { "line": 257, "text": ": splitRothWithdrawal(" },
+        { "line": 267, "text": "rothRows.push({ poolKey, taken, ownerAgeAttained, split })" }
       ]
     },
     {
       "id": "AE.helper.result",
       "label": "complete immutable withdrawal-character result",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [217, 234],
+      "lines": [270, 286],
       "anchors": [
-        { "line": 217, "text": "return {" },
-        { "line": 225, "text": "capConsumed: input.hsaQualifiedCap - hsaCapLeft," },
-        { "line": 232, "text": "penaltyExcludingRmdShortfallExcise:" }
+        { "line": 270, "text": "const hsa = annualHsaWithdrawalEffects({" },
+        { "line": 276, "text": "return {" },
+        { "line": 284, "text": "penaltyExcludingRmdShortfallExcise:" }
       ]
     },
     {
       "id": "AE.callsite.snapshot",
       "label": "annual account-identity snapshot for every supported withdrawal domain",
       "file": "projection/simulate.ts",
-      "lines": [6526, 6563],
+      "lines": [6526, 6566],
       "anchors": [
         { "line": 6526, "text": "const fundingWithdrawalEffectAccounts = Object.freeze(" },
         { "line": 6528, "text": "if (state.account.type === 'traditional') {" },
         { "line": 6541, "text": "if (state.account.type === 'roth') {" },
-        { "line": 6552, "text": "if (state.account.type === 'hsa') {" }
+        { "line": 6552, "text": "if (state.account.type === 'hsa') {" },
+        { "line": 6564, "text": "const fundingHsaEffectAccounts = fundingWithdrawalEffectAccounts.filter(" }
       ]
     },
     {
       "id": "AE.callsite.probe",
       "label": "candidate invocation and tax/penalty consumption inside the funding evaluator",
       "file": "projection/simulate.ts",
-      "lines": [6587, 6618],
+      "lines": [6590, 6621],
       "anchors": [
-        { "line": 6587, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 6592, "text": "let withdrawalEffectsProbe = annualFundingWithdrawalEffects({" },
-        { "line": 6617, "text": "withdrawalEffectsProbe.roth.taxableOrdinary +" },
-        { "line": 6618, "text": "withdrawalEffectsProbe.hsa.taxableOrdinary," }
+        { "line": 6590, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 6595, "text": "let withdrawalEffectsProbe = annualFundingWithdrawalEffects({" },
+        { "line": 6620, "text": "withdrawalEffectsProbe.roth.taxableOrdinary +" },
+        { "line": 6621, "text": "withdrawalEffectsProbe.hsa.taxableOrdinary," }
       ]
     },
     {
@@ -156,5 +168,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct tests independently pin taxable-share fallback, inherited and S2 identity, Rule of 55, all HSA modes and exact account order, inherited-Roth exclusion, first-seen pool order, missing basis, pooled Roth worksheet arithmetic, input purity, and nonpositive rows. The hostile delegation test injects non-economic tax character, penalty rows/totals, and Roth next state and proves exact simulator consumption at tax, balance, warning, annual-ledger, and cash-flow boundaries."
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct tests independently pin taxable-share fallback, inherited and S2 identity, Rule of 55, all HSA modes and exact account order, HSA-only cap refresh identity, inherited-Roth exclusion, first-seen pool order and accumulation, missing basis, pooled Roth worksheet arithmetic, input purity, and nonpositive rows. The hostile delegation test injects non-economic tax character, penalty rows/totals, Roth next state, and HSA cap consumption and proves exact simulator consumption at tax, balance, warning, annual-ledger, cash-flow, next-year Roth-basis, and reimburse-later-pool boundaries."
 }

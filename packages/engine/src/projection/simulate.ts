@@ -107,8 +107,8 @@ import {
   type AnnualFundingFixedPointEvaluationRequest,
 } from './internal/annualFundingFixedPoint.js'
 import {
-  annualFundingWithdrawalEffects,
-  type AnnualFundingWithdrawalEffectAccount,
+  annualFundingWithdrawalEffects, recharacterizeAnnualFundingWithdrawalHsaCap,
+  type AnnualFundingWithdrawalEffectAccount, type AnnualHsaWithdrawalEffectAccount,
 } from './internal/annualFundingWithdrawalEffects.js'
 import {
   annualDebtServiceRows,
@@ -6439,13 +6439,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
     }
 
-    // Early-withdrawal penalties: 10% traditional pre-59½ (approximated as
-    // age < 60), 20% HSA non-medical pre-65 (v1 treats HSA spending as
-    // non-medical; HSA sits last in the drain order). The Rule of 55 waives the
-    // traditional penalty for an EMPLOYER plan the owner separated from in/after
-    // the year they turned 55 (IRAs never qualify); "separation" is approximated
-    // by the owner's retirement age. 72(t) SEPP distributions are taken outside
-    // this need-based flow (above), so they're already penalty-free.
+    // Form 8606 character for need-based owned-IRA withdrawals. The separate
+    // annualFundingWithdrawalEffects coordinator applies traditional, HSA, and
+    // Roth early-withdrawal treatment after this taxable share is known. Its
+    // modeled policy includes the 10% traditional additional tax, the HSA
+    // 20% proxy, the employer-plan Rule-of-55 proxy, and Roth FIFO character.
+    // SEPP distributions remain outside this need-based flow above, while this
+    // helper owns only the annual Form 8606 taxable-share input to that policy.
     interface NeedBasedOwnedIraCharacter {
       readonly nontaxable: number
       readonly taxableBySourceAccountId: ReadonlyMap<string, number>
@@ -6527,7 +6527,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       rmdBalances.flatMap((state): AnnualFundingWithdrawalEffectAccount[] => {
         if (state.account.type === 'traditional') {
           const ownerId = state.account.ownerPersonId ?? primary.id
-          return [{
+          return [Object.freeze({
             kind: 'traditional',
             sourceAccountId: state.account.id,
             account: state.account,
@@ -6536,30 +6536,33 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               personById.get(ownerId)?.retirementAge ?? null,
             treatAsOwnEffective:
               isTreatAsOwnEffective(state.account, year),
-          }]
+          })]
         }
         if (state.account.type === 'roth') {
           const ownerId = state.account.ownerPersonId ?? primary.id
-          return [{
+          return [Object.freeze({
             kind: 'roth',
             sourceAccountId: state.account.id,
             poolKey: isInheritedRothOutsideOwnedPool(state.account)
               ? null
               : rothPoolKey(state.account),
             ownerAgeAttained: stateOf(ownerId).ageAttained,
-          }]
+          })]
         }
         if (state.account.type === 'hsa') {
           const ownerId = state.account.ownerPersonId ?? primary.id
-          return [{
+          return [Object.freeze({
             kind: 'hsa',
             sourceAccountId: state.account.id,
             withdrawalTreatment: state.account.withdrawalTreatment,
             ownerAgeAttained: stateOf(ownerId).ageAttained,
-          }]
+          })]
         }
         return []
       }),
+    )
+    const fundingHsaEffectAccounts = fundingWithdrawalEffectAccounts.filter(
+      (row): row is AnnualHsaWithdrawalEffectAccount => row.kind === 'hsa',
     )
 
     // Pro-rata (Form 8606) return-of-basis in a candidate's need-based IRA
@@ -6725,13 +6728,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           break
         }
         candidateHsaCap = nextHsaCap
-        withdrawalEffectsProbe = annualFundingWithdrawalEffects({
-          accounts: fundingWithdrawalEffectAccounts,
+        // Traditional and Roth character are invariant across this cap loop.
+        withdrawalEffectsProbe = recharacterizeAnnualFundingWithdrawalHsaCap(withdrawalEffectsProbe, {
+          accounts: fundingHsaEffectAccounts,
           withdrawalsByAccountId: withdrawalPlan.byAccountId,
-          traditionalTaxableByAccountId:
-            iraCharacterProbe.taxableBySourceAccountId,
-          rothBasisByPool: rothBasis,
-          year,
           hsaQualifiedCap: candidateHsaCap,
         })
       }

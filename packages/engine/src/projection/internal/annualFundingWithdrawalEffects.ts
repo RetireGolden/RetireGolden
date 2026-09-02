@@ -37,6 +37,11 @@ export type AnnualFundingWithdrawalEffectAccount =
       ownerAgeAttained: number
     }>
 
+export type AnnualHsaWithdrawalEffectAccount = Extract<
+  AnnualFundingWithdrawalEffectAccount,
+  { kind: 'hsa' }
+>
+
 export interface AnnualFundingWithdrawalEffectsInput {
   /** One logical candidate-withdrawal row per account, in annual balance order. */
   readonly accounts: readonly AnnualFundingWithdrawalEffectAccount[]
@@ -64,6 +69,21 @@ export interface AnnualHsaWithdrawalEffectRow {
   readonly capConsumed: number
 }
 
+export interface AnnualHsaWithdrawalEffectsResult {
+  readonly rows: readonly AnnualHsaWithdrawalEffectRow[]
+  readonly taxableOrdinary: number
+  readonly penalty: number
+  readonly qualified: number
+  readonly nonQualified: number
+  readonly capConsumed: number
+}
+
+export interface AnnualHsaWithdrawalEffectsInput {
+  readonly accounts: readonly AnnualHsaWithdrawalEffectAccount[]
+  readonly withdrawalsByAccountId: ReadonlyMap<string, number>
+  readonly hsaQualifiedCap: number
+}
+
 export interface AnnualRothPoolWithdrawalEffectRow {
   readonly poolKey: string
   readonly taken: number
@@ -77,20 +97,93 @@ export interface AnnualFundingWithdrawalEffectsResult {
     rows: readonly AnnualTraditionalWithdrawalPenaltyRow[]
     penalty: number
   }>
-  readonly hsa: Readonly<{
-    rows: readonly AnnualHsaWithdrawalEffectRow[]
-    taxableOrdinary: number
-    penalty: number
-    qualified: number
-    nonQualified: number
-    capConsumed: number
-  }>
+  readonly hsa: Readonly<AnnualHsaWithdrawalEffectsResult>
   readonly roth: Readonly<{
     rows: readonly AnnualRothPoolWithdrawalEffectRow[]
     taxableOrdinary: number
     penalty: number
   }>
   readonly penaltyExcludingRmdShortfallExcise: number
+}
+
+/** Recompute only the HSA channel whose character changes with the medical cap. */
+export function annualHsaWithdrawalEffects(
+  input: AnnualHsaWithdrawalEffectsInput,
+): AnnualHsaWithdrawalEffectsResult {
+  const rows: AnnualHsaWithdrawalEffectRow[] = []
+  let taxableOrdinary = 0
+  let penaltyTotal = 0
+  let qualifiedTotal = 0
+  let nonQualifiedTotal = 0
+  let capLeft = input.hsaQualifiedCap
+
+  for (const row of input.accounts) {
+    const taken = input.withdrawalsByAccountId.get(row.sourceAccountId) ?? 0
+    if (taken <= 0) continue
+
+    let qualified: number
+    let nonQualified: number
+    let capConsumed: number
+    let penalty: number
+    if (row.withdrawalTreatment === 'capByMedicalExpenses') {
+      qualified = Math.min(taken, capLeft)
+      capLeft -= qualified
+      nonQualified = taken - qualified
+      capConsumed = qualified
+      penalty =
+        nonQualified * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)
+    } else if (row.withdrawalTreatment === 'assumeAllQualified') {
+      qualified = taken
+      nonQualified = 0
+      capConsumed = 0
+      penalty = 0
+    } else {
+      qualified = taken
+      nonQualified = 0
+      capConsumed = 0
+      penalty = taken * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)
+    }
+    qualifiedTotal += qualified
+    nonQualifiedTotal += nonQualified
+    taxableOrdinary += nonQualified
+    penaltyTotal += penalty
+    rows.push({
+      sourceAccountId: row.sourceAccountId,
+      taken,
+      qualified,
+      nonQualified,
+      taxableOrdinary: nonQualified,
+      penalty,
+      capConsumed,
+    })
+  }
+
+  return {
+    rows,
+    taxableOrdinary,
+    penalty: penaltyTotal,
+    qualified: qualifiedTotal,
+    nonQualified: nonQualifiedTotal,
+    capConsumed: input.hsaQualifiedCap - capLeft,
+  }
+}
+
+/**
+ * Refresh the cap-dependent HSA channel while preserving the already-computed
+ * traditional and Roth characterization objects by identity.
+ */
+export function recharacterizeAnnualFundingWithdrawalHsaCap(
+  previous: AnnualFundingWithdrawalEffectsResult,
+  input: AnnualHsaWithdrawalEffectsInput,
+): AnnualFundingWithdrawalEffectsResult {
+  const hsa = annualHsaWithdrawalEffects(input)
+  return {
+    traditional: previous.traditional,
+    hsa,
+    roth: previous.roth,
+    penaltyExcludingRmdShortfallExcise:
+      previous.traditional.penalty + previous.roth.penalty + hsa.penalty,
+  }
 }
 
 /**
@@ -107,13 +200,7 @@ export function annualFundingWithdrawalEffects(
 ): AnnualFundingWithdrawalEffectsResult {
   const traditionalRows: AnnualTraditionalWithdrawalPenaltyRow[] = []
   let traditionalPenalty = 0
-
-  const hsaRows: AnnualHsaWithdrawalEffectRow[] = []
-  let hsaTaxableOrdinary = 0
-  let hsaPenalty = 0
-  let hsaQualified = 0
-  let hsaNonQualified = 0
-  let hsaCapLeft = input.hsaQualifiedCap
+  const hsaAccounts: AnnualHsaWithdrawalEffectAccount[] = []
 
   const rothPools = new Map<string, {
     taken: number
@@ -144,41 +231,7 @@ export function annualFundingWithdrawalEffects(
     }
 
     if (row.kind === 'hsa') {
-      let qualified: number
-      let nonQualified: number
-      let capConsumed: number
-      let penalty: number
-      if (row.withdrawalTreatment === 'capByMedicalExpenses') {
-        qualified = Math.min(taken, hsaCapLeft)
-        hsaCapLeft -= qualified
-        nonQualified = taken - qualified
-        capConsumed = qualified
-        penalty =
-          nonQualified * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)
-      } else if (row.withdrawalTreatment === 'assumeAllQualified') {
-        qualified = taken
-        nonQualified = 0
-        capConsumed = 0
-        penalty = 0
-      } else {
-        qualified = taken
-        nonQualified = 0
-        capConsumed = 0
-        penalty = taken * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)
-      }
-      hsaQualified += qualified
-      hsaNonQualified += nonQualified
-      hsaTaxableOrdinary += nonQualified
-      hsaPenalty += penalty
-      hsaRows.push({
-        sourceAccountId: row.sourceAccountId,
-        taken,
-        qualified,
-        nonQualified,
-        taxableOrdinary: nonQualified,
-        penalty,
-        capConsumed,
-      })
+      hsaAccounts.push(row)
       continue
     }
 
@@ -214,22 +267,21 @@ export function annualFundingWithdrawalEffects(
     rothRows.push({ poolKey, taken, ownerAgeAttained, split })
   }
 
+  const hsa = annualHsaWithdrawalEffects({
+    accounts: hsaAccounts,
+    withdrawalsByAccountId: input.withdrawalsByAccountId,
+    hsaQualifiedCap: input.hsaQualifiedCap,
+  })
+
   return {
     traditional: { rows: traditionalRows, penalty: traditionalPenalty },
-    hsa: {
-      rows: hsaRows,
-      taxableOrdinary: hsaTaxableOrdinary,
-      penalty: hsaPenalty,
-      qualified: hsaQualified,
-      nonQualified: hsaNonQualified,
-      capConsumed: input.hsaQualifiedCap - hsaCapLeft,
-    },
+    hsa,
     roth: {
       rows: rothRows,
       taxableOrdinary: rothTaxableOrdinary,
       penalty: rothPenalty,
     },
     penaltyExcludingRmdShortfallExcise:
-      traditionalPenalty + rothPenalty + hsaPenalty,
+      traditionalPenalty + rothPenalty + hsa.penalty,
   }
 }

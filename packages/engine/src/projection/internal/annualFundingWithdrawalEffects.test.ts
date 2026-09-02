@@ -4,8 +4,17 @@ import type { Account } from '../../model/plan.js'
 import type { RothBasisState } from '../../strategies/rothBasis.js'
 import {
   annualFundingWithdrawalEffects,
+  recharacterizeAnnualFundingWithdrawalHsaCap,
   type AnnualFundingWithdrawalEffectAccount,
 } from './annualFundingWithdrawalEffects.js'
+
+/**
+ * Contract tests for a behavior-preserving extraction. The statutory money
+ * math below is independently recomputed from the named rule-registry records;
+ * account order, owner-wide pooling, and legacy HSA treatment are explicitly
+ * projection conventions, so those assertions characterize the reviewed
+ * pre-extraction ledger rather than claiming a statutory oracle.
+ */
 
 type TraditionalAccount = Extract<Account, { type: 'traditional' }>
 
@@ -53,6 +62,11 @@ const run = (
 
 describe('annualFundingWithdrawalEffects', () => {
   it('penalizes only taxable traditional dollars and applies inherited, S2, and Rule-of-55 identity', () => {
+    // Independent worksheet: IRC 72(t)(1), registry record
+    // irc-72-t-1-additional-tax-on-includible-portion, applies 10% only to the
+    // $60 and $40 taxable shares: $6 + $4 = $10. The employer-plan $100 is
+    // waived by irc-72-t-2-A-v-rule-of-55; inherited/S2 identity stays a
+    // separately named projection convention/residual.
     const inherited = traditionalAccount('inherited', 'ira', true)
     const accounts: AnnualFundingWithdrawalEffectAccount[] = [
       {
@@ -116,6 +130,11 @@ describe('annualFundingWithdrawalEffects', () => {
   })
 
   it('allocates one HSA medical cap in account order and preserves legacy treatment', () => {
+    // Independent worksheet: the modeled $100 cap pays $70 then $30 in plan
+    // order, leaving $20 nonqualified. IRC 223(f)(2)/(4) makes that $20
+    // ordinary and adds 20% ($4); the legacy pre-65 proxy adds 20% of its $10
+    // ($2), while the attained-age-65 record waives its additional tax. Thus
+    // qualified = 70 + 30 + 10 + 10 + 10 = $130; total penalty = $6.
     const accounts: AnnualFundingWithdrawalEffectAccount[] = [
       {
         kind: 'hsa',
@@ -217,7 +236,57 @@ describe('annualFundingWithdrawalEffects', () => {
     })
   })
 
+  it('refreshes only cap-dependent HSA character during the funding fixed point', () => {
+    const hsaAccount: AnnualFundingWithdrawalEffectAccount = {
+      kind: 'hsa',
+      sourceAccountId: 'hsa',
+      withdrawalTreatment: 'capByMedicalExpenses',
+      ownerAgeAttained: 50,
+    }
+    const previous = run(
+      [
+        {
+          kind: 'traditional',
+          sourceAccountId: 'traditional',
+          account: traditionalAccount('traditional'),
+          ownerAgeAttained: 50,
+          ownerRetirementAge: null,
+          treatAsOwnEffective: false,
+        },
+        hsaAccount,
+      ],
+      new Map([
+        ['traditional', 100],
+        ['hsa', 100],
+      ]),
+      { hsaQualifiedCap: 25 },
+    )
+
+    const refreshed = recharacterizeAnnualFundingWithdrawalHsaCap(previous, {
+      accounts: [hsaAccount],
+      withdrawalsByAccountId: new Map([['hsa', 100]]),
+      hsaQualifiedCap: 60,
+    })
+
+    expect(refreshed.traditional).toBe(previous.traditional)
+    expect(refreshed.roth).toBe(previous.roth)
+    expect(refreshed.hsa).toMatchObject({
+      qualified: 60,
+      nonQualified: 40,
+      taxableOrdinary: 40,
+      penalty: 8,
+      capConsumed: 60,
+    })
+    expect(refreshed.penaltyExcludingRmdShortfallExcise).toBe(18)
+  })
+
   it('aggregates Roth accounts by first-seen pool and splits one ordered withdrawal', () => {
+    // Independent worksheet: IRC 408A(d)(4)(B) ordering consumes the $100
+    // contribution basis, then the $50 2024 conversion, then $50 earnings from
+    // the $200 draw. Record irc-408A-d-3-F-roth-conversion-recapture exposes
+    // the $40 taxable conversion share to 10% ($4); nonqualified earnings add
+    // $50 ordinary and $5 additional tax, for $9 total. Pooling two Roth-IRA
+    // rows before that worksheet is the preserved projection convention.
     const basis: RothBasisState = {
       contributionBasis: 100,
       conversionLayers: [{ year: 2024, amount: 50, taxableAmount: 40 }],
