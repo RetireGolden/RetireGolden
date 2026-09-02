@@ -248,6 +248,47 @@ describe('validation cluster F', () => {
     expect(parsePlan(seeded).ok).toBe(true)
   })
 
+  it('entering "Until an age" over a stale age the schema rejects stores the shown default, not the stale one (#503)', async () => {
+    // The mode the plan was loaded with hides the field, so a rejected age can
+    // sit there from an import with nothing to type into. Opening the mode has
+    // to leave an age the schema accepts rather than an error on a field the
+    // person just reopened.
+    const plan = createSamplePlan()
+    plan.careEvents = []
+    plan.insurance = [
+      {
+        kind: 'permanentLife',
+        id: 'life-stale',
+        name: 'Whole life',
+        insured: plan.household.people[0]!.id,
+        beneficiary: 'estate',
+        annualPremium: 1200,
+        premiumMode: 'paidUp',
+        premiumEndAge: 5,
+        deathBenefit: 100_000,
+        cashValue: 10_000,
+        cashValueMode: 'flatRate',
+        cashValueGrowthPct: 4,
+      },
+    ]
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    const issues = parsed.ok ? [] : parsed.issues
+    expect(issues).toContain('insurance.0.premiumEndAge: Too small: expected number to be >=40')
+    const update = vi.fn()
+    await render(
+      <PlanCtx.Provider value={contextFor(plan, issues, update)}>
+        <InsuranceSection />
+      </PlanCtx.Provider>,
+    )
+    await choose(labelledControl<HTMLSelectElement>('Premium'), 'untilAge')
+    expect(update).toHaveBeenCalledTimes(1)
+    const opened = structuredClone(plan)
+    update.mock.calls[0]![0](opened)
+    expect(opened.insurance[0]!).toMatchObject({ premiumMode: 'untilAge', premiumEndAge: 65 })
+    expect(parsePlan(opened).ok).toBe(true)
+  })
+
   it('leaving "Until an age" keeps a premium end age the schema accepts, so the round trip does not lose it (#503)', async () => {
     const plan = createSamplePlan()
     plan.careEvents = []

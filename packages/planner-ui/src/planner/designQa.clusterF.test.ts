@@ -92,10 +92,12 @@ describe('cluster F: fields carry the engine bound or its path', () => {
 
   it('the premium mode select clears a premium end age the schema no longer wants (#503)', () => {
     const src = read('./sections/InsuranceSection.tsx')
-    expect(src).toContain("if (v === 'untilAge') p.premiumEndAge ??= 65")
-    // The keep/drop check reads the schema of the policy kind being edited.
+    // The keep/drop check reads the schema of the policy kind being edited, and
+    // both sides of the switch leave an age that schema accepts, or none.
     expect(src).toContain("const schema = p.kind === 'ltc' ? ltcPolicySchema : permanentLifePolicySchema")
-    expect(src).toContain('else if (!schema.shape.premiumEndAge.safeParse(p.premiumEndAge).success) delete p.premiumEndAge')
+    expect(src).toContain('const endAgeParses = schema.shape.premiumEndAge.safeParse(p.premiumEndAge).success')
+    expect(src).toContain('if (p.premiumEndAge === undefined || !endAgeParses) p.premiumEndAge = 65')
+    expect(src).toContain('} else if (!endAgeParses) delete p.premiumEndAge')
   })
 
   it('issue labels for the newly wired paths read as the cards do', () => {
@@ -157,13 +159,22 @@ describe('cluster F: compact KPI money degrades by magnitude, never by digit cou
     expect(fmtMoneyCompact(Number.POSITIVE_INFINITY)).toBe('—')
   })
 
-  it('every suffix the formatter emits parses back into a money field', () => {
+  it('every form the formatter emits parses back into a money field, sign and all', () => {
+    // Each tier the formatter can emit, back through the field: the suffixes,
+    // the bare exponent past 999T, and the Unicode minus a negative carries.
+    expect(parseAmount(fmtMoneyCompact(45_000))).toBe(45_000)
     expect(parseAmount(fmtMoneyCompact(2_500_000_000))).toBe(2_500_000_000)
     expect(parseAmount(fmtMoneyCompact(1.2e12))).toBe(1.2e12)
+    expect(parseAmount(fmtMoneyCompact(1e15))).toBe(1e15)
+    expect(parseAmount(fmtMoneyCompact(1.181e37))).toBe(1.18e37)
+    expect(fmtMoneyCompact(-370_261_372_999_000)).toBe('−$370.26T')
+    expect(parseAmount('−$370.26T')).toBe(-370.26e12)
     expect(parseAmount('$45k')).toBe(45_000)
     expect(parseAmount('1.5m')).toBe(1_500_000)
     expect(parseAmount('3B')).toBe(3e9)
     expect(parseAmount('0.5t')).toBe(5e11)
     expect(parseAmount('nope')).toBeNull()
+    // A bare suffix is a stray keystroke, not a balance of zero.
+    for (const stray of ['k', 'm', 'B', 't', '−']) expect(parseAmount(stray), stray).toBeNull()
   })
 })

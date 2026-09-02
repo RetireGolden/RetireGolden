@@ -94,15 +94,18 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
             const p = d.insurance[index]!
             p.premiumMode = v
             // The schema requires premiumEndAge while premiums run until an
-            // age and still bounds one otherwise. Entering that mode stores the
-            // age the field already displays as its default; leaving it keeps
-            // a valid age for the round trip back and drops only one the schema
-            // rejects, so no issue is left on a field that is no longer shown
-            // (#503). The bound is the engine's, read from this policy kind's
-            // own schema.
+            // age and still bounds one otherwise, so either side of this switch
+            // leaves an age the schema accepts, or none at all (#503). Entering
+            // the mode keeps a stored age that parses (a 72 survives the round
+            // trip) and otherwise stores the 65 the field already displays as
+            // its default; leaving it drops only an age the schema rejects, so
+            // no issue is left on a field that is no longer shown. The bound is
+            // the engine's, read from this policy kind's own schema.
             const schema = p.kind === 'ltc' ? ltcPolicySchema : permanentLifePolicySchema
-            if (v === 'untilAge') p.premiumEndAge ??= 65
-            else if (!schema.shape.premiumEndAge.safeParse(p.premiumEndAge).success) delete p.premiumEndAge
+            const endAgeParses = schema.shape.premiumEndAge.safeParse(p.premiumEndAge).success
+            if (v === 'untilAge') {
+              if (p.premiumEndAge === undefined || !endAgeParses) p.premiumEndAge = 65
+            } else if (!endAgeParses) delete p.premiumEndAge
           })
         }
       />

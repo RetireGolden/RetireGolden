@@ -15,7 +15,7 @@ const COMPACT_TIERS = [
 ] as const
 
 /**
- * Compact KPI form: $1.24M, $310k, −$8.2k, and past a billion $2.50B / $1.20T,
+ * Compact KPI form: $1.24M, $310k, −$82k, and past a billion $2.50B / $1.20T,
  * so an absurd balance never renders a six-digit mantissa in millions or a
  * raw JS exponent with a unit behind it (#495, #548). A mantissa never reaches
  * four digits: $999k hands off to $1.00M, and once the T mantissa would round
@@ -46,12 +46,17 @@ export function fmtPct(v: number, digits = 0): string {
 /** Magnitude suffixes a typed amount may carry: every one `fmtMoneyCompact` emits, so a copied KPI parses back. */
 const AMOUNT_SUFFIX: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9, t: 1e12 }
 
-/** Parses a user-typed money/number string ("1,200,000", "$45k", "$2.5B") to a number, or null. */
+/** Parses a user-typed money/number string ("1,200,000", "$45k", "−$2.5B") to a number, or null. */
 export function parseAmount(text: string): number | null {
-  const cleaned = text.trim().replace(/[$,\s]/g, '').toLowerCase()
+  // A pasted KPI carries the minus the formatter wrote (−, not a hyphen), so
+  // a copied −$370.26T parses back the way a typed one does.
+  const cleaned = text.trim().replace(/[$,\s]/g, '').replace(/−/g, '-').toLowerCase()
   if (cleaned === '') return null
   const mult = AMOUNT_SUFFIX[cleaned.slice(-1)] ?? 1
   const core = mult === 1 ? cleaned : cleaned.slice(0, -1)
+  // A suffix with no number in front of it ("k") is not an amount: `Number('')`
+  // is 0, which would read a stray keystroke as a balance of zero.
+  if (core === '') return null
   const n = Number(core)
   return Number.isFinite(n) ? n * mult : null
 }
