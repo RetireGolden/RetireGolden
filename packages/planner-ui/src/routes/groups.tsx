@@ -70,10 +70,16 @@ export const plannerContentRoutes: RouteObject[] = [
   { path: 'learn/*', element: suspended(<LearnRoutes />) },
   { path: 'disclaimer', element: <DisclaimerPage /> },
   { path: 'how-tested', element: suspended(<HowTestedPage />) },
-  // Catch-all: an unmatched URL gets not-found chrome instead of a blank main
-  // (#442). Ranked last by the router whatever order the host mounts groups in.
-  { path: '*', element: <NotFoundPage /> },
 ]
+
+/**
+ * Site-level catch-all (#442): not-found chrome for an unmatched URL instead
+ * of a blank main. A single route rather than a member of a group, so a host
+ * that mounts the groups under its own router keeps its own fallback (equal-
+ * rank splats resolve to whichever comes first); `<PlannerApp/>` spreads it
+ * after the three groups.
+ */
+export const plannerNotFoundRoute: RouteObject = { path: '*', element: <NotFoundPage /> }
 
 /**
  * The web app's plans-management surfaces: the home page (plan list, backup

@@ -122,6 +122,10 @@ function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (m
       <h2 className="plan-card-name">{example.title}</h2>
       <span className="plan-card-meta">{householdFacts(example)}</span>
       <p className="example-card-teaches">{example.teaches}</p>
+      {/* Each action names its example so no two cards share a name (#478).
+          The visible label stays a contiguous prefix of the accessible name
+          (WCAG 2.5.3 Label in Name) so speech-input users can say what they
+          see. */}
       <span className="plan-card-actions">
         <button
           type="button"
@@ -136,7 +140,7 @@ function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (m
           type="button"
           className="btn btn-secondary btn-small"
           disabled={busy}
-          aria-label={`Save ${example.title} to my plans`}
+          aria-label={`Save to my plans: ${example.title}`}
           onClick={() => void handleSave()}
         >
           Save to my plans
@@ -145,7 +149,7 @@ function ExampleCard({ example, onNotice }: { example: ExamplePlan; onNotice: (m
           {...learnHook}
           variant="button"
           className="btn btn-ghost btn-small"
-          ariaLabel={`Learn about ${example.title}`}
+          ariaLabel={`Learn about this example: ${example.title}`}
         />
       </span>
       {dialogs}
@@ -193,14 +197,15 @@ export function ExampleLibrary({
         Explore curated households in the full planner. Examples stay out of {homeLabel} until you save one. Edit
         freely and refresh without cluttering your own list.
       </p>
-      <ul className="plan-grid" aria-label="Featured examples">
+      {/* role="list" restores list semantics WebKit drops for list-style: none. */}
+      <ul className="plan-grid" role="list" aria-label="Featured examples">
         {FEATURED.map((example) => (
           <ExampleCard key={example.id} example={example} onNotice={onNotice} />
         ))}
       </ul>
 
       {expanded ? (
-        <ul className="plan-grid" id="examples-full-grid" aria-label="All other examples">
+        <ul className="plan-grid" id="examples-full-grid" role="list" aria-label="All other examples">
           {REST.map((example) => (
             <ExampleCard key={example.id} example={example} onNotice={onNotice} />
           ))}

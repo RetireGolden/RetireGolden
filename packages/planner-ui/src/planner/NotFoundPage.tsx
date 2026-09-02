@@ -16,7 +16,9 @@ export function NotFoundPage() {
   return (
     <div className="page">
       <div className="card empty-state">
-        <h2>Page not found</h2>
+        {/* The site-level page owns its document, so its heading is the h1;
+            the workspace variant below sits under the plan's h1. */}
+        <h1>Page not found</h1>
         <p className="muted">
           There is nothing at this address. It may be an old bookmark, a mistyped link, or a page that has moved.
         </p>

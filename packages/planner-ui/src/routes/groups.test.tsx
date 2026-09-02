@@ -14,7 +14,7 @@ import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, savePlan } from '../data/planStore'
 import { RouteErrorBoundary } from '../RouteErrorBoundary'
-import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './groups'
+import { plannerContentRoutes, plannerHomeRoutes, plannerNotFoundRoute, plannerWorkspaceRoutes } from './groups'
 import PlanRoutes from './PlanRoutes'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { waitFor, waitForText } from '../testSupport/settle'
@@ -220,6 +220,12 @@ describe('lazy route elements', () => {
 })
 
 describe('all groups together', () => {
+  it('keeps the catch-all out of every group, so a host keeps its own fallback (#442 review)', () => {
+    const all = [...plannerHomeRoutes, ...plannerWorkspaceRoutes, ...plannerContentRoutes]
+    expect(all.some((r) => r.path === '*')).toBe(false)
+    expect(plannerNotFoundRoute.path).toBe('*')
+  })
+
   it('composes into the full route table (home + workspace + content), like <PlannerApp/>', () => {
     const all = [...plannerHomeRoutes, ...plannerWorkspaceRoutes, ...plannerContentRoutes]
     const html = renderToString(

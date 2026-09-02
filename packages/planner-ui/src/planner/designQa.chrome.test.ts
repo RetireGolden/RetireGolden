@@ -319,6 +319,13 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(wrap.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/#[0-9a-f]{3,6}\b/i)
     expect(rule('.year-table-wrap:focus-visible')).toMatch(/outline:\s*2px solid var\(--accent\)/)
     expect(rule('.year-table-wrap--grow')).toMatch(/max-height:\s*none/)
+    // The sticky first column covers the wrap's left cue, so it carries its own
+    // scroll-driven edge shadow, behind @supports and off while nothing overflows.
+    const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
+    expect(css).toMatch(
+      /@supports \(animation-timeline: scroll\(\)\) \{\s*\.year-table th:first-child,\s*\.year-table td:first-child \{[^}]*animation-timeline:\s*scroll\(nearest inline\)/,
+    )
+    expect(css).toMatch(/@keyframes sticky-column-edge \{[\s\S]*?box-shadow: [^;]*color-mix\(in srgb, var\(--fg\) 18%, transparent\)/)
     // The three tables the findings named are ScrollRegions, and the Results
     // year table prints $0 in the columns that used to go blank at zero.
     const survivor: string = readFileSync(fileURLToPath(new URL('./SurvivorTransitionPage.tsx', import.meta.url)), 'utf8')

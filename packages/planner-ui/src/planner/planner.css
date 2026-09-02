@@ -1341,6 +1341,29 @@ html:has(.kpi-bar) {
   font-weight: 600;
 }
 
+/* The opaque sticky column paints over the wrap's left-edge cue, so once the
+   wrap has scrolled inline the column carries the shadow itself: a
+   scroll-driven animation fades it in over the first 2rem of travel and the
+   timeline stays inactive (no shadow) while nothing overflows. Browsers
+   without scroll timelines keep the plain column. */
+@supports (animation-timeline: scroll()) {
+  .year-table th:first-child,
+  .year-table td:first-child {
+    animation: sticky-column-edge linear both;
+    animation-timeline: scroll(nearest inline);
+    animation-range: 0 2rem;
+  }
+}
+
+@keyframes sticky-column-edge {
+  from {
+    box-shadow: none;
+  }
+  to {
+    box-shadow: 0.35rem 0 0.5rem -0.25rem color-mix(in srgb, var(--fg) 18%, transparent);
+  }
+}
+
 .year-table thead th {
   background: var(--surface-2);
   position: sticky;

@@ -80,7 +80,9 @@ describe('Workspace chrome', () => {
     const { container, unmount } = await mountAt('/zzz-not-a-route', storeFor(plan))
     await waitForText(container, 'Page not found')
     const main = container.querySelector('main')!
-    expect(main.querySelector('.card.empty-state h2')?.textContent).toBe('Page not found')
+    // Page-level heading, so heading navigation lands on it.
+    expect(main.querySelector('.card.empty-state h1')?.textContent).toBe('Page not found')
+    expect(main.querySelectorAll('h1')).toHaveLength(1)
     const hrefs = [...main.querySelectorAll('a')].map((a) => a.getAttribute('href'))
     expect(hrefs).toEqual(expect.arrayContaining(['/', '/examples', '/learn']))
     await unmount()

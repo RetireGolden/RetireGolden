@@ -8,7 +8,7 @@
  * name are what this component adds. Use it for any wide table.
  */
 
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
 export function ScrollRegion({
   label,
@@ -26,8 +26,32 @@ export function ScrollRegion({
   children: ReactNode
 }) {
   const classes = ['year-table-wrap', grow ? 'year-table-wrap--grow' : null, className].filter(Boolean).join(' ')
+  const ref = useRef<HTMLDivElement>(null)
+  // A tab stop only while there is something to scroll: a table that fits
+  // its wrap would otherwise cost keyboard users an inert stop. Starts true
+  // (server render and environments without ResizeObserver keep the stop)
+  // and follows the measured overflow from then on.
+  const [scrollable, setScrollable] = useState(true)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const measure = () =>
+      setScrollable(el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    for (const child of el.children) observer.observe(child)
+    return () => observer.disconnect()
+  }, [])
   return (
-    <div className={classes} style={style} role="region" aria-label={label} tabIndex={0}>
+    <div
+      ref={ref}
+      className={classes}
+      style={style}
+      role="region"
+      aria-label={label}
+      tabIndex={scrollable ? 0 : undefined}
+    >
       {children}
     </div>
   )
