@@ -23,7 +23,26 @@ interface CandidateCall {
 const seam = vi.hoisted(() => ({
   inject: false,
   calls: [] as CandidateCall[],
+  withdrawalEffectsInputs: [] as unknown[],
 }))
+
+vi.mock(
+  './internal/annualFundingWithdrawalEffects.js',
+  async (importOriginal) => {
+    const original = await importOriginal<
+      typeof import('./internal/annualFundingWithdrawalEffects.js')
+    >()
+    return {
+      ...original,
+      annualFundingWithdrawalEffects: (
+        input: Parameters<typeof original.annualFundingWithdrawalEffects>[0],
+      ) => {
+        seam.withdrawalEffectsInputs.push(input)
+        return original.annualFundingWithdrawalEffects(input)
+      },
+    }
+  },
+)
 
 vi.mock(
   './internal/annualFundingCandidateEvaluation.js',
@@ -65,6 +84,7 @@ const zeroTax: TaxCalculator = { compute: () => 0 }
 beforeEach(() => {
   seam.inject = false
   seam.calls.length = 0
+  seam.withdrawalEffectsInputs.length = 0
 })
 
 describe('simulatePlan annual funding candidate-evaluation delegation', () => {
@@ -108,6 +128,10 @@ describe('simulatePlan annual funding candidate-evaluation delegation', () => {
       call.input.withdrawalPlan.byCategory.cash === 444 &&
       call.original.withdrawalPlan === call.input.withdrawalPlan
     )).toBe(true)
+    expect(seam.withdrawalEffectsInputs).toHaveLength(seam.calls.length + 1)
+    expect(seam.withdrawalEffectsInputs.at(-1)).toMatchObject({
+      hsaQualifiedCap: 70,
+    })
     expect(year.tax).toBe(321)
     expect(year.penalties).toBe(123)
     expect(year.expenses.healthcare).toBe(50)

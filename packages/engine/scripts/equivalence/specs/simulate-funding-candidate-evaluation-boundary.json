@@ -121,5 +121,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Corpus-cold known-attestation merge, contradicted-attestation provenance, HSA-only recharacterization, and the defensive nonconvergent HSA-cap fallback are intentionally excluded from steady-state ranges and pinned by direct contract tests where reachable. Object identity and hostile output consumption are delegation-test responsibilities, not claims made by a byte-identical dump or coverage range."
+  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Corpus-cold known-attestation merge, contradicted-attestation provenance, and HSA-only recharacterization are intentionally excluded from steady-state ranges and pinned by direct contract tests. The defensive nonconvergent HSA-cap fallback is unreachable while its frozen finite qualified-expense cap is the sole refresh input, so neither this corpus nor direct tests claim it. Object identity and hostile output consumption are delegation-test responsibilities, not claims made by a byte-identical dump or coverage range."
 }

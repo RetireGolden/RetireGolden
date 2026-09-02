@@ -279,6 +279,37 @@ describe('annualFundingCandidateEvaluation', () => {
     expect(result.acaMagiProbe?.components.taxExemptInterest).toBe(2_000)
     expect(result.acaMagiProbe?.magi).toBe(32_000)
     expect(result.acaQuote).not.toBeNull()
+
+    const attestedDominant = annualFundingCandidateEvaluation({
+      ...input,
+      ordinaryIncomeBase: 30_000,
+      taxInputBase: {
+        ...input.taxInputBase,
+        taxExemptInterest: 2_000,
+      },
+      aca: {
+        active: true,
+        contract: {
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          taxExemptInterest: { state: 'known', amount: 3_000 },
+          foreignExclusionAddback: { state: 'known', amount: 0 },
+          dependents: [],
+        },
+        initialSupportCodes: [],
+        generatedTaxExemptInterest: 2_000,
+        planDerivedTaxExemptInterest: true,
+        grossEnrollmentPremium: 12_000,
+        enrollmentPremiums: monthlyPremiums,
+        slcspBenchmarkPremiums: monthlyPremiums,
+        healthcareExcludingEnrollment: 0,
+        pricingInflationScale: 1,
+      },
+    })
+
+    expect(attestedDominant.acaMagiProbe?.components.taxExemptInterest).toBe(3_000)
+    expect(attestedDominant.acaMagiProbe?.magi).toBe(33_000)
+    expect(attestedDominant.acaQuote).not.toBeNull()
   })
 
   it('annotates a contradicted not-applicable attestation without blocking ACA pricing', () => {
