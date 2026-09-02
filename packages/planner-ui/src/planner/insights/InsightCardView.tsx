@@ -13,22 +13,12 @@ import type { InsightAction, InsightCard, InsightImpact } from '@retiregolden/en
 import { LearnLink } from '../../learn/LearnLink'
 import { sectionTitleOf } from '../sectionTitles'
 import { fmtMoney, fmtMoneyCompact } from '../format'
+import { uniqueScenarioName } from '../scenarioNames'
 
 function makeScenarioId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? `scenario-${crypto.randomUUID()}`
     : `scenario-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-function uniqueScenarioName(baseName: string, plan: Plan): string {
-  const names = new Set(plan.scenarios.map((scenario) => scenario.name))
-  if (!names.has(baseName)) return baseName
-
-  let suffix = 2
-  while (names.has(`${baseName} (${suffix})`)) {
-    suffix += 1
-  }
-  return `${baseName} (${suffix})`
 }
 
 export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDismiss: () => void }) {
@@ -142,7 +132,10 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
       setPreviewError(`This insight can't be applied to your plan: ${applied.issues.join('; ')}`)
       return
     }
-    const name = uniqueScenarioName(action.scenarioName, plan)
+    const name = uniqueScenarioName(
+      action.scenarioName,
+      plan.scenarios.map((scenario) => scenario.name),
+    )
     update((d) => {
       d.scenarios.push({
         id: makeScenarioId(),

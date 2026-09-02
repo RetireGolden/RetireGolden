@@ -14,6 +14,7 @@ import { SelectField } from './fields'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
 import { projectPlan, type ProjectionView } from './useProjection'
+import { ScrollRegion } from './ScrollRegion'
 
 const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
 
@@ -196,7 +197,7 @@ export function ComparePlansPage() {
           {!canCompare ? (
             <div className="callout callout--info">{SAME_PLAN_NOTICE}</div>
           ) : (
-            <div className="year-table-wrap">
+            <ScrollRegion label="Plan comparison">
               <table className="year-table compare-table">
                 <thead>
                   <tr>
@@ -216,7 +217,7 @@ export function ComparePlansPage() {
                   {rows.map((row) => <MetricRow key={row.label} {...row} />)}
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
           )}
         </>
       )}

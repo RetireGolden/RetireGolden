@@ -99,6 +99,23 @@ describe('Workspace chrome', () => {
       const figure = chart.querySelector('[role="img"]')
       expect(figure?.getAttribute('aria-label'), chart.querySelector('h3')?.textContent ?? '').toMatch(/\S/)
     }
+    // Plan orientation survives leaving the workspace shell (#432): a breadcrumb
+    // back into the plan, and Back to plan lands on the plan itself, not Results.
+    const crumb = container.querySelector('.report-head nav[aria-label="Breadcrumb"]')!
+    expect(crumb).not.toBeNull()
+    expect(crumb.className).toContain('no-print')
+    const crumbLinks = [...crumb.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')])
+    expect(crumbLinks).toEqual([
+      ['Your plans', '/'],
+      [plan.name, `/plan/${plan.id}`],
+    ])
+    expect(crumb.querySelector('[aria-current="page"]')?.textContent).toBe('Report')
+    const back = [...container.querySelectorAll('a')].find((a) => a.textContent === 'Back to plan')
+    expect(back?.getAttribute('href')).toBe(`/plan/${plan.id}`)
+    // The year-by-year appendix is a named, reachable scroll region (#474).
+    const appendix = container.querySelector('.report-appendix [role="region"]')
+    expect(appendix?.getAttribute('aria-label')).toBe('Year-by-year appendix')
+    expect(appendix?.className).toContain('year-table-wrap--grow')
     await unmount()
     // Leaving the report restores the default title, like leaving the workspace.
     expect(document.title).toBe('RetireGolden')

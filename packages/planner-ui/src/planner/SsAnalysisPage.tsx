@@ -53,6 +53,7 @@ import {
   type SweepRow,
 } from './ssAnalysis'
 import { chartTooltipStyle } from './chartStyle'
+import { ScrollRegion } from './ScrollRegion'
 
 type Tab = 'plan' | 'benefits' | 'breakeven'
 
@@ -310,7 +311,7 @@ function BridgePanel() {
         benefit until your claim starts, so the delay never cuts lifestyle. Sized from your own plan; quoted on
         Treasury real yields as of {EMBEDDED_REAL_YIELD_CURVE.asOfIso}. <LearnLink {...LEARN.socialSecurityBridge} />
       </p>
-      <div className="year-table-wrap">
+      <ScrollRegion label="Social Security bridge">
         <table>
           <thead>
             <tr>
@@ -335,7 +336,7 @@ function BridgePanel() {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       <div className="form-grid">
         <SelectField
           label="Fund the bridge from"
@@ -370,7 +371,7 @@ function BridgePanel() {
         </p>
       ) : null}
       {rows ? (
-        <div className="year-table-wrap">
+        <ScrollRegion label="Claiming strategies">
           <table>
             <thead>
               <tr>
@@ -395,7 +396,7 @@ function BridgePanel() {
             All three run on the same steady-markets ledger and the same 500 seeded market paths, so every difference
             is the strategy, not luck of the draw.
           </p>
-        </div>
+        </ScrollRegion>
       ) : null}
     </div>
   )
@@ -677,7 +678,7 @@ function SingleSweepTable({
   const byAge = [...sweep.rows].sort((a, b) => a.claimByPersonId[id]! - b.claimByPersonId[id]!)
   const bestKey = sweep.ranked[0]!.claimByPersonId[id]
   return (
-    <div className="year-table-wrap" style={{ border: 'none' }}>
+    <ScrollRegion label="Claim-age sweep" style={{ border: 'none' }}>
       <table className="claim-table">
         <thead>
           <tr>
@@ -712,7 +713,7 @@ function SingleSweepTable({
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   )
 }
 
@@ -748,7 +749,7 @@ function CoupleHeatmap({
         After-tax estate by claim age, rows: {personName(rowId!)}, columns: {personName(colId!)}. Greener is better;
         {readOnly ? ' claim-age choices are read-only in this workspace.' : ' use Enter or Space on a cell to apply it.'}
       </p>
-      <div className="year-table-wrap" style={{ border: 'none' }}>
+      <ScrollRegion label="Claim-age heatmap" style={{ border: 'none' }}>
         <table className="claim-table heatmap">
           <thead>
             <tr>
@@ -791,7 +792,7 @@ function CoupleHeatmap({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </>
   )
 }
@@ -965,7 +966,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       ) : null}
 
-      <div className="year-table-wrap" style={{ border: 'none' }}>
+      <ScrollRegion label="Expected value by claim age" style={{ border: 'none' }}>
         <table className="claim-table">
           <thead>
             <tr>
@@ -991,7 +992,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       {ranking.ranked.length > 10 ? <p className="muted small">Showing the top 10 of {ranking.ranked.length} combinations.</p> : null}
 
       <SurvivorSwitchingPanel discountPct={discountPct} />
@@ -1059,7 +1060,7 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
           return (
             <div key={person.id} className="callout callout--info" style={{ marginTop: '0.6rem' }}>
               <strong>{person.name}</strong>
-              <div className="year-table-wrap" style={{ border: 'none' }}>
+              <ScrollRegion label={`Paid in vs. received: ${person.name}`} style={{ border: 'none' }}>
                 <table className="claim-table">
                   <tbody>
                     <tr><td>Paid in (OASDI)</td><td>{fmtMoney(paidIn.paidIn)}</td></tr>
@@ -1070,7 +1071,7 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
                     <tr><td>Ratio (get back ÷ paid in)</td><td>{ratio > 0 ? `${ratio.toFixed(2)}×` : '—'}</td></tr>
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
               <p className="muted small" style={{ marginTop: '0.3rem' }}>
                 At a {discountPct}% real discount rate. Excludes Medicare tax, disability/survivor insurance value, and
                 spousal benefits; the OASDI rate is applied uniformly over your career.
@@ -1156,7 +1157,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
         {discountPct}%{' '}
         <HelpTip text="Illustrative: the survivor base is the deceased's actual (claim-age-adjusted) benefit, the RIB-LIM widow's-limit caps it at 82.5% of the deceased's PIA when they claimed early, and the early-claim widow(er) reduction (up to 28.5% at 60) applies before the survivor's FRA, the same computation the projection ledger uses. Only one benefit is paid at a time, the larger of those claimed." />.
       </p>
-      <div className="year-table-wrap" style={{ border: 'none' }}>
+      <ScrollRegion label="Survivor vs. personal timing" style={{ border: 'none' }}>
         <table className="claim-table">
           <thead>
             <tr>
@@ -1173,7 +1174,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </div>
   )
 }

@@ -55,6 +55,7 @@ import { currentStartYear, seedFromPlanId } from './useProjection'
 import { chartTooltipStyle } from './chartStyle'
 import { successBand } from './successBand'
 import { frameH } from './chartFrame'
+import { ScrollRegion } from './ScrollRegion'
 
 function SuccessGauge({ rate, pathCount }: { rate: number; pathCount: number }) {
   const pct = Math.round(rate * 100)
@@ -668,7 +669,7 @@ export function MonteCarloPage() {
                       <ComposedChart data={visibleFrontier.spending} margin={{ left: 12, right: 8, top: 8 }}>
                         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                         <XAxis dataKey="x" tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 12 }} />
-                        <YAxis tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
+                        <YAxis domain={[0, 1]} ticks={[0, 0.25, 0.5, 0.75, 1]} tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
                         <Tooltip
                           formatter={(v: unknown, name: unknown) =>
                             name === 'Success rate' ? `${Math.round(Number(v) * 100)}%` : fmtMoneyCompact(Number(v))
@@ -688,7 +689,7 @@ export function MonteCarloPage() {
                       <ComposedChart data={visibleFrontier.retirement} margin={{ left: 12, right: 8, top: 8 }}>
                         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                         <XAxis dataKey="x" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
-                        <YAxis tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
+                        <YAxis domain={[0, 1]} ticks={[0, 0.25, 0.5, 0.75, 1]} tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
                         <Tooltip
                           formatter={(v: unknown, name: unknown) =>
                             name === 'Success rate' ? `${Math.round(Number(v) * 100)}%` : fmtMoneyCompact(Number(v))
@@ -736,7 +737,7 @@ export function MonteCarloPage() {
                         >
                           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                           <XAxis dataKey="pct" tickFormatter={(v) => `${v}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} />
-                          <YAxis tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
+                          <YAxis domain={[0, 1]} ticks={[0, 0.25, 0.5, 0.75, 1]} tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
                           <Tooltip
                             formatter={(v: unknown) =>
                               Number.isFinite(Number(v)) ? `${(Number(v) * 100).toFixed(1)}%` : '—'
@@ -759,7 +760,7 @@ export function MonteCarloPage() {
                     </div>
                   </div>
                   <div>
-                    <div className="year-table-wrap" style={{ border: 'none' }}>
+                    <ScrollRegion label="Annuitization frontier" style={{ border: 'none' }}>
                       <table className="compare-table">
                         <thead>
                           <tr>
@@ -780,14 +781,19 @@ export function MonteCarloPage() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
+                    </ScrollRegion>
                   </div>
                 </div>
-                {visibleFrontier.annuitization.notes.map((note) => (
-                  <p key={note} className="muted" style={{ marginBottom: 0 }}>
-                    {note}
-                  </p>
-                ))}
+                {visibleFrontier.annuitization.notes.length > 0 ? (
+                  <div className="callout callout--note" role="note">
+                    <strong>Notes on this comparison</strong>
+                    <ul>
+                      {visibleFrontier.annuitization.notes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -816,7 +822,7 @@ export function MonteCarloPage() {
                 {visibleHistorical.suites.map((suite) => (
                   <div key={suite.kind}>
                     <h3 style={{ marginTop: 0 }}>{suite.name}</h3>
-                    <div className="year-table-wrap" style={{ border: 'none' }}>
+                    <ScrollRegion label={suite.name} style={{ border: 'none' }}>
                       <table className="compare-table">
                         <thead>
                           <tr>
@@ -837,7 +843,7 @@ export function MonteCarloPage() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
+                    </ScrollRegion>
                   </div>
                 ))}
               </div>

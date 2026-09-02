@@ -16,6 +16,7 @@ import {
   RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE,
   retirementActionReadinessVetoExplanation,
 } from './retirementActionReadinessVetoCopy'
+import { ScrollRegion } from './ScrollRegion'
 
 function fmtSignedMoney(v: number): string {
   return `${v >= 0 ? '+' : '−'}${fmtMoney(Math.abs(v))}`
@@ -201,7 +202,7 @@ export function WhyRecommendationPanel({
           )}
         </p>
       ) : null}
-      <div className="year-table-wrap" style={{ border: 'none' }}>
+      <ScrollRegion label="Alternatives considered" style={{ border: 'none' }}>
         <table className="compare-table">
           <thead>
             <tr>
@@ -266,7 +267,7 @@ export function WhyRecommendationPanel({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       <p className="field-hint" style={{ margin: '0.4rem 0 0' }}>
         Deltas are versus your current plan, measured on the full projection (heir tax on pre-tax balances included).
         Candidates that shorten how long the money lasts are rejected regardless of estate gain. The solver's own

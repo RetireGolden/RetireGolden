@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
@@ -334,9 +334,15 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(scenarios).toMatch(/<ScrollRegion label="Scenario overview table"/)
     const results: string = readFileSync(fileURLToPath(new URL('./ResultsPage.tsx', import.meta.url)), 'utf8')
     expect(results).toMatch(/<ScrollRegion label="Year-by-year table">/)
-    // No raw wrap is left on the pages this batch edited: every table there is named and reachable.
-    expect(results).not.toMatch(/<div className="year-table-wrap"/)
-    expect(scenarios).not.toMatch(/<div className="year-table-wrap"/)
+    // No raw wrap is left anywhere: every wide table in the package is a named,
+    // reachable ScrollRegion (#480, #484, and the rest of the family).
+    const srcDir = fileURLToPath(new URL('..', import.meta.url))
+    const files = readdirSync(srcDir, { recursive: true }) as string[]
+    const rawWraps = files
+      .filter((f: string) => f.endsWith('.tsx') && !f.endsWith('ScrollRegion.tsx'))
+      // Any div whose attributes mention the class, however the JSX is shaped.
+      .filter((f: string) => /<div\b[^>]*year-table-wrap/s.test(readFileSync(`${srcDir}/${f}`, 'utf8')))
+    expect(rawWraps).toEqual([])
     for (const label of ['{caption}', '"Annual ledger comparison"', '"Capacity solve status"']) {
       expect(scenarios).toContain(`<ScrollRegion label=${label}`)
     }
@@ -353,6 +359,33 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
       // The row-depleted class toggle keeps its threshold; only the cell shape is banned.
       expect(results, `${field} cell no longer blanks at zero`).not.toMatch(new RegExp(`y\\.${field} > 0\\.005 \\? fmtMoney`))
     }
+  })
+
+  it('frontier axes, skipped-control notes, and the report head follow the chrome rules (#449, #484, #474)', () => {
+    const mc: string = readFileSync(fileURLToPath(new URL('./MonteCarloPage.tsx', import.meta.url)), 'utf8')
+    // Every success-rate axis (two frontiers, annuitization) is bounded 0–100%
+    // with quarter ticks, so equal quantities never read on different scales (#449).
+    const pinned = mc.match(/<YAxis domain=\{\[0, 1\]\} ticks=\{\[0, 0\.25, 0\.5, 0\.75, 1\]\} tickFormatter=\{\(v\) => `\$\{Math\.round\(Number\(v\) \* 100\)\}%`\}/g)
+    expect(pinned, 'all three success-rate charts pin their y-axis').toHaveLength(3)
+    // No other fraction-as-percent axis is left unpinned.
+    expect(mc.match(/<YAxis tickFormatter=\{\(v\) => `\$\{Math\.round\(Number\(v\) \* 100\)\}%`\}/g)).toBeNull()
+    // Skipped-control notes get callout chrome, not grey body text (#484).
+    expect(mc).toMatch(/annuitization\.notes\.length > 0 \? \(\s*<div className="callout callout--note" role="note">/)
+    expect(rule('.callout--note')).toMatch(/border-color:\s*color-mix\(in srgb, var\(--fg\)/)
+    expect(rule('.report-head h1')).toMatch(/overflow-wrap:\s*anywhere/)
+    // Report head: the title block owns the row and actions wrap under a long name (#474).
+    expect(rule('.report-head')).toMatch(/flex-wrap:\s*wrap/)
+    expect(rule('.report-head-title')).toMatch(/flex:\s*1 1 16rem/)
+    expect(rule('.report-head-title')).toMatch(/min-width:\s*0/)
+    const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
+    expect(css).toMatch(/@media print \{\s*\.report \.year-table-wrap \{[^}]*overflow:\s*visible;[^}]*max-height:\s*none;/)
+    // The engine's skipped-control note reads as a sentence to a person, not a code aside.
+    const engineNote: string = readFileSync(
+      fileURLToPath(new URL('../../../engine/src/decisions/annuitization.ts', import.meta.url)),
+      'utf8',
+    )
+    expect(engineNote).toContain('Glidepath attribution was skipped.')
+    expect(engineNote).not.toContain('controls were skipped')
   })
 
   it('text, select, and affixed inputs share one height token', () => {

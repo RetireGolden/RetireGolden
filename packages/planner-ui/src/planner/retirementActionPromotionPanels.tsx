@@ -51,6 +51,7 @@ import {
   RETIREMENT_ACTION_IRA_FACTS_ANCHOR,
   RETIREMENT_ACTION_IRA_FACTS_HEADING,
 } from './sections/RetirementActionEligibilityFactsEditor'
+import { ScrollRegion } from './ScrollRegion'
 
 function trimSentences(
   plan: Readonly<Plan>,
@@ -137,7 +138,7 @@ export function PromotedSchedulePanel({
     <div className="card">
       <h2>{PROMOTED_SCHEDULE_HEADING}</h2>
       <p className="card-hint">{PROMOTED_SCHEDULE_INTRO}</p>
-      <div className="year-table-wrap">
+      <ScrollRegion label={PROMOTED_SCHEDULE_HEADING}>
         <table className="compare-table">
           <thead>
             <tr>
@@ -160,7 +161,7 @@ export function PromotedSchedulePanel({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       <p className="field-hint">
         {promotion.outcome === 'equivalent'
           ? PROMOTED_SCHEDULE_EQUIVALENT_NOTE
