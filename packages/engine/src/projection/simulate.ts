@@ -58,9 +58,9 @@ import {
 import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import {
-  annualCoordinatedHecmAllocations,
-  annualCoordinatedHecmEligibility,
+  annualCoordinatedHecmAllocations, annualCoordinatedHecmEligibility,
 } from './internal/annualCoordinatedHecm.js'
+import { annualHecmBackstopPlan } from './internal/annualHecmBackstop.js'
 import {
   annualOrdinaryWithdrawalBoundary,
   type AnnualOrdinaryWithdrawalBoundaryResult,
@@ -5903,27 +5903,27 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // Any open HECM line backstops a true portfolio shortfall regardless of
     // draw policy — no borrower defaults on spending with credit available.
     // The policy only controls proactive (coordinated) draws above.
-    let hecmShortfallDraw = 0
-    if (withdrawalPlan.shortfall > EPSILON && anyAlive) {
-      let remaining = withdrawalPlan.shortfall
-      const visitedHecmLineIds = new Set<string>()
-      for (const account of plan.accounts) {
-        if (account.type !== 'property' || !account.hecm) continue
-        if (visitedHecmLineIds.has(account.id)) continue
-        visitedHecmLineIds.add(account.id)
-        const line = hecmStates.get(account.id)
-        if (!line) continue
-        const draw = Math.min(remaining, Math.max(0, line.principalLimit - line.loanBalance))
-        if (draw <= 0) continue
-        line.loanBalance += draw
-        hecmShortfallDraw += draw
-        remaining -= draw
-        hecmBackstopByProperty?.set(account.id, draw)
-        if (remaining <= EPSILON) break
-      }
-      hecmDraw += hecmShortfallDraw
+    const hecmBackstop = annualHecmBackstopPlan(Object.freeze({
+      accounts: plan.accounts,
+      hecmStates,
+      portfolioShortfall: withdrawalPlan.shortfall,
+      anyAlive,
+    }))
+    for (const allocation of hecmBackstop.allocations) {
+      const line = hecmStates.get(allocation.propertyAccountId)
+      if (!line) continue
+      line.loanBalance += allocation.amount
+      hecmBackstopByProperty?.set(
+        allocation.propertyAccountId,
+        allocation.amount,
+      )
     }
-    const shortfallAfterHecm = Math.max(0, withdrawalPlan.shortfall - hecmShortfallDraw)
+    const hecmShortfallDraw = hecmBackstop.draw
+    hecmDraw += hecmShortfallDraw
+    const shortfallAfterHecm = hecmBackstop.shortfallAfterHecm
+    // The caller retains observable live line/map mutation, coordinated-then-
+    // backstop accumulation, capture gating, and downstream residual use.
+    // Those effects make this application loop orchestration, not HECM policy.
     const surplus = Math.max(0, cashInflows - expenses.total - contributions - tax - penalties)
     const iraCharacterFinal = needBasedOwnedIraCharacter(
       withdrawalPlan.byAccountId,
