@@ -22,7 +22,7 @@ import { PrivacyProvider } from './privacyContext'
 import { usePrivacy } from './privacyContextCore'
 import { fmtMoneyCompact } from './format'
 import { successBand } from './successBand'
-import { useMcSuccessRate } from './useMcSuccessRate'
+import { useMcSuccessRateState } from './useMcSuccessRate'
 import { useProjection } from './useProjection'
 import { SECTION_TITLES } from './sectionTitles'
 
@@ -79,7 +79,7 @@ function SaveIndicator() {
 function KpiBar() {
   const { plan } = usePlan()
   const { result, summary, deflate } = useProjection(plan)
-  const mcRate = useMcSuccessRate(plan, !isPlanIncomplete(plan))
+  const { rate: mcRate, status: mcStatus } = useMcSuccessRateState(plan, !isPlanIncomplete(plan))
   // While a page has Hide amounts active (the Household map's screen-share
   // toggle), the KPI bar masks every dollar it would otherwise show — the
   // chrome must not leak what the page below is hiding. The literal "$" unit
@@ -137,12 +137,25 @@ function KpiBar() {
           >
             {Math.round(mcRate * 100)}%
           </Link>
+        ) : mcStatus === 'failed' ? (
+          <Link className="kpi-value kpi-value--pending kpi-value-link" to="monte-carlo" aria-label="Simulation unavailable; open Monte Carlo to retry">
+            —
+          </Link>
         ) : (
-          <span className="kpi-value kpi-value--pending" aria-label="Simulating markets">
+          <span className="kpi-value kpi-value--pending" aria-busy="true" aria-label="Simulating markets">
             …
           </span>
         )}
-        <span className="kpi-sub">of {DEFAULT_PATH_COUNT.toLocaleString()} varied markets</span>
+        {/* While the simulation runs the sub-label says so, instead of
+            describing a number that is not there yet; a failed run says that
+            instead of staying busy forever (#453). */}
+        <span className="kpi-sub">
+          {mcRate !== null
+            ? `of ${DEFAULT_PATH_COUNT.toLocaleString()} varied markets`
+            : mcStatus === 'failed'
+              ? 'simulation unavailable · open Monte Carlo to retry'
+              : `simulating ${DEFAULT_PATH_COUNT.toLocaleString()} markets…`}
+        </span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Lifetime tax</span>

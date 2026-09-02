@@ -51,6 +51,7 @@ import {
   type MonthlyClaim,
   type MonthlyRefinement,
   type SweepRow,
+  sweepVerdict,
 } from './ssAnalysis'
 import { chartTooltipStyle } from './chartStyle'
 import { ScrollRegion } from './ScrollRegion'
@@ -437,7 +438,11 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   const [mcError, setMcError] = useState<string | null>(null)
   const [refined, setRefined] = useState<MonthlyRefinement | null>(null)
 
-  const best = sweep.ranked[0]
+  // Only the engine's winner is ever crowned (banner, Apply, refine, table and
+  // heatmap highlights). A flat objective, a current claim that already leads,
+  // or no eligible candidate gets a note instead (#454).
+  const verdict = sweepVerdict(sweep)
+  const best: SweepRow | undefined = verdict === 'winner' ? (sweep.winner ?? undefined) : undefined
   const current = currentClaim(plan, personIds)
   const currentRow = sweep.rows.find((r) => personIds.every((id) => r.claimByPersonId[id] === current[id]))
   const keyOf = (r: SweepRow) => personIds.map((id) => r.claimByPersonId[id]).join('-')
@@ -494,7 +499,27 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       </div>
 
-      {best ? (
+      {verdict === 'flat' || verdict === 'current-best' || verdict === 'ineligible' ? (
+        <div className="callout callout--note" role="note">
+          {verdict === 'flat' ? (
+            <>
+              <strong>No best claim age to recommend.</strong> Every claim age scores the same on{' '}
+              {objectivePolicies[objectiveId].label.toLowerCase()}, so this ranking cannot separate them. Try another
+              ranking, or compare the claim ages in the table below.
+            </>
+          ) : verdict === 'current-best' ? (
+            <>
+              <strong>Your current claim age already leads.</strong> No other claim age improves on it by{' '}
+              {objectivePolicies[objectiveId].label.toLowerCase()}; the table below shows how the others compare.
+            </>
+          ) : (
+            <>
+              <strong>No claim age meets this ranking's constraints.</strong> Try another ranking, or review the
+              table below for what each claim age would do.
+            </>
+          )}
+        </div>
+      ) : best ? (
         <div className="callout callout--info">
           <strong>Best by {objectivePolicies[objectiveId].label.toLowerCase()}: claim at {ageLabel(best.claimByPersonId, personIds)}</strong>
           {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}
@@ -676,7 +701,7 @@ function SingleSweepTable({
   const readOnly = useWorkspaceReadOnly()
   const id = personIds[0]!
   const byAge = [...sweep.rows].sort((a, b) => a.claimByPersonId[id]! - b.claimByPersonId[id]!)
-  const bestKey = sweep.ranked[0]!.claimByPersonId[id]
+  const bestKey = sweep.winner?.claimByPersonId[id] ?? null
   return (
     <ScrollRegion label="Claim-age sweep" style={{ border: 'none' }}>
       <table className="claim-table">
@@ -741,7 +766,7 @@ function CoupleHeatmap({
   const min = Math.min(...values)
   const max = Math.max(...values)
   const norm = (v: number) => (max > min ? (v - min) / (max - min) : 1)
-  const bestKey = `${sweep.ranked[0]!.claimByPersonId[rowId!]}-${sweep.ranked[0]!.claimByPersonId[colId!]}`
+  const bestKey = sweep.winner ? `${sweep.winner.claimByPersonId[rowId!]}-${sweep.winner.claimByPersonId[colId!]}` : null
 
   return (
     <>

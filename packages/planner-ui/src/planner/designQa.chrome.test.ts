@@ -388,6 +388,24 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(engineNote).not.toContain('controls were skipped')
   })
 
+  it('loading, recalculating, and failure states are labelled, and a flat objective crowns no best (#433, #453, #448, #454)', () => {
+    const workspace: string = readFileSync(fileURLToPath(new URL('./PlanWorkspace.tsx', import.meta.url)), 'utf8')
+    expect(workspace).toMatch(/className="kpi-value kpi-value--pending" aria-busy="true" aria-label="Simulating markets"/)
+    expect(workspace).toContain('simulating ${DEFAULT_PATH_COUNT.toLocaleString()} markets…')
+    const solver: string = readFileSync(fileURLToPath(new URL('./SpendingSolverPage.tsx', import.meta.url)), 'utf8')
+    expect(solver).toMatch(
+      /<div className="callout callout--warn solver-failure" role="alert">\s*(\{\/\*[\s\S]*?\*\/\}\s*)?<h2 style=\{\{ marginTop: 0 \}\}>No sustainable spending level found<\/h2>/,
+    )
+    expect(solver).toMatch(/Review Spending[\s\S]*Review Assumptions/)
+    const ss: string = readFileSync(fileURLToPath(new URL('./SsAnalysisPage.tsx', import.meta.url)), 'utf8')
+    expect(ss).toMatch(/verdict === 'flat' \|\| verdict === 'current-best' \|\| verdict === 'ineligible' \? \(\s*<div className="callout callout--note" role="note">/)
+    // Nothing on the page reads the top ranked row as "best" any more.
+    expect(ss).not.toMatch(/sweep\.ranked\[0\]!?\.claimByPersonId/)
+    expect(workspace).toContain("mcStatus === 'failed'")
+    expect(rule('.route-fallback-caption')).toMatch(/margin:\s*0 0 0\.75rem/)
+    expect(rule('.solver-failure .picker-actions')).toMatch(/margin:\s*0\.75rem 0 0/)
+  })
+
   it('text, select, and affixed inputs share one height token', () => {
     const affix = rule('.input-affix')
     expect(affix).toMatch(/min-height:\s*var\(--control-height\)/)

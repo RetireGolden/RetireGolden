@@ -41,13 +41,20 @@ function successRateOf(plan: Plan): Promise<number> {
   return run
 }
 
-export function useMcSuccessRate(plan: Plan, enabled: boolean): number | null {
+export type McSuccessRateStatus = 'idle' | 'running' | 'done' | 'failed'
+
+/**
+ * The headline rate plus what the simulation is doing, so a KPI can say
+ * "simulating" only while a run is live and "unavailable" after one fails
+ * (the Monte Carlo page carries the error detail and retry).
+ */
+export function useMcSuccessRateState(plan: Plan, enabled: boolean): { rate: number | null; status: McSuccessRateStatus } {
   // The rate is stored WITH the plan it was computed for, and derived to null
   // whenever the current plan differs — so a headline number can never show a
   // previous plan's rate through the debounce + recompute, and a silently
   // failed re-run can never leave a stale rate up (edits produce a new plan
   // object via structuredClone, so reference identity is the right key).
-  const [snapshot, setSnapshot] = useState<{ plan: Plan; rate: number } | null>(null)
+  const [snapshot, setSnapshot] = useState<{ plan: Plan; rate: number | null; failed: boolean } | null>(null)
   const runToken = useRef(0)
   useEffect(() => {
     if (!enabled) return undefined
@@ -55,10 +62,12 @@ export function useMcSuccessRate(plan: Plan, enabled: boolean): number | null {
     const attach = () => {
       successRateOf(plan)
         .then((rate) => {
-          if (token === runToken.current) setSnapshot({ plan, rate })
+          if (token === runToken.current) setSnapshot({ plan, rate, failed: false })
         })
         .catch(() => {
-          /* silent — the Monte Carlo page carries the error state and retry */
+          // The Monte Carlo page carries the error detail and retry; here the
+          // KPI only needs to stop claiming a simulation is in progress.
+          if (token === runToken.current) setSnapshot({ plan, rate: null, failed: true })
         })
     }
     // A run for this plan already exists (typically started by the KPI bar):
@@ -73,5 +82,11 @@ export function useMcSuccessRate(plan: Plan, enabled: boolean): number | null {
       window.clearTimeout(t)
     }
   }, [plan, enabled])
-  return enabled && snapshot !== null && snapshot.plan === plan ? snapshot.rate : null
+  const current = enabled && snapshot !== null && snapshot.plan === plan ? snapshot : null
+  const status: McSuccessRateStatus = !enabled ? 'idle' : current === null ? 'running' : current.failed ? 'failed' : 'done'
+  return { rate: current?.rate ?? null, status }
+}
+
+export function useMcSuccessRate(plan: Plan, enabled: boolean): number | null {
+  return useMcSuccessRateState(plan, enabled).rate
 }

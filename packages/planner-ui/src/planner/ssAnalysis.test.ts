@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
-import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies } from './ssAnalysis'
+import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, sweepVerdict, type SweepRow } from './ssAnalysis'
 
 let counter = 0
 const id = () => `ssa-${++counter}`
@@ -209,3 +209,36 @@ describe('benefitsOnlyRanking', () => {
     expect(r.ranked[0]!.claimByPersonId['p1']!).toBeGreaterThanOrEqual(r.ranked[0]!.claimByPersonId['p2']!)
   })
 })
+describe('sweep verdict (#454)', () => {
+  it('crowns nothing on an asset-free plan: every estate is $0, so the engine has no winner', () => {
+    const plan = singlePlan()
+    plan.accounts = []
+    const sweep = sweepClaimingStrategies(parsePlanOk(plan), 2026)
+    expect(sweep.ranked.length).toBeGreaterThan(1)
+    expect(sweep.ranked.every((row) => row.summary.endingAfterTaxEstate === 0)).toBe(true)
+    expect(sweep.winner).toBeNull()
+    expect(sweepVerdict(sweep)).not.toBe('winner')
+    expect(['flat', 'ineligible']).toContain(sweepVerdict(sweep))
+  })
+
+  it('crowns the engine winner on a funded plan, and it is the top ranked row', () => {
+    const sweep = sweepClaimingStrategies(singlePlan(), 2026)
+    expect(sweep.winner, 'a funded single with a 67 claim has a better estate claim age').not.toBeNull()
+    expect(sweep.winner).toBe(sweep.ranked[0])
+    expect(sweep.winner!.eligible).toBe(true)
+    expect(sweep.winner!.primaryValue).toBeGreaterThan(0)
+    expect(sweepVerdict(sweep)).toBe('winner')
+  })
+
+  it('reads flatness over eligible rows within half a unit, and reports an all-ineligible sweep', () => {
+    const row = (primaryValue: number, eligible = true) =>
+      ({ claimByPersonId: { p1: 62 }, primaryValue, eligible, lossReason: null }) as unknown as SweepRow
+    expect(objectiveIsFlat([row(0), row(0.4), row(-0.3)])).toBe(true)
+    expect(objectiveIsFlat([row(0), row(0), row(1_500, false)])).toBe(true)
+    expect(objectiveIsFlat([row(0), row(1_500)])).toBe(false)
+    expect(sweepVerdict({ ranked: [row(0, false), row(-5, false)], winner: null })).toBe('ineligible')
+    expect(sweepVerdict({ ranked: [row(0), row(-5)], winner: null })).toBe('current-best')
+    expect(sweepVerdict({ ranked: [], winner: null })).toBe('empty')
+  })
+})
+

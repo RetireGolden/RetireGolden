@@ -122,6 +122,12 @@ export interface SweepResult {
   rows: SweepRow[]
   /** Rows sorted by the selected objective policy, descending. */
   ranked: SweepRow[]
+  /**
+   * The engine's pick: the first eligible row that strictly improves the
+   * objective over the current claim, after tie-breakers. Null when nothing
+   * does, which is the only state in which a claim age may be called best.
+   */
+  winner: SweepRow | null
 }
 
 export function planWithClaimAges(plan: Plan, claimByPersonId: Record<string, number>): Plan {
@@ -149,14 +155,14 @@ export function sweepClaimingStrategies(
   const taxCalculator = taxCalculatorFor(plan)
   if (personIds.length === 0) {
     const policy = objectivePolicyForPlan(objectivePolicyId, plan)
-    return { personIds, objectivePolicyId, primaryMetricLabel: policy.primaryMetricLabel, rows: [], ranked: [] }
+    return { personIds, objectivePolicyId, primaryMetricLabel: policy.primaryMetricLabel, rows: [], ranked: [], winner: null }
   }
 
   const ctx = createDecisionContext(plan, { startYear, taxCalculator })
   const policy = objectivePolicyForPlan(objectivePolicyId, plan)
   const candidates = socialSecurityClaimGridGenerator.generate(ctx)
   const evaluations = candidates.map((candidate) => evaluateCandidate(ctx, candidate))
-  const { ranked: rankedDecisions } = rankEvaluations(evaluations, ctx, policy, 0)
+  const { ranked: rankedDecisions, winner: winningDecision } = rankEvaluations(evaluations, ctx, policy, 0)
 
   const rowByCandidateId = new Map<string, SweepRow>()
   for (const row of rankedDecisions) {
@@ -179,7 +185,8 @@ export function sweepClaimingStrategies(
   const ranked = rankedDecisions
     .map((row) => rowByCandidateId.get(row.evaluation.candidate.id))
     .filter((row): row is SweepRow => row !== undefined)
-  return { personIds, objectivePolicyId, primaryMetricLabel: policy.primaryMetricLabel, rows, ranked }
+  const winner = winningDecision ? (rowByCandidateId.get(winningDecision.evaluation.candidate.id) ?? null) : null
+  return { personIds, objectivePolicyId, primaryMetricLabel: policy.primaryMetricLabel, rows, ranked, winner }
 }
 
 // ---------------------------------------------------------------------------
@@ -323,3 +330,35 @@ export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear 
   const ranked = [...rows].sort((x, y) => y.expectedPv - x.expectedPv)
   return { personIds, rows, ranked }
 }
+/** Half a unit of the objective metric (a dollar or a year): closer than this is the same score. */
+const FLAT_TOLERANCE = 0.5
+
+/**
+ * True when the selected objective scores every eligible candidate the same
+ * (for example, every after-tax estate is $0 on a plan with no assets), so
+ * no claim age can honestly be called best on it (#454). Ineligible rows are
+ * ranked below the eligible ones and do not count.
+ */
+export function objectiveIsFlat(ranked: readonly SweepRow[]): boolean {
+  const eligible = ranked.filter((row) => row.eligible)
+  if (eligible.length < 2) return false
+  const first = eligible[0]!.primaryValue
+  return eligible.every((row) => Math.abs(row.primaryValue - first) <= FLAT_TOLERANCE)
+}
+
+export type SweepVerdict = 'winner' | 'flat' | 'current-best' | 'ineligible' | 'empty'
+
+/**
+ * What the page may say about the sweep. Only `winner` crowns a claim age:
+ * the engine found an eligible row that strictly improves on the current
+ * claim. The rest are notes: the objective cannot separate the candidates
+ * (`flat`), the current claim already leads (`current-best`), nothing meets
+ * the objective's constraints (`ineligible`), or nobody claims (`empty`).
+ */
+export function sweepVerdict(sweep: Pick<SweepResult, 'ranked' | 'winner'>): SweepVerdict {
+  if (sweep.ranked.length === 0) return 'empty'
+  if (sweep.winner) return 'winner'
+  if (!sweep.ranked.some((row) => row.eligible)) return 'ineligible'
+  return objectiveIsFlat(sweep.ranked) ? 'flat' : 'current-best'
+}
+
