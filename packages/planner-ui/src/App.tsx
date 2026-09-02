@@ -49,10 +49,14 @@ type ThemeMode = 'light' | 'dark' | 'system'
 const THEME_STORAGE_KEY = STORAGE_KEYS.theme
 const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system']
 
+function isThemeMode(value: unknown): value is ThemeMode {
+  return typeof value === 'string' && (THEME_MODES as string[]).includes(value)
+}
+
 function getInitialThemeMode(): ThemeMode {
   if (typeof window === 'undefined') return 'system'
   const stored = readLocal(THEME_STORAGE_KEY)
-  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+  return isThemeMode(stored) ? stored : 'system'
 }
 
 function getResolvedTheme(mode: ThemeMode) {
@@ -194,8 +198,11 @@ export function App({
     const applyTheme = () => {
       const nextResolvedTheme = getResolvedTheme(themeMode)
 
+      // Apply only. Storage is written where the choice is made (the switcher),
+      // never here: an effect that echoed its state back to storage could, from
+      // a lagging tab, overwrite a newer choice and yank every tab to the old
+      // value, which is the "theme changed by itself" this guards against (#434).
       root.dataset.theme = themeMode
-      writeLocal(THEME_STORAGE_KEY, themeMode)
       themeColor?.setAttribute('content', nextResolvedTheme === 'dark' ? '#0e1116' : '#f4f6f8')
     }
 
@@ -207,6 +214,20 @@ export function App({
     media.addEventListener('change', applyTheme)
     return () => media.removeEventListener('change', applyTheme)
   }, [themeMode])
+
+  // The mode lives in localStorage, which every tab (and every parallel
+  // session on the same device) shares. Without this, a change made in one
+  // tab leaves another tab's control and page out of step until a reload
+  // snaps it to whichever tab wrote last, which reads as the theme changing
+  // on its own (#434).
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== THEME_STORAGE_KEY) return
+      if (isThemeMode(e.newValue)) setThemeMode(e.newValue)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   return (
     <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
@@ -259,7 +280,10 @@ export function App({
                         className="theme-switcher-button"
                         type="button"
                         aria-pressed={themeMode === mode}
-                        onClick={() => setThemeMode(mode)}
+                        onClick={() => {
+                          writeLocal(THEME_STORAGE_KEY, mode)
+                          setThemeMode(mode)
+                        }}
                       >
                         {mode[0].toUpperCase() + mode.slice(1)}
                       </button>
