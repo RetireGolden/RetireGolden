@@ -77,7 +77,11 @@ describe('NumberField suffix is the accessible unit', () => {
 })
 
 describe('Strategy bracket target (#451)', () => {
-  it('labels the field Bracket and puts the percent in the affix', async () => {
+  // #451 asked that the unit ride with the value rather than sit in the label
+  // ("Bracket (%)"). Since #495 decision D6 the control is a select of the
+  // published rates (#508), so the percent rides in each option's own text
+  // instead of an affix — the same rule, the control the decision chose.
+  it('labels the field Bracket and puts the percent on the value, not the label', async () => {
     const plan = createSamplePlan()
     plan.strategies.rothConversion = {
       mode: 'fillToTarget',
@@ -97,7 +101,9 @@ describe('Strategy bracket target (#451)', () => {
       (f) => f.querySelector('.field-label')?.textContent === 'Bracket',
     )
     expect(field, 'a field labelled exactly "Bracket"').toBeDefined()
-    expect(field!.querySelector('.input-affix > span')?.textContent).toBe('%')
+    const select = field!.querySelector('select')
+    expect(select, 'the bracket control is a select of the published rates').not.toBeNull()
+    expect([...select!.options].filter((o) => !o.disabled).every((o) => o.textContent?.endsWith('%'))).toBe(true)
     expect(el.textContent).not.toContain('Bracket (%)')
   })
 })

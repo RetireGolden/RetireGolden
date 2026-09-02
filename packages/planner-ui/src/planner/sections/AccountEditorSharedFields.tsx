@@ -289,7 +289,23 @@ function EstateBeneficiaryFields({
   index: number
   onCommit: CommitAccountField
 }) {
-  if (account.type === 'debt' || account.type === 'property' || account.type === 'pension') return null
+  if (account.type === 'debt' || account.type === 'property') return null
+  // A guaranteed-income contract is not a logical balance account, so
+  // `estateBreakdown` never reads an estate beneficiary off a pension or an
+  // annuity: what the contract leaves behind is its own survivor benefit,
+  // period-certain, or lump-sum term. The control was hidden on Pension and
+  // shown on Annuity, which made the same inert field look meaningful on one
+  // card and absent on the other (#486). Decision D8 on #495: hide it on both
+  // and say why. The schema keeps the field, so an imported plan that carries
+  // one still round-trips.
+  if (account.type === 'pension' || account.type === 'annuity') {
+    return (
+      <p className="card-hint">
+        Guaranteed income does not pass to the estate. What continues after a death comes from the contract
+        itself — a survivor benefit, guaranteed years, or a lump sum — not from an estate beneficiary.
+      </p>
+    )
+  }
 
   return (
     <>

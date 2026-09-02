@@ -267,6 +267,14 @@ transitions, restrained hover states that shift a border or tint a background by
   hover/focus reveals its field chrome — inline editing without a form feel.
 - **Help ladder:** label → one-line hint → a single `HelpTip` (ⓘ) → "Learn more" link. Never
   stack more than one tip on a field.
+- **Three levels of feedback under a field, and only one shows at a time.** `.field-error` is what
+  the engine refused: danger token, the control `aria-invalid`, the save chip jumps to it.
+  `.field-note` is what the field did not keep: muted token, `role="status"`, the plan's own value
+  came back. `.field-warning` is a value the engine accepts that is almost certainly not what was
+  meant — a 999% rate, a $100M balance, a goal year in the past: the `callout--warn` treatment
+  (1px warn-tinted border and ground, never a side-stripe) at field scale, `role="status"`, and the
+  control is **never** `aria-invalid`, because the plan holds the value. The thresholds are a
+  product decision, recorded in `planner/warnings.ts`, not a bound the engine enforces.
 - **Native control chrome is styled once, app-wide.** Checkboxes, radios, selects, range
   sliders, and number inputs take the shared treatment in `index.css`: `appearance: none`
   (number inputs keep `textfield` and only drop the spin buttons), a box on Surface White edged
@@ -299,6 +307,11 @@ transitions, restrained hover states that shift a border or tint a background by
 - **Breadcrumbs:** muted with `/` separators; current page is Ink at 550.
 
 ### Forms and figures
+- **One column rhythm** (`.form-grid`, `--form-col`): every form grid lays FIXED tracks
+  (`repeat(auto-fill, var(--form-col))`, 11.5rem), so a field is the same width at the top of a
+  card, inside an item row, and inside a nested well — three containers whose insets used to make a
+  flexible track three different widths. Only the column count adapts to the container. Under 640px
+  the track goes back to `minmax(11.5rem, 1fr)` so a phone's single column fills the card.
 - **Compound field with actions** (`.field-with-action`): input plus its buttons in one cell.
   Add `.field-with-action--wide` to span two grid columns beside sibling fields; use
   `.field-span-full` only when the row really belongs to it.

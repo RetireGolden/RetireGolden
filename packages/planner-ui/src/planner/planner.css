@@ -769,9 +769,19 @@
   max-width: 70ch;
 }
 
+/* One column rhythm for every form grid (#465, decision D9 on #495).
+   The track is a FIXED width, not `minmax(track, 1fr)`, because a flexible
+   track takes its width from its container: the same field measured 215.9px at
+   the top of a Spending card and 204.6px inside an item row at 1024, and
+   211.9px vs 200.6px at 768, purely from the item row's 1rem inset. A fixed
+   track is the same width in both, and in a nested well, so a form reads as one
+   grid instead of three. The count still adapts — `auto-fill` fits as many
+   tracks as the container holds — and below the two-column breakpoint the track
+   goes back to stretching, so a phone never leaves a gutter beside a field. */
 .form-grid {
+  --form-col: 11.5rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, var(--form-col));
   gap: 0.8rem 1.1rem;
 }
 
@@ -853,6 +863,13 @@
   .form-grid > .field--wide {
     grid-column: 1 / -1;
   }
+
+  /* One column that fills the card. A fixed track here would leave a hundred
+     points of gutter beside every field on a phone, and there is no second
+     column for it to line up with anyway (#465, D9). */
+  .form-grid {
+    --form-col: minmax(11.5rem, 1fr);
+  }
 }
 
 .form-grid > .field-span-full {
@@ -887,10 +904,10 @@
   font-size: 0.98rem;
 }
 
-.nested-control-grid,
-.nested-phase-grid {
-  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
-}
+/* A nested well is a form grid too, and it is inset again inside the item row
+   that already inset it, so its flexible tracks were the third width on the
+   page. It inherits the shared fixed track from `.form-grid` (#465, D9); only
+   the count differs, which is what a narrower container is supposed to change. */
 
 .nested-phase-row {
   border-bottom: 1px dashed var(--border);
@@ -3535,6 +3552,22 @@ html:has(.kpi-bar) {
 .field-note {
   margin: 0.3rem 0 0;
   color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* A value the engine accepts that is almost certainly not what was meant
+   (#495 decisions D1, D2, D3, D7, D4). It is not a fault — the plan holds the
+   value and the control is not aria-invalid — so it wears the warn token in
+   the `callout--warn` treatment (1px border, tinted ground, never a colored
+   side-stripe, DESIGN.md §Callouts) at field scale rather than `.field-error`'s
+   danger token. Both themes define --warn, so light and dark stay in parity. */
+.field-warning {
+  margin: 0.3rem 0 0;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface-1));
+  color: var(--fg);
   font-size: 0.85rem;
 }
 

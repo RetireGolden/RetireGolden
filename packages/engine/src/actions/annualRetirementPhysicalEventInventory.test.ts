@@ -1387,15 +1387,6 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
         endYear: 2029,
       }
     }],
-    ['fractional IRMAA tier', (plan: Plan) => {
-      plan.strategies.rothConversion = {
-        mode: 'fillToTarget',
-        target: 'irmaaTier',
-        targetValue: 1.5,
-        startYear: 2030,
-        endYear: 2030,
-      }
-    }],
     ['missing Roth destination', (plan: Plan) => {
       plan.strategies.rothConversion = {
         mode: 'manual',
@@ -1415,6 +1406,27 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
       })]))).toContain('sourceKindMismatch')
     },
   )
+
+  // A fractional IRMAA tier used to reach this layer and be turned away here as
+  // a source-kind mismatch. Since #495 decision D6 the plan schema itself
+  // refuses a tier that is not a whole number inside the published table
+  // (plan.ts, `an IRMAA tier target must be a whole number from 1 to 5`), so
+  // the inventory now sees an unparseable plan and never gets to the mismatch.
+  it('turns away a fractional IRMAA tier as an invalid plan, before any source matching', () => {
+    const plan = basePlan()
+    plan.strategies.rothConversion = {
+      mode: 'fillToTarget',
+      target: 'irmaaTier',
+      targetValue: 1.5,
+      startYear: 2030,
+      endYear: 2030,
+    }
+    expect(issueKinds(input(plan, [resolved({
+      kind: 'legacyRothConversion',
+      origin: 'legacyProjection',
+      sourceAccountId: ownedIraId,
+    })]))).toContain('planInvalid')
+  })
 
   it('requires employer-match records to name an account with match configuration', () => {
     const plan = basePlan()
