@@ -80,79 +80,79 @@
       "label": "annual coordinated HECM eligibility invocation",
       "file": "projection/simulate.ts",
       "lines": [
-        6385,
-        6392
+        6386,
+        6393
       ],
       "anchors": [
         {
-          "line": 6385,
+          "line": 6386,
           "text": "const coordinatedHecm = annualCoordinatedHecmEligibility({"
         },
         {
-          "line": 6391,
+          "line": 6392,
           "text": "priorYearPortfolioReturnPct,"
         },
         {
-          "line": 6392,
+          "line": 6393,
           "text": "})"
         }
       ]
     },
     {
       "id": "D.accepted-scalar-callsite",
-      "label": "coordinated HECM capacity consumption and ACA/tax accepted scalar",
-      "file": "projection/simulate.ts",
+      "label": "coordinated HECM capacity consumption and ACA/tax accepted scalar coordination",
+      "file": "projection/internal/annualFundingFixedPoint.ts",
       "lines": [
-        6931,
-        6962
+        207,
+        248
       ],
       "anchors": [
         {
-          "line": 6931,
-          "text": "if (coordinatedHecm.capacity > EPSILON && spendingNeedBeforeTax > EPSILON) {"
+          "line": 208,
+          "text": "input.coordinatedHecmCapacity > tolerance &&"
         },
         {
-          "line": 6948,
-          "text": "const nextDraw = Math.min(coordinatedHecm.capacity, postCreditPreTaxNeed)"
+          "line": 228,
+          "text": "input.coordinatedHecmCapacity,"
         },
         {
-          "line": 6956,
-          "text": "if (!coordinatedDrawConverged) hecmDraw = 0"
+          "line": 238,
+          "text": "if (!coordinatedDrawConverged) acceptedCoordinatedHecmDraw = 0"
         },
         {
-          "line": 6962,
-          "text": "}"
+          "line": 247,
+          "text": "evaluationCount = 0"
         }
       ],
-      "note": "N1 reaches the non-ACA outer solve with an accepted draw below total capacity. N2 establishes that multiple ACA/tax probes occur before one scalar is accepted. The focused delegation suite proves those probes do not allocate or mutate a live line."
+      "note": "N1 reaches the non-ACA outer solve with an accepted draw below total capacity. N2 establishes that multiple ACA/tax probes occur before one scalar is accepted. The direct funding-coordinator suite pins the failed-probe zero-draw arm, and the focused HECM delegation suite proves probes do not allocate or mutate a live line."
     },
     {
       "id": "E.allocation-apply-callsite",
       "label": "accepted coordinated allocation invocation, line mutation and source publication",
       "file": "projection/simulate.ts",
       "lines": [
-        7070,
-        7084
+        6883,
+        6897
       ],
       "anchors": [
         {
-          "line": 7070,
+          "line": 6883,
           "text": "for (const allocation of annualCoordinatedHecmAllocations({"
         },
         {
-          "line": 7077,
+          "line": 6890,
           "text": "line.loanBalance += allocation.amount"
         },
         {
-          "line": 7078,
+          "line": 6891,
           "text": "hecmCoordinatedByProperty?.set("
         },
         {
-          "line": 7082,
+          "line": 6895,
           "text": "}"
         },
         {
-          "line": 7083,
+          "line": 6896,
           "text": "// Any open HECM line backstops a true portfolio shortfall regardless of"
         }
       ],
