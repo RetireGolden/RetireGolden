@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  ledgerCentsToPlanDollars,
+  planDollarsToLedgerCents,
+} from '../../actions/planBalanceAdapter.js'
 import { packForYear } from '../../params/index.js'
+import { describeRule } from '../../rules/describeRule.js'
 import {
   sizeRothConversion,
   type ConversionSizingInput,
@@ -59,23 +64,6 @@ function traditional(id: string, balance: number): PhysicalBalanceState {
   return {
     account: {
       type: 'traditional',
-      kind: 'ira',
-      id,
-      name: id,
-      ownerPersonId: 'p1',
-      annualReturnPct: 0,
-      balance,
-      annualContribution: 0,
-    },
-    balance,
-    costBasis: 0,
-  }
-}
-
-function roth(id: string, balance: number): PhysicalBalanceState {
-  return {
-    account: {
-      type: 'roth',
       kind: 'ira',
       id,
       name: id,
@@ -306,16 +294,20 @@ describe('annualWithdrawalPlan', () => {
 
   it('honors the first traditional cap before later fallback sources', () => {
     const result = plan(
-      150,
-      [traditional('ira', 100), roth('roth', 100)],
+      80,
+      [cash('cash', 100), traditional('ira', 100)],
       { mode: 'bracketTargeted', traditionalCap: 40 },
     )
 
     expect(result.byCategory).toMatchObject({
-      traditional: 50,
-      roth: 100,
-      total: 150,
+      cash: 40,
+      traditional: 40,
+      total: 80,
     })
+    expect([...result.byAccountId]).toEqual([
+      ['ira', 40],
+      ['cash', 40],
+    ])
   })
 
   it('holds the liquid floor until other sources run out, then releases it', () => {
@@ -335,11 +327,36 @@ describe('annualWithdrawalPlan', () => {
     expect(result.shortfall).toBe(0)
   })
 
-  it('discharges an unrepresentable traditional quantum without publishing it', () => {
+})
+
+describeRule('treas-reg-1-408-8-projection-sub-cent-distribution-discharge', {
+  readings: {
+    regulationRequiresExactQuantum: 0.006,
+    engineJournalPublishesRoundedCent: 0.01,
+    belowHalfCentIsDischarged: 0,
+  },
+  accepted: 'regulationRequiresExactQuantum',
+  produced: 'engineJournalPublishesRoundedCent',
+  note: 'need-based traditional-withdrawal half-cent boundary',
+}, ({ accepted, produced, readings }) => {
+  it('discharges a below-half-cent traditional quantum without publishing it', () => {
     const result = plan(1, [traditional('ira', 0.004)])
 
-    expect(result.byCategory.total).toBe(0)
+    expect(result.byCategory.total).toBe(readings.belowHalfCentIsDischarged)
     expect(result.byAccountId.size).toBe(0)
     expect(result.shortfall).toBe(0.996)
+  })
+
+  it('retains an above-half-cent quantum that the exact ledger publishes as one cent', () => {
+    const result = plan(1, [traditional('ira', accepted)])
+    const candidate = result.byAccountId.get('ira')
+
+    expect(candidate).toBe(accepted)
+    expect(result.byCategory.traditional).toBe(accepted)
+    expect(result.shortfall).toBe(0.994)
+    expect(ledgerCentsToPlanDollars(planDollarsToLedgerCents(candidate!))).toBe(
+      produced,
+    )
+    expect(produced).not.toBe(accepted)
   })
 })

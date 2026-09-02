@@ -3049,6 +3049,7 @@
       ],
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.test.ts",
+        "packages/engine/src/projection/internal/annualWithdrawalPlanning.test.ts",
         "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
       ],
       "fixtures": [
@@ -3060,6 +3061,21 @@
             {
               "title": "discharges a scalar-QCD source residue below one ledger cent",
               "line": 163
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualWithdrawalPlanning.test.ts",
+          "line": 332,
+          "note": "need-based traditional-withdrawal half-cent boundary",
+          "tests": [
+            {
+              "title": "discharges a below-half-cent traditional quantum without publishing it",
+              "line": 342
+            },
+            {
+              "title": "retains an above-half-cent quantum that the exact ledger publishes as one cent",
+              "line": 350
             }
           ]
         },
