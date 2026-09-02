@@ -103,6 +103,8 @@ import { annualRetirementActionPreflight } from
   './internal/annualRetirementActionPreflight.js'
 import { annualQcdExecutionInput } from
   './internal/annualQcdExecutionInput.js'
+import { annualRothConversionExecutionInput } from
+  './internal/annualRothConversionExecutionInput.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountGrowth.js'
@@ -167,8 +169,6 @@ import {
   rothConversionSourceContextForPerson,
   type RothConversionSourceContext,
   type NonpersistedActionPersonAliveEvidence,
-  type NonpersistedOwnerAggregatedIraBasisEvidence,
-  type NonpersistedOwnerIraRmdSatisfactionEvidence,
 } from '../strategies/accountEligibility.js'
 import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
 import { splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
@@ -185,7 +185,6 @@ import {
   executeRothConversions,
   ledgerCentsToPlanDollars,
   planDollarsMoveNoLedgerCent,
-  planDollarsToFlooredLedgerCents,
   planDollarsToLedgerCents,
   signedLedgerCentTotalToPlanDollars,
   type ActionId,
@@ -4660,18 +4659,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       retirementActionPreflight.observedConversionLinkedWithdrawalGroups
     const conversionLinkedWithdrawalGroups =
       retirementActionPreflight.conversionLinkedWithdrawalGroups
-    /**
-     * The verdict as the rest of the year reads it, which is the released one
-     * until the withdrawal leg fails to arrive.
-     *
-     * Separate from `conversionLinkedWithdrawalGroups` because the withdrawal
-     * executor has already run against that one by the time the revocation is
-     * knowable, and rewriting the verdict it answered to would make the year
-     * report a decision no executor was given. This is the decision every
-     * *later* reader is given: the conversion executor, the candidate funding
-     * vector, and the group executor that publishes the year's answer.
-     */
-    let effectiveLinkedWithdrawalGroups = conversionLinkedWithdrawalGroups
     // The ordinary executor still mints its alive facts at the caller boundary;
     // named-QCD evidence is now prepared by `annualQcdExecutionInput` below.
     const actionPersonAliveEvidence = (
@@ -4961,175 +4948,54 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     const retirementActionOrdinaryIncome = retirementActionEquityCompensation
 
-    // Named conversions do not inherit the legacy aggregate strategy's
-    // first-source/first-Roth movement authority. Publish request-keyed,
-    // fail-closed evidence from balances after forced distributions and named
-    // ordinary withdrawals, immediately before aggregate conversion sizing.
-    // Complete annual Form-8606 line-8, RMD-reserve, and tax-liability funding
-    // evidence do not exist at this simulator boundary, so none is invented.
-    if (currentYearConversionActions.length > 0 && !mixedKindScheduleBlocked) {
-      const conversionAccountIds = new Set<string>(
-        currentYearConversionActions.flatMap((request) => [
-          request.destinationRothAccountId,
-          ...request.allocations.map((allocation) => allocation.sourceAccountId),
-        ]),
+    const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({
+      taxYear: year,
+      plan: passPlan,
+      requests: Object.freeze([...currentYearConversionActions]),
+      mixedKindScheduleBlocked,
+      people: Object.freeze(peopleStates.map((state) => Object.freeze({
+        personId: state.personId,
+        alive: state.alive,
+      }))),
+      balances: Object.freeze(balances.map((state) => Object.freeze({
+        accountId: state.account.id,
+        balancePlanDollars: state.balance,
+      }))),
+      ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>
+        request.personId))].map((ownerPersonId) => Object.freeze({
+          ownerPersonId,
+          requiredPlanDollars: iraRmdRequiredByOwner.get(ownerPersonId) ?? 0,
+          unsatisfiedPlanDollars:
+            iraRmdUnsatisfiedByOwner.get(ownerPersonId) ?? 0,
+        }))),
+      ownerBasis: Object.freeze([...iraBasisByOwner].map(([
+        ownerPersonId,
+        basisPlanDollars,
+      ]) => Object.freeze({ ownerPersonId, basisPlanDollars }))),
+      observedLinkedWithdrawalGroups,
+      linkedWithdrawalGroups: conversionLinkedWithdrawalGroups,
+      ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map(
+        (evidence) => Object.freeze({
+          actionId: evidence.actionId,
+          requestedAmount: evidence.requestedAmount,
+          readiness: evidence.readiness,
+          outcome: evidence.disposition.outcome,
+          executedAmount: evidence.disposition.executedAmount,
+        }),
+      ) ?? []),
+    }))
+    /**
+     * The verdict as the rest of the year reads it, which is the released one
+     * until the withdrawal leg fails to arrive. Keep it separate from the
+     * pre-withdrawal verdict: that executor already answered to the earlier
+     * assessment, while every later reader must share this narrowed result.
+     */
+    const effectiveLinkedWithdrawalGroups =
+      rothConversionExecutionInput.effectiveLinkedWithdrawalGroups
+    if (rothConversionExecutionInput.status === 'ready') {
+      rothConversionActionExecution = executeRothConversions(
+        rothConversionExecutionInput.executorInput,
       )
-      const conversionSourceAccountIds = new Set<string>(
-        currentYearConversionActions.flatMap((request) =>
-          request.allocations.map((allocation) => allocation.sourceAccountId)),
-      )
-      const openingBalances = [...balances]
-        .filter((state) => conversionAccountIds.has(state.account.id))
-        .sort((left, right) => compareUtf16CodeUnits(left.account.id, right.account.id))
-        .flatMap((state) => {
-          try {
-            return [{
-              accountId: asAccountId(state.account.id),
-              // A source snapshot is a spending capacity and is truncated; a
-              // destination snapshot is a measurement and is not. The executor
-              // admits an allocation only where the source's reported opening
-              // covers the requested cents, and the commit below subtracts
-              // those exact cents from the live float, so half-up rounding on a
-              // source could report up to half a cent more than the account
-              // holds and authorise a request the balance cannot fund -- which
-              // drove the balance negative, permanently, and only after the
-              // dollars had moved. Truncating makes that unreachable rather
-              // than detectable afterwards. Nothing is ever drawn against the
-              // destination figure, so rounding it down would understate a
-              // published balance to buy protection it does not need.
-              openingBalance: conversionSourceAccountIds.has(state.account.id)
-                ? planDollarsToFlooredLedgerCents(state.balance)
-                : planDollarsToLedgerCents(state.balance),
-            }]
-          } catch {
-            return []
-          }
-        })
-      const personAliveEvidence = currentYearConversionActions.map((request) => ({
-        evidenceId: `projection-alive:${JSON.stringify([
-          request.actionId,
-          request.personId,
-          year,
-          request.executionDate ?? null,
-        ])}`,
-        actionId: request.actionId,
-        personId: request.personId,
-        actionYear: year,
-        actionDate: request.executionDate ?? null,
-        alive: peopleStates.find((state) => state.personId === request.personId)?.alive ?? false,
-      }))
-      // Treas. Reg. 1.408A-4 A-6(b) bars converting while the year's required
-      // minimum distribution is undistributed, and the two-pass RMD block
-      // above is where that question was actually settled for each owner. It
-      // is published here as request-keyed evidence rather than left implicit
-      // in the order of these statements: being downstream of the RMD block is
-      // not evidence that the RMD came out, and the executor must be able to
-      // tell an owner whose sum was distributed from one whose IRAs were all
-      // emptied before the sum could be taken.
-      //
-      // Both figures cross into exact cents, and an owner whose evidence
-      // cannot be represented there is omitted entirely — the executor then
-      // reads no evidence and keeps the blocking reason.
-      const ownerIraRmdSatisfactionEvidence = currentYearConversionActions
-        .flatMap((request): NonpersistedOwnerIraRmdSatisfactionEvidence[] => {
-          const required = iraRmdRequiredByOwner.get(request.personId) ?? 0
-          const unsatisfied = iraRmdUnsatisfiedByOwner.get(request.personId) ?? 0
-          try {
-            const requiredAmount = planDollarsToLedgerCents(required)
-            const shortfall = planDollarsToLedgerCents(Math.max(0, unsatisfied))
-            return [{
-              evidenceId: `projection-owner-ira-rmd-satisfaction:${JSON.stringify([
-                request.actionId,
-                request.personId,
-                year,
-                request.executionDate ?? null,
-              ])}`,
-              actionId: request.actionId,
-              personId: request.personId,
-              actionYear: year,
-              actionDate: request.executionDate ?? null,
-              requiredAmount,
-              distributedAmount: asUsdCents(Math.max(0, requiredAmount - shortfall)),
-            }]
-          } catch {
-            return []
-          }
-        })
-      // The owner's aggregated-IRA nondeductible basis, published the same way
-      // and for the same reason as the RMD outcome above: being downstream of
-      // the statement that seeded `iraBasisByOwner` is not evidence about the
-      // owner's basis, and the executor must be able to tell an owner whose
-      // numerator is genuinely zero from one whose basis it simply cannot see.
-      // `iraBasisByOwner` holds only owners with a positive figure, so an
-      // absent entry is the zero this is allowed to prove.
-      const ownerAggregatedIraBasisEvidence = currentYearConversionActions
-        .flatMap((request): NonpersistedOwnerAggregatedIraBasisEvidence[] => {
-          try {
-            return [{
-              evidenceId: `projection-owner-aggregated-ira-basis:${JSON.stringify([
-                request.actionId,
-                request.personId,
-                year,
-                request.executionDate ?? null,
-              ])}`,
-              actionId: request.actionId,
-              personId: request.personId,
-              actionYear: year,
-              actionDate: request.executionDate ?? null,
-              basisAmount: planDollarsToLedgerCents(
-                iraBasisByOwner.get(request.personId) ?? 0,
-              ),
-            }]
-          } catch {
-            return []
-          }
-        })
-      /**
-       * The group verdict the conversion leg answers to, narrowed by what the
-       * withdrawal leg actually did.
-       *
-       * The two legs move in different phases and the withdrawal moves first,
-       * so this is the one place in the year where "did the funding actually
-       * arrive" is a fact rather than a forecast. A release that survives to
-       * here and whose withdrawal did not move its whole authored amount is
-       * revoked, and revoking one revokes all: the assessment's own release
-       * rule is all-or-nothing across the annual group, so handing it a
-       * shortened authorization list releases nothing.
-       *
-       * This closes the direction of the atomicity hazard that ordering alone
-       * cannot: a conversion that converted on funding its withdrawal never
-       * took. The other direction — a withdrawal that moved for a conversion
-       * that then refused — is closed before either leg moves, by the seam's
-       * floored-capacity read of both legs, and backstopped by publication's
-       * `assertLinkedWithdrawalRecordAtomicity` for any refusal that read
-       * cannot see.
-       */
-      const withdrawalLegsMovedWhole = conversionLinkedWithdrawalGroups.groups
-        .filter((group) => group.disposition === 'executedAsAtomicGroup')
-        .every((group) => {
-          const evidence = retirementActionExecution?.evidence.find(
-            (entry) => entry.actionId === group.withdrawalActionId,
-          )
-          return evidence !== undefined &&
-            evidence.readiness === 'actionable' &&
-            evidence.disposition.outcome === 'executed' &&
-            evidence.disposition.executedAmount === evidence.requestedAmount
-        })
-      if (!withdrawalLegsMovedWhole) {
-        effectiveLinkedWithdrawalGroups = observedLinkedWithdrawalGroups
-      }
-      rothConversionActionExecution = executeRothConversions({
-        year,
-        plan: passPlan,
-        requests: currentYearConversionActions,
-        openingBalances,
-        runtimeEvidence: {
-          personAliveEvidence,
-          ownerIraRmdSatisfactionEvidence,
-          ownerAggregatedIraBasisEvidence,
-          conversionLinkedWithdrawalGroups: effectiveLinkedWithdrawalGroups,
-        },
-      })
 
       if (rothConversionActionExecution.committed) {
         // Debits for every committed request first, then the destination
