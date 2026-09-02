@@ -8,17 +8,34 @@ import { defineConfig } from 'vitest/config'
 const engineSrc = fileURLToPath(new URL('../packages/engine/src', import.meta.url)).replaceAll('\\', '/')
 const plannerUiSrc = fileURLToPath(new URL('../packages/planner-ui/src', import.meta.url)).replaceAll('\\', '/')
 
-const annualProjectionPublicationChunk = (id: string): string | undefined =>
-  id.endsWith('/packages/engine/src/projection/internal/annualAcaResultPublication.ts')
-    ? 'annualProjectionPublications'
-    : undefined
+const annualProjectionCoordinatorChunk = (id: string): string | undefined => {
+  if (id.endsWith('/packages/engine/src/projection/internal/annualAcaResultPublication.ts')) {
+    return 'annualProjectionPublications'
+  }
+  if (
+    id.endsWith('/packages/engine/src/projection/internal/annualFundingFixedPoint.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/wageIncomeStreams.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/otherIncomeStreams.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/propertyEventsAndGrowth.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/annualExpenseSummary.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/annualSnapshot.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/publishedEntityFacts.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/annualPermanentLifeTransitions.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/annualInsurancePremiumRows.ts') ||
+    id.endsWith('/packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts')
+  ) {
+    return 'annualProjectionKernels'
+  }
+  return undefined
+}
 
 // https://vite.dev/config/
 export default defineConfig({
   build: {
     rolldownOptions: {
       output: {
-        manualChunks: annualProjectionPublicationChunk,
+        manualChunks: annualProjectionCoordinatorChunk,
       },
     },
   },
@@ -28,7 +45,7 @@ export default defineConfig({
     format: 'es',
     rolldownOptions: {
       output: {
-        manualChunks: annualProjectionPublicationChunk,
+        manualChunks: annualProjectionCoordinatorChunk,
       },
     },
   },
