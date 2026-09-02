@@ -4948,42 +4948,42 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     const retirementActionOrdinaryIncome = retirementActionEquityCompensation
 
-    const rothConversionExecutionInput = annualRothConversionExecutionInput({
+    const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({
       taxYear: year,
       plan: passPlan,
-      requests: currentYearConversionActions,
+      requests: Object.freeze([...currentYearConversionActions]),
       mixedKindScheduleBlocked,
-      people: peopleStates.map((state) => ({
+      people: Object.freeze(peopleStates.map((state) => Object.freeze({
         personId: state.personId,
         alive: state.alive,
-      })),
-      balances: balances.map((state) => ({
+      }))),
+      balances: Object.freeze(balances.map((state) => Object.freeze({
         accountId: state.account.id,
         balancePlanDollars: state.balance,
-      })),
-      ownerRmd: [...new Set(currentYearConversionActions.map((request) =>
-        request.personId))].map((ownerPersonId) => ({
+      }))),
+      ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>
+        request.personId))].map((ownerPersonId) => Object.freeze({
           ownerPersonId,
           requiredPlanDollars: iraRmdRequiredByOwner.get(ownerPersonId) ?? 0,
           unsatisfiedPlanDollars:
             iraRmdUnsatisfiedByOwner.get(ownerPersonId) ?? 0,
-        })),
-      ownerBasis: [...iraBasisByOwner].map(([
+        }))),
+      ownerBasis: Object.freeze([...iraBasisByOwner].map(([
         ownerPersonId,
         basisPlanDollars,
-      ]) => ({ ownerPersonId, basisPlanDollars })),
+      ]) => Object.freeze({ ownerPersonId, basisPlanDollars }))),
       observedLinkedWithdrawalGroups,
       linkedWithdrawalGroups: conversionLinkedWithdrawalGroups,
-      ordinaryWithdrawalEvidence: retirementActionExecution?.evidence.map(
-        (evidence) => ({
+      ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map(
+        (evidence) => Object.freeze({
           actionId: evidence.actionId,
           requestedAmount: evidence.requestedAmount,
           readiness: evidence.readiness,
           outcome: evidence.disposition.outcome,
           executedAmount: evidence.disposition.executedAmount,
         }),
-      ) ?? [],
-    })
+      ) ?? []),
+    }))
     /**
      * The verdict as the rest of the year reads it, which is the released one
      * until the withdrawal leg fails to arrive. Keep it separate from the

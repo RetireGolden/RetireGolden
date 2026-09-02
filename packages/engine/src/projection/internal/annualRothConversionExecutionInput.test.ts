@@ -224,6 +224,35 @@ describe('annualRothConversionExecutionInput', () => {
     ).toEqual([])
   })
 
+  it('omits conversion-set balances with an invalid account identity', () => {
+    const validRequest = conversion()
+    const invalidSourceRequest: RothConversionRequest = {
+      ...validRequest,
+      allocations: [
+        {
+          ...validRequest.allocations[0]!,
+          sourceAccountId: '   ' as typeof SOURCE_A_ID,
+        },
+        validRequest.allocations[1]!,
+      ],
+    }
+    const result = annualRothConversionExecutionInput(input({
+      requests: [invalidSourceRequest],
+      balances: [
+        { accountId: '   ', balancePlanDollars: 50 },
+        { accountId: ROTH_ID, balancePlanDollars: 10 },
+        { accountId: SOURCE_A_ID, balancePlanDollars: 80 },
+      ],
+    }))
+
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') throw new Error('expected ready input')
+    expect(result.executorInput.openingBalances).toEqual([
+      { accountId: ROTH_ID, openingBalance: asUsdCents(1_000) },
+      { accountId: SOURCE_A_ID, openingBalance: asUsdCents(8_000) },
+    ])
+  })
+
   it('does not prepare a call without a request or across a blocked schedule', () => {
     const noRequest = annualRothConversionExecutionInput(input({
       plan: plan([]),

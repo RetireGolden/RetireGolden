@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-roth-conversion-execution-input-boundary",
-  "why": "Measured reach for immutable named Roth-conversion evidence and executor-input preparation extracted from simulatePlan. Existing named-conversion and linked-funding corpus members exercise exact-cent source/destination snapshots, request-keyed life/RMD/basis evidence, actual-withdrawal narrowing of the linked-group verdict, the caller contract, and the retained executor handoff in all four equivalence modes. Direct contract tests own the no-request and mixed-kind exits, invalid exact-cent omissions, absent-fact behavior, incomplete linked-withdrawal dispositions, deterministic balance ordering, and frozen envelopes. Hostile delegation separately proves the caller consumes withheld execution, zeroed source capacity, and absent owner-RMD evidence rather than rebuilding coordinator outputs inline.",
+  "why": "Measured reach for immutable named Roth-conversion evidence and executor-input preparation extracted from simulatePlan. Existing named-conversion and linked-funding corpus members exercise exact-cent source/destination snapshots, request-keyed life/RMD/basis evidence, actual-withdrawal narrowing of the linked-group verdict, the caller contract, and the retained executor handoff in all four equivalence modes. Direct contract tests own the no-request and mixed-kind exits, invalid identity/exact-cent omissions, absent-fact behavior, incomplete linked-withdrawal dispositions, deterministic balance ordering, and frozen envelopes. Hostile delegation separately proves the caller consumes withheld execution, zeroed source capacity, absent owner-RMD evidence, and the coordinator-owned linked-group verdict rather than rebuilding coordinator outputs inline.",
   "entries": [
     {
       "id": "AK.helper.noRequest",
@@ -110,11 +110,11 @@
       "file": "projection/simulate.ts",
       "lines": [4951, 4986],
       "anchors": [
-        { "line": 4951, "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput({" },
-        { "line": 4960, "text": "balances: balances.map((state) => ({" },
-        { "line": 4964, "text": "ownerRmd: [...new Set(currentYearConversionActions.map((request) =>" },
-        { "line": 4971, "text": "ownerBasis: [...iraBasisByOwner].map(([" },
-        { "line": 4977, "text": "ordinaryWithdrawalEvidence: retirementActionExecution?.evidence.map(" }
+        { "line": 4951, "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({" },
+        { "line": 4960, "text": "balances: Object.freeze(balances.map((state) => Object.freeze({" },
+        { "line": 4964, "text": "ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>" },
+        { "line": 4971, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(([" },
+        { "line": 4977, "text": "ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map(" }
       ]
     },
     {
@@ -138,5 +138,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct tests own exits, exact-cent edge cases, missing facts, incomplete linked withdrawals, ordering, and immutability; hostile delegation owns consumption of the prepared call, source capacity, and RMD channel. JavaScript line coverage cannot distinguish every ternary or compound operand sharing a physical line, so reported cold sub-line regions must be read alongside those focused tests."
+  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct tests own exits, identity/exact-cent edge cases, missing facts, incomplete linked withdrawals, ordering, and immutability; hostile delegation owns consumption of the prepared call, source capacity, RMD channel, and narrowed linked-group settlement handoff. JavaScript line coverage cannot distinguish every ternary or compound operand sharing a physical line, so reported cold sub-line regions must be read alongside those focused tests."
 }

@@ -11,8 +11,16 @@ import type {
   AnnualRothConversionExecutionInput,
   AnnualRothConversionExecutionInputResult,
 } from './internal/annualRothConversionExecutionInput.js'
+import type {
+  AnnualRetirementActionSettlementPublicationInput,
+} from './internal/annualRetirementActionSettlementPublication.js'
 
-type InputMutation = 'none' | 'withholdExecution' | 'zeroSource' | 'dropRmd'
+type InputMutation =
+  | 'none'
+  | 'withholdExecution'
+  | 'zeroSource'
+  | 'dropRmd'
+  | 'revokeLinkedGroup'
 
 interface InputCall {
   readonly input: Readonly<AnnualRothConversionExecutionInput>
@@ -23,6 +31,7 @@ interface InputCall {
 const seam = vi.hoisted(() => ({
   mutation: 'none' as InputMutation,
   calls: [] as InputCall[],
+  settlementCalls: [] as AnnualRetirementActionSettlementPublicationInput[],
 }))
 
 vi.mock(
@@ -74,6 +83,12 @@ vi.mock(
                   }),
                 }),
               })
+            case 'revokeLinkedGroup':
+              return Object.freeze({
+                ...production,
+                effectiveLinkedWithdrawalGroups:
+                  input.observedLinkedWithdrawalGroups,
+              })
             case 'none':
               return production
           }
@@ -85,12 +100,31 @@ vi.mock(
   },
 )
 
+vi.mock(
+  './internal/annualRetirementActionSettlementPublication.js',
+  async (importOriginal) => {
+    const original = await importOriginal<
+      typeof import('./internal/annualRetirementActionSettlementPublication.js')
+    >()
+    return {
+      ...original,
+      annualRetirementActionSettlementPublication: (
+        input: AnnualRetirementActionSettlementPublicationInput,
+      ) => {
+        seam.settlementCalls.push(input)
+        return original.annualRetirementActionSettlementPublication(input)
+      },
+    }
+  },
+)
+
 import {
   parseRetirementActionRequest,
   type RothConversionRequest,
 } from '../actions/index.js'
 import type { Account, Plan } from '../model/plan.js'
 import {
+  recurringOrdinaryIncome,
   singlePersonPlan,
   validatePlan,
 } from '../testing/planFixtures.js'
@@ -99,6 +133,10 @@ import { simulatePlan } from './simulate.js'
 
 const TAX_YEAR = 2026
 const CONVERSION_DOLLARS = 10_000
+const LINKED_CONVERSION_DOLLARS = 40_000
+const LINKED_WITHDRAWAL_DOLLARS = 8_800
+const LINKED_CONVERSION_ID = 'linked-conversion'
+const LINKED_WITHDRAWAL_ID = 'linked-withdrawal'
 
 function cash(id: string, balance: number): Account {
   return {
@@ -162,6 +200,56 @@ function namedConversion(): RothConversionRequest {
   return parsed.request
 }
 
+function linkedWithdrawal() {
+  const parsed = parseRetirementActionRequest({
+    actionId: LINKED_WITHDRAWAL_ID,
+    kind: 'ordinaryWithdrawal',
+    personId: 'p1',
+    year: TAX_YEAR,
+    executionDate: `${TAX_YEAR}-06-14`,
+    executionSequence: 1,
+    requestedAmount: LINKED_WITHDRAWAL_DOLLARS * 100,
+    allocations: [{
+      allocationId: 'linked-withdrawal-allocation',
+      sourceAccountId: 'cash-a',
+      requestedAmount: LINKED_WITHDRAWAL_DOLLARS * 100,
+    }],
+    purpose: { kind: 'taxPayment', referenceId: LINKED_CONVERSION_ID },
+    provenance: { source: 'manual' },
+  })
+  if (!parsed.ok || parsed.request.kind !== 'ordinaryWithdrawal') {
+    throw new Error('invalid linked-withdrawal fixture')
+  }
+  return parsed.request
+}
+
+function linkedConversion(): RothConversionRequest {
+  const parsed = parseRetirementActionRequest({
+    actionId: LINKED_CONVERSION_ID,
+    kind: 'rothConversion',
+    personId: 'p1',
+    year: TAX_YEAR,
+    executionDate: `${TAX_YEAR}-06-15`,
+    executionSequence: 2,
+    requestedAmount: LINKED_CONVERSION_DOLLARS * 100,
+    allocations: [{
+      allocationId: 'linked-conversion-allocation',
+      sourceAccountId: 'ira-a',
+      requestedAmount: LINKED_CONVERSION_DOLLARS * 100,
+    }],
+    destinationRothAccountId: 'roth-a',
+    taxFunding: {
+      kind: 'linkedWithdrawal',
+      withdrawalActionId: LINKED_WITHDRAWAL_ID,
+    },
+    provenance: { source: 'manual' },
+  })
+  if (!parsed.ok || parsed.request.kind !== 'rothConversion') {
+    throw new Error('invalid linked-conversion fixture')
+  }
+  return parsed.request
+}
+
 function plan(): Plan {
   const target = singlePersonPlan({ planningAge: 60, dob: '1970-01-01' })
   target.id = 'annual-roth-conversion-execution-input-delegation'
@@ -187,11 +275,43 @@ function plan(): Plan {
   return validatePlan(target)
 }
 
-function run() {
-  const result = simulatePlan(plan(), {
+function linkedPlan(): Plan {
+  const target = singlePersonPlan({ planningAge: 60, dob: '1970-01-01' })
+  const linkedIra = traditionalIra('ira-a', 400_000)
+  if (linkedIra.type !== 'traditional') throw new Error('invalid IRA fixture')
+  linkedIra.nondeductibleBasis = 0
+  target.id = 'annual-roth-conversion-linked-group-delegation'
+  target.assumptions.inflationPct = 0
+  target.assumptions.defaultReturnPct = 0
+  target.incomes = [recurringOrdinaryIncome('pension', 90_000)]
+  target.expenses.baseAnnual = 50_000
+  target.accounts = [
+    cash('cash-a', 1_000_000),
+    linkedIra,
+    rothIra('roth-a'),
+  ]
+  target.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      evidenceId: 'ira-a-classification',
+      provenance: { source: 'manual' },
+      sourceAccountId: 'ira-a',
+      subtype: 'traditional',
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: [],
+  }
+  target.strategies.retirementActions = [
+    linkedWithdrawal(),
+    linkedConversion(),
+  ]
+  return validatePlan(target)
+}
+
+function run(target = plan(), flatTaxRatePct = 0) {
+  const result = simulatePlan(target, {
     startYear: TAX_YEAR,
     horizonEndYear: TAX_YEAR,
-    taxCalculator: createFlatTaxCalculator(0),
+    taxCalculator: createFlatTaxCalculator(flatTaxRatePct),
   })
   const year = result.years[0]
   if (year === undefined) throw new Error('missing year')
@@ -202,6 +322,7 @@ describe('simulatePlan delegates named Roth-conversion execution input', () => {
   beforeEach(() => {
     seam.mutation = 'none'
     seam.calls.length = 0
+    seam.settlementCalls.length = 0
   })
 
   it('hands the coordinator post-withdrawal balances and owner facts', () => {
@@ -222,6 +343,16 @@ describe('simulatePlan delegates named Roth-conversion execution input', () => {
       unsatisfiedPlanDollars: 0,
     }])
     expect(call?.input.ownerBasis).toEqual([])
+    expect(Object.isFrozen(call?.input)).toBe(true)
+    expect(Object.isFrozen(call?.input.requests)).toBe(true)
+    expect(Object.isFrozen(call?.input.people)).toBe(true)
+    expect(Object.isFrozen(call?.input.people[0])).toBe(true)
+    expect(Object.isFrozen(call?.input.balances)).toBe(true)
+    expect(Object.isFrozen(call?.input.balances[0])).toBe(true)
+    expect(Object.isFrozen(call?.input.ownerRmd)).toBe(true)
+    expect(Object.isFrozen(call?.input.ownerRmd[0])).toBe(true)
+    expect(Object.isFrozen(call?.input.ownerBasis)).toBe(true)
+    expect(Object.isFrozen(call?.input.ordinaryWithdrawalEvidence)).toBe(true)
   })
 
   it.each([
@@ -238,5 +369,26 @@ describe('simulatePlan delegates named Roth-conversion execution input', () => {
     expect(year.rothConversionActionExecution?.committed ?? false).toBe(false)
     expect(year.balances['ira-a']).toBeCloseTo(100_000, 6)
     expect(year.balances['roth-a']).toBeCloseTo(0, 6)
+  })
+
+  it('hands the coordinator-owned linked-group verdict to settlement', () => {
+    seam.mutation = 'revokeLinkedGroup'
+
+    run(linkedPlan(), 22)
+
+    const revoked = seam.calls.find((call) =>
+      call.original.status === 'ready' &&
+      call.original.effectiveLinkedWithdrawalGroups !==
+        call.output.effectiveLinkedWithdrawalGroups)
+    expect(revoked?.original.effectiveLinkedWithdrawalGroups.groups[0])
+      .toMatchObject({ disposition: 'executedAsAtomicGroup' })
+    expect(revoked?.output.effectiveLinkedWithdrawalGroups)
+      .toBe(revoked?.input.observedLinkedWithdrawalGroups)
+    expect(Object.isFrozen(revoked?.input.ownerBasis[0])).toBe(true)
+    expect(Object.isFrozen(revoked?.input.ordinaryWithdrawalEvidence[0]))
+      .toBe(true)
+    expect(seam.settlementCalls.some((call) =>
+      call.linkedWithdrawalGroups ===
+        revoked?.output.effectiveLinkedWithdrawalGroups)).toBe(true)
   })
 })
