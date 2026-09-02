@@ -208,12 +208,12 @@
       "id": "AH.callsite.taxableReuse",
       "label": "optimizer probe then-current gross-to-taxable translation",
       "file": "projection/simulate.ts",
-      "lines": [6774, 6778],
+      "lines": [6734, 6738],
       "note": "The callback's source reread timing and injected non-economic return are hostile-delegation claims; this range proves the callback is reached at the optimizer probe boundary.",
       "anchors": [
-        { "line": 6774, "text": ": remainingConvertibleGross > 0" },
-        { "line": 6775, "text": "? aggregateRothConversionTarget.taxableAmountForGross(" },
-        { "line": 6778, "text": "remainingConvertibleGross" }
+        { "line": 6734, "text": ": remainingConvertibleGross > 0" },
+        { "line": 6735, "text": "? aggregateRothConversionTarget.taxableAmountForGross(" },
+        { "line": 6738, "text": "remainingConvertibleGross" }
       ]
     }
   ],

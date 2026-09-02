@@ -160,11 +160,11 @@
       "id": "AE.callsite.rothCommit",
       "label": "accepted Roth split identity enters the existing basis commit",
       "file": "projection/simulate.ts",
-      "lines": [6916, 6924],
+      "lines": [6876, 6884],
       "anchors": [
-        { "line": 6916, "text": "for (const row of withdrawalEffectsFinal.roth.rows) {" },
-        { "line": 6921, "text": "const split = row.split" },
-        { "line": 6924, "text": "const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0" }
+        { "line": 6876, "text": "for (const row of withdrawalEffectsFinal.roth.rows) {" },
+        { "line": 6881, "text": "const split = row.split" },
+        { "line": 6884, "text": "const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0" }
       ]
     }
   ],
