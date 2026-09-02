@@ -2,10 +2,10 @@
  * Hostile delegation proof for the annual HECM shortfall backstop.
  *
  * The wrapper replaces the coordinator's independently computed allocation,
- * total draw, and residual shortfall. Independent year, debt, depletion, and
- * cash-flow fields observe those exact replacements, so an orphaned helper or
- * caller-side recomputation cannot pass because production matches the former
- * inline loop.
+ * total draw, and residual shortfall with deliberately inconsistent values.
+ * Independent year, debt, depletion, and cash-flow fields observe those exact
+ * replacements, so an orphaned helper or caller-side recomputation cannot pass
+ * because production matches the former inline loop.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -38,7 +38,9 @@ vi.mock('./internal/annualHecmBackstop.js', async (importOriginal) => {
           ? {
               allocations: production.allocations.map((row, index) =>
                 index === 0 ? { ...row, amount: row.amount - 3_000 } : row),
-              draw: production.draw - 3_000,
+              // Deliberately differs from both the allocation sum and the
+              // amount implied by the independently injected residual.
+              draw: production.draw - 4_000,
               shortfallAfterHecm: production.shortfallAfterHecm + 3_000,
             }
           : production
@@ -156,15 +158,15 @@ describe('simulatePlan delegates annual HECM backstop planning', () => {
     }))
   })
 
-  it('uses hostile allocations, draw, and residual shortfall without recomputing them', () => {
+  it('uses independently hostile allocations, draw, and residual without recomputing', () => {
     const { year } = run(true)
     expect(seam.calls).toHaveLength(1)
     expect(seam.calls[0]!.output).toEqual({
       allocations: [{ propertyAccountId: 'home1', amount: 7_000 }],
-      draw: 7_000,
+      draw: 6_000,
       shortfallAfterHecm: 32_000,
     })
-    expect(year.hecmDraw).toBe(7_000)
+    expect(year.hecmDraw).toBe(6_000)
     expect(year.hecmLoanBalance).toBe(7_000)
     expect(year.shortfall).toBe(32_000)
     expect(year.cashFlow!.sourceLines).toContainEqual(expect.objectContaining({

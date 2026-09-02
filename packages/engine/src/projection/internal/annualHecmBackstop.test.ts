@@ -68,6 +68,9 @@ describe('annualHecmBackstopPlan', () => {
   })
 
   it('uses every open line regardless of policy and allocates in source order', () => {
+    // Product authority: DOCS/domain/domain-rules-reference/
+    // 19-annuity-payout-forms-the-annuitization-sweep.md, "Draw policies":
+    // either policy leaves an open line available to backstop a true shortfall.
     expect(annualHecmBackstopPlan(input({
       accounts: [
         cash,
@@ -131,6 +134,24 @@ describe('annualHecmBackstopPlan', () => {
     })
   })
 
+  it('lets a missing first HECM-bearing alias suppress the duplicate id', () => {
+    expect(annualHecmBackstopPlan(input({
+      accounts: [
+        property('missing'),
+        { ...property('missing'), name: 'duplicate missing row' },
+        property('tail'),
+      ],
+      hecmStates: new Map([
+        ['tail', { principalLimit: 10, loanBalance: 0 }],
+      ]),
+      portfolioShortfall: 20,
+    }))).toEqual({
+      allocations: [{ propertyAccountId: 'tail', amount: 10 }],
+      draw: 10,
+      shortfallAfterHecm: 10,
+    })
+  })
+
   it('folds the draw in source order without regrouping', () => {
     const lines = new Map([
       ['huge', { principalLimit: 1e16, loanBalance: 0 }],
@@ -163,7 +184,9 @@ describe('annualHecmBackstopPlan', () => {
       { propertyAccountId: 'first', amount: 100 },
     ])
     expect(result.draw).toBe(100)
-    expect(result.shortfallAfterHecm).toBeCloseTo(0.004, 12)
+    const exactBinary64Residual = Math.max(0, 100.004 - 100)
+    expect(result.shortfallAfterHecm).toBe(exactBinary64Residual)
+    expect(result.shortfallAfterHecm).not.toBe(0.004)
   })
 
   it('is stateless and never mutates accounts or line state', () => {

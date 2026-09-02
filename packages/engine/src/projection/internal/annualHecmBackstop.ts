@@ -59,7 +59,7 @@ export function annualHecmBackstopPlan(
       if (visitedHecmLineIds.has(account.id)) continue
       visitedHecmLineIds.add(account.id)
       const line = input.hecmStates.get(account.id)
-      if (line === undefined) continue
+      if (!line) continue
       const amount = Math.min(
         remaining,
         Math.max(0, line.principalLimit - line.loanBalance),
