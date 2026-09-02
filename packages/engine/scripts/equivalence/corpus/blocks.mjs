@@ -72,13 +72,14 @@
  * `scripts/equivalence/specs/simulate-funding-candidate-evaluation-boundary.json`,
  * `scripts/equivalence/specs/simulate-conversion-linked-withdrawal-funding-boundary.json`,
  * `scripts/equivalence/specs/simulate-aggregate-roth-conversion-target-boundary.json`,
- * and `scripts/equivalence/specs/simulate-retirement-action-preflight-boundary.json`
+ * `scripts/equivalence/specs/simulate-retirement-action-preflight-boundary.json`,
+ * and `scripts/equivalence/specs/simulate-qcd-execution-input-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  * Several extracted boundaries have no dedicated corpus blocks: their specs
- * measure the existing full corpus and use `AC`, `AD`, `AF`, `AG`, `AH`, and
- * `AI` only as reach-entry namespaces. Block AE pins the otherwise-cold
+ * measure the existing full corpus and use `AC`, `AD`, `AF`, `AG`, `AH`, `AI`,
+ * and `AJ` only as reach-entry namespaces. Block AE pins the otherwise-cold
  * multi-account Roth-pool accumulation in the withdrawal-effects coordinator.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so

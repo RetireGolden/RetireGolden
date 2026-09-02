@@ -1,0 +1,188 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-qcd-execution-input-boundary",
+  "why": "Measured reach for immutable named-QCD evidence and executor-input preparation extracted from simulatePlan. Existing named-QCD corpus members exercise alive/prior-offset evidence, prerequisite evaluation, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, complete owned-IRA Form 8606 pool input, the caller contract, and the retained executor handoff in all four equivalence modes. Direct contract tests own the no-request and blocked-prerequisite exits, unprovable prior-offset omission, cent-floor arithmetic, complete-pool arithmetic, deterministic account ordering, and frozen envelopes. Hostile delegation separately proves the caller consumes withheld execution, zeroed source capacity, and absent complete-pool capacity instead of rebuilding any coordinator output inline.",
+  "entries": [
+    {
+      "id": "AJ.helper.evidenceSetup",
+      "label": "donor state, prior-offset state, and alive evidence setup",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [117, 121],
+      "anchors": [
+        { "line": 117, "text": "const peopleById = new Map(input.people.map((person) => [" },
+        { "line": 121, "text": "const priorOffsetByDonor = new Map(input.priorOffsets.map((offset) => [" }
+      ],
+      "note": "The named-QCD corpus has no prior consumed-offset row, so the map callback body on lines 122-124 is pinned by the direct positive-offset test rather than claimed here."
+    },
+    {
+      "id": "AJ.helper.aliveEvidence",
+      "label": "unprovable-history state and donor alive evidence",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [125, 143],
+      "anchors": [
+        { "line": 129, "text": "const personAliveEvidenceFor = (" },
+        { "line": 142, "text": "alive: peopleById.get(request.donorPersonId)?.alive ?? false," }
+      ]
+    },
+    {
+      "id": "AJ.helper.priorOffset",
+      "label": "post-70-half contribution history and prior-offset evidence",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [145, 149],
+      "note": "Corpus reach covers function entry and donor lookup. Direct tests pin a missing donor through prerequisite validation and the deliberately omitted evidence when positive contribution history has an unprovable prior-consumption checkpoint.",
+      "anchors": [
+        { "line": 145, "text": "const priorQcdOffsetEvidenceFor = (" },
+        { "line": 148, "text": "const donor = peopleById.get(request.donorPersonId)" }
+      ]
+    },
+    {
+      "id": "AJ.helper.priorOffsetCalculation",
+      "label": "threshold-year contribution and prior-consumption calculation",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [151, 169],
+      "note": "The corpus takes the present-donor, provable-history route. Direct tests own missing threshold and unprovable-history returns.",
+      "anchors": [
+        { "line": 151, "text": ": addCalendarMonths(donor.dob, 846)" },
+        { "line": 154, "text": "const offsetTotalCents = (" },
+        { "line": 161, "text": "const consumed = priorOffsetByDonor.get(request.donorPersonId) ?? 0" }
+      ]
+    },
+    {
+      "id": "AJ.helper.priorOffsetEvidence",
+      "label": "provable prior-offset evidence result",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [173, 186],
+      "note": "The corpus owns the zero-consumption evidence route; the direct positive-offset test owns the consumed branch.",
+      "anchors": [
+        { "line": 173, "text": "const actionDate = request.executionDate ?? null" },
+        { "line": 185, "text": "priorOffsetApplied: asUsdCents(offsetTotalCents === 0n ? 0 : consumed)," }
+      ]
+    },
+    {
+      "id": "AJ.helper.prerequisite",
+      "label": "runtime evidence and named-QCD prerequisite handoff",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [189, 206],
+      "note": "The blocked result arm immediately below this success range is pinned directly with an invalid tax year.",
+      "anchors": [
+        { "line": 189, "text": "const runtimeEvidenceFor = (" },
+        { "line": 201, "text": "const prerequisite = evaluateAnnualQcdExecutionPrerequisites({" },
+        { "line": 205, "text": "runtimeEvidence: runtimeEvidenceFor(input.requests)," }
+      ]
+    },
+    {
+      "id": "AJ.helper.executionIdentity",
+      "label": "evaluated request, donor, source, RMD, and basis identity",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [215, 224],
+      "note": "The corpus creates the owner-basis map but its named-QCD members have no positive basis entry. Direct pool-arithmetic tests pin the owner-basis callback and propagated opening basis.",
+      "anchors": [
+        { "line": 215, "text": "const requests = prerequisite.requests" },
+        { "line": 216, "text": "const donorIds = [...new Set(requests.map((request) =>" },
+        { "line": 220, "text": "const ownerRmdById = new Map(input.ownerRmd.map((row) => [" },
+        { "line": 224, "text": "const ownerBasisById = new Map(input.ownerBasis.map((row) => [" }
+      ]
+    },
+    {
+      "id": "AJ.helper.sourceCapacity",
+      "label": "exact-cent floored source-capacity snapshot",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [232, 239],
+      "anchors": [
+        { "line": 232, "text": "const openingBalances = freezeRows(input.balances" },
+        { "line": 236, "text": "openingBalance: planDollarsToFlooredLedgerCents(" }
+      ]
+    },
+    {
+      "id": "AJ.helper.rmdPools",
+      "label": "complete owner RMD-pool opening snapshots",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [241, 281],
+      "anchors": [
+        { "line": 241, "text": "const rmdPools = freezeRows(donorIds.map((donorId) => {" },
+        { "line": 250, "text": "const sourceAccountIds = Object.freeze(input.balances" },
+        { "line": 269, "text": "rmdRequiredAmount: required," },
+        { "line": 273, "text": "rmdRemainingBefore: remaining," }
+      ]
+    },
+    {
+      "id": "AJ.helper.physicalStaging",
+      "label": "immutable physical input and staged gift attribution",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [283, 305],
+      "anchors": [
+        { "line": 283, "text": "const physicalInput: Readonly<StageAnnualQcdPhysicalExecutionInput> =" },
+        { "line": 294, "text": "const staging = stageAnnualQcdPhysicalExecution(physicalInput)" },
+        { "line": 297, "text": "for (const application of staging.applications) {" },
+        { "line": 302, "text": "application.executedAmount," }
+      ]
+    },
+    {
+      "id": "AJ.helper.poolMembers",
+      "label": "owned-IRA pool member balance and subtype assembly",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [307, 318],
+      "note": "Corpus members reach pool filtering and sort setup. Their named QCDs use one owned IRA, so direct tests own the multi-account comparator and deterministic account order.",
+      "anchors": [
+        { "line": 307, "text": "const subtypeById = new Map(" },
+        { "line": 314, "text": "const poolCapacityInputs = Object.freeze(donorIds.map((donorId) => {" },
+        { "line": 318, "text": ".sort((left, right) =>" }
+      ]
+    },
+    {
+      "id": "AJ.helper.poolMemberRows",
+      "label": "owned-IRA pool member balances and complete pool total",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [320, 354],
+      "anchors": [
+        { "line": 320, "text": "const poolMembers = freezeRows(poolAccounts.map((account) => {" },
+        { "line": 350, "text": "const poolBalance = asUsdCents(Number(poolMembers.reduce(" }
+      ]
+    },
+    {
+      "id": "AJ.helper.poolEvidenceAndResult",
+      "label": "complete Form 8606 pool evidence and executor input result",
+      "file": "projection/internal/annualQcdExecutionInput.ts",
+      "lines": [355, 409],
+      "anchors": [
+        { "line": 355, "text": "const poolId = `projection-owned-ira-pool:${JSON.stringify([" },
+        { "line": 363, "text": "completePoolEvidence: Object.freeze({" },
+        { "line": 388, "text": "annualFacts: Object.freeze({" },
+        { "line": 405, "text": "return Object.freeze({" }
+      ]
+    },
+    {
+      "id": "AJ.callsite.contract",
+      "label": "post-forced-distribution QCD preparation snapshot",
+      "file": "projection/simulate.ts",
+      "lines": [4697, 4739],
+      "anchors": [
+        { "line": 4697, "text": "const qcdExecutionInput = annualQcdExecutionInput(Object.freeze({" },
+        { "line": 4702, "text": "people: Object.freeze(people.map((person) => Object.freeze({" },
+        { "line": 4707, "text": "balances: Object.freeze(rmdBalances.map((state) => Object.freeze({" },
+        { "line": 4724, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(" },
+        { "line": 4736, "text": "offsetHistoryUnprovableDonorIds: Object.freeze([" }
+      ]
+    },
+    {
+      "id": "AJ.callsite.outputs",
+      "label": "prerequisite publication and retained executor handoff",
+      "file": "projection/simulate.ts",
+      "lines": [4740, 4740],
+      "anchors": [
+        { "line": 4740, "text": "const qcdActionPrerequisiteResult = qcdExecutionInput.prerequisite" }
+      ]
+    },
+    {
+      "id": "AJ.callsite.execute",
+      "label": "caller-owned named-QCD executor call",
+      "file": "projection/simulate.ts",
+      "lines": [4781, 4782],
+      "anchors": [
+        { "line": 4781, "text": "if (qcdExecutionInput.status === 'ready') {" },
+        { "line": 4782, "text": "qcdActionExecution = executeAnnualQcds(qcdExecutionInput.executorInput)" }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct tests own no-request and blocked exits, unprovable prior-offset omission, cent-floor and pool arithmetic, ordering, and frozen envelopes; hostile delegation owns consumption of the prepared call, source capacity, and complete-pool channel. JavaScript line coverage cannot distinguish every ternary or compound operand sharing a physical line, so reported cold sub-line regions must be read alongside those focused tests."
+}
