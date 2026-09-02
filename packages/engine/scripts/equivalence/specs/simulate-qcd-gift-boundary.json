@@ -175,12 +175,12 @@
       "engineSourceTree": "33d9b00d8054b592361e37710c78f99cc01cee65"
     },
     "head": {
-      "sourceObservedAtCommit": "8a99bb95dc3aaf4d2ae5f4fea966339eb90405c8",
-      "engineSourceTree": "87e8d425122f645066a70407300f4a8d9decd212"
+      "sourceObservedAtCommit": "9dbf6f1b5682eaf17dce0e36cdd40c1e3339ea8b",
+      "engineSourceTree": "f13f701b6ffb532995ee2c589867fd2ff7be4372"
     },
     "inputs": {
       "harnessBlobs": {
-        "packages/engine/scripts/equivalence.mjs": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
+        "packages/engine/scripts/equivalence.mjs": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
       "packages/engine/scripts/equivalence/corpus/blocks.mjs": "7a1507c9bbf8e42f2e465195628bd389951c8025",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
@@ -189,7 +189,7 @@
         "packages/engine/scripts/equivalence/engine-tree.mjs": "9450176f7dfdc1b3374d87b2cbc80f3f03b72f98",
         "packages/engine/scripts/equivalence/modes.mjs": "0c75aac27538942bf96517fd00c417fa8b967ab9",
         "packages/engine/scripts/equivalence/reach.mjs": "81d6c4cce57b40f770be21b7a89ea2da9c0c217d",
-        "packages/engine/scripts/equivalence/usage.mjs": "0b3b3072c3e716d4bace88f6887a41bdda5d60d1",
+        "packages/engine/scripts/equivalence/usage.mjs": "0b6386a9acffbd35621a9076f371b5af7f4d4640",
         "packages/engine/scripts/typescript-source-resolution.mjs": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a"
       },
     "specMeasurementSha256": "b9c9454b9a9d68b769aa31a3fa93facea320dd25d995dfc45e9c46252337e760"
