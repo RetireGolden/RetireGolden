@@ -17,16 +17,6 @@ import {
   summarizeComputation,
 } from '../socialSecurity/explain'
 import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
-
-/**
- * The survivor floor as people read it: in months when the engine's value is
- * a whole number of months, else in years as the engine states it, so the
- * copy never rounds the floor to something the engine does not apply.
- */
-function survivorFloorLabel(): string {
-  const months = SURVIVOR_MIN_MARRIAGE_YEARS * 12
-  return Number.isInteger(months) ? `${months} months (${SURVIVOR_MIN_MARRIAGE_YEARS} years)` : `${SURVIVOR_MIN_MARRIAGE_YEARS} years`
-}
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { parseSsaStatementXml } from '../socialSecurity/ssaStatementXml'
@@ -42,6 +32,17 @@ import { fmtMoney } from './format'
 import { dobParts, resolvePia } from './ssAnalysis'
 import { ordinalSuffixes, PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
 import { Issues } from './sections/shared'
+
+/**
+ * The survivor floor as people read it, in one unit: months when the engine's
+ * value is a whole number of months (the statutory wording), else years
+ * exactly as the engine states it, so the copy never rounds the floor to
+ * something the engine does not apply.
+ */
+function survivorFloorLabel(): string {
+  const months = SURVIVOR_MIN_MARRIAGE_YEARS * 12
+  return Number.isInteger(months) ? `${months} months` : `${SURVIVOR_MIN_MARRIAGE_YEARS} years`
+}
 
 const newId = () => crypto.randomUUID()
 
@@ -137,10 +138,11 @@ export function FormerSpousesEditor({
         relationship,
         dob: '1960-01-01',
         piaMonthly: 0,
-        // A new record opens at the engine's own floor for its kind (the
-        // statute lives there, not here); the fields below say so while a
-        // value sits under it.
-        marriageYears: relationship === 'divorced' ? DIVORCED_MIN_MARRIAGE_YEARS : SURVIVOR_MIN_MARRIAGE_YEARS,
+        // A new divorced record opens at the engine's own floor (the statute
+        // lives there, not here); a deceased record keeps its long-standing
+        // one-year default, which is above the survivor floor. The fields
+        // below say so while a value sits under either floor.
+        marriageYears: relationship === 'divorced' ? DIVORCED_MIN_MARRIAGE_YEARS : 1,
         remarriedAtAge: null,
       })
     })
@@ -288,7 +290,8 @@ export function FormerSpousesEditor({
             {inapplicable ? (
               <p id={partnerNoteId} className="field-hint" style={{ color: 'var(--warn)' }}>
                 Divorced-spousal needs you to be currently unmarried. With a partner on this plan it won't apply (you'd get
-                the current-spouse top-up instead). The record is kept; its fields are off while a partner is on the plan.
+                the current-spouse top-up instead). The record is kept; its date, benefit, and years fields are off while a
+                partner is on the plan. Change its type, or remove it.
               </p>
             ) : null}
             {underMinYears ? (

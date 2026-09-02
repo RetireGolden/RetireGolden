@@ -18,7 +18,7 @@
  *   node scripts/check-css-clamp.mjs
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -37,11 +37,17 @@ function cssFiles(dir) {
   return out
 }
 
+if (!existsSync(distDir)) {
+  console.error(`check-css-clamp: no build at ${distDir}; run vite build first`)
+  process.exit(1)
+}
 let files
 try {
   files = cssFiles(distDir)
-} catch {
-  console.error(`check-css-clamp: no build at ${distDir}; run vite build first`)
+} catch (err) {
+  // The build is there but could not be read (an unreadable entry, a dangling
+  // link): say that, not "no build", so the fix is looked for in the right place.
+  console.error(`check-css-clamp: could not read the build under ${distDir}: ${err instanceof Error ? err.message : String(err)}`)
   process.exit(1)
 }
 if (files.length === 0) {

@@ -141,9 +141,18 @@ export function WorkspaceNotFound() {
   // can be named, so nothing is painted that the resolved card contradicts.
   const pending = resolved === undefined
   const escape = !pending && resolved && (!resolved.to.startsWith('/import') || !importWithheld) ? resolved : undefined
+  // A reader who heard the pending copy is told when the escape arrives:
+  // aria-busy alone is not announced. Derived during render, as the plan
+  // name input does, so no effect writes state.
+  const [sawPending, setSawPending] = useState(false)
+  if (pending && !sawPending) setSawPending(true)
+  const announcement = !pending && sawPending && escape ? `Found it. Go to ${escape.label}.` : ''
   return (
     <div className="card empty-state" aria-busy={pending ? true : undefined}>
       <h2>This plan has no such section</h2>
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
       {pending ? (
         <p className="muted">Finding the page this address was reaching for…</p>
       ) : escape ? (

@@ -243,11 +243,17 @@ function PlanName() {
   // The cap is for what is typed, never for what is stored: a name that is
   // already past it (imported, or saved before the cap) keeps its full
   // length here, or the first keystroke would persist it silently
-  // truncated. The limit is fixed once per plan load (the component is
-  // keyed by plan id) at max(cap, stored length), so the value can never
-  // exceed the length the plan was loaded with, and a name shortened by a
-  // Backspace can be typed back out to that length (review of #533).
-  const [nameCap] = useState(() => Math.max(PLAN_NAME_MAX_LENGTH, plan.name.length))
+  // truncated. While the name is over the cap the limit is the longest
+  // over-cap length this plan has been seen with (so a Backspace does not
+  // shrink it and the character can be typed back, and a longer name that
+  // arrives on a reload raises it); once the name is back within the cap
+  // the ordinary limit applies from then on, as in every other name flow
+  // (review of #533). Derived during render, the way fields.tsx adopts an
+  // external value, rather than in an effect.
+  const [overCapLength, setOverCapLength] = useState(() => (plan.name.length > PLAN_NAME_MAX_LENGTH ? plan.name.length : 0))
+  if (plan.name.length > PLAN_NAME_MAX_LENGTH && plan.name.length > overCapLength) setOverCapLength(plan.name.length)
+  if (plan.name.length <= PLAN_NAME_MAX_LENGTH && overCapLength !== 0) setOverCapLength(0)
+  const nameCap = overCapLength || PLAN_NAME_MAX_LENGTH
   return (
     <input
       className="plan-name-input"

@@ -23,26 +23,27 @@ export function normalizeSelector(selector) {
   return selector.replace(/\s*([>+~,])\s*/g, '$1').replace(/\s+/g, ' ').trim()
 }
 
+/** The sheet with every comment removed, so no brace inside one is mistaken for structure. */
+function withoutComments(css) {
+  return css.replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
 /**
  * Bodies of every style rule whose selector list includes `selector`,
  * however the sheet is formatted: a minifier may merge the rule into a
- * selector list, strip spaces around combinators, or nest it under an
- * at-rule, and none of that changes the answer here. Comments are skipped;
- * at-rule preludes open a nested scope; a style rule's body runs to its
- * closing brace.
+ * selector list, strip spaces around combinators, split its declarations
+ * across two rules, or nest it under an at-rule, and none of that changes
+ * the answer here. Comments are removed first; at-rule preludes open a
+ * nested scope; a style rule's body runs to its closing brace.
  */
 export function ruleBodies(css, selector) {
+  const src = withoutComments(css)
   const want = normalizeSelector(selector)
   const bodies = []
   let prelude = ''
   let i = 0
-  while (i < css.length) {
-    const ch = css[i]
-    if (ch === '/' && css[i + 1] === '*') {
-      const end = css.indexOf('*/', i + 2)
-      i = end < 0 ? css.length : end + 2
-      continue
-    }
+  while (i < src.length) {
+    const ch = src[i]
     if (ch === '{') {
       const head = prelude.trim()
       prelude = ''
@@ -50,10 +51,10 @@ export function ruleBodies(css, selector) {
         i++
         continue
       }
-      const close = css.indexOf('}', i)
-      const body = css.slice(i + 1, close < 0 ? css.length : close)
+      const close = src.indexOf('}', i)
+      const body = src.slice(i + 1, close < 0 ? src.length : close)
       if (head.split(',').map(normalizeSelector).includes(want)) bodies.push(body)
-      i = close < 0 ? css.length : close + 1
+      i = close < 0 ? src.length : close + 1
       continue
     }
     if (ch === '}') {
@@ -67,21 +68,24 @@ export function ruleBodies(css, selector) {
   return bodies
 }
 
+/** The message for a sheet with no rule for the selector at all. */
+export const NO_RULE = `no ${CLAMP_SELECTOR} rule in the built stylesheet`
+
 /**
  * Problems with the clamp in `css`, empty when every required declaration is
- * present in some rule for the clamp selector that carries the line clamp.
- * A missing rule is reported as one problem starting with "no ", which the
- * CLI uses to tell a sheet that lacks the rule from one that has it wrong.
+ * present across the rules for the clamp selector (a minifier may split
+ * them; what matters is what the cascade ends up with). A sheet with no rule
+ * at all reports NO_RULE, which the CLI uses to tell it from a sheet that
+ * has the rule but has it wrong.
  */
 export function clampProblems(css) {
   const bodies = ruleBodies(css, CLAMP_SELECTOR)
-  if (bodies.length === 0) return [`no ${CLAMP_SELECTOR} rule in the built stylesheet`]
-  const clamp = bodies.find((b) => REQUIRED[2][0].test(b))
-  if (clamp === undefined) return [`no ${CLAMP_SELECTOR} rule carries -webkit-line-clamp: 2`]
-  return REQUIRED.filter(([re]) => !re.test(clamp)).map(([, name]) => `${CLAMP_SELECTOR} lost ${name}`)
+  if (bodies.length === 0) return [NO_RULE]
+  const union = bodies.join(';')
+  return REQUIRED.filter(([re]) => !re.test(union)).map(([, name]) => `${CLAMP_SELECTOR} lost ${name}`)
 }
 
-/** Whether a problem list means the sheet has no clamp rule at all. */
+/** Whether a problem list means the sheet has no clamp rule at all (as opposed to an incomplete one). */
 export function lacksRule(problems) {
-  return problems.length === 1 && problems[0].startsWith('no ')
+  return problems.length === 1 && problems[0] === NO_RULE
 }

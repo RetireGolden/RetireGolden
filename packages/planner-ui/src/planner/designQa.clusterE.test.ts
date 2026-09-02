@@ -67,13 +67,23 @@ function rule(selector: string, source = css): string {
     let after = from
     while (after < source.length && /\s/.test(source[after]!)) after++
     if (source[after] !== '{') continue
-    let before = at - 1
-    while (before >= 0 && /\s/.test(source[before]!)) before--
-    const boundary = before < 0 || source[before] === '}' || source.slice(before - 1, before + 1) === '*/'
-    if (!boundary) continue
+    if (!atRuleBoundary(source, at)) continue
     return ruleBodyAt(source, at, selector)
   }
   return ruleBodyAt(source, -1, selector)
+}
+
+/**
+ * Whether only whitespace separates `at` from the start of the sheet, a
+ * `}`, or the end of a comment. The comment check reads the two characters
+ * before the whitespace explicitly, so a comment that ends at the very start
+ * of the sheet is a boundary too.
+ */
+function atRuleBoundary(source: string, at: number): boolean {
+  let before = at - 1
+  while (before >= 0 && /\s/.test(source[before]!)) before--
+  if (before < 0 || source[before] === '}') return true
+  return before >= 1 && source[before - 1] === '*' && source[before] === '/'
 }
 
 /** Body of the LAST rule for `selector` — the cluster block appends overrides at the end of the sheet. */
@@ -87,13 +97,20 @@ function lastRule(selector: string, source = css): string {
     let after = from
     while (after < source.length && /\s/.test(source[after]!)) after++
     if (source[after] !== '{') continue
-    let before = at - 1
-    while (before >= 0 && /\s/.test(source[before]!)) before--
-    const boundary = before < 0 || source[before] === '}' || source.slice(before - 1, before + 1) === '*/'
-    if (boundary) last = at
+    if (atRuleBoundary(source, at)) last = at
   }
   return ruleBodyAt(source, last, selector)
 }
+
+describe('the pin helpers themselves', () => {
+  it('find a rule that follows a sheet-leading comment, and one after a brace, and reject one inside a selector list', () => {
+    const sheet = '/* header */\n.first { a: b }\n.x, .second { c: d }\n.second { e: f }'
+    expect(rule('.first', sheet)).toMatch(/a: b/)
+    expect(rule('.second', sheet)).toMatch(/e: f/)
+    expect(lastRule('.second', sheet)).toMatch(/e: f/)
+    expect(rule('.x', '/* c */.x { g: h }')).toMatch(/g: h/)
+  })
+})
 
 describe('Design-QA cluster E chrome pins', () => {
   it('a plan card clamps a long name to two lines instead of growing past its siblings (#533)', () => {

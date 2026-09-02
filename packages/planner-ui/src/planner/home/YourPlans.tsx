@@ -45,6 +45,9 @@ export function YourPlans({ plans, headingLevel = 'h2', actions, onOpenPlan, onD
           <div key={s.id} className="plan-card">
             <button type="button" className="plan-card-open" onClick={() => onOpenPlan(s.id)}>
               <span className="plan-card-name">{s.name}</span>
+              {/* The verb, after the name so voice control still matches on
+                  the visible text; Duplicate and Delete carry theirs too. */}
+              <span className="sr-only">, open plan</span>
             </button>
             <span className="plan-card-meta">{fmtUpdated(s.updatedAtIso)}</span>
             {/* Duplicate/Delete write through the seam — hidden when read-only.

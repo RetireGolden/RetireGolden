@@ -209,6 +209,12 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     await typeInto(nameInput, plan.name.slice(0, -1))
     expect(nameInput.value.length).toBe(loadedLength - 1)
     expect(nameInput.getAttribute('maxlength')).toBe(String(loadedLength))
+    // Once the name is back within the cap, the ordinary cap applies from
+    // then on: it does not spring back to the loaded length.
+    await typeInto(nameInput, 'Short name')
+    expect(nameInput.getAttribute('maxlength')).toBe(String(PLAN_NAME_MAX_LENGTH))
+    await typeInto(nameInput, 'x'.repeat(PLAN_NAME_MAX_LENGTH - 1))
+    expect(nameInput.getAttribute('maxlength')).toBe(String(PLAN_NAME_MAX_LENGTH))
     // The crumb follows the input (the stored name is what was just typed).
     expect(container.querySelector('.workspace-breadcrumb [aria-current="page"]')!.textContent).toBe(nameInput.value)
     await unmount()
@@ -232,7 +238,9 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     const open = card.querySelector('button.plan-card-open')!
     const name = open.querySelector(':scope > .plan-card-name')!
     expect(name.textContent).toBe(plans[0]!.name)
-    expect(open.textContent).toBe(plans[0]!.name)
+    // The accessible name is the visible name first, then the verb.
+    expect(open.textContent).toBe(`${plans[0]!.name}, open plan`)
+    expect(open.querySelector('.sr-only')!.textContent).toBe(', open plan')
     expect(open.hasAttribute('aria-label')).toBe(false)
     // Sibling actions stay outside the open control.
     expect(card.querySelector('.plan-card-actions')!.closest('button')).toBeNull()
@@ -354,6 +362,9 @@ describe('Former spouses (#535)', () => {
     expect(row.querySelector('.item-row-title')!.textContent).toContain('Not applied')
     const note = row.querySelector<HTMLElement>('#former-spouse-ex-1-partner-note')!
     expect(note.textContent).toContain("it won't apply")
+    // The note names the controls that are off, and leaves Type out of it.
+    expect(note.textContent).toContain('its date, benefit, and years fields are off')
+    expect(note.textContent).toContain('Change its type')
     // Twelve years married: the ten-year note has no reason to show.
     expect(row.querySelector('#former-spouse-ex-1-years-note')).toBeNull()
     const byLabel = (label: string) =>
@@ -423,7 +434,7 @@ describe('Former spouses (#535)', () => {
     await unmount()
   })
 
-  it('opens a new record at the engine floor for its kind, not a number restated here', async () => {
+  it('opens a new divorced record at the engine floor, and a deceased one at its prior default', async () => {
     const stream = streamWith([])
     const added: NonNullable<SsStream['formerSpouses']> = []
     const setStream = (mut: (s: SsStream) => void) => {
@@ -434,10 +445,13 @@ describe('Former spouses (#535)', () => {
     const buttons = [...container.querySelectorAll('button')]
     await act(async () => buttons.find((b) => b.textContent === '+ Divorced ex-spouse')!.click())
     await act(async () => buttons.find((b) => b.textContent === '+ Deceased former spouse')!.click())
+    // A divorced record opens at the engine floor; a deceased one keeps its
+    // long-standing one-year default, above the survivor floor.
     expect(stream.formerSpouses!.map((r) => [r.relationship, r.marriageYears])).toEqual([
       ['divorced', DIVORCED_MIN_MARRIAGE_YEARS],
-      ['deceased', SURVIVOR_MIN_MARRIAGE_YEARS],
+      ['deceased', 1],
     ])
+    expect(1).toBeGreaterThan(SURVIVOR_MIN_MARRIAGE_YEARS)
     await unmount()
   })
 
@@ -521,6 +535,8 @@ describe('Plan-scoped site-level paths (#536)', () => {
       })
       expect(container.querySelector('.empty-state[aria-busy="true"]')).toBeNull()
       expect(container.textContent).toContain('This plan has no such section')
+      // The arrival is announced to a reader who heard the pending copy.
+      expect(container.querySelector('.empty-state [role="status"]')!.textContent).toBe('Found it. Go to About RetireGolden.')
       await unmount()
     } finally {
       registryGate.hold = null

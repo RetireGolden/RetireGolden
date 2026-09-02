@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { CLAMP_SELECTOR, clampProblems, lacksRule, normalizeSelector, ruleBodies } from './cssClamp.mjs'
+import { CLAMP_SELECTOR, clampProblems, lacksRule, NO_RULE, normalizeSelector, ruleBodies } from './cssClamp.mjs'
 
 const CLAMP = '-webkit-line-clamp:2;line-clamp:2;min-width:0;overflow-wrap:anywhere;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden'
 const GOOD = `.a{color:red}.plan-card-name{font-size:1.05rem}.plan-card-open>.plan-card-name{${CLAMP}}`
@@ -21,20 +21,25 @@ describe('cssClamp', () => {
     expect(clampProblems(`@supports (display:grid){.z{a:b}.plan-card-open > .plan-card-name{${CLAMP}}}`)).toEqual([])
   })
 
+  it('accepts the clamp split across two rules for the selector', () => {
+    const split = '.plan-card-open>.plan-card-name{display:-webkit-box;-webkit-box-orient:vertical}.b{c:d}.plan-card-open>.plan-card-name{-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}'
+    expect(clampProblems(split)).toEqual([])
+  })
+
   it('names the declaration a minifier dropped', () => {
     expect(clampProblems(GOOD.replace('-webkit-box-orient:vertical;', ''))).toEqual([`${CLAMP_SELECTOR} lost -webkit-box-orient: vertical`])
     expect(clampProblems(GOOD.replace('display:-webkit-box;', ''))).toEqual([`${CLAMP_SELECTOR} lost display: -webkit-box`])
     expect(clampProblems(GOOD.replace('overflow-wrap:anywhere;', ''))).toEqual([`${CLAMP_SELECTOR} lost overflow-wrap: anywhere`])
   })
 
-  it('fails closed when the rule or the clamp is missing, and says which', () => {
+  it('tells a sheet with no rule from one whose rule is incomplete', () => {
     const none = clampProblems('.a{color:red}.plan-card-name{font-size:1rem}')
-    expect(none).toEqual([`no ${CLAMP_SELECTOR} rule in the built stylesheet`])
+    expect(none).toEqual([NO_RULE])
     expect(lacksRule(none)).toBe(true)
-    const noClamp = clampProblems('.plan-card-open>.plan-card-name{font-size:1rem}')
-    expect(noClamp).toEqual([`no ${CLAMP_SELECTOR} rule carries -webkit-line-clamp: 2`])
-    expect(lacksRule(noClamp)).toBe(true)
-    expect(lacksRule([`${CLAMP_SELECTOR} lost overflow: hidden`])).toBe(false)
+    const incomplete = clampProblems('.plan-card-open>.plan-card-name{font-size:1rem}')
+    expect(incomplete).toHaveLength(5)
+    expect(incomplete[0]).toBe(`${CLAMP_SELECTOR} lost display: -webkit-box`)
+    expect(lacksRule(incomplete)).toBe(false)
   })
 
   it('matches the exact selector, not a compound or bare one', () => {
@@ -43,7 +48,8 @@ describe('cssClamp', () => {
     expect(normalizeSelector('.plan-card-open  >  .plan-card-name')).toBe('.plan-card-open>.plan-card-name')
   })
 
-  it('skips comments that contain braces', () => {
+  it('ignores comments wherever they sit, braces included', () => {
     expect(clampProblems(`/* not a rule { } */.plan-card-open>.plan-card-name{${CLAMP}}`)).toEqual([])
+    expect(clampProblems(`.plan-card-open>.plan-card-name{display:-webkit-box;/* } */-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}`)).toEqual([])
   })
 })
