@@ -50,7 +50,7 @@ describe('ScrollRegion', () => {
       await act(async () => fire())
       expect(region.getAttribute('tabindex'), 'overflow makes it reachable again').toBe('0')
     } finally {
-      for (const key of Object.keys(metrics)) delete (HTMLDivElement.prototype as Record<string, unknown>)[key]
+      for (const key of Object.keys(metrics)) Reflect.deleteProperty(HTMLDivElement.prototype, key)
       await act(async () => root.unmount())
       container.remove()
     }
