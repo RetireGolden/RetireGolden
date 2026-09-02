@@ -29,6 +29,20 @@ vi.mock('../annualCashFlowCapture.js', async (importOriginal) => {
 
 import { annualYearResultAssembly } from './annualYearResultAssembly.js'
 
+const OPTIONAL_PUBLICATION_KEYS = [
+  'inheritedAccounts',
+  'aggregateRothConversionAllocationBalances',
+  'aggregateRothConversionAllocationDesired',
+  'retirementActionExecution',
+  'retirementActionPublication',
+  'conversionLinkedWithdrawalGroupExecution',
+  'rothConversionActionExecution',
+  'qcdActionPrerequisites',
+  'qcdActionExecution',
+  'aca',
+  'cashFlow',
+] as const
+
 function baseInput(): AnnualYearResultAssemblyInput {
   const people = ([
     { personId: 'person-1', age: 70, alive: true },
@@ -47,6 +61,19 @@ function baseInput(): AnnualYearResultAssemblyInput {
     { ownerPersonId: 'person-1', marker: 'traditional' },
   ]) as unknown as NonNullable<
     YearResult['ownedTraditionalIraAggregateActivity']
+  >
+  const retirementRuntimeSource = Object.freeze({
+    marker: 'retirement-runtime',
+  }) as unknown as NonNullable<YearResult['retirementRuntimeSource']>
+  const retirementRuntimeApplicationSource = Object.freeze({
+    marker: 'retirement-runtime-application',
+  }) as unknown as NonNullable<
+    YearResult['retirementRuntimeApplicationSource']
+  >
+  const ownedNonRothIraPostGrowthSource = Object.freeze({
+    marker: 'owned-non-roth-post-growth',
+  }) as unknown as NonNullable<
+    YearResult['ownedNonRothIraPostGrowthSource']
   >
 
   return {
@@ -85,9 +112,9 @@ function baseInput(): AnnualYearResultAssemblyInput {
       rothConversion: 21,
       aggregateRothConversionAllocationBalances: undefined,
       aggregateRothConversionAllocationDesired: undefined,
-      retirementRuntimeSource: undefined,
-      retirementRuntimeApplicationSource: undefined,
-      ownedNonRothIraPostGrowthSource: undefined,
+      retirementRuntimeSource,
+      retirementRuntimeApplicationSource,
+      ownedNonRothIraPostGrowthSource,
       retirementActionExecution: undefined,
       rothConversionActionExecution: undefined,
       qcdActionExecution: undefined,
@@ -100,10 +127,10 @@ function baseInput(): AnnualYearResultAssemblyInput {
       medicarePremiums: 25,
       irmaaSurcharge: 26,
       irmaaTier: 2,
-      irmaaLookbackMagi: undefined,
-      irmaaLookbackMagiSource: undefined,
-      irmaaLookbackMagiYear: undefined,
-      irmaaNextTierThreshold: undefined,
+      irmaaLookbackMagi: 103,
+      irmaaLookbackMagiSource: 'planFallback',
+      irmaaLookbackMagiYear: 2028,
+      irmaaNextTierThreshold: 104,
       advisoryFederalTax: {
         input: { marker: 'tax-input' } as unknown as NonNullable<
           YearResult['advisoryFederalTax']
@@ -150,13 +177,13 @@ function baseInput(): AnnualYearResultAssemblyInput {
       snapshot: {
         balanceRecord: balances,
         investableTotal: 1e16,
-        propertyTotal: 1,
+        propertyTotal: 8,
         debtTotal: 1e16,
         hecmLoanTotal: 44,
         hecmEffectiveDebt: 1,
-        insuranceCashValueTotal: 1,
+        insuranceCashValueTotal: 4,
       },
-      ladderValue: 0,
+      ladderValue: 2,
       deathBenefit: 45,
       hecmDraw: 46,
     },
@@ -174,23 +201,128 @@ describe('annualYearResultAssembly', () => {
 
     const result = annualYearResultAssembly(input)
 
-    expect(result.people).toBe(input.chronology.people)
-    expect(result.incomes).toBe(input.ledger.incomes)
-    expect(result.ownedRothIraPoolActivity).toBe(
-      input.entityFacts.ownedRothIraPoolActivity,
-    )
-    expect(result.employerRothAccountActivity).toBe(
-      input.entityFacts.employerRothAccountActivity,
-    )
-    expect(result.ownedTraditionalIraAggregateActivity).toBe(
-      input.entityFacts.ownedTraditionalIraAggregateActivity,
-    )
-    expect(result.balances).toBe(input.balanceSheet.snapshot.balanceRecord)
-    expect(result.advisoryFederalTax).toBe(input.tax.advisoryFederalTax)
-    expect(result.amt).toBe(27)
+    for (const [label, actual, expected] of [
+      ['people', result.people, input.chronology.people],
+      ['incomes', result.incomes, input.ledger.incomes],
+      ['expenses', result.expenses, input.ledger.expenses],
+      [
+        'ownedNonRothIraBalancesBeforeGrowth',
+        result.ownedNonRothIraBalancesBeforeGrowth,
+        input.ledger.ownedNonRothIraBalancesBeforeGrowth,
+      ],
+      [
+        'ownedNonRothIraPhysicalBalancesBeforeGrowth',
+        result.ownedNonRothIraPhysicalBalancesBeforeGrowth,
+        input.ledger.ownedNonRothIraPhysicalBalancesBeforeGrowth,
+      ],
+      [
+        'ownedNonRothIraPhysicalOpeningBalances',
+        result.ownedNonRothIraPhysicalOpeningBalances,
+        input.ledger.ownedNonRothIraPhysicalOpeningBalances,
+      ],
+      [
+        'ownedRothIraPoolActivity',
+        result.ownedRothIraPoolActivity,
+        input.entityFacts.ownedRothIraPoolActivity,
+      ],
+      [
+        'employerRothAccountActivity',
+        result.employerRothAccountActivity,
+        input.entityFacts.employerRothAccountActivity,
+      ],
+      [
+        'ownedTraditionalIraAggregateActivity',
+        result.ownedTraditionalIraAggregateActivity,
+        input.entityFacts.ownedTraditionalIraAggregateActivity,
+      ],
+      [
+        'retirementRuntimeSource',
+        result.retirementRuntimeSource,
+        input.retirement.retirementRuntimeSource,
+      ],
+      [
+        'retirementRuntimeApplicationSource',
+        result.retirementRuntimeApplicationSource,
+        input.retirement.retirementRuntimeApplicationSource,
+      ],
+      [
+        'ownedNonRothIraPostGrowthSource',
+        result.ownedNonRothIraPostGrowthSource,
+        input.retirement.ownedNonRothIraPostGrowthSource,
+      ],
+      [
+        'qualifiedAnnuityPayments',
+        result.qualifiedAnnuityPayments,
+        input.ledger.qualifiedAnnuityPayments,
+      ],
+      [
+        'socialSecurityStreams',
+        result.socialSecurityStreams,
+        input.ledger.socialSecurityStreams,
+      ],
+      [
+        'rmdShortfallExciseDetails',
+        result.rmdShortfallExciseDetails,
+        input.retirement.rmdShortfallExciseDetails,
+      ],
+      ['advisoryFederalTax', result.advisoryFederalTax, input.tax.advisoryFederalTax],
+      ['withdrawals', result.withdrawals, input.funding.withdrawals],
+      ['flexibleGoals', result.flexibleGoals, input.funding.flexibleGoals],
+      ['balances', result.balances, input.balanceSheet.snapshot.balanceRecord],
+    ] as const) {
+      expect(actual, label).toBe(expected)
+    }
+    expect(result).toMatchObject({
+      year: 2030,
+      inflationScale: 1.25,
+      filingStatus: 'single',
+      contributions: 11,
+      ownedNonRothIraContributions: 12,
+      employerMatch: 14,
+      rmd: 15,
+      rmdShortfallExciseTax: 16,
+      sepp: 17,
+      inheritedDistribution: 18,
+      inheritedTraditionalDistribution: 19,
+      qcd: 20,
+      rothConversion: 21,
+      penalties: 22,
+      taxableYield: 23,
+      magi: 24,
+      medicarePremiums: 25,
+      irmaaSurcharge: 26,
+      irmaaTier: 2,
+      irmaaLookbackMagi: 103,
+      irmaaLookbackMagiSource: 'planFallback',
+      irmaaLookbackMagiYear: 2028,
+      irmaaNextTierThreshold: 104,
+      amt: 27,
+      ltcgZeroHeadroom: 28,
+      ssEarningsTestWithheld: 29,
+      ssdiPaid: 30,
+      tax: 31,
+      taxExemptInterest: 32,
+      capitalLossUsedAgainstGains: 33,
+      capitalLossUsedAgainstOrdinary: 34,
+      capitalLossCarryforwardRemaining: 35,
+      surplusInvested: 36,
+      shortfall: 38,
+      requiredShortfall: 39,
+      targetShortfall: 40,
+      idealShortfall: 42,
+      excessShortfall: 43,
+      guardrailAction: 'hold',
+      investableTotal: 1e16,
+      insuranceCashValue: 4,
+      ladderValue: 2,
+      deathBenefit: 45,
+      hecmDraw: 46,
+      hecmLoanBalance: 44,
+    })
     expect(result.realizedGains).toBe(1)
-    expect(result.netWorth).toBe(0)
-    expect(result.taxableYield).toBe(23)
+    // (((((1e16 + 8) - 1e16) + 4) + 2) - 1) keeps every term
+    // effective and differs from plausible regroupings.
+    expect(result.netWorth).toBe(13)
     expect(result).not.toHaveProperty('cashFlow')
     expect(cashFlowSeam.calls).toHaveLength(0)
     expect(input).toEqual(before)
@@ -267,21 +399,88 @@ describe('annualYearResultAssembly', () => {
     expect(result.aca).toBe(input.tax.aca)
     expect(result.cashFlow).toBe(cashFlowSeam.output)
     expect(cashFlowSeam.calls).toEqual([cashFlowInput])
-
-    const absent = annualYearResultAssembly(base)
-    for (const key of [
+    expect(Object.keys(result)).toEqual([
+      'year',
+      'inflationScale',
+      'people',
+      'filingStatus',
+      'incomes',
+      'expenses',
+      'contributions',
+      'ownedNonRothIraContributions',
+      'ownedNonRothIraBalancesBeforeGrowth',
+      'ownedNonRothIraPhysicalBalancesBeforeGrowth',
+      'ownedNonRothIraPhysicalOpeningBalances',
+      'ownedRothIraPoolActivity',
+      'employerRothAccountActivity',
+      'ownedTraditionalIraAggregateActivity',
+      'qualifiedAnnuityPayments',
+      'socialSecurityStreams',
+      'employerMatch',
+      'rmd',
+      'rmdShortfallExciseTax',
+      'rmdShortfallExciseDetails',
+      'sepp',
+      'inheritedDistribution',
+      'inheritedTraditionalDistribution',
       'inheritedAccounts',
+      'qcd',
+      'rothConversion',
       'aggregateRothConversionAllocationBalances',
       'aggregateRothConversionAllocationDesired',
+      'retirementRuntimeSource',
+      'retirementRuntimeApplicationSource',
+      'ownedNonRothIraPostGrowthSource',
       'retirementActionExecution',
       'retirementActionPublication',
       'conversionLinkedWithdrawalGroupExecution',
       'rothConversionActionExecution',
       'qcdActionPrerequisites',
       'qcdActionExecution',
+      'penalties',
+      'magi',
       'aca',
+      'medicarePremiums',
+      'irmaaSurcharge',
+      'irmaaTier',
+      'irmaaLookbackMagi',
+      'irmaaLookbackMagiSource',
+      'irmaaLookbackMagiYear',
+      'irmaaNextTierThreshold',
+      'advisoryFederalTax',
+      'amt',
+      'ltcgZeroHeadroom',
+      'ssEarningsTestWithheld',
+      'ssdiPaid',
+      'tax',
+      'withdrawals',
+      'realizedGains',
+      'taxableYield',
+      'taxExemptInterest',
+      'capitalLossUsedAgainstGains',
+      'capitalLossUsedAgainstOrdinary',
+      'capitalLossCarryforwardRemaining',
+      'surplusInvested',
+      'shortfall',
+      'requiredShortfall',
+      'targetShortfall',
+      'idealShortfall',
+      'excessShortfall',
+      'guardrailAction',
+      'flexibleGoals',
+      'balances',
+      'investableTotal',
+      'insuranceCashValue',
+      'ladderValue',
+      'deathBenefit',
+      'hecmDraw',
+      'hecmLoanBalance',
+      'netWorth',
       'cashFlow',
-    ]) {
+    ])
+
+    const absent = annualYearResultAssembly(base)
+    for (const key of OPTIONAL_PUBLICATION_KEYS) {
       expect(Object.hasOwn(absent, key), key).toBe(false)
     }
     // These legacy keys are present even when their values are undefined.
@@ -289,5 +488,150 @@ describe('annualYearResultAssembly', () => {
     expect(Object.hasOwn(absent, 'irmaaLookbackMagiSource')).toBe(true)
     expect(Object.hasOwn(absent, 'irmaaLookbackMagiYear')).toBe(true)
     expect(Object.hasOwn(absent, 'irmaaNextTierThreshold')).toBe(true)
+  })
+
+  it('keeps every optional channel independent and fails QCD execution closed', () => {
+    const base = baseInput()
+    const inheritedAccounts = Object.freeze([{ marker: 'inherited-only' }]) as unknown as
+      NonNullable<YearResult['inheritedAccounts']>
+    const allocationBalances = Object.freeze({ 'account-only': 101 })
+    const retirementActionExecution = Object.freeze({ marker: 'ordinary-only' }) as unknown as
+      NonNullable<YearResult['retirementActionExecution']>
+    const retirementActionPublication = Object.freeze({ marker: 'publication-only' }) as unknown as
+      NonNullable<YearResult['retirementActionPublication']>
+    const linkedExecution = Object.freeze({ marker: 'linked-only' }) as unknown as
+      NonNullable<YearResult['conversionLinkedWithdrawalGroupExecution']>
+    const rothExecution = Object.freeze({ marker: 'roth-only' }) as unknown as
+      NonNullable<YearResult['rothConversionActionExecution']>
+    const aca = Object.freeze({ marker: 'aca-only' }) as unknown as
+      NonNullable<YearResult['aca']>
+    const cashFlowInput = Object.freeze({ marker: 'cash-only' }) as unknown as
+      AssembleYearCashFlowInput
+    const cases: ReadonlyArray<{
+      readonly key: (typeof OPTIONAL_PUBLICATION_KEYS)[number]
+      readonly expected: unknown
+      readonly input: AnnualYearResultAssemblyInput
+    }> = [
+      {
+        key: 'inheritedAccounts',
+        expected: inheritedAccounts,
+        input: {
+          ...base,
+          retirement: { ...base.retirement, inheritedAccounts },
+        },
+      },
+      {
+        key: 'aggregateRothConversionAllocationBalances',
+        expected: allocationBalances,
+        input: {
+          ...base,
+          retirement: {
+            ...base.retirement,
+            aggregateRothConversionAllocationBalances: allocationBalances,
+          },
+        },
+      },
+      {
+        key: 'aggregateRothConversionAllocationDesired',
+        expected: 102,
+        input: {
+          ...base,
+          retirement: {
+            ...base.retirement,
+            aggregateRothConversionAllocationDesired: 102,
+          },
+        },
+      },
+      {
+        key: 'retirementActionExecution',
+        expected: retirementActionExecution,
+        input: {
+          ...base,
+          retirement: {
+            ...base.retirement,
+            retirementActionExecution,
+          },
+        },
+      },
+      {
+        key: 'retirementActionPublication',
+        expected: retirementActionPublication,
+        input: {
+          ...base,
+          settlement: { retirementActionPublication },
+        },
+      },
+      {
+        key: 'conversionLinkedWithdrawalGroupExecution',
+        expected: linkedExecution,
+        input: {
+          ...base,
+          settlement: {
+            conversionLinkedWithdrawalGroupExecution: linkedExecution,
+          },
+        },
+      },
+      {
+        key: 'rothConversionActionExecution',
+        expected: rothExecution,
+        input: {
+          ...base,
+          retirement: {
+            ...base.retirement,
+            rothConversionActionExecution: rothExecution,
+          },
+        },
+      },
+      {
+        key: 'aca',
+        expected: aca,
+        input: { ...base, tax: { ...base.tax, aca } },
+      },
+      {
+        key: 'cashFlow',
+        expected: cashFlowSeam.output,
+        input: { ...base, cashFlowInput },
+      },
+    ]
+
+    for (const testCase of cases) {
+      const result = annualYearResultAssembly(testCase.input)
+      expect(Reflect.get(result, testCase.key), testCase.key).toBe(
+        testCase.expected,
+      )
+      for (const otherKey of OPTIONAL_PUBLICATION_KEYS) {
+        if (otherKey === testCase.key) continue
+        expect(Object.hasOwn(result, otherKey), `${testCase.key} -> ${otherKey}`)
+          .toBe(false)
+      }
+    }
+
+    const qcdActionPrerequisites = Object.freeze([
+      { marker: 'prerequisite-only' },
+    ]) as unknown as NonNullable<YearResult['qcdActionPrerequisites']>
+    const prerequisitesOnly = annualYearResultAssembly({
+      ...base,
+      settlement: {
+        qcdActionPrerequisites: {
+          evidence: qcdActionPrerequisites,
+        } as unknown as NonNullable<
+          AnnualYearResultAssemblyInput['settlement']['qcdActionPrerequisites']
+        >,
+      },
+    })
+    expect(prerequisitesOnly.qcdActionPrerequisites).toBe(
+      qcdActionPrerequisites,
+    )
+    expect(prerequisitesOnly).not.toHaveProperty('qcdActionExecution')
+
+    const qcdActionExecution = Object.freeze({
+      marker: 'execution-without-prerequisite',
+    }) as unknown as NonNullable<YearResult['qcdActionExecution']>
+    const executionOnly = annualYearResultAssembly({
+      ...base,
+      retirement: { ...base.retirement, qcdActionExecution },
+    })
+    expect(executionOnly).not.toHaveProperty('qcdActionPrerequisites')
+    expect(executionOnly).not.toHaveProperty('qcdActionExecution')
   })
 })

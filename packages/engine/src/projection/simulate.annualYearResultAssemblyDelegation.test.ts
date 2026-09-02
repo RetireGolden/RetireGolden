@@ -1,4 +1,4 @@
-/** Hostile seam guard for the final annual-publication coordinator. */
+/** Hostile seam guard for the core annual-pass publication coordinator. */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -27,7 +27,6 @@ vi.mock('./internal/annualYearResultAssembly.js', async (importOriginal) => {
       const ordinal = seam.calls.length
       const injected: YearResult = {
         ...natural,
-        balances: { [`delegated-year-result-${ordinal}`]: 90_000 + ordinal },
         flexibleGoals: {
           funded: 100 + ordinal,
           partiallyFunded: 200 + ordinal,
@@ -43,7 +42,11 @@ vi.mock('./internal/annualYearResultAssembly.js', async (importOriginal) => {
   }
 })
 
-import { singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
+import {
+  singlePersonPlan,
+  traditionalAccount,
+  validatePlan,
+} from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
 import type { TaxCalculator } from './types.js'
 
@@ -54,7 +57,7 @@ describe('simulatePlan YearResult assembly delegation', () => {
     seam.calls.length = 0
   })
 
-  it('commits the coordinator-owned object and its injected references', () => {
+  it('commits the exact coordinator object when no outer replay attaches', () => {
     const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 60 })
     plan.accounts = []
     plan.expenses.baseAnnual = 0
@@ -77,7 +80,6 @@ describe('simulatePlan YearResult assembly delegation', () => {
       ({ injected }) => injected === published,
     )
     expect(committedCall).toBeDefined()
-    expect(published.balances).toBe(committedCall!.injected.balances)
     expect(published.flexibleGoals).toBe(
       committedCall!.injected.flexibleGoals,
     )
@@ -90,7 +92,57 @@ describe('simulatePlan YearResult assembly delegation', () => {
       balanceSheet: { ladderValue: 0, deathBenefit: 0, hecmDraw: 0 },
     })
     expect(committedCall!.input.cashFlowInput).toBeUndefined()
-    expect(committedCall!.natural.balances).toEqual({})
-    expect(published.balances).not.toBe(committedCall!.natural.balances)
+    expect(published.flexibleGoals).not.toBe(
+      committedCall!.natural.flexibleGoals,
+    )
+    expect(published).not.toHaveProperty('ownedNonRothIraAnnualReplay')
+  })
+
+  it('preserves coordinator references through the outer IRA replay attachment', () => {
+    const plan = singlePersonPlan({ dob: '1970-01-01', planningAge: 60 })
+    plan.id = 'delegated-year-result-with-ira-replay'
+    const ira = traditionalAccount('ira', 0.06, 'p1', 'ira')
+    if (ira.type !== 'traditional') throw new Error('expected traditional IRA')
+    plan.accounts = [
+      {
+        ...ira,
+        annualReturnPct: 0,
+        nondeductibleBasis: 0.01,
+      },
+      {
+        type: 'roth',
+        id: 'roth',
+        name: 'Roth IRA',
+        ownerPersonId: 'p1',
+        kind: 'ira',
+        balance: 0,
+        annualReturnPct: 0,
+        annualContribution: 0,
+      },
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: 2026, amount: 0.03 }],
+    }
+
+    const result = simulatePlan(validatePlan(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: zeroTax,
+    })
+
+    expect(result.years).toHaveLength(1)
+    const published = result.years[0]!
+    const committedCall = seam.calls.find(
+      ({ injected }) => injected.flexibleGoals === published.flexibleGoals,
+    )
+    expect(committedCall).toBeDefined()
+    expect(published).not.toBe(committedCall!.injected)
+    expect(published.flexibleGoals).toBe(
+      committedCall!.injected.flexibleGoals,
+    )
+    expect(published.balances).toBe(committedCall!.injected.balances)
+    expect(published).toHaveProperty('ownedNonRothIraAnnualReplay')
+    expect(Object.keys(published).at(-1)).toBe('ownedNonRothIraAnnualReplay')
   })
 })

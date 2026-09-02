@@ -1,5 +1,5 @@
 /**
- * Assemble the public record for one settled annual pass.
+ * Assemble the core public record for one settled annual pass.
  *
  * WHAT IT TAKES: already-committed annual ledger scalars plus the outputs of
  * the settlement-publication, per-entity publication, and snapshot
@@ -7,12 +7,14 @@
  * whether those keys are published. Cash-flow capture is also assembled here,
  * after every economic commit has completed.
  *
- * WHAT IT PRODUCES: the canonical `YearResult` object in its legacy property
- * order, including the exact realized-gain and net-worth associations.
+ * WHAT IT PRODUCES: the canonical core annual-pass `YearResult` object in its
+ * legacy property order, including the exact realized-gain and net-worth
+ * associations.
  *
  * WHAT IT REFUSES: it does not move balances, mutate pass state, append to the
- * projection result, or choose annual phase order. `simulatePlan` retains all
- * of those orchestration responsibilities.
+ * projection result, attach the outer settlement's committed owned non-Roth
+ * IRA replay evidence, or choose annual phase order. `simulatePlan` retains
+ * all of those orchestration responsibilities.
  */
 import {
   assembleYearCashFlow,

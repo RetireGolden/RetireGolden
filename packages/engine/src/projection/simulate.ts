@@ -8672,6 +8672,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       form8606ConsequentialByOwner,
     })
 
+    // This is the core annual-pass record. The outer owned non-Roth IRA
+    // settlement may later clone it solely to attach its committed replay;
+    // final result-array ownership remains below in this caller.
     const yearResult = annualYearResultAssembly({
       chronology: {
         year,

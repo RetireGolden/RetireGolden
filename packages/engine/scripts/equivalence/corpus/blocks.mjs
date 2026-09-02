@@ -29,7 +29,6 @@
  *   Y  legacy aggregate QCD owner-character plan
  *   Z  annual pension and annuity income
  *   AB retirement-action settlement publication
- *   AC annual YearResult assembly
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -39,7 +38,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z, AB and AC, each have a
+ * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z and AB, each have a
  * phase-specific reach spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -68,6 +67,9 @@
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
+ * The YearResult assembly boundary has no dedicated corpus block: its
+ * `simulate-year-result-assembly-boundary.json` spec measures the existing full
+ * corpus and uses `AC` only as its reach-entry namespace.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so
  * this tier has no dependency outside the engine package. Plans are
