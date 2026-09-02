@@ -175,13 +175,13 @@
       "engineSourceTree": "33d9b00d8054b592361e37710c78f99cc01cee65"
     },
     "head": {
-      "sourceObservedAtCommit": "c5775d2c57f121a5939fd7a881c4a15481bd4df7",
-      "engineSourceTree": "fa6fc92f816169e3067ae054b187205a1f86138c"
+      "sourceObservedAtCommit": "bc5a916a3840281b7191e709ae1acb5a362c3ef5",
+      "engineSourceTree": "860d64902ef15d9601968128a404f2e955f48247"
     },
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
-      "packages/engine/scripts/equivalence/corpus/blocks.mjs": "42f2cb90ecf56fa1412f1a50beae0a2aff1d5a98",
+      "packages/engine/scripts/equivalence/corpus/blocks.mjs": "7d377d1dfbb2a0ff69ab2998230378d86883604e",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
