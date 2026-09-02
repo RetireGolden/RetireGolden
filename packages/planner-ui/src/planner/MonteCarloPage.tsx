@@ -39,7 +39,7 @@ import {
 import { usePlan } from './planContextCore'
 import { WhySuccessPanel } from './explainPanels'
 import { LiveStatus } from './LiveStatus'
-import { HelpTip } from './fields'
+import { CheckboxField, HelpTip } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import {
@@ -349,30 +349,24 @@ export function MonteCarloPage() {
               Run {ON_DEMAND_PATH_COUNT.toLocaleString()} paths
             </button>
           </div>
-          <div className="field">
-            <label className="radio-option">
-              <input type="checkbox" checked={stochasticLongevity} onChange={(e) => setStochasticLongevity(e.target.checked)} />
-              <span>
-                <span className="field-label-row">
-                  <span className="field-label">Model longevity</span>
-                  <HelpTip text="Instead of everyone living to their fixed planning age, each path draws a lifespan from SSA mortality tables (by age and sex). Outcomes are then weighted by how long people actually live, dying earlier frees the plan, living longer stresses it. Couples use a joint-life RMD divisor when one spouse is much younger." />
-                </span>
-                <p className="field-hint">Draw lifespans from mortality tables instead of the fixed planning age.</p>
-              </span>
-            </label>
-          </div>
-          <div className="field">
-            <label className="radio-option">
-              <input type="checkbox" checked={ltcShock} onChange={(e) => setLtcShock(e.target.checked)} />
-              <span>
-                <span className="field-label-row">
-                  <span className="field-label">Model an LTC shock</span>
-                  <HelpTip text="Each path may draw a paid long-term-care episode (incidence, onset age, and duration from published LTC-risk research), adding a late-life cost spike. Any LTC policy you've entered offsets it, so the success rate with vs. without coverage shows what the policy buys you across the whole distribution." />
-                </span>
-                <p className="field-hint">Add a probabilistic care episode; your LTC policy offsets it.</p>
-              </span>
-            </label>
-          </div>
+          {/* The shared checkbox field, so these two subgrid into the row's
+              label and control tracks like Market draw and Precision instead of
+              starting at the top of the row with a three-line helper under the
+              box (#473). The one-line hint rides in the ⓘ bubble. */}
+          <CheckboxField
+            label="Model longevity"
+            help="Instead of everyone living to their fixed planning age, each path draws a lifespan from SSA mortality tables (by age and sex). Outcomes are then weighted by how long people actually live, dying earlier frees the plan, living longer stresses it. Couples use a joint-life RMD divisor when one spouse is much younger."
+            hint="Draw lifespans from mortality tables instead of the fixed planning age."
+            value={stochasticLongevity}
+            onCommit={setStochasticLongevity}
+          />
+          <CheckboxField
+            label="Model an LTC shock"
+            help="Each path may draw a paid long-term-care episode (incidence, onset age, and duration from published LTC-risk research), adding a late-life cost spike. Any LTC policy you've entered offsets it, so the success rate with vs. without coverage shows what the policy buys you across the whole distribution."
+            hint="Add a probabilistic care episode; your LTC policy offsets it."
+            value={ltcShock}
+            onCommit={setLtcShock}
+          />
         </div>
         {running ? (
           <div className="progress-track" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>

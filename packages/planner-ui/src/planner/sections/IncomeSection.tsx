@@ -2,20 +2,25 @@
 
 import { Link } from 'react-router'
 
-import type { IncomeStream } from '@retiregolden/engine/model/plan'
+import type { IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'
 import { fmtMoney } from '../format'
 import { resolvePia } from '../ssAnalysis'
 import { Issues } from './shared'
-import { newId } from './sectionHelpers'
+import { PIA_MONTHLY_AT_FRA_LABEL, newId } from './sectionHelpers'
 
 const INCOME_LABEL: Record<IncomeStream['type'], string> = {
   wages: 'Wages',
   socialSecurity: 'Social Security',
   recurring: 'Recurring',
   oneTime: 'One-time',
+}
+
+/** A person-bound stream whose person is no longer in the household (the plan fails validation until it goes). */
+function isOrphanStream(plan: Plan, stream: IncomeStream): boolean {
+  return 'personId' in stream && !plan.household.people.some((p) => p.id === stream.personId)
 }
 
 function makeIncome(type: IncomeStream['type'], personId: string): IncomeStream {
@@ -70,24 +75,40 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
       )
     }
     case 'socialSecurity': {
-      const ssPerson = plan.household.people.find((p) => p.id === stream.personId)
+      const orphan = isOrphanStream(plan, stream)
+      const ssPerson = orphan ? undefined : plan.household.people.find((p) => p.id === stream.personId)
       const resolved = ssPerson ? resolvePia(ssPerson, stream) : null
       const pia = resolved?.piaMonthly ?? stream.piaMonthly
       const sourceLabel = stream.piaMonthly === null ? 'earnings record' : 'quick PIA'
       const claim = `${stream.claimAge.years}y${stream.claimAge.months ? ` ${stream.claimAge.months}m` : ''}`
       return (
         <>
+          {/* The Social Security step renders one card per household member,
+              so an orphaned stream cannot be reached there: this row is the
+              only place it can be removed, and the usual pointer would send
+              the reader to a surface that does not show it. The warning sits
+              first, right under the row head that carries Remove. */}
+          {orphan ? (
+            <div className="callout callout--warn" role="status">
+              This benefit belongs to a person who is no longer in the household, so the plan cannot be stored until it
+              is removed here (Remove, above) or the person is added back on the{' '}
+              <Link to="../household">Household</Link> page.
+            </div>
+          ) : null}
           <div className="form-grid">
             <ReadonlyField label="Person" value={ssPerson?.name ?? '—'} />
-            <ReadonlyField label="PIA (monthly at FRA)" value={pia != null ? `${fmtMoney(pia)} (${sourceLabel})` : 'Not set'} />
+            <ReadonlyField label={PIA_MONTHLY_AT_FRA_LABEL} value={pia != null ? `${fmtMoney(pia)} (${sourceLabel})` : 'Not set'} />
             <ReadonlyField label="Claim age" value={claim} />
           </div>
-          <p className="field-hint">
-            Social Security is managed on the <Link to="../social-security">Social Security</Link> step so the
-            earnings-derived benefit stays in one place. Edit the benefit and claim age there; the{' '}
-            <Link to="../social-security-analysis">Social Security analysis</Link> can apply the top-ranked claim age
-            for the objective you pick there.
-          </p>
+          {orphan ? null : (
+            <p className="field-hint">
+              The benefit and claim age are edited on the <Link to="../social-security">Social Security</Link> step, so
+              the earnings-derived benefit stays in one place; the{' '}
+              <Link to="../social-security-analysis">Social Security analysis</Link> can apply the top-ranked claim age
+              for the objective you pick there. Remove, above, deletes this benefit from the plan, the same as Remove
+              on that step.
+            </p>
+          )}
         </>
       )
     }
@@ -171,7 +192,19 @@ export function IncomeSection() {
                 <span className="type-chip">{INCOME_LABEL[s.type]}</span>
                 {'label' in s ? s.label : (plan.household.people.find((p) => 'personId' in s && p.id === s.personId)?.name ?? '')}
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.incomes.splice(i, 1))}>
+              {/* Every row keeps Remove. A Social Security row's summary copy
+                  says what it does (deletes the benefit, the same as Remove on
+                  the Social Security step) and that editing happens there, so
+                  the affordance no longer reads as contradicting that step
+                  (#462, "drop Remove or clarify": clarified). It is also the
+                  only place a stream whose person has left the household can
+                  be removed, since that step renders per person. */}
+              <button
+                type="button"
+                className="btn-ghost btn-ghost-danger"
+                title={s.type === 'socialSecurity' ? 'Deletes this benefit from the plan (the same as Remove on the Social Security step).' : undefined}
+                onClick={() => update((d) => void d.incomes.splice(i, 1))}
+              >
                 Remove
               </button>
             </div>

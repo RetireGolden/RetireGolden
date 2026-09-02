@@ -115,31 +115,37 @@ export function StrategySection() {
           Results. <LearnLink {...LEARN.whyConversionsRaiseCosts} />
         </p>
         <div className="form-grid">
-          <SelectField
-            label="Mode"
-            help="Roth conversions move money from a pre-tax account into Roth, adding taxable income now to cut future taxes and RMDs."
-            learn={LEARN.rothConversionBasics}
-            value={rc.mode}
-            options={[
-              { value: 'none', label: 'No conversions' },
-              { value: 'manual', label: 'Manual amounts per year' },
-              { value: 'fillToTarget', label: 'Fill to a target each year' },
-              // Display-only: set from the Optimize tab. Picking any other mode
-              // takes manual control and discards the optimized schedule.
-              ...(rc.mode === 'optimized' ? [{ value: 'optimized', label: 'Optimized (from the Optimize tab)' }] : []),
-            ]}
-            onCommit={(v) =>
-              update((d) => {
-                if (v === 'optimized') return // no-op; optimized is produced in the Optimize tab
-                d.strategies.rothConversion =
-                  v === 'none'
-                    ? { mode: 'none' }
-                    : v === 'manual'
-                      ? { mode: 'manual', conversions: [{ year: thisYear + 1, amount: 50_000 }] }
-                      : { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 22, startYear: thisYear + 1, endYear: thisYear + 10 }
-              })
-            }
-          />
+          {/* Full-width, like the Spending policy select (#423): "Fill to a
+              target each year" and "Optimized (from the Optimize tab)" clip to
+              an ellipsis in a one-column cell at the default workspace width
+              (#477). The mode's own fields render in their own grid below. */}
+          <div className="field-span-full">
+            <SelectField
+              label="Mode"
+              help="Roth conversions move money from a pre-tax account into Roth, adding taxable income now to cut future taxes and RMDs."
+              learn={LEARN.rothConversionBasics}
+              value={rc.mode}
+              options={[
+                { value: 'none', label: 'No conversions' },
+                { value: 'manual', label: 'Manual amounts per year' },
+                { value: 'fillToTarget', label: 'Fill to a target each year' },
+                // Display-only: set from the Optimize tab. Picking any other mode
+                // takes manual control and discards the optimized schedule.
+                ...(rc.mode === 'optimized' ? [{ value: 'optimized', label: 'Optimized (from the Optimize tab)' }] : []),
+              ]}
+              onCommit={(v) =>
+                update((d) => {
+                  if (v === 'optimized') return // no-op; optimized is produced in the Optimize tab
+                  d.strategies.rothConversion =
+                    v === 'none'
+                      ? { mode: 'none' }
+                      : v === 'manual'
+                        ? { mode: 'manual', conversions: [{ year: thisYear + 1, amount: 50_000 }] }
+                        : { mode: 'fillToTarget', target: 'topOfBracket', targetValue: 22, startYear: thisYear + 1, endYear: thisYear + 10 }
+                })
+              }
+            />
+          </div>
         </div>
         {rc.mode === 'optimized' ? (
           <div className="callout callout--info">

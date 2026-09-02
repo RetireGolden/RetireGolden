@@ -32,7 +32,8 @@ import { provenanceSource } from '../provenanceLinks'
 import { CheckboxField, MoneyField, NumberField, SelectField, TextField } from '../fields'
 import { fmtMoney, fmtMoneyCompact } from '../format'
 import { currentStartYear, useProjection } from '../useProjection'
-import { Issues } from './shared'
+import { IssueSectionsSentence, Issues } from './shared'
+import { hasIssueAt, hasIssueUnder, withoutIssuesBeyond } from '../validationIssues'
 import { ScrollRegion } from '../ScrollRegion'
 
 const CURVE = EMBEDDED_REAL_YIELD_CURVE
@@ -50,15 +51,33 @@ function quoteLadder(ladder: TipsLadder, startYear: number): LadderBuild | null 
   })
 }
 
-function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: number; startYear: number }) {
-  const { plan, update } = usePlan()
-  const quote = useMemo(() => quoteLadder(ladder, startYear), [ladder, startYear])
+function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: number }) {
+  const { plan, update, issues } = usePlan()
+  // The ladder is addressed by id, not by the position it was mapped at: the
+  // issue paths carry the index this ladder holds in the plan the issues
+  // were computed from, which is the plan in hand, so the lookup is made
+  // against that same plan at render time.
+  const ladders = plan.incomeFloor?.ladders ?? []
+  const ladderIndex = ladders.findIndex((l) => l.id === ladder.id)
+  // Belt and braces for the index coupling: an issue whose ladder index the
+  // current list does not have is ignored rather than matched to any row.
+  const ladderIssues = withoutIssuesBeyond(issues, ['incomeFloor', 'ladders'], ladders.length)
+  // An invalid edit (last payout year before the first) used to swap the
+  // quote for the empty-state hint as if nothing had been entered; the quote
+  // pauses and says why instead (#512). Scoped to this ladder: the quote
+  // prices the ladder's rungs on the embedded curve and reads nothing else
+  // from the plan, so another entry's issue does not touch it. An issue on
+  // the ladder list itself (or on incomeFloor) pauses every ladder.
+  const ownIssue = ladderIndex >= 0 && hasIssueUnder(ladderIssues, ['incomeFloor', 'ladders', String(ladderIndex)])
+  const listIssue = ladderIndex < 0 || hasIssueAt(ladderIssues, ['incomeFloor']) || hasIssueAt(ladderIssues, ['incomeFloor', 'ladders'])
+  const onHold = ownIssue || listIssue
+  const quote = useMemo(() => (onHold ? null : quoteLadder(ladder, startYear)), [ladder, startYear, onHold])
   const fundingOptions = plan.accounts
     .filter((a) => a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp')
     .map((a) => ({ value: a.id, label: a.name }))
   const edit = (fn: (l: TipsLadder) => void) =>
     update((d) => {
-      const l = d.incomeFloor?.ladders[index]
+      const l = d.incomeFloor?.ladders.find((candidate) => candidate.id === ladder.id)
       if (l) fn(l)
     })
 
@@ -72,7 +91,12 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
         <button
           type="button"
           className="btn-ghost btn-ghost-danger"
-          onClick={() => update((d) => void d.incomeFloor?.ladders.splice(index, 1))}
+          onClick={() =>
+            update((d) => {
+              const at = d.incomeFloor?.ladders.findIndex((l) => l.id === ladder.id) ?? -1
+              if (at >= 0) d.incomeFloor?.ladders.splice(at, 1)
+            })
+          }
         >
           Remove
         </button>
@@ -141,7 +165,22 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
           </>
         ) : null}
       </div>
-      {quote ? (
+      {onHold ? (
+        <div className="callout callout--warn" role="status">
+          {ownIssue ? (
+            <>
+              Quote paused: an entry on this ladder is invalid, so it cannot be priced yet. The issue list at the end of
+              this section names the field; the last quoted cost no longer applies.
+            </>
+          ) : (
+            <>
+              Quote paused: the ladder list itself has an issue to fix before any ladder can be priced; this ladder's
+              own entries may be fine. The issue list at the end of this section names it; the last quoted cost no
+              longer applies.
+            </>
+          )}
+        </div>
+      ) : quote ? (
         <>
           <p className="card-hint">
             Quoted cost <strong>{fmtMoney(quote.totalCost)}</strong> (today's $) for {quote.rungs.length} rung
@@ -185,8 +224,46 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
   )
 }
 
-/** Funded-ratio card, shared with the Results page (step 4 of the plan). */
+function FundedRatioIntro() {
+  return (
+    <>
+      <h2>Funded ratio</h2>
+      <p className="card-hint">
+        Pension accounting for your household: essential spending valued on the TIPS curve vs. the guaranteed income
+        dedicated to it. <LearnLink {...LEARN.fundedRatio} />
+      </p>
+    </>
+  )
+}
+
+/**
+ * Funded-ratio card, shared with the Results page (step 4 of the plan).
+ *
+ * The ratio is read off a full projection, so while any entry in the plan is
+ * invalid (a ladder's, or one on another page) that projection would run on a
+ * plan the engine has refused to store. The card then pauses without
+ * projecting at all: the readout component, which owns the projection hook,
+ * is not mounted, so an invalid draft can neither throw out of the card nor
+ * leave it empty (#512). Shared with Results, where no issue list renders,
+ * so the copy names and links the sections the failing entries live on.
+ */
 export function FundedRatioCard() {
+  const { issues } = usePlan()
+  if (issues.length === 0) return <FundedRatioReadout />
+  return (
+    <div className="card">
+      <FundedRatioIntro />
+      <div className="callout callout--warn" role="status">
+        Paused while the plan has {issues.length === 1 ? 'an issue' : `${issues.length} issues`} to fix, which may be
+        anywhere in the plan: the ratio is read off a full projection, and a projection is not re-run on a plan the
+        engine will not store, so the last readout no longer applies. <IssueSectionsSentence />
+      </div>
+    </div>
+  )
+}
+
+/** The live readout: projects the (valid) plan and renders nothing when it has no measurable essential spending. */
+function FundedRatioReadout() {
   const { plan } = usePlan()
   const { result, deflate } = useProjection(plan)
   const startYear = result.startYear
@@ -206,11 +283,7 @@ export function FundedRatioCard() {
   if (!fr) return null
   return (
     <div className="card">
-      <h2>Funded ratio</h2>
-      <p className="card-hint">
-        Pension accounting for your household: essential spending valued on the TIPS curve vs. the guaranteed income
-        dedicated to it. <LearnLink {...LEARN.fundedRatio} />
-      </p>
+      <FundedRatioIntro />
       <div className="stat-grid">
         <div>
           <div className={`stat-value ${fr.fundedRatioPct >= 100 ? 'stat-value--good' : 'stat-value--neutral'}`}>
@@ -397,8 +470,8 @@ export function IncomeFloorSection() {
           taxation (federally ordinary, state-exempt, accretion taxed as it accrues).{' '}
           <LearnLink {...LEARN.tipsLadders} />
         </p>
-        {ladders.map((ladder, i) => (
-          <LadderRow key={ladder.id} ladder={ladder} index={i} startYear={startYear} />
+        {ladders.map((ladder) => (
+          <LadderRow key={ladder.id} ladder={ladder} startYear={startYear} />
         ))}
         <div className="add-row">
           <button
