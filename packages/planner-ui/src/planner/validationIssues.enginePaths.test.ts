@@ -224,5 +224,8 @@ describe('every wired schema path, against real engine output', () => {
     expect(issue!.advice).not.toMatch(/^(Too small|Too big|Invalid input|Invalid option|Invalid date)/)
     expect(issue!.label).not.toMatch(/[a-z][A-Z]/)
     expect(issue!.section).not.toBe('unknown')
+    // The brokerage qualified share is stored 0–1 and shown as a percent: the
+    // engine's own bound, in the unit the person is typing in (r2-4).
+    if (path.endsWith('.qualifiedRatio')) expect(issue!.advice).toBe('Must be at most 100')
   })
 })

@@ -22,8 +22,12 @@ describe('validation chrome pins', () => {
     expect(css).toMatch(/\.save-state--button \{[^}]*border: 0;[^}]*background: none;/)
     expect(css).toMatch(/\.field--invalid > \.field-label-row > \.field-label \{\s*color: var\(--bad\)/)
     expect(css).toMatch(/\.issue-list:focus \{\s*outline: 2px solid var\(--accent\)/)
-    // The chip is a button, so keyboard focus is visible on it too (r1-8).
+    // The chip is a button, so keyboard focus is visible on it too (r1-8), and
+    // `font: inherit` does not cost it the size every save state shares (r2-5).
     expect(css).toMatch(/\.save-state--button:focus-visible \{\s*outline: 2px solid var\(--accent\)/)
+    expect(css).toMatch(/\.save-state--button \{[^}]*font: inherit;\s*font-size: 0\.85rem;/)
+    // A rejected block is outlined in the danger token at rest, as an invalid input is bordered (r2-6).
+    expect(css).toMatch(/\.field\[role='group'\]\[aria-invalid='true'\] \{\s*outline: 1px solid var\(--bad\)/)
     // A whole block the engine rejected (the cash-value schedule) takes focus.
     expect(css).toMatch(/\.field--invalid\[tabindex\]:focus \{\s*outline: 2px solid var\(--bad\)/)
     // An accepted-and-adjusted value reads as a note, not a fault (r1-2).
@@ -32,15 +36,19 @@ describe('validation chrome pins', () => {
     expect(css).toMatch(/\.diff-chip \{[^}]*overflow-wrap: anywhere/)
     expect(css).not.toMatch(/\.diff-chip \{[^}]*white-space: nowrap/)
     const workspace = read('./PlanWorkspace.tsx')
-    expect(workspace).toContain('focusIssueTarget(document, section)')
-    expect(workspace).toContain('navigate(`/plan/${plan.id}/${route}`)')
+    expect(workspace).toContain('const target = `/plan/${plan.id}/${route}`')
+    expect(workspace).toContain('navigate(target)')
     expect(workspace).toContain('className="save-state save-state--error save-state--button"')
     // The chip goes somewhere even when nothing is placeable (r1-4), the retry
     // loop is cancellable (r1-6), and hovering it describes the jump, not
     // where the plan is stored (r1-15).
     expect(workspace).toContain('const route = routeForIssues(issues)')
-    expect(workspace).toContain('if (mine !== jumpGeneration.current) return')
-    expect(workspace).toContain('cancelAnimationFrame(jumpFrame.current)')
+    // The retry is scoped to the plan outlet and cancelled by a route change,
+    // by focus moving to a control the person chose, and on unmount (r2-1, r2-3).
+    expect(workspace).toContain('focusIssueTarget(workspaceRoot(), section, path)')
+    expect(workspace).toContain('if (pendingJump.current && pendingJump.current.target !== pathname) cancelJump()')
+    expect(workspace).toContain('useEffect(() => cancelJump, [])')
+    expect(workspace).toContain('retryFocus(workspaceRoot, section, path, focusMoved)')
     expect(workspace).toContain('title="Go to the first thing to fix. The plan is stored once it is valid."')
   })
 

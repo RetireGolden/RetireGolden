@@ -154,8 +154,13 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
               aria-invalid={scheduleIssue ? true : undefined}
               aria-describedby={scheduleIssue ? `${scheduleId}-error` : undefined}
               tabIndex={scheduleIssue ? -1 : undefined}
+              data-path={`insurance.${index}.cashValueSchedule`}
             >
-              <span className="field-label" id={`${scheduleId}-label`}>Cash-value schedule (age → value)</span>
+              {/* The same caption structure as every field, so the invalid
+                  tint on .field--invalid > .field-label-row > .field-label applies. */}
+              <span className="field-label-row">
+                <span className="field-label" id={`${scheduleId}-label`}>Cash-value schedule (age → value)</span>
+              </span>
               {(policy.cashValueSchedule ?? []).map((row, ri) => (
                 <div className="add-row" key={ri} style={{ alignItems: 'flex-end' }}>
                   <NumberField label="Age" path={`insurance.${index}.cashValueSchedule.${ri}.age`} value={row.age} min={0} max={120} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.age = Math.round(v ?? row.age) })} />

@@ -14,7 +14,7 @@ export function useFieldIssue(path: string | undefined): ParsedIssue | null {
   const ctx = useContext(PlanCtx)
   if (!path || !ctx) return null
   for (const issue of ctx.issues) {
-    const parsed = parseIssue(issue)
+    const parsed = parseIssue(issue, ctx.plan)
     if (parsed.path === path) return parsed
   }
   return null

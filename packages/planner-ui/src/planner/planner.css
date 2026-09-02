@@ -3454,8 +3454,19 @@ html:has(.kpi-bar) {
   padding: 0;
   background: none;
   color: var(--bad);
+  /* `font: inherit` takes the header's size with it; the chip keeps the
+     0.85rem every save state shares. */
   font: inherit;
+  font-size: 0.85rem;
   cursor: pointer;
+}
+
+/* A whole block the engine rejected (the cash-value schedule) is outlined in
+   the danger token at rest, as an invalid input is bordered. */
+.field[role='group'][aria-invalid='true'] {
+  outline: 1px solid var(--bad);
+  outline-offset: 6px;
+  border-radius: 4px;
 }
 
 /* The chip is a real button, so it shows the same keyboard focus ring the

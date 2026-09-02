@@ -1221,9 +1221,9 @@ describe('AccountFields extracted editor commit wiring', () => {
   })
 
   it.each([
-    ['below', '20', 40],
-    ['above', '95', 80],
-  ])('clamps a manually entered pension start age %s the schema range (parse-valid)', (_boundary, typed, expected) => {
+    ['below', '20', 'Not kept: 20 is below the lowest allowed, 40'],
+    ['above', '95', 'Not kept: 95 is above the highest allowed, 80'],
+  ])('does not keep a pension start age %s the schema range on leaving; the stored age stays (parse-valid)', (_boundary, typed, note) => {
     const pension: Extract<Account, { type: 'pension' }> = {
       type: 'pension',
       id: 'pension',
@@ -1245,21 +1245,24 @@ describe('AccountFields extracted editor commit wiring', () => {
       if (!valueSetter) throw new Error('missing input value setter')
       valueSetter.call(startAge, typed)
       startAge.dispatchEvent(new Event('input', { bubbles: true }))
-      // Out-of-range text is only clamped on leaving the field.
+      // Out-of-range text is flagged while typing and not kept on leaving:
+      // the plan's own age stays, and a note says what the field allows.
       startAge.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
 
     const account = mounted.plan.accounts[0]
     expect(account?.type).toBe('pension')
     if (account?.type !== 'pension') throw new Error('expected pension')
-    expect(account.startAge).toBe(expected)
+    expect(account.startAge).toBe(65)
+    expect(startAge.value).toBe('65')
+    expect(startAge.closest('.field')?.querySelector('.field-note')?.textContent).toBe(note)
     expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
   })
 
   it.each([
-    ['below', '20', 40],
-    ['above', '97', 95],
-  ])('clamps a manually entered unpurchased annuity start age %s the schema range (parse-valid)', (_boundary, typed, expected) => {
+    ['below', '20', 'Not kept: 20 is below the lowest allowed, 40'],
+    ['above', '97', 'Not kept: 97 is above the highest allowed, 95'],
+  ])('does not keep an unpurchased annuity start age %s the schema range on leaving; the stored age stays (parse-valid)', (_boundary, typed, note) => {
     const annuity: Extract<Account, { type: 'annuity' }> = {
       type: 'annuity',
       id: 'annuity',
@@ -1281,14 +1284,17 @@ describe('AccountFields extracted editor commit wiring', () => {
       if (!valueSetter) throw new Error('missing input value setter')
       valueSetter.call(startAge, typed)
       startAge.dispatchEvent(new Event('input', { bubbles: true }))
-      // Out-of-range text is only clamped on leaving the field.
+      // Out-of-range text is flagged while typing and not kept on leaving:
+      // the plan's own age stays, and a note says what the field allows.
       startAge.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
 
     const account = mounted.plan.accounts[0]
     expect(account?.type).toBe('annuity')
     if (account?.type !== 'annuity') throw new Error('expected annuity')
-    expect(account.startAge).toBe(expected)
+    expect(account.startAge).toBe(65)
+    expect(startAge.value).toBe('65')
+    expect(startAge.closest('.field')?.querySelector('.field-note')?.textContent).toBe(note)
     expect(parsePlan(structuredClone(mounted.plan)).ok).toBe(true)
   })
 

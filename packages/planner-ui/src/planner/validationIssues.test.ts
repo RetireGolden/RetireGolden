@@ -174,6 +174,37 @@ describe('adviceOf', () => {
   })
 })
 
+describe('labels with the plan in hand', () => {
+  it('names a Social Security stream for its person, not its slot in the incomes array (r2-7)', () => {
+    const plan = createEmptyPlan({ newId: () => 'id-' + Math.random().toString(36).slice(2, 8) })
+    const alex = plan.household.people[0]!
+    plan.household.people[0] = { ...alex, name: 'Alex' }
+    plan.incomes = [
+      { type: 'wages', id: 'w', personId: alex.id, annualGross: 100_000, endAge: null, realGrowthPct: 0 },
+      { type: 'recurring', id: 'r', label: 'Rental', annualAmount: 1, startYear: null, endYear: null, inflationAdjusted: true, taxTreatment: 'ordinary' },
+      { type: 'socialSecurity', id: 's', personId: alex.id, piaMonthly: 2_000, earnings: null, claimAge: { years: 67, months: 18 } },
+    ]
+    const issue = 'incomes.2.claimAge.months: Too big: expected number to be <=11'
+    expect(parseIssue(issue, plan).label).toBe('Social Security (Alex): Claim age (+ months)')
+    // The wage stream keeps its number: that is how the Income page lists it.
+    expect(parseIssue('incomes.0.annualGross: Too small: expected number to be >=0', plan).label).toBe('Income 1: Annual gross')
+    // Without the plan, the numbered form is all there is.
+    expect(parseIssue(issue).label).toBe('Income 3: Claim age (+ months)')
+    expect(parseIssues([issue], plan)[0]!.section).toBe('social-security')
+  })
+
+  it('states the brokerage qualified-dividend bound in the percent the card shows, not the stored ratio (r2-4)', () => {
+    // The engine stores a 0–1 share; the card shows and edits it as a percent.
+    // The bound is the engine's, re-expressed in the field's own unit.
+    expect(adviceOf('Too big: expected number to be <=1', 'accounts.1.qualifiedRatio')).toBe('Must be at most 100')
+    expect(adviceOf('Too small: expected number to be >=0', 'accounts.1.qualifiedRatio')).toBe('Must be at least 0')
+    expect(parseIssue('accounts.1.qualifiedRatio: Too big: expected number to be <=1').advice).toBe('Must be at most 100')
+    // The asset-class share is already a 0–100 field and is untouched.
+    expect(adviceOf('Too big: expected number to be <=100', 'assumptions.assetClassParams.usStocks.qualifiedRatioPct')).toBe('Must be at most 100')
+    expect(adviceOf('Too big: expected number to be <=1', 'strategies.someRatio')).toBe('Must be at most 1')
+  })
+})
+
 describe('labelOfSegments', () => {
   it('keeps a segment that holds a slash or a dot whole, so a decoded pointer key is not read as a path (r1-14)', () => {
     expect(labelOfSegments(['assumptions', 'historicalAnnualMagiByYear', '2024'])).toBe('Historical annual MAGI by year 2024')

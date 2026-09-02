@@ -11,8 +11,8 @@ import { usePlan } from '../planContextCore'
 import { issuesForSection, parseIssues, sectionsWithIssues, type IssueSection } from '../validationIssues'
 
 export function Issues({ section }: { section: IssueSection }) {
-  const { issues } = usePlan()
-  const mine = issuesForSection(parseIssues(issues), section)
+  const { plan, issues } = usePlan()
+  const mine = issuesForSection(parseIssues(issues, plan), section)
   if (mine.length === 0) return null
   return (
     <ul className="issue-list" id={`plan-issues-${section}`} tabIndex={-1} aria-label="Fix these to store the plan">

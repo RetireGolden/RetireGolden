@@ -235,12 +235,14 @@ function FieldShell({
           {error}
         </p>
       ) : null}
-      {/* What the field did to a value it accepted ("Adjusted to 120, the
-          highest allowed"). It is described, not an error: the value the plan
-          now holds is valid, so the control does not stay aria-invalid and the
-          save chip's jump does not land on it (#476, #494). */}
+      {/* What the field did with an entry it did not keep ("Not kept: 150 is
+          above the highest allowed, 120"). It is described, not an error: the
+          value the plan holds is valid, so the control does not stay
+          aria-invalid and the save chip's jump does not land on it (#476, #494). */}
       {!error && note ? (
-        <p className="field-note" id={`${id}-note`}>
+        // A status: the note appears after focus has already moved on (a
+        // blur wrote it), so it has to announce itself to be heard.
+        <p className="field-note" id={`${id}-note`} role="status">
           {note}
         </p>
       ) : null}
@@ -345,6 +347,7 @@ export function MoneyField({
           placeholder={placeholder}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy(error && `${id}-error`)}
+          data-path={path}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.preventDefault()
           }}
@@ -422,6 +425,7 @@ export function NumberField({
       max={max}
       aria-invalid={error ? true : undefined}
       aria-describedby={describedBy(suffixId, error ? `${id}-error` : adjustedNote && `${id}-note`)}
+      data-path={path}
       onFocus={() => setFocused(true)}
       onBlur={(e) => {
         setFocused(false)
@@ -446,11 +450,16 @@ export function NumberField({
           setRangeError(null)
           return
         }
-        const bound = side === 'low' ? min! : max!
-        onCommit(bound)
-        setText(String(bound))
+        // Out of range on leaving: the entry is not kept and the plan's value
+        // comes back. A blur is often a Tab, a rail link, or the save chip
+        // mid-edit ("9" on the way to "95"), so committing the bound here
+        // would store an age the person never typed (#476). The note says
+        // what was not kept and what the field allows, in its own range.
+        setText(value === null ? '' : String(value))
         setRangeError(null)
-        setAdjustedNote(`Adjusted to ${bound}, the ${side === 'low' ? 'lowest' : 'highest'} allowed`)
+        setAdjustedNote(
+          `Not kept: ${trimmed} is ${side === 'low' ? `below the lowest allowed, ${min}` : `above the highest allowed, ${max}`}`,
+        )
       }}
       onChange={(e) => {
         setText(e.target.value)
@@ -522,6 +531,7 @@ export function TextField({
         value={value}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(error && `${id}-error`)}
+        data-path={path}
         onChange={(e) => onCommit(e.target.value)}
       />
     </FieldShell>
@@ -550,6 +560,7 @@ export function DateField({
         value={capIsoDateYear(value)}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(error && `${id}-error`)}
+        data-path={path}
         onChange={(e) => onCommit(capIsoDateYear(e.target.value))}
       />
     </FieldShell>
@@ -593,6 +604,7 @@ export function SelectField<T extends string>({
         required={placeholder !== undefined}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(describedById, error && `${id}-error`)}
+        data-path={path}
         title={options.find((o) => o.value === value)?.label ?? placeholder}
         onChange={(e) => {
           const v = e.target.value

@@ -11,6 +11,8 @@
  * strings into that; it never decides what is valid (the engine does).
  */
 
+import type { Plan } from '@retiregolden/engine/model/plan'
+
 import { SECTION_TITLES } from './sectionTitles'
 
 export interface ParsedIssue {
@@ -42,16 +44,17 @@ export type IssueSection =
  * Split an engine issue string at its first `: ` (the path never contains
  * one). `(root)` and `$` both mean the plan as a whole.
  */
-export function parseIssue(issue: string): ParsedIssue {
+export function parseIssue(issue: string, plan?: Plan): ParsedIssue {
   const at = issue.indexOf(': ')
   const rawPath = at < 0 ? '(root)' : issue.slice(0, at)
   const path = rawPath === '$' ? '(root)' : rawPath
   const message = at < 0 ? issue : issue.slice(at + 2)
-  return { path, message, section: sectionOfPath(path), label: labelOfPath(path), advice: adviceOf(message) }
+  return { path, message, section: sectionOfPath(path), label: labelOfPath(path, plan), advice: adviceOf(message, path) }
 }
 
-export function parseIssues(issues: readonly string[]): ParsedIssue[] {
-  return issues.map(parseIssue)
+/** With the plan, items that a person knows by name are named ("Social Security (Alex)") rather than numbered. */
+export function parseIssues(issues: readonly string[], plan?: Plan): ParsedIssue[] {
+  return issues.map((issue) => parseIssue(issue, plan))
 }
 
 const SECTION_BY_ROOT: Record<string, IssueSection> = {
@@ -281,16 +284,30 @@ function isIndex(segment: string): boolean {
  * → "Itemized deductions: State & local taxes (SALT)". The last numbered item
  * wins as the prefix; a bare root ("Assumptions") is the prefix when there is none.
  */
-export function labelOfPath(path: string): string {
+export function labelOfPath(path: string, plan?: Plan): string {
   if (path === '(root)' || path === '$' || path === '') return 'Plan'
-  return labelOfSegments(path.split('.'))
+  return labelOfSegments(path.split('.'), plan)
+}
+
+/**
+ * A Social Security stream sits in `plan.incomes` beside wages and rentals,
+ * but its card is on the Social Security page under the person's name, so
+ * "Income 3" would send someone hunting the wrong page for the wrong row.
+ * With the plan in hand the item is named for the person instead.
+ */
+function namedItem(container: string, index: number, plan: Plan | undefined): string | null {
+  if (!plan || container !== 'incomes') return null
+  const stream = plan.incomes[index]
+  if (stream?.type !== 'socialSecurity') return null
+  const person = plan.household.people.find((p) => p.id === stream.personId)
+  return person ? `Social Security (${person.name})` : 'Social Security'
 }
 
 /**
  * The same, from path segments that are already split, so a segment holding a
  * dot or slash (a JSON-pointer key decoded from `~1`) stays one segment.
  */
-export function labelOfSegments(segments: readonly string[]): string {
+export function labelOfSegments(segments: readonly string[], plan?: Plan): string {
   if (segments.length === 0) return 'Plan'
   // A numbered item ("Person 2") is the card the field sits on and wins; with
   // no item, the last named group ("Itemized deductions") is the card. Any
@@ -306,7 +323,7 @@ export function labelOfSegments(segments: readonly string[]): string {
     const seg = segments[i]!
     const next = segments[i + 1]!
     if (isIndex(next)) {
-      item = `${ITEM_NAMES[seg] ?? singular(seg)} ${Number(next) + 1}`
+      item = namedItem(seg, Number(next), plan) ?? `${ITEM_NAMES[seg] ?? singular(seg)} ${Number(next) + 1}`
       container = seg
       trail.length = 0
       i++
@@ -384,19 +401,37 @@ export function humanizeSchemaKeys(message: string): string {
 }
 
 /**
+ * Leaves the engine stores in one unit and the card shows in another: the
+ * brokerage qualified-dividend share is a 0–1 ratio in the plan and a percent
+ * on the card. The engine's bound is kept exactly and only re-expressed in the
+ * unit the person is typing in, so "at most 1" reads "at most 100" beside a
+ * field showing 150 %; nothing here adds or moves a limit.
+ */
+const DISPLAY_SCALE: Record<string, number> = { qualifiedRatio: 100 }
+
+function boundInDisplayUnit(raw: string, path: string | undefined): string {
+  const leaf = path?.split('.').pop() ?? ''
+  const scale = DISPLAY_SCALE[leaf]
+  if (!scale) return raw
+  const n = Number(raw)
+  return Number.isFinite(n) ? String(n * scale) : raw
+}
+
+/**
  * Zod's wording, translated. The engine's own messages (anything not in
  * Zod's "Too small" / "Too big" / "Invalid input" family) keep their sense,
  * with any schema key they name shown as the field's label; the two that a
  * person cannot act on as worded are translated exactly.
  */
-export function adviceOf(message: string): string {
+export function adviceOf(message: string, path?: string): string {
   const custom = CUSTOM_ADVICE[message]
   if (custom) return custom
+  const bound = (raw: string) => boundInDisplayUnit(raw, path)
   let m: RegExpMatchArray | null
-  if ((m = message.match(/^Too small: expected .* to be >=(-?[\d.]+)/))) return `Must be at least ${m[1]}`
-  if ((m = message.match(/^Too small: expected .* to be >(-?[\d.]+)/))) return `Must be more than ${m[1]}`
-  if ((m = message.match(/^Too big: expected .* to be <=(-?[\d.]+)/))) return `Must be at most ${m[1]}`
-  if ((m = message.match(/^Too big: expected .* to be <(-?[\d.]+)/))) return `Must be less than ${m[1]}`
+  if ((m = message.match(/^Too small: expected .* to be >=(-?[\d.]+)/))) return `Must be at least ${bound(m[1]!)}`
+  if ((m = message.match(/^Too small: expected .* to be >(-?[\d.]+)/))) return `Must be more than ${bound(m[1]!)}`
+  if ((m = message.match(/^Too big: expected .* to be <=(-?[\d.]+)/))) return `Must be at most ${bound(m[1]!)}`
+  if ((m = message.match(/^Too big: expected .* to be <(-?[\d.]+)/))) return `Must be less than ${bound(m[1]!)}`
   if (/^Too small: expected array /.test(message)) return 'Add at least one entry'
   if (/^Too small: expected string /.test(message)) return 'Enter a value'
   if (/^Invalid input: expected number/.test(message)) return 'Enter a number'

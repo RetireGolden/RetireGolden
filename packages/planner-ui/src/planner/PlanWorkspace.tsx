@@ -24,7 +24,7 @@ import { successBand } from './successBand'
 import { useMcSuccessRateState } from './useMcSuccessRate'
 import { useProjection } from './useProjection'
 import { SECTION_TITLES } from './sectionTitles'
-import { firstIssueSection, focusIssueTarget, routeForIssues } from './issueJump'
+import { firstIssue, focusIssueTarget, retryFocus, routeForIssues, workspaceRoot } from './issueJump'
 
 const railClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'rail-link rail-link--active' : 'rail-link')
 
@@ -40,18 +40,20 @@ function SaveIndicator() {
   const readOnly = useWorkspaceReadOnly()
   const { homeLabel, storageTooltip } = usePlannerEdition()
   const isExample = plan.origin === 'example'
-  // The retry loop that waits for the destination page to render: one
-  // generation token so a superseded jump stops, and the pending frame so
-  // unmounting cancels it.
-  const jumpGeneration = useRef(0)
-  const jumpFrame = useRef<number | undefined>(undefined)
-  useEffect(
-    () => () => {
-      jumpGeneration.current++
-      if (jumpFrame.current !== undefined) cancelAnimationFrame(jumpFrame.current)
-    },
-    [],
-  )
+  const { pathname } = useLocation()
+  // The retry loop that waits for the destination page to render, and where
+  // it was headed. A second click, a route change to anywhere else, focus
+  // moving to a control the person chose, or unmounting cancels it, so a
+  // late frame can never pull focus away from what they are doing.
+  const pendingJump = useRef<{ cancel: () => void; target: string } | null>(null)
+  const cancelJump = () => {
+    pendingJump.current?.cancel()
+    pendingJump.current = null
+  }
+  useEffect(() => {
+    if (pendingJump.current && pendingJump.current.target !== pathname) cancelJump()
+  }, [pathname])
+  useEffect(() => cancelJump, [])
   // Read-only wins over any save state: nothing is being stored, so the
   // "Stored on this device" / "Storing…" copy would be misleading. Keep the
   // label generic — planner-ui doesn't know the reason (the host explains it).
@@ -84,23 +86,29 @@ function SaveIndicator() {
     // that is another section. With nothing placeable, it still goes to an
     // entry page, where every list shows the unplaceable issues (#494).
     const jump = () => {
-      const section = firstIssueSection(issues)
-      if (focusIssueTarget(document, section)) return
+      cancelJump()
+      const { section, path } = firstIssue(issues)
+      if (focusIssueTarget(workspaceRoot(), section, path)) return
       const route = routeForIssues(issues)
       if (!route) return
-      navigate(`/plan/${plan.id}/${route}`)
-      // The target renders after navigation; look for it over the next frames.
-      // Only the newest jump may act: an earlier loop still running when the
-      // person clicks again or navigates away would otherwise focus whatever
-      // it finds by then.
-      const mine = ++jumpGeneration.current
-      let tries = 0
-      const look = () => {
-        if (mine !== jumpGeneration.current) return
-        if (focusIssueTarget(document, section) || tries++ > 30) return
-        jumpFrame.current = requestAnimationFrame(look)
+      const target = `/plan/${plan.id}/${route}`
+      const chip = document.activeElement
+      navigate(target)
+      // The target renders after navigation; look for it over the next
+      // frames, unless the person has moved on: focus resting anywhere but
+      // the chip, the page body, or the outlet itself means they picked a
+      // control, and that choice wins. Route changes cancel via the effect.
+      const focusMoved = () => {
+        const active = document.activeElement
+        return (
+          active !== null &&
+          active !== chip &&
+          active !== document.body &&
+          active !== document.documentElement &&
+          active.id !== 'plan-content'
+        )
       }
-      jumpFrame.current = requestAnimationFrame(look)
+      pendingJump.current = { target, cancel: retryFocus(workspaceRoot, section, path, focusMoved) }
     }
     return (
       <>
