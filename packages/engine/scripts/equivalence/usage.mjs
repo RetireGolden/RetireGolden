@@ -44,17 +44,30 @@ export function resolveReachSpecEntries(entries, path, readSource) {
   const candidatesByFile = Map.groupBy(candidates, (candidate) => candidate.entry.file)
 
   return candidates.map((candidate) => {
-    if (candidate.validMatches.length === 1) {
-      return applyReachSpecMatch(candidate.entry, candidate.validMatches[0])
-    }
-
     const fileCandidates = candidatesByFile.get(candidate.entry.file) ?? []
     const sharedDeltas = candidate.validMatches
       .map((match) => match.delta)
       .filter((delta) => fileCandidates.every((peer) =>
         peer.validMatches.some((match) => match.delta === delta),
       ))
-    if (sharedDeltas.length === 1) {
+    if (
+      candidate.recordedLocationAnchorMatches > 0 &&
+      !candidate.validMatches.some((match) => match.delta === 0)
+    ) {
+      throw new UsageError(
+        `${path} entry "${candidate.entry.id}" has stale anchor evidence at its ` +
+        `recorded location in ${candidate.entry.file}`,
+      )
+    }
+
+    if (
+      candidate.validMatches.length === 1 &&
+      candidate.validMatches[0].delta === 0
+    ) {
+      return applyReachSpecMatch(candidate.entry, candidate.validMatches[0])
+    }
+
+    if (fileCandidates.length > 1 && sharedDeltas.length === 1) {
       const sharedMatch = candidate.validMatches.find(
         (match) => match.delta === sharedDeltas[0],
       )
@@ -62,9 +75,12 @@ export function resolveReachSpecEntries(entries, path, readSource) {
     }
 
     const deltas = [...new Set(candidate.validMatches.map((match) => match.delta))]
+    const reason = candidate.validMatches.length === 1
+      ? 'uncorroborated non-zero'
+      : 'ambiguous'
     throw new UsageError(
       `${path} entry "${candidate.entry.id}" has ${candidate.validMatches.length} ` +
-      `ambiguous content-anchor matches in ${candidate.entry.file} ` +
+      `${reason} content-anchor matches in ${candidate.entry.file} ` +
       `(deltas ${deltas.join(', ')})`,
     )
   })
@@ -153,6 +169,9 @@ function resolveReachSpecEntryCandidates(entry, path, readSource) {
   }
 
   const rows = readSource(entry.file).split('\n')
+  const recordedLocationAnchorMatches = recordedAnchors.filter(
+    (anchor) => rows[anchor.line - 1]?.trim() === anchor.text,
+  ).length
   const first = recordedAnchors[0]
   const candidateLines = []
   for (let index = 0; index < rows.length; index++) {
@@ -192,7 +211,9 @@ function resolveReachSpecEntryCandidates(entry, path, readSource) {
     validMatches.push({ delta, lines: shiftedLines, anchors: shiftedAnchors })
   }
 
-  if (validMatches.length > 0) return { entry, validMatches }
+  if (validMatches.length > 0) {
+    return { entry, validMatches, recordedLocationAnchorMatches }
+  }
 
   if (textMatchedDeltas.length > 0) {
     throw new UsageError(

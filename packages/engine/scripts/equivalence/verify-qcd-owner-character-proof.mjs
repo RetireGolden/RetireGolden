@@ -52,9 +52,9 @@ function workingTreeBlob(path) {
   }).trim()
 }
 
-function runEquivalence(equivalence, args) {
+function runEquivalence(equivalence, args, cwd) {
   execFileSync(process.execPath, [equivalence, ...args], {
-    cwd: repoDir,
+    cwd,
     stdio: 'inherit',
   })
 }
@@ -232,36 +232,40 @@ try {
     '--name', 'blocks',
     '--out', corpus,
     '--engine-src', headSrc,
-  ])
+  ], harnessRoot)
   runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', mutantDump,
     '--engine-src', mutantSrc,
     '--engine-label', 'calibration-ignore-qcd-section219',
-  ])
+  ], harnessRoot)
   runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', baseDump,
     '--engine-src', baseSrc,
     '--engine-label', proof.base.engineSourceTree,
-  ])
+  ], harnessRoot)
   runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', headDump,
     '--engine-src', headSrc,
     '--engine-label', proof.head.engineSourceTree,
-  ])
-  runEquivalence(authenticatedEquivalence, ['compare', '--base', baseDump, '--head', headDump])
+  ], harnessRoot)
+  runEquivalence(
+    authenticatedEquivalence,
+    ['compare', '--base', baseDump, '--head', headDump],
+    harnessRoot,
+  )
   runEquivalence(authenticatedEquivalence, [
     'reach',
     '--corpus', corpus,
     '--spec', authenticatedSpec,
     '--engine-src', headSrc,
     '--out', reach,
-  ])
+  ], harnessRoot)
 
   const corpusBody = JSON.parse(readFileSync(corpus, 'utf8'))
   const baseManifest = JSON.parse(readFileSync(`${baseDump}.manifest.json`, 'utf8'))

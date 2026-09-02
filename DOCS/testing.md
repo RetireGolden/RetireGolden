@@ -184,12 +184,13 @@ Committed reach specs still store positional `lines` plus exact trimmed `{ line,
 coverage runs, `reach` (and the committed-spec Vitest guard) **content-locate** each entry: every candidate
 occurrence of the first anchor's text implies one line delta, and that delta is accepted only when every
 anchor matches at its recorded line plus the same delta and the shifted range stays valid. An entry must
-either have one valid delta of its own or share exactly one delta with every other anchored entry for that
-file — zero matches, uncorroborated ambiguous locations, inconsistent relative anchor layout, or an invalid
-shifted range fail closed. An unchanged file therefore resolves at delta zero; insertions or deletions above
-a block resolve without rewriting the JSON, while a verbatim move only needs the entry's `file` changed
-rather than every stored line. Edits that change relative anchor spacing inside the measured block still
-fail. Do not add marker comments
+either match at its recorded location or share exactly one non-zero delta with every other anchored entry
+for that file — zero matches, an uncorroborated non-zero location, ambiguous locations, stale anchor evidence
+at the recorded location, inconsistent relative anchor layout, or an invalid shifted range fail closed. An
+unchanged file therefore resolves at delta zero; insertions or deletions above a group of blocks resolve
+without rewriting the JSON, while a corroborated verbatim move only needs each entry's `file` changed rather
+than every stored line. A lone moved entry must update its positional lines explicitly. Edits that change
+relative anchor spacing inside the measured block still fail. Do not add marker comments
 throughout production source to make ranges relocatable.
 
 [`scripts/equivalence/specs/simulate-batch.json`](../packages/engine/scripts/equivalence/specs/simulate-batch.json)

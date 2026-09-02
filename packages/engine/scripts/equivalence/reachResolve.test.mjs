@@ -41,7 +41,17 @@ describe('resolveReachSpecEntries', () => {
       'return 1',
       '}',
     ])
-    const [resolved] = resolveReachSpecEntries([baseEntry], 'spec.json', () => source)
+    const contextEntry = {
+      id: 'context',
+      file: 'phase.ts',
+      lines: /** @type {[number, number]} */ ([1, 1]),
+      anchors: [{ line: 1, text: 'header' }],
+    }
+    const [, resolved] = resolveReachSpecEntries(
+      [contextEntry, baseEntry],
+      'spec.json',
+      () => source,
+    )
     expect(resolved.lines).toEqual([3, 5])
     expect(resolved.anchors).toEqual([
       { line: 3, text: 'const phase = () => {' },
@@ -51,13 +61,28 @@ describe('resolveReachSpecEntries', () => {
   })
 
   it('applies a uniform negative shift when lines are deleted above the block', () => {
-    const source = sourceFromRows(['const phase = () => {', 'return 1', '}'])
-    const [resolved] = resolveReachSpecEntries([baseEntry], 'spec.json', () => source)
-    expect(resolved.lines).toEqual([1, 3])
+    const shiftedEntry = {
+      ...baseEntry,
+      lines: /** @type {[number, number]} */ ([3, 5]),
+      anchors: baseEntry.anchors.map((anchor) => ({ ...anchor, line: anchor.line + 1 })),
+    }
+    const contextEntry = {
+      id: 'context',
+      file: 'phase.ts',
+      lines: /** @type {[number, number]} */ ([2, 2]),
+      anchors: [{ line: 2, text: 'header' }],
+    }
+    const source = sourceFromRows(['header', 'const phase = () => {', 'return 1', '}'])
+    const [, resolved] = resolveReachSpecEntries(
+      [contextEntry, shiftedEntry],
+      'spec.json',
+      () => source,
+    )
+    expect(resolved.lines).toEqual([2, 4])
     expect(resolved.anchors).toEqual([
-      { line: 1, text: 'const phase = () => {' },
-      { line: 2, text: 'return 1' },
-      { line: 3, text: '}' },
+      { line: 2, text: 'const phase = () => {' },
+      { line: 3, text: 'return 1' },
+      { line: 4, text: '}' },
     ])
   })
 
@@ -86,6 +111,42 @@ describe('resolveReachSpecEntries', () => {
     expect(() => resolveReachSpecEntries([baseEntry], 'spec.json', () => source)).toThrow(UsageError)
     expect(() => resolveReachSpecEntries([baseEntry], 'spec.json', () => source)).toThrow(
       /spec\.json entry "phase" has 2 ambiguous content-anchor matches/u,
+    )
+  })
+
+  it('content-locates corroborated verbatim blocks after a spec is retargeted to another file', () => {
+    const movedEntry = { ...baseEntry, file: 'moved.ts' }
+    const movedContext = {
+      id: 'context',
+      file: 'moved.ts',
+      lines: /** @type {[number, number]} */ ([1, 1]),
+      anchors: [{ line: 1, text: 'moved header' }],
+    }
+    const source = sourceFromRows([
+      'inserted',
+      'moved header',
+      'const phase = () => {',
+      'return 1',
+      '}',
+    ])
+    const [, resolved] = resolveReachSpecEntries([movedContext, movedEntry], 'spec.json', (file) => {
+      expect(file).toBe('moved.ts')
+      return source
+    })
+    expect(resolved.file).toBe('moved.ts')
+    expect(resolved.lines).toEqual([3, 5])
+  })
+
+  it('fails closed on an uncorroborated non-zero location', () => {
+    const source = sourceFromRows([
+      'inserted',
+      'header',
+      'const phase = () => {',
+      'return 1',
+      '}',
+    ])
+    expect(() => resolveReachSpecEntries([baseEntry], 'spec.json', () => source)).toThrow(
+      /uncorroborated non-zero content-anchor matches/u,
     )
   })
 
@@ -141,6 +202,22 @@ describe('resolveReachSpecEntries', () => {
     expect(() => resolveReachSpecEntries([baseEntry], 'spec.json', () => source)).toThrow(UsageError)
     expect(() => resolveReachSpecEntries([baseEntry], 'spec.json', () => source)).toThrow(
       /spec\.json entry "phase" has inconsistent relative anchor layout in phase\.ts/u,
+    )
+  })
+
+  it('does not retarget an edited recorded block to an untouched clone', () => {
+    const source = sourceFromRows([
+      'header',
+      'const phase = () => {',
+      'noop()',
+      'return 1',
+      '}',
+      'const phase = () => {',
+      'return 1',
+      '}',
+    ])
+    expect(() => resolveReachSpecEntries([baseEntry], 'spec.json', () => source)).toThrow(
+      /spec\.json entry "phase" has stale anchor evidence at its recorded location/u,
     )
   })
 
