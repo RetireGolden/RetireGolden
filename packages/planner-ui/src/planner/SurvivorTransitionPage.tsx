@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
@@ -17,9 +18,10 @@ import { LearnLink } from '../learn/LearnLink'
 import { LEARN } from './learnLinks'
 import { ScrollRegion } from './ScrollRegion'
 import { fmtMoney, fmtMoneyCompact } from './format'
-import { currentStartYear, taxCalculatorFor } from './useProjection'
+import { currentStartYear, taxCalculatorFor, useProjection } from './useProjection'
 import {
   buildSurvivorAnalysis,
+  isDegenerateTiming,
   type SurvivorAnalysis,
   type SurvivorScenarioRow,
 } from './survivorAnalysis'
@@ -56,7 +58,28 @@ function TimelineCell({ row }: { row: SurvivorScenarioRow }) {
   )
 }
 
-function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; personName: string }) {
+/**
+ * Rows with nothing on either side of the transition are shown as an empty
+ * state, not as confident results (#513); see `isDegenerateTiming`.
+ */
+function partitionByContent(rows: SurvivorScenarioRow[]) {
+  return {
+    live: rows.filter((r) => !isDegenerateTiming(r)),
+    degenerate: rows.filter((r) => isDegenerateTiming(r)),
+  }
+}
+
+function ScenarioTable({
+  rows,
+  personName,
+  planId,
+  depletionYear,
+}: {
+  rows: SurvivorScenarioRow[]
+  personName: string
+  planId: string
+  depletionYear: number | null
+}) {
   if (rows.length === 0) {
     return (
       <p className="small">
@@ -65,26 +88,41 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
       </p>
     )
   }
+  const { live, degenerate } = partitionByContent(rows)
+  if (live.length === 0) {
+    return (
+      <div className="empty-state" data-survivor-empty="degenerate">
+        <p>
+          Every death timing here for {personName} (dies at {[...new Set(rows.map((r) => r.deathAge))].join(', ')}) shows no
+          income, tax, or balance on either side of the transition: Social Security $0 → $0, no tax, no surviving
+          balance, no estate. This plan has nothing for a survivor transition to model at those timings
+          {depletionYear !== null ? <>; its steady-market projection runs out of money in {depletionYear}</> : null}.{' '}
+          <Link to={`/plan/${planId}/insights`}>See what would change this in Insights</Link>.
+        </p>
+      </div>
+    )
+  }
   return (
+    <>
     <ScrollRegion label={`Death-timing scenarios for ${personName}`} grow style={{ border: 'none' }}>
       {/* survivor-table: a column floor so headers wrap on word boundaries at
           most once, and the wrap scrolls instead of stacking them (#431). */}
       <table className="compare-table survivor-table">
         <thead>
           <tr>
-            <th>Dies at</th>
-            <th>Filing status</th>
-            <th>Household Social Security</th>
-            <th>Tax around the transition</th>
-            <th>
+            <th scope="col">Dies at</th>
+            <th scope="col">Filing status</th>
+            <th scope="col">Household Social Security</th>
+            <th scope="col">Tax around the transition</th>
+            <th scope="col">
               IRMAA relief <span className="nowrap">(SSA-44)</span>
             </th>
-            <th>Survivor spending</th>
-            <th>Convert-early lever</th>
+            <th scope="col">Survivor spending</th>
+            <th scope="col">Convert-early lever</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {live.map((row) => (
             <tr key={`${row.deceasedPersonId}-${row.deathAge}`}>
               <td>
                 <strong>{row.deathAge}</strong>
@@ -161,6 +199,14 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
         </tbody>
       </table>
     </ScrollRegion>
+    {degenerate.length > 0 ? (
+      <p className="small" data-survivor-omitted={degenerate.length}>
+        {degenerate.length} timing{degenerate.length === 1 ? '' : 's'} (dies at{' '}
+        {[...new Set(degenerate.map((r) => r.deathAge))].join(', ')}) not shown: no income, tax, or balance on either side of that
+        transition.
+      </p>
+    ) : null}
+    </>
   )
 }
 
@@ -170,8 +216,14 @@ export function SurvivorTransitionPage() {
   // The analysis is stored WITH the plan it was computed for and derived to
   // null whenever the current plan differs, so a stale sweep can never render
   // against an edited plan through the debounce window.
-  const [snapshot, setSnapshot] = useState<{ plan: typeof plan; analysis: SurvivorAnalysis } | null>(null)
+  // The depletion year rides in the snapshot with the rows it was computed
+  // beside, so the empty state never quotes a newer plan's year above older rows.
+  const [snapshot, setSnapshot] = useState<{ plan: typeof plan; analysis: SurvivorAnalysis; depletionYear: number | null } | null>(null)
   const eligible = plan.household.filingStatus === 'marriedFilingJointly' && plan.household.people.length === 2
+  // The same memoized deterministic projection the KPI bar reads; its
+  // depletion year is named in the degenerate-timings empty state (#513).
+  const { summary } = useProjection(plan)
+  const depletionYear = summary.depletionYear
 
   // Each timing runs a handful of full ledger simulations; debounce off the
   // keystroke path like the Scenarios page does.
@@ -182,17 +234,19 @@ export function SurvivorTransitionPage() {
         setSnapshot({
           plan,
           analysis: buildSurvivorAnalysis(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) }),
+          depletionYear,
         })
       } catch {
         // Per-timing failures are already absorbed inside the sweep; this is
         // the whole-sweep backstop so the page shows an error card, not a
         // stuck skeleton.
-        setSnapshot({ plan, analysis: { eligible: true, planUsesSsa44: false, rows: [], failedTimings: 0, error: true } })
+        setSnapshot({ plan, analysis: { eligible: true, planUsesSsa44: false, rows: [], failedTimings: 0, error: true }, depletionYear })
       }
     }, 200)
     return () => window.clearTimeout(t)
-  }, [plan, eligible])
+  }, [plan, eligible, depletionYear])
   const analysis = snapshot !== null && snapshot.plan === plan ? snapshot.analysis : null
+  const analysisDepletionYear = snapshot !== null && snapshot.plan === plan ? snapshot.depletionYear : null
 
   const anySsa44Savings = useMemo(
     () => (analysis?.rows ?? []).some((r) => r.ssa44PremiumSavings > 0.5),
@@ -292,7 +346,12 @@ export function SurvivorTransitionPage() {
           {plan.household.people.map((person) => (
             <div className="card" key={person.id}>
               <h3 style={{ marginTop: 0 }}>If {person.name} dies first</h3>
-              <ScenarioTable rows={analysis.rows.filter((r) => r.deceasedPersonId === person.id)} personName={person.name} />
+              <ScenarioTable
+                rows={analysis.rows.filter((r) => r.deceasedPersonId === person.id)}
+                personName={person.name}
+                planId={plan.id}
+                depletionYear={analysisDepletionYear}
+              />
             </div>
           ))}
         </>

@@ -14,6 +14,7 @@ import { LearnLink } from '../../learn/LearnLink'
 import { sectionTitleOf } from '../sectionTitles'
 import { fmtMoney, fmtMoneyCompact } from '../format'
 import { uniqueScenarioName } from '../scenarioNames'
+import { formatMcDelta } from './mcDeltaFormat'
 
 function makeScenarioId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -28,11 +29,20 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
   const navigate = useNavigate()
 
   const [expanded, setExpanded] = useState(false)
-  const [exactImpact, setExactImpact] = useState<InsightImpact | null>(null)
+  // Preview results are keyed to the plan object they were computed for and
+  // read as absent once the plan changes, so a stale delta can never sit
+  // beside a newer plan's depletion year; the next Preview recomputes them.
+  const [exactImpactFor, setExactImpactFor] = useState<{ plan: Plan; impact: InsightImpact } | null>(null)
+  const exactImpact = exactImpactFor !== null && exactImpactFor.plan === plan ? exactImpactFor.impact : null
+  const setExactImpact = (impact: InsightImpact) => setExactImpactFor({ plan, impact })
   // Detectors may refine their action during evaluate() (e.g. the spending
   // headroom card solves the exact level); Add-as-scenario must use that one.
-  const [exactAction, setExactAction] = useState<InsightAction | null>(null)
-  const [mcDelta, setMcDelta] = useState<number | null>(null)
+  const [exactActionFor, setExactActionFor] = useState<{ plan: Plan; action: InsightAction } | null>(null)
+  const exactAction = exactActionFor !== null && exactActionFor.plan === plan ? exactActionFor.action : null
+  const setExactAction = (action: InsightAction) => setExactActionFor({ plan, action })
+  const [mcDeltaFor, setMcDeltaFor] = useState<{ plan: Plan; delta: number } | null>(null)
+  const mcDelta = mcDeltaFor !== null && mcDeltaFor.plan === plan ? mcDeltaFor.delta : null
+  const setMcDelta = (delta: number) => setMcDeltaFor({ plan, delta })
   const [loadingExact, setLoadingExact] = useState(false)
   const [loadingMc, setLoadingMc] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
@@ -91,6 +101,10 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 evalResult.impact?.qualitative ? { ...impact, qualitative: evalResult.impact.qualitative } : impact,
               )
               setExactAction(evalResult.action)
+              // The exact dollar deltas are final here: release the button so
+              // the reader can hide the preview while the slower Monte Carlo
+              // pair below is still running (#527).
+              setLoadingExact(false)
 
               // If it impacts Monte Carlo success rate, run async MC pool query
               if (card.impact.successRateDeltaPct !== undefined) {
@@ -181,6 +195,24 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
     )
   }
 
+  // A Monte Carlo delta the one-decimal display would print as 0.0 is "no
+  // change": its sign must not paint it in a verdict color (#527).
+  const mcLabel = mcDelta === null ? null : formatMcDelta(mcDelta)
+  const mcFlat = mcLabel !== null && mcLabel.flat
+  // Every delta this card defines is zero (dollar deltas exact; the Monte
+  // Carlo line, if the card has one, settled and flat). The base plan running
+  // out of money is stated beside that as a fact, not as the cause: the
+  // evaluator reports no depletion delta, so the cause is not verified here.
+  const baseDepletionYear = projectionView.summary.depletionYear
+  const definedDollarDeltas = exactImpact === null
+    ? []
+    : [exactImpact.endingAfterTaxEstateDelta, exactImpact.lifetimeTaxDelta].filter((v): v is number => v !== undefined)
+  const mcSettledFlat = card.impact.successRateDeltaPct === undefined ? true : !loadingMc && mcFlat
+  // At least one delta of any kind must be defined: a card with only a Monte
+  // Carlo line still gets the note when that line is settled and flat.
+  const anyDeltaDefined = definedDollarDeltas.length > 0 || card.impact.successRateDeltaPct !== undefined
+  const allFlat = anyDeltaDefined && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat
+
   const confidenceChips = {
     high: { className: 'type-chip type-chip--good', label: 'High Confidence' },
     medium: { className: 'type-chip type-chip--warn', label: 'Medium Confidence' },
@@ -226,7 +258,14 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
 
       {/* Impact Section */}
       <div className="insight-impact-box">
-        {expanded && exactImpact ? (
+        {expanded && loadingExact && !exactImpact ? (
+          // The wait shows where the numbers will land, as a shimmer with a
+          // visible caption, not as a greyed button elsewhere on the card (#527).
+          <div className="insight-preview-wait" role="status">
+            <div className="skeleton" style={{ height: '2.5rem' }} aria-hidden="true" />
+            <p className="small muted">Re-simulating this plan…</p>
+          </div>
+        ) : expanded && exactImpact ? (
           <div>
             {exactImpact.qualitative ? <p>{exactImpact.qualitative}</p> : null}
             <div className="insight-impact-grid">
@@ -246,20 +285,29 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 <div>
                   <span className="muted">Monte Carlo success:</span>{' '}
                   {loadingMc ? (
-                    <span className="muted">calculating…</span>
-                  ) : mcDelta !== null ? (
-                    <span className={mcDelta >= 0 ? 'delta-pos' : 'delta-neg'}>
-                      {mcDelta > 0 ? '+' : ''}
-                      {mcDelta.toFixed(1)}%
+                    <span className="muted" role="status" aria-busy="true">
+                      still simulating…
                     </span>
+                  ) : mcLabel !== null ? (
+                    mcLabel.flat ? (
+                      'no change'
+                    ) : (
+                      <span className={mcLabel.good ? 'delta-pos' : 'delta-neg'}>{mcLabel.text}</span>
+                    )
                   ) : (
-                    '--'
+                    '—'
                   )}
                 </div>
               )}
             </div>
+            {allFlat && baseDepletionYear !== null ? (
+              <p className="small muted insight-flat-note">
+                Every delta shown is zero. The base plan runs out of money in {baseDepletionYear}.
+              </p>
+            ) : null}
             <div className="insight-impact-note">
               * Calculated by running a full plan re-simulation side-by-side.
+              {loadingMc ? ' The Monte Carlo line is still running; the dollar deltas above are final.' : ''}
             </div>
           </div>
         ) : (
@@ -306,8 +354,9 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 className="btn btn-secondary btn-small"
                 onClick={handleToggleExpand}
                 disabled={loadingExact}
+                aria-busy={loadingExact || loadingMc || undefined}
               >
-                {loadingExact ? 'Loading…' : expanded ? 'Hide preview' : 'Preview impact'}
+                {loadingExact ? 'Previewing…' : expanded ? 'Hide preview' : 'Preview impact'}
               </button>
               {expanded && exactImpact && (
                 <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={handleAddScenario}>

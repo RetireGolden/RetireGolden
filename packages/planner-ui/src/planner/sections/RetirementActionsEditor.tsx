@@ -6,11 +6,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 
 import { usePlan } from '../planContextCore'
 import { currentStartYear, taxCalculatorFor } from '../useProjection'
-import {
-  classifiableIraAccounts,
-  contributionDonors,
-} from '../retirementActionEligibilityFacts'
-import { namedQcdActions } from '../retirementActionQcdSchedule'
+import { retirementActionsCardParts } from '../retirementActionsCardVisibility'
 import { RetirementActionEligibilityFactsEditor } from './RetirementActionEligibilityFactsEditor'
 import { RetirementActionQcdAuthoringSection } from './RetirementActionQcdAuthoringSection'
 import {
@@ -24,7 +20,6 @@ import {
   buildRetirementActionManualIntent,
   emptyRetirementActionManualEditorDraft,
   formatPositiveUsdCents,
-  migratedRetirementActionsNeedingReview,
   retirementActionManualDestinationCandidate,
   retirementActionManualDestinationSupportIssue,
   retirementActionManualExecutionIssue,
@@ -439,11 +434,10 @@ function QcdManualReviewRow({
  */
 export function RetirementActionsEditor() {
   const { plan } = usePlan()
-  const actions = migratedRetirementActionsNeedingReview(plan)
-  const hasFacts = classifiableIraAccounts(plan).length > 0 ||
-    contributionDonors(plan, currentStartYear()).length > 0
-  const hasGifts = namedQcdActions(plan).length > 0
-  if (actions.length === 0 && !hasFacts && !hasGifts) return null
+  // One predicate, shared with the Strategy screen's charitable-giving copy,
+  // so nothing points at this card while it is not mounted (#518).
+  const { actions, hasFacts, hasGifts, mounts } = retirementActionsCardParts(plan, currentStartYear())
+  if (!mounts) return null
 
   return (
     <div className="card">

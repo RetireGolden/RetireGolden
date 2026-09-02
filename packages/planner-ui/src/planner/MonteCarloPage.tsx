@@ -52,6 +52,7 @@ import {
   type ModelKind,
 } from './marketModelPicker'
 import { currentStartYear, seedFromPlanId } from './useProjection'
+import { HEADLINE_MC_MODEL, isHeadlineMcConfig, publishMcHeadline, registerMcHeadlineRun, useMcHeadline } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
 import { successBand } from './successBand'
 import { frameH } from './chartFrame'
@@ -93,13 +94,17 @@ function SuccessGauge({ rate, pathCount }: { rate: number; pathCount: number }) 
 
 export function MonteCarloPage() {
   const { plan } = usePlan()
-  const [modelKind, setModelKind] = useState<ModelKind>('lognormal')
-  const [returnVolPct, setReturnVolPct] = useState(12)
-  const [equityWeightPct, setEquityWeightPct] = useState(60)
+  // The controls start on the headline configuration the KPI bar runs, from
+  // the one constant that defines it, so a run here is the headline run until
+  // the reader changes something (#497).
+  const [modelKind, setModelKind] = useState<ModelKind>(HEADLINE_MC_MODEL.kind)
+  const [returnVolPct, setReturnVolPct] = useState<number>(HEADLINE_MC_MODEL.returnVolPct)
+  const [equityWeightPct, setEquityWeightPct] = useState<number>(HEADLINE_MC_MODEL.equityWeightPct)
   const [seed, setSeed] = useState(() => seedFromPlanId(plan.id))
   const [stochasticLongevity, setStochasticLongevity] = useState(false)
   const [ltcShock, setLtcShock] = useState(false)
-  const [summary, setSummary] = useState<MonteCarloSummary | null>(null)
+  // The page's own latest run; `summary` below prefers a published headline run.
+  const [ownSummary, setSummary] = useState<MonteCarloSummary | null>(null)
   const [frontier, setFrontier] = useState<{
     plan: Plan
     model: MarketModelConfig
@@ -119,6 +124,8 @@ export function MonteCarloPage() {
   const [historicalRunning, setHistoricalRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [running, setRunning] = useState(false)
+  // The size of the run in flight, so the intro and the hero name it while it runs.
+  const [inFlightPaths, setInFlightPaths] = useState<number>(DEFAULT_PATH_COUNT)
   const [statusMessage, setStatusMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [frontierError, setFrontierError] = useState<string | null>(null)
@@ -134,10 +141,12 @@ export function MonteCarloPage() {
     (paths: number) => {
       const token = ++runToken.current
       setRunning(true)
+      setInFlightPaths(paths)
       setProgress(0)
       setError(null)
       setStatusMessage(`Simulating ${paths.toLocaleString()} market paths…`)
-      void runMonteCarlo(plan, {
+      const headlineRun = isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
+      const simulation = runMonteCarlo(plan, {
         startYear: currentStartYear(),
         pathCount: paths,
         seed,
@@ -148,7 +157,15 @@ export function MonteCarloPage() {
           if (token === runToken.current) setProgress(done / total)
         },
       })
+      // The KPI bar attaches to this run instead of launching its own (#497).
+      if (headlineRun) registerMcHeadlineRun(plan, simulation, paths)
+      void simulation
         .then((s) => {
+          // A headline-configuration run is the headline number too, even when
+          // a re-roll or model change superseded it on this page meanwhile:
+          // the store is per plan object and configuration-invariant, so the
+          // KPI bar and Results still gain the finer result (#497).
+          if (headlineRun) publishMcHeadline(plan, s)
           if (token === runToken.current) {
             setSummary(s)
             setStatusMessage(
@@ -166,7 +183,7 @@ export function MonteCarloPage() {
           if (token === runToken.current) setRunning(false)
         })
     },
-    [plan, seed, model, stochasticLongevity, ltcShock],
+    [plan, seed, model, modelKind, returnVolPct, equityWeightPct, stochasticLongevity, ltcShock],
   )
 
   const runFrontiers = useCallback(() => {
@@ -212,11 +229,29 @@ export function MonteCarloPage() {
       .finally(() => setHistoricalRunning(false))
   }, [plan, equityWeightPct])
 
-  // Auto-run 1k paths whenever the plan, seed, or model changes (debounced).
+  // Under the headline configuration, the latest run published for this exact
+  // plan object (a 10,000-path one, typically) is what the page shows, so the
+  // gauge here and the KPI bar can never quote different runs (#497). A
+  // subscription, so a publish from any surface re-renders this page.
+  const publishedHeadline = useMcHeadline(plan)
+  const cachedHeadline = isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
+    ? publishedHeadline
+    : undefined
+  const summary = cachedHeadline ?? ownSummary
+
+  // Auto-run 1k paths whenever the plan, seed, or model changes (debounced),
+  // unless a published run is already on show: a coarser fresh run must not
+  // replace it. A run the reader starts inside the debounce (Run 10,000
+  // paths) bumps the token, and the auto-run then stands down instead of
+  // superseding that run.
   useEffect(() => {
-    const t = window.setTimeout(() => run(DEFAULT_PATH_COUNT), 250)
+    if (cachedHeadline !== undefined) return undefined
+    const scheduledAt = runToken.current
+    const t = window.setTimeout(() => {
+      if (runToken.current === scheduledAt) run(DEFAULT_PATH_COUNT)
+    }, 250)
     return () => window.clearTimeout(t)
-  }, [run])
+  }, [run, cachedHeadline])
 
   const fanRows = useMemo(() => summary?.fan ?? [], [summary])
   const histRows = useMemo(() => {
@@ -252,7 +287,8 @@ export function MonteCarloPage() {
         <h2>Market model</h2>
         <p className="card-hint">
           Your deterministic projection assumes the same return and inflation every year. Monte Carlo replays the exact
-          same plan a thousand times with markets that vary year to year, then reports how often the money lasts. The
+          same plan {(summary?.pathCount ?? inFlightPaths).toLocaleString()} times with markets that vary year to
+          year, then reports how often the money lasts. The
           model below controls <em>how</em> those markets are generated, your expected returns and inflation from
           Assumptions stay the center of the distribution either way.
         </p>
@@ -334,7 +370,7 @@ export function MonteCarloPage() {
           <div className="field">
             <span className="field-label-row">
               <span className="field-label">Market draw</span>
-              <HelpTip text="The random sequence is reproducible: the same draw always produces the same thousand markets, so results don't jump around as you edit the plan. Re-roll to check the conclusion holds under a different draw, if success swings more than a point or two, run 10,000 paths. The exact seed number is under Advanced models." />
+              <HelpTip text="The random sequence is reproducible: the same draw always produces the same markets, so results don't jump around as you edit the plan. Re-roll to check the conclusion holds under a different draw, if success swings more than a point or two, run 10,000 paths. The exact seed number is under Advanced models." />
             </span>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => setSeed((Math.random() * 0xffffffff) >>> 0)}>
               Re-roll markets
@@ -391,6 +427,14 @@ export function MonteCarloPage() {
             <SuccessGauge rate={summary.successRate} pathCount={summary.pathCount} />
             <div>
               <h2>{successBand(summary.successRate).verdict}</h2>
+              {running ? (
+                // The figures on show are the last completed run; say so while
+                // a replacement runs, instead of letting them pass as current.
+                <p className="small muted" role="status">
+                  Showing the last completed run ({summary.pathCount.toLocaleString()} paths) while{' '}
+                  {inFlightPaths.toLocaleString()} paths simulate.
+                </p>
+              ) : null}
               <p className="muted">
                 Median ending estate {fmtMoneyCompact(summary.endingAfterTaxEstate.percentiles.p50)} · worst 10%{' '}
                 {fmtMoneyCompact(summary.endingAfterTaxEstate.percentiles.p10)} · best 10%{' '}

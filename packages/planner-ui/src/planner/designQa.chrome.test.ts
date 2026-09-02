@@ -17,6 +17,11 @@ function sheet(rel: string): string {
   return readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
 }
 
+/** The same, for an absolute path (the source sweeps). */
+function text(path: string): string {
+  return readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
+}
+
 const css: string = sheet('./planner.css')
 const learnCss: string = sheet('../learn/learn.css')
 const indexCss: string = sheet('../index.css')
@@ -308,7 +313,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
   })
 
   it('the scenario rows table carries the class the danger rule targets (#460)', () => {
-    const page: string = readFileSync(fileURLToPath(new URL('./ScenariosPage.tsx', import.meta.url)), 'utf8')
+    const page: string = sheet('./ScenariosPage.tsx')
     const overview = page.indexOf('<caption>Deterministic overview (nominal dollars)</caption>')
     expect(overview).toBeGreaterThan(0)
     const tag = page.lastIndexOf('<table', overview)
@@ -327,18 +332,18 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(rule('.year-table-wrap--grow')).toMatch(/max-height:\s*none/)
     // The sticky first column covers the wrap's left cue, so it carries its own
     // scroll-driven edge shadow, behind @supports and off while nothing overflows.
-    const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
+    const css: string = sheet('./planner.css')
     expect(css).toMatch(
       /@supports \(animation-timeline: scroll\(\)\) \{\s*\.year-table th:first-child,\s*\.year-table td:first-child \{[^}]*animation-timeline:\s*scroll\(nearest inline\)/,
     )
     expect(css).toMatch(/@keyframes sticky-column-edge \{[\s\S]*?box-shadow: [^;]*color-mix\(in srgb, var\(--fg\) 18%, transparent\)/)
     // The three tables the findings named are ScrollRegions, and the Results
     // year table prints $0 in the columns that used to go blank at zero.
-    const survivor: string = readFileSync(fileURLToPath(new URL('./SurvivorTransitionPage.tsx', import.meta.url)), 'utf8')
+    const survivor: string = sheet('./SurvivorTransitionPage.tsx')
     expect(survivor).toMatch(/<ScrollRegion label=\{`Death-timing scenarios for \$\{personName\}`\} grow/)
-    const scenarios: string = readFileSync(fileURLToPath(new URL('./ScenariosPage.tsx', import.meta.url)), 'utf8')
+    const scenarios: string = sheet('./ScenariosPage.tsx')
     expect(scenarios).toMatch(/<ScrollRegion label="Scenario overview table"/)
-    const results: string = readFileSync(fileURLToPath(new URL('./ResultsPage.tsx', import.meta.url)), 'utf8')
+    const results: string = sheet('./ResultsPage.tsx')
     expect(results).toMatch(/<ScrollRegion label="Year-by-year table">/)
     // No raw wrap is left anywhere: every wide table in the package is a named,
     // reachable ScrollRegion (#480, #484, and the rest of the family).
@@ -347,17 +352,14 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     const rawWraps = files
       .filter((f: string) => f.endsWith('.tsx') && !f.endsWith('ScrollRegion.tsx'))
       // Any div whose attributes mention the class, however the JSX is shaped.
-      .filter((f: string) => /<div\b[^>]*year-table-wrap/s.test(readFileSync(`${srcDir}/${f}`, 'utf8')))
+      .filter((f: string) => /<div\b[^>]*year-table-wrap/s.test(text(`${srcDir}/${f}`)))
     expect(rawWraps).toEqual([])
     for (const label of ['{caption}', '"Annual ledger comparison"', '"Capacity solve status"']) {
       expect(scenarios).toContain(`<ScrollRegion label=${label}`)
     }
     expect(results).toContain('<ScrollRegion label="Roth conversion details"')
     // The Learning Center article describes the cell the table now prints.
-    const article: string = readFileSync(
-      fileURLToPath(new URL('../learn/content/reading-the-results-page.ts', import.meta.url)),
-      'utf8',
-    )
+    const article: string = sheet('../learn/content/reading-the-results-page.ts')
     expect(article).toContain('A $0 shortfall cell is good news')
     expect(article).not.toMatch(/blank shortfall cell/i)
     for (const field of ['contributions', 'employerMatch', 'shortfall']) {
@@ -368,7 +370,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
   })
 
   it('frontier axes, skipped-control notes, and the report head follow the chrome rules (#449, #484, #474)', () => {
-    const mc: string = readFileSync(fileURLToPath(new URL('./MonteCarloPage.tsx', import.meta.url)), 'utf8')
+    const mc: string = sheet('./MonteCarloPage.tsx')
     // Every success-rate axis (two frontiers, annuitization) is bounded 0–100%
     // with quarter ticks, so equal quantities never read on different scales (#449).
     const pinned = mc.match(/<YAxis domain=\{\[0, 1\]\} ticks=\{\[0, 0\.25, 0\.5, 0\.75, 1\]\} tickFormatter=\{\(v\) => `\$\{Math\.round\(Number\(v\) \* 100\)\}%`\}/g)
@@ -383,27 +385,24 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(rule('.report-head')).toMatch(/flex-wrap:\s*wrap/)
     expect(rule('.report-head-title')).toMatch(/flex:\s*1 1 16rem/)
     expect(rule('.report-head-title')).toMatch(/min-width:\s*0/)
-    const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
+    const css: string = sheet('./planner.css')
     expect(css).toMatch(/@media print \{\s*\.report \.year-table-wrap \{[^}]*overflow:\s*visible;[^}]*max-height:\s*none;/)
     // The engine's skipped-control note reads as a sentence to a person, not a code aside.
-    const engineNote: string = readFileSync(
-      fileURLToPath(new URL('../../../engine/src/decisions/annuitization.ts', import.meta.url)),
-      'utf8',
-    )
+    const engineNote: string = sheet('../../../engine/src/decisions/annuitization.ts')
     expect(engineNote).toContain('Glidepath attribution was skipped.')
     expect(engineNote).not.toContain('controls were skipped')
   })
 
   it('loading, recalculating, and failure states are labelled, and a flat objective crowns no best (#433, #453, #448, #454)', () => {
-    const workspace: string = readFileSync(fileURLToPath(new URL('./PlanWorkspace.tsx', import.meta.url)), 'utf8')
+    const workspace: string = sheet('./PlanWorkspace.tsx')
     expect(workspace).toMatch(/className="kpi-value kpi-value--pending" aria-busy="true" aria-label="Simulating markets"/)
-    expect(workspace).toContain('simulating ${DEFAULT_PATH_COUNT.toLocaleString()} markets…')
-    const solver: string = readFileSync(fileURLToPath(new URL('./SpendingSolverPage.tsx', import.meta.url)), 'utf8')
+    expect(workspace).toContain('simulating ${mcPathCount.toLocaleString()} markets…')
+    const solver: string = sheet('./SpendingSolverPage.tsx')
     expect(solver).toMatch(
       /<div className="callout callout--warn solver-failure" role="alert">\s*(\{\/\*[\s\S]*?\*\/\}\s*)?<h2 style=\{\{ marginTop: 0 \}\}>No sustainable spending level found<\/h2>/,
     )
     expect(solver).toMatch(/Review Spending[\s\S]*Review Assumptions/)
-    const ss: string = readFileSync(fileURLToPath(new URL('./SsAnalysisPage.tsx', import.meta.url)), 'utf8')
+    const ss: string = sheet('./SsAnalysisPage.tsx')
     expect(ss).toMatch(/verdict === 'flat' \|\| verdict === 'current-best' \|\| verdict === 'ineligible' \? \(\s*<div className="callout callout--note" role="note">/)
     // Nothing on the page reads the top ranked row as "best" any more.
     expect(ss).not.toMatch(/sweep\.ranked\[0\]!?\.claimByPersonId/)
@@ -422,7 +421,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(css).toMatch(
       /\.app-shell\.planner-shell:not\(\.app-shell--landing\):not\(\.app-shell--reading\):not\(\.app-shell--reading-narrow\) \{\s*max-width: 80rem/,
     )
-    const app: string = readFileSync(fileURLToPath(new URL('../App.tsx', import.meta.url)), 'utf8')
+    const app: string = sheet('../App.tsx')
     expect(app).toContain("isReading ? ' app-shell--reading' : ''")
     expect(app).toContain("isReadingNarrow ? ' app-shell--reading-narrow' : ''")
     expect(app).toContain("location.pathname === '/how-tested'")
@@ -435,7 +434,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
   })
 
   it('recurring and one-time income share one Tax treatment order and one Inflation help (#481)', () => {
-    const income: string = readFileSync(fileURLToPath(new URL('./sections/IncomeSection.tsx', import.meta.url)), 'utf8')
+    const income: string = sheet('./sections/IncomeSection.tsx')
     const orders = [...income.matchAll(/options=\{\[\s*((?:\{ value: '[a-zA-Z]+', label: '[^']+' \},?\s*)+)\]\}/g)].map((m) =>
       [...m[1]!.matchAll(/value: '([a-zA-Z]+)'/g)].map((v) => v[1]),
     )
@@ -461,7 +460,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
 })
 
 describe('Narrow viewports and the remaining partial-issue items (#439, #440, #462, #467, #469, #473)', () => {
-  const src = (rel: string): string => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
+  const src = sheet
 
   it('between the phone and two-column layouts the brand anchors top-left and only the theme cluster wraps (#440)', () => {
     expect(indexCss).toMatch(/@media \(min-width: 641px\) and \(max-width: 880px\) \{\s*\.app-header \{\s*align-items: flex-start;/)
@@ -533,5 +532,15 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
     const fields = src('./fields.tsx')
     expect(fields).toContain("while (scope && !scope.querySelector('.kpi-bar')) scope = scope.parentElement")
     expect(fields).not.toContain("button.closest('.workspace')")
+  })
+})
+
+describe('Design-QA pin hygiene', () => {
+  it('reads every file through a CRLF-normalising helper, so the pins hold on a Windows checkout', () => {
+    // Every readFileSync in this file normalises on the same line; nothing reads raw.
+    const self = sheet('./designQa.chrome.test.ts')
+    const reads = self.split('\n').filter((line) => line.includes('readFileSync' + '('))
+    expect(reads.length).toBeGreaterThan(0)
+    for (const line of reads) expect(line, line.trim()).toContain(".replace(/\\r\\n/g, '\\n')")
   })
 })

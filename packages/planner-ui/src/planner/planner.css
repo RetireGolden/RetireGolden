@@ -3314,3 +3314,110 @@ html:has(.kpi-bar) {
   outline-offset: 2px;
 }
 
+
+/* --- Design QA cluster A (#501, #504, #518) ---------------------------------
+   Appended as one block; nothing above is reordered. */
+
+/* Plan header breadcrumb (#501): the current-page crumb truncates with an
+   ellipsis like the plan-name input under it, instead of wrapping a long name
+   onto a second line with the "/" separator orphaned at its start. The home
+   crumb never shrinks; a linked crumb (the report's plan-name crumb) clips on
+   the anchor itself so its focus ring is never cut by an ancestor. */
+.workspace-breadcrumb ol {
+  flex-wrap: nowrap;
+}
+
+.workspace-breadcrumb li:first-child {
+  flex: 0 0 auto;
+}
+
+.workspace-breadcrumb li + li {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.workspace-breadcrumb li + li > a {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-breadcrumb li[aria-current='page'] {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Optional money fields (#518): the blank box says what blank means, in the
+   muted token in both themes. Scoped to fields that opt in with a placeholder
+   (MoneyField adds the modifier), not to every affixed input. */
+.input-affix--optional > input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+/* Print (#504): the theme tokens are set on :root[data-theme='dark'] and, for
+   a system-dark preference, :root:not([data-theme='light']) (both 0,2,0), so
+   the plain :root print override above never won and a dark-theme report
+   printed as a black page. The two theme-conditioned selectors here are
+   (0,2,1), one step more specific than either dark mechanism; the bare
+   html:root (0,1,1) only outranks the light theme's plain :root and must
+   never be the only selector left. Together they restate the whole light
+   palette from index.css, so paper is light and its verdict and chart colors
+   are the light-theme ones whatever the app theme. */
+@media print {
+  html:root,
+  html:root[data-theme='dark'],
+  html:root:not([data-theme='light']) {
+    color-scheme: light;
+    --bg: #fff;
+    --fg: #111;
+    --muted: #555;
+    --border: #bbb;
+    --surface-1: #fff;
+    --surface-2: #f2f2f2;
+    --accent: #84620f;
+    --accent-soft: #d9a521;
+    --accent-fg: #fff;
+    --good: #157a3a;
+    --warn: #a84e08;
+    --bad: #b91c1c;
+    --chart-1: #b8860b;
+    --chart-2: #6366f1;
+    --chart-3: #0c8f66;
+    --chart-4: #db2777;
+    --chart-5: #64748b;
+    --chart-6: #7c3aed;
+    --chart-7: #0891b2;
+    --chart-8: #b91c1c;
+    /* The one non-color token both dark blocks override: the muted-stroke chevron. */
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%235b6470' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    /* --control-border arrived in index.css with cluster B (#544); this cluster A
+       print palette restates it like every other token. */
+    --control-border: #767f8b;
+    --shadow-card: none;
+  }
+}
+
+/* Optional money fields, continued (#518 review): while the placeholder is
+   showing, the unit chip steps back so the box reads as a non-amount state
+   rather than "$ No floor"; it keeps its width and returns with the first typed
+   character, focused or not. */
+.input-affix > span.input-affix-unit--blank {
+  visibility: hidden;
+}
+
+/* Insights preview wait (#527 review): the shimmer and its caption stack.
+   Lives in this block with the rest of the cluster. */
+.insight-preview-wait {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.insight-preview-wait p {
+  margin: 0;
+}

@@ -39,6 +39,8 @@ export interface SurvivorYearFacts {
   year: number
   magi: number
   tax: number
+  /** Required-spending shortfall that year (nominal); non-zero means the plan was already short. */
+  shortfall: number
   filingStatus: ProjectedFilingStatus
 }
 
@@ -88,6 +90,41 @@ export interface SurvivorScenarioRow {
     estateDelta: number
     lifetimeTaxDelta: number
   } | null
+}
+
+const nearZero = (v: number) => Math.abs(v) < 0.5
+
+/**
+ * A timing with nothing on either side of the transition: no Social Security
+ * before or after the death, no tax or MAGI in the last joint or first
+ * survivor year, no surviving balance, no estate, no lifetime tax at all, no
+ * premium to relieve. Such a row is exact for its timing but reads as a
+ * confident survivor result
+ * ("$0 → $0", "no surcharge to relieve") beside a red shortfall count (#513).
+ * A plan that runs short of money but still has guaranteed income is NOT
+ * degenerate: its filing-status, Social Security, tax, and IRMAA columns are
+ * exactly what the survivor page exists to show, so those rows stay.
+ * Shortfall is checked symmetrically across the transition: survivor-year
+ * shortfall counts as a transition signal only when the last joint year had
+ * none, i.e. the death introduced it. A plan already short before the death
+ * (#513's row: shortfall on both sides, everything else $0) stays degenerate.
+ * Near-zero is symmetric (|v| < 0.5) so a rounding remainder of either sign
+ * is still nothing; a real negative figure is a real figure and keeps the row.
+ */
+export function isDegenerateTiming(row: SurvivorScenarioRow): boolean {
+  return (
+    nearZero(row.ssBeforeDeath) &&
+    nearZero(row.ssAfterDeath) &&
+    nearZero(row.lastJointYear.tax) &&
+    nearZero(row.firstSurvivorYear.tax) &&
+    nearZero(row.lastJointYear.magi) &&
+    nearZero(row.firstSurvivorYear.magi) &&
+    nearZero(row.minSurvivorInvestable) &&
+    nearZero(row.ssa44PremiumSavings) &&
+    nearZero(row.baseEndingAfterTaxEstate) &&
+    nearZero(row.baseLifetimeTax) &&
+    (nearZero(row.survivorShortfallYears) || row.lastJointYear.shortfall > 0.5)
+  )
 }
 
 export interface SurvivorAnalysis {
@@ -227,11 +264,18 @@ function buildTimingRow(
     deathAge,
     deathYear,
     filingTimeline: filingTimeline(base),
-    lastJointYear: { year: lastJoint.year, magi: lastJoint.magi, tax: lastJoint.tax, filingStatus: lastJoint.filingStatus },
+    lastJointYear: {
+      year: lastJoint.year,
+      magi: lastJoint.magi,
+      tax: lastJoint.tax,
+      shortfall: lastJoint.shortfall,
+      filingStatus: lastJoint.filingStatus,
+    },
     firstSurvivorYear: {
       year: firstSurvivor.year,
       magi: firstSurvivor.magi,
       tax: firstSurvivor.tax,
+      shortfall: firstSurvivor.shortfall,
       filingStatus: firstSurvivor.filingStatus,
     },
     ssBeforeDeath: lastJoint.incomes.socialSecurity,
