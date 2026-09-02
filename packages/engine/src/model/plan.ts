@@ -3261,17 +3261,26 @@ export const planSchema = z
       const targetValue = rothConversion.targetValue
       const targetPath = ['strategies', 'rothConversion', 'targetValue']
       if (rothConversion.target === 'topOfBracket') {
-        const rates = publishedBracketRatesPct(taxYear)
-        if (targetValue === null || !rates.includes(targetValue)) {
-          // No year is named: beyond the last published pack `packForYear`
-          // stands in with the latest one, so calling these "the 2050 rates"
-          // would assert a publication that has not happened (review r1-8).
-          // The rate ladder itself is not indexed — only the bounds are — so
-          // the set is the same list whichever year stands in.
+        // "Fill to the top of this bracket" needs a bracket ABOVE the chosen
+        // one to supply the ceiling, so the highest published rate — the
+        // open-ended top bracket, with nothing above it — is not a target the
+        // ledger can price. `ceilingFor` says the same in its own terms
+        // (`strategies/rothConversion.ts`: "unknown rate or open-ended top
+        // bracket"). The top rate is read off the pack's own ascending ladder
+        // rather than written down, so a pack whose schedule changes moves this
+        // rule with it (Nathan, 2026-09-02, on #495 D6).
+        //
+        // No year is named in the message: beyond the last published pack
+        // `packForYear` stands in with the latest one, so calling these "the
+        // 2050 rates" would assert a publication that has not happened (review
+        // r1-8). The ladder itself is not indexed — only the bounds are — so
+        // the set is the same list whichever year stands in.
+        const fillable = publishedBracketRatesPct(taxYear).slice(0, -1)
+        if (targetValue === null || !fillable.includes(targetValue)) {
           ctx.addIssue({
             code: 'custom',
             path: targetPath,
-            message: `a bracket target must be one of the published rates (${rates.join(', ')})`,
+            message: `a bracket target must be one of the published rates below the top bracket (${fillable.join(', ')})`,
           })
         }
       } else if (rothConversion.target === 'irmaaTier') {
@@ -3284,11 +3293,14 @@ export const planSchema = z
           })
         }
       } else if (rothConversion.target === 'fixedMagi') {
-        if (targetValue === null || targetValue < 0) {
+        // A ceiling of 0 is not a small conversion window, it is no window at
+        // all: the metric it caps is a floored MAGI, so nothing can ever fit
+        // under it and `ceilingFor` refuses it too (Nathan, 2026-09-02, D6).
+        if (targetValue === null || targetValue <= 0) {
           ctx.addIssue({
             code: 'custom',
             path: targetPath,
-            message: 'a fixed MAGI target cannot be negative',
+            message: 'a fixed MAGI target must be above 0',
           })
         }
       }

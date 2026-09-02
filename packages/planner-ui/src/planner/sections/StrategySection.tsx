@@ -262,14 +262,15 @@ export function StrategySection() {
               }
             />
             {rc.target === 'topOfBracket' ? (
-              /* Only a rate the pack publishes names a ceiling the conversion
-                 can aim at, so the control is the list of those rates rather
-                 than a number box that used to accept 37.5 % and then convert
-                 nothing (#508, decision D6). The window's first year picks the
-                 pack, which is the year the engine validates against. */
+              /* Only a rate with a bracket above it names a ceiling the
+                 conversion can aim at, so the control is the list of those
+                 rates rather than a number box that used to accept 37.5 % and
+                 then convert nothing (#508, decision D6). The window's first
+                 year picks the pack, which is the year the engine validates
+                 against. */
               <SelectField
                 label="Bracket"
-                help="Convert just enough each year to fill ordinary income to the top of this bracket. The top bracket is open-ended, so there is nothing above it to fill: choosing it converts nothing, and Results says so under Modeling notes."
+                help="Convert just enough each year to fill ordinary income to the top of this bracket. The listed rates are the ones with a bracket above them to stop at; the top rate has none, so it cannot be filled to."
                 learn={LEARN.marginalVsEffective}
                 path="strategies.rothConversion.targetValue"
                 value={rc.targetValue === null ? '' : String(rc.targetValue)}

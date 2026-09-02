@@ -266,6 +266,16 @@ export function annualAggregateRothConversionTargetPlan(
     itemizedDeductions: sizing.itemizedDeductions,
   })
   if (!sized.ok) {
+    // Kept after #495 D6 made the two everyday routes here parse errors (an
+    // unpublished or open-ended bracket rate, a fixed MAGI of 0 or less are
+    // refused by `planSchema` now, so a stored plan cannot carry one). This is
+    // still reachable, and removing it would turn the remaining case from a
+    // reported no-op into a silent one: `planSchema` validates the target
+    // against the pack for the window's FIRST year, while sizing looks it up in
+    // the pack for the year being simulated. A window that outlives a pack
+    // whose rate ladder or IRMAA tier count changed can therefore hold a target
+    // that was valid when it was authored and names no ceiling by the time it
+    // is priced. `annualAggregateRothConversionTargetPlan.test.ts` covers it.
     if (sized.reason === 'bad_target') {
       return result({
         desiredPlanDollars: 0,

@@ -194,15 +194,15 @@ describe('D6 (#508): the fill-to-target bracket is chosen, not typed', () => {
     }
   }
 
-  it('offers exactly the rates the pack publishes for the window year, marking the open-ended top one', async () => {
+  it('offers the published rates below the open-ended top one, and omits the top one', async () => {
     const host = await mount(validPlan(fillToTarget), <StrategySection />)
     const select = host.querySelector<HTMLSelectElement>('select[data-path="strategies.rothConversion.targetValue"]')
     expect(select, 'the bracket control is a select').not.toBeNull()
     const rates = packForYear(2026).pack.federalTax.brackets.single.map((b) => b.ratePct)
     const top = rates[rates.length - 1]!
-    expect([...select!.options].filter((o) => !o.disabled).map((o) => o.textContent)).toEqual(
-      rates.map((rate) => (rate === top ? `${rate}% (top bracket — nothing above it to fill)` : `${rate}%`)),
-    )
+    const labels = [...select!.options].filter((o) => !o.disabled).map((o) => o.textContent)
+    expect(labels).toEqual(rates.slice(0, -1).map((rate) => `${rate}%`))
+    expect(labels).not.toContain(`${top}%`)
     expect(select!.value).toBe('22')
   })
 
@@ -227,23 +227,28 @@ describe('D6 (#508): the fill-to-target bracket is chosen, not typed', () => {
     expect(offered).not.toContain(offered[0]! + 0.5)
   })
 
-  it('keeps a stored rate the pack does not publish visible, marked, beside the engine message', async () => {
-    // Parse refuses 37.5 now, so the fixture is built WITHOUT parsing: this is
+  it.each([
+    [37.5, '37.5% (not a published rate)'],
+    // A plan saved before the top bracket was refused. It says which of the two
+    // mistakes this is, because they are corrected differently.
+    [37, '37% (top bracket — nothing above it to fill)'],
+  ])('keeps a stored rate the select no longer offers visible and marked: %s', async (stored, label) => {
+    // Parse refuses both now, so the fixture is built WITHOUT parsing: this is
     // the shape an older stored plan arrives in, and the workspace renders it
     // with the engine's issue beside the control rather than dropping it.
-    const stored = validPlan(fillToTarget)
-    ;(stored.strategies.rothConversion as { targetValue: number }).targetValue = 37.5
+    const plan = validPlan(fillToTarget)
+    ;(plan.strategies.rothConversion as { targetValue: number }).targetValue = stored
     const host = await mount(
-      stored,
+      plan,
       <StrategySection />,
-      ['strategies.rothConversion.targetValue: a bracket target must be one of the published rates (10, 12, 22, 24, 32, 35, 37)'],
+      ['strategies.rothConversion.targetValue: a bracket target must be one of the published rates below the top bracket (10, 12, 22, 24, 32, 35)'],
     )
     const select = host.querySelector<HTMLSelectElement>('select[data-path="strategies.rothConversion.targetValue"]')!
-    expect(select.value).toBe('37.5')
-    expect([...select.options].map((o) => o.textContent)).toContain('37.5% (not a published rate)')
+    expect(select.value).toBe(String(stored))
+    expect([...select.options].map((o) => o.textContent)).toContain(label)
     expect(select.getAttribute('aria-invalid')).toBe('true')
     expect(select.closest('.field')!.querySelector('.field-error')?.textContent).toContain(
-      'a bracket target must be one of the published rates',
+      'a bracket target must be one of the published rates below the top bracket',
     )
   })
 

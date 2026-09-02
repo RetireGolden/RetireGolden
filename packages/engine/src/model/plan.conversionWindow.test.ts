@@ -136,8 +136,36 @@ describe('Roth fill-to-target value by target kind (#508, decision D6)', () => {
     expect(pack.medicare.irmaaTiers.map((t) => t.applicablePct)).toEqual(PUBLISHED_IRMAA_APPLICABLE_PCTS)
   })
 
-  it.each(PUBLISHED_RATES)('accepts the published %i%% bracket rate', (rate) => {
+  // Every published rate except the last. The registry statement lists the
+  // schedule in order — "the 10/12/22/24/32/35/37 structure" — so the rate a
+  // conversion can fill to is any of them that has another bracket above it,
+  // and 37 is the one that does not (IRC 1(j)(2)(C) prints its row as "Over
+  // $640,600", with no upper bound to reach).
+  const FILLABLE_RATES = PUBLISHED_RATES.slice(0, -1)
+  const TOP_RATE = PUBLISHED_RATES[PUBLISHED_RATES.length - 1]!
+  const BRACKET_MESSAGE =
+    'strategies.rothConversion.targetValue: a bracket target must be one of the published rates below the top bracket (10, 12, 22, 24, 32, 35)'
+
+  it.each(FILLABLE_RATES)('accepts the published %i%% bracket rate, which has a bracket above it', (rate) => {
     expect(issuesOf(withFillToTarget('topOfBracket', rate))).toEqual([])
+  })
+
+  it('refuses the open-ended top rate and accepts the one immediately below it', () => {
+    // The discriminating pair: 35 and 37 are both published by the same table
+    // in the same year, and only the difference this rule is about — whether a
+    // bracket sits above it to supply the ceiling — separates them.
+    expect(TOP_RATE).toBe(37)
+    expect(FILLABLE_RATES[FILLABLE_RATES.length - 1]).toBe(35)
+    expect(issuesOf(withFillToTarget('topOfBracket', TOP_RATE))).toContain(BRACKET_MESSAGE)
+    expect(issuesOf(withFillToTarget('topOfBracket', 35))).toEqual([])
+  })
+
+  it('reads the top rate off the pack rather than a written-down 37', () => {
+    // The refused value is whatever the pack's ascending ladder ends with, so a
+    // pack whose schedule changes moves the rule with it.
+    const ladder = packForYear(TAX_YEAR).pack.federalTax.brackets.single.map((b) => b.ratePct)
+    expect(issuesOf(withFillToTarget('topOfBracket', ladder[ladder.length - 1]!))).toContain(BRACKET_MESSAGE)
+    expect(issuesOf(withFillToTarget('topOfBracket', ladder[ladder.length - 2]!))).toEqual([])
   })
 
   it.each([
@@ -150,10 +178,7 @@ describe('Roth fill-to-target value by target kind (#508, decision D6)', () => {
     [37.5],
     [99],
   ])('refuses %s%%, which the statute does not publish as a bracket rate', (rate) => {
-    const issues = issuesOf(withFillToTarget('topOfBracket', rate))
-    expect(issues).toContain(
-      'strategies.rothConversion.targetValue: a bracket target must be one of the published rates (10, 12, 22, 24, 32, 35, 37)',
-    )
+    expect(issuesOf(withFillToTarget('topOfBracket', rate))).toContain(BRACKET_MESSAGE)
   })
 
   it('refuses a missing bracket rate', () => {
@@ -182,12 +207,17 @@ describe('Roth fill-to-target value by target kind (#508, decision D6)', () => {
     expect(issuesOf(withFillToTarget('irmaaTier', null)).join(' ')).toContain('an IRMAA tier target must be')
   })
 
-  it('accepts a fixed MAGI at or above zero and refuses a negative one', () => {
-    expect(issuesOf(withFillToTarget('fixedMagi', 0))).toEqual([])
+  it('refuses a fixed MAGI ceiling of 0 and accepts the dollar above it', () => {
+    // The discriminating pair, one dollar apart: 0 is not a small window but no
+    // window — the metric it caps is a floored MAGI (`metricFor` in
+    // strategies/rothConversion.ts returns `Math.max(0, …)`), so no conversion
+    // can ever fit under it, while 1 is an ordinary if tiny ceiling.
+    const message = 'strategies.rothConversion.targetValue: a fixed MAGI target must be above 0'
+    expect(issuesOf(withFillToTarget('fixedMagi', 0))).toContain(message)
+    expect(issuesOf(withFillToTarget('fixedMagi', 1))).toEqual([])
     expect(issuesOf(withFillToTarget('fixedMagi', 150_000))).toEqual([])
-    expect(issuesOf(withFillToTarget('fixedMagi', -1))).toContain(
-      'strategies.rothConversion.targetValue: a fixed MAGI target cannot be negative',
-    )
+    expect(issuesOf(withFillToTarget('fixedMagi', -1))).toContain(message)
+    expect(issuesOf(withFillToTarget('fixedMagi', null))).toContain(message)
   })
 
   it('leaves the ACA cliff target alone: its ceiling is the FPL, not a typed value', () => {
