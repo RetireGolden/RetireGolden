@@ -107,6 +107,10 @@ import {
   type AnnualFundingFixedPointEvaluationRequest,
 } from './internal/annualFundingFixedPoint.js'
 import {
+  annualFundingWithdrawalEffects,
+  type AnnualFundingWithdrawalEffectAccount,
+} from './internal/annualFundingWithdrawalEffects.js'
+import {
   annualDebtServiceRows,
   annualLongTermCarePlan,
 } from './internal/annualDebtAndLongTermCare.js'
@@ -136,7 +140,6 @@ import {
   ROTH_QUALIFIED_AGE,
   applyConversionPrincipalDebt,
   assumedSeedConsequentialSpill,
-  splitRothWithdrawal,
   type RothBasisState,
 } from '../strategies/rothBasis.js'
 import {
@@ -145,14 +148,12 @@ import {
   type InheritedRegimeResult,
 } from '../strategies/inheritedIra.js'
 import {
-  hsaNonQualifiedPenaltyRate,
   isAggregatedIra,
   hasSpouseTreatAsOwnElection,
   isConvertibleToRoth,
   isSpendableInYear,
   isTreatAsOwnEffective,
   rothConversionSourceContextForPerson,
-  traditionalWithdrawalPenaltyRate,
   type RothConversionSourceContext,
   type NonpersistedActionPersonAliveEvidence,
   type NonpersistedOwnerAggregatedIraBasisEvidence,
@@ -6520,124 +6521,46 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       return { nontaxable, taxableBySourceAccountId }
     }
 
-    const penaltiesFor = (
-      byAccountId: Map<string, number>,
-      iraCharacter = needBasedOwnedIraCharacter(byAccountId),
-    ): number => {
-      let total = 0
-      for (const state of rmdBalances) {
-        const taken = byAccountId.get(state.account.id) ?? 0
-        if (taken <= 0) continue
-        const ownerId = state.account.ownerPersonId ?? primary.id
-        const ownerAge = stateOf(ownerId).ageAttained
+    // Snapshot the candidate-withdrawal identity once per annual pass. The
+    // coordinator never sees live balances or caller-owned warning/basis maps.
+    const fundingWithdrawalEffectAccounts = Object.freeze(
+      rmdBalances.flatMap((state): AnnualFundingWithdrawalEffectAccount[] => {
         if (state.account.type === 'traditional') {
-          // Return-of-basis is excluded from gross income, so penalize only the
-          // taxable portion of an IRA with nondeductible basis; other
-          // traditional accounts (employer plans, no basis) penalize in full.
-          const penalizable = isAggregatedIraThisYear(state.account)
-            ? iraCharacter.taxableBySourceAccountId.get(state.account.id) ??
-              taken
-            : taken
-          // S2 post-election: account is the spouse's own for penalty purposes
-          // even though the plan still carries the inherited block (static
-          // validators stay pre-transition — WS5 residual).
-          const penaltyAccount =
-            state.account.type === 'traditional' &&
-            isTreatAsOwnEffective(state.account, year)
-              ? { ...state.account, inherited: undefined }
-              : state.account
-          total +=
-            penalizable *
-            traditionalWithdrawalPenaltyRate(penaltyAccount, {
-              ownerAgeAttained: ownerAge,
-              ownerRetirementAge: personById.get(ownerId)?.retirementAge ?? null,
-            })
+          const ownerId = state.account.ownerPersonId ?? primary.id
+          return [{
+            kind: 'traditional',
+            sourceAccountId: state.account.id,
+            account: state.account,
+            ownerAgeAttained: stateOf(ownerId).ageAttained,
+            ownerRetirementAge:
+              personById.get(ownerId)?.retirementAge ?? null,
+            treatAsOwnEffective:
+              isTreatAsOwnEffective(state.account, year),
+          }]
         }
-        // HSA penalties are computed by the subledger probe (hsaEffect below),
-        // which knows how much of a withdrawal is qualified.
-      }
-      if (total > 0) warnings.add('Early-withdrawal penalties were charged (pre-59½ traditional or pre-65 HSA).')
-      return total
-    }
-
-    // Roth withdrawals aggregated into their basis pools (an owner's Roth IRAs
-    // share one pool per IRS aggregation; employer Roth stays per-account), so a
-    // draw is ordered against the owner's whole Roth-IRA basis, not one account's.
-    // Inherited Roth (including post-S2) is excluded: voluntary and forced draws
-    // are non-taxable and penalty-free in v1 and must not touch the owned pool
-    // (basis migration after the flip is a documented residual).
-    const rothPoolWithdrawals = (byAccountId: Map<string, number>): Map<string, { taken: number; age: number }> => {
-      const byPool = new Map<string, { taken: number; age: number }>()
-      for (const state of rmdBalances) {
-        if (state.account.type !== 'roth') continue
-        if (isInheritedRothOutsideOwnedPool(state.account)) continue
-        const taken = byAccountId.get(state.account.id) ?? 0
-        if (taken <= 0) continue
-        const key = rothPoolKey(state.account)
-        const age = stateOf(state.account.ownerPersonId ?? primary.id).ageAttained
-        const entry = byPool.get(key)
-        if (entry) entry.taken += taken
-        else byPool.set(key, { taken, age })
-      }
-      return byPool
-    }
-
-    // Roth ordering effect of a candidate Roth draw: the 10% penalty on pre-59½
-    // earnings and unseasoned conversions, plus the earnings taxed as ordinary
-    // income. Pure (probed against the uncommitted basis pools every iteration);
-    // the pools are only mutated once, when the final plan is applied.
-    const rothEarlyEffect = (byAccountId: Map<string, number>): { penalty: number; taxableOrdinary: number } => {
-      let penalty = 0
-      let taxableOrdinary = 0
-      for (const [key, { taken, age }] of rothPoolWithdrawals(byAccountId)) {
-        const rb = rothBasis.get(key)
-        if (!rb) continue
-        const split = splitRothWithdrawal(rb, taken, year, age)
-        penalty += split.penalty
-        taxableOrdinary += split.taxableOrdinary
-      }
-      return { penalty, taxableOrdinary }
-    }
-
-    // HSA subledger effect of a candidate HSA draw (steps 2–3): how much is a
-    // qualified medical reimbursement (tax- and penalty-free) vs. non-qualified
-    // (ordinary income, 20% penalty pre-65). Pure — probed against the year's
-    // fixed qualified cap every iteration; the reimburse-later pool commits
-    // once, after the final plan. Cap consumption runs in balances order.
-    const hsaEffect = (
-      byAccountId: Map<string, number>,
-      qualifiedCap = hsaQualifiedCap,
-    ): { taxableOrdinary: number; penalty: number; qualified: number; nonQualified: number; capConsumed: number } => {
-      let taxableOrdinary = 0
-      let penalty = 0
-      let qualified = 0
-      let nonQualified = 0
-      let capLeft = qualifiedCap
-      for (const state of rmdBalances) {
-        if (state.account.type !== 'hsa') continue
-        const taken = byAccountId.get(state.account.id) ?? 0
-        if (taken <= 0) continue
-        const ownerAge = stateOf(state.account.ownerPersonId ?? primary.id).ageAttained
-        const treatment = state.account.withdrawalTreatment
-        if (treatment === 'capByMedicalExpenses') {
-          const q = Math.min(taken, capLeft)
-          capLeft -= q
-          qualified += q
-          const nq = taken - q
-          nonQualified += nq
-          taxableOrdinary += nq
-          penalty += nq * hsaNonQualifiedPenaltyRate(ownerAge)
-        } else if (treatment === 'assumeAllQualified') {
-          // Explicit simplification: every withdrawal is qualified.
-          qualified += taken
-        } else {
-          // Legacy v1 treatment: tax-free but conservatively penalized pre-65.
-          qualified += taken
-          penalty += taken * hsaNonQualifiedPenaltyRate(ownerAge)
+        if (state.account.type === 'roth') {
+          const ownerId = state.account.ownerPersonId ?? primary.id
+          return [{
+            kind: 'roth',
+            sourceAccountId: state.account.id,
+            poolKey: isInheritedRothOutsideOwnedPool(state.account)
+              ? null
+              : rothPoolKey(state.account),
+            ownerAgeAttained: stateOf(ownerId).ageAttained,
+          }]
         }
-      }
-      return { taxableOrdinary, penalty, qualified, nonQualified, capConsumed: qualifiedCap - capLeft }
-    }
+        if (state.account.type === 'hsa') {
+          const ownerId = state.account.ownerPersonId ?? primary.id
+          return [{
+            kind: 'hsa',
+            sourceAccountId: state.account.id,
+            withdrawalTreatment: state.account.withdrawalTreatment,
+            ownerAgeAttained: stateOf(ownerId).ageAttained,
+          }]
+        }
+        return []
+      }),
+    )
 
     // Pro-rata (Form 8606) return-of-basis in a candidate's need-based IRA
     // draws (step 5). Pure — probed against the uncommitted per-owner year
@@ -6661,13 +6584,20 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         year,
         floorReserveNominal,
       )
-      const rothEffect = rothEarlyEffect(withdrawalPlan.byAccountId)
       const iraCharacterProbe = needBasedOwnedIraCharacter(
         withdrawalPlan.byAccountId,
       )
       const iraNontaxableProbe = iraCharacterProbe.nontaxable
       let candidateHsaCap = hsaQualifiedCap
-      let hsaProbe = hsaEffect(withdrawalPlan.byAccountId, candidateHsaCap)
+      let withdrawalEffectsProbe = annualFundingWithdrawalEffects({
+        accounts: fundingWithdrawalEffectAccounts,
+        withdrawalsByAccountId: withdrawalPlan.byAccountId,
+        traditionalTaxableByAccountId:
+          iraCharacterProbe.taxableBySourceAccountId,
+        rothBasisByPool: rothBasis,
+        year,
+        hsaQualifiedCap: candidateHsaCap,
+      })
       let nettedProbe!: ReturnType<typeof applyCapitalLossCarryforward>
       let tax = 0
       let acaMagiProbe: AcaHouseholdMagiResult | null = null
@@ -6684,8 +6614,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ordinaryBase +
             withdrawalPlan.byCategory.traditional -
             iraNontaxableProbe +
-            rothEffect.taxableOrdinary +
-            hsaProbe.taxableOrdinary,
+            withdrawalEffectsProbe.roth.taxableOrdinary +
+            withdrawalEffectsProbe.hsa.taxableOrdinary,
           preWithdrawalCapitalResult + withdrawalPlan.realizedGains,
           lossOffsetLimit,
         )
@@ -6795,16 +6725,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           break
         }
         candidateHsaCap = nextHsaCap
-        hsaProbe = hsaEffect(withdrawalPlan.byAccountId, candidateHsaCap)
+        withdrawalEffectsProbe = annualFundingWithdrawalEffects({
+          accounts: fundingWithdrawalEffectAccounts,
+          withdrawalsByAccountId: withdrawalPlan.byAccountId,
+          traditionalTaxableByAccountId:
+            iraCharacterProbe.taxableBySourceAccountId,
+          rothBasisByPool: rothBasis,
+          year,
+          hsaQualifiedCap: candidateHsaCap,
+        })
       }
       if (!hsaCapConverged && acaActive) {
         acaSupportCodes.push('hsa-cap-fixed-point-nonconvergent')
         candidateHealthcare = healthcareExcludingAcaEnrollment + acaGrossEnrollmentPremium
       }
-      const penalties = penaltiesFor(
-        withdrawalPlan.byAccountId,
-        iraCharacterProbe,
-      ) + rothEffect.penalty + hsaProbe.penalty + rmdShortfallExciseTax
+      if (withdrawalEffectsProbe.traditional.penalty > 0) {
+        warnings.add(
+          'Early-withdrawal penalties were charged (pre-59½ traditional or pre-65 HSA).',
+        )
+      }
+      const penalties =
+        withdrawalEffectsProbe.penaltyExcludingRmdShortfallExcise +
+        rmdShortfallExciseTax
       return {
         withdrawalPlan,
         tax,
@@ -6918,103 +6860,81 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
     const shortfallAfterHecm = Math.max(0, withdrawalPlan.shortfall - hecmShortfallDraw)
     const surplus = Math.max(0, cashInflows - expenses.total - contributions - tax - penalties)
-    const rothEffectFinal = rothEarlyEffect(withdrawalPlan.byAccountId)
-    const hsaEffectFinal = hsaEffect(withdrawalPlan.byAccountId)
     const iraCharacterFinal = needBasedOwnedIraCharacter(
       withdrawalPlan.byAccountId,
     )
+    const withdrawalEffectsFinal = annualFundingWithdrawalEffects({
+      accounts: fundingWithdrawalEffectAccounts,
+      withdrawalsByAccountId: withdrawalPlan.byAccountId,
+      traditionalTaxableByAccountId:
+        iraCharacterFinal.taxableBySourceAccountId,
+      rothBasisByPool: rothBasis,
+      year,
+      hsaQualifiedCap,
+    })
+    const rothEffectFinal = withdrawalEffectsFinal.roth
+    const hsaEffectFinal = withdrawalEffectsFinal.hsa
     const iraNontaxableFinal = iraCharacterFinal.nontaxable
     if (publishCashFlow) {
       // Pass-local penalty snapshot at committed finals. Assemble does not
-      // re-walk penaltiesFor / rothEarlyEffect / hsaEffect.
-      for (const state of rmdBalances) {
-        const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
-        if (taken <= 0) continue
-        const ownerId = state.account.ownerPersonId ?? primary.id
-        const ownerAge = stateOf(ownerId).ageAttained
-        if (state.account.type === 'traditional') {
-          const penalizable = isAggregatedIraThisYear(state.account)
-            ? iraCharacterFinal.taxableBySourceAccountId.get(state.account.id) ?? taken
-            : taken
-          const penaltyAccount =
-            isTreatAsOwnEffective(state.account, year)
-              ? { ...state.account, inherited: undefined }
-              : state.account
-          const amount =
-            penalizable *
-            traditionalWithdrawalPenaltyRate(penaltyAccount, {
-              ownerAgeAttained: ownerAge,
-              ownerRetirementAge: personById.get(ownerId)?.retirementAge ?? null,
-            })
-          if (amount > 0) {
-            cashFlowPenaltyLines!.push({
-              attribution: 'account',
-              accountId: state.account.id,
-              penaltyClass: 'traditionalEarly',
-              amount,
-            })
-          }
-        }
+      // re-walk the withdrawal-effects coordinator.
+      for (const row of withdrawalEffectsFinal.traditional.rows) {
+        cashFlowPenaltyLines!.push({
+          attribution: 'account',
+          accountId: row.sourceAccountId,
+          penaltyClass: 'traditionalEarly',
+          amount: row.amount,
+        })
       }
-      let hsaCapLeft = hsaQualifiedCap
-      for (const state of rmdBalances) {
-        if (state.account.type !== 'hsa') continue
-        const taken = withdrawalPlan.byAccountId.get(state.account.id) ?? 0
-        if (taken <= 0) continue
-        const ownerAge = stateOf(state.account.ownerPersonId ?? primary.id).ageAttained
-        const treatment = state.account.withdrawalTreatment
-        let amount: number
-        if (treatment === 'capByMedicalExpenses') {
-          const qualified = Math.min(taken, hsaCapLeft)
-          hsaCapLeft -= qualified
-          const nonqualifiedOrdinary = taken - qualified
-          if (nonqualifiedOrdinary > 0) {
-            hsaNonqualifiedOrdinaryByAccountId!.set(state.account.id, nonqualifiedOrdinary)
-          }
-          amount = nonqualifiedOrdinary * hsaNonQualifiedPenaltyRate(ownerAge)
-        } else if (treatment === 'assumeAllQualified') {
-          amount = 0
-        } else {
-          amount = taken * hsaNonQualifiedPenaltyRate(ownerAge)
+      for (const row of withdrawalEffectsFinal.hsa.rows) {
+        if (row.nonQualified > 0) {
+          hsaNonqualifiedOrdinaryByAccountId!.set(
+            row.sourceAccountId,
+            row.nonQualified,
+          )
         }
-        if (amount > 0) {
+        if (row.penalty > 0) {
           cashFlowPenaltyLines!.push({
             attribution: 'account',
-            accountId: state.account.id,
+            accountId: row.sourceAccountId,
             penaltyClass: 'hsaNonMedical',
-            amount,
+            amount: row.penalty,
           })
         }
       }
-      for (const [key, { taken, age }] of rothPoolWithdrawals(withdrawalPlan.byAccountId)) {
-        const rb = rothBasis.get(key)
-        if (!rb) continue
-        const split = splitRothWithdrawal(rb, taken, year, age)
-        if (key.startsWith('rothira:')) {
-          const personId = key.slice('rothira:'.length)
-          if (split.penalty > 0) {
+      for (const row of withdrawalEffectsFinal.roth.rows) {
+        if (row.split === null) continue
+        if (row.poolKey.startsWith('rothira:')) {
+          const personId = row.poolKey.slice('rothira:'.length)
+          if (row.split.penalty > 0) {
             cashFlowPenaltyLines!.push({
               attribution: 'rothPool',
               personId,
               penaltyClass: 'rothEarly',
-              amount: split.penalty,
+              amount: row.split.penalty,
             })
           }
-          if (split.taxableOrdinary > 0) {
-            rothPoolTaxableOrdinaryByPersonId!.set(personId, split.taxableOrdinary)
+          if (row.split.taxableOrdinary > 0) {
+            rothPoolTaxableOrdinaryByPersonId!.set(
+              personId,
+              row.split.taxableOrdinary,
+            )
           }
-        } else if (key.startsWith('roth:')) {
-          const accountId = key.slice('roth:'.length)
-          if (split.penalty > 0) {
+        } else if (row.poolKey.startsWith('roth:')) {
+          const accountId = row.poolKey.slice('roth:'.length)
+          if (row.split.penalty > 0) {
             cashFlowPenaltyLines!.push({
               attribution: 'account',
               accountId,
               penaltyClass: 'rothEarly',
-              amount: split.penalty,
+              amount: row.split.penalty,
             })
           }
-          if (split.taxableOrdinary > 0) {
-            employerRothTaxableOrdinaryByAccountId!.set(accountId, split.taxableOrdinary)
+          if (row.split.taxableOrdinary > 0) {
+            employerRothTaxableOrdinaryByAccountId!.set(
+              accountId,
+              row.split.taxableOrdinary,
+            )
           }
         }
       }
@@ -7922,10 +7842,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // assumed seed exceeds free-cover capacity at this moment (FIFO prefix of
     // seasoned conversion principal + wholly nontaxable unseasoned principal;
     // stops at the first unseasoned taxable layer).
-    for (const [key, { taken, age }] of rothPoolWithdrawals(withdrawalPlan.byAccountId)) {
+    for (const row of withdrawalEffectsFinal.roth.rows) {
+      if (row.split === null) continue
+      const key = row.poolKey
+      const taken = row.taken
+      const age = row.ownerAgeAttained
+      const split = row.split
       const rb = rothBasis.get(key)
       if (!rb) continue
-      const split = splitRothWithdrawal(rb, taken, year, age)
       const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0
       // Known contribution basis (supplied seed + credits) is consumed first;
       // only the residual draw into the assumed seed is a candidate spill.
