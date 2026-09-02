@@ -29,6 +29,7 @@
  *   Y  legacy aggregate QCD owner-character plan
  *   Z  annual pension and annuity income
  *   AB retirement-action settlement publication
+ *   AE annual funding withdrawal effects
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -38,7 +39,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z and AB, each have a
+ * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z, AB and AE, each have a
  * phase-specific reach spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -64,13 +65,15 @@
  * `scripts/equivalence/specs/simulate-pension-annuity-income-boundary.json`,
  * `scripts/equivalence/specs/simulate-retirement-action-settlement-publication-boundary.json`,
  * `scripts/equivalence/specs/simulate-year-result-assembly-boundary.json`,
- * and `scripts/equivalence/specs/simulate-funding-fixed-point-boundary.json`
+ * `scripts/equivalence/specs/simulate-funding-fixed-point-boundary.json`,
+ * and `scripts/equivalence/specs/simulate-funding-withdrawal-effects-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  * The YearResult assembly and funding-fixed-point boundaries have no dedicated
  * corpus blocks: their specs measure the existing full corpus and use `AC` and
- * `AD` only as reach-entry namespaces.
+ * `AD` only as reach-entry namespaces. Block AE pins the otherwise-cold
+ * multi-account Roth-pool accumulation in the withdrawal-effects coordinator.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so
  * this tier has no dependency outside the engine package. Plans are
@@ -4554,6 +4557,40 @@ function blockAB() {
   return out
 }
 
+// ---------------------------------------------------------------------------
+// AE — annual funding withdrawal effects
+// ---------------------------------------------------------------------------
+
+function blockAE() {
+  const plan = shell(60, { dob: '1976-01-01' })
+  plan.id = 'ae1-multi-account-roth-pool'
+  plan.assumptions.defaultReturnPct = 0
+  plan.assumptions.inflationPct = 0
+  plan.incomes = []
+  plan.accounts = [
+    qualified('roth', 'ae1-roth-first', 50_000, {
+      annualReturnPct: 0,
+      contributionBasis: 50_000,
+    }),
+    qualified('roth', 'ae1-roth-second', 50_000, {
+      annualReturnPct: 0,
+      contributionBasis: 50_000,
+    }),
+  ]
+  plan.expenses.baseAnnual = 80_000
+  plan.expenses.healthcare = {
+    pre65MonthlyPremiumPerPerson: 0,
+    applyAcaCredit: false,
+    medicareExtrasMonthlyPerPerson: 0,
+  }
+  return [member(
+    'ae1-multiAccountRothPool',
+    'AE: one need-based draw spans two owned Roth accounts and increments one owner-wide pool',
+    plan,
+    { horizonEndYear: START_YEAR },
+  )]
+}
+
 /** @returns {Promise<object[]>} every member in this tier, in a stable order. */
 export async function blockMembers() {
   fixtures = await import('@retiregolden/engine/testing/planFixtures')
@@ -4585,5 +4622,6 @@ export async function blockMembers() {
     ...blockY(),
     ...blockZ(),
     ...blockAB(),
+    ...blockAE(),
   ]
 }
