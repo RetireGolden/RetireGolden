@@ -41,17 +41,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5466,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 828,
           "note": null,
           "tests": [
             {
               "title": "holds a low earner to compensation rather than to the dollar limit",
-              "line": 5470
+              "line": 832
             }
           ]
         }
@@ -198,17 +198,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5545,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 907,
           "note": null,
           "tests": [
             {
               "title": "projects the age-50 catch-up instead of holding it flat",
-              "line": 5549
+              "line": 911
             }
           ]
         }
@@ -259,17 +259,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5484,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 846,
           "note": null,
           "tests": [
             {
               "title": "lets a non-earning spouse draw on the earner’s compensation, up to the combined total",
-              "line": 5488
+              "line": 850
             }
           ]
         }
@@ -320,17 +320,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 5506,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 868,
           "note": null,
           "tests": [
             {
               "title": "gives a retiree living on a pension no contribution room",
-              "line": 5510
+              "line": 872
             }
           ]
         }
@@ -939,17 +939,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.rmd-roth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2591,
+          "path": "packages/engine/src/projection/simulate.rmd-roth.test.ts",
+          "line": 55,
           "note": "April 1 first-RMD deferral receipt-year income",
           "tests": [
             {
               "title": "books the deferred employer-plan RMD as ordinary income in the following receipt year",
-              "line": 2605
+              "line": 69
             }
           ]
         }
@@ -1087,17 +1087,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2340,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 583,
           "note": null,
           "tests": [
             {
               "title": "shares one deferral limit across every employer plan",
-              "line": 2344
+              "line": 587
             }
           ]
         }
@@ -1624,50 +1624,50 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2070,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 313,
           "note": "the window closes at 64",
           "tests": [
             {
               "title": "drops back to the ordinary catch-up at sixty-four",
-              "line": 2075
+              "line": 318
             }
           ]
         },
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2118,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 361,
           "note": "a sub-step increase does not move the amount",
           "tests": [
             {
               "title": "does not move the amount when the increase falls short of a 500 step",
-              "line": 2123
+              "line": 366
             }
           ]
         },
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2171,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 414,
           "note": "the increase is measured from a fixed origin, not year over year",
           "tests": [
             {
               "title": "banks cost-of-living below a step until it carries the amount up",
-              "line": 2180
+              "line": 423
             }
           ]
         },
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2215,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 458,
           "note": "which amount the adjustment reaches",
           "tests": [
             {
               "title": "indexes the operative amount rather than the inoperative 10,000 leg",
-              "line": 2224
+              "line": 467
             }
           ]
         }
@@ -2258,28 +2258,28 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.test.ts"
+        "packages/engine/src/projection/simulate.contributions-growth.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2260,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 503,
           "note": "the cap binds total additions, not the match alone",
           "tests": [
             {
               "title": "never lets total additions exceed the participant pay",
-              "line": 2265
+              "line": 508
             }
           ]
         },
         {
-          "path": "packages/engine/src/projection/simulate.test.ts",
-          "line": 2301,
+          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
+          "line": 544,
           "note": "the pay prong binds deferrals too",
           "tests": [
             {
               "title": "binds the deferral itself, not only the match",
-              "line": 2306
+              "line": 549
             }
           ]
         }
