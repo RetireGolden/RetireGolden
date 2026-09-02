@@ -8,20 +8,20 @@
       "label": "group-leg source aggregation and balance lookup",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        92,
-        101
+        93,
+        102
       ],
       "anchors": [
         {
-          "line": 92,
+          "line": 93,
           "text": "const requestedBySourceAccountId = new Map<string, number>()"
         },
         {
-          "line": 93,
+          "line": 94,
           "text": "for (const allocation of request.allocations) {"
         },
         {
-          "line": 100,
+          "line": 101,
           "text": "for (const [accountId, requested] of requestedBySourceAccountId) {"
         }
       ]
@@ -31,17 +31,17 @@
       "label": "exact-cent floored snapshot capacity comparison",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        106,
-        107
+        107,
+        108
       ],
       "note": "Missing, insufficient, and unrepresentable balance refusals are deliberately outside this reached success range and pinned directly, including withdrawal- and conversion-leg balances where half-up rounding would over-authorize by one cent. The explicit missing-balance guard is also the TypeScript narrowing boundary for the converter call.",
       "anchors": [
         {
-          "line": 106,
+          "line": 107,
           "text": "try {"
         },
         {
-          "line": 107,
+          "line": 108,
           "text": "if (planDollarsToFlooredLedgerCents(balancePlanDollars) < requested) {"
         }
       ]
@@ -51,20 +51,20 @@
       "label": "provisional linked-group request and authorization setup",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        123,
-        127
+        124,
+        128
       ],
       "anchors": [
         {
-          "line": 123,
+          "line": 124,
           "text": "const requestByActionId = new Map("
         },
         {
-          "line": 126,
+          "line": 127,
           "text": "const authorizations: ConversionLinkedWithdrawalGroupAuthorization[] = []"
         },
         {
-          "line": 127,
+          "line": 128,
           "text": "for (const group of assessment.groups) {"
         }
       ]
@@ -74,25 +74,25 @@
       "label": "fundable linked-pair authorization hypothesis",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        129,
-        150
+        130,
+        151
       ],
       "note": "The contested-pair continue and the failed-capacity continue are direct-test claims. Corpus reach covers both request lookups, both fundability calls, and the authored-withdrawal-cent authority emitted for the discarded staging run.",
       "anchors": [
         {
-          "line": 129,
+          "line": 130,
           "text": "const conversion = requestByActionId.get(group.conversionActionId)"
         },
         {
-          "line": 131,
+          "line": 132,
           "text": "if ("
         },
         {
-          "line": 137,
+          "line": 138,
           "text": "authorizations.push({"
         },
         {
-          "line": 150,
+          "line": 151,
           "text": "return authorizations"
         }
       ]
@@ -102,20 +102,20 @@
       "label": "current-year kind partition and mixed-schedule gate",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        162,
-        181
+        163,
+        182
       ],
       "anchors": [
         {
-          "line": 162,
+          "line": 163,
           "text": "const currentYearActions = Object.freeze(input.retirementActions.filter("
         },
         {
-          "line": 176,
+          "line": 177,
           "text": "const schedule = evaluateRetirementActionSchedule("
         },
         {
-          "line": 180,
+          "line": 181,
           "text": "const mixedKindScheduleBlocked ="
         }
       ]
@@ -125,16 +125,16 @@
       "label": "current-year QCD partition",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        184,
-        187
+        185,
+        188
       ],
       "anchors": [
         {
-          "line": 184,
+          "line": 185,
           "text": "const qcdActions = Object.freeze(currentYearActions.filter("
         },
         {
-          "line": 186,
+          "line": 187,
           "text": "request.kind === 'qcd',"
         }
       ]
@@ -144,17 +144,17 @@
       "label": "cross-executor QCD collision scan setup",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        192,
-        194
+        193,
+        195
       ],
       "note": "The corpus reaches construction of the collision set. The callback body is intentionally excluded because validated corpus schedules do not collide; direct tests pin both cross-kind and QCD-only collision routing.",
       "anchors": [
         {
-          "line": 192,
+          "line": 193,
           "text": "const qcdActionIds = new Set(qcdActions.map((request) => request.actionId))"
         },
         {
-          "line": 193,
+          "line": 194,
           "text": "const crossKindCollidingQcdActionIds = new Set("
         }
       ]
@@ -164,17 +164,17 @@
       "label": "QCD and ordinary executor request routing",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        201,
-        208
+        202,
+        209
       ],
       "note": "Validated corpus members reach the normal QCD and ordinary routes. Cross-kind collision selection and mixed-kind widening are pinned by direct tests because those diagnostics are intentionally rare in accepted plans.",
       "anchors": [
         {
-          "line": 201,
+          "line": 202,
           "text": "const qcdExecutionActions = Object.freeze(qcdActions.filter("
         },
         {
-          "line": 204,
+          "line": 205,
           "text": "const ordinaryExecutionActions = Object.freeze(("
         }
       ]
@@ -184,20 +184,20 @@
       "label": "complete annual linked-group request union and observed verdict",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        212,
-        229
+        213,
+        230
       ],
       "anchors": [
         {
-          "line": 212,
+          "line": 213,
           "text": "const linkedGroupAssessmentRequests = Object.freeze(["
         },
         {
-          "line": 220,
+          "line": 221,
           "text": "const observedLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups("
         },
         {
-          "line": 224,
+          "line": 225,
           "text": "const balancePlanDollarsByAccountId = new Map("
         }
       ]
@@ -207,17 +207,17 @@
       "label": "outer linked-group release gate",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        230,
-        231
+        231,
+        232
       ],
       "note": "The corpus reaches the release discriminant. Direct tests pin proven-authority forwarding, the corpus-cold true arm on the following line.",
       "anchors": [
         {
-          "line": 230,
+          "line": 231,
           "text": "const linkedGroupAuthorizations ="
         },
         {
-          "line": 231,
+          "line": 232,
           "text": "linkedGroupRelease.kind === 'proven'"
         }
       ]
@@ -227,20 +227,20 @@
       "label": "provisional selection and final linked-group assessment",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        233,
-        249
+        234,
+        250
       ],
       "anchors": [
         {
-          "line": 233,
+          "line": 234,
           "text": ": linkedGroupRelease.kind === 'stageProvisionally'"
         },
         {
-          "line": 240,
+          "line": 241,
           "text": "const conversionLinkedWithdrawalGroups ="
         },
         {
-          "line": 243,
+          "line": 244,
           "text": ": assessConversionLinkedWithdrawalGroups("
         }
       ]
@@ -250,16 +250,16 @@
       "label": "immutable preflight result channels",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
-        251,
-        260
+        252,
+        261
       ],
       "anchors": [
         {
-          "line": 251,
+          "line": 252,
           "text": "return Object.freeze({"
         },
         {
-          "line": 259,
+          "line": 260,
           "text": "conversionLinkedWithdrawalGroups,"
         }
       ]
