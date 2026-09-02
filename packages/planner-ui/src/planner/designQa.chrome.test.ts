@@ -398,7 +398,12 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     )
     expect(solver).toMatch(/Review Spending[\s\S]*Review Assumptions/)
     const ss: string = readFileSync(fileURLToPath(new URL('./SsAnalysisPage.tsx', import.meta.url)), 'utf8')
-    expect(ss).toMatch(/\{best && flatObjective \? \(\s*<div className="callout callout--note" role="note">/)
+    expect(ss).toMatch(/verdict === 'flat' \|\| verdict === 'current-best' \|\| verdict === 'ineligible' \? \(\s*<div className="callout callout--note" role="note">/)
+    // Nothing on the page reads the top ranked row as "best" any more.
+    expect(ss).not.toMatch(/sweep\.ranked\[0\]!?\.claimByPersonId/)
+    expect(workspace).toContain("mcStatus === 'failed'")
+    expect(rule('.route-fallback-caption')).toMatch(/margin:\s*0 0 0\.75rem/)
+    expect(rule('.solver-failure .picker-actions')).toMatch(/margin:\s*0\.75rem 0 0/)
   })
 
   it('text, select, and affixed inputs share one height token', () => {

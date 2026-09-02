@@ -3184,3 +3184,20 @@ html:has(.kpi-bar) {
     background: none;
   }
 }
+
+/* Lazy-route wait (#433): the caption sits above the shimmer, and the page
+   keeps enough height that the wait does not collapse the footer upward. */
+.route-fallback {
+  min-height: 40vh;
+}
+
+.route-fallback-caption {
+  margin: 0 0 0.75rem;
+  font-size: 0.92rem;
+}
+
+/* Solver failure well (#448): the way-back actions sit apart from the prose. */
+.solver-failure .picker-actions {
+  margin: 0.75rem 0 0;
+}
+

@@ -101,3 +101,43 @@ describe('SsAnalysisPage claim-age heatmap', () => {
     expect(container.textContent).toContain('claim-age choices are read-only in this workspace.')
   })
 })
+
+describe('flat objective (#454)', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('shows a note and no Best, Apply, or best-strategy chrome when every claim age scores the same', async () => {
+    const plan = createSamplePlan()
+    plan.accounts = []
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <WorkspaceReadOnlyContext.Provider value={false}>
+            <PlanCtx.Provider value={contextFor(plan, () => undefined)}>
+              <SsAnalysisPage />
+            </PlanCtx.Provider>
+          </WorkspaceReadOnlyContext.Provider>
+        </MemoryRouter>,
+      )
+    })
+    const note = container.querySelector('.callout--note[role="note"]')
+    expect(note?.textContent).toMatch(/No best claim age to recommend|No claim age meets this ranking/)
+    expect(container.textContent).not.toMatch(/Best by /)
+    const applies = [...container.querySelectorAll('button')].filter((b) => /^Apply /.test(b.textContent ?? ''))
+    expect(applies).toHaveLength(0)
+    expect(container.querySelector('[aria-label*="best strategy"]')).toBeNull()
+    expect(container.querySelector('.claim-row--best')).toBeNull()
+  })
+})
+
