@@ -76,9 +76,23 @@ export function publishMcHeadline(plan: Plan, summary: MonteCarloSummary): void 
   for (const listener of listeners) listener()
 }
 
-/** The latest published headline run for this plan object, if any. */
+/** The latest published headline run for this plan object, if any (non-reactive read; components use `useMcHeadline`). */
 export function publishedMcSummary(plan: Plan): MonteCarloSummary | undefined {
   return published.get(plan)
+}
+
+/**
+ * Share a Monte Carlo page run with the headline hook: while it is in flight
+ * the KPI bar attaches to it instead of launching a second simulation of the
+ * same configuration. A run already in flight for this plan object is kept.
+ */
+export function registerMcHeadlineRun(plan: Plan, run: Promise<MonteCarloSummary>): void {
+  if (inflight.get(plan) !== undefined) return
+  const rate = run.then((s) => s.successRate)
+  rate.catch(() => {
+    inflight.delete(plan)
+  })
+  inflight.set(plan, rate)
 }
 
 function subscribe(listener: () => void): () => void {
@@ -86,6 +100,16 @@ function subscribe(listener: () => void): () => void {
   return () => {
     listeners.delete(listener)
   }
+}
+
+/**
+ * The published headline run for this plan object, as a subscription: any
+ * publisher, not only the Monte Carlo page's own run, re-renders the reader.
+ * The store hands back the same object until the next publish, so this never
+ * re-renders on its own.
+ */
+export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined {
+  return useSyncExternalStore(subscribe, () => published.get(plan), () => undefined)
 }
 
 function successRateOf(plan: Plan): Promise<number> {
@@ -137,9 +161,8 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   const [snapshot, setSnapshot] = useState<{ plan: Plan; rate: number | null; failed: boolean } | null>(null)
   const runToken = useRef(0)
   // A run the Monte Carlo page published for this exact plan object wins over
-  // the hook's own default run; the store hands back the same object until
-  // the next publish, so this subscription never re-renders on its own.
-  const headline = useSyncExternalStore(subscribe, () => published.get(plan), () => undefined)
+  // the hook's own default run.
+  const headline = useMcHeadline(plan)
   useEffect(() => {
     if (!enabled) return undefined
     // A published run already answers for this plan object: starting the
@@ -174,8 +197,4 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   const current = enabled && snapshot !== null && snapshot.plan === plan ? snapshot : null
   const status: McSuccessRateStatus = !enabled ? 'idle' : current === null ? 'running' : current.failed ? 'failed' : 'done'
   return { rate: current?.rate ?? null, status, pathCount: DEFAULT_PATH_COUNT }
-}
-
-export function useMcSuccessRate(plan: Plan, enabled: boolean): number | null {
-  return useMcSuccessRateState(plan, enabled).rate
 }

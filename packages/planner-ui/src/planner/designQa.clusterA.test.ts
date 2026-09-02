@@ -101,6 +101,13 @@ describe('Design-QA cluster A: stylesheet pins', () => {
     expect(rule('.workspace-breadcrumb li + li', clusterA)).not.toMatch(/overflow/)
     // The separator glyph rule is untouched: it still draws the "/".
     expect(rule('.workspace-breadcrumb li + li::before')).toMatch(/content:\s*'\/'/)
+    // The truncation rule must actually win: the older attribute-only rule
+    // (0,2,0) sets none of the properties this one relies on, and the block
+    // sits after it in the sheet, so (0,2,1) + order decide it. Both are pinned.
+    const older = rule(".workspace-breadcrumb [aria-current='page']")
+    expect(older).not.toMatch(/display|overflow|white-space|text-overflow|min-width/)
+    expect(css.indexOf(".workspace-breadcrumb [aria-current='page'] {")).toBeLessThan(clusterAt)
+    expect(css.indexOf(".workspace-breadcrumb li[aria-current='page'] {", clusterAt)).toBeGreaterThan(clusterAt)
   })
 
   it('print forces the light palette over both dark mechanisms (#504)', () => {
@@ -146,8 +153,13 @@ describe('Design-QA cluster A: stylesheet pins', () => {
       clusterA.slice(clusterA.indexOf('{', clusterA.indexOf('@media print')) + 1),
     )
     const darkBlock = indexCss.slice(indexCss.indexOf(":root[data-theme='dark'] {"), indexCss.indexOf('@media (prefers-color-scheme: dark)'))
-    const darkTokens = [...darkBlock.matchAll(/^ {2}(--[a-z0-9-]+):/gm)].map((m) => m[1]!)
+    // Indentation-independent, and cross-checked against the light root so a
+    // reformat of index.css fails here loudly rather than vacating the sweep.
+    const darkTokens = [...darkBlock.matchAll(/^\s*(--[a-z0-9-]+):/gm)].map((m) => m[1]!)
+    const lightRoot = indexCss.slice(indexCss.indexOf(':root {'), indexCss.indexOf(":root[data-theme='light']"))
     expect(darkTokens.length).toBeGreaterThan(15)
+    expect(darkTokens).toEqual(expect.arrayContaining(['--bg', '--fg', '--accent', '--chart-8', '--select-chevron', '--shadow-card']))
+    for (const token of darkTokens) expect(lightRoot.includes(`${token}:`), `${token} also defined in the light root`).toBe(true)
     for (const token of darkTokens) expect(printBody.includes(`${token}:`), `${token} restated on paper`).toBe(true)
     // The chevron on paper carries the light muted stroke, not the dark one.
     expect(printBody).toMatch(/--select-chevron:\s*url\("data:image\/svg\+xml[^"]*stroke='%235b6470'/)
@@ -179,6 +191,15 @@ describe('Design-QA cluster A: source pins', () => {
     const hook = read('./useMcSuccessRate.ts')
     expect(hook).toContain('if (current !== undefined && current.pathCount > summary.pathCount) return')
     expect(hook).toContain('if (headline !== undefined) return undefined')
+    // The page subscribes to the store (any publisher re-renders it), shares
+    // its in-flight run with the hook, and stands its auto-run down when the
+    // reader has already started one. The count-less wrapper is gone.
+    expect(mc).toContain('const publishedHeadline = useMcHeadline(plan)')
+    expect(mc).not.toContain('publishedMcSummary(plan)')
+    expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation)')
+    expect(mc).toContain('if (runToken.current === scheduledAt) run(DEFAULT_PATH_COUNT)')
+    expect(hook).not.toMatch(/export function useMcSuccessRate\(/)
+    expect(hook).toContain('export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined')
     expect(mc).toMatch(/isHeadlineMcConfig\(plan, \{ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock \}\)/)
     // The page's controls start on the one constant that defines the headline
     // configuration: no second copy of lognormal / 12 / 60 to drift.
@@ -187,7 +208,7 @@ describe('Design-QA cluster A: source pins', () => {
     expect(mc).toContain('useState<number>(HEADLINE_MC_MODEL.equityWeightPct)')
     expect(mc).not.toMatch(/useState<ModelKind>\('lognormal'\)|useState\(12\)|useState\(60\)/)
     // On mount the page adopts the published run instead of replacing it with a coarser one.
-    expect(mc).toContain('? publishedMcSummary(plan)')
+    expect(mc).toContain('? publishedHeadline')
     // No literal "thousand" survives: the intro and the seed tip follow the run.
     expect(mc).not.toMatch(/a thousand times|same thousand markets/)
     expect(mc).toContain('same plan {(summary?.pathCount ?? DEFAULT_PATH_COUNT).toLocaleString()} times')
@@ -224,13 +245,16 @@ describe('Design-QA cluster A: source pins', () => {
     // a depleted plan with Social Security keeps its rows.
     expect(survivor).not.toMatch(/deathYear\s*[<>]=?\s*depletionYear/)
     expect(survivor).toMatch(/className="empty-state" data-survivor-empty/)
+    // The year the empty state quotes travels in the snapshot with its rows.
+    expect(survivor).toContain('depletionYear={analysisDepletionYear}')
+    expect(survivor).not.toContain('depletionYear={summary.depletionYear}')
   })
 
   it('the Relocation tables are named scroll regions, not bare divs (#514)', () => {
     const relocation = read('./RelocationComparePage.tsx')
     expect(relocation).not.toContain('table-scroll')
-    expect(relocation).toContain('<ScrollRegion label="Ranked relocation results">')
-    expect(relocation).toContain('<ScrollRegion label={`Drivers for ${f.stateName}`}>')
+    expect(relocation).toContain('<ScrollRegion label="Ranked relocation results" grow')
+    expect(relocation).toContain('<ScrollRegion label={`Drivers for ${f.stateName}`} grow')
     expect(relocation).toContain('<th scope="col" className="nowrap" style={{ textAlign: \'right\' }}>Δ vs staying</th>')
   })
 
@@ -268,9 +292,16 @@ describe('Design-QA cluster A: source pins', () => {
       .filter((f: string) => /\.(tsx?|css)$/.test(f) && !/\.test\.tsx?$/.test(f))
       .filter((f: string) => readFileSync(`${srcDir}/${f}`, 'utf8').includes('table-scroll'))
     expect(bare).toEqual([])
-    const solver = read('./SpendingSolverPage.tsx')
-    expect(solver).toContain('<ScrollRegion label="Spending shape comparison">')
-    expect(solver).toContain('<ScrollRegion label="Published withdrawal rules on this plan">')
+    // The converted tables keep the full-height, boxless rendering the bare
+    // div had (`grow`, no border): only horizontal scrolling and its cue are new.
+    const converted = [
+      ['./SpendingSolverPage.tsx', '<ScrollRegion label="Spending shape comparison" grow style={{ border: \'none\' }}>'],
+      ['./SpendingSolverPage.tsx', '<ScrollRegion label="Published withdrawal rules on this plan" grow style={{ border: \'none\' }}>'],
+      ['./RelocationComparePage.tsx', '<ScrollRegion label="Ranked relocation results" grow style={{ border: \'none\' }}>'],
+      ['./RelocationComparePage.tsx', '<ScrollRegion label={`Drivers for ${f.stateName}`} grow style={{ border: \'none\' }}>'],
+      ['./sections/IncomeFloorSection.tsx', '<ScrollRegion label="Nearest real TIPS per rung" grow style={{ border: \'none\' }}>'],
+    ] as const
+    for (const [file, tag] of converted) expect(read(file), `${file}: ${tag}`).toContain(tag)
     const report = read('./ReportPage.tsx')
     expect(report.match(/<caption className="sr-only">/g)?.length).toBeGreaterThanOrEqual(8)
     expect(report).toContain('<caption className="sr-only">Year-by-year appendix, nominal dollars</caption>')

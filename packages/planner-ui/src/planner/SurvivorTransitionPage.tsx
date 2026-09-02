@@ -216,11 +216,14 @@ export function SurvivorTransitionPage() {
   // The analysis is stored WITH the plan it was computed for and derived to
   // null whenever the current plan differs, so a stale sweep can never render
   // against an edited plan through the debounce window.
-  const [snapshot, setSnapshot] = useState<{ plan: typeof plan; analysis: SurvivorAnalysis } | null>(null)
+  // The depletion year rides in the snapshot with the rows it was computed
+  // beside, so the empty state never quotes a newer plan's year above older rows.
+  const [snapshot, setSnapshot] = useState<{ plan: typeof plan; analysis: SurvivorAnalysis; depletionYear: number | null } | null>(null)
   const eligible = plan.household.filingStatus === 'marriedFilingJointly' && plan.household.people.length === 2
   // The same memoized deterministic projection the KPI bar reads; its
   // depletion year is named in the degenerate-timings empty state (#513).
   const { summary } = useProjection(plan)
+  const depletionYear = summary.depletionYear
 
   // Each timing runs a handful of full ledger simulations; debounce off the
   // keystroke path like the Scenarios page does.
@@ -231,17 +234,19 @@ export function SurvivorTransitionPage() {
         setSnapshot({
           plan,
           analysis: buildSurvivorAnalysis(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) }),
+          depletionYear,
         })
       } catch {
         // Per-timing failures are already absorbed inside the sweep; this is
         // the whole-sweep backstop so the page shows an error card, not a
         // stuck skeleton.
-        setSnapshot({ plan, analysis: { eligible: true, planUsesSsa44: false, rows: [], failedTimings: 0, error: true } })
+        setSnapshot({ plan, analysis: { eligible: true, planUsesSsa44: false, rows: [], failedTimings: 0, error: true }, depletionYear })
       }
     }, 200)
     return () => window.clearTimeout(t)
-  }, [plan, eligible])
+  }, [plan, eligible, depletionYear])
   const analysis = snapshot !== null && snapshot.plan === plan ? snapshot.analysis : null
+  const analysisDepletionYear = snapshot !== null && snapshot.plan === plan ? snapshot.depletionYear : null
 
   const anySsa44Savings = useMemo(
     () => (analysis?.rows ?? []).some((r) => r.ssa44PremiumSavings > 0.5),
@@ -345,7 +350,7 @@ export function SurvivorTransitionPage() {
                 rows={analysis.rows.filter((r) => r.deceasedPersonId === person.id)}
                 personName={person.name}
                 planId={plan.id}
-                depletionYear={summary.depletionYear}
+                depletionYear={analysisDepletionYear}
               />
             </div>
           ))}

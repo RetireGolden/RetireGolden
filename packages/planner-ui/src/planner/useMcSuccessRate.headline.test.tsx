@@ -15,7 +15,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { seedFromPlanId } from './useProjection'
-import { isHeadlineMcConfig, publishMcHeadline, publishedMcSummary, useMcSuccessRateState } from './useMcSuccessRate'
+import { isHeadlineMcConfig, publishMcHeadline, publishedMcSummary, registerMcHeadlineRun, useMcSuccessRateState } from './useMcSuccessRate'
 
 vi.mock('../mc/pool', async (importOriginal) => {
   const original = await importOriginal<typeof import('../mc/pool')>()
@@ -85,6 +85,18 @@ describe('Monte Carlo headline (#497)', () => {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 1400))
     })
+    expect(mockedRunMc).not.toHaveBeenCalled()
+  })
+
+  it('attaches to a Monte Carlo page run registered for the plan instead of launching its own', async () => {
+    const plan = createSamplePlan()
+    let settle: (s: MonteCarloSummary) => void = () => {}
+    registerMcHeadlineRun(plan, new Promise<MonteCarloSummary>((resolve) => { settle = resolve }))
+    await act(async () => root.render(<Probe plan={plan} />))
+    expect(container.textContent).toBe('running|null|1000')
+    // The page's run is in flight, so the hook attaches at once (no debounce) and starts nothing.
+    await act(async () => settle(summaryOf(0.37, 10_000)))
+    expect(container.textContent).toBe('done|0.37|1000')
     expect(mockedRunMc).not.toHaveBeenCalled()
   })
 

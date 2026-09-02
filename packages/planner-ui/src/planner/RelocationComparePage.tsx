@@ -92,7 +92,7 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
   }
   return (
     <>
-      <ScrollRegion label={`Drivers for ${f.stateName}`}>
+      <ScrollRegion label={`Drivers for ${f.stateName}`} grow style={{ border: 'none' }}>
       <table>
         <thead>
           <tr>
@@ -395,8 +395,10 @@ export function RelocationComparePage() {
           </div>
           {/* A named scroll region, not a bare div: the six-column results
               table clipped its Success rate column flush at the card edge
-              and squeezed Δ / Ending estate (#514). */}
-          <ScrollRegion label="Ranked relocation results">
+              and squeezed Δ / Ending estate (#514). `grow` and no border keep
+              the full-height, boxless rendering the bare div had: only the
+              horizontal scroll and its cue are new. */}
+          <ScrollRegion label="Ranked relocation results" grow style={{ border: 'none' }}>
             <table>
               <thead>
                 <tr>

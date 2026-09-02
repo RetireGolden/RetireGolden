@@ -298,7 +298,7 @@ export function LivePricesCard() {
               {loading ? 'Fetching…' : 'Fetch the latest prices from Treasury FedInvest'}
             </button>
           ) : null}
-          <ScrollRegion label="Nearest real TIPS per rung">
+          <ScrollRegion label="Nearest real TIPS per rung" grow style={{ border: 'none' }}>
             <table>
               <thead>
                 <tr>

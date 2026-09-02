@@ -80,6 +80,29 @@ describe('MonteCarloPage adopts the published headline run (#497)', () => {
     expect(container.textContent).toContain('same plan 8 times')
   })
 
+  it('stands the auto-run down when the reader starts a run inside the debounce', async () => {
+    const plan = createSamplePlan()
+    mockedRunMc.mockImplementation((p, opts) => actualPool.runMonteCarlo(p, { ...opts, pathCount: 8 }))
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(plan)}>
+            <MonteCarloPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    // Click Run 10,000 paths before the 250 ms auto-run timer fires.
+    const tenK = [...container.querySelectorAll('button')].find((b) => b.textContent?.startsWith('Run 10,000'))!
+    await act(async () => tenK.click())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400))
+    })
+    await waitFor(() => container.querySelector('.success-gauge') !== null, { what: 'the gauge' })
+    // Exactly one simulation, the one the reader asked for; the auto-run did not supersede it.
+    expect(mockedRunMc.mock.calls.map((c) => c[1].pathCount)).toEqual([10_000])
+  })
+
   it('runs a fresh default simulation when nothing is published for this plan object', async () => {
     const plan = createSamplePlan()
     mockedRunMc.mockImplementation((p, opts) => actualPool.runMonteCarlo(p, { ...opts, pathCount: 8 }))

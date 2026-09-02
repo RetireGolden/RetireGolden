@@ -33,6 +33,15 @@ afterEach(async () => {
   container.remove()
 })
 
+/**
+ * Planning ages of 78 keep the sweep to two death ages (70, 75) per person
+ * over a short horizon, so each case is a few ledger runs, not dozens.
+ */
+function shortHorizon(plan: Plan): Plan {
+  plan.household.people = plan.household.people.map((p) => ({ ...p, longevity: { ...p.longevity, planningAge: 78 } }))
+  return plan
+}
+
 async function mount(plan: Plan) {
   const value: PlanContextValue = { plan, update: () => {}, discardPendingSave: () => {}, saveState: 'saved', issues: [] }
   await act(async () => {
@@ -47,14 +56,14 @@ async function mount(plan: Plan) {
   // The sweep is debounced 200 ms off the keystroke path.
   await waitFor(() => container.querySelector('.skeleton') === null, {
     what: 'the death-timing sweep',
-    attempts: 3000,
+    attempts: 600,
     intervalMs: 20,
   })
 }
 
 /** The example couple with its assets and income stripped: nothing on either side of any transition. */
 function bareCouple(): Plan {
-  const plan = createSamplePlan()
+  const plan = shortHorizon(createSamplePlan())
   plan.accounts = plan.accounts.filter((a) => a.type === 'cash').map((a) => ({ ...a, balance: 5_000 }))
   plan.incomes = []
   plan.insurance = []
@@ -85,7 +94,7 @@ describe('SurvivorTransitionPage empty state (#513)', () => {
     // No timing row survives to assert shortfall years or a $0 estate.
     expect(container.querySelector('.survivor-table')).toBeNull()
     expect(container.textContent).not.toContain('shortfall yrs')
-  }, 90_000)
+  }, 20_000)
 
   it('keeps every row for a plan that runs short of money but still has Social Security', async () => {
     const plan = depletedCoupleWithSocialSecurity()
@@ -103,14 +112,14 @@ describe('SurvivorTransitionPage empty state (#513)', () => {
       for (const th of table.querySelectorAll('thead th')) expect(th.getAttribute('scope')).toBe('col')
     }
     expect(container.textContent).toMatch(/\$[\d,.]+k? → \$[\d,.]+k?/)
-  }, 90_000)
+  }, 20_000)
 
   it('keeps every timing row on a plan that never depletes', async () => {
-    const plan = createSamplePlan()
+    const plan = shortHorizon(createSamplePlan())
     expect(projectPlan(plan).summary.depletionYear).toBeNull()
     await mount(plan)
     expect(container.querySelector('[data-survivor-empty]')).toBeNull()
     expect(container.querySelectorAll('.survivor-table').length).toBe(2)
     expect(container.querySelector('[data-survivor-omitted]')).toBeNull()
-  }, 90_000)
+  }, 20_000)
 })

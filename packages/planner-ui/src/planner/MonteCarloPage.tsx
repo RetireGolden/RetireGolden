@@ -52,7 +52,7 @@ import {
   type ModelKind,
 } from './marketModelPicker'
 import { currentStartYear, seedFromPlanId } from './useProjection'
-import { HEADLINE_MC_MODEL, isHeadlineMcConfig, publishMcHeadline, publishedMcSummary } from './useMcSuccessRate'
+import { HEADLINE_MC_MODEL, isHeadlineMcConfig, publishMcHeadline, registerMcHeadlineRun, useMcHeadline } from './useMcSuccessRate'
 import { chartTooltipStyle } from './chartStyle'
 import { successBand } from './successBand'
 import { frameH } from './chartFrame'
@@ -142,7 +142,8 @@ export function MonteCarloPage() {
       setProgress(0)
       setError(null)
       setStatusMessage(`Simulating ${paths.toLocaleString()} market paths…`)
-      void runMonteCarlo(plan, {
+      const headlineRun = isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
+      const simulation = runMonteCarlo(plan, {
         startYear: currentStartYear(),
         pathCount: paths,
         seed,
@@ -153,6 +154,9 @@ export function MonteCarloPage() {
           if (token === runToken.current) setProgress(done / total)
         },
       })
+      // The KPI bar attaches to this run instead of launching its own (#497).
+      if (headlineRun) registerMcHeadlineRun(plan, simulation)
+      void simulation
         .then((s) => {
           if (token === runToken.current) {
             setSummary(s)
@@ -161,9 +165,7 @@ export function MonteCarloPage() {
             )
             // A headline-configuration run is the headline number too: the KPI
             // bar and Results quote this run and its count (#497).
-            if (isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })) {
-              publishMcHeadline(plan, s)
-            }
+            if (headlineRun) publishMcHeadline(plan, s)
           }
         })
         .catch((e: unknown) => {
@@ -224,20 +226,25 @@ export function MonteCarloPage() {
 
   // Under the headline configuration, the latest run published for this exact
   // plan object (a 10,000-path one, typically) is what the page shows, so the
-  // gauge here and the KPI bar can never quote different runs (#497). Read
-  // during render: the store changes only when a run completes, which also
-  // sets `ownSummary`, so the two stay in step without a subscription.
+  // gauge here and the KPI bar can never quote different runs (#497). A
+  // subscription, so a publish from any surface re-renders this page.
+  const publishedHeadline = useMcHeadline(plan)
   const cachedHeadline = isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
-    ? publishedMcSummary(plan)
+    ? publishedHeadline
     : undefined
   const summary = cachedHeadline ?? ownSummary
 
   // Auto-run 1k paths whenever the plan, seed, or model changes (debounced),
   // unless a published run is already on show: a coarser fresh run must not
-  // replace it.
+  // replace it. A run the reader starts inside the debounce (Run 10,000
+  // paths) bumps the token, and the auto-run then stands down instead of
+  // superseding that run.
   useEffect(() => {
     if (cachedHeadline !== undefined) return undefined
-    const t = window.setTimeout(() => run(DEFAULT_PATH_COUNT), 250)
+    const scheduledAt = runToken.current
+    const t = window.setTimeout(() => {
+      if (runToken.current === scheduledAt) run(DEFAULT_PATH_COUNT)
+    }, 250)
     return () => window.clearTimeout(t)
   }, [run, cachedHeadline])
 

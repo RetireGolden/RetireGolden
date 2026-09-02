@@ -414,7 +414,7 @@ export function SpendingSolverPage() {
         {shapesError ? <p style={{ color: 'var(--bad)' }}>Per-shape solve error: {shapesError}</p> : null}
         {shapeRows !== null && !shapesRunning ? (
           <>
-            <ScrollRegion label="Spending shape comparison">
+            <ScrollRegion label="Spending shape comparison" grow style={{ border: 'none' }}>
               <table>
                 <thead>
                   <tr>
@@ -461,7 +461,7 @@ export function SpendingSolverPage() {
           starting portfolio; your solver answer prices your actual phases, taxes, and horizon, which is why they
           differ.
         </p>
-        <ScrollRegion label="Published withdrawal rules on this plan">
+        <ScrollRegion label="Published withdrawal rules on this plan" grow style={{ border: 'none' }}>
           <table>
             <thead>
               <tr>
