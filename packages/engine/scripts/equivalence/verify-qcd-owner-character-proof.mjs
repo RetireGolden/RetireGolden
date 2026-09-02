@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { authenticateObservedEngineTree } from './proof-git-provenance.mjs'
@@ -21,21 +21,27 @@ const repoDir = execFileSync('git', ['rev-parse', '--show-toplevel'], {
   cwd: engineDir,
   encoding: 'utf8',
 }).trim()
+const specRepoPath =
+  'packages/engine/scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json'
 const equivalence = resolve(engineDir, 'scripts', 'equivalence.mjs')
-const specPath = resolve(
-  scriptDir,
-  'specs',
-  'simulate-qcd-owner-character-boundary.json',
-)
-const spec = JSON.parse(readFileSync(specPath, 'utf8'))
-const proof = spec.measuredProof
-
-if (proof === undefined) {
-  throw new Error('QCD owner-character spec has no measuredProof')
-}
 
 function gitObject(revision) {
   return execFileSync('git', ['rev-parse', revision], {
+    cwd: repoDir,
+    encoding: 'utf8',
+  }).trim()
+}
+
+function gitText(path) {
+  return execFileSync('git', ['show', `HEAD:${path}`], {
+    cwd: repoDir,
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+  })
+}
+
+function workingTreeBlob(path) {
+  return execFileSync('git', ['hash-object', `--path=${path}`, '--', path], {
     cwd: repoDir,
     encoding: 'utf8',
   }).trim()
@@ -60,7 +66,84 @@ function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
 }
 
-// Pin every mutable measurement input independently of the recorded outputs.
+function authenticateSpec() {
+  const committedBlob = gitObject(`HEAD:${specRepoPath}`)
+  assertEqual(
+    workingTreeBlob(specRepoPath),
+    committedBlob,
+    'proof spec working-tree input',
+  )
+  const body = gitText(specRepoPath)
+  assertEqual(
+    workingTreeBlob(specRepoPath),
+    committedBlob,
+    'proof spec stable working-tree input',
+  )
+  return body
+}
+
+const specBody = authenticateSpec()
+const spec = JSON.parse(specBody)
+const proof = spec.measuredProof
+
+if (proof === undefined) {
+  throw new Error('QCD owner-character spec has no measuredProof')
+}
+
+function localImportSpecifiers(source) {
+  const found = new Set()
+  for (const pattern of [
+    /\bfrom\s*['"]([^'"]+)['"]/gu,
+    /\bimport\s*['"]([^'"]+)['"]/gu,
+    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/gu,
+  ]) {
+    for (const match of source.matchAll(pattern)) found.add(match[1])
+  }
+  return [...found]
+}
+
+function resolveLocalImport(fromPath, specifier) {
+  if (!specifier.startsWith('.')) return null
+  const resolved = posix.normalize(posix.join(posix.dirname(fromPath), specifier))
+  if (resolved.startsWith('../') || posix.isAbsolute(resolved)) {
+    throw new Error(`local harness import escapes repository: ${fromPath} -> ${specifier}`)
+  }
+  return resolved
+}
+
+function authenticateHarnessClosure() {
+  const expectedBlobs = proof.inputs.harnessBlobs
+  if (expectedBlobs === undefined || Array.isArray(expectedBlobs)) {
+    throw new Error('QCD owner-character proof has no harnessBlobs map')
+  }
+  const pending = ['packages/engine/scripts/equivalence.mjs']
+  const seen = new Set()
+  while (pending.length > 0) {
+    const path = pending.pop()
+    if (seen.has(path)) continue
+    seen.add(path)
+    const expected = expectedBlobs[path]
+    if (expected === undefined) {
+      throw new Error(`unrecorded transitive harness input: ${path}`)
+    }
+    assertEqual(gitObject(`HEAD:${path}`), expected, `${path} committed input`)
+    assertEqual(workingTreeBlob(path), expected, `${path} working-tree input`)
+    const source = gitText(path)
+    for (const specifier of localImportSpecifiers(source)) {
+      const dependency = resolveLocalImport(path, specifier)
+      if (dependency !== null) pending.push(dependency)
+    }
+  }
+  assertEqual(
+    JSON.stringify([...seen].sort()),
+    JSON.stringify(Object.keys(expectedBlobs).sort()),
+    'complete transitive harness closure',
+  )
+}
+
+// Authenticate the complete local harness closure before executing any of it.
+authenticateHarnessClosure()
+
 assertEqual(
   gitObject(`${proof.base.commit}:packages/engine/src`),
   proof.base.engineSourceTree,
@@ -72,21 +155,6 @@ authenticateObservedEngineTree({
   engineSourceTree: proof.head.engineSourceTree,
   label: 'observed head',
 })
-assertEqual(
-  gitObject('HEAD:packages/engine/scripts/equivalence/corpus/blocks.mjs'),
-  proof.inputs.corpusSourceBlob,
-  'blocks corpus source blob',
-)
-assertEqual(
-  gitObject('HEAD:packages/engine/scripts/equivalence.mjs'),
-  proof.inputs.equivalenceRunnerBlob,
-  'equivalence runner blob',
-)
-assertEqual(
-  gitObject('HEAD:packages/engine/scripts/equivalence/engine-tree.mjs'),
-  proof.inputs.engineTreeLoaderBlob,
-  'engine-tree loader blob',
-)
 assertEqual(
   sha256(JSON.stringify({
     schema: spec.schema,
@@ -105,6 +173,7 @@ try {
   const mutantSrc = join(scratch, 'mutant-src')
   const baseTar = join(scratch, 'base.tar')
   const headTar = join(scratch, 'head.tar')
+  const authenticatedSpec = join(scratch, 'spec.json')
   const corpus = join(scratch, 'corpus.json')
   const baseDump = join(scratch, 'base.json')
   const headDump = join(scratch, 'head.json')
@@ -113,6 +182,7 @@ try {
   mkdirSync(baseSrc)
   mkdirSync(headSrc)
   mkdirSync(mutantSrc)
+  writeFileSync(authenticatedSpec, specBody)
 
   execFileSync(
     'git',
@@ -172,7 +242,7 @@ try {
   runEquivalence([
     'reach',
     '--corpus', corpus,
-    '--spec', specPath,
+    '--spec', authenticatedSpec,
     '--engine-src', headSrc,
     '--out', reach,
   ])
