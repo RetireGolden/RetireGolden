@@ -250,8 +250,8 @@
       "engineSourceTree": "dc89890dd2e4dd4eabc14bd20bb27fe551535d35"
     },
     "head": {
-      "observedAtCommit": "c86d7f648521f88c805ac5032ea2d87a8581dfd6",
-      "engineSourceTree": "cdc617aa4d9f5cd68135ad94b0e79892d793d373"
+      "observedAtCommit": "0c67d0263fb208cbd5ea0620979093db2e2caaf5",
+      "engineSourceTree": "feb784bd0b22483edf8c7b9bdac553fd5714dbfa"
     },
     "inputs": {
       "harnessBlobs": {
@@ -267,7 +267,7 @@
         "packages/engine/scripts/equivalence/usage.mjs": "c5206bc5ec7719595a05b24e757e96babf45079a",
         "packages/engine/scripts/typescript-source-resolution.mjs": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a"
       },
-      "specMeasurementSha256": "e5d2edc03c4f38206000f7c086d4a5dbb4cab647c532eeea40e4bd7484bd5d44"
+      "specMeasurementSha256": "0b4b8309517bf1cb4ab3e225673cf35d72a9a44faf1cf1f9dcd0e2351abadee8"
     },
     "corpus": {
       "members": 121,

@@ -226,8 +226,8 @@
       "engineSourceTree": "d8e8d22f1bd0931f79bca576612b66a60e430987"
     },
     "head": {
-      "observedAtCommit": "c86d7f648521f88c805ac5032ea2d87a8581dfd6",
-      "engineSourceTree": "cdc617aa4d9f5cd68135ad94b0e79892d793d373"
+      "observedAtCommit": "0c67d0263fb208cbd5ea0620979093db2e2caaf5",
+      "engineSourceTree": "feb784bd0b22483edf8c7b9bdac553fd5714dbfa"
     },
     "inputs": {
     "corpusSourceBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
@@ -241,7 +241,7 @@
       "reachRecorderBlob": "81d6c4cce57b40f770be21b7a89ea2da9c0c217d",
       "typescriptSourceResolutionBlob": "f5c6c88ddb5e43e894e2c89658aa869ff06e430a",
       "usageBlob": "c5206bc5ec7719595a05b24e757e96babf45079a",
-    "specMeasurementSha256": "29167e9315c05c10554ae94f648afb3a3c65e29180d972078b4f78950ab42560"
+    "specMeasurementSha256": "41800a044dfd48448ee0c45136fcc3e6d71ee1b0c81487705434c8e4ec5ef4f6"
     },
     "corpus": {
       "name": "blocks",
