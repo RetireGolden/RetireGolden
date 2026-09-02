@@ -32,30 +32,35 @@ function rule(selector: string, source = css): string {
   return source.slice(open + 1, source.indexOf('}', open))
 }
 
-describe('D9 (#465): one fixed column rhythm for every form grid', () => {
-  // Measured on /plan/example:example-couple/spending in Chromium with this
-  // branch's stylesheet. Before: the same field was 215.94px at the top of the
-  // card and 204.6px inside an item row at 1024, and 211.94px vs 200.6px at
-  // 768 — the item row's 1rem inset, spent by a flexible track. After: 184px in
-  // both, at both widths, and on Assumptions' nested wells too. At 375 the
-  // track goes back to stretching (293px / 259px, no horizontal scroll).
-  it('the grid lays fixed tracks, not flexible ones, through one custom property', () => {
+describe('D9 (#465): one column rhythm for every form grid', () => {
+  // Measured on /plan/example:example-couple/spending and /accounts in
+  // Chromium. Before: the same field was 215.94px at the top of the card and
+  // 204.6px inside an item row at 1024, 211.94px vs 200.6px at 768 — the item
+  // row's 1rem inset, spent by a flexible track. After: every `.form-grid` on
+  // the page reports left=285 w=683 cols=215.938px at 1024, left=41 w=671
+  // cols=211.938px at 768, and left=41 w=293 single column at 375 with no
+  // horizontal overflow. One width AND one left edge, top-level and item row.
+  it('keeps flexible tracks, so a full-row child still reaches both edges', () => {
     const body = rule('.form-grid')
-    expect(body).toMatch(/--form-col:\s*11\.5rem/)
-    expect(body).toMatch(/grid-template-columns:\s*repeat\(auto-fill, var\(--form-col\)\)/)
-    // A flexible track is what made the two grids disagree; it must not return.
-    expect(body).not.toMatch(/minmax/)
+    expect(body).toMatch(/grid-template-columns:\s*repeat\(auto-fill, minmax\(11\.5rem, 1fr\)\)/)
     expect(body).toMatch(/gap:\s*0\.8rem 1\.1rem/)
+    // A fixed track shares its width too, but leaves the row's remainder
+    // outside the grid box, so a `grid-column: 1 / -1` panel stops at the last
+    // track instead of the row's edge — app/e2e/accounts-layout.spec.ts caught
+    // exactly that (panel right 1090.78 against a required 1199).
+    expect(body).not.toMatch(/--form-col/)
+    expect(css).not.toMatch(/repeat\(auto-fill, var\(--form-col\)\)/)
   })
 
-  it('a phone stretches the single track instead of leaving a gutter', () => {
-    const at = css.indexOf('@media (max-width: 640px) {\n  .form-grid > .field-with-action--wide {')
-    expect(at).toBeGreaterThanOrEqual(0)
-    const phone = css.slice(at, css.indexOf('\n}\n', at))
-    expect(rule('.form-grid', phone)).toMatch(/--form-col:\s*minmax\(11\.5rem, 1fr\)/)
+  it('an item row adds no inset, so its grid is as wide as the card’s own', () => {
+    // The pull is exactly what the row adds back: 1rem of padding + 1px border.
+    const body = rule('.item-row')
+    expect(body).toMatch(/padding:\s*0\.9rem 1rem/)
+    expect(body).toMatch(/border:\s*1px solid var\(--border\)/)
+    expect(body).toMatch(/margin-inline:\s*calc\(-1rem - 1px\)/)
   })
 
-  it('a nested well no longer sets a third column width of its own', () => {
+  it('a nested well no longer sets a column width of its own', () => {
     expect(css).not.toMatch(/repeat\(auto-fit, minmax\(11\.5rem, 1fr\)\)/)
     // The two marker classes carried nothing but that override, so they are
     // gone from the markup rather than left dangling with no rule behind them.

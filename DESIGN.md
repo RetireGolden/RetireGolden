@@ -307,11 +307,12 @@ transitions, restrained hover states that shift a border or tint a background by
 - **Breadcrumbs:** muted with `/` separators; current page is Ink at 550.
 
 ### Forms and figures
-- **One column rhythm** (`.form-grid`, `--form-col`): every form grid lays FIXED tracks
-  (`repeat(auto-fill, var(--form-col))`, 11.5rem), so a field is the same width at the top of a
-  card, inside an item row, and inside a nested well — three containers whose insets used to make a
-  flexible track three different widths. Only the column count adapts to the container. Under 640px
-  the track goes back to `minmax(11.5rem, 1fr)` so a phone's single column fills the card.
+- **One column rhythm** (`.form-grid`): tracks are `repeat(auto-fill, minmax(11.5rem, 1fr))` and
+  keep filling the row, so a child spanning `1 / -1` reaches both edges. Equal field widths come
+  from equal CONTAINERS, not from fixing the track: `.item-row` cancels its own inset with
+  `margin-inline: calc(-1rem - 1px)`, so a card's heading, a top-of-form field, and a field inside
+  a row all start on one left edge and resolve one track width. Never fix the track to line the
+  grids up — the row's remainder then falls outside the grid box and full-row panels stop short.
 - **Compound field with actions** (`.field-with-action`): input plus its buttons in one cell.
   Add `.field-with-action--wide` to span two grid columns beside sibling fields; use
   `.field-span-full` only when the row really belongs to it.
