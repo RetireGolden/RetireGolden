@@ -1,0 +1,40 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-hecm-backstop-boundary",
+  "why": "Measured reach for the pure annual HECM portfolio-shortfall backstop and the caller band that commits its immutable plan. Existing HECM corpus members reach an alive household with an open line after liquid assets exhaust, so all four equivalence modes observe ordered allocation, debt mutation, residual shortfall, depletion, and optional property-attributed cash-flow publication. Direct contract tests independently pin draw-policy independence, duplicate-id suppression, missing and exhausted lines, the half-cent break, exact residual arithmetic, and input purity. A hostile delegation test replaces allocations, total draw, and residual shortfall and proves simulatePlan consumes all three instead of rebuilding the former inline loop.",
+  "entries": [
+    {
+      "id": "AM.helper.plan",
+      "label": "shortfall eligibility, unique open-line allocation, ordered draw fold, and residual",
+      "file": "projection/internal/annualHecmBackstop.ts",
+      "lines": [49, 79],
+      "anchors": [
+        { "line": 49, "text": "const allocations: AnnualHecmBackstopAllocationRow[] = []" },
+        { "line": 52, "text": "input.portfolioShortfall > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS &&" },
+        { "line": 56, "text": "const visitedHecmLineIds = new Set<string>()" },
+        { "line": 60, "text": "visitedHecmLineIds.add(account.id)" },
+        { "line": 68, "text": "allocations.push({ propertyAccountId: account.id, amount })" },
+        { "line": 71, "text": "if (remaining <= ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS) break" },
+        { "line": 78, "text": "shortfallAfterHecm: Math.max(0, input.portfolioShortfall - draw)," }
+      ],
+      "note": "The export/signature lines are excluded because Node 24/V8 reports the entered body but no executable count for declarations. Whole-corpus HECM members reach positive allocation and residual publication. Defensive missing/exhausted-line, exact-tolerance, duplicate-id, and household-dead results are pinned by direct tests; their conditions share executed physical lines, so line reach is read together with those branch assertions."
+    },
+    {
+      "id": "AM.callsite.apply",
+      "label": "frozen backstop-plan handoff plus caller-owned line/map mutation and scalar consumption",
+      "file": "projection/simulate.ts",
+      "lines": [5906, 5923],
+      "anchors": [
+        { "line": 5906, "text": "const hecmBackstop = annualHecmBackstopPlan(Object.freeze({" },
+        { "line": 5909, "text": "portfolioShortfall: withdrawalPlan.shortfall," },
+        { "line": 5912, "text": "for (const allocation of hecmBackstop.allocations) {" },
+        { "line": 5915, "text": "line.loanBalance += allocation.amount" },
+        { "line": 5916, "text": "hecmBackstopByProperty?.set(" },
+        { "line": 5921, "text": "const hecmShortfallDraw = hecmBackstop.draw" },
+        { "line": 5923, "text": "const shortfallAfterHecm = hecmBackstop.shortfallAfterHecm" }
+      ],
+      "note": "The caller deliberately owns live line mutation, per-property cash-flow attribution, coordinated-plus-backstop total accumulation, and downstream residual publication. Cash-flow mode observes the optional map write; default and optimizer modes observe debt and shortfall; counterfactual mode re-enters the annual pass and therefore also exercises rollback around caller-owned line state."
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct unit tests own defensive branch semantics and mutation purity; the hostile delegation suite owns exact output consumption and frozen-envelope identity."
+}
