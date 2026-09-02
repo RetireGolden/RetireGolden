@@ -217,7 +217,7 @@
           "text": "if (evidence === undefined || evidence.accountId !== write.accountId) {"
         }
       ],
-      "note": "The evidence-position throw body on lines 6793-6795 is excluded: the helper enumerates the supplied evidence array and copies each row's account id. Hostile delegation tests prove the invariant."
+      "note": "The evidence-position throw body on lines 6382-6384 is excluded: the helper enumerates the supplied evidence array and copies each row's account id. Hostile delegation tests prove the invariant."
     },
     {
       "id": "W.callsite.evidenceWrite",
@@ -276,7 +276,7 @@
       "file": "projection/simulate.ts",
       "lines": [
         6407,
-        6440
+        6434
       ],
       "anchors": [
         {
@@ -296,8 +296,8 @@
           "text": "if (operation.recordsOwnedIraApplication) {"
         },
         {
-          "line": 6438,
-          "text": "}"
+          "line": 6433,
+          "text": "ownedIraProducerOccurrenceKey = producerOccurrenceKey"
         }
       ]
     },
@@ -315,7 +315,7 @@
           "text": "if (operation.taxableSaleMissing) {"
         }
       ],
-      "note": "The failure body on line 6848 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
+      "note": "The failure body on line 6437 is excluded because the annual withdrawal planner supplies every positive taxable sale. Focused delegation injects the missing-sale verdict and pins the exact caller-timed error."
     },
     {
       "id": "W.callsite.apply",

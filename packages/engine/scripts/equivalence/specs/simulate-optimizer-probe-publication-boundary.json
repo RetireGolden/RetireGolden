@@ -31,20 +31,20 @@
       "label": "spouse-treat-as-own remap eligibility and fraction setup",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        153,
-        162
+        158,
+        167
       ],
       "anchors": [
         {
-          "line": 153,
+          "line": 158,
           "text": "let s2FlipOwnerRmdObligationRemap = 0"
         },
         {
-          "line": 158,
+          "line": 163,
           "text": "for (const account of input.traditionalAccounts) {"
         },
         {
-          "line": 161,
+          "line": 166,
           "text": "const obligation = account.rmdObligation"
         }
       ],
@@ -55,20 +55,20 @@
       "label": "post-remap forced and inherited distribution totals",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        168,
-        181
+        173,
+        191
       ],
       "anchors": [
         {
-          "line": 168,
+          "line": 173,
           "text": "const probeRmd = Math.max("
         },
         {
-          "line": 172,
+          "line": 182,
           "text": "const probeInheritedDistribution ="
         },
         {
-          "line": 178,
+          "line": 188,
           "text": "const probeRmdTaxable = Math.max("
         }
       ]
@@ -78,24 +78,24 @@
       "label": "QCD corrections and ordinary/capital income bases",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        185,
-        208
+        201,
+        232
       ],
       "anchors": [
         {
-          "line": 185,
+          "line": 201,
           "text": "const optimizerForcedDistributionOrdinaryExclusion = Math.max("
         },
         {
-          "line": 192,
+          "line": 216,
           "text": "const optimizerForcedDistributionCashDiversion = Math.max("
         },
         {
-          "line": 199,
+          "line": 223,
           "text": "const optimizerOrdinaryIncomeBase ="
         },
         {
-          "line": 207,
+          "line": 231,
           "text": "const optimizerCapitalGainsBase ="
         }
       ]
@@ -105,24 +105,24 @@
       "label": "ordered owner-withdrawal and remaining-taxable fraction folds",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        210,
-        230
+        234,
+        254
       ],
       "anchors": [
         {
-          "line": 210,
+          "line": 234,
           "text": "let optimizerOwnerTraditionalWithdrawal = 0"
         },
         {
-          "line": 214,
+          "line": 238,
           "text": "for (const account of input.traditionalAccounts) {"
         },
         {
-          "line": 222,
+          "line": 246,
           "text": "if (account.convertibleToRoth) {"
         },
         {
-          "line": 226,
+          "line": 250,
           "text": "const optimizerTraditionalGross ="
         }
       ]
@@ -132,24 +132,24 @@
       "label": "exact-cent committed ordinary, conversion, and QCD action aggregation",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        233,
-        273
+        257,
+        297
       ],
       "anchors": [
         {
-          "line": 233,
+          "line": 257,
           "text": "const committedActionCentsByAccountId = new Map<string, bigint>()"
         },
         {
-          "line": 240,
+          "line": 264,
           "text": "if (input.ordinaryAction?.committed) {"
         },
         {
-          "line": 248,
+          "line": 272,
           "text": "if (input.conversionAction?.committed) {"
         },
         {
-          "line": 265,
+          "line": 289,
           "text": "if (input.qcdAction?.committed) {"
         }
       ]
@@ -159,20 +159,20 @@
       "label": "zero filtering, plan-dollar conversion, and deterministic action ordering",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        274,
-        282
+        298,
+        306
       ],
       "anchors": [
         {
-          "line": 274,
+          "line": 298,
           "text": "const optimizerCommittedActionAccountMovement ="
         },
         {
-          "line": 276,
+          "line": 300,
           "text": ".filter(([, cents]) => cents !== 0n)"
         },
         {
-          "line": 279,
+          "line": 303,
           "text": "amount: signedLedgerCentTotalToPlanDollars(cents),"
         }
       ]
@@ -182,24 +182,24 @@
       "label": "runtime occurrence and mutation-site strategy movement aggregation",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        286,
-        320
+        310,
+        344
       ],
       "anchors": [
         {
-          "line": 286,
+          "line": 310,
           "text": "const exogenousStrategyCentsByAccountId = new Map<string, bigint>()"
         },
         {
-          "line": 300,
+          "line": 324,
           "text": "for (const occurrence of input.runtimeOccurrences) {"
         },
         {
-          "line": 309,
+          "line": 333,
           "text": "if (signedAmountPlanDollars === 0) continue"
         },
         {
-          "line": 315,
+          "line": 339,
           "text": "for (const debit of input.exogenousStrategyDebits) {"
         }
       ]
@@ -209,20 +209,20 @@
       "label": "zero filtering, plan-dollar conversion, and deterministic strategy ordering",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        321,
-        329
+        345,
+        353
       ],
       "anchors": [
         {
-          "line": 321,
+          "line": 345,
           "text": "const optimizerExogenousStrategyAccountMovement ="
         },
         {
-          "line": 323,
+          "line": 347,
           "text": ".filter(([, cents]) => cents !== 0n)"
         },
         {
-          "line": 326,
+          "line": 350,
           "text": "amount: signedLedgerCentTotalToPlanDollars(cents),"
         }
       ]
@@ -232,28 +232,28 @@
       "label": "complete optimizer scalar and movement publication",
       "file": "projection/internal/annualOptimizerProbePublication.ts",
       "lines": [
-        331,
-        420
+        355,
+        444
       ],
       "anchors": [
         {
-          "line": 331,
+          "line": 355,
           "text": "return {"
         },
         {
-          "line": 360,
+          "line": 384,
           "text": "acaConversionMagiHeadroom:"
         },
         {
-          "line": 385,
+          "line": 409,
           "text": "rothConversionTaxableFraction:"
         },
         {
-          "line": 403,
+          "line": 427,
           "text": "traditionalWithdrawalTaxableFraction:"
         },
         {
-          "line": 420,
+          "line": 444,
           "text": "}"
         }
       ]
@@ -307,7 +307,7 @@
           "text": ": retirementActionExecution === undefined"
         }
       ],
-      "note": "The uncommitted ordinary-action snapshot arm on line 6253 is corpus-cold and pinned by direct and hostile-delegation tests."
+      "note": "The caller's present-but-uncommitted ordinary-action materialization on line 6248 is deliberately outside this measured range. The direct coordinator contract independently proves that a committed-false snapshot contributes no movement."
     },
     {
       "id": "AO.callsite.acaSnapshot",
@@ -353,7 +353,8 @@
           "line": 6285,
           "text": ": qcdActionExecution === undefined"
         }
-      ]
+      ],
+      "note": "The full corpus reaches both present-but-uncommitted paths in this range (conversion line 6273 and QCD line 6287), while the direct coordinator contract independently proves that their committed-false evidence contributes no movement."
     },
     {
       "id": "AO.callsite.delegate",
@@ -377,7 +378,7 @@
           "text": "sourceAccountId: occurrence.sourceAccountId === null"
         }
       ],
-      "note": "The null runtime-source ternary line 6312 is corpus-cold and pinned by hostile delegation; the non-null runtime snapshot continuation is measured separately."
+      "note": "The caller's `? null` runtime-source materialization on line 6307 is deliberately between this range and the scalar-continuation range. The direct coordinator contract independently proves that a null-source occurrence contributes no movement."
     },
     {
       "id": "AO.callsite.scalarDelegate",

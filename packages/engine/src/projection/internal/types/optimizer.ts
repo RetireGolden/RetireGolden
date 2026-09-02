@@ -310,9 +310,17 @@ export interface OptimizerYearProbe {
   /** Start-of-year owner-convertible traditional balance, used to recover the owner RMD divisor ratio. */
   startTraditional: number
   /**
-   * Forced inherited-traditional distribution this year in the baseline
-   * (traditional accounts only — Roth forced is excluded). Same meaning as
-   * `YearResult.inheritedTraditionalDistribution`.
+   * Forced inherited-traditional distribution this year in the optimizer
+   * baseline (traditional accounts only — Roth forced is excluded).
+   *
+   * Usually this is the same forced amount as
+   * `YearResult.inheritedTraditionalDistribution`. The deliberate probe-only
+   * exception is a post-flip S2 account: its owner-RMD obligation share is
+   * remapped here at GROSS so the LP's static inherited opening bucket sees
+   * consistent cash and depletion floors, while the exact `YearResult` remains
+   * on the owner-RMD path. Form 8606 basis is netted only on the probe's income
+   * side through `forcedDistributionOrdinaryIncomeExclusion`; netting it here
+   * would understate both spendable cash and inherited-bucket depletion.
    */
   inheritedDistribution: number
   /** Start-of-year inherited traditional balance, used to recover the inherited distribution divisor ratio. */

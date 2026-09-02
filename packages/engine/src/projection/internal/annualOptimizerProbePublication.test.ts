@@ -1,3 +1,11 @@
+/**
+ * Fixed hand worksheets for the published optimizer contract, not values read
+ * back from the implementation. Contract authority lives in
+ * internal/types/optimizer.ts; S2 bucket/remap authority lives in
+ * optimizePlan.ts (`optimizerOpeningBuckets`) and optimizePlan.test.ts; QCD
+ * income authority lives in DOCS/domain/domain-rules-reference/
+ * 06-rmds-secure-20.md and the registry record named by the probe type.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type { YearAcaResult } from '../types.js'
@@ -67,7 +75,9 @@ function input(
     traditionalWithdrawal: 20,
     taxableWithdrawal: 12,
     totalRothConversion: 0,
-    taxableAmountForGrossConversion: (gross) => gross * 0.8,
+    // Deliberately non-proportional at the expected $80 query so a helper that
+    // skips or changes the gross-to-taxable callback cannot preserve the oracle.
+    taxableAmountForGrossConversion: (gross) => gross === 80 ? 53 : Number.NaN,
     seppTotal: 0,
     peopleAged65Plus: 1,
     ssa44IrmaaRedetermination: false,
@@ -114,6 +124,10 @@ describe('annualOptimizerProbePublication', () => {
   it('publishes the settled annual scalar and marginal-fraction contract', () => {
     const result = annualOptimizerProbePublication(input())
 
+    // Independent worksheet: taxable RMD = 10 - 2 = 8; ordinary base =
+    // 50 - 8 + 5 taxable SS = 47. Traditional taxable = 8 + (20 - 1)
+    // over gross 10 + 20 = 0.9. The conversion fallback asks for the remaining
+    // $80 and the fixture's explicit $53 answer yields 53 / 80 = 0.6625.
     expect(result).toMatchObject({
       year: 2026,
       startTraditional: 100,
@@ -123,7 +137,7 @@ describe('annualOptimizerProbePublication', () => {
       inheritedDistribution: 0,
       incumbentTraditionalDistribution: 30,
       traditionalWithdrawalTaxableFraction: 0.9,
-      rothConversionTaxableFraction: 0.8,
+      rothConversionTaxableFraction: 0.6625,
       ordinaryIncomeBase: 47,
       capitalGainsBase: 2,
       forcedDistributionOrdinaryIncomeExclusion: 0,
@@ -225,12 +239,17 @@ describe('annualOptimizerProbePublication', () => {
       namedQcdRmdSatisfied: 3,
       incomeBeforeConversion: 30,
       taxableSocialSecurity: 2,
+      namedRothConversionExecuted: 13,
+      namedRothConversionNontaxable: 5,
       yearAcaResult: actionableAca(),
-      totalRothConversionTaxable: 8,
+      totalRothConversionTaxable: 7,
       traditionalWithdrawal: 10,
       totalRothConversion: 10,
     }))
 
+    // Independent S2/QCD worksheet: the $10 S2 obligation carries the owner's
+    // 20% nontaxable share, leaving probe RMD taxable 16 - 8 = 8 and adding $2
+    // to the $5 QCD exclusion. Ordinary base is 30 - (8 - 7) - 5 - 10 + 2 = 16.
     expect(result).toMatchObject({
       startTraditional: 80,
       startInheritedTraditional: 120,
@@ -240,10 +259,12 @@ describe('annualOptimizerProbePublication', () => {
       forcedDistributionOrdinaryIncomeExclusion: 7,
       forcedDistributionCashDiversion: 7,
       ordinaryIncomeBase: 16,
+      committedConversionOrdinaryIncome: 8,
+      incumbentModeledMagiBeforeTaxableWithdrawalGains: 48,
       acaConversionMagiHeadroom: 50_000,
       acaModeledAllowablePtc: 1_234,
       acaCliffState: 'below-cliff',
-      rothConversionTaxableFraction: 0.8,
+      rothConversionTaxableFraction: 0.7,
     })
     expect(result.committedActionAccountMovement).toEqual([
       { accountId: 'a', amount: -5 },

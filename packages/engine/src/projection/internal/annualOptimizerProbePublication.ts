@@ -148,8 +148,13 @@ export function annualOptimizerProbePublication(
     }
   }
 
-  // S2 post-flip owner-RMD obligation shares remain in the inherited opening
-  // bucket for the static LP horizon, so remap only the probe's forced flow.
+  // S2 stays in the inherited-traditional opening bucket for the static LP
+  // horizon even after its exact annual ledger flips to the owner-RMD path.
+  // Remap the account's separately calculated OBLIGATION share into the
+  // probe's inherited forced flow, not its executed account debit: an owned-
+  // IRA aggregate sweep can execute that obligation from another account.
+  // This is probe-only; YearResult.rmd and inherited fields remain on their
+  // exact-ledger paths. See optimizerOpeningBuckets in optimizePlan.ts.
   let s2FlipOwnerRmdObligationRemap = 0
   let s2FlipOwnerRmdObligationRemapTaxable = 0
   let s2FlipOwnerRmdObligationRemapNontaxable = 0
@@ -169,6 +174,11 @@ export function annualOptimizerProbePublication(
     0,
     rmdTotal - s2FlipOwnerRmdObligationRemap,
   )
+  // GROSS is load-bearing. The LP's inherited `wi` variable is simultaneously
+  // cash receipt, inherited-bucket debit, and ordinary income at coefficient
+  // 1. Netting Form 8606 basis here would understate spendable cash and bucket
+  // depletion. The remapped nontaxable share travels only on the income side,
+  // through forcedDistributionOrdinaryIncomeExclusion below.
   const probeInheritedDistribution =
     input.inheritedOrdinaryIncome + s2FlipOwnerRmdObligationRemap
   const rmdTaxableTotal = Math.max(
@@ -180,8 +190,14 @@ export function annualOptimizerProbePublication(
     rmdTaxableTotal - s2FlipOwnerRmdObligationRemapTaxable,
   )
 
-  // Income and cash are distinct sides of a QCD routed from an RMD. The LP
-  // re-decides the forced distribution, so both established corrections stay.
+  // Income and cash are distinct sides of a QCD routed from an RMD. The exact
+  // ledger already nets the gift out of incomeBeforeConversion, but the LP
+  // removes the whole taxable RMD from that base and then re-decides the forced
+  // draw as `wt`. Without this separate exclusion, Math.max(0, ...) erases the
+  // negative QCD residue and the LP charges income on dollars §408(d)(8)
+  // excludes. The forced-taxable cap is defensive and remains true because
+  // basis is recovered only after the gift is carved out of line-7 gross.
+  // See OptimizerYearProbe.forcedDistributionOrdinaryIncomeExclusion.
   const optimizerForcedDistributionOrdinaryExclusion = Math.max(
     0,
     Math.min(
@@ -189,6 +205,14 @@ export function annualOptimizerProbePublication(
       rmdTotal - rmdNontaxable,
     ) + s2FlipOwnerRmdObligationRemapNontaxable,
   )
+  // The cash sibling takes back the full routed gift because the household
+  // never receives those dollars. The exact base cash flow nets them from its
+  // RMD receipt, whereas the LP credits every re-decided `wt` dollar at 1.0.
+  // This is GROSS rather than the qualified/taxable share; it adjusts cash,
+  // while the field above adjusts income, so the two cannot double-count.
+  // Beyond-RMD QCD dollars are excluded here because the LP never credited
+  // them as forced cash; their account debit is published on the movement side.
+  // See OptimizerYearProbe.forcedDistributionCashDiversion.
   const optimizerForcedDistributionCashDiversion = Math.max(
     0,
     Math.min(
