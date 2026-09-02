@@ -72,7 +72,12 @@ export function HouseholdSection() {
           <div className="item-row" key={person.id} style={{ marginTop: '1rem' }}>
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">{i === 0 ? 'Primary' : 'Partner'}</span>
+                {/* The stored name always shows. The role chip is dropped only
+                    when the name is the placeholder, which already states the
+                    role: "PARTNER Unnamed partner" would say it twice (#523). */}
+                {person.name === fallbackPersonName(i) ? null : (
+                  <span className="type-chip">{i === 0 ? 'Primary' : 'Partner'}</span>
+                )}
                 {person.name}
               </span>
               {i === 1 ? (

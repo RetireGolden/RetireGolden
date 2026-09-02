@@ -9,6 +9,8 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
+// @ts-expect-error -- node builtins in a test; the app tsconfig omits node types
+import { readFileSync } from 'node:fs'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
@@ -50,7 +52,10 @@ function renderAccount(account: Account) {
 }
 
 const CENTRING_SELECTOR = ".form-grid > .field--checkbox > input[type='checkbox']"
+/** The subgrid rule's two-child field selector, as the sheet spells it. */
 const TWO_CHILD_FIELD_SELECTOR = '.form-grid > .field:has(> :nth-child(2)):not(:has(> :nth-child(3)))'
+// jsdom gives import.meta.url an http scheme; vitest runs from the package root.
+const css: string = readFileSync('src/planner/planner.css', 'utf8').replace(/\r\n/g, '\n')
 
 describe('contribution-row checkbox markup (#516)', () => {
   it('the centring selector matches the Schedule-contributions box in a two-child subgrid field', () => {
@@ -79,7 +84,14 @@ describe('contribution-row checkbox markup (#516)', () => {
     expect(field.parentElement!.classList.contains('form-grid')).toBe(true)
     const money = Array.from(el.querySelectorAll('label.field-label')).find((l) => l.textContent?.trim() === 'Annual contribution')!
     expect(money.closest('.form-grid')).toBe(field.parentElement)
-    // jsdom cannot evaluate :has(); guard the selector text the sheet uses.
-    expect(TWO_CHILD_FIELD_SELECTOR).toContain('.field:has(> :nth-child(2)):not(:has(> :nth-child(3)))')
+    // jsdom cannot evaluate :has(), so the two halves are tied together by
+    // hand: the sheet's subgrid block must still key on exactly this
+    // two-child selector (a drift there would strand the centring rule),
+    // and the rendered field is that shape — two children, in a .form-grid.
+    const supports = css.slice(css.indexOf('@supports (grid-template-rows: subgrid)'))
+    expect(supports).toMatch(new RegExp(`${TWO_CHILD_FIELD_SELECTOR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^{]*\\{\\s*display:\\s*grid`))
+    expect(supports).toMatch(new RegExp(`${CENTRING_SELECTOR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{\\s*align-self:\\s*center`))
+    expect(field.matches('.form-grid > .field')).toBe(true)
+    expect(field.children).toHaveLength(2)
   })
 })

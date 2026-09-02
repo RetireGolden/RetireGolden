@@ -101,8 +101,12 @@ export function HouseholdMapPage() {
   // "this view" is, and the totals line and attention panel describe it.
   const attention = useMemo(() => vm.nodes.filter((n) => n.missing.length > 0), [vm])
   const focusPersonName = plan.household.people.find((p) => p.id === focusPersonId)?.name ?? null
+  const filtersActive = hiddenColumns.length > 0
   const scopeLabel =
-    vm.scope === 'household' ? null : focusPersonName && hiddenColumns.length === 0 ? `for ${focusPersonName}` : 'for the items shown'
+    vm.scope === 'household' ? null : focusPersonName && !filtersActive ? `for ${focusPersonName}` : 'for the items shown'
+  // Name only the controls that are actually narrowing the view.
+  const clearHint =
+    focusPersonName && filtersActive ? 'clear Focus and the group filters' : focusPersonName ? 'clear Focus' : 'clear the group filters'
   const printScale = Math.min(1, PRINT_WIDTH_PX / vm.width, PRINT_HEIGHT_PX / vm.height)
 
   // Arrow keys move focus between cards (grid-wise); Tab order stays the
@@ -315,7 +319,7 @@ export function HouseholdMapPage() {
           <h3 style={{ marginTop: 0 }}>What needs attention</h3>
           <p className="card-hint">
             Facts the plan could carry but doesn't yet. Filling them in sharpens the projection and the estate picture.
-            {scopeLabel ? ` Listed ${scopeLabel}; clear Focus and the group filters to see the whole household.` : ''}
+            {scopeLabel ? ` Listed ${scopeLabel}; ${clearHint} to see the whole household.` : ''}
           </p>
           <ul className="map-attention-list">
             {attention.map((n) => (

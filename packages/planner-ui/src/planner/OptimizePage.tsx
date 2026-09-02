@@ -150,8 +150,11 @@ export function OptimizePage() {
   const explicitToken = useRef<number | null>(null)
   const failureWell = useRef<HTMLDivElement>(null)
   // Completed runs, explicit or automatic: the mount-time auto-run is the
-  // first, and its success is not announced (nothing changed for the user).
+  // first, and its success is not announced (nothing changed for the user)
+  // — unless the user asked for a run themselves before it finished, in
+  // which case the completion is theirs and is announced.
   const [runsCompleted, setRunsCompleted] = useState(0)
+  const [explicitRunRequested, setExplicitRunRequested] = useState(false)
 
   // Precondition, checked before any dispatch: the engine admits a plan
   // carrying recorded retirement actions — identity-bearing or migrated
@@ -452,7 +455,10 @@ export function OptimizePage() {
     update((d) => applyOptimizeRecommendation(d, { claimAge, conversions: [], mode: 'optimized' }))
   }
 
-  const runExplicitly = () => run(true)
+  const runExplicitly = () => {
+    setExplicitRunRequested(true)
+    run(true)
+  }
 
   const rerunButton = (label = 'Re-run optimizer') => (
     <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={runExplicitly}>
@@ -470,7 +476,7 @@ export function OptimizePage() {
       ? ''
       : noRecommendation
         ? "Optimizer finished: couldn't optimize this plan. No feasible schedule was found."
-        : runsCompleted > 1
+        : runsCompleted > 1 || explicitRunRequested
           ? 'Optimizer finished. Results updated below.'
           : ''
   useEffect(() => {

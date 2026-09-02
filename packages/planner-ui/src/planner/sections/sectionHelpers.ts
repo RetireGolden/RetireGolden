@@ -37,7 +37,7 @@ export const MONTH_OPTIONS = [
  * this string specially, so a person really called this is shown as typed.
  */
 export function fallbackPersonName(index: number): string {
-  return index === 0 ? 'Unnamed person' : 'Unnamed partner'
+  return index === 0 ? 'Unnamed primary' : 'Unnamed partner'
 }
 
 export function isIndividuallyOwnedAccount(type: Account['type']): boolean {

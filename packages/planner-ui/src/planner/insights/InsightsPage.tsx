@@ -55,16 +55,24 @@ export function InsightsPage() {
   // focus to <body> (#505). Record where focus should land before the card
   // goes, then move it once the new list has rendered: the next card in
   // reading order (across groups, so the last card of a group hands off to
-  // the next group's first card), else the previous one, else Restore.
+  // the next group's first card), else the previous one; a neighbour that
+  // sits in a collapsed group is unmounted, so its group's heading toggle
+  // stands in — the dismissed card's own group first, if it survived — and
+  // Restore is the target only when no group is left at all.
   const pageRef = useRef<HTMLElement>(null)
-  const pendingFocus = useRef<{ nextId: string | null; prevId: string | null } | null>(null)
+  const pendingFocus = useRef<{
+    next: InsightCard | null
+    prev: InsightCard | null
+    category: InsightCategory
+  } | null>(null)
 
   // Save dismissed cards to localStorage
   const dismissCard = (card: InsightCard, inReadingOrder: InsightCard[]) => {
     const at = inReadingOrder.findIndex((c) => c.id === card.id)
     pendingFocus.current = {
-      nextId: inReadingOrder[at + 1]?.id ?? null,
-      prevId: at > 0 ? (inReadingOrder[at - 1]?.id ?? null) : null,
+      next: inReadingOrder[at + 1] ?? null,
+      prev: at > 0 ? (inReadingOrder[at - 1] ?? null) : null,
+      category: card.category,
     }
     const nextMap = {
       ...dismissedMap,
@@ -83,10 +91,19 @@ export function InsightsPage() {
     if (!page) return
     const escape = (value: string) =>
       typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&')
-    const dismissOf = (id: string | null) =>
-      id ? page.querySelector<HTMLElement>(`[data-insight-id="${escape(id)}"] .insight-dismiss`) : null
+    const dismissOf = (card: InsightCard | null) =>
+      card ? page.querySelector<HTMLElement>(`[data-insight-id="${escape(card.id)}"] .insight-dismiss`) : null
+    const headingOf = (category: InsightCategory | null | undefined) =>
+      category
+        ? page.querySelector<HTMLElement>(`[data-insight-category="${escape(category)}"] .insight-category-header`)
+        : null
     const target =
-      dismissOf(pending.nextId) ?? dismissOf(pending.prevId) ?? page.querySelector<HTMLElement>('[data-insight-restore]')
+      dismissOf(pending.next) ??
+      dismissOf(pending.prev) ??
+      headingOf(pending.category) ??
+      headingOf(pending.next?.category) ??
+      headingOf(pending.prev?.category) ??
+      page.querySelector<HTMLElement>('[data-insight-restore]')
     target?.focus()
   }, [dismissedMap])
 
@@ -201,7 +218,7 @@ export function InsightsPage() {
             const category = cat as InsightCategory
             const isCollapsed = collapsedCategories[category] ?? false
             return (
-              <div key={category} className="insight-category-group">
+              <div key={category} className="insight-category-group" data-insight-category={category}>
                 <h2 className="insight-category-heading">
                   <button
                     type="button"

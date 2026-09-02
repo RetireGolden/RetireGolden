@@ -143,7 +143,9 @@ describe('HouseholdMapPage scoping (#506)', () => {
     expect(attention.length).toBeGreaterThan(0)
     for (const label of attention) expect(shown.has(label), `${label} is on the map`).toBe(true)
     expect(attention).not.toContain('Alex 401(k)')
-    expect(el.textContent).toContain('Listed for Sam; clear Focus and the group filters')
+    // Only the control that is narrowing the view is named.
+    expect(el.textContent).toContain('Listed for Sam; clear Focus to see the whole household.')
+    expect(el.textContent).not.toContain('clear Focus and the group filters')
 
     selectFocus(el, '')
     expect(totalsText(el)).toBe(wholeTotals)
@@ -152,12 +154,51 @@ describe('HouseholdMapPage scoping (#506)', () => {
 
   it('hiding a group scopes the attention panel too', () => {
     const el = renderPage(buildExampleCouple())
-    const filter = Array.from(el.querySelectorAll<HTMLInputElement>('.map-filter-group input')).find((i) =>
-      i.parentElement?.textContent?.includes('Accounts'),
-    )!
-    act(() => filter.click())
+    const filterFor = (label: string) =>
+      Array.from(el.querySelectorAll<HTMLInputElement>('.map-filter-group input')).find((i) =>
+        i.parentElement?.textContent?.includes(label),
+      )!
+    act(() => filterFor('Accounts').click())
     expect(nodeLabels(el)).not.toContain('Sam IRA')
     expect(attentionLabels(el)).not.toContain('Sam IRA')
     expect(totalsText(el)).toMatch(/^As entered for the items shown: assets/)
+    // Nothing left on the map needs attention, so the panel is not shown at all.
+    expect(el.textContent).not.toContain('What needs attention')
+    // Hide a group that leaves attention items on the map: the hint names
+    // only the control that is narrowing the view.
+    act(() => filterFor('Accounts').click())
+    act(() => filterFor('Income').click())
+    expect(nodeLabels(el)).not.toContain('Wages: Sam')
+    expect(attentionLabels(el)).toContain('Sam IRA')
+    expect(el.textContent).toContain('Listed for the items shown; clear the group filters to see the whole household.')
+    expect(el.textContent).not.toContain('clear Focus')
+    // Both narrowing: both named.
+    const sam = buildExampleCouple().household.people.find((p) => p.name === 'Sam')!
+    selectFocus(el, sam.id)
+    expect(totalsText(el)).toMatch(/^As entered for the items shown: assets/)
+    expect(el.textContent).toContain('clear Focus and the group filters to see the whole household.')
+  })
+
+  it('a person focus that changes no total still reads as that person\'s view', () => {
+    // Everything joint: focusing Sam keeps every item (only Alex's own card
+    // leaves, so the totals are unchanged), but the reader asked about Sam,
+    // so the scope is hers and the totals line says so. The scope keys on
+    // the focus being active, not on what the focus happened to remove.
+    const plan = buildExampleCouple()
+    plan.accounts = plan.accounts.filter((a) => a.name === 'Joint brokerage')
+    plan.incomes = []
+    plan.insurance = []
+    plan.careEvents = []
+    plan.incomeFloor = undefined
+    const graph = buildHouseholdGraph(plan)
+    const sam = plan.household.people.find((p) => p.name === 'Sam')!
+    const vm = buildMapViewModel(graph, { focusPersonId: sam.id })
+    expect(vm.nodes.map((n) => n.label)).toEqual(expect.arrayContaining(['Sam', 'Joint brokerage']))
+    expect(vm.nodes.map((n) => n.label)).not.toContain('Alex')
+    expect(vm.scope).toBe('shown')
+    expect(vm.totals).toEqual(buildMapViewModel(graph).totals)
+    const el = renderPage(plan)
+    selectFocus(el, sam.id)
+    expect(totalsText(el)).toMatch(/^As entered for Sam: assets/)
   })
 })

@@ -14,6 +14,7 @@ import { IDBFactory } from 'fake-indexeddb'
 import { _resetPlanStoreForTests } from '../data/planStore'
 import { ImportPage } from './ImportPage'
 import { ImportAvailabilityProvider } from './ImportAvailabilityProvider'
+import { waitFor } from '../testSupport/settle'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -80,7 +81,44 @@ function typeMoney(input: HTMLInputElement, text: string) {
   })
 }
 
+function findSelect(el: HTMLElement, label: string): HTMLSelectElement {
+  const lab = Array.from(el.querySelectorAll('label')).find((l) => l.textContent?.includes(label))
+  expect(lab, `expected a label containing "${label}"`).toBeTruthy()
+  const sel = el.ownerDocument.getElementById(lab!.htmlFor)
+  expect(sel instanceof HTMLSelectElement, `expected a select labelled "${label}"`).toBe(true)
+  return sel as HTMLSelectElement
+}
+
+function selectByKeyboard(sel: HTMLSelectElement, value: string) {
+  act(() => {
+    sel.focus()
+    sel.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    sel.value = value
+    sel.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+}
+
+const wagesDigits = (el: HTMLElement) => findInput(el, 'Line 1a').value.replace(/[^0-9]/g, '')
+
 describe('Import wizard cancel semantics (#507)', () => {
+  it('Start over after a built 1040 draft returns to a blank form', async () => {
+    const el = render()
+    click(el.querySelector('[data-source="tenforty"]'))
+    typeMoney(findInput(el, 'Line 1a'), '85000')
+    selectByKeyboard(findSelect(el, 'State of residence'), 'KY')
+    expect(wagesDigits(el)).toBe('85000')
+
+    click(findButton(el, 'Build my draft plan'))
+    await waitFor(() => el.querySelector('.import-review') !== null, { what: 'the review checklist', attempts: 400, intervalMs: 5 })
+
+    click(findButton(el, 'Start over'))
+    expect(el.querySelector('.import-review')).toBeNull()
+    expect(findButton(el, 'Build my draft plan')).toBeTruthy()
+    // The form is back, and blank: no wages, no state.
+    expect(wagesDigits(el)).toBe('0')
+    expect(findSelect(el, 'State of residence').value).toBe('')
+  })
+
   it('Choose a different source discards the typed 1040 lines', () => {
     const el = render()
     click(el.querySelector('[data-source="tenforty"]'))
