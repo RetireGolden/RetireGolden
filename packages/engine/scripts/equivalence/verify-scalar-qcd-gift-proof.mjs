@@ -13,6 +13,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { authenticateObservedEngineTree } from './proof-git-provenance.mjs'
+
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..', '..')
 const repoDir = execFileSync('git', ['rev-parse', '--show-toplevel'], {
@@ -29,20 +31,6 @@ function gitObject(revision) {
     cwd: repoDir,
     encoding: 'utf8',
   }).trim()
-}
-
-function assertGitAncestor(ancestor, descendant, label) {
-  const result = spawnSync(
-    'git',
-    ['merge-base', '--is-ancestor', ancestor, descendant],
-    { cwd: repoDir, encoding: 'utf8' },
-  )
-  if (result.error !== undefined) throw result.error
-  if (result.status !== 0) {
-    throw new Error(
-      `${label}: ${ancestor} is not an ancestor of ${descendant}`,
-    )
-  }
 }
 
 function gitText(path) {
@@ -176,21 +164,12 @@ assertEqual(
   proof.base.engineSourceTree,
   'base engine source tree',
 )
-assertEqual(
-  gitObject(`${proof.head.sourceObservedAtCommit}:packages/engine/src`),
-  proof.head.engineSourceTree,
-  'observed semantic source tree',
-)
-assertGitAncestor(
-  proof.head.sourceObservedAtCommit,
-  gitObject('HEAD'),
-  'observed semantic source commit belongs to current HEAD history',
-)
-assertEqual(
-  gitObject('HEAD:packages/engine/src'),
-  proof.head.engineSourceTree,
-  'current engine source tree',
-)
+authenticateObservedEngineTree({
+  repoDir,
+  observedAtCommit: proof.head.sourceObservedAtCommit,
+  engineSourceTree: proof.head.engineSourceTree,
+  label: 'observed semantic source',
+})
 assertEqual(
   sha256(JSON.stringify({
     schema: spec.schema,

@@ -13,6 +13,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { authenticateObservedEngineTree } from './proof-git-provenance.mjs'
+
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..', '..')
 const repoDir = execFileSync('git', ['rev-parse', '--show-toplevel'], {
@@ -64,16 +66,12 @@ assertEqual(
   proof.base.engineSourceTree,
   'base engine source tree',
 )
-assertEqual(
-  gitObject(`${proof.head.observedAtCommit}:packages/engine/src`),
-  proof.head.engineSourceTree,
-  'observed head engine source tree',
-)
-assertEqual(
-  gitObject('HEAD:packages/engine/src'),
-  proof.head.engineSourceTree,
-  'current engine source tree',
-)
+authenticateObservedEngineTree({
+  repoDir,
+  observedAtCommit: proof.head.observedAtCommit,
+  engineSourceTree: proof.head.engineSourceTree,
+  label: 'observed head',
+})
 assertEqual(
   gitObject('HEAD:packages/engine/scripts/equivalence/corpus/blocks.mjs'),
   proof.inputs.corpusSourceBlob,
