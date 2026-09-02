@@ -64,6 +64,12 @@ describe('HSA beneficiary hints (#516)', () => {
     expect(el.textContent).toContain('Spouse / non-spouse shorthand. An Estate beneficiary set below overrides it.')
     expect(el.textContent).toContain('Blank = follows the Beneficiary above.')
     expect(el.textContent).not.toContain('Blank = default by account type.')
+    // The blank option itself says the same thing; "by account type" would
+    // contradict the untaxed spouse outcome the shorthand can produce.
+    const estate = Array.from(el.querySelectorAll('label.field-label')).find((l) => l.textContent?.trim() === 'Estate beneficiary')!
+    const select = el.ownerDocument.getElementById(estate.getAttribute('for')!) as HTMLSelectElement
+    expect(select.options[0]!.value).toBe('')
+    expect(select.options[0]!.textContent).toBe('Default (follows Beneficiary above)')
   })
 
   it('keeps the by-type hint on accounts without the shorthand', () => {
@@ -79,5 +85,6 @@ describe('HSA beneficiary hints (#516)', () => {
     })
     expect(el.textContent).toContain('Blank = default by account type.')
     expect(el.textContent).not.toContain('follows the Beneficiary above')
+    expect(el.textContent).toContain('Default (by account type)')
   })
 })

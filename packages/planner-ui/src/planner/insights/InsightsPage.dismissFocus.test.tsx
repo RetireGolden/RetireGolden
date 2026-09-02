@@ -66,15 +66,16 @@ describe('Insights dismissal (#505)', () => {
     await mount(createSamplePlan())
     let remaining = dismissButtons().length
     expect(remaining).toBeGreaterThan(0)
-    // Dismiss from the top until the list is empty: along the way focus has
-    // to land on the next card, the previous card, a group heading, or the
-    // Restore control — each is exercised as the groups thin out.
+    // Dismiss from the top until the list is empty: focus has to land on the
+    // next card in reading order — across a group boundary when the card was
+    // the last of its group — and on Restore only once nothing is left.
+    let crossedGroup = false
     while (remaining > 0) {
       const first = dismissButtons()[0]!
       const card = first.closest<HTMLElement>('.insight-card')!
-      const group = card.closest<HTMLElement>('.insight-category-group')!
-      const siblings = [...group.querySelectorAll<HTMLElement>('.insight-card')]
-      const next = siblings[siblings.indexOf(card) + 1] ?? null
+      const all = [...container.querySelectorAll<HTMLElement>('.insight-card')]
+      const next = all[all.indexOf(card) + 1] ?? null
+      if (next && next.closest('.insight-category-group') !== card.closest('.insight-category-group')) crossedGroup = true
       first.focus()
       await act(async () => first.click())
       const active = document.activeElement as HTMLElement
@@ -83,13 +84,11 @@ describe('Insights dismissal (#505)', () => {
       if (next) {
         expect(active).toBe(next.querySelector('.insight-dismiss'))
       } else {
-        // The card was last in its group: the group is gone with it, so
-        // focus falls to Restore (the group heading would have taken it had
-        // the group survived).
         expect(active.hasAttribute('data-insight-restore')).toBe(true)
       }
       remaining = dismissButtons().length
     }
+    expect(crossedGroup, 'the sample plan has more than one group, so a hand-off across groups was exercised').toBe(true)
     expect(container.textContent).toContain('No opportunities found right now')
     expect(container.querySelector('[data-insight-restore]')).not.toBeNull()
   })

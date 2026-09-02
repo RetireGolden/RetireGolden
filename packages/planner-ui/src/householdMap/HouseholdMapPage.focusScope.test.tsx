@@ -87,9 +87,39 @@ describe('view model scope', () => {
     expect(focused.nodes.map((n) => n.label)).toContain('Joint brokerage')
   })
 
-  it('the graph totals equal the node-based sum, so both readings agree', () => {
-    const graph = buildHouseholdGraph(buildExampleCouple())
-    expect(sumEnteredTotals(graph.nodes)).toEqual(graph.totals)
+  it('the node-based sum reproduces the stored balances summed straight off the plan', () => {
+    // Expected values are read from the plan's accounts, not from the graph
+    // or the function under test, so a change to either side is caught.
+    const plan = buildExampleCouple()
+    const investable = plan.accounts
+      .filter((a) => ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'].includes(a.type))
+      .reduce((sum, a) => sum + ('balance' in a ? a.balance : 0), 0)
+    const property = plan.accounts.reduce((sum, a) => sum + (a.type === 'property' ? a.value : 0), 0)
+    const liabilities = plan.accounts.reduce((sum, a) => sum + (a.type === 'debt' ? a.balance : 0), 0)
+    expect(investable).toBeGreaterThan(0)
+    expect(property).toBeGreaterThan(0)
+    expect(liabilities).toBeGreaterThan(0)
+    const expected = {
+      investable,
+      property,
+      assets: investable + property,
+      liabilities,
+      netWorth: investable + property - liabilities,
+    }
+    const graph = buildHouseholdGraph(plan)
+    expect(sumEnteredTotals(graph.nodes)).toEqual(expected)
+    expect(graph.totals).toEqual(expected)
+    // Focus on Sam: her IRA plus the joint items, nothing of Alex's own.
+    const sam = plan.household.people.find((p) => p.name === 'Sam')!
+    const focused = buildMapViewModel(graph, { focusPersonId: sam.id })
+    const samInvestable = plan.accounts
+      .filter((a) => ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'].includes(a.type))
+      .filter((a) => a.ownerPersonId === null || a.ownerPersonId === sam.id)
+      .reduce((sum, a) => sum + ('balance' in a ? a.balance : 0), 0)
+    expect(samInvestable).toBeLessThan(investable)
+    const shown = graph.nodes.filter((n) => focused.nodes.some((v) => v.id === n.id))
+    expect(sumEnteredTotals(shown).investable).toBe(samInvestable)
+    expect(sumEnteredTotals(shown).liabilities).toBe(liabilities)
   })
 })
 

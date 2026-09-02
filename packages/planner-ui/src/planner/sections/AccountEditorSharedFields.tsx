@@ -299,7 +299,7 @@ function EstateBeneficiaryFields({
         hint={account.type === 'hsa' ? 'Blank = follows the Beneficiary above.' : 'Blank = default by account type.'}
         value={account.estateBeneficiary?.destination ?? ''}
         options={[
-          { value: '', label: 'Default (by account type)' },
+          { value: '', label: account.type === 'hsa' ? 'Default (follows Beneficiary above)' : 'Default (by account type)' },
           { value: 'spouse', label: 'Spouse (rolls over untaxed)' },
           { value: 'nonSpouse', label: 'Non-spouse heir' },
           { value: 'charity', label: 'Charity' },

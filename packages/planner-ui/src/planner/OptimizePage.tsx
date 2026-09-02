@@ -143,10 +143,15 @@ export function OptimizePage() {
   // An explicit Run / Re-run / Try again moves focus to the failure well when
   // the run ends without a recommendation (#525), so keyboard and
   // screen-reader users land on the answer; an auto-run never steals focus
-  // from the field being edited. The outcome itself is announced by the
-  // live region below, derived from state so it needs no effect.
-  const explicitRun = useRef(false)
+  // from the field being edited. The flag is the explicit run's own token,
+  // so an auto-run that supersedes it while it is in flight cannot inherit
+  // the focus move. The outcome itself is announced by the live region
+  // below, derived from state so it needs no effect.
+  const explicitToken = useRef<number | null>(null)
   const failureWell = useRef<HTMLDivElement>(null)
+  // Completed runs, explicit or automatic: the mount-time auto-run is the
+  // first, and its success is not announced (nothing changed for the user).
+  const [runsCompleted, setRunsCompleted] = useState(0)
 
   // Precondition, checked before any dispatch: the engine admits a plan
   // carrying recorded retirement actions — identity-bearing or migrated
@@ -300,9 +305,11 @@ export function OptimizePage() {
         tournament?.retirementActionReadinessVeto ?? null,
       )
 
-  const run = useCallback(() => {
+  const run = useCallback((explicit = false) => {
     const token = ++runToken.current
+    explicitToken.current = explicit ? token : null
     if (optimizerUnavailable) {
+      explicitToken.current = null
       // Never dispatch: clear any result computed before the actions were
       // recorded so the chart and Apply cannot describe a superseded plan.
       setRunning(false)
@@ -327,13 +334,16 @@ export function OptimizePage() {
         }
       })
       .finally(() => {
-        if (token === runToken.current) setRunning(false)
+        if (token === runToken.current) {
+          setRunning(false)
+          setRunsCompleted((n) => n + 1)
+        }
       })
   }, [plan, startYear, objectiveId, coOptimizeRequested, optimizerUnavailable])
 
   // Auto-run on plan / rate change (debounced).
   useEffect(() => {
-    const t = window.setTimeout(run, 300)
+    const t = window.setTimeout(() => run(), 300)
     return () => window.clearTimeout(t)
   }, [run])
 
@@ -442,10 +452,7 @@ export function OptimizePage() {
     update((d) => applyOptimizeRecommendation(d, { claimAge, conversions: [], mode: 'optimized' }))
   }
 
-  const runExplicitly = () => {
-    explicitRun.current = true
-    run()
-  }
+  const runExplicitly = () => run(true)
 
   const rerunButton = (label = 'Re-run optimizer') => (
     <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={runExplicitly}>
@@ -455,19 +462,22 @@ export function OptimizePage() {
 
   const failed = !running && !optimizerUnavailable && (error !== null || noRecommendation)
   // Empty while a run is in flight, so the same outcome twice is announced
-  // twice (the live region only speaks when its text changes).
+  // twice (the live region only speaks when its text changes). A thrown
+  // failure is not repeated here: its well is a role="alert" that announces
+  // itself when it mounts. The mount-time auto-run's success is silent.
   const liveMessage =
-    running || optimizerUnavailable || (heldResult === null && error === null)
+    running || optimizerUnavailable || error !== null || heldResult === null
       ? ''
-      : error !== null
-        ? `Optimizer failed: ${error}`
-        : noRecommendation
-          ? "Optimizer finished: couldn't optimize this plan. No feasible schedule was found."
-          : 'Optimizer finished. Results updated below.'
+      : noRecommendation
+        ? "Optimizer finished: couldn't optimize this plan. No feasible schedule was found."
+        : runsCompleted > 1
+          ? 'Optimizer finished. Results updated below.'
+          : ''
   useEffect(() => {
-    if (running || !explicitRun.current) return
-    explicitRun.current = false
-    if (failed) failureWell.current?.focus()
+    if (running) return
+    const wasExplicit = explicitToken.current !== null && explicitToken.current === runToken.current
+    explicitToken.current = null
+    if (wasExplicit && failed) failureWell.current?.focus()
   }, [running, failed])
 
   const downloadRecommendationReport = () => {
@@ -544,6 +554,9 @@ export function OptimizePage() {
           </>
         ) : null}
         {error && !optimizerUnavailable ? (
+          // The alert announces itself on mount (the live region above stays
+          // silent for this path, so it is heard once); the tabIndex is for
+          // the explicit-run focus move.
           <div className="callout callout--warn optimizer-failure" role="alert" tabIndex={-1} ref={failureWell}>
             Optimizer error: {error}
           </div>

@@ -53,18 +53,18 @@ export function InsightsPage() {
 
   // Dismissing unmounts the control that had focus, which dropped keyboard
   // focus to <body> (#505). Record where focus should land before the card
-  // goes, then move it once the new list has rendered: the next card in the
-  // group, else the previous one, else the group heading, else Restore.
+  // goes, then move it once the new list has rendered: the next card in
+  // reading order (across groups, so the last card of a group hands off to
+  // the next group's first card), else the previous one, else Restore.
   const pageRef = useRef<HTMLElement>(null)
-  const pendingFocus = useRef<{ nextId: string | null; prevId: string | null; category: InsightCategory } | null>(null)
+  const pendingFocus = useRef<{ nextId: string | null; prevId: string | null } | null>(null)
 
   // Save dismissed cards to localStorage
-  const dismissCard = (card: InsightCard, siblings: InsightCard[]) => {
-    const at = siblings.findIndex((c) => c.id === card.id)
+  const dismissCard = (card: InsightCard, inReadingOrder: InsightCard[]) => {
+    const at = inReadingOrder.findIndex((c) => c.id === card.id)
     pendingFocus.current = {
-      nextId: siblings[at + 1]?.id ?? null,
-      prevId: at > 0 ? (siblings[at - 1]?.id ?? null) : null,
-      category: card.category,
+      nextId: inReadingOrder[at + 1]?.id ?? null,
+      prevId: at > 0 ? (inReadingOrder[at - 1]?.id ?? null) : null,
     }
     const nextMap = {
       ...dismissedMap,
@@ -86,10 +86,7 @@ export function InsightsPage() {
     const dismissOf = (id: string | null) =>
       id ? page.querySelector<HTMLElement>(`[data-insight-id="${escape(id)}"] .insight-dismiss`) : null
     const target =
-      dismissOf(pending.nextId) ??
-      dismissOf(pending.prevId) ??
-      page.querySelector<HTMLElement>(`[data-insight-category="${escape(pending.category)}"] .insight-category-header`) ??
-      page.querySelector<HTMLElement>('[data-insight-restore]')
+      dismissOf(pending.nextId) ?? dismissOf(pending.prevId) ?? page.querySelector<HTMLElement>('[data-insight-restore]')
     target?.focus()
   }, [dismissedMap])
 
@@ -138,6 +135,8 @@ export function InsightsPage() {
     }
     return groups
   }, [visibleCards])
+  // The cards as the page lays them out, group by group.
+  const cardsInReadingOrder = useMemo(() => Object.values(groupedCards).flat(), [groupedCards])
 
   const toggleCategory = (cat: InsightCategory) => {
     setCollapsedCategories((prev) => ({
@@ -202,7 +201,7 @@ export function InsightsPage() {
             const category = cat as InsightCategory
             const isCollapsed = collapsedCategories[category] ?? false
             return (
-              <div key={category} className="insight-category-group" data-insight-category={category}>
+              <div key={category} className="insight-category-group">
                 <h2 className="insight-category-heading">
                   <button
                     type="button"
@@ -231,7 +230,7 @@ export function InsightsPage() {
                 {!isCollapsed && (
                   <div className="insight-cards-list">
                     {cards!.map((card) => (
-                      <InsightCardView key={insightRenderKey(card)} card={card} onDismiss={() => dismissCard(card, cards!)} />
+                      <InsightCardView key={insightRenderKey(card)} card={card} onDismiss={() => dismissCard(card, cardsInReadingOrder)} />
                     ))}
                   </div>
                 )}

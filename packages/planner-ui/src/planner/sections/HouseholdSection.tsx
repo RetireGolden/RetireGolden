@@ -72,10 +72,8 @@ export function HouseholdSection() {
           <div className="item-row" key={person.id} style={{ marginTop: '1rem' }}>
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">{fallbackPersonName(i)}</span>
-                {/* An unnamed person is already announced by the role chip;
-                    repeating it would read "Partner Partner". */}
-                {person.name === fallbackPersonName(i) ? null : person.name}
+                <span className="type-chip">{i === 0 ? 'Primary' : 'Partner'}</span>
+                {person.name}
               </span>
               {i === 1 ? (
                 <button

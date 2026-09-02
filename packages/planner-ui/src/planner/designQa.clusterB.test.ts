@@ -127,14 +127,18 @@ describe('Design-QA cluster B: native check boxes carry their own edge token (#5
   })
 
   it('nested form groups are bounded wells, not a gold side-stripe (#521)', () => {
-    const well = rule('.nested-form-section', clusterBlock)
+    // Edited in place: the sheet carries exactly one .nested-form-section
+    // rule, so there is no dead side-stripe copy to resurrect by mistake.
+    expect(css.match(/^\.nested-form-section\s*\{/gm)).toHaveLength(1)
+    const well = rule('.nested-form-section')
     expect(well).toMatch(/border:\s*1px solid var\(--border\)/)
     expect(well).toMatch(/border-radius:\s*var\(--radius\)/)
     expect(well).toMatch(/background:\s*color-mix\(in srgb, var\(--fg\) 3%, transparent\)/)
     expect(well).not.toMatch(/border-left/)
+    expect(css).not.toMatch(/border-left:\s*3px solid var\(--accent\)/)
     // Inside a form grid the well takes the full row, so it never shares a
     // track with a field beside it.
-    expect(rule('.form-grid > .nested-form-section', clusterBlock)).toMatch(/grid-column:\s*1 \/ -1/)
+    expect(rule('.form-grid > .nested-form-section')).toMatch(/grid-column:\s*1 \/ -1/)
   })
 })
 
@@ -160,9 +164,18 @@ describe('Design-QA cluster B: layout and focus chrome', () => {
     expect(title).toMatch(/margin:\s*0/)
   })
 
-  it('the optimizer failure well takes the app focus ring and hides the UA one (#525)', () => {
-    expect(rule('.optimizer-failure:focus-visible', clusterBlock)).toMatch(/outline:\s*2px solid var\(--accent\)/)
-    expect(rule('.optimizer-failure:focus:not(:focus-visible)', clusterBlock)).toMatch(/outline:\s*none/)
+  it('the optimizer failure well takes the app focus ring on any focus, since it is focused by script (#525)', () => {
+    const ring = rule('.optimizer-failure:focus', clusterBlock)
+    expect(ring).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(ring).toMatch(/outline-offset:\s*2px/)
+    // No rule hides the ring for script focus after a pointer click.
+    expect(clusterBlock).not.toMatch(/\.optimizer-failure:focus:not\(:focus-visible\)/)
+    // The thrown-error well is a warn callout, which the sheet defines.
+    const warn = rule('.callout--warn')
+    expect(warn).toMatch(/var\(--warn\)/)
+    const page = read('./OptimizePage.tsx')
+    expect(page).toMatch(/className="callout callout--warn optimizer-failure" role="alert" tabIndex=\{-1\}/)
+    expect(page).toMatch(/className="card optimizer-failure" tabIndex=\{-1\}/)
   })
 
   it('the cluster block is appended after every earlier rule, so it wins ties', () => {

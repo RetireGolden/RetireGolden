@@ -99,7 +99,9 @@ describe('Optimize failure well (#525)', () => {
     expect(well, 'the failure well rendered').not.toBeNull()
     expect(well.getAttribute('role')).toBe('alert')
     expect(well.textContent).toContain('Optimizer error: solver exploded')
-    expect(status()?.textContent).toContain('Optimizer failed: solver exploded')
+    // One announcement channel: the alert well speaks for itself, and the
+    // polite live region stays empty so the failure is not heard twice.
+    expect(status()?.textContent ?? '').toBe('')
     // The auto-run never takes focus from whatever the user was doing.
     expect(document.activeElement).toBe(document.body)
 
@@ -127,5 +129,35 @@ describe('Optimize failure well (#525)', () => {
     const well = container.querySelector<HTMLElement>('.card.optimizer-failure')!
     expect(well.textContent).toContain("Couldn't optimize this plan")
     expect(document.activeElement).toBe(well)
+  })
+
+  it('an auto-run that supersedes an in-flight explicit run does not inherit the focus move', async () => {
+    mockedRunOptimize.mockResolvedValue(infeasibleResult())
+    const plan = createSamplePlan()
+    await mount(plan)
+    expect(container.textContent).toContain("Couldn't optimize this plan")
+
+    // The explicit run hangs; before it settles the plan changes, so the
+    // debounced auto-run takes over the token and then fails.
+    mockedRunOptimize.mockImplementationOnce(() => new Promise(() => {}))
+    const rerun = findButton('Re-run optimizer')!
+    rerun.focus()
+    await act(async () => rerun.click())
+    mockedRunOptimize.mockRejectedValue(new Error('auto-run failed'))
+    const edited = { ...plan, name: `${plan.name} edited` }
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(edited)}>
+            <OptimizePage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await settle()
+    const well = container.querySelector<HTMLElement>('.optimizer-failure')!
+    expect(well.textContent).toContain('auto-run failed')
+    // The auto-run's failure is on screen but focus was not moved to it.
+    expect(document.activeElement).not.toBe(well)
   })
 })
