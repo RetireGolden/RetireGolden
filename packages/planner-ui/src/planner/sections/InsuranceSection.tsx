@@ -448,9 +448,12 @@ export function InsuranceSection() {
   useEffect(() => {
     const id = addedPolicyId.current
     if (id === null) return
+    // One attempt per add, found or not: a row that is not in the document
+    // by the time the plan holds it is never going to be, so the ref must
+    // not keep retrying on every later change.
+    addedPolicyId.current = null
     const row = document.querySelector<HTMLElement>(`[data-policy-id="${id}"]`)
     if (!row) return
-    addedPolicyId.current = null
     row.querySelector<HTMLElement>('input, select')?.focus()
     row.scrollIntoView?.({ block: 'nearest' })
   }, [plan.insurance])

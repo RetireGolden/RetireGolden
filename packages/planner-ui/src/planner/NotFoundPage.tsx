@@ -43,29 +43,37 @@ export function NotFoundPage() {
 /**
  * Site-level pages a plan URL is likely to be guessed for (#536): the rail's
  * "Compare plans" sits among the plan links, so `/plan/:id/compare` is a
- * natural miss, and `/plan/:id/import` the same for the import wizard. Keyed
- * by the first path segment; the label is the destination's own tab title,
- * read from the shared table so a rename there renames the button here.
+ * natural miss, and `/plan/:id/import` the same for the import wizard. The
+ * rest of the path rides along (`/plan/:id/learn/glossary` escapes to
+ * `/learn/glossary`), and `/sources`, which the site redirects, escapes to
+ * where it lands. The label is the destination's own tab title, read from
+ * the shared table so a rename there renames the button here.
  */
-const SITE_LEVEL_ESCAPE_PATHS = ['/compare', '/import', '/examples', '/learn'] as const
-const SITE_LEVEL_ESCAPES: Readonly<Record<string, { to: string; label: string }>> = Object.fromEntries(
-  SITE_LEVEL_ESCAPE_PATHS.map((to) => [to.slice(1), { to, label: routeTitleOf(to) ?? to.slice(1) }]),
-)
+const SITE_LEVEL_ESCAPE_ROOTS: ReadonlySet<string> = new Set(['compare', 'import', 'examples', 'learn'])
+const SITE_LEVEL_ESCAPE_ALIASES: Readonly<Record<string, string>> = { '/sources': '/learn/sources' }
+
+/** The site-level path a plan-scoped splat was reaching for, or null when it names no such page. */
+function siteLevelEscapeOf(splat: string | undefined): { to: string; label: string } | null {
+  const parts = (splat ?? '').split('/').filter(Boolean)
+  const path = `/${parts.join('/')}`
+  const to = SITE_LEVEL_ESCAPE_ALIASES[path] ?? (parts[0] !== undefined && SITE_LEVEL_ESCAPE_ROOTS.has(parts[0]) ? path : null)
+  if (to === null) return null
+  return { to, label: routeTitleOf(to) ?? to.slice(1) }
+}
 
 export function WorkspaceNotFound() {
   const { planId, '*': splat } = useParams()
   const importAvailability = useImportAvailability()
-  const segment = splat?.split('/').filter(Boolean)[0] ?? ''
   // The import wizard is a host capability: while the host has it switched
   // off (or has not yet said), the plain copy applies instead of a primary
-  // action into an unavailable page. Whether a host mounts the route at all
-  // is not knowable from here; the same is true of every /import link in the
-  // package, and a host without the route answers with its own not-found.
+  // action into an unavailable page. Whether a host mounts a route at all
+  // is not knowable from here; the same is true of every /import and /learn
+  // link in the package (routes/groups.tsx states the contract: a host
+  // mounts or redirects those paths), and a host without a route answers
+  // with its own not-found.
   const importOffered = importAvailability.enabled && importAvailability.resolved
-  const escape =
-    Object.hasOwn(SITE_LEVEL_ESCAPES, segment) && (segment !== 'import' || importOffered)
-      ? SITE_LEVEL_ESCAPES[segment]
-      : undefined
+  const candidate = siteLevelEscapeOf(splat)
+  const escape = candidate && (!candidate.to.startsWith('/import') || importOffered) ? candidate : undefined
   return (
     <div className="card empty-state">
       <h2>This plan has no such section</h2>

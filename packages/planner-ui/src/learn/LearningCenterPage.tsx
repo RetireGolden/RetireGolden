@@ -23,6 +23,9 @@ import { ArticleCard } from './LearnCards'
  */
 export const SEARCH_ANNOUNCE_DELAY_MS = 400
 
+/** What the live region says when a settled search is cleared and the index is back. */
+export const SEARCH_CLEARED_MESSAGE = 'Search cleared. Showing every topic.'
+
 export function LearningCenterPage() {
   const [query, setQuery] = useState('')
   const searchInputId = useId()
@@ -39,6 +42,15 @@ export function LearningCenterPage() {
   const resultsSummary = results ? `${results.length} result${results.length === 1 ? '' : 's'} for “${trimmed}”` : ''
   const [announced, setAnnounced] = useState('')
   useEffect(() => {
+    // A new result set waits for the query to rest. An emptied query does
+    // not: the index is already back on screen, so the region says so on
+    // the next tick rather than holding the old count for the delay and
+    // then going silent (#534 review). Nothing is said when there was no
+    // search to clear.
+    if (resultsSummary === '') {
+      const timer = setTimeout(() => setAnnounced((prev) => (prev === '' ? '' : SEARCH_CLEARED_MESSAGE)), 0)
+      return () => clearTimeout(timer)
+    }
     const timer = setTimeout(() => setAnnounced(resultsSummary), SEARCH_ANNOUNCE_DELAY_MS)
     return () => clearTimeout(timer)
   }, [resultsSummary])

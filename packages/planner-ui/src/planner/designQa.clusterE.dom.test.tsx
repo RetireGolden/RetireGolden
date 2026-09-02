@@ -14,9 +14,10 @@ import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
 import type { IncomeStream, Plan } from '@retiregolden/engine/model/plan'
+import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { App } from '../App.tsx'
 import type { PlanStore } from '../data/planStoreContext'
-import { LearningCenterPage, SEARCH_ANNOUNCE_DELAY_MS } from '../learn/LearningCenterPage'
+import { LearningCenterPage, SEARCH_ANNOUNCE_DELAY_MS, SEARCH_CLEARED_MESSAGE } from '../learn/LearningCenterPage'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport/lazyRoutes'
 import { advanceBy, waitFor, waitForText } from '../testSupport/settle'
@@ -202,7 +203,8 @@ describe('Learn search (#534)', () => {
     const box = container.querySelector('.learn-search')!
     expect(box.classList.contains('learn-search--has-query')).toBe(false)
 
-    // Spaces alone are not a query: no results, no button, no reserved room.
+    // Spaces alone are not a query: no results, no button, no reserved room,
+    // and nothing to announce since no search was ever running.
     await typeInto(input, '   ')
     expect(box.classList.contains('learn-search--has-query')).toBe(false)
     expect(container.querySelector('.learn-search-clear')).toBeNull()
@@ -230,8 +232,12 @@ describe('Learn search (#534)', () => {
     expect(clear.getAttribute('type')).toBe('button')
     await act(async () => clear.click())
     expect(input.value).toBe('')
+    // Clearing does not wait: the index is back, and the region says so on
+    // the next tick instead of holding the old count and then going blank.
+    await advanceBy(1)
+    expect(status.textContent).toBe(SEARCH_CLEARED_MESSAGE)
     await settle()
-    expect(status.textContent).toBe('')
+    expect(status.textContent).toBe(SEARCH_CLEARED_MESSAGE)
     expect(document.activeElement).toBe(input)
     expect(container.querySelector('.learn-search-clear')).toBeNull()
     expect(box.classList.contains('learn-search--has-query')).toBe(false)
@@ -316,6 +322,43 @@ describe('Former spouses (#535)', () => {
     await unmount()
   })
 
+  it('discloses the survivor floor from the engine constant on a deceased record under it', async () => {
+    const stream = streamWith([
+      { id: 'late-1', relationship: 'deceased', dob: '1955-01-01', piaMonthly: 2_400, marriageYears: 0.5, remarriedAtAge: null },
+    ])
+    const { container, unmount } = await mount(
+      <FormerSpousesEditor stream={stream} setStream={() => undefined} householdIsSingle />,
+    )
+    const row = container.querySelector<HTMLElement>('.item-row')!
+    const note = row.querySelector<HTMLElement>('#former-spouse-late-1-years-note')!
+    expect(note.textContent).toContain(`at least ${Math.round(SURVIVOR_MIN_MARRIAGE_YEARS * 12)} months`)
+    expect(note.textContent).toContain('pays nothing')
+    const years = [...row.querySelectorAll('label')].find((l) => l.textContent === 'Years married')!.control as HTMLInputElement
+    expect(years.disabled).toBe(false)
+    expect(years.getAttribute('aria-describedby')).toContain(note.id)
+    // A survivor record has no partner rule.
+    expect(row.querySelector('#former-spouse-late-1-partner-note')).toBeNull()
+    await unmount()
+  })
+
+  it('opens a new record at the engine floor for its kind, not a number restated here', async () => {
+    const stream = streamWith([])
+    const added: NonNullable<SsStream['formerSpouses']> = []
+    const setStream = (mut: (s: SsStream) => void) => {
+      mut(stream)
+      added.push(...(stream.formerSpouses ?? []))
+    }
+    const { container, unmount } = await mount(<FormerSpousesEditor stream={stream} setStream={setStream} householdIsSingle />)
+    const buttons = [...container.querySelectorAll('button')]
+    await act(async () => buttons.find((b) => b.textContent === '+ Divorced ex-spouse')!.click())
+    await act(async () => buttons.find((b) => b.textContent === '+ Deceased former spouse')!.click())
+    expect(stream.formerSpouses!.map((r) => [r.relationship, r.marriageYears])).toEqual([
+      ['divorced', DIVORCED_MIN_MARRIAGE_YEARS],
+      ['deceased', SURVIVOR_MIN_MARRIAGE_YEARS],
+    ])
+    await unmount()
+  })
+
   it('numbers two records of the same kind', async () => {
     const stream = streamWith([divorced('ex-1'), divorced('ex-2')])
     const { container, unmount } = await mount(
@@ -343,6 +386,23 @@ describe('Plan-scoped site-level paths (#536)', () => {
       // The way back into the plan is still offered.
       const household = [...container.querySelectorAll('a')].find((a) => a.textContent === 'Go to Household')!
       expect(household.getAttribute('href')).toBe(`/plan/${plan.id}/household`)
+      await unmount()
+    }
+  })
+
+  it('keeps a deep link path and sends /sources where the site redirects it', async () => {
+    const plan = createSamplePlan()
+    for (const [splat, to] of [
+      ['learn/glossary', '/learn/glossary'],
+      ['learn/sources', '/learn/sources'],
+      ['sources', '/learn/sources'],
+    ] as const) {
+      const { container, unmount } = await mountApp(`/plan/${plan.id}/${splat}`, storeFor(plan))
+      await waitForText(container, 'This plan has no such section')
+      const label = routeTitleOf(to)!
+      const escape = [...container.querySelectorAll('a')].find((a) => a.textContent === `Go to ${label}`)!
+      expect(escape, `escape for ${splat}`).toBeDefined()
+      expect(escape.getAttribute('href')).toBe(to)
       await unmount()
     }
   })

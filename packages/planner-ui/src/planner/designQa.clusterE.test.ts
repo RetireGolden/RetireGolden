@@ -1,10 +1,13 @@
 /**
- * Design-QA cluster E pins (#533, #534, #535, #541, #549) and the pure helpers
- * the cluster added. The breadcrumb truncation (#501) is cluster A's rule,
- * pinned in designQa.clusterA.test.ts; this cluster adds none of its own. Pin the CSS, not a jsdom visual: jsdom computes no layout,
- * so a clamped card name or a truncated crumb is only observable in the
- * stylesheet. The rendered-DOM checks for this cluster live in
- * designQa.clusterE.dom.test.tsx.
+ * Design-QA cluster E: stylesheet pins (#533, #534, #535, #541, #549) and unit
+ * tests for the pure helpers the cluster added (plan-name caps, ordinals).
+ *
+ * The pins read the CSS rather than render it: jsdom computes no layout, so
+ * a clamped card name or a disabled field's fill is only observable in the
+ * stylesheet. The rendered-DOM checks for the cluster live in
+ * designQa.clusterE.dom.test.tsx. The breadcrumb truncation (#501) is
+ * cluster A's rule, pinned in designQa.clusterA.test.ts; this file adds no
+ * pin for it.
  */
 
 import { describe, expect, it } from 'vitest'

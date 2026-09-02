@@ -16,7 +16,7 @@ import {
   replaceZeroYearGain,
   summarizeComputation,
 } from '../socialSecurity/explain'
-import { DIVORCED_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
+import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { parseSsaStatementXml } from '../socialSecurity/ssaStatementXml'
@@ -127,7 +127,10 @@ export function FormerSpousesEditor({
         relationship,
         dob: '1960-01-01',
         piaMonthly: 0,
-        marriageYears: relationship === 'divorced' ? 10 : 1,
+        // A new record opens at the engine's own floor for its kind (the
+        // statute lives there, not here); the fields below say so while a
+        // value sits under it.
+        marriageYears: relationship === 'divorced' ? DIVORCED_MIN_MARRIAGE_YEARS : SURVIVOR_MIN_MARRIAGE_YEARS,
         remarriedAtAge: null,
       })
     })
@@ -156,7 +159,10 @@ export function FormerSpousesEditor({
         // live; the type select stays live so the record can be changed or
         // the card removed, and every control is described by the note (#535).
         const inapplicable = r.relationship === 'divorced' && !householdIsSingle
-        const underMinYears = r.relationship === 'divorced' && r.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS
+        // Each kind has its own floor in the engine (maritalBenefitFor returns
+        // nothing under it); the note names the one that applies.
+        const minYears = r.relationship === 'divorced' ? DIVORCED_MIN_MARRIAGE_YEARS : SURVIVOR_MIN_MARRIAGE_YEARS
+        const underMinYears = r.marriageYears < minYears
         // Both conditions can hold at once; each has its own note so the
         // ten-year floor is disclosed even while the partner rule applies.
         const partnerNoteId = `former-spouse-${r.id}-partner-note`
@@ -209,7 +215,11 @@ export function FormerSpousesEditor({
               />
               <NumberField
                 label="Years married"
-                hint={r.relationship === 'divorced' ? `${DIVORCED_MIN_MARRIAGE_YEARS}+ for divorced-spousal.` : '9 months (0.75) minimum.'}
+                hint={
+                  r.relationship === 'divorced'
+                    ? `${DIVORCED_MIN_MARRIAGE_YEARS}+ for divorced-spousal.`
+                    : `${Math.round(SURVIVOR_MIN_MARRIAGE_YEARS * 12)} months (${SURVIVOR_MIN_MARRIAGE_YEARS}) minimum.`
+                }
                 value={r.marriageYears}
                 min={0}
                 max={75}
@@ -268,8 +278,10 @@ export function FormerSpousesEditor({
             ) : null}
             {underMinYears ? (
               <p id={yearsNoteId} className="field-hint" style={{ color: 'var(--warn)' }}>
-                A divorced-spousal benefit needs a marriage of {DIVORCED_MIN_MARRIAGE_YEARS} or more years. Under that,
-                this record pays nothing.
+                {r.relationship === 'divorced'
+                  ? `A divorced-spousal benefit needs a marriage of ${DIVORCED_MIN_MARRIAGE_YEARS} or more years.`
+                  : `A survivor benefit needs a marriage of at least ${Math.round(SURVIVOR_MIN_MARRIAGE_YEARS * 12)} months (${SURVIVOR_MIN_MARRIAGE_YEARS} years).`}{' '}
+                Under that, this record pays nothing.
               </p>
             ) : null}
           </div>

@@ -3533,9 +3533,9 @@ html:has(.kpi-bar) {
 /* A long plan name clamps to two lines on its card, so one card never runs to
    three times its siblings' height and pushes the grid rows apart (#533). The
    open button still carries the whole name as its accessible name. The clamp
-   needs the -webkit-box display and orientation pair; the web build's
-   minifier keeps it (app/src/plannerCssMinify.test.ts runs the same
-   lightningcss over this rule and checks). */
+   needs the -webkit-box display and orientation pair; the web build checks
+   the built sheet still carries it (app/scripts/check-css-clamp.mjs, run by
+   the app's build script after vite build). */
 .plan-card-name {
   display: -webkit-box;
   -webkit-box-orient: vertical;
