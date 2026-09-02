@@ -460,9 +460,8 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             <NumberField
               label="Disability onset age"
               help="The age your disability began. SSDI starts here (not at your retirement claim age) and pays the full PIA. Must be before your full retirement age. An onset at/after FRA is ignored (SSDI converts to retirement at FRA, so it can't start later)."
+              path={`incomes.${streamIndex}.disability.onsetAge`}
               value={stream.disability.onsetAge}
-              min={40}
-              max={75}
               onCommit={(v) =>
                 setStream((s) => {
                   if (s.disability) s.disability.onsetAge = Math.round(v ?? 62)

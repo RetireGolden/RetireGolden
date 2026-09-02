@@ -326,6 +326,20 @@ function namedItem(container: string, index: number, plan: Plan | undefined): st
 }
 
 /**
+ * Leaves whose card label depends on what the item *is*, not only on which
+ * list it sits in. A debt card labels its balance "Balance owed"
+ * (AccountEditorSharedFields.tsx), so a card-level issue on
+ * `accounts.N.balance` has to say that too — "Account 1: Balance" named a
+ * field that card does not have (#502). Read from the plan the way
+ * `namedItem` reads a Social Security stream; with no plan in hand the
+ * generic label from LEAF_LABELS still stands.
+ */
+function typedLeafLabel(container: string, index: number, leaf: string, plan: Plan | undefined): string | null {
+  if (!plan || container !== 'accounts' || leaf !== 'balance') return null
+  return plan.accounts[index]?.type === 'debt' ? 'Balance owed' : null
+}
+
+/**
  * The same, from path segments that are already split, so a segment holding a
  * dot or slash (a JSON-pointer key decoded from `~1`) stays one segment.
  */
@@ -338,6 +352,7 @@ export function labelOfSegments(segments: readonly string[], plan?: Plan): strin
   // age (years)"), so a nested field is never mistaken for a top-level one.
   let item: string | null = null
   let container: string | null = null
+  let containerIndex: number | null = null
   let group: string | null = null
   const trail: string[] = []
   const leaf = segments[segments.length - 1] ?? ''
@@ -347,6 +362,7 @@ export function labelOfSegments(segments: readonly string[], plan?: Plan): strin
     if (isIndex(next)) {
       item = namedItem(seg, Number(next), plan) ?? `${ITEM_NAMES[seg] ?? singular(seg)} ${Number(next) + 1}`
       container = seg
+      containerIndex = Number(next)
       trail.length = 0
       i++
       continue
@@ -355,6 +371,7 @@ export function labelOfSegments(segments: readonly string[], plan?: Plan): strin
       // A year-like key (a map keyed by year) is shown as itself.
       item = `${words(seg)} ${next}`
       container = seg
+      containerIndex = null
       trail.length = 0
       i++
       continue
@@ -373,7 +390,12 @@ export function labelOfSegments(segments: readonly string[], plan?: Plan): strin
     return isIndex(leaf) ? `${ITEM_NAMES[list] ?? singular(list)} ${Number(leaf) + 1}` : `${words(list)} ${leaf}`
   }
   const parent = segments[segments.length - 2] ?? ''
+  const typed =
+    container !== null && containerIndex !== null && isIndex(parent)
+      ? typedLeafLabel(container, containerIndex, leaf, plan)
+      : null
   const own =
+    typed ??
     (container !== null && isIndex(parent) ? CONTAINER_LEAF_LABELS[container]?.[leaf] : undefined) ??
     NESTED_LEAF_LABELS[`${parent}.${leaf}`]
   const field = own ?? [...trail, LEAF_LABELS[leaf] ?? words(leaf)].join(' › ')

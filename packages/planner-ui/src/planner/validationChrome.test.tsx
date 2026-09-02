@@ -14,6 +14,7 @@ import { createSamplePlan } from '../testSupport/samplePlan'
 import { DateField, MoneyField, NumberField, SelectField, TextField } from './fields'
 import { focusIssueTarget } from './issueJump'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
+import { SocialSecuritySection } from './SocialSecuritySection'
 import { InsuranceSection } from './sections/InsuranceSection'
 import { Issues } from './sections/shared'
 import { StrategySection } from './sections/StrategySection'
@@ -389,5 +390,44 @@ describe('validation chrome', () => {
     expect(strategy[0]!.getAttribute('title')).toBe('strategies.qcdAnnual: Too small: expected number to be >=0')
     expect(container.querySelector('[data-card="spending"] li')).toBeNull()
     expect(container.querySelector('[data-card="strategy"] ul')?.getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('a stored SSDI onset age outside the engine’s range is flagged at the field, not only in the card list (#511)', async () => {
+    // The field used to carry hand-written min/max and no path, so a plan
+    // already holding an out-of-range onset age said nothing beside the
+    // control. Wired to its schema path, the engine's own issue lands there.
+    const plan = createSamplePlan()
+    const index = plan.incomes.findIndex((s) => s.type === 'socialSecurity')
+    expect(index, 'the example couple has a Social Security stream').toBeGreaterThanOrEqual(0)
+    const stream = plan.incomes[index] as Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
+    stream.disability = { onsetAge: 12 }
+    const path = `incomes.${index}.disability.onsetAge`
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(plan, [`${path}: Too small: expected number to be >=40`])}>
+            <SocialSecuritySection />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    const onset = container.querySelector<HTMLInputElement>(`input[data-path="${path}"]`)
+    expect(onset, 'the onset-age control names its schema path').not.toBeNull()
+    expect(onset!.value).toBe('12')
+    expect(onset!.getAttribute('aria-invalid')).toBe('true')
+    const error = onset!.closest('.field')!.querySelector('.field-error')!
+    expect(error.textContent).toBe('Must be at least 40')
+    expect(onset!.getAttribute('aria-describedby')).toContain(error.id)
+    // The range the control enforces is the engine's, read from the path —
+    // the literals the field used to hardcode are gone.
+    expect(onset!.getAttribute('min')).toBe('40')
+    expect(onset!.getAttribute('max')).toBe('75')
+    // The other person's onset field is untouched: one issue, one field.
+    expect(container.querySelectorAll('.field-error')).toHaveLength(1)
+    // And the card still lists it in words, named for the person whose stream
+    // it is rather than for its slot in the incomes array.
+    expect([...container.querySelectorAll('li')].map((li) => li.textContent)).toContain(
+      'Social Security (Alex): Disability onset age: Must be at least 40',
+    )
   })
 })
