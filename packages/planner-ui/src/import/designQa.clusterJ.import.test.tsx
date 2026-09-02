@@ -31,7 +31,7 @@ import {
   duplicateRoleMessage,
   type ColumnRole,
 } from './genericCsv'
-import { seedPlanFromTenForty, type TenFortyInputs } from './tenForty'
+import { ESTIMATED_BROKERAGE_NAME, seedPlanFromTenForty, type TenFortyInputs } from './tenForty'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
@@ -69,6 +69,13 @@ const BASE_1040: TenFortyInputs = {
 let seq = 0
 const ids = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`
 
+/** The seeded-brokerage row, found by what it is rather than by its wording. */
+function estimateRow(review: ReturnType<typeof seed>['review']) {
+  const rows = review.filter((i) => i.confidence === 'estimated')
+  expect(rows, 'exactly one estimated row').toHaveLength(1)
+  return rows[0]!
+}
+
 function seed(overrides: Partial<TenFortyInputs>) {
   seq = 0
   const r = seedPlanFromTenForty({ ...BASE_1040, ...overrides }, ids, () => new Date('2026-06-01T12:00:00Z'))
@@ -90,14 +97,34 @@ describe('cluster J: a 1040 line never leaves the checklist silent (#568)', () =
     // The amount the user typed is in the row, so they can see what was dropped.
     expect(item!.detail).toContain('$50,000')
     expect(item!.detail).toContain('line 3b')
+    // Nothing was seeded, so adding the account by hand is the right remedy.
+    expect(item!.detail).toContain('add the brokerage account')
+    expect(item!.detail).not.toContain(ESTIMATED_BROKERAGE_NAME)
   })
 
   it('says nothing extra when line 3b carries the dividends (the normal return)', () => {
     const { plan, review } = seed({ qualifiedDividends: 8_000, ordinaryDividends: 10_000, agi: 10_000 })
     expect(plan.accounts).toHaveLength(1)
     expect(review.filter((i) => i.source.includes('line 3a'))).toHaveLength(0)
-    const estimate = review.find((i) => i.source.includes('2b/3a/3b'))!
+    const estimate = estimateRow(review)
     expect(estimate.detail).toContain('The qualified-dividend share was kept.')
+    // Line 2b is $0 on this return, so the estimate does not claim it either.
+    expect(estimate.source).toBe('From your 1040, lines 3a/3b (dividends)')
+  })
+
+  it('sources all three lines only when interest and dividends both fed the estimate', () => {
+    const { review } = seed({ taxableInterest: 2_000, qualifiedDividends: 8_000, ordinaryDividends: 10_000, agi: 12_000 })
+    const estimate = estimateRow(review)
+    expect(estimate.source).toBe('From your 1040, lines 2b/3a/3b (interest & dividends)')
+    expect(estimate.locator).toEqual({
+      kind: 'derived',
+      from: [
+        { kind: 'form1040', line: '2b' },
+        { kind: 'form1040', line: '3a' },
+        { kind: 'form1040', line: '3b' },
+      ],
+      note: 'balance implied by a 2.5% yield',
+    })
   })
 
   it('reports line 3a as dropped even when line 2b interest builds the account without it', () => {
@@ -108,13 +135,27 @@ describe('cluster J: a 1040 line never leaves the checklist silent (#568)', () =
     const account = plan.accounts[0]!
     expect(account.type === 'taxable' && account.qualifiedRatio).toBe(0)
     expect(account.type === 'taxable' && account.dividendYieldPct).toBe(0)
-    const estimate = review.find((i) => i.source.includes('2b/3a/3b'))!
+    const estimate = estimateRow(review)
     expect(estimate.detail).not.toContain('The qualified-dividend share was kept.')
     expect(estimate.detail).not.toContain('capped at 100%')
     expect(estimate.detail).toContain('Line 3b (ordinary dividends) is $0')
+    // The estimate may not source a line that set nothing on it: with 3b at
+    // zero, line 3a fed neither the balance nor the qualified ratio.
+    expect(estimate.source).toBe('From your 1040, line 2b (taxable interest)')
+    expect(estimate.locator).toEqual({
+      kind: 'derived',
+      from: [{ kind: 'form1040', line: '2b' }],
+      note: 'balance implied by a 2.5% yield',
+    })
     const dropped = review.find((i) => i.source.includes('line 3a'))!
     expect(dropped.status).toBe('unmapped')
     expect(dropped.detail).toContain('$50,000')
+    // And the remedy points at the account that already exists. Telling the
+    // user to "add the brokerage account" here would leave them holding two.
+    expect(dropped.detail).toContain(ESTIMATED_BROKERAGE_NAME)
+    expect(dropped.detail).toContain('rather than adding a second one')
+    expect(dropped.detail).not.toContain('add the brokerage account')
+    expect(plan.accounts.filter((a) => a.name === ESTIMATED_BROKERAGE_NAME)).toHaveLength(1)
   })
 
   it('names the cap when line 3a exceeds line 3b instead of claiming the share was kept', () => {
@@ -123,7 +164,7 @@ describe('cluster J: a 1040 line never leaves the checklist silent (#568)', () =
     const { plan, review } = seed({ qualifiedDividends: 8_000, ordinaryDividends: 5_000, agi: 5_000 })
     const account = plan.accounts[0]!
     expect(account.type === 'taxable' && account.qualifiedRatio).toBe(1)
-    const estimate = review.find((i) => i.source.includes('2b/3a/3b'))!
+    const estimate = estimateRow(review)
     expect(estimate.detail).not.toContain('The qualified-dividend share was kept.')
     expect(estimate.detail).toContain('capped at 100%')
     expect(estimate.detail).toContain('$8,000')

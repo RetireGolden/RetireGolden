@@ -22,13 +22,19 @@ import { fileURLToPath } from 'node:url'
 const plannerUiSrc: string = fileURLToPath(new URL('..', import.meta.url))
 
 /**
- * A className that writes the *base* badge class into markup.
+ * A className that writes the *base* badge class into markup, in any form a
+ * call site might reach for: a quoted attribute, a braced string literal, a
+ * template literal, a conditional, a helper call. Matching only `className="`
+ * would leave `className={'type-chip'}` invisible, and a hole in this pin is a
+ * hole on exactly the surfaces the rendered sweep cannot mount — which is the
+ * whole reason the pin exists.
  *
- * `type-chip--muted` is a modifier a call site may legitimately hand to
+ * The window is bounded and cannot cross `>`, so it stays inside one opening
+ * tag. `type-chip--muted` is a modifier a call site may legitimately hand to
  * `TypeChip`, so the lookahead keeps modifiers out of the net; only the bare
  * class — the one `TypeChip` itself is responsible for — is caught.
  */
-const BADGE_CLASS_IN_MARKUP = /className=(["'`])[^"'`]*\btype-chip(?![\w-])/
+const BADGE_CLASS_IN_MARKUP = /className=\s*\{?[^>]{0,160}?(["'`])[^"'`]*\btype-chip(?![\w-])/
 
 /** Component sources under `planner-ui/src`; tests may name the class freely. */
 function componentSources(dir: string, found: string[] = []): string[] {
@@ -60,13 +66,35 @@ describe('cluster J: the kind badge markup has one home (#570)', () => {
     expect(files.some((f) => f.endsWith('planner/sections/AccountsSection.tsx'))).toBe(true)
   })
 
-  it('catches a bare badge span and lets a modifier through', () => {
+  it('catches every className form a call site could write the base class in', () => {
     // Calibration: a net that matched nothing would make the pin below vacuous,
     // and one that matched modifiers would forbid a legitimate call.
-    expect(BADGE_CLASS_IN_MARKUP.test('<span className="type-chip">Cash</span>')).toBe(true)
-    expect(BADGE_CLASS_IN_MARKUP.test('<span className="type-chip year-cash-flow-shortfall-badge">')).toBe(true)
-    expect(BADGE_CLASS_IN_MARKUP.test('<TypeChip className="type-chip--muted">Not applied</TypeChip>')).toBe(false)
-    expect(BADGE_CLASS_IN_MARKUP.test('<TypeChip>Cash</TypeChip>')).toBe(false)
+    const caught = [
+      '<span className="type-chip">Cash</span>',
+      "<span className='type-chip'>Cash</span>",
+      '<span className="type-chip year-cash-flow-shortfall-badge">',
+      "<span className={'type-chip'}>Cash</span>",
+      '<span className={"type-chip"}>Cash</span>',
+      '<span className={`type-chip ${extra}`}>Cash</span>',
+      "<span className={muted ? 'type-chip type-chip--muted' : 'type-chip'}>Cash</span>",
+      "<span className={classNames('type-chip', extra)}>Cash</span>",
+      '<span\n  className="type-chip"\n>Cash</span>',
+    ]
+    for (const markup of caught) expect(BADGE_CLASS_IN_MARKUP.test(markup), markup).toBe(true)
+
+    const allowed = [
+      '<TypeChip className="type-chip--muted">Not applied</TypeChip>',
+      "<TypeChip className={'type-chip--good'}>High Confidence</TypeChip>",
+      '<TypeChip>Cash</TypeChip>',
+      "const confidenceChips = { high: { className: 'type-chip--good' } }",
+    ]
+    for (const markup of allowed) expect(BADGE_CLASS_IN_MARKUP.test(markup), markup).toBe(false)
+  })
+
+  it('sees the one legitimate call: TypeChip is excluded by name, never invisible', () => {
+    // The net has to match the real expression form the badge is written in.
+    // If it did not, the sweep below would pass because it sees nothing at all.
+    expect(BADGE_CLASS_IN_MARKUP.test(source(`${plannerUiSrc}planner/TypeChip.tsx`))).toBe(true)
   })
 
   it('only TypeChip.tsx writes the type-chip class into markup', () => {

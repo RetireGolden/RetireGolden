@@ -51,6 +51,9 @@ export type TenFortyResult = { ok: true; plan: Plan; review: ImportReviewItem[] 
 /** Combined interest+dividend yield used to size the estimated taxable account. */
 export const ASSUMED_TAXABLE_YIELD_PCT = 2.5
 
+/** The seeded taxable account's name. Shared so review copy can point at it by name. */
+export const ESTIMATED_BROKERAGE_NAME = 'Brokerage (estimated from your 1040)'
+
 /** True for a real calendar date in YYYY-MM-DD (rejects 2026-13-40, 2026-02-30, …). */
 function isValidIsoDate(s: string): boolean {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s)
@@ -201,7 +204,7 @@ export function seedPlanFromTenForty(
      */
     const qualifiedShareNote =
       inputs.ordinaryDividends === 0
-        ? 'Line 3b (ordinary dividends) is $0, so the balance is implied by your line 2b interest alone and the account carries no dividend yield.'
+        ? 'Line 3b (ordinary dividends) is $0, so the balance is implied by your line 2b interest alone, and the account carries no dividend yield and no qualified share.'
         : inputs.qualifiedDividends > inputs.ordinaryDividends
           ? `Line 3a ($${inputs.qualifiedDividends.toLocaleString('en-US')}) is larger than line 3b ` +
             `($${inputs.ordinaryDividends.toLocaleString('en-US')}), and 3a is the qualified portion of 3b, so the qualified share ` +
@@ -213,7 +216,7 @@ export function seedPlanFromTenForty(
     plan.accounts.push({
       id: newId(),
       type: 'taxable',
-      name: 'Brokerage (estimated from your 1040)',
+      name: ESTIMATED_BROKERAGE_NAME,
       // A Single return has one person — Joint ownership is a couple label.
       // MFJ interest/dividends are combined, so the estimate stays Joint.
       ownerPersonId: inputs.filingStatus === 'single' ? primary.id : null,
@@ -226,15 +229,35 @@ export function seedPlanFromTenForty(
       reinvestDividends: true,
       annualContribution: 0,
     })
+    /**
+     * The estimate may only source the lines that actually fed it. With 3b at
+     * zero, line 3a set nothing on this account (its qualified ratio is 0), so
+     * naming 3a here would claim it as an input to the very account the
+     * line-3a row below reports as not imported.
+     */
+    const sourceLines = [
+      ...(inputs.taxableInterest > 0 ? ['2b'] : []),
+      ...(inputs.ordinaryDividends > 0 ? ['3a', '3b'] : []),
+    ]
+    const sourceLabel =
+      sourceLines.length === 1
+        ? 'line 2b (taxable interest)'
+        : inputs.taxableInterest > 0
+          ? 'lines 2b/3a/3b (interest & dividends)'
+          : 'lines 3a/3b (dividends)'
     review.push({
       status: 'defaulted',
-      source: 'From your 1040, lines 2b/3a/3b (interest & dividends)',
+      source: `From your 1040, ${sourceLabel}`,
       detail:
         `Your $${investmentIncome.toLocaleString('en-US')} of interest + dividends implies roughly a ` +
         `$${estimatedBalance.toLocaleString('en-US')} taxable balance at a ${ASSUMED_TAXABLE_YIELD_PCT}% yield, an estimate to replace ` +
         'with the real balance and cost basis on the Accounts screen. ' +
         qualifiedShareNote,
-      locator: { kind: 'derived', from: [form1040('2b'), form1040('3a'), form1040('3b')], note: `balance implied by a ${ASSUMED_TAXABLE_YIELD_PCT}% yield` },
+      locator: {
+        kind: 'derived',
+        from: sourceLines.map((line) => form1040(line)),
+        note: `balance implied by a ${ASSUMED_TAXABLE_YIELD_PCT}% yield`,
+      },
       confidence: 'estimated',
       target: `accounts[${plan.accounts.length - 1}]`,
     })
@@ -246,14 +269,21 @@ export function seedPlanFromTenForty(
   // nothing and set nothing — and used to leave the review checklist silent,
   // which the "nothing imports silently" promise cannot carry (#568).
   if (inputs.qualifiedDividends > 0 && inputs.ordinaryDividends === 0) {
+    // Line 2b alone still seeds the estimate, so the remedy differs: with an
+    // account already in the draft the user has to CORRECT it, and sending
+    // them to "add the brokerage account" would leave them holding two (#568).
+    const estimateSeeded = inputs.taxableInterest > 0
     review.push({
       status: 'unmapped',
       source: 'From your 1040, line 3a (qualified dividends)',
       detail:
         `$${inputs.qualifiedDividends.toLocaleString('en-US')} of qualified dividends with line 3b (ordinary dividends) at $0. ` +
         'Line 3a is the qualified portion of line 3b, so with 3b empty there is no dividend total to size a taxable balance from ' +
-        'and nothing was brought over. Check line 3b on your return, then add the brokerage account with its real balance and ' +
-        'qualified share on the Accounts screen.',
+        'and none of it was applied. Check line 3b on your return. ' +
+        (estimateSeeded
+          ? `The draft already holds a “${ESTIMATED_BROKERAGE_NAME}” account, sized from your line 2b interest alone, so its ` +
+            'dividend yield and qualified share are both 0 — set them on that account on the Accounts screen rather than adding a second one.'
+          : 'Then add the brokerage account with its real balance and qualified share on the Accounts screen.'),
       locator: form1040('3a'),
       confidence: 'unmapped',
     })
