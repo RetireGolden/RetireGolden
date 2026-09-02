@@ -85,9 +85,13 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
         margin,
         Math.min(btn.left + btn.width / 2 - bub.width / 2, window.innerWidth - bub.width - margin),
       )
+      // The sticky KPI bar owns the top of the viewport inside a plan; a bubble
+      // that would open under it flips below its trigger instead (#469).
+      const barBottom = document.querySelector('.kpi-bar')?.getBoundingClientRect().bottom ?? 0
+      const minTop = Math.max(margin, barBottom + margin)
       const above = btn.top - bub.height - margin
       bubble.style.left = `${left}px`
-      bubble.style.top = `${above >= margin ? above : btn.bottom + margin}px`
+      bubble.style.top = `${above >= minTop ? above : btn.bottom + margin}px`
     }
     place()
     window.addEventListener('scroll', place, true)
@@ -172,17 +176,20 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
 
 export function ReadonlyField({ label, help, learn, value }: BaseProps & { value: ReactNode }) {
   const id = useId()
+  const valueId = `${id}-value`
+  // A real label for a real (labelable) output, and no input chrome on the
+  // value, so it never looks editable (#462).
   return (
     <div className="field">
       <span className="field-label-row">
-        <span className="field-label" id={id}>
+        <label className="field-label" id={id} htmlFor={valueId}>
           {label}
-        </span>
+        </label>
         {help || learn ? <HelpTip text={help} learn={learn} id={`${id}-help`} /> : null}
       </span>
-      <p className="field-readonly" aria-labelledby={id}>
+      <output id={valueId} className="field-readonly" aria-labelledby={id}>
         {value}
-      </p>
+      </output>
     </div>
   )
 }

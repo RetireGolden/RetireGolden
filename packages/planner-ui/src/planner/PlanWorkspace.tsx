@@ -196,6 +196,13 @@ function WorkspaceInner() {
   const { homeLabel } = usePlannerEdition()
   const navigate = useNavigate()
   const location = useLocation()
+  // In the horizontal strip (under 880px) the active chip can sit off-screen
+  // after a navigation; bring it into view without moving the page (#439).
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    if (!window.matchMedia('(max-width: 880px)').matches) return
+    document.querySelector('.rail-link--active')?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' })
+  }, [location.pathname])
   const { prompt, alert, dialogs } = useDialogs()
 
   // Page identity: retitle the tab per section so history and multi-tab

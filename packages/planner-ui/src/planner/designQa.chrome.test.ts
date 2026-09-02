@@ -449,6 +449,38 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(inflation).toHaveLength(2)
   })
 
+  it('narrow header, rail strip, compound field, charts, read-only values, and help bubble (#439, #440, #462, #467, #469, #473)', () => {
+    // #440: under 880px the brand anchors top-left and only the theme cluster wraps.
+    expect(indexCss).toMatch(/@media \(max-width: 880px\) \{\s*\.app-header \{\s*align-items: flex-start;/)
+    expect(indexCss).toMatch(/\.nav \{\s*flex-wrap: nowrap;\s*flex-shrink: 0;/)
+    // #439: the strip shows a scroll cue, snaps, and separates groups.
+    const rail = css.slice(css.indexOf('.workspace-rail {', css.indexOf('@media (max-width: 880px)')))
+    expect(rail).toMatch(/background-attachment: local, local, scroll, scroll/)
+    expect(rail).toMatch(/scroll-snap-type: x proximity/)
+    expect(css).toMatch(/\.workspace-rail \.rail-link \{\s*scroll-snap-align: start/)
+    const workspace: string = readFileSync(fileURLToPath(new URL('./PlanWorkspace.tsx', import.meta.url)), 'utf8')
+    expect(workspace).toContain("document.querySelector('.rail-link--active')?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' })")
+    // #467: the Planning age compound field spans two columns, not the row.
+    expect(rule('.form-grid > .field-with-action--wide')).toMatch(/grid-column:\s*span 2/)
+    expect(css.indexOf('.form-grid > .field-with-action--wide')).toBeLessThan(css.indexOf('.form-grid > .field-span-full'))
+    const household: string = readFileSync(fileURLToPath(new URL('./sections/HouseholdSection.tsx', import.meta.url)), 'utf8')
+    expect(household).toContain('className="field-with-action field-with-action--wide"')
+    // #473: every Monte Carlo chart frame is a named image.
+    const mc: string = readFileSync(fileURLToPath(new URL('./MonteCarloPage.tsx', import.meta.url)), 'utf8')
+    const frames = mc.match(/className="chart-frame"[^>]*>/g) ?? []
+    expect(frames.length).toBeGreaterThanOrEqual(6)
+    for (const frame of frames) expect(frame, frame).toMatch(/role="img"/)
+    // #462: a read-only value has no input chrome and is a labelled output.
+    const readonly = rule('.field-readonly')
+    expect(readonly).not.toMatch(/dashed/)
+    expect(readonly).not.toMatch(/background:/)
+    const fields: string = readFileSync(fileURLToPath(new URL('./fields.tsx', import.meta.url)), 'utf8')
+    expect(fields).toMatch(/<output id=\{valueId\} className="field-readonly" aria-labelledby=\{id\}>/)
+    expect(fields).toMatch(/<label className="field-label" id=\{id\} htmlFor=\{valueId\}>/)
+    // #469: the help bubble clamps below the sticky KPI bar.
+    expect(fields).toContain("document.querySelector('.kpi-bar')?.getBoundingClientRect().bottom")
+  })
+
   it('text, select, and affixed inputs share one height token', () => {
     const affix = rule('.input-affix')
     expect(affix).toMatch(/min-height:\s*var\(--control-height\)/)

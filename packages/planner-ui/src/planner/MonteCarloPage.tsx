@@ -664,7 +664,7 @@ export function MonteCarloPage() {
               <div className="chart-grid">
                 <div>
                   <h3 style={{ marginTop: 0 }}>Spending vs. success</h3>
-                  <div className="chart-frame" style={frameH(240)}>
+                  <div className="chart-frame" style={frameH(240)} role="img" aria-label="Spending versus success: success rate by annual spending level">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={visibleFrontier.spending} margin={{ left: 12, right: 8, top: 8 }}>
                         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
@@ -684,7 +684,7 @@ export function MonteCarloPage() {
                 </div>
                 <div>
                   <h3 style={{ marginTop: 0 }}>Retirement age vs. success</h3>
-                  <div className="chart-frame" style={frameH(240)}>
+                  <div className="chart-frame" style={frameH(240)} role="img" aria-label="Retirement age versus success: success rate by retirement age">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={visibleFrontier.retirement} margin={{ left: 12, right: 8, top: 8 }}>
                         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
@@ -725,7 +725,7 @@ export function MonteCarloPage() {
                 </p>
                 <div className="chart-grid">
                   <div>
-                    <div className="chart-frame" style={frameH(240)}>
+                    <div className="chart-frame" style={frameH(240)} role="img" aria-label="Annuitization: success rate by share of the portfolio annuitized">
                       <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart
                           data={visibleFrontier.annuitization.points.map((p) => ({
