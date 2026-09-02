@@ -437,7 +437,7 @@
       "label": "eager warning, runtime occurrence, and match-record detachment",
       "file": "projection/simulate.ts",
       "lines": [545, 585],
-      "note": "The non-credit application refusal on lines 604-606 is excluded from measured reach and pinned by the hostile delegation suite.",
+      "note": "The non-credit application refusal on lines 591-593 is excluded from measured reach and pinned by the hostile delegation suite.",
       "anchors": [
         { "line": 545, "text": "const operations: AnnualContributionAndMatchOperation[] = []" },
         { "line": 585, "text": "const sourceRetirementApplication = operation.retirementApplication" }
@@ -488,7 +488,7 @@
       "label": "independent cardinality check and shadow reconciliation state",
       "file": "projection/simulate.ts",
       "lines": [2899, 2903],
-      "note": "The throw on line 2921 is excluded from measured reach and pinned by truncated, coordinated zero-row omission, coordinated warning insertion, and empty/nonzero delegation cases.",
+      "note": "The throw on line 2905 is excluded from measured reach and pinned by truncated, coordinated zero-row omission, coordinated warning insertion, and empty/nonzero delegation cases.",
       "anchors": [
         { "line": 2899, "text": "if (" },
         { "line": 2903, "text": "contributionPlan.operations.length" }
@@ -499,7 +499,7 @@
       "label": "unique pre-loop physical contribution expectation",
       "file": "projection/simulate.ts",
       "lines": [2907, 2913],
-      "note": "The duplicate-position refusal on line 2930 is excluded from measured reach and pinned by a coordinated hostile delegation case.",
+      "note": "The duplicate-position refusal on line 2914 is excluded from measured reach and pinned by a coordinated hostile delegation case.",
       "anchors": [
         { "line": 2907, "text": "const seenMatchBalanceIndices = new Set<number>()" },
         { "line": 2913, "text": ") {" }
@@ -520,7 +520,7 @@
       "label": "physical index identity preflight",
       "file": "projection/simulate.ts",
       "lines": [2939, 2945],
-      "note": "The identity throw on line 2962 and post-match-warning throw on line 2966 are excluded from measured reach and pinned by hostile delegation cases.",
+      "note": "The identity throw on line 2946 and post-match-warning throw on line 2950 are excluded from measured reach and pinned by hostile delegation cases.",
       "anchors": [
         { "line": 2939, "text": "if (" },
         { "line": 2945, "text": ") {" }
@@ -542,7 +542,7 @@
       "label": "expected unique physical contribution identity",
       "file": "projection/simulate.ts",
       "lines": [2971, 2974],
-      "note": "The duplicate or unexpected-position refusal on line 2991 is excluded from measured reach and pinned by coordinated hostile delegation cases.",
+      "note": "The duplicate or unexpected-position refusal on line 2975 is excluded from measured reach and pinned by coordinated hostile delegation cases.",
       "anchors": [
         { "line": 2971, "text": "if (" },
         { "line": 2974, "text": ") {" }
@@ -573,7 +573,7 @@
       "label": "finite contribution amount and exact closing-balance math",
       "file": "projection/simulate.ts",
       "lines": [2993, 3002],
-      "note": "The balance-math throw on line 3019 is excluded from this measured range and pinned by a hostile delegation case.",
+      "note": "The balance-math throw on line 3003 is excluded from this measured range and pinned by a hostile delegation case.",
       "anchors": [
         { "line": 2993, "text": "if (" },
         { "line": 3002, "text": ") {" }
@@ -584,7 +584,7 @@
       "label": "taxable/equity basis expectation and exact closing-basis comparison",
       "file": "projection/simulate.ts",
       "lines": [3005, 3012],
-      "note": "The basis-math throw on line 3029 is excluded from measured reach; exact stale/signed-zero preimages are pinned separately by the delegation suite.",
+      "note": "The basis-math throw on line 3012 is excluded from measured reach; exact stale/signed-zero preimages are pinned separately by the delegation suite.",
       "anchors": [
         { "line": 3005, "text": "const expectsBasisCredit =" },
         { "line": 3012, "text": "if (!Object.is(operation.costBasisAfter, expectedCostBasisAfter)) {" }
@@ -637,7 +637,7 @@
       "label": "complete physical contribution position reconciliation",
       "file": "projection/simulate.ts",
       "lines": [3077, 3080],
-      "note": "The missing-position refusal on line 3097 is excluded from measured reach and pinned by the fixture-derived whole-decision omission hostile case.",
+      "note": "The missing-position refusal on line 3081 is excluded from measured reach and pinned by the fixture-derived whole-decision omission hostile case.",
       "anchors": [
         { "line": 3077, "text": "if (" },
         { "line": 3080, "text": ") {" }

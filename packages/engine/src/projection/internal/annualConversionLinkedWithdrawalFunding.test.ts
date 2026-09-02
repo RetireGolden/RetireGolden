@@ -151,6 +151,20 @@ describe('annualConversionLinkedWithdrawalFunding', () => {
     expect(controller.probeInputs).toHaveLength(0)
   })
 
+  it('refuses without running a pass when there are no linked actions to omit', () => {
+    const result = annualConversionLinkedWithdrawalFunding({
+      ...input(),
+      omitActionIds: [],
+    })
+
+    expect(result).toEqual({
+      baseline: null,
+      release: REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
+    })
+    expect(controller.counterfactualInputs).toHaveLength(0)
+    expect(controller.probeInputs).toHaveLength(0)
+  })
+
   it('keeps the committed run refused when T0 cannot be read', () => {
     const result = annualConversionLinkedWithdrawalFunding(input())
 
@@ -229,5 +243,55 @@ describe('annualConversionLinkedWithdrawalFunding', () => {
       release: REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
     })
     expect(controller.authorizationInputs).toHaveLength(0)
+  })
+
+  it('retains T0 but refuses a successful staging pass with no observation', () => {
+    controller.baselineResult = {
+      status: 'counterfactualAnnualLiabilityRead',
+      liability: LIABILITY,
+      identity: IDENTITY,
+    }
+    controller.probeResult = {
+      status: 'annualPassProbeRead',
+      restoration: 'checkpointRestored',
+      observation: null,
+    }
+
+    const result = annualConversionLinkedWithdrawalFunding(input())
+
+    expect(result).toEqual({
+      baseline: BASELINE,
+      release: REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
+    })
+    expect(controller.probeInputs).toHaveLength(1)
+    expect(controller.authorizationInputs).toHaveLength(0)
+  })
+
+  it('retains T0 but refuses when group authorization is withheld', () => {
+    controller.baselineResult = {
+      status: 'counterfactualAnnualLiabilityRead',
+      liability: LIABILITY,
+      identity: IDENTITY,
+    }
+    controller.probeResult = {
+      status: 'annualPassProbeRead',
+      restoration: 'checkpointRestored',
+      observation: STAGED_EXECUTION,
+    }
+
+    const result = annualConversionLinkedWithdrawalFunding(input(() => ({
+      yearResult: {
+        year: 2026,
+        tax: 10,
+        penalties: 2,
+        conversionLinkedWithdrawalGroupExecution: STAGED_EXECUTION as never,
+      },
+    })))
+
+    expect(result).toEqual({
+      baseline: BASELINE,
+      release: REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
+    })
+    expect(controller.authorizationInputs).toEqual([STAGED_EXECUTION])
   })
 })

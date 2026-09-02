@@ -238,7 +238,7 @@
         { "line": 4316, "text": "qcdProRataIdentityByReadSnapshot.set(" },
         { "line": 4318, "text": "row.iraProRataWrite," },
         { "line": 4320, "text": "}" },
-        { "line": 4320, "text": "}" }
+        { "line": 4321, "text": "}" }
       ],
       "note": "The hostile delegation test observes the exact returned object on the wrapped downstream identity channel while a second-read-throwing object proves all arithmetic uses the immutable scalar snapshot."
     }
