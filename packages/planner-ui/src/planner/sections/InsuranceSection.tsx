@@ -83,7 +83,19 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
         learn={policyLearn}
         value={policy.premiumMode}
         options={PREMIUM_MODE_OPTIONS}
-        onCommit={(v) => set('premiumMode', v)}
+        onCommit={(v) =>
+          update((d) => {
+            const p = d.insurance[index]!
+            p.premiumMode = v
+            // premiumEndAge exists only while premiums run until an age (the
+            // schema requires it then and still bounds a stale one otherwise),
+            // so leaving that mode clears it rather than keeping an issue on
+            // a field that is no longer shown; entering it stores the age the
+            // field already displays as its default (#503).
+            if (v === 'untilAge') p.premiumEndAge ??= 65
+            else delete p.premiumEndAge
+          })
+        }
       />
       {policy.premiumMode === 'untilAge' ? (
         <NumberField
