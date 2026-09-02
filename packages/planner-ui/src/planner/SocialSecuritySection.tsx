@@ -148,7 +148,7 @@ export function FormerSpousesEditor({
     <div style={{ marginTop: '0.8rem' }}>
       <h4 style={{ margin: '0 0 0.3rem' }}>Former spouses</h4>
       <p className="card-hint">
-        A 10+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
+        A {DIVORCED_MIN_MARRIAGE_YEARS}+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
         half their benefit; a deceased former spouse can pay a survivor benefit. You receive whichever is largest of your
         own, spousal, and survivor benefits, so add any that might apply.
       </p>

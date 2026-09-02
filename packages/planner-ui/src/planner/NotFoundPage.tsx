@@ -13,6 +13,7 @@ import { Link, useParams } from 'react-router'
 import { useImportAvailability } from '../import/importAvailability'
 import { routeTitleOf } from '../routeTitles'
 import { usePlannerEdition } from './editionContext'
+import { loadLearningRegistry } from './learnRegistryLoader'
 
 export function NotFoundPage() {
   const { homeLabel } = usePlannerEdition()
@@ -45,13 +46,15 @@ export function NotFoundPage() {
  * Site-level pages a plan URL is likely to be guessed for (#536): the rail's
  * "Compare plans" sits among the plan links, so `/plan/:id/compare` is a
  * natural miss, and `/plan/:id/import` the same for the import wizard.
- * Compare, Import, and Examples are single pages, so anything after their
- * segment is dropped (`/plan/:id/compare/foo` escapes to `/compare`); Learn
- * is a tree, so its path rides along (`/plan/:id/learn/glossary` escapes to
- * `/learn/glossary`, and an article slug to that article), and `/sources`,
- * which the site redirects, escapes to where it lands. The label is the
- * destination's own tab title from the shared table, or, for an article,
- * the article's title from the Learning Center index.
+ * Every escape lands on a mounted route, never on a path that renders
+ * nothing: Compare, Import, and Examples are single pages, so anything after
+ * their segment is dropped (`/plan/:id/compare/foo` escapes to `/compare`);
+ * Learn mounts exactly one segment under it (`glossary`, `sources`, or an
+ * article slug — routes/LearnRoutes.tsx), so that segment is kept and any
+ * further ones are dropped (`/plan/:id/learn/glossary/foo` escapes to
+ * `/learn/glossary`); and `/sources`, which the site redirects, escapes to
+ * where it lands. The label is the destination's own tab title from the
+ * shared table, or, for an article, the article's title from the index.
  */
 const SITE_LEVEL_SINGLE_PAGES: ReadonlySet<string> = new Set(['compare', 'import', 'examples'])
 const SITE_LEVEL_ESCAPE_ALIASES: Readonly<Record<string, string>> = { '/sources': '/learn/sources' }
@@ -74,8 +77,10 @@ function siteLevelEscapeOf(splat: string | undefined): (Escape & { articleSlug?:
   }
   if (SITE_LEVEL_SINGLE_PAGES.has(root)) return { to: `/${root}`, label: routeTitleOf(`/${root}`) ?? root }
   if (root !== 'learn') return null
-  const slug = parts.length === 2 && parts[1] !== 'glossary' && parts[1] !== 'sources' ? parts[1] : undefined
-  return { to: path, label: routeTitleOf(path) ?? 'Learning Center', articleSlug: slug }
+  const sub = parts[1]
+  if (sub === undefined) return { to: '/learn', label: routeTitleOf('/learn') ?? 'Learning Center' }
+  if (sub === 'glossary' || sub === 'sources') return { to: `/learn/${sub}`, label: routeTitleOf(`/learn/${sub}`) ?? sub }
+  return { to: `/learn/${sub}`, label: routeTitleOf('/learn') ?? 'Learning Center', articleSlug: sub }
 }
 
 /**
@@ -91,7 +96,7 @@ function useResolvedEscape(candidate: (Escape & { articleSlug?: string }) | null
   useEffect(() => {
     if (slug === undefined) return
     let cancelled = false
-    void import('../learn/learningRegistry').then((m) => {
+    void loadLearningRegistry().then((m) => {
       if (cancelled) return
       const article = m.getArticle(slug)
       setResolved({
@@ -111,16 +116,29 @@ function useResolvedEscape(candidate: (Escape & { articleSlug?: string }) | null
 export function WorkspaceNotFound() {
   const { planId, '*': splat } = useParams()
   const importAvailability = useImportAvailability()
-  // The import wizard is a host capability: while the host has it switched
-  // off (or has not yet said), the plain copy applies instead of a primary
-  // action into an unavailable page. Whether a host mounts a route at all
-  // is not knowable from here; the same is true of every /import and /learn
-  // link in the package (routes/groups.tsx states the contract: a host
-  // mounts or redirects those paths), and a host without a route answers
-  // with its own not-found.
-  const importOffered = importAvailability.enabled && importAvailability.resolved
+  // The import wizard is a host capability: once the host has said it is
+  // switched off, the plain copy applies instead of a primary action into an
+  // unavailable page. While the host is still resolving the switch (every
+  // cold load on the web host) the escape is offered: import is on in the
+  // normal case, and a card that repaints from generic to import-specific on
+  // every first hit is the worse outcome. Whether a host mounts a route at
+  // all is not knowable from here; the same is true of every /import and
+  // /learn link in the package (routes/groups.tsx states the contract: a
+  // host mounts or redirects those paths), and a host without a route
+  // answers with its own not-found.
+  const importWithheld = importAvailability.resolved && !importAvailability.enabled
   const resolved = useResolvedEscape(siteLevelEscapeOf(splat))
-  const escape = resolved && (!resolved.to.startsWith('/import') || importOffered) ? resolved : undefined
+  if (resolved === undefined) {
+    // An article escape whose title is still loading: neither the generic
+    // heading nor the plan links, which would paint a story the resolved
+    // card then contradicts. Neutral copy, and the region says it is busy.
+    return (
+      <div className="card empty-state" aria-busy="true">
+        <p className="muted">Finding the page this address was reaching for…</p>
+      </div>
+    )
+  }
+  const escape = resolved && (!resolved.to.startsWith('/import') || !importWithheld) ? resolved : undefined
   return (
     <div className="card empty-state">
       <h2>This plan has no such section</h2>

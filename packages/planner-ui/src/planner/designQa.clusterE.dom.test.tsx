@@ -9,6 +9,19 @@
  */
 import 'fake-indexeddb/auto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
+
+// The registry load behind a Learn-article escape can be held open, so the
+// frame the page shows while it waits is observable (review of #536).
+const registryGate = vi.hoisted(() => ({ hold: null as Promise<void> | null }))
+vi.mock('./learnRegistryLoader', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./learnRegistryLoader')>()
+  return {
+    loadLearningRegistry: async () => {
+      if (registryGate.hold) await registryGate.hold
+      return actual.loadLearningRegistry()
+    },
+  }
+})
 import { act, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
@@ -17,21 +30,22 @@ import type { IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { App } from '../App.tsx'
 import type { PlanStore } from '../data/planStoreContext'
+import { cloneAsUserPlan } from '../data/planStore'
 import { LearningCenterPage, SEARCH_ANNOUNCE_DELAY_MS, SEARCH_CLEARED_MESSAGE } from '../learn/LearningCenterPage'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport/lazyRoutes'
-import { advanceBy, waitFor, waitForText } from '../testSupport/settle'
+import { advanceBy, waitFor, waitForSelector, waitForText } from '../testSupport/settle'
 import { routeTitleOf } from '../routeTitles'
 import { PromptDialog } from './dialogViews'
 import { YourPlans } from './home/YourPlans'
 import { categorySummaries } from '../learn/learningRegistry'
 import { PlanCtx } from './planContextCore'
-import { PLAN_NAME_MAX_LENGTH, PLAN_NAME_TITLE_MAX_LENGTH } from './planName'
+import { duplicateNameDefault, PLAN_NAME_MAX_LENGTH, PLAN_NAME_TITLE_MAX_LENGTH } from './planName'
 import { AccountsSection, InsuranceSection } from './sections'
 import { FormerSpousesEditor } from './SocialSecuritySection'
 
 beforeAll(async () => {
-  await preloadLazyRoutes('plan', 'report')
+  await preloadLazyRoutes('plan', 'report', 'learn')
 }, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
 
 async function mount(node: ReactNode) {
@@ -59,7 +73,7 @@ function storeFor(plan: Plan): PlanStore {
   }
 }
 
-function mountApp(path: string, store: PlanStore, props: { importEnabled?: boolean } = {}) {
+function mountApp(path: string, store: PlanStore, props: { importEnabled?: boolean; importResolved?: boolean } = {}) {
   return mount(
     <MemoryRouter initialEntries={[path]}>
       <App planStore={store} {...props} />
@@ -126,6 +140,17 @@ const removeLabels = (container: HTMLElement, selector: string) =>
   )
 
 describe('Duplicate prompt and long plan names (#533)', () => {
+  it('the store applies the same cap and fallback when a name reaches it blank', () => {
+    const source = createSamplePlan()
+    source.name = 'n'.repeat(PLAN_NAME_MAX_LENGTH)
+    for (const name of [undefined, '', '   ']) {
+      const { clone } = cloneAsUserPlan(source, name === undefined ? {} : { name })
+      expect(clone.name).toBe(duplicateNameDefault(source.name))
+      expect(clone.name.length).toBeLessThanOrEqual(PLAN_NAME_MAX_LENGTH)
+    }
+    expect(cloneAsUserPlan(source, { name: '  Kept  ' }).clone.name).toBe('Kept')
+  })
+
   it('caps the prompt input at the plan-name limit', async () => {
     const onResult = vi.fn()
     const { container, unmount } = await mount(
@@ -432,6 +457,53 @@ describe('Plan-scoped site-level paths (#536)', () => {
     }
   })
 
+  it('collapses extra Learn segments to the one mounted route beneath /learn, and each target renders', async () => {
+    const plan = createSamplePlan()
+    for (const [splat, to, renders] of [
+      ['learn/glossary/foo', '/learn/glossary', 'Glossary'],
+      ['learn/sources/foo/bar', '/learn/sources', 'Sources'],
+      ['learn/about-retiregolden/extra', '/learn/about-retiregolden', 'About RetireGolden'],
+    ] as const) {
+      const { container, unmount } = await mountApp(`/plan/${plan.id}/${splat}`, storeFor(plan))
+      await waitFor(() => [...container.querySelectorAll('a')].some((a) => a.getAttribute('href') === to), {
+        what: `the escape for ${splat}`,
+      })
+      const escape = [...container.querySelectorAll('a')].find((a) => a.getAttribute('href') === to)!
+      expect(escape.textContent, splat).toMatch(/^Go to /)
+      await unmount()
+      // The collapsed target is a mounted page, not a blank shell.
+      const target = await mountApp(to, storeFor(plan))
+      await waitForText(target.container, renders)
+      await target.unmount()
+    }
+  })
+
+  it('shows neutral copy, not the generic heading or the plan links, while an article escape resolves', async () => {
+    const plan = createSamplePlan()
+    let release: () => void = () => undefined
+    registryGate.hold = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    try {
+      const { container, unmount } = await mountApp(`/plan/${plan.id}/learn/about-retiregolden`, storeFor(plan))
+      await waitForSelector(container, '.empty-state[aria-busy="true"]', { what: 'the pending frame' })
+      expect(container.textContent).toContain('Finding the page this address was reaching for')
+      expect(container.textContent).not.toContain('This plan has no such section')
+      expect([...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to Household')).toBe(false)
+      release()
+      registryGate.hold = null
+      await waitFor(() => [...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to About RetireGolden'), {
+        what: 'the resolved escape',
+      })
+      expect(container.querySelector('.empty-state[aria-busy="true"]')).toBeNull()
+      expect(container.textContent).toContain('This plan has no such section')
+      await unmount()
+    } finally {
+      registryGate.hold = null
+      release()
+    }
+  })
+
   it('collapses a single page\'s extra segments to its root', async () => {
     const plan = createSamplePlan()
     for (const [splat, to] of [
@@ -484,6 +556,19 @@ describe('Plan-scoped site-level paths (#536)', () => {
       expect(escape.getAttribute('href')).toBe(to)
       await unmount()
     }
+  })
+
+  it('offers the import escape while the host is still resolving its switch', async () => {
+    const plan = createSamplePlan()
+    const { container, unmount } = await mountApp(`/plan/${plan.id}/import`, storeFor(plan), {
+      importEnabled: true,
+      importResolved: false,
+    })
+    await waitForText(container, 'This plan has no such section')
+    const escape = [...container.querySelectorAll('a')].find((a) => a.textContent === `Go to ${routeTitleOf('/import')}`)!
+    expect(escape).toBeDefined()
+    expect(escape.className).toContain('btn-primary')
+    await unmount()
   })
 
   it('withholds the import escape while the host has import switched off', async () => {

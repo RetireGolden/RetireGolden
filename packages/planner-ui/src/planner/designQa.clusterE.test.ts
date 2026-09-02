@@ -1,6 +1,9 @@
 /**
- * Design-QA cluster E: stylesheet pins (#533, #534, #535, #541, #549) and unit
- * tests for the pure helpers the cluster added (plan-name caps, ordinals).
+ * Design-QA cluster E: stylesheet pins for the rules the cluster appended
+ * (#533 card clamp and open overlay, #534 Learn clear control, #535 disabled
+ * field chrome) and unit tests for the pure helpers it added (the plan-name
+ * caps for #533, the ordinal suffixes for #541 and #549). The ordinals have
+ * no stylesheet of their own; their rendering is checked in the DOM file.
  *
  * The pins read the CSS rather than render it: jsdom computes no layout, so
  * a clamped card name or a disabled field's fill is only observable in the
