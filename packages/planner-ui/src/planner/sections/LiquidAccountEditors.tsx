@@ -105,6 +105,7 @@ export function TaxableAccountEditor({
             label="Qualified dividends override"
             help="Optional. Leave blank to use the blended qualified share from the class mix. Enter a value to override the share of dividends taxed at long-term capital-gain rates."
             hint="Blank = use blended share."
+            path={`accounts.${index}.qualifiedRatio`}
             value={account.qualifiedRatio === undefined ? null : account.qualifiedRatio * 100}
             allowNull
             onCommit={(value) =>

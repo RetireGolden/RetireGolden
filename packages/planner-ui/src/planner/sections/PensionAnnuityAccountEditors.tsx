@@ -76,9 +76,8 @@ export function PensionAccountEditor({
       />
       <NumberField
         label="Start age"
+        path={`accounts.${index}.startAge`}
         value={account.startAge}
-        min={PENSION_MIN_START_AGE}
-        max={PENSION_MAX_START_AGE}
         onCommit={(v) =>
           onCommit(
             'startAge',
@@ -86,9 +85,10 @@ export function PensionAccountEditor({
           )
         }
       />
-      <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
-      <PercentField label="COLA" value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
-      <PercentField label="Survivor benefit" value={account.survivorPct} onCommit={(v) => onCommit('survivorPct', v ?? 0)} />
+      <MoneyField label="Monthly amount" path={`accounts.${index}.monthlyAmount`} value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
+      <PercentField label="COLA" path={`accounts.${index}.colaPct`} value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
+      {/* The path carries the engine's own 0–100 (plan.ts pensionSchema) to the field, so 999 % is flagged while typing. */}
+      <PercentField label="Survivor benefit" path={`accounts.${index}.survivorPct`} value={account.survivorPct} onCommit={(v) => onCommit('survivorPct', v ?? 0)} />
       <CheckboxField
         label="Lump-sum offer on record"
         help="Record a lump-sum buyout offer to unlock the decision view: the annuity's discounted present value against the offer, a discount-rate × longevity sensitivity table, and the survivor option's value. Recording the offer changes nothing in the projection until you elect it."
@@ -210,17 +210,25 @@ export function AnnuityAccountEditor({
       <NumberField
         label="Start age"
         help={annuityStartAgeHelp(startAgeBounds)}
+        // No schema path here, unlike the pension field above: a bound read by
+        // path is one number for `accounts.N.startAge`, and this ceiling is the
+        // contract's own (the QLAC / non-QLAC latest start for this purchase),
+        // which is lower than the schema's 95 and higher than the pension's 80.
         value={account.startAge}
         min={ANNUITY_MIN_START_AGE}
         max={startAgeBounds?.binding ?? ANNUITY_MAX_START_AGE}
         onCommit={(v) => onCommit('startAge', clampedAnnuityStartAge(plan, { ...account, startAge: Math.round(v ?? 65) }) ?? Math.round(v ?? 65))}
       />
-      <MoneyField label="Monthly amount" value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
-      <PercentField label="COLA" value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
+      <MoneyField label="Monthly amount" path={`accounts.${index}.monthlyAmount`} value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
+      <PercentField label="COLA" path={`accounts.${index}.colaPct`} value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
       {!account.purchase ? (
         <PercentField
           label="Taxable share"
           hint="Simplified exclusion ratio."
+          // The path brings the engine's own 0–100 (plan.ts annuitySchema) to
+          // the field, so 99999 % is flagged while typing instead of only
+          // counted in the header (#516).
+          path={`accounts.${index}.taxablePct`}
           value={account.taxablePct}
           onCommit={(v) => onCommit('taxablePct', v ?? 0)}
         />
@@ -254,9 +262,8 @@ export function AnnuityAccountEditor({
         <NumberField
           label="Guaranteed years"
           help="Years of payments guaranteed from the start age, paid to the household even if the owner dies inside the window."
+          path={`accounts.${index}.payoutForm.certainYears`}
           value={account.payoutForm.certainYears}
-          min={1}
-          max={40}
           onCommit={(v) => onCommit('payoutForm', { kind: 'periodCertain', certainYears: Math.round(v ?? 10) })}
         />
       ) : null}
@@ -264,6 +271,8 @@ export function AnnuityAccountEditor({
         <PercentField
           label="Survivor share"
           help="Percent of the payment continuing to the surviving joint annuitant for their lifetime (100% / 75% / 50% are the common contract options)."
+          // The path brings the engine's own 1–100 (plan.ts annuityPayoutFormSchema) to the field.
+          path={`accounts.${index}.payoutForm.survivorPct`}
           value={account.payoutForm.survivorPct}
           onCommit={(v) => onCommit('payoutForm', { kind: 'jointSurvivor', survivorPct: Math.min(100, Math.max(1, v ?? 50)) })}
         />

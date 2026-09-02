@@ -2,7 +2,13 @@
 
 import { useId, useMemo } from 'react'
 
-import type { CareEvent, InsurancePolicy, Plan } from '@retiregolden/engine/model/plan'
+import {
+  ltcPolicySchema,
+  permanentLifePolicySchema,
+  type CareEvent,
+  type InsurancePolicy,
+  type Plan,
+} from '@retiregolden/engine/model/plan'
 import { compareLtcStress } from '@retiregolden/engine/projection/compare'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
@@ -83,7 +89,25 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
         learn={policyLearn}
         value={policy.premiumMode}
         options={PREMIUM_MODE_OPTIONS}
-        onCommit={(v) => set('premiumMode', v)}
+        onCommit={(v) =>
+          update((d) => {
+            const p = d.insurance[index]!
+            p.premiumMode = v
+            // The schema requires premiumEndAge while premiums run until an
+            // age and still bounds one otherwise, so either side of this switch
+            // leaves an age the schema accepts, or none at all (#503). Entering
+            // the mode keeps a stored age that parses (a 72 survives the round
+            // trip) and otherwise stores the 65 the field already displays as
+            // its default; leaving it drops only an age the schema rejects, so
+            // no issue is left on a field that is no longer shown. The bound is
+            // the engine's, read from this policy kind's own schema.
+            const schema = p.kind === 'ltc' ? ltcPolicySchema : permanentLifePolicySchema
+            const endAgeParses = schema.shape.premiumEndAge.safeParse(p.premiumEndAge).success
+            if (v === 'untilAge') {
+              if (p.premiumEndAge === undefined || !endAgeParses) p.premiumEndAge = 65
+            } else if (!endAgeParses) delete p.premiumEndAge
+          })
+        }
       />
       {policy.premiumMode === 'untilAge' ? (
         <NumberField

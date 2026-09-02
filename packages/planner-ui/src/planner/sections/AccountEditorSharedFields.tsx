@@ -98,7 +98,7 @@ export function AccountEditorShell({
         onEstimate={() => setEstimating(true)}
       />
       <ContributionFields account={account} onCommit={onCommit} />
-      <EstateBeneficiaryFields account={account} onCommit={onCommit} />
+      <EstateBeneficiaryFields account={account} index={index} onCommit={onCommit} />
       {estimating ? (
         <ReturnEstimatorModal
           initialPct={account.annualReturnPct}
@@ -282,9 +282,11 @@ function ContributionFields({
 
 function EstateBeneficiaryFields({
   account,
+  index,
   onCommit,
 }: {
   account: Account
+  index: number
   onCommit: CommitAccountField
 }) {
   if (account.type === 'debt' || account.type === 'property' || account.type === 'pension') return null
@@ -322,9 +324,8 @@ function EstateBeneficiaryFields({
         <PercentField
           label="Charity share"
           help="What percentage of this account goes to charity. The remainder goes to a non-spouse heir and is taxed at the heir tax rate."
+          path={`accounts.${index}.estateBeneficiary.charityPct`}
           value={account.estateBeneficiary.charityPct ?? 100}
-          min={0}
-          max={100}
           onCommit={(value) =>
             onCommit('estateBeneficiary', { destination: 'charity', charityPct: value ?? 100 })
           }
