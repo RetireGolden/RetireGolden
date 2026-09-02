@@ -40,6 +40,7 @@ export function HsaAccountEditor({
       <SelectField
         label="Beneficiary"
         help="Who inherits this HSA. A spouse inherits it as their own HSA and it passes untaxed. Any other beneficiary (child, estate, single-person plans) receives a fully taxable distribution of the balance in the year of death, so the after-tax estate metric taxes the remaining HSA at your assumed heir tax rate, like a traditional account."
+        hint="Spouse / non-spouse shorthand. An Estate beneficiary set below overrides it."
         value={account.beneficiary ?? 'spouse'}
         options={[
           { value: 'spouse', label: 'Spouse (inherits as HSA, untaxed)' },

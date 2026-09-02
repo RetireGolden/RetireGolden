@@ -97,8 +97,8 @@ override the home label and the two host-specific Disclaimer sections via
 route groups), `routes/` (`groups.tsx` — the exported `plannerWorkspaceRoutes` /
 `plannerContentRoutes` / `plannerHomeRoutes` route-object arrays: `/` plan picker + `/import` in
 home; `/plan/*` via lazy `routes/PlanRoutes` + `/compare` in workspace; `/examples`, `/learn/*`
-via lazy `routes/LearnRoutes`, `/disclaimer`, `/how-tested` in content; retired v1 routes redirect
-to `/`), `RouteErrorBoundary.tsx`, `staleChunkReload.ts` (stale-deployment recovery: a
+via lazy `routes/LearnRoutes`, `/sources` (redirects to `/learn/sources`), `/disclaimer`,
+`/how-tested` in content; retired v1 routes redirect to `/`), `RouteErrorBoundary.tsx`, `staleChunkReload.ts` (stale-deployment recovery: a
 `vite:preloadError` listener the web host installs before render, plus the loop-guarded one-shot
 reload the error boundary uses as a backstop — the exported route groups mount that boundary
 per lazy route, so bare route-group hosts recover too — so a deploy that replaces hashed chunks

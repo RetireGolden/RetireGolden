@@ -154,6 +154,10 @@ function EnabledImportPage() {
     setAnalysis(null)
     setRoles([])
     setPendingSource(null)
+    // The guided 1040 lines are draft state too: "Choose a different source"
+    // and "Start over" read as cancel, so they must not hand the typed values
+    // back on the next visit (#507).
+    setTenForty(EMPTY_1040)
   }
 
   const chooseSource = (id: SourceId) => {

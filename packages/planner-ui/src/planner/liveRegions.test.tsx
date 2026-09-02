@@ -162,7 +162,7 @@ describe('insight dismissal announcements', () => {
     await mountWithPlan(<InsightsPage />, sample)
     await advanceBy(60)
     const dismissBtn = Array.from(container.querySelectorAll('button')).find(
-      (b) => b.getAttribute('aria-label') === 'Dismiss this insight',
+      (b) => b.getAttribute('aria-label')?.startsWith('Dismiss insight: '),
     )
     expect(dismissBtn, 'sample plan should surface at least one dismissable insight').toBeDefined()
     await act(async () => dismissBtn!.click())

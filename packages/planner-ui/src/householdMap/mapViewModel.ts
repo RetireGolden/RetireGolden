@@ -9,6 +9,7 @@
 
 import {
   personNodeId,
+  sumEnteredTotals,
   type HouseholdEdge,
   type HouseholdGraph,
   type HouseholdNode,
@@ -155,6 +156,13 @@ export interface HouseholdMapViewModel {
   height: number
   /** Null when amounts are hidden — the hidden model carries no dollar strings. */
   totals: MapTotalsVM | null
+  /**
+   * 'household' when the whole household is on the map; 'shown' when a
+   * person focus is active or a group filter removed nodes, in which case
+   * `totals` (and the attention items the page derives from `nodes`) cover
+   * only what is shown (#506).
+   */
+  scope: 'household' | 'shown'
   amountsHidden: boolean
 }
 
@@ -240,6 +248,14 @@ export function buildMapViewModel(graph: HouseholdGraph, options: MapViewOptions
     nodes = nodes.filter((n) => visible.has(columnForKind(n.kind)))
   }
   const nodeIds = new Set(nodes.map((n) => n.id))
+  // A person focus scopes the view even when it removes nothing (everything
+  // joint): the reader asked about one person, so the copy says so. A group
+  // filter scopes it only when it actually hid something.
+  const scope = options.focusPersonId || nodes.length !== graph.nodes.length ? 'shown' : 'household'
+  // The same reading of stored figures the whole-household graph uses, over
+  // the nodes that survived the filters, so "as entered" never describes
+  // items the map is not showing.
+  const totals = scope === 'household' ? graph.totals : sumEnteredTotals(nodes)
   const edges = graph.edges.filter((e) => nodeIds.has(e.from) && nodeIds.has(e.to))
   const layout = layoutHouseholdGraph({ ...graph, nodes, edges })
 
@@ -343,10 +359,11 @@ export function buildMapViewModel(graph: HouseholdGraph, options: MapViewOptions
     totals: hideAmounts
       ? null
       : {
-          assetsText: fmtMoney(graph.totals.assets),
-          liabilitiesText: fmtMoney(graph.totals.liabilities),
-          netWorthText: fmtMoney(graph.totals.netWorth),
+          assetsText: fmtMoney(totals.assets),
+          liabilitiesText: fmtMoney(totals.liabilities),
+          netWorthText: fmtMoney(totals.netWorth),
         },
+    scope,
     amountsHidden: hideAmounts,
   }
 }

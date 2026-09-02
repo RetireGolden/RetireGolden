@@ -4,6 +4,12 @@
   --fg: #161a1f;
   --muted: #5b6470;
   --border: #dde2e8;
+  /* The edge of a check or radio box. --border draws panels and fields
+     against text that already carries the contrast; an unchecked box has
+     nothing else, and Slate Border on white is ~1.3:1 (Design QA #521).
+     4.1:1 on --surface-1 and 3.6:1 on --surface-2, clearing the 3:1
+     non-text floor; guarded in designQa.clusterB.test.ts. */
+  --control-border: #767f8b;
   --surface-1: #ffffff;
   --surface-2: #eef1f4;
   /* Gold rebrand (2026-07): 5.6:1 against white (--accent-fg), so white-on-accent
@@ -50,6 +56,7 @@
   --fg: #eef1f4;
   --muted: #97a1ad;
   --border: #283038;
+  --control-border: #727d8b;
   --surface-1: #161b22;
   --surface-2: #1d242d;
   --accent: #E3B341;
@@ -77,6 +84,7 @@
     --fg: #eef1f4;
     --muted: #97a1ad;
     --border: #283038;
+    --control-border: #727d8b;
     --surface-1: #161b22;
     --surface-2: #1d242d;
     --accent: #E3B341;
@@ -522,7 +530,7 @@ input[type='radio'] {
   width: var(--control-check-size);
   height: var(--control-check-size);
   margin: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: 4px;
   background: var(--surface-1);
   color: var(--accent-fg);
@@ -570,7 +578,7 @@ input[type='radio']:checked::before {
 
 input[type='checkbox']:hover:not(:disabled),
 input[type='radio']:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--fg) 30%, var(--border));
+  border-color: color-mix(in srgb, var(--fg) 30%, var(--control-border));
 }
 
 input[type='checkbox']:focus-visible,

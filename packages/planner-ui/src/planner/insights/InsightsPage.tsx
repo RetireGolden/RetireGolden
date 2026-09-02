@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { usePlan } from '../planContextCore'
 import { useProjection } from '../useProjection'
@@ -51,16 +51,61 @@ export function InsightsPage() {
   // Screen-reader announcement for dismiss/restore (visual change is otherwise silent).
   const [liveMessage, setLiveMessage] = useState('')
 
+  // Dismissing unmounts the control that had focus, which dropped keyboard
+  // focus to <body> (#505). Record where focus should land before the card
+  // goes, then move it once the new list has rendered: the next card in
+  // reading order (across groups, so the last card of a group hands off to
+  // the next group's first card), else the previous one; a neighbour that
+  // sits in a collapsed group is unmounted, so its group's heading toggle
+  // stands in — the dismissed card's own group first, if it survived — and
+  // Restore is the target only when no group is left at all.
+  const pageRef = useRef<HTMLElement>(null)
+  const pendingFocus = useRef<{
+    next: InsightCard | null
+    prev: InsightCard | null
+    category: InsightCategory
+  } | null>(null)
+
   // Save dismissed cards to localStorage
-  const dismissCard = (cardId: string) => {
+  const dismissCard = (card: InsightCard, inReadingOrder: InsightCard[]) => {
+    const at = inReadingOrder.findIndex((c) => c.id === card.id)
+    pendingFocus.current = {
+      next: inReadingOrder[at + 1] ?? null,
+      prev: at > 0 ? (inReadingOrder[at - 1] ?? null) : null,
+      category: card.category,
+    }
     const nextMap = {
       ...dismissedMap,
-      [plan.id]: [...(dismissedMap[plan.id] ?? []), cardId],
+      [plan.id]: [...(dismissedMap[plan.id] ?? []), card.id],
     }
     setDismissedMap(nextMap)
     writeLocal(STORAGE_KEYS.insightsDismissed, JSON.stringify(nextMap))
     setLiveMessage(`Insight dismissed. ${nextMap[plan.id]!.length} dismissed on this plan.`)
   }
+
+  useLayoutEffect(() => {
+    const pending = pendingFocus.current
+    if (!pending) return
+    pendingFocus.current = null
+    const page = pageRef.current
+    if (!page) return
+    const escape = (value: string) =>
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&')
+    const dismissOf = (card: InsightCard | null) =>
+      card ? page.querySelector<HTMLElement>(`[data-insight-id="${escape(card.id)}"] .insight-dismiss`) : null
+    const headingOf = (category: InsightCategory | null | undefined) =>
+      category
+        ? page.querySelector<HTMLElement>(`[data-insight-category="${escape(category)}"] .insight-category-header`)
+        : null
+    const target =
+      dismissOf(pending.next) ??
+      dismissOf(pending.prev) ??
+      headingOf(pending.category) ??
+      headingOf(pending.next?.category) ??
+      headingOf(pending.prev?.category) ??
+      page.querySelector<HTMLElement>('[data-insight-restore]')
+    target?.focus()
+  }, [dismissedMap])
 
   // Restore all dismissed cards for this plan
   const restoreDismissed = () => {
@@ -107,6 +152,8 @@ export function InsightsPage() {
     }
     return groups
   }, [visibleCards])
+  // The cards as the page lays them out, group by group.
+  const cardsInReadingOrder = useMemo(() => Object.values(groupedCards).flat(), [groupedCards])
 
   const toggleCategory = (cat: InsightCategory) => {
     setCollapsedCategories((prev) => ({
@@ -116,7 +163,7 @@ export function InsightsPage() {
   }
 
   return (
-    <section>
+    <section ref={pageRef}>
       <LiveStatus message={liveMessage} />
       <div className="card">
         <h2>Insights</h2>
@@ -160,7 +207,7 @@ export function InsightsPage() {
             Your plan already covers the big levers or no new opportunities were detected. Try adjusting your strategy or assumptions.
           </p>
           {planDismissed.length > 0 && (
-            <button type="button" className="btn btn-secondary btn-small" onClick={restoreDismissed}>
+            <button type="button" className="btn btn-secondary btn-small" data-insight-restore onClick={restoreDismissed}>
               Restore dismissed insights
             </button>
           )}
@@ -171,7 +218,7 @@ export function InsightsPage() {
             const category = cat as InsightCategory
             const isCollapsed = collapsedCategories[category] ?? false
             return (
-              <div key={category} className="insight-category-group">
+              <div key={category} className="insight-category-group" data-insight-category={category}>
                 <h2 className="insight-category-heading">
                   <button
                     type="button"
@@ -200,7 +247,7 @@ export function InsightsPage() {
                 {!isCollapsed && (
                   <div className="insight-cards-list">
                     {cards!.map((card) => (
-                      <InsightCardView key={insightRenderKey(card)} card={card} onDismiss={() => dismissCard(card.id)} />
+                      <InsightCardView key={insightRenderKey(card)} card={card} onDismiss={() => dismissCard(card, cardsInReadingOrder)} />
                     ))}
                   </div>
                 )}
@@ -210,7 +257,7 @@ export function InsightsPage() {
 
           {planDismissed.length > 0 && (
             <div className="insight-restore-row">
-              <button type="button" className="btn btn-secondary btn-small" onClick={restoreDismissed}>
+              <button type="button" className="btn btn-secondary btn-small" data-insight-restore onClick={restoreDismissed}>
                 Restore dismissed insights ({planDismissed.length})
               </button>
             </div>

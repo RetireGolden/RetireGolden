@@ -68,6 +68,10 @@ export const plannerWorkspaceRoutes: RouteObject[] = [
 export const plannerContentRoutes: RouteObject[] = [
   { path: 'examples', element: suspended(<ExamplesPage />) },
   { path: 'learn/*', element: suspended(<LearnRoutes />) },
+  // The short path people type for the Learning Center's sources page (#520).
+  // Route-relative, so the alias resolves beside the learn routes wherever
+  // this group is mounted (a host basename is honoured either way).
+  { path: 'sources', element: <Navigate to="../learn/sources" replace /> },
   { path: 'disclaimer', element: <DisclaimerPage /> },
   { path: 'how-tested', element: suspended(<HowTestedPage />) },
 ]

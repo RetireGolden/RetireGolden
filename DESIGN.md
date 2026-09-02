@@ -149,6 +149,8 @@ computed outcomes.
 - **Cool Slate** (#F4F6F8): the light body background; a true cool gray-blue, not cream.
 - **Surface White** (#FFFFFF) and **Cool Slate 2** (#EEF1F4): card surface and second-layer panel.
 - **Slate Border** (#DDE2E8): the 1px rule that draws the entire interface.
+- **Control Border** (#767F8B light / #727D8B dark): the edge of an unchecked check or radio box
+  only — the one 1px rule that has to be seen on its own, so it clears 3:1 against both surfaces.
 - **Night set** (#0E1116 bg, #161B22 / #1D242D surfaces, #EEF1F4 ink, #97A1AD muted, #283038
   border): the dark theme mirrors every role one-for-one; no role exists in only one theme.
 
@@ -267,7 +269,10 @@ transitions, restrained hover states that shift a border or tint a background by
   stack more than one tip on a field.
 - **Native control chrome is styled once, app-wide.** Checkboxes, radios, selects, range
   sliders, and number inputs take the shared treatment in `index.css`: `appearance: none`
-  (number inputs keep `textfield` and only drop the spin buttons), Slate Border box on Surface White, Ledger Gold fill when checked or as the slider thumb, the
+  (number inputs keep `textfield` and only drop the spin buttons), a box on Surface White edged
+  with the control-border token (`--control-border`, #767F8B light / #727D8B dark — an unchecked
+  box has no text to carry its contrast, and Slate Border alone sat at ~1.3:1; the token clears
+  the 3:1 non-text floor on both surfaces in both themes), Ledger Gold fill when checked or as the slider thumb, the
   muted-color chevron on selects (an inline SVG token, mirrored per theme and pinned equal to
   `--muted`), no UA spin buttons, the 2px gold focus ring, the flat disabled tokens, and a
   `forced-colors` fallback that hands the controls back to the UA. Text inputs, selects, and

@@ -38,6 +38,7 @@ import { CheckboxField, HelpTip, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { LEARN } from './learnLinks'
+import { LiveStatus } from './LiveStatus'
 import {
   actionableTournamentConversions,
   buildOptimizeChartRows,
@@ -139,6 +140,21 @@ export function OptimizePage() {
   // combination (up to ~7×), so the user opts into the extra runtime per session.
   const [coOptimizeClaim, setCoOptimizeClaim] = useState(false)
   const runToken = useRef(0)
+  // An explicit Run / Re-run / Try again moves focus to the failure well when
+  // the run ends without a recommendation (#525), so keyboard and
+  // screen-reader users land on the answer; an auto-run never steals focus
+  // from the field being edited. The flag is the explicit run's own token,
+  // so an auto-run that supersedes it while it is in flight cannot inherit
+  // the focus move. The outcome itself is announced by the live region
+  // below, derived from state so it needs no effect.
+  const explicitToken = useRef<number | null>(null)
+  const failureWell = useRef<HTMLDivElement>(null)
+  // Completed runs, explicit or automatic: the mount-time auto-run is the
+  // first, and its success is not announced (nothing changed for the user)
+  // — unless the user asked for a run themselves before it finished, in
+  // which case the completion is theirs and is announced.
+  const [runsCompleted, setRunsCompleted] = useState(0)
+  const [explicitRunRequested, setExplicitRunRequested] = useState(false)
 
   // Precondition, checked before any dispatch: the engine admits a plan
   // carrying recorded retirement actions — identity-bearing or migrated
@@ -292,9 +308,11 @@ export function OptimizePage() {
         tournament?.retirementActionReadinessVeto ?? null,
       )
 
-  const run = useCallback(() => {
+  const run = useCallback((explicit = false) => {
     const token = ++runToken.current
+    explicitToken.current = explicit ? token : null
     if (optimizerUnavailable) {
+      explicitToken.current = null
       // Never dispatch: clear any result computed before the actions were
       // recorded so the chart and Apply cannot describe a superseded plan.
       setRunning(false)
@@ -319,13 +337,16 @@ export function OptimizePage() {
         }
       })
       .finally(() => {
-        if (token === runToken.current) setRunning(false)
+        if (token === runToken.current) {
+          setRunning(false)
+          setRunsCompleted((n) => n + 1)
+        }
       })
   }, [plan, startYear, objectiveId, coOptimizeRequested, optimizerUnavailable])
 
   // Auto-run on plan / rate change (debounced).
   useEffect(() => {
-    const t = window.setTimeout(run, 300)
+    const t = window.setTimeout(() => run(), 300)
     return () => window.clearTimeout(t)
   }, [run])
 
@@ -434,11 +455,36 @@ export function OptimizePage() {
     update((d) => applyOptimizeRecommendation(d, { claimAge, conversions: [], mode: 'optimized' }))
   }
 
+  const runExplicitly = () => {
+    setExplicitRunRequested(true)
+    run(true)
+  }
+
   const rerunButton = (label = 'Re-run optimizer') => (
-    <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={run}>
+    <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={runExplicitly}>
       {running ? 'Optimizing...' : label}
     </button>
   )
+
+  const failed = !running && !optimizerUnavailable && (error !== null || noRecommendation)
+  // Empty while a run is in flight, so the same outcome twice is announced
+  // twice (the live region only speaks when its text changes). A thrown
+  // failure is not repeated here: its well is a role="alert" that announces
+  // itself when it mounts. The mount-time auto-run's success is silent.
+  const liveMessage =
+    running || optimizerUnavailable || error !== null || heldResult === null
+      ? ''
+      : noRecommendation
+        ? "Optimizer finished: couldn't optimize this plan. No feasible schedule was found."
+        : runsCompleted > 1 || explicitRunRequested
+          ? 'Optimizer finished. Results updated below.'
+          : ''
+  useEffect(() => {
+    if (running) return
+    const wasExplicit = explicitToken.current !== null && explicitToken.current === runToken.current
+    explicitToken.current = null
+    if (wasExplicit && failed) failureWell.current?.focus()
+  }, [running, failed])
 
   const downloadRecommendationReport = () => {
     if (!heldResult || !recommendationReportIsAvailable) return
@@ -460,6 +506,7 @@ export function OptimizePage() {
 
   return (
     <section>
+      <LiveStatus message={liveMessage} />
       <div className="card">
         <h2>Roth & Tax Optimizer</h2>
         <p className="card-hint">
@@ -513,7 +560,12 @@ export function OptimizePage() {
           </>
         ) : null}
         {error && !optimizerUnavailable ? (
-          <p style={{ color: 'var(--bad)' }}>Optimizer error: {error}</p>
+          // The alert announces itself on mount (the live region above stays
+          // silent for this path, so it is heard once); the tabIndex is for
+          // the explicit-run focus move.
+          <div className="callout callout--warn optimizer-failure" role="alert" tabIndex={-1} ref={failureWell}>
+            Optimizer error: {error}
+          </div>
         ) : null}
         {/* No run controls while the precondition holds: every control here
             either starts a run that cannot happen or downloads a report that
@@ -638,7 +690,7 @@ export function OptimizePage() {
             <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
           </div>
         ) : noRecommendation ? (
-          <div className="card">
+          <div className="card optimizer-failure" tabIndex={-1} ref={failureWell}>
             <h2>Couldn't optimize this plan</h2>
             <p className="muted">
               The optimizer couldn't find a feasible schedule, usually because the plan runs out of money before the end

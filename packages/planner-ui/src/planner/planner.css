@@ -848,10 +848,23 @@
   margin-top: 0;
 }
 
+/* A nested group (asset classes on Assumptions, an allocation or contribution
+   schedule panel) is a bounded well — full 1px border and a 3% ink tint, the
+   .empty-state treatment without the dash — so four groups read as four
+   (Design QA #521: the former 3px gold side-stripe was faint in Light and
+   the groups ran together). Gold marks action, selection, and focus, not
+   grouping (DESIGN.md Golden Thread and side-stripe rules). */
 .nested-form-section {
-  border-left: 3px solid var(--accent);
-  padding-left: 1rem;
-  margin: 0.35rem 0 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--fg) 3%, transparent);
+  padding: 0.75rem 1rem 0.85rem;
+  margin: 0.5rem 0;
+}
+
+/* Inside a form grid the well takes the full row, never a track beside a field. */
+.form-grid > .nested-form-section {
+  grid-column: 1 / -1;
 }
 
 .nested-form-section > h4 {
@@ -3250,5 +3263,54 @@ html:has(.kpi-bar) {
 /* Solver failure well (#448): the way-back actions sit apart from the prose. */
 .solver-failure .picker-actions {
   margin: 0.75rem 0 0;
+}
+
+/* --- Design QA cluster B (#507, #516, #519, #525) -----------------------------
+   Appended as one block; pinned by designQa.clusterB.test.ts. */
+
+/* Import source cards (#507): "Choose a different source" hands focus back to
+   the card that was opened, by script, after a pointer click — which is the
+   one case :focus-visible does not mark. Ring the card on any focus here so
+   the restored card is the marked one, not whichever card the idle pointer
+   happens to rest on (its hover border is the plan-card affordance, and it
+   read as a selection). Mouse users never see this ring linger: opening a
+   card unmounts the grid at once. */
+.import-page .home-path-card:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Checkbox fields inside a subgridded form row (#516): the box is a third the
+   height of a text input, and pinned to the top of the control track it sat
+   ~9px above the neighbouring input text. Centre it in the track instead; the
+   shared -0.45rem pull-up stays, so the visual centre lands on the inputs'. */
+@supports (grid-template-rows: subgrid) {
+  .form-grid > .field--checkbox > input[type='checkbox'] {
+    align-self: center;
+  }
+}
+
+/* Example groups (#519): the two lists get real headings so the outline is
+   h1 > h2 (group) > h3 (card) instead of twenty-nine sibling h2s, and the
+   card title keeps its card-name size at either level. */
+.example-group-heading {
+  margin: 1.25rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.plan-grid h3.plan-card-name,
+.plan-grid h4.plan-card-name {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* Optimizer failure wells (#525): a completed re-run moves focus here by
+   script, after a click as often as after a key press, which is the case
+   :focus-visible does not mark — so the ring shows on any focus. (The
+   nested-form-section well for #521 is edited in place, above.) */
+.optimizer-failure:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
