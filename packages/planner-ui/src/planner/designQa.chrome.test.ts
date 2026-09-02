@@ -334,6 +334,20 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(scenarios).toMatch(/<ScrollRegion label="Scenario overview table"/)
     const results: string = readFileSync(fileURLToPath(new URL('./ResultsPage.tsx', import.meta.url)), 'utf8')
     expect(results).toMatch(/<ScrollRegion label="Year-by-year table">/)
+    // No raw wrap is left on the pages this batch edited: every table there is named and reachable.
+    expect(results).not.toMatch(/<div className="year-table-wrap"/)
+    expect(scenarios).not.toMatch(/<div className="year-table-wrap"/)
+    for (const label of ['{caption}', '"Annual ledger comparison"', '"Capacity solve status"']) {
+      expect(scenarios).toContain(`<ScrollRegion label=${label}`)
+    }
+    expect(results).toContain('<ScrollRegion label="Roth conversion details"')
+    // The Learning Center article describes the cell the table now prints.
+    const article: string = readFileSync(
+      fileURLToPath(new URL('../learn/content/reading-the-results-page.ts', import.meta.url)),
+      'utf8',
+    )
+    expect(article).toContain('A $0 shortfall cell is good news')
+    expect(article).not.toMatch(/blank shortfall cell/i)
     for (const field of ['contributions', 'employerMatch', 'shortfall']) {
       expect(results, `${field} cell prints a formatted zero`).toMatch(new RegExp(`fmtMoney\\(adj\\(y\\.year, y\\.${field}\\)\\)`))
       // The row-depleted class toggle keeps its threshold; only the cell shape is banned.

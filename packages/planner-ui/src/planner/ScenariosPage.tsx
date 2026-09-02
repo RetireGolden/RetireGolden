@@ -452,7 +452,7 @@ export function MetricTable({
   rows: Array<{ label: string; metric: ComparisonMetric; format: MetricFormat }>
 }) {
   return (
-    <div className="year-table-wrap" style={{ border: 'none' }}>
+    <ScrollRegion label={caption} style={{ border: 'none' }}>
       <table className="compare-table">
         <caption>
           {caption} <span className="small">({basis})</span>
@@ -478,7 +478,7 @@ export function MetricTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   )
 }
 
@@ -514,7 +514,7 @@ function AnnualLedgerComparison({ comparison }: { comparison: ScenarioPlanCompar
   return (
     <details>
       <summary>Annual ledger comparison ({comparison.annual.length} years)</summary>
-      <div className="year-table-wrap">
+      <ScrollRegion label="Annual ledger comparison">
         <table className="compare-table">
           <caption>Annual ledger (nominal dollars; IRMAA tier is a count)</caption>
           <thead>
@@ -549,7 +549,7 @@ function AnnualLedgerComparison({ comparison }: { comparison: ScenarioPlanCompar
             )}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </details>
   )
 }
@@ -590,7 +590,7 @@ function CapacitySection({
               { label: 'Slack vs. current base spending', metric: capacity.spendingSlack, format: 'money' },
             ]}
           />
-          <div className="year-table-wrap" style={{ border: 'none' }}>
+          <ScrollRegion label="Capacity solve status" style={{ border: 'none' }}>
             <table className="compare-table">
               <caption>Capacity solve status</caption>
               <thead>
@@ -616,7 +616,7 @@ function CapacitySection({
                 </tr>
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           {diagnostics.length > 0 ? (
             <ul className="small">
               {diagnostics.map((message) => (

@@ -339,7 +339,7 @@ function InheritedAccountSchedule({
           </ul>
         </>
       ) : null}
-      <div className="year-table-wrap" style={{ border: 'none', marginTop: '0.5rem' }}>
+      <ScrollRegion label="Roth conversion details" style={{ border: 'none', marginTop: '0.5rem' }}>
         <table className="year-table">
           <thead>
             <tr>
@@ -362,7 +362,7 @@ function InheritedAccountSchedule({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </details>
   )
 }
