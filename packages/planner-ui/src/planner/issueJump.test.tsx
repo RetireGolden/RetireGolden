@@ -161,4 +161,40 @@ describe('issue jump (#494)', () => {
     document.body.innerHTML = `<ul class="issue-list" id="plan-issues-household" tabindex="-1"></ul>`
     expect(focusIssueTarget(document, 'strategy', 'household.capitalLossCarryforward')).toBe(false)
   })
+
+  it('opens the disclosures a target is hidden behind, so the jump never reports success on a field nobody can see (r1-1)', () => {
+    // The Social Security card keeps SSDI (and the AIME explainer) behind a
+    // closed <details>. Focus does nothing to a control inside one, so without
+    // this the chip would return true and the caller would skip the fallback,
+    // leaving the person on a card with the flagged field still collapsed.
+    document.body.innerHTML = `
+      <ul class="issue-list" id="plan-issues-social-security" tabindex="-1"></ul>
+      <details id="outer">
+        <summary>Disability (SSDI)</summary>
+        <details id="inner">
+          <summary>More</summary>
+          <input id="onset" aria-invalid="true" data-path="incomes.2.disability.onsetAge" />
+        </details>
+      </details>
+    `
+    const outer = document.getElementById('outer') as HTMLDetailsElement
+    const inner = document.getElementById('inner') as HTMLDetailsElement
+    expect(outer.open, 'closed to begin with, as the card renders it').toBe(false)
+    expect(inner.open).toBe(false)
+    expect(focusIssueTarget(document, 'social-security', 'incomes.2.disability.onsetAge')).toBe(true)
+    // Every disclosure on the way to the control, not only the nearest one.
+    expect(outer.open).toBe(true)
+    expect(inner.open).toBe(true)
+    expect(document.activeElement?.id).toBe('onset')
+  })
+
+  it('leaves a target that is not behind a disclosure alone, and never opens an unrelated one', () => {
+    document.body.innerHTML = `
+      <details id="elsewhere"><summary>Other</summary><input id="other" /></details>
+      <input id="carry" aria-invalid="true" data-path="household.capitalLossCarryforward" />
+    `
+    expect(focusIssueTarget(document, 'strategy', 'household.capitalLossCarryforward')).toBe(true)
+    expect(document.activeElement?.id).toBe('carry')
+    expect((document.getElementById('elsewhere') as HTMLDetailsElement).open).toBe(false)
+  })
 })

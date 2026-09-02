@@ -181,7 +181,11 @@ function fixture(): Plan {
   // Wages first, then the recurring/one-time streams, then Social Security at
   // index 2 — the index SocialSecuritySection resolves for the first person.
   const wages = plan.incomes.find((s) => s.type === 'wages')!
-  const ss = plan.incomes.find((s) => s.type === 'socialSecurity')!
+  const ss = plan.incomes.find((s) => s.type === 'socialSecurity') as Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
+  // The SSDI block the Social Security card edits behind its own checkbox, so
+  // `incomes.N.disability.onsetAge` is a field of this plan (#511). Onset at
+  // 60 is inside the schema's 40–75 and before FRA, so the fixture stays valid.
+  ss.disability = { onsetAge: 60 }
   plan.incomes = [
     wages,
     { type: 'recurring', id: 'rent-fixture', label: 'Rental', annualAmount: 12_000, startYear: year + 1, endYear: year + 10, inflationAdjusted: true, taxTreatment: 'ordinary' },

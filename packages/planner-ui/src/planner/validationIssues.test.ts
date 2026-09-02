@@ -208,6 +208,41 @@ describe('labels with the plan in hand', () => {
     expect(adviceOf('Too big: expected number to be <=100', 'assumptions.assetClassParams.usStocks.qualifiedRatioPct')).toBe('Must be at most 100')
     expect(adviceOf('Too big: expected number to be <=1', 'strategies.someRatio')).toBe('Must be at most 1')
   })
+
+  it('calls a debt account’s balance what its own card calls it, and leaves every other account alone (#502)', () => {
+    // The debt editor labels the field "Balance owed"
+    // (AccountEditorSharedFields.tsx); a card-level issue that said "Balance"
+    // named a field that card does not have.
+    const plan = createEmptyPlan({ newId: () => 'id-' + Math.random().toString(36).slice(2, 8) })
+    plan.accounts = [
+      { id: 'c', name: 'Checking', ownerPersonId: null, annualReturnPct: null, type: 'cash', balance: 10_000, annualContribution: 0 },
+      {
+        id: 'd',
+        name: 'Mortgage',
+        ownerPersonId: null,
+        annualReturnPct: null,
+        type: 'debt',
+        balance: 250_000,
+        interestPct: 6,
+        monthlyPayment: 1_500,
+      },
+    ]
+    const overdrawn = 'accounts.0.balance: Too small: expected number to be >=0'
+    const owed = 'accounts.1.balance: Too small: expected number to be >=0'
+    expect(labelOfPath('accounts.1.balance', plan)).toBe('Account 2: Balance owed')
+    expect(labelOfPath('accounts.0.balance', plan)).toBe('Account 1: Balance')
+    expect(parseIssue(owed, plan).label).toBe('Account 2: Balance owed')
+    expect(parseIssue(overdrawn, plan).label).toBe('Account 1: Balance')
+    // Only the balance leaf is type-aware; a debt's other fields keep the
+    // labels the shared table gives them, and both stay on the Accounts card.
+    expect(labelOfPath('accounts.1.interestPct', plan)).toBe('Account 2: Interest rate')
+    expect(parseIssue(owed, plan).section).toBe('accounts')
+    // Without the plan there is nothing to read the type from, so the generic
+    // label stands rather than guessing.
+    expect(labelOfPath('accounts.1.balance')).toBe('Account 2: Balance')
+    // An index the plan does not have must not throw or invent a label.
+    expect(labelOfPath('accounts.9.balance', plan)).toBe('Account 10: Balance')
+  })
 })
 
 describe('labelOfSegments', () => {
