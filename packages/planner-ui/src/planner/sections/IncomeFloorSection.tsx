@@ -426,7 +426,7 @@ export function IncomeFloorSection() {
           Curve provenance: {CURVE.source}, as of {CURVE.asOfIso}. Looking for a bridge sized from your own benefit?
           The Social Security Optimizer has a one-click bridge panel. <LearnLink {...LEARN.socialSecurityBridge} />
         </p>
-        <Issues />
+        <Issues section="income-floor" />
       </div>
 
       <FundedRatioCard />

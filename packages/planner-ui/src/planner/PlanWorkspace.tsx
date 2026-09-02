@@ -64,9 +64,28 @@ function SaveIndicator() {
   const title = isExample
     ? `This example is saved on this device under its own slot: your edits stick across reloads, but it stays out of ${homeLabel} until you use 'Save to my plans'. 'Load a fresh copy' resets it.`
     : storageTooltip
+  if (saveState === 'invalid') {
+    // The chip names the count; the button takes you to the first field
+    // marked invalid, else to the first card's issue list (#494).
+    const jump = () => {
+      const target = document.querySelector<HTMLElement>('[aria-invalid="true"], .issue-list')
+      target?.scrollIntoView?.({ block: 'center' })
+      target?.focus?.()
+    }
+    return (
+      <>
+        <span className="sr-only" role="status" aria-live="polite">
+          {text}
+        </span>
+        <button type="button" className="save-state save-state--error save-state--button" title="Show what to fix" onClick={jump}>
+          {text}
+        </button>
+      </>
+    )
+  }
   return (
     <span
-      className={saveState === 'invalid' || saveState === 'error' ? 'save-state save-state--error' : 'save-state'}
+      className={saveState === 'error' ? 'save-state save-state--error' : 'save-state'}
       role="status"
       aria-live="polite"
       title={title}

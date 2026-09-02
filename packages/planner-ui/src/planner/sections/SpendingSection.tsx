@@ -906,7 +906,7 @@ export function SpendingSection() {
             }
           />
         </div>
-        <Issues />
+        <Issues section="spending" />
       </div>
       <LearnAboutScreen route="/plan/:planId/spending" />
     </section>

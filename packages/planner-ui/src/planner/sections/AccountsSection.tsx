@@ -76,7 +76,7 @@ export function AccountsSection() {
             </button>
           ))}
         </div>
-        <Issues />
+        <Issues section="accounts" />
       </div>
       <UpdateBalancesPanel />
     </section>

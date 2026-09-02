@@ -201,7 +201,7 @@ function renderIssues(plan: Plan, issues: string[]) {
   act(() => {
     root!.render(
       <PlanCtx.Provider value={{ plan, update: () => undefined, discardPendingSave: () => undefined, saveState: 'invalid', issues }}>
-        <Issues />
+        <Issues section="accounts" />
       </PlanCtx.Provider>,
     )
   })
