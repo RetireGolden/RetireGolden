@@ -1,0 +1,331 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-retirement-action-preflight-boundary",
+  "why": "Measured reach for the annual named-action routing and conversion-linked withdrawal preflight extracted from simulatePlan. Existing linked-pair, named-QCD, ordinary-withdrawal, and multi-year corpus members exercise current-year partitioning, normal executor routing, complete linked-group request assembly, floored fundability, provisional and proven release selection, and every caller output handoff in all four equivalence modes. Direct contract tests own cross-kind and QCD-only schedule collisions, mixed-kind blocking, one-cent-short capacity on both legs, shared-withdrawal contention, current-year exclusion including QCDs, frozen results, hostile release getters, and proven-authority forwarding. Hostile delegation tests separately prove the caller consumes ordinary and QCD execution routes, cross-executor QCD collision routing, mixed-kind blocking, the complete linked-group request union, and the shared linked-group assessment instead of rebuilding those decisions inline.",
+  "entries": [
+    {
+      "id": "AI.helper.capacityAggregation",
+      "label": "group-leg source aggregation and balance lookup",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        93,
+        102
+      ],
+      "anchors": [
+        {
+          "line": 93,
+          "text": "const requestedBySourceAccountId = new Map<string, number>()"
+        },
+        {
+          "line": 94,
+          "text": "for (const allocation of request.allocations) {"
+        },
+        {
+          "line": 101,
+          "text": "for (const [accountId, requested] of requestedBySourceAccountId) {"
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.capacityComparison",
+      "label": "exact-cent floored snapshot capacity comparison",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        107,
+        108
+      ],
+      "note": "Missing, insufficient, and unrepresentable balance refusals are deliberately outside this reached success range and pinned directly, including withdrawal- and conversion-leg balances where half-up rounding would over-authorize by one cent. The explicit missing-balance guard is also the TypeScript narrowing boundary for the converter call.",
+      "anchors": [
+        {
+          "line": 107,
+          "text": "try {"
+        },
+        {
+          "line": 108,
+          "text": "if (planDollarsToFlooredLedgerCents(balancePlanDollars) < requested) {"
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.provisionalSetup",
+      "label": "provisional linked-group request and authorization setup",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        124,
+        128
+      ],
+      "anchors": [
+        {
+          "line": 124,
+          "text": "const requestByActionId = new Map("
+        },
+        {
+          "line": 127,
+          "text": "const authorizations: ConversionLinkedWithdrawalGroupAuthorization[] = []"
+        },
+        {
+          "line": 128,
+          "text": "for (const group of assessment.groups) {"
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.provisionalAuthorization",
+      "label": "fundable linked-pair authorization hypothesis",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        130,
+        151
+      ],
+      "note": "The contested-pair continue and the failed-capacity continue are direct-test claims. Corpus reach covers both request lookups, both fundability calls, and the authored-withdrawal-cent authority emitted for the discarded staging run.",
+      "anchors": [
+        {
+          "line": 130,
+          "text": "const conversion = requestByActionId.get(group.conversionActionId)"
+        },
+        {
+          "line": 132,
+          "text": "if ("
+        },
+        {
+          "line": 138,
+          "text": "authorizations.push({"
+        },
+        {
+          "line": 151,
+          "text": "return authorizations"
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.partition",
+      "label": "current-year kind partition and mixed-schedule gate",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        163,
+        182
+      ],
+      "anchors": [
+        {
+          "line": 163,
+          "text": "const currentYearActions = Object.freeze(input.retirementActions.filter("
+        },
+        {
+          "line": 177,
+          "text": "const schedule = evaluateRetirementActionSchedule("
+        },
+        {
+          "line": 181,
+          "text": "const mixedKindScheduleBlocked ="
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.qcdPartition",
+      "label": "current-year QCD partition",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        185,
+        188
+      ],
+      "anchors": [
+        {
+          "line": 185,
+          "text": "const qcdActions = Object.freeze(currentYearActions.filter("
+        },
+        {
+          "line": 187,
+          "text": "request.kind === 'qcd',"
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.collisionSetup",
+      "label": "cross-executor QCD collision scan setup",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        193,
+        195
+      ],
+      "note": "The corpus reaches construction of the collision set. The callback body is intentionally excluded because validated corpus schedules do not collide; direct tests pin both cross-kind and QCD-only collision routing.",
+      "anchors": [
+        {
+          "line": 193,
+          "text": "const qcdActionIds = new Set(qcdActions.map((request) => request.actionId))"
+        },
+        {
+          "line": 194,
+          "text": "const crossKindCollidingQcdActionIds = new Set("
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.executorRouting",
+      "label": "QCD and ordinary executor request routing",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        202,
+        209
+      ],
+      "note": "Validated corpus members reach the normal QCD and ordinary routes. Cross-kind collision selection and mixed-kind widening are pinned by direct tests because those diagnostics are intentionally rare in accepted plans.",
+      "anchors": [
+        {
+          "line": 202,
+          "text": "const qcdExecutionActions = Object.freeze(qcdActions.filter("
+        },
+        {
+          "line": 205,
+          "text": "const ordinaryExecutionActions = Object.freeze(("
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.assessment",
+      "label": "complete annual linked-group request union and observed verdict",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        213,
+        230
+      ],
+      "anchors": [
+        {
+          "line": 213,
+          "text": "const linkedGroupAssessmentRequests = Object.freeze(["
+        },
+        {
+          "line": 221,
+          "text": "const observedLinkedWithdrawalGroups = assessConversionLinkedWithdrawalGroups("
+        },
+        {
+          "line": 225,
+          "text": "const balancePlanDollarsByAccountId = new Map("
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.releaseGate",
+      "label": "outer linked-group release gate",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        231,
+        232
+      ],
+      "note": "The corpus reaches the release discriminant. Direct tests pin proven-authority forwarding, the corpus-cold true arm on the following line.",
+      "anchors": [
+        {
+          "line": 231,
+          "text": "const linkedGroupAuthorizations ="
+        },
+        {
+          "line": 232,
+          "text": "linkedGroupRelease.kind === 'proven'"
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.stagingAndAssessment",
+      "label": "provisional selection and final linked-group assessment",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        234,
+        250
+      ],
+      "anchors": [
+        {
+          "line": 234,
+          "text": ": linkedGroupRelease.kind === 'stageProvisionally'"
+        },
+        {
+          "line": 241,
+          "text": "const conversionLinkedWithdrawalGroups ="
+        },
+        {
+          "line": 244,
+          "text": ": assessConversionLinkedWithdrawalGroups("
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.result",
+      "label": "immutable preflight result channels",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        252,
+        261
+      ],
+      "anchors": [
+        {
+          "line": 252,
+          "text": "return Object.freeze({"
+        },
+        {
+          "line": 260,
+          "text": "conversionLinkedWithdrawalGroups,"
+        }
+      ]
+    },
+    {
+      "id": "AI.callsite.contract",
+      "label": "annual action, balance snapshot, baseline and release contract",
+      "file": "projection/simulate.ts",
+      "lines": [
+        4640,
+        4651
+      ],
+      "anchors": [
+        {
+          "line": 4640,
+          "text": "const retirementActionPreflight = annualRetirementActionPreflight(Object.freeze({"
+        },
+        {
+          "line": 4642,
+          "text": "retirementActions: Object.freeze([...passRetirementActions]),"
+        },
+        {
+          "line": 4643,
+          "text": "balances: Object.freeze(annualIdKeyedBalances.map((state) =>"
+        },
+        {
+          "line": 4648,
+          "text": "annualLiabilityBaseline:"
+        },
+        {
+          "line": 4650,
+          "text": "linkedGroupRelease,"
+        }
+      ]
+    },
+    {
+      "id": "AI.callsite.outputs",
+      "label": "all executor-routing and linked-group output handoffs",
+      "file": "projection/simulate.ts",
+      "lines": [
+        4652,
+        4666
+      ],
+      "anchors": [
+        {
+          "line": 4652,
+          "text": "const currentYearOrdinaryActions = retirementActionPreflight.ordinaryActions"
+        },
+        {
+          "line": 4655,
+          "text": "const currentYearQcdExecutionActions ="
+        },
+        {
+          "line": 4659,
+          "text": "const mixedKindScheduleBlocked ="
+        },
+        {
+          "line": 4661,
+          "text": "const linkedGroupAssessmentRequests ="
+        },
+        {
+          "line": 4665,
+          "text": "const conversionLinkedWithdrawalGroups ="
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct coordinator tests own collision routing, mixed-kind widening, insufficient or unrepresentable capacity on both group legs, contested groups, year exclusion, frozen result arrays, one-read release snapshots, and proven-authority forwarding. Hostile delegation owns exact consumption of ordinary/QCD routing, mixed-kind blocking, group requests, and the shared group verdict. JavaScript line coverage cannot distinguish every ternary or compound operand sharing a physical line, so reported cold sub-line regions must be read alongside those focused tests."
+}

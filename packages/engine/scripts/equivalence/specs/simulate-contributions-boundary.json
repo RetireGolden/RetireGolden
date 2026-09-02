@@ -416,264 +416,264 @@
       "id": "U.snapshot.maps",
       "label": "complete caller-owned string-number map snapshot function",
       "file": "projection/simulate.ts",
-      "lines": [513, 523],
+      "lines": [511, 521],
       "anchors": [
-        { "line": 513, "text": "function snapshotStringNumberMap(" },
-        { "line": 523, "text": "}" }
+        { "line": 511, "text": "function snapshotStringNumberMap(" },
+        { "line": 521, "text": "}" }
       ]
     },
     {
       "id": "U.snapshot.allocation",
       "label": "complete caller-owned employer allocation scalar and nested-map snapshot function",
       "file": "projection/simulate.ts",
-      "lines": [525, 537],
+      "lines": [523, 535],
       "anchors": [
-        { "line": 525, "text": "function snapshotEmployerElectiveAllocation(" },
-        { "line": 537, "text": "}" }
+        { "line": 523, "text": "function snapshotEmployerElectiveAllocation(" },
+        { "line": 535, "text": "}" }
       ]
     },
     {
       "id": "U.snapshot.operationKinds",
       "label": "eager warning, runtime occurrence, and match-record detachment",
       "file": "projection/simulate.ts",
-      "lines": [547, 587],
-      "note": "The non-credit application refusal on lines 593-595 is excluded from measured reach and pinned by the hostile delegation suite.",
+      "lines": [545, 585],
+      "note": "The non-credit application refusal on lines 591-593 is excluded from measured reach and pinned by the hostile delegation suite.",
       "anchors": [
-        { "line": 547, "text": "const operations: AnnualContributionAndMatchOperation[] = []" },
-        { "line": 587, "text": "const sourceRetirementApplication = operation.retirementApplication" }
+        { "line": 545, "text": "const operations: AnnualContributionAndMatchOperation[] = []" },
+        { "line": 585, "text": "const sourceRetirementApplication = operation.retirementApplication" }
       ]
     },
     {
       "id": "U.snapshot.contributionPayload",
       "label": "eager application, contribution payload, and record detachment",
       "file": "projection/simulate.ts",
-      "lines": [596, 634],
+      "lines": [594, 632],
       "anchors": [
-        { "line": 596, "text": "retirementApplication = {" },
-        { "line": 634, "text": "})" }
+        { "line": 594, "text": "retirementApplication = {" },
+        { "line": 632, "text": "})" }
       ]
     },
     {
       "id": "U.snapshot.resultChannels",
       "label": "single-read emitted/expected identity, totals, owner-allocation, and detached-result snapshot",
       "file": "projection/simulate.ts",
-      "lines": [637, 684],
+      "lines": [635, 682],
       "anchors": [
-        { "line": 637, "text": "const snapshotOperationIdentity = (" },
-        { "line": 684, "text": "}" }
+        { "line": 635, "text": "const snapshotOperationIdentity = (" },
+        { "line": 682, "text": "}" }
       ]
     },
     {
       "id": "U.snapshot.totalAssertion",
       "label": "exact Object.is total comparison",
       "file": "projection/simulate.ts",
-      "lines": [691, 691],
+      "lines": [689, 689],
       "note": "The throw on the next line is hostile-only and pinned by a dedicated inconsistent-total delegation case.",
       "anchors": [
-        { "line": 691, "text": "if (!Object.is(actual, expected)) {" }
+        { "line": 689, "text": "if (!Object.is(actual, expected)) {" }
       ]
     },
     {
       "id": "U.callsite.invoke",
       "label": "annual contribution boundary invocation and atomic snapshot",
       "file": "projection/simulate.ts",
-      "lines": [2876, 2899],
+      "lines": [2871, 2894],
       "anchors": [
-        { "line": 2876, "text": "const contributionPlan = snapshotAnnualContributionsAndEmployerMatchResult(" },
-        { "line": 2899, "text": ")" }
+        { "line": 2871, "text": "const contributionPlan = snapshotAnnualContributionsAndEmployerMatchResult(" },
+        { "line": 2894, "text": ")" }
       ]
     },
     {
       "id": "U.callsite.cardinalitySetup",
       "label": "independent cardinality check and shadow reconciliation state",
       "file": "projection/simulate.ts",
-      "lines": [2901, 2905],
-      "note": "The throw on line 2907 is excluded from measured reach and pinned by truncated, coordinated zero-row omission, coordinated warning insertion, and empty/nonzero delegation cases.",
+      "lines": [2896, 2900],
+      "note": "The throw on line 2902 is excluded from measured reach and pinned by truncated, coordinated zero-row omission, coordinated warning insertion, and empty/nonzero delegation cases.",
       "anchors": [
-        { "line": 2901, "text": "if (" },
-        { "line": 2905, "text": "contributionPlan.operations.length" }
+        { "line": 2896, "text": "if (" },
+        { "line": 2900, "text": "contributionPlan.operations.length" }
       ]
     },
     {
       "id": "U.callsite.expectedContributionPositions",
       "label": "unique pre-loop physical contribution expectation",
       "file": "projection/simulate.ts",
-      "lines": [2909, 2915],
-      "note": "The duplicate-position refusal on line 2916 is excluded from measured reach and pinned by a coordinated hostile delegation case.",
+      "lines": [2904, 2910],
+      "note": "The duplicate-position refusal on line 2911 is excluded from measured reach and pinned by a coordinated hostile delegation case.",
       "anchors": [
-        { "line": 2909, "text": "const seenMatchBalanceIndices = new Set<number>()" },
-        { "line": 2915, "text": ") {" }
+        { "line": 2904, "text": "const seenMatchBalanceIndices = new Set<number>()" },
+        { "line": 2910, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.identitySetup",
       "label": "shadow state and ordered identity preflight setup",
       "file": "projection/simulate.ts",
-      "lines": [2918, 2938],
+      "lines": [2913, 2933],
       "anchors": [
-        { "line": 2918, "text": "const seenContributionBalanceIndices = new Set<number>()" },
-        { "line": 2938, "text": ") {" }
+        { "line": 2913, "text": "const seenContributionBalanceIndices = new Set<number>()" },
+        { "line": 2933, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.indexIdentity",
       "label": "physical index identity preflight",
       "file": "projection/simulate.ts",
-      "lines": [2941, 2947],
-      "note": "The identity throw on line 2948 and post-match-warning throw on line 2952 are excluded from measured reach and pinned by hostile delegation cases.",
+      "lines": [2936, 2942],
+      "note": "The identity throw on line 2943 and post-match-warning throw on line 2947 are excluded from measured reach and pinned by hostile delegation cases.",
       "anchors": [
-        { "line": 2941, "text": "if (" },
-        { "line": 2947, "text": ") {" }
+        { "line": 2936, "text": "if (" },
+        { "line": 2942, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.physicalPreimage",
       "label": "exact source-account and shadow-balance preimage validation",
       "file": "projection/simulate.ts",
-      "lines": [2956, 2964],
+      "lines": [2951, 2959],
       "note": "The fail-closed body is hostile-only and includes exact Object.is signed-zero coverage in the delegation suite.",
       "anchors": [
-        { "line": 2956, "text": "const state = balances[operation.balanceIndex]" },
-        { "line": 2964, "text": ") {" }
+        { "line": 2951, "text": "const state = balances[operation.balanceIndex]" },
+        { "line": 2959, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.contributionIdentity",
       "label": "expected unique physical contribution identity",
       "file": "projection/simulate.ts",
-      "lines": [2973, 2976],
-      "note": "The duplicate or unexpected-position refusal on line 2977 is excluded from measured reach and pinned by coordinated hostile delegation cases.",
+      "lines": [2968, 2971],
+      "note": "The duplicate or unexpected-position refusal on line 2972 is excluded from measured reach and pinned by coordinated hostile delegation cases.",
       "anchors": [
-        { "line": 2973, "text": "if (" },
-        { "line": 2976, "text": ") {" }
+        { "line": 2968, "text": "if (" },
+        { "line": 2971, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.contributionIdentityCommit",
       "label": "physical contribution identity commit to preflight set",
       "file": "projection/simulate.ts",
-      "lines": [2979, 2979],
+      "lines": [2974, 2974],
       "anchors": [
-        { "line": 2979, "text": "seenContributionBalanceIndices.add(operation.balanceIndex)" }
+        { "line": 2974, "text": "seenContributionBalanceIndices.add(operation.balanceIndex)" }
       ]
     },
     {
       "id": "U.callsite.basisPreimage",
       "label": "exact shadow-basis preimage validation",
       "file": "projection/simulate.ts",
-      "lines": [2980, 2985],
+      "lines": [2975, 2980],
       "note": "The fail-closed body is hostile-only and includes exact Object.is signed-zero coverage in the delegation suite.",
       "anchors": [
-        { "line": 2980, "text": "if (" },
-        { "line": 2985, "text": ") {" }
+        { "line": 2975, "text": "if (" },
+        { "line": 2980, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.contributionMath",
       "label": "finite contribution amount and exact closing-balance math",
       "file": "projection/simulate.ts",
-      "lines": [2995, 3004],
-      "note": "The balance-math throw on line 3005 is excluded from this measured range and pinned by a hostile delegation case.",
+      "lines": [2990, 2999],
+      "note": "The balance-math throw on line 3000 is excluded from this measured range and pinned by a hostile delegation case.",
       "anchors": [
-        { "line": 2995, "text": "if (" },
-        { "line": 3004, "text": ") {" }
+        { "line": 2990, "text": "if (" },
+        { "line": 2999, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.contributionBasisMath",
       "label": "taxable/equity basis expectation and exact closing-basis comparison",
       "file": "projection/simulate.ts",
-      "lines": [3007, 3014],
-      "note": "The basis-math guard and throw on lines 3014-3015 are excluded from measured reach; exact stale/signed-zero preimages are pinned separately by the delegation suite.",
+      "lines": [3002, 3009],
+      "note": "The basis-math guard and throw on lines 3009-3010 are excluded from measured reach; exact stale/signed-zero preimages are pinned separately by the delegation suite.",
       "anchors": [
-        { "line": 3007, "text": "const expectsBasisCredit =" },
-        { "line": 3014, "text": "if (!Object.is(operation.costBasisAfter, expectedCostBasisAfter)) {" }
+        { "line": 3002, "text": "const expectsBasisCredit =" },
+        { "line": 3009, "text": "if (!Object.is(operation.costBasisAfter, expectedCostBasisAfter)) {" }
       ]
     },
     {
       "id": "U.callsite.contributionFold",
       "label": "shadow writes and exact left-associated contribution totals",
       "file": "projection/simulate.ts",
-      "lines": [3017, 3046],
+      "lines": [3012, 3041],
       "anchors": [
-        { "line": 3017, "text": "if (operation.credited > 0) {" },
-        { "line": 3046, "text": "continue" }
+        { "line": 3012, "text": "if (operation.credited > 0) {" },
+        { "line": 3041, "text": "continue" }
       ]
     },
     {
       "id": "U.callsite.matchIdentity",
       "label": "ordered unique physical employer-match validation",
       "file": "projection/simulate.ts",
-      "lines": [3048, 3056],
+      "lines": [3043, 3051],
       "note": "The fail-closed body is hostile-only and pinned by focused delegation tests.",
       "anchors": [
-        { "line": 3048, "text": "reachedEmployerMatches = true" },
-        { "line": 3056, "text": ") {" }
+        { "line": 3043, "text": "reachedEmployerMatches = true" },
+        { "line": 3051, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.matchMath",
       "label": "finite positive employer-match and exact closing-balance math",
       "file": "projection/simulate.ts",
-      "lines": [3059, 3066],
+      "lines": [3054, 3061],
       "note": "The fail-closed body is hostile-only and pinned by focused delegation tests.",
       "anchors": [
-        { "line": 3059, "text": "if (" },
-        { "line": 3066, "text": ") {" }
+        { "line": 3054, "text": "if (" },
+        { "line": 3061, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.matchFold",
       "label": "shadow match write and exact left-associated match totals",
       "file": "projection/simulate.ts",
-      "lines": [3069, 3078],
+      "lines": [3064, 3073],
       "anchors": [
-        { "line": 3069, "text": "seenMatchBalanceIndices.add(operation.balanceIndex)" },
-        { "line": 3078, "text": "}" }
+        { "line": 3064, "text": "seenMatchBalanceIndices.add(operation.balanceIndex)" },
+        { "line": 3073, "text": "}" }
       ]
     },
     {
       "id": "U.callsite.contributionCompleteness",
       "label": "complete physical contribution position reconciliation",
       "file": "projection/simulate.ts",
-      "lines": [3079, 3082],
-      "note": "The missing-position refusal on line 3083 is excluded from measured reach and pinned by the fixture-derived whole-decision omission hostile case.",
+      "lines": [3074, 3077],
+      "note": "The missing-position refusal on line 3078 is excluded from measured reach and pinned by the fixture-derived whole-decision omission hostile case.",
       "anchors": [
-        { "line": 3079, "text": "if (" },
-        { "line": 3082, "text": ") {" }
+        { "line": 3074, "text": "if (" },
+        { "line": 3077, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.totalReconciliation",
       "label": "complete exact total reconciliation before commit",
       "file": "projection/simulate.ts",
-      "lines": [3085, 3119],
+      "lines": [3080, 3114],
       "anchors": [
-        { "line": 3085, "text": "assertExactContributionTotal(" },
-        { "line": 3119, "text": ")" }
+        { "line": 3080, "text": "assertExactContributionTotal(" },
+        { "line": 3114, "text": ")" }
       ]
     },
     {
       "id": "U.callsite.apply",
       "label": "entire ordered commit loop for cached warnings, balances, basis, runtime, QCD, records, and matches",
       "file": "projection/simulate.ts",
-      "lines": [3120, 3167],
+      "lines": [3115, 3162],
       "anchors": [
-        { "line": 3120, "text": "for (const operation of contributionPlan.operations) {" },
-        { "line": 3162, "text": "yearSites?.recordEmployerMatch(operation.record)" },
-        { "line": 3163, "text": "state.balance = operation.balanceAfter" },
-        { "line": 3165, "text": "recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)" },
-        { "line": 3167, "text": "}" }
+        { "line": 3115, "text": "for (const operation of contributionPlan.operations) {" },
+        { "line": 3157, "text": "yearSites?.recordEmployerMatch(operation.record)" },
+        { "line": 3158, "text": "state.balance = operation.balanceAfter" },
+        { "line": 3160, "text": "recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)" },
+        { "line": 3162, "text": "}" }
       ]
     },
     {
       "id": "U.callsite.totals",
       "label": "complete reconciled totals, detached downstream owner allocations, and IRA handoff",
       "file": "projection/simulate.ts",
-      "lines": [3168, 3179],
+      "lines": [3163, 3174],
       "anchors": [
-        { "line": 3168, "text": "const {" },
-        { "line": 3179, "text": "const iraProRata = new Map<string, IraProRataYear>()" }
+        { "line": 3163, "text": "const {" },
+        { "line": 3174, "text": "const iraProRata = new Map<string, IraProRataYear>()" }
       ]
     }
   ],
