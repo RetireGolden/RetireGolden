@@ -81,10 +81,10 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 312 |
+| Engine source files | 313 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 46 |
+| partial | 47 |
 | registered | 101 |
 | rule-free | 165 |
 | unswept | 0 |
@@ -104,7 +104,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 3 | 3 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 8 | 0 | 6 | 2 | 0 |
-| projection | 76 | 11 | 14 | 51 | 0 |
+| projection | 77 | 12 | 14 | 51 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
 | rules | 25 | 0 | 20 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -151,6 +151,7 @@ None.
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-08-27 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain |
+| projection/internal/annualAggregateRothConversionTargetPlan.ts | 2026-09-02 | the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. simulatePlan retains source-context and current-balance snapshots, every conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer publication, and all live annual commits |
 | projection/internal/annualFundingCandidateEvaluation.ts | 2026-09-02 | the pure candidate evaluator composes registered federal capital-loss netting, federal/combined tax calculators, ACA household-MAGI and premium-credit pricing, and the separately attested traditional/HSA/Roth withdrawal-character coordinator. Its bounded HSA-cap refresh, informational ACA support-code filtering, gross-premium candidate handling, and exact ordering of those producers preserve reviewed simulator composition conventions rather than introducing new filing-grade rules. simulatePlan retains withdrawal-strategy selection, Form 8606 character, immutable annual-context construction, caller-owned warning insertion, accepted basis mutation, every balance/cash-flow/healthcare commit, and final publication |
 | projection/internal/annualFundingWithdrawalEffects.ts | 2026-09-02 | the annual candidate/final withdrawal-character coordinator composes the traditional and HSA penalty proxies in partially registered strategies/accountEligibility.ts (whose registry entry explicitly retains the S2 election-timing residual) with the registered strategies/rothBasis.ts ordering, conversion-layer recapture and nonqualified-earnings character. It preserves the pre-existing projection-only withdrawalTreatment policy (ordered capByMedicalExpenses allocation, assumeAllQualified, and legacy tax-free-but-penalized treatment), owner-wide Roth-IRA pooling, per-account employer-Roth pooling, inherited-Roth exclusion, and missing-basis silence; those simulator composition/pooling conventions remain residual rather than being presented as filing-grade rules. Candidate tax/ACA reconciliation now belongs to projection/internal/annualFundingCandidateEvaluation.ts. simulatePlan retains Form 8606 character, warning insertion, accepted Roth-basis mutation, every account/ledger commit, and cash-flow publication |
 | projection/internal/annualInheritedIraDistributions.ts | 2026-09-01 | the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Twelve inherited-RMD records name the helper. Residual rule-bearing behavior remains: dead-beneficiary successor-clock suppression has no dedicated registry record; inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only. |

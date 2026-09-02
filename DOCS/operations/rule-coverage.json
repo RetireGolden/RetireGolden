@@ -74,9 +74,9 @@
     }
   },
   "attestations": {
-    "totalFiles": 312,
+    "totalFiles": 313,
     "byStatus": {
-      "partial": 46,
+      "partial": 47,
       "registered": 101,
       "rule-free": 165,
       "unswept": 0
@@ -225,6 +225,11 @@
       "path": "projection/compare.ts",
       "sweptOn": "2026-08-27",
       "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
+    },
+    {
+      "path": "projection/internal/annualAggregateRothConversionTargetPlan.ts",
+      "sweptOn": "2026-09-02",
+      "note": "the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. simulatePlan retains source-context and current-balance snapshots, every conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer publication, and all live annual commits"
     },
     {
       "path": "projection/internal/annualFundingCandidateEvaluation.ts",
@@ -409,9 +414,9 @@
     },
     {
       "directory": "projection",
-      "files": 76,
+      "files": 77,
       "byStatus": {
-        "partial": 11,
+        "partial": 12,
         "registered": 14,
         "rule-free": 51
       }

@@ -97,6 +97,8 @@ import {
   annualAggregateRothConversionPlan,
   withAnnualAggregateRothConversionReservations,
 } from './internal/annualAggregateRothConversionPlan.js'
+import { annualAggregateRothConversionTargetPlan } from
+  './internal/annualAggregateRothConversionTargetPlan.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountGrowth.js'
@@ -5855,129 +5857,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         ),
       )
     }
-    const conversionTaxableAmountForGross = (grossTarget: number): number => {
-      let remainingGross = Math.max(0, grossTarget)
-      let taxable = 0
-      for (const state of rmdBalances) {
-        if (!yearConvertibleToRoth(state.account) || remainingGross <= 0) continue
-        const gross = Math.min(state.balance, remainingGross)
-        const fraction = isAggregatedIra(state.account)
-          ? ownedIraConversionTaxableFraction(
-            state.account.ownerPersonId ?? primary.id,
-          )
-          : 1
-        taxable += gross * fraction
-        remainingGross -= gross
-      }
-      return taxable
-    }
-    const conversionGrossAmountForTaxable = (
-      taxableTarget: number,
-    ): number => {
-      let remainingTaxable = Math.max(0, taxableTarget)
-      let gross = 0
-      for (const state of rmdBalances) {
-        if (!yearConvertibleToRoth(state.account)) continue
-        const fraction = isAggregatedIra(state.account)
-          ? ownedIraConversionTaxableFraction(
-            state.account.ownerPersonId ?? primary.id,
-          )
-          : 1
-        if (fraction <= 0) {
-          gross += state.balance
-          continue
-        }
-        const take = Math.min(state.balance, remainingTaxable / fraction)
-        gross += take
-        remainingTaxable -= take * fraction
-        if (remainingTaxable <= EPSILON) break
-      }
-      // Preserve the requested-above-capacity signal so the execution path can
-      // retain its existing reduced-conversion warning.
-      return remainingTaxable > EPSILON ? gross + remainingTaxable : gross
-    }
-
-    // Taxable safety-net floor, conversion side (step 7): trim a fill-to-target
-    // conversion so its estimated tax bill stays payable from liquid dollars
-    // above the floor after this year's pre-tax cash need. Manual/optimized
-    // schedules are executed as requested (the user typed them); generated
-    // fill-to-target candidates — including every decision-engine conversion
-    // candidate — respect the floor here.
-    const trimConversionForFloor = (desired: number): number => {
-      const floorNominal = safetyNetFloorToday * inflFactor
-      let liquid = 0
-      for (const b of balances) {
-        if (b.account.type === 'cash' || b.account.type === 'taxable' || b.account.type === 'equityComp') {
-          liquid += spendableBalance(b, year)
-        }
-      }
-      const preConversionInflows =
-        incomes.total -
-        taxableYieldReinvested +
-        rmdTotal -
-        qcdFromRmd -
-        namedQcdRmdSatisfied +
-        seppTotal +
-        inheritedTotal +
-        propertySaleProceedsTotal +
-        retirementActionProceeds
-      // Liquid dollars available above the floor to pay a conversion's tax:
-      // existing spendable liquid plus this year's surplus inflows, net of the
-      // pre-tax cash need. Surplus inflows (inflows above expenses+contributions)
-      // are real available cash — they land in liquid accounts at year end — so
-      // they raise the headroom rather than being clamped away.
-      const netLiquid = liquid + preConversionInflows - expenses.total - contributions
-      const headroom = Math.max(0, netLiquid - floorNominal)
-      const taxOf = (grossConversion: number): number => {
-        const extraOrdinary = conversionTaxableAmountForGross(
-          grossConversion,
-        )
-        const netted = applyCapitalLossCarryforward(
-          capitalLossPool,
-          Math.max(0, incomeBeforeConversion + extraOrdinary),
-          preWithdrawalCapitalResult,
-          pack.federalTax.capitalLossOrdinaryOffsetLimit,
-        )
-        return taxCalculator.compute({
-          year,
-          filingStatus: filingStatusForYear,
-          ordinaryIncome: netted.ordinaryAfter,
-          capitalGains: netted.netCapitalGain,
-          realizedCapitalGainsBeforeCarryforward:
-            preWithdrawalCapitalResult,
-          taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
-          taxExemptInterest: yearTaxExemptInterest,
-          foreignExclusionAddback: acaForeignExclusionAddback,
-          usGovernmentInterest: ladderTaxableInterest,
-          ordinaryDividends: incomes.ordinaryDividends,
-          qualifiedDividends: incomes.qualifiedDividends,
-          ssBenefits: incomes.socialSecurity,
-          peopleAged65Plus,
-          inflationScale: limitGrowth,
-          state: residenceState,
-          stateResidency,
-          privateRetirementIncome: privateRetirementBase,
-          publicPensionIncome: publicPensionBase,
-          agesAlive,
-          itemizedDeductions,
-        })
-      }
-      const baseTax = taxOf(0)
-      let trimmed = desired
-      for (let i = 0; i < 3; i++) {
-        const conversionTax = Math.max(0, taxOf(trimmed) - baseTax)
-        if (conversionTax <= headroom + EPSILON) break
-        trimmed = conversionTax > 0 ? Math.max(0, trimmed * (headroom / conversionTax)) : 0
-        if (trimmed <= 0.01) {
-          trimmed = 0
-          break
-        }
-      }
-      if (trimmed < desired - 0.01) {
-        warnings.add('Roth conversions were trimmed so their tax bill stays payable without breaching the taxable safety-net floor.')
-      }
-      return trimmed
-    }
 
     let rothConversion = 0
     /**
@@ -5999,60 +5878,25 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * what the ledger did.
      */
     let aggregateRothConversionAllocationDesired: number | undefined
-    // A named request is authoritative for this year even when blocked. An
-    // aggregate fallback would debit different sources and hide that result.
-    const rc = currentYearConversionActions.length > 0
-      ? { mode: 'none' as const }
-      : plan.strategies.rothConversion
-    const acaSizingInput = acaActive
-      ? acaContract
-        ? {
-          actionable: acaActive && acaInitialSupportCodes.length === 0,
-          taxFamilySize: acaContract.taxFamilyMembers.length,
-          fplRegion: acaContract.fplRegion,
-          fixedMagiAddbacks:
-            (acaContract.foreignExclusionAddback.state === 'known'
-              ? (acaContract.foreignExclusionAddback.amount ?? 0)
-              : 0) +
-            acaContract.taxFamilyMembers
-              .filter(
-                (member) =>
-                  member.relationship === 'dependent' &&
-                  member.requiredToFile === 'required',
+    const aggregateRothConversionTarget =
+      annualAggregateRothConversionTargetPlan(Object.freeze({
+        strategy: plan.strategies.rothConversion,
+        namedConversionActionCount: currentYearConversionActions.length,
+        anyAlive,
+        year,
+        readSources: () => rmdBalances.map((state) => {
+          const convertible = yearConvertibleToRoth(state.account)
+          return Object.freeze({
+            balancePlanDollars: state.balance,
+            convertible,
+            taxableFraction: convertible && isAggregatedIra(state.account)
+              ? ownedIraConversionTaxableFraction(
+                state.account.ownerPersonId ?? primary.id,
               )
-              .reduce((sum, member) => sum + member.magi, 0),
-          taxExemptInterest:
-            acaContract.taxExemptInterest.state === 'known'
-              ? Math.max(
-                  Math.max(0, acaContract.taxExemptInterest.amount ?? 0),
-                  generatedTaxExemptInterest,
-                )
-              : planDerivedTaxExemptInterest
-                ? generatedTaxExemptInterest
-                : 0,
-          foreignExclusionAddback:
-            acaContract.foreignExclusionAddback.state === 'known'
-              ? (acaContract.foreignExclusionAddback.amount ?? 0)
-              : 0,
-          }
-        : {
-            actionable: false,
-            taxFamilySize: aliveCount,
-            fplRegion: 'contiguous' as const,
-            fixedMagiAddbacks: 0,
-            taxExemptInterest: 0,
-            foreignExclusionAddback: 0,
-          }
-      : undefined
-    if (rc.mode !== 'none' && anyAlive) {
-      let desired = 0
-      if (rc.mode === 'manual' || rc.mode === 'optimized') {
-        // `optimized` is an optimizer-produced schedule; identical to manual in
-        // the ledger (the distinct mode only preserves provenance for the UI).
-        for (const c of rc.conversions) if (c.year === year) desired += c.amount
-      } else if (year >= rc.startYear && year <= rc.endYear) {
-        const sized = sizeRothConversion(rc, {
-          year,
+              : 1,
+          })
+        }),
+        sizing: Object.freeze({
           pack,
           filingStatus: taxFilingStatusForYear,
           ordinaryIncomeBase: incomeBeforeConversion,
@@ -6062,20 +5906,77 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           peopleAged65Plus,
           householdSize: aliveCount,
           taxExemptInterest: yearTaxExemptInterest,
-          aca: acaSizingInput,
           inflationScale: inflFactorFrom(pack.year, year),
           itemizedDeductions,
-        })
-        if (sized.ok) {
-          desired = conversionGrossAmountForTaxable(sized.amount)
-          if (desired > 0.01 && safetyNetFloorToday > 0) desired = trimConversionForFloor(desired)
-        } else if (sized.reason === 'bad_target') {
-          warnings.add('The Roth-conversion target is invalid for this plan (unknown bracket or tier); no conversion made.')
-        } else if (sized.reason === 'aca_nonactionable') {
-          warnings.add('The ACA-cliff Roth-conversion target was skipped because current-year ACA evidence is non-actionable.')
-        }
-      }
-      if (desired > 0.01) {
+          aca: Object.freeze({
+            active: acaActive,
+            contract: acaContract,
+            initialSupportCodeCount: acaInitialSupportCodes.length,
+            generatedTaxExemptInterest,
+            planDerivedTaxExemptInterest,
+            fallbackTaxFamilySize: aliveCount,
+          }),
+        }),
+        safetyNet: Object.freeze({
+          floorTodayPlanDollars: safetyNetFloorToday,
+          inflationFactor: inflFactor,
+          readSpendableLiquidBalances: () => balances.flatMap((state) =>
+            state.account.type === 'cash' ||
+            state.account.type === 'taxable' ||
+            state.account.type === 'equityComp'
+              ? [spendableBalance(state, year)]
+              : []),
+          preConversionInflows:
+            incomes.total -
+            taxableYieldReinvested +
+            rmdTotal -
+            qcdFromRmd -
+            namedQcdRmdSatisfied +
+            seppTotal +
+            inheritedTotal +
+            propertySaleProceedsTotal +
+            retirementActionProceeds,
+          totalExpenses: expenses.total,
+          contributions,
+          computeTaxForTaxableConversion: (extraOrdinary: number) => {
+            const netted = applyCapitalLossCarryforward(
+              capitalLossPool,
+              Math.max(0, incomeBeforeConversion + extraOrdinary),
+              preWithdrawalCapitalResult,
+              pack.federalTax.capitalLossOrdinaryOffsetLimit,
+            )
+            return taxCalculator.compute({
+              year,
+              filingStatus: filingStatusForYear,
+              ordinaryIncome: netted.ordinaryAfter,
+              capitalGains: netted.netCapitalGain,
+              realizedCapitalGainsBeforeCarryforward:
+                preWithdrawalCapitalResult,
+              taxableInterestIncome:
+                incomes.taxableInterest + ladderTaxableInterest,
+              taxExemptInterest: yearTaxExemptInterest,
+              foreignExclusionAddback: acaForeignExclusionAddback,
+              usGovernmentInterest: ladderTaxableInterest,
+              ordinaryDividends: incomes.ordinaryDividends,
+              qualifiedDividends: incomes.qualifiedDividends,
+              ssBenefits: incomes.socialSecurity,
+              peopleAged65Plus,
+              inflationScale: limitGrowth,
+              state: residenceState,
+              stateResidency,
+              privateRetirementIncome: privateRetirementBase,
+              publicPensionIncome: publicPensionBase,
+              agesAlive,
+              itemizedDeductions,
+            })
+          },
+        }),
+      }))
+    for (const warning of aggregateRothConversionTarget.warnings) {
+      warnings.add(warning)
+    }
+    const desired = aggregateRothConversionTarget.desiredPlanDollars
+    if (desired > 0.01) {
         // A conversion is a rollover inside one individual's own accounts:
         // IRC 408(d)(3)(A)(i) admits it only where the amount is paid out of
         // the account maintained for an individual and paid into an account
@@ -6333,14 +6234,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             }
           }
         }
-      }
     }
 
-    // The year converts by at most one authority: `rc.mode` is forced to
-    // 'none' above whenever a named request exists, so the aggregate strategy
-    // never sizes a second conversion on top of a committed one. These sum the
-    // two anyway rather than assuming that, because the published figure has to
-    // be the year's conversions and not whichever route happened to run.
+    // The year converts by at most one authority: the target coordinator
+    // suppresses the aggregate strategy whenever a named request exists, so it
+    // never sizes a second conversion on top of a committed one. These sum both
+    // paths anyway because the published figure has to be the year's conversions
+    // and not whichever route happened to run.
     const totalRothConversion = rothConversion + namedRothConversionExecuted
     // Each authority nets its own basis return. The two are kept apart rather
     // than pooled because they are apportioned against different Form 8606
@@ -6410,7 +6310,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           peopleAged65Plus,
           householdSize: aliveCount,
           taxExemptInterest: yearTaxExemptInterest,
-          aca: acaSizingInput,
+          aca: aggregateRothConversionTarget.acaSizingInput,
           inflationScale: inflFactorFrom(pack.year, year),
           itemizedDeductions,
         },
@@ -6841,7 +6741,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       )
     }
 
-    if (rc.mode === 'fillToTarget' && rothConversion > 0 && withdrawalPlan.byCategory.traditional > 0.01) {
+    if (
+      aggregateRothConversionTarget.fillToTargetSelected &&
+      rothConversion > 0 &&
+      withdrawalPlan.byCategory.traditional > 0.01
+    ) {
       warnings.add(
         'Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.',
       )
@@ -7591,7 +7495,9 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               ),
             )
             : remainingConvertibleGross > 0
-              ? conversionTaxableAmountForGross(remainingConvertibleGross) /
+              ? aggregateRothConversionTarget.taxableAmountForGross(
+                remainingConvertibleGross,
+              ) /
                 remainingConvertibleGross
               : 1,
         // Probe-only remap: post-flip S2 owner-RMD obligation shares ride the
