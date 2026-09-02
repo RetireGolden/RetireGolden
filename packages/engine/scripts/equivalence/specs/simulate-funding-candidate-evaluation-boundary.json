@@ -98,26 +98,26 @@
       "id": "AF.callsite.context",
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot",
       "file": "projection/simulate.ts",
-      "lines": [6578, 6648],
+      "lines": [6561, 6631],
       "anchors": [
-        { "line": 6578, "text": "const fundingCandidateAcaContract = acaContract" },
-        { "line": 6595, "text": "const fundingCandidateEvaluationContext:" },
-        { "line": 6601, "text": "taxInputBase: Object.freeze({" },
-        { "line": 6625, "text": "aca: Object.freeze({" },
-        { "line": 6637, "text": "hsa: Object.freeze({" }
+        { "line": 6561, "text": "const fundingCandidateAcaContract = acaContract" },
+        { "line": 6578, "text": "const fundingCandidateEvaluationContext:" },
+        { "line": 6584, "text": "taxInputBase: Object.freeze({" },
+        { "line": 6608, "text": "aca: Object.freeze({" },
+        { "line": 6620, "text": "hsa: Object.freeze({" }
       ]
     },
     {
       "id": "AF.callsite.delegate",
       "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
       "file": "projection/simulate.ts",
-      "lines": [6649, 6673],
+      "lines": [6632, 6656],
       "anchors": [
-        { "line": 6652, "text": "const withdrawalPlan = planWithdrawals(" },
-        { "line": 6659, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 6662, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
-        { "line": 6668, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
-        { "line": 6673, "text": "return evaluation" }
+        { "line": 6635, "text": "const withdrawalPlan = planWithdrawals(" },
+        { "line": 6642, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 6645, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 6651, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
+        { "line": 6656, "text": "return evaluation" }
       ]
     }
   ],

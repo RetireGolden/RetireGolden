@@ -184,8 +184,10 @@ describe('simulatePlan conversion-linked withdrawal funding delegation', () => {
       Object.isFrozen(call.input) &&
       call.input.taxUnitId !== null &&
       new Set(call.input.omitActionIds).size === 2 &&
-      call.input.omitActionIds.includes(CONVERSION_ACTION_ID) &&
-      call.input.omitActionIds.includes(WITHDRAWAL_ACTION_ID)
+      call.input.omitActionIds.some((actionId) =>
+        actionId === CONVERSION_ACTION_ID) &&
+      call.input.omitActionIds.some((actionId) =>
+        actionId === WITHDRAWAL_ACTION_ID)
     )).toBe(true)
     expect(seam.calls.some((call) => call.original.release.kind === 'proven'))
       .toBe(true)
