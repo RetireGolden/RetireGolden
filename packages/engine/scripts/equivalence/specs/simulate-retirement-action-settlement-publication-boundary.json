@@ -131,18 +131,18 @@
       "id": "AB.callsite",
       "label": "post-settlement invocation before entity facts and YearResult publication",
       "file": "projection/simulate.ts",
-      "lines": [8273, 8287],
+      "lines": [8179, 8193],
       "anchors": [
         {
-          "line": 8273,
+          "line": 8179,
           "text": "const settlementPublication = annualRetirementActionSettlementPublication({"
         },
         {
-          "line": 8276,
+          "line": 8182,
           "text": "taxPlanDollars: tax,"
         },
         {
-          "line": 8286,
+          "line": 8192,
           "text": "annualLiabilityNonGroupTaxInputs,"
         }
       ]
