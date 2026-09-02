@@ -183,6 +183,19 @@ describe('annualQcdExecutionInput', () => {
     ).toEqual([])
   })
 
+  it('fails missing donor runtime facts closed', () => {
+    const result = annualQcdExecutionInput(input({ people: [] }))
+
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') throw new Error('expected ready input')
+    expect(
+      result.executorInput.physicalInput.runtimeEvidence.personAliveEvidence,
+    ).toEqual([expect.objectContaining({ alive: false })])
+    expect(
+      result.executorInput.physicalInput.runtimeEvidence.priorQcdOffsetEvidence,
+    ).toEqual([])
+  })
+
   it('returns no executor input when the annual pass has no named QCD', () => {
     const plan = donorPlan([])
     const result = annualQcdExecutionInput(input({ plan, requests: [] }))
@@ -192,6 +205,14 @@ describe('annualQcdExecutionInput', () => {
       prerequisite: undefined,
       executorInput: null,
     })
+  })
+
+  it('forwards a blocked prerequisite without constructing executor input', () => {
+    const result = annualQcdExecutionInput(input({ taxYear: 0 }))
+
+    expect(result.status).toBe('blocked')
+    expect(result.executorInput).toBeNull()
+    expect(result.prerequisite?.issues[0]?.kind).toBe('invalidInput')
   })
 
   it('publishes frozen result, executor, evidence, and pool envelopes', () => {
