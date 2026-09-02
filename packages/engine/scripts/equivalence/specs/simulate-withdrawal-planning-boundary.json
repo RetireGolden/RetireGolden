@@ -103,42 +103,42 @@
       "id": "AL.callsite.strategy",
       "label": "frozen annual strategy contract and lazy sizing callback handoff",
       "file": "projection/simulate.ts",
-      "lines": [5579, 5582],
+      "lines": [3490, 3493],
       "anchors": [
-        { "line": 5579, "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({" },
-        { "line": 5582, "text": "readSizing: () => Object.freeze({" }
+        { "line": 3490, "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({" },
+        { "line": 3493, "text": "readSizing: () => Object.freeze({" }
       ]
     },
     {
       "id": "AL.callsite.strategyResult",
       "label": "optional warning gate and resolved strategy handoff",
       "file": "projection/simulate.ts",
-      "lines": [5597, 5598],
+      "lines": [3508, 3509],
       "anchors": [
-        { "line": 5597, "text": "}))" },
-        { "line": 5598, "text": "if (withdrawalStrategyResult.warning !== null) {" }
+        { "line": 3508, "text": "}))" },
+        { "line": 3509, "text": "if (withdrawalStrategyResult.warning !== null) {" }
       ]
     },
     {
       "id": "AL.callsite.resolvedStrategy",
       "label": "resolved strategy selected for candidate planning",
       "file": "projection/simulate.ts",
-      "lines": [5601, 5601],
+      "lines": [3512, 3512],
       "anchors": [
-        { "line": 5601, "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy" }
+        { "line": 3512, "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy" }
       ]
     },
     {
       "id": "AL.callsite.plan",
       "label": "fixed-point request delegation and Form 8606 handoff by exact plan identity",
       "file": "projection/simulate.ts",
-      "lines": [5813, 5829],
+      "lines": [3724, 3740],
       "anchors": [
-        { "line": 5813, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
-        { "line": 5815, "text": "states: Object.freeze([...rmdBalances])," },
-        { "line": 5820, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 5823, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
-        { "line": 5827, "text": "iraCharacter: iraCharacterProbe," }
+        { "line": 3724, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
+        { "line": 3726, "text": "states: Object.freeze([...rmdBalances])," },
+        { "line": 3731, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 3734, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 3738, "text": "iraCharacter: iraCharacterProbe," }
       ]
     }
   ],

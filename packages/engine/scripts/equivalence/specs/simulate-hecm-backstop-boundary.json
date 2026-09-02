@@ -23,15 +23,15 @@
       "id": "AM.callsite.apply",
       "label": "frozen backstop-plan handoff plus caller-owned line/map mutation and scalar consumption",
       "file": "projection/simulate.ts",
-      "lines": [5907, 5924],
+      "lines": [3818, 3835],
       "anchors": [
-        { "line": 5907, "text": "const hecmBackstop = annualHecmBackstopPlan(Object.freeze({" },
-        { "line": 5910, "text": "portfolioShortfall: withdrawalPlan.shortfall," },
-        { "line": 5913, "text": "for (const allocation of hecmBackstop.allocations) {" },
-        { "line": 5916, "text": "line.loanBalance += allocation.amount" },
-        { "line": 5917, "text": "hecmBackstopByProperty?.set(" },
-        { "line": 5922, "text": "const hecmShortfallDraw = hecmBackstop.draw" },
-        { "line": 5924, "text": "const shortfallAfterHecm = hecmBackstop.shortfallAfterHecm" }
+        { "line": 3818, "text": "const hecmBackstop = annualHecmBackstopPlan(Object.freeze({" },
+        { "line": 3821, "text": "portfolioShortfall: withdrawalPlan.shortfall," },
+        { "line": 3824, "text": "for (const allocation of hecmBackstop.allocations) {" },
+        { "line": 3827, "text": "line.loanBalance += allocation.amount" },
+        { "line": 3828, "text": "hecmBackstopByProperty?.set(" },
+        { "line": 3833, "text": "const hecmShortfallDraw = hecmBackstop.draw" },
+        { "line": 3835, "text": "const shortfallAfterHecm = hecmBackstop.shortfallAfterHecm" }
       ],
       "note": "The caller deliberately owns live line mutation, per-property cash-flow attribution, coordinated-plus-backstop total accumulation, and downstream residual publication. Cash-flow mode observes the optional map write; default and optimizer modes observe debt and shortfall; counterfactual mode re-enters the annual pass and therefore also exercises rollback around caller-owned line state."
     }

@@ -291,7 +291,20 @@ export interface AnnualForcedDistributionQcdRetirementActionsResult {
 }
 
 function immutablePlainSnapshot<T>(value: T): T {
-  return structuredClone(value)
+  const snapshot = structuredClone(value)
+  const freeze = (candidate: unknown): void => {
+    if (
+      candidate === null ||
+      typeof candidate !== 'object' ||
+      Object.isFrozen(candidate)
+    ) return
+    for (const child of Object.values(candidate as Record<string, unknown>)) {
+      freeze(child)
+    }
+    Object.freeze(candidate)
+  }
+  freeze(snapshot)
+  return snapshot
 }
 
 export function annualForcedDistributionQcdAndRetirementActions(

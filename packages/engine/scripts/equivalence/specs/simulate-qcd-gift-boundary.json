@@ -89,82 +89,82 @@
     {
       "id": "Q.callsite.invoke",
       "label": "logical live-state snapshot and exact map handoff",
-      "file": "projection/simulate.ts",
-      "lines": [3856, 3887],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [926, 957],
       "anchors": [
-        { "line": 3856, "text": "const qcdGiftPlan = annualLegacyQcdGiftPlan({" },
-        { "line": 3861, "text": "people: peopleStates.map((state) => ({" },
-        { "line": 3868, "text": "ownedIraRmdGrossByOwner," },
-        { "line": 3869, "text": "balances: rmdBalances.map((state, balanceIndex) => ({" },
-        { "line": 3877, "text": "qcd = qcdGiftPlan.qcd" },
-        { "line": 3885, "text": "const qcdGrossByOwner = qcdGiftPlan.qcdGrossByOwner" },
-        { "line": 3887, "text": "const qcdFromRmdByOwner = qcdGiftPlan.qcdFromRmdByOwner" }
+        { "line": 926, "text": "const qcdGiftPlan = annualLegacyQcdGiftPlan({" },
+        { "line": 931, "text": "people: peopleStates.map((state) => ({" },
+        { "line": 938, "text": "ownedIraRmdGrossByOwner," },
+        { "line": 939, "text": "balances: rmdBalances.map((state, balanceIndex) => ({" },
+        { "line": 947, "text": "qcd = qcdGiftPlan.qcd" },
+        { "line": 955, "text": "const qcdGrossByOwner = qcdGiftPlan.qcdGrossByOwner" },
+        { "line": 957, "text": "const qcdFromRmdByOwner = qcdGiftPlan.qcdFromRmdByOwner" }
       ]
     },
     {
       "id": "Q.callsite.validate",
       "label": "whole-plan logical IRA identity normalization, sequential balance and amount validation",
-      "file": "projection/simulate.ts",
-      "lines": [3892, 3925],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [962, 995],
       "anchors": [
-        { "line": 3892, "text": "const validatedQcdGiftDebitIntents: Array<{" },
-        { "line": 3901, "text": "const remainingQcdGiftBalanceByIndex = new Map<number, number>()" },
-        { "line": 3902, "text": "for (const intent of qcdGiftPlan.debitIntents) {" },
-        { "line": 3906, "text": "const balanceIndex = intent.balanceIndex" },
-        { "line": 3907, "text": "const sourceAccountId = intent.sourceAccountId" },
-        { "line": 3908, "text": "const ownerId = intent.ownerId" },
-        { "line": 3909, "text": "const sourceBalanceBefore = intent.sourceBalanceBefore" },
-        { "line": 3910, "text": "const amount = intent.amount" },
-        { "line": 3911, "text": "const state = rmdBalances[balanceIndex]" },
-        { "line": 3915, "text": "if (" },
-        { "line": 3917, "text": "!isAggregatedIra(state.account) ||" },
-        { "line": 3923, "text": "planDollarsMoveNoLedgerCent(amount) ||" },
-        { "line": 3925, "text": "amount > remainingBalance" }
+        { "line": 962, "text": "const validatedQcdGiftDebitIntents: Array<{" },
+        { "line": 971, "text": "const remainingQcdGiftBalanceByIndex = new Map<number, number>()" },
+        { "line": 972, "text": "for (const intent of qcdGiftPlan.debitIntents) {" },
+        { "line": 976, "text": "const balanceIndex = intent.balanceIndex" },
+        { "line": 977, "text": "const sourceAccountId = intent.sourceAccountId" },
+        { "line": 978, "text": "const ownerId = intent.ownerId" },
+        { "line": 979, "text": "const sourceBalanceBefore = intent.sourceBalanceBefore" },
+        { "line": 980, "text": "const amount = intent.amount" },
+        { "line": 981, "text": "const state = rmdBalances[balanceIndex]" },
+        { "line": 985, "text": "if (" },
+        { "line": 987, "text": "!isAggregatedIra(state.account) ||" },
+        { "line": 993, "text": "planDollarsMoveNoLedgerCent(amount) ||" },
+        { "line": 995, "text": "amount > remainingBalance" }
       ],
       "note": "Validated differential members take the successful seam. The fail-closed throw cannot execute in a behavior-equivalent capture; hostile delegation independently injects wrong logical positions, owner, non-IRA source, stale balance, zero, positive sub-cent, cumulative overdraw and getter-backed identity intents. It proves complete normalization before mutation and that apply never re-reads helper-owned intent objects."
     },
     {
       "id": "Q.callsite.validateSequentialCommit",
       "label": "sequential shadow-balance advance and immutable scalar record cache",
-      "file": "projection/simulate.ts",
-      "lines": [3931, 3945],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1001, 1015],
       "anchors": [
-        { "line": 3931, "text": "const sourceBalanceAfter = remainingBalance - amount" },
-        { "line": 3932, "text": "remainingQcdGiftBalanceByIndex.set(" },
-        { "line": 3936, "text": "validatedQcdGiftDebitIntents.push({" },
-        { "line": 3944, "text": "})" },
-        { "line": 3945, "text": "}" }
+        { "line": 1001, "text": "const sourceBalanceAfter = remainingBalance - amount" },
+        { "line": 1002, "text": "remainingQcdGiftBalanceByIndex.set(" },
+        { "line": 1006, "text": "validatedQcdGiftDebitIntents.push({" },
+        { "line": 1014, "text": "})" },
+        { "line": 1015, "text": "}" }
       ]
     },
     {
       "id": "Q.callsite.validateHistory",
       "label": "caller-owned history snapshot and donor identity validation",
-      "file": "projection/simulate.ts",
-      "lines": [3946, 3953],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1016, 1023],
       "anchors": [
-        { "line": 3946, "text": "const qcdGiftOffsetHistoryUnprovableDonorIds = [" },
-        { "line": 3947, "text": "...qcdGiftPlan.offsetHistoryUnprovableDonorIds," },
-        { "line": 3949, "text": "const qcdGiftPersonIds = new Set(" },
-        { "line": 3952, "text": "if (qcdGiftOffsetHistoryUnprovableDonorIds.some((donorId) =>" },
-        { "line": 3953, "text": "!qcdGiftPersonIds.has(donorId))) {" }
+        { "line": 1016, "text": "const qcdGiftOffsetHistoryUnprovableDonorIds = [" },
+        { "line": 1017, "text": "...qcdGiftPlan.offsetHistoryUnprovableDonorIds," },
+        { "line": 1019, "text": "const qcdGiftPersonIds = new Set(" },
+        { "line": 1022, "text": "if (qcdGiftOffsetHistoryUnprovableDonorIds.some((donorId) =>" },
+        { "line": 1023, "text": "!qcdGiftPersonIds.has(donorId))) {" }
       ],
       "note": "The unknown-donor throw is excluded because a behavior-equivalent corpus cannot take a hostile helper seam. Focused delegation injects throwing history property and iterator channels and proves neither reaches the first logical debit/runtime publication."
     },
     {
       "id": "Q.callsite.apply",
       "label": "logical pro-rata debit, single runtime identity, deferred character and history writes",
-      "file": "projection/simulate.ts",
-      "lines": [3959, 4001],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1029, 1071],
       "anchors": [
-        { "line": 3959, "text": "for (const debit of validatedQcdGiftDebitIntents) {" },
-        { "line": 3960, "text": "const state = rmdBalances[debit.balanceIndex]!" },
-        { "line": 3963, "text": "state.balance = debit.sourceBalanceAfter" },
-        { "line": 3969, "text": "recordAnnualRetirementRuntimeOccurrence({" },
-        { "line": 3979, "text": "const giftApplication = recordAnnualRetirementRuntimeApplication({" },
-        { "line": 3989, "text": "if (giftApplication.applicationKind === 'debit') {" },
-        { "line": 3990, "text": "deferredLegacyQcdDistributions.push({" },
-        { "line": 3999, "text": "for (const donorId of qcdGiftOffsetHistoryUnprovableDonorIds) {" },
-        { "line": 4000, "text": "namedQcdOffsetHistoryUnprovable.add(donorId)" }
+        { "line": 1029, "text": "for (const debit of validatedQcdGiftDebitIntents) {" },
+        { "line": 1030, "text": "const state = rmdBalances[debit.balanceIndex]!" },
+        { "line": 1033, "text": "state.balance = debit.sourceBalanceAfter" },
+        { "line": 1039, "text": "recordAnnualRetirementRuntimeOccurrence({" },
+        { "line": 1049, "text": "const giftApplication = recordAnnualRetirementRuntimeApplication({" },
+        { "line": 1059, "text": "if (giftApplication.applicationKind === 'debit') {" },
+        { "line": 1060, "text": "deferredLegacyQcdDistributions.push({" },
+        { "line": 1069, "text": "for (const donorId of qcdGiftOffsetHistoryUnprovableDonorIds) {" },
+        { "line": 1070, "text": "namedQcdOffsetHistoryUnprovable.add(donorId)" }
       ]
     }
   ],

@@ -107,34 +107,34 @@
     {
       "id": "AK.callsite.contract",
       "label": "post-RMD and post-withdrawal conversion preparation snapshot",
-      "file": "projection/simulate.ts",
-      "lines": [4766, 4801],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1836, 1871],
       "anchors": [
-        { "line": 4766, "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({" },
-        { "line": 4775, "text": "balances: Object.freeze(balances.map((state) => Object.freeze({" },
-        { "line": 4779, "text": "ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>" },
-        { "line": 4786, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(([" },
-        { "line": 4792, "text": "ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map(" }
+        { "line": 1836, "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({" },
+        { "line": 1845, "text": "balances: Object.freeze(balances.map((state) => Object.freeze({" },
+        { "line": 1849, "text": "ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>" },
+        { "line": 1856, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(([" },
+        { "line": 1862, "text": "ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map(" }
       ]
     },
     {
       "id": "AK.callsite.effectiveGroups",
       "label": "shared narrowed linked-group verdict",
-      "file": "projection/simulate.ts",
-      "lines": [4808, 4809],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1878, 1879],
       "anchors": [
-        { "line": 4808, "text": "const effectiveLinkedWithdrawalGroups =" },
-        { "line": 4809, "text": "rothConversionExecutionInput.effectiveLinkedWithdrawalGroups" }
+        { "line": 1878, "text": "const effectiveLinkedWithdrawalGroups =" },
+        { "line": 1879, "text": "rothConversionExecutionInput.effectiveLinkedWithdrawalGroups" }
       ]
     },
     {
       "id": "AK.callsite.execute",
       "label": "caller-owned named-conversion executor call",
-      "file": "projection/simulate.ts",
-      "lines": [4810, 4812],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1880, 1882],
       "anchors": [
-        { "line": 4810, "text": "if (rothConversionExecutionInput.status === 'ready') {" },
-        { "line": 4812, "text": "rothConversionExecutionInput.executorInput," }
+        { "line": 1880, "text": "if (rothConversionExecutionInput.status === 'ready') {" },
+        { "line": 1882, "text": "rothConversionExecutionInput.executorInput," }
       ]
     }
   ],

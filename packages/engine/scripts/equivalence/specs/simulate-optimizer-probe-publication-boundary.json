@@ -263,24 +263,24 @@
       "label": "capture gate and detached annual traditional-account snapshots",
       "file": "projection/simulate.ts",
       "lines": [
-        6197,
-        6232
+        4108,
+        4143
       ],
       "anchors": [
         {
-          "line": 6197,
+          "line": 4108,
           "text": "let optimizerProbe: OptimizerYearProbe | null = null"
         },
         {
-          "line": 6198,
+          "line": 4109,
           "text": "if (opts.captureOptimizerInputs) {"
         },
         {
-          "line": 6199,
+          "line": 4110,
           "text": "const traditionalAccountSnapshots = Object.freeze("
         },
         {
-          "line": 6208,
+          "line": 4119,
           "text": "const remainingTaxableFraction ="
         }
       ]
@@ -290,20 +290,20 @@
       "label": "detached exact-cent ordinary-action evidence snapshot",
       "file": "projection/simulate.ts",
       "lines": [
-        6233,
-        6247
+        4144,
+        4158
       ],
       "anchors": [
         {
-          "line": 6233,
+          "line": 4144,
           "text": "const ordinaryActionSnapshot ="
         },
         {
-          "line": 6237,
+          "line": 4148,
           "text": "balances: Object.freeze("
         },
         {
-          "line": 6246,
+          "line": 4157,
           "text": ": retirementActionExecution === undefined"
         }
       ],
@@ -314,20 +314,20 @@
       "label": "minimal detached ACA publication snapshot",
       "file": "projection/simulate.ts",
       "lines": [
-        6288,
-        6296
+        4199,
+        4207
       ],
       "anchors": [
         {
-          "line": 6288,
+          "line": 4199,
           "text": "const optimizerAcaSnapshot = yearAcaResult === undefined"
         },
         {
-          "line": 6290,
+          "line": 4201,
           "text": ": Object.freeze({"
         },
         {
-          "line": 6295,
+          "line": 4206,
           "text": "cliffState: yearAcaResult.cliffState,"
         }
       ]
@@ -337,20 +337,20 @@
       "label": "detached exact-cent conversion and QCD action evidence snapshots",
       "file": "projection/simulate.ts",
       "lines": [
-        6249,
-        6287
+        4160,
+        4198
       ],
       "anchors": [
         {
-          "line": 6249,
+          "line": 4160,
           "text": "const conversionActionSnapshot ="
         },
         {
-          "line": 6274,
+          "line": 4185,
           "text": "const qcdActionSnapshot = qcdActionExecution?.committed"
         },
         {
-          "line": 6285,
+          "line": 4196,
           "text": ": qcdActionExecution === undefined"
         }
       ],
@@ -361,20 +361,20 @@
       "label": "frozen annual evidence and runtime occurrence handoff",
       "file": "projection/simulate.ts",
       "lines": [
-        6297,
-        6306
+        4208,
+        4217
       ],
       "anchors": [
         {
-          "line": 6297,
+          "line": 4208,
           "text": "optimizerProbe = annualOptimizerProbePublication(Object.freeze({"
         },
         {
-          "line": 6303,
+          "line": 4214,
           "text": "runtimeOccurrences: Object.freeze("
         },
         {
-          "line": 6306,
+          "line": 4217,
           "text": "sourceAccountId: occurrence.sourceAccountId === null"
         }
       ],
@@ -385,24 +385,24 @@
       "label": "detached runtime/debit evidence and complete scalar publication handoff",
       "file": "projection/simulate.ts",
       "lines": [
-        6308,
-        6357
+        4219,
+        4268
       ],
       "anchors": [
         {
-          "line": 6308,
+          "line": 4219,
           "text": ": String(occurrence.sourceAccountId),"
         },
         {
-          "line": 6314,
+          "line": 4225,
           "text": "exogenousStrategyDebits: Object.freeze("
         },
         {
-          "line": 6352,
+          "line": 4263,
           "text": "taxableAmountForGrossConversion: (gross: number) =>"
         },
         {
-          "line": 6357,
+          "line": 4268,
           "text": "}))"
         }
       ]
