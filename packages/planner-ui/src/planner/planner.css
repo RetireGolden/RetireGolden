@@ -3720,3 +3720,98 @@ html:has(.kpi-bar) {
   }
 }
 
+
+/* --- Design QA cluster I: narrow-viewport layout (#559, #560, #562, #565,
+   #566, #573, #575) ----------------------------------------------------------
+   Appended as one block; nothing above is reordered. Every rule here is a
+   layout floor — none of them changes what the engine computed or what the
+   page says. */
+
+/* KPI labels (#559): the phone/tablet strip gave every KPI a fixed 8.5rem
+   card while the label stayed `white-space: nowrap` with visible overflow, so
+   a label wider than the card painted into its neighbour with no gap
+   ("ENDING NET WORTH" measured 145px in a 136px card and ran straight into
+   "MONEY LASTS"). Two floors: the card is wide enough for the longest label
+   this app writes, and the label clips with an ellipsis so no font metric can
+   ever put one KPI's text on top of the next. */
+.kpi-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 880px) {
+  .kpi-bar {
+    grid-auto-columns: minmax(10rem, 1fr);
+  }
+}
+
+/* Compare plans (#560): the table's 52rem floor forced ~120px of inline
+   scroll into a 711px wrap at 768, and the 12rem sticky Metric column then
+   painted over the left edge of Plan A ("Depletes in 2051" read as "epletes
+   in 2051"). Below the rail breakpoint the four columns wrap their cells and
+   share the wrap's own width instead, so nothing scrolls under the sticky
+   column. The floor still applies at the widths it was written for (#384). */
+@media (max-width: 880px) {
+  .year-table.compare-table {
+    min-width: 0;
+    white-space: normal;
+  }
+}
+
+/* Import (#562): `.import-page` is a grid, and a grid item's automatic
+   minimum size is its min-content — so the card holding the column-mapping
+   table refused to shrink, the single track grew to the table's width, and
+   the whole document gained a horizontal scrollbar (page scrollWidth 1690 vs
+   969 at 1024 on an 8-column sheet). Letting the track and its items shrink
+   hands the overflow back to the ScrollRegion that already wraps the table. */
+.import-page {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.import-page > * {
+  min-width: 0;
+}
+
+/* Plan workspace header (#565): the head is a wrapping flex row, but the
+   title block had no flex basis, so it absorbed every pixel the actions did
+   not want — at 375 it shrank to 68px and the plan name showed one letter.
+   A basis wide enough to read a name wraps the actions onto their own row
+   instead, which is what the row already does for the report head (#474). */
+.workspace-head-main {
+  flex: 1 1 16rem;
+}
+
+/* KPI bar on phones (#566): the strip is 97–112px tall and shows two of five
+   KPIs at 375. Kept sticky there it permanently covered the top of the form
+   the user is typing into — Household's Name and Date of birth sat under it
+   after any scroll — while delivering less than half of the verdict it is
+   sticky for. It stays sticky everywhere the viewport can afford it (the
+   functional exception in DESIGN.md); on a phone it scrolls away with the
+   page, and the anchor/focus offset that reserved room for it goes with it. */
+@media (max-width: 640px) {
+  .kpi-bar {
+    position: static;
+  }
+
+  html:has(.kpi-bar) {
+    scroll-padding-top: 1rem;
+  }
+}
+
+/* Field help icon (#573): the help button is an atomic inline after the label
+   text, and a line break is allowed before it, so it widowed onto a line of
+   its own and added ~24px to the label row ("State & local taxes (SALT)" on
+   line one, the icon alone on line two, the field dropped below its
+   siblings). A word joiner does not help — Chrome breaks before an atomic
+   inline regardless. Reserving the icon's room inside the label's own inline
+   box does: the text now reflows to leave space on its last line and the icon
+   is pulled back into it, so it always follows the label's last word (#470,
+   #471). */
+.field-label-row > .field-label:has(+ .help-tip) {
+  margin-right: 0;
+  padding-right: 1.3rem;
+}
+
+.field-label-row > .help-tip {
+  margin-left: -1rem;
+}

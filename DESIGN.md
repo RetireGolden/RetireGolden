@@ -321,7 +321,10 @@ Sticky verdict strip at the top of every planner page: auto-fit grid of KPIs, ea
 Label over a bold tabular value in clamp(1.15rem–1.5rem). Values wear verdict colors —
 good/bad/pending — and KPI values that route somewhere underline in their own tone at 55%
 opacity, sharpening on hover. Translucent surface with 8px backdrop blur so the ledger stays
-readable while the plan scrolls beneath. On phones it becomes one horizontally scrollable row.
+readable while the plan scrolls beneath. On phones (≤640px) it becomes one horizontally
+scrollable row and stops sticking: at that width the strip is ~100px tall and shows two of the
+five KPIs, so holding the top of the screen cost more of the form than the verdict it kept.
+Stickiness is the rule wherever the viewport can afford it, not a property of the component.
 
 ## 6. Do's and Don'ts
 

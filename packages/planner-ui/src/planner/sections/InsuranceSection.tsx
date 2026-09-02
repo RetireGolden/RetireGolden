@@ -15,6 +15,7 @@ import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, Text
 import { useFieldIssue } from '../useFieldIssue'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
+import { ScrollRegion } from '../ScrollRegion'
 import { LEARN } from '../learnLinks'
 import { fmtMoneyCompact } from '../format'
 import { TypeChip } from '../TypeChip'
@@ -377,32 +378,39 @@ function LtcStressPanel() {
         Ending net worth if {episodes} {many ? 'happen' : 'happens'}, with and without your LTC coverage offsetting{' '}
         {many ? 'them' : 'it'}.
       </p>
-      <table className="compare-table">
-        <thead>
-          <tr>
-            <th scope="col">Scenario</th>
-            <th scope="col">Ending net worth</th>
-            <th scope="col">Money lasts</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">No care needed</th>
-            <td>{fmtMoneyCompact(cmp.noCare.endingNetWorth)}</td>
-            <td>{lastsLabel(cmp.noCare.depletionYear)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Care, self-funded</th>
-            <td>{fmtMoneyCompact(cmp.careUninsured.endingNetWorth)}</td>
-            <td>{lastsLabel(cmp.careUninsured.depletionYear)}</td>
-          </tr>
-          <tr>
-            <th scope="row">Care, insured</th>
-            <td>{fmtMoneyCompact(cmp.careInsured.endingNetWorth)}</td>
-            <td>{lastsLabel(cmp.careInsured.depletionYear)}</td>
-          </tr>
-        </tbody>
-      </table>
+      {/* Three scenarios beside a 12rem Scenario column do not fit a phone, and
+          unwrapped the table pushed the whole document sideways at 375 (#575).
+          The shared scroll region contains it, the way every other wide table
+          in the app is contained; `grow` keeps three rows off the height cap
+          and the card already draws the border. */}
+      <ScrollRegion label="LTC stress test scenarios" grow style={{ border: 'none' }}>
+        <table className="compare-table">
+          <thead>
+            <tr>
+              <th scope="col">Scenario</th>
+              <th scope="col">Ending net worth</th>
+              <th scope="col">Money lasts</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">No care needed</th>
+              <td>{fmtMoneyCompact(cmp.noCare.endingNetWorth)}</td>
+              <td>{lastsLabel(cmp.noCare.depletionYear)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Care, self-funded</th>
+              <td>{fmtMoneyCompact(cmp.careUninsured.endingNetWorth)}</td>
+              <td>{lastsLabel(cmp.careUninsured.depletionYear)}</td>
+            </tr>
+            <tr>
+              <th scope="row">Care, insured</th>
+              <td>{fmtMoneyCompact(cmp.careInsured.endingNetWorth)}</td>
+              <td>{lastsLabel(cmp.careInsured.depletionYear)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </ScrollRegion>
       {/* Counts follow the plan: two care events or two LTC policies read as
           plural, since both are modeled (#489). */}
       <p className="card-hint" style={{ marginTop: '0.75rem' }}>
