@@ -4,11 +4,8 @@ import type { IraProRataYear } from '../../strategies/iraBasis.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../annualRetirementRuntimeJournal.js'
 import type {
   PersonYearState,
-  SimulatorRetirementRuntimeApplication,
-} from '../types.js'
-
-import type {
   ProjectedFilingStatus,
+  SimulatorRetirementRuntimeApplication,
   TaxCalculator,
 } from '../types.js'
 
@@ -42,10 +39,10 @@ import type {
 
 type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
   SimulatorRetirementRuntimeApplication extends infer Application
-    ? Application extends SimulatorRetirementRuntimeApplication
-      ? Omit<Application, 'mutationOrdinal'>
-      : never
-    : never
+  ? Application extends SimulatorRetirementRuntimeApplication
+  ? Omit<Application, 'mutationOrdinal'>
+  : never
+  : never
 
 type AcaContractYear = NonNullable<
   NonNullable<Plan['expenses']['healthcare']['acaYears']>[number]
@@ -112,16 +109,16 @@ export interface AnnualAggregateRothConversionPhaseCallbacks {
     input: Readonly<{
       ownerPersonId: string
       calculationScope:
-        | 'form8606Line7Distributions'
-        | 'form8606Line8NetConversions'
+      | 'form8606Line7Distributions'
+      | 'form8606Line8NetConversions'
       occurrenceKind:
-        | 'ownedIraRmd'
-        | 'annuityContractDistribution'
-        | 'automaticSeppDistribution'
-        | 'legacyNeedBasedWithdrawal'
-        | 'legacyQcd'
-        | 'legacyRothConversion'
-        | 'namedRothConversion'
+      | 'ownedIraRmd'
+      | 'annuityContractDistribution'
+      | 'automaticSeppDistribution'
+      | 'legacyNeedBasedWithdrawal'
+      | 'legacyQcd'
+      | 'legacyRothConversion'
+      | 'namedRothConversion'
       producerOccurrenceKey: string
       sourceAccountId: string
       mutationOrdinal: number
@@ -169,8 +166,8 @@ export interface AnnualAggregateRothConversionPhaseInput {
 export interface AnnualAggregateRothConversionPhaseResult {
   readonly incomeBeforeConversion: number
   readonly itemizedDeductions:
-    | { stateAndLocalTaxes: number; mortgageInterest: number; charitable: number }
-    | undefined
+  | { stateAndLocalTaxes: number; mortgageInterest: number; charitable: number }
+  | undefined
   readonly residenceState: string
   readonly stateResidency: ReturnType<typeof stateResidencySegmentsForYear>
   readonly agesAlive: number[]
@@ -189,7 +186,7 @@ export interface AnnualAggregateRothConversionPhaseResult {
   readonly totalRothConversionTaxable: number
   readonly aggregateRothConversionTarget: AnnualAggregateRothConversionTargetPlanResult
   readonly aggregateRothConversionAllocationBalances:
-    Readonly<Record<string, number>> | undefined
+  Readonly<Record<string, number>> | undefined
   readonly aggregateRothConversionAllocationDesired: number | undefined
   readonly yearConvertibleToRoth: (
     account: Account,
@@ -280,542 +277,542 @@ export function annualAggregateRothConversionPhase(
     account.kind === 'ira'
       ? `rothira:${account.ownerPersonId ?? primary.id}`
       : `roth:${account.id}`
-// --- Roth conversions (after RMDs — RMDs must be satisfied first) -------
-const peopleAged65Plus = peopleStates.filter((s) => s.alive && s.ageAttained >= 65).length
-// Forced IRA distributions count only their taxable (post-pro-rata) part as
-// ordinary income. The QCD subtraction is qcdIncomeOffset, not the whole
-// gift: 408(d)(8)(D) treats a distribution as a QCD only to the extent it
-// would otherwise be includible, so the offset carries only the routed
-// dollars that qualified — the beyond-RMD part never entered income at all,
-// and an excess over the owner's aggregate includible amount is not a QCD
-// and arrives on `qcdNonQualifiedOrdinaryIncome` instead.
-const incomeBeforeConversion =
-  ordinaryIncome -
-  preTaxContributions +
-  rmdTotal -
-  rmdNontaxable -
-  // The annuity payment entered `ordinaryIncome` at its full face amount in
-  // the income block, which had no year fraction to price it with. This is
-  // the basis share 408(d)(2)(B) gives it, coming back out.
-  annuityPaymentNontaxable -
-  qcdIncomeOffset -
-  namedQcdIncomeOffset +
-  qcdNonQualifiedOrdinaryIncome +
-  seppTotal -
-  seppNontaxable +
-  inheritedOrdinaryIncome +
-  retirementActionOrdinaryIncome
+  // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------
+  const peopleAged65Plus = peopleStates.filter((s) => s.alive && s.ageAttained >= 65).length
+  // Forced IRA distributions count only their taxable (post-pro-rata) part as
+  // ordinary income. The QCD subtraction is qcdIncomeOffset, not the whole
+  // gift: 408(d)(8)(D) treats a distribution as a QCD only to the extent it
+  // would otherwise be includible, so the offset carries only the routed
+  // dollars that qualified — the beyond-RMD part never entered income at all,
+  // and an excess over the owner's aggregate includible amount is not a QCD
+  // and arrives on `qcdNonQualifiedOrdinaryIncome` instead.
+  const incomeBeforeConversion =
+    ordinaryIncome -
+    preTaxContributions +
+    rmdTotal -
+    rmdNontaxable -
+    // The annuity payment entered `ordinaryIncome` at its full face amount in
+    // the income block, which had no year fraction to price it with. This is
+    // the basis share 408(d)(2)(B) gives it, coming back out.
+    annuityPaymentNontaxable -
+    qcdIncomeOffset -
+    namedQcdIncomeOffset +
+    qcdNonQualifiedOrdinaryIncome +
+    seppTotal -
+    seppNontaxable +
+    inheritedOrdinaryIncome +
+    retirementActionOrdinaryIncome
 
-// Itemized deductions (today's $ → nominal). The user's SALT estimate grows
-// with general inflation, like spending; federal tax takes the greater of
-// this and the standard deduction. Built here so the conversion/bracket
-// sizers below target the same deduction the tax engine will use.
-const itm = plan.strategies.itemizedDeductions
-const itemizedDeductions = itm
-  ? {
+  // Itemized deductions (today's $ → nominal). The user's SALT estimate grows
+  // with general inflation, like spending; federal tax takes the greater of
+  // this and the standard deduction. Built here so the conversion/bracket
+  // sizers below target the same deduction the tax engine will use.
+  const itm = plan.strategies.itemizedDeductions
+  const itemizedDeductions = itm
+    ? {
       stateAndLocalTaxes: itm.stateAndLocalTaxes * inflFactor,
       mortgageInterest: itm.mortgageInterest * inflFactor,
       charitable: itm.charitable * inflFactor,
     }
-  : undefined
+    : undefined
 
-// State-tax inputs (resolved once per year, before conversions so the
-// safety-net trim below can price a conversion's full tax bill).
-// Retirement-income base = pension/annuity + taxable RMD/SEPP/inherited −
-// QCD; traditional spending withdrawals are added per iteration below.
-// Roth conversions are excluded (not exclusion-eligible).
-const residenceState = stateForYear(plan.household, year)
-const stateResidency = stateResidencySegmentsForYear(plan.household, year)
-const agesAlive = peopleStates.filter((s) => s.alive).map((s) => s.ageAttained)
-const privateRetirementBase = Math.max(
-  0,
-  privateRetirementOrdinary + rmdTotal - rmdNontaxable -
+  // State-tax inputs (resolved once per year, before conversions so the
+  // safety-net trim below can price a conversion's full tax bill).
+  // Retirement-income base = pension/annuity + taxable RMD/SEPP/inherited −
+  // QCD; traditional spending withdrawals are added per iteration below.
+  // Roth conversions are excluded (not exclusion-eligible).
+  const residenceState = stateForYear(plan.household, year)
+  const stateResidency = stateResidencySegmentsForYear(plan.household, year)
+  const agesAlive = peopleStates.filter((s) => s.alive).map((s) => s.ageAttained)
+  const privateRetirementBase = Math.max(
+    0,
+    privateRetirementOrdinary + rmdTotal - rmdNontaxable -
     annuityPaymentNontaxable - qcdIncomeOffset -
     namedQcdIncomeOffset + qcdNonQualifiedOrdinaryIncome +
     seppTotal - seppNontaxable + inheritedOrdinaryIncome,
-)
-const publicPensionBase = Math.max(0, publicPensionOrdinary)
-if (plan.assumptions.stateEffectiveTaxPct <= 0) {
-  for (const segment of stateResidency) {
-    if (stateParamsFor(segment.state, year)) continue
-    warnings.add(
-      `State "${segment.state}" isn't modeled for per-state tax yet, so state income tax was treated as $0. ` +
+  )
+  const publicPensionBase = Math.max(0, publicPensionOrdinary)
+  if (plan.assumptions.stateEffectiveTaxPct <= 0) {
+    for (const segment of stateResidency) {
+      if (stateParamsFor(segment.state, year)) continue
+      warnings.add(
+        `State "${segment.state}" isn't modeled for per-state tax yet, so state income tax was treated as $0. ` +
         'If it taxes income, set a flat effective rate under Assumptions to approximate it.',
-    )
+      )
+    }
   }
-}
-const generatedTaxExemptInterest = incomes.taxExemptInterest
-const planDerivedTaxExemptInterest =
-  planHasTaxExemptYieldAttestation && generatedTaxExemptInterest > 0
-// Characterization takes the max of the attested household total and the
-// plan-generated subset — never the sum (generated dollars sit inside the
-// attested total when the attestation is current), and never the attested
-// figure alone (a stale attestation must not hide income the plan produces).
-// Cash and balances always follow generated only.
-const yearTaxExemptInterest =
-  acaActive && acaContract?.taxExemptInterest.state === 'known'
-    ? Math.max(
+  const generatedTaxExemptInterest = incomes.taxExemptInterest
+  const planDerivedTaxExemptInterest =
+    planHasTaxExemptYieldAttestation && generatedTaxExemptInterest > 0
+  // Characterization takes the max of the attested household total and the
+  // plan-generated subset — never the sum (generated dollars sit inside the
+  // attested total when the attestation is current), and never the attested
+  // figure alone (a stale attestation must not hide income the plan produces).
+  // Cash and balances always follow generated only.
+  const yearTaxExemptInterest =
+    acaActive && acaContract?.taxExemptInterest.state === 'known'
+      ? Math.max(
         Math.max(0, acaContract.taxExemptInterest.amount ?? 0),
         generatedTaxExemptInterest,
       )
-    : generatedTaxExemptInterest
-const acaForeignExclusionAddback =
-  acaActive && acaContract?.foreignExclusionAddback.state === 'known'
-    ? Math.max(0, acaContract.foreignExclusionAddback.amount ?? 0)
-    : 0
-// Canonical signed current-year capital before any residual legacy
-// withdrawal sale. Exact-cent action character crosses into Plan dollars
-// once above; proceeds remain liquidity and are not income a second time.
-const preWithdrawalCapitalResult =
-  oneTimeGains +
-  rebalanceRealizedGains +
-  retirementActionCapitalGainOrLoss
-const netCapitalForPreWithdrawalSizing =
-  applyCapitalLossCarryforward(
-    capitalLossPool,
-    incomeBeforeConversion,
-    preWithdrawalCapitalResult,
-    pack.federalTax.capitalLossOrdinaryOffsetLimit,
-  ).netCapitalGain
+      : generatedTaxExemptInterest
+  const acaForeignExclusionAddback =
+    acaActive && acaContract?.foreignExclusionAddback.state === 'known'
+      ? Math.max(0, acaContract.foreignExclusionAddback.amount ?? 0)
+      : 0
+  // Canonical signed current-year capital before any residual legacy
+  // withdrawal sale. Exact-cent action character crosses into Plan dollars
+  // once above; proceeds remain liquidity and are not income a second time.
+  const preWithdrawalCapitalResult =
+    oneTimeGains +
+    rebalanceRealizedGains +
+    retirementActionCapitalGainOrLoss
+  const netCapitalForPreWithdrawalSizing =
+    applyCapitalLossCarryforward(
+      capitalLossPool,
+      incomeBeforeConversion,
+      preWithdrawalCapitalResult,
+      pack.federalTax.capitalLossOrdinaryOffsetLimit,
+    ).netCapitalGain
 
-const assumedLine8ByOwner = new Map<string, {
-  gross: number
-  taxable: number
-}>()
-for (const effect of assumedEffects) {
-  if (effect.taxYear !== year ||
+  const assumedLine8ByOwner = new Map<string, {
+    gross: number
+    taxable: number
+  }>()
+  for (const effect of assumedEffects) {
+    if (effect.taxYear !== year ||
       effect.calculationScope !== 'form8606Line8NetConversions') continue
-  const current = assumedLine8ByOwner.get(effect.ownerPersonId) ?? {
-    gross: 0,
-    taxable: 0,
+    const current = assumedLine8ByOwner.get(effect.ownerPersonId) ?? {
+      gross: 0,
+      taxable: 0,
+    }
+    current.gross += ledgerCentsToPlanDollars(effect.grossAmount)
+    current.taxable += ledgerCentsToPlanDollars(
+      effect.ordinaryIncomeAmount,
+    )
+    assumedLine8ByOwner.set(effect.ownerPersonId, current)
   }
-  current.gross += ledgerCentsToPlanDollars(effect.grossAmount)
-  current.taxable += ledgerCentsToPlanDollars(
-    effect.ordinaryIncomeAmount,
-  )
-  assumedLine8ByOwner.set(effect.ownerPersonId, current)
-}
-const conversionSourceContextForOwner = (
-  ownerPersonId: string,
-): RothConversionSourceContext => {
-  const person = personById.get(ownerPersonId)
-  return {
-    ownerAgeAttained: person !== undefined ? stateOf(ownerPersonId).ageAttained : 0,
-    ownerRetirementAge: person?.retirementAge ?? null,
+  const conversionSourceContextForOwner = (
+    ownerPersonId: string,
+  ): RothConversionSourceContext => {
+    const person = personById.get(ownerPersonId)
+    return {
+      ownerAgeAttained: person !== undefined ? stateOf(ownerPersonId).ageAttained : 0,
+      ownerRetirementAge: person?.retirementAge ?? null,
+    }
   }
-}
-const yearConvertibleToRoth = (
-  account: Account,
-): account is Extract<Account, { type: 'traditional' }> =>
-  isConvertibleToRoth(
-    account,
-    conversionSourceContextForOwner(account.ownerPersonId ?? primary.id),
-  )
-const ownedIraConversionTaxableFraction = (ownerPersonId: string) => {
-  const assumed = assumedLine8ByOwner.get(ownerPersonId)
-  if (assumed !== undefined && assumed.gross > 0) {
-    return Math.min(1, Math.max(0, assumed.taxable / assumed.gross))
+  const yearConvertibleToRoth = (
+    account: Account,
+  ): account is Extract<Account, { type: 'traditional' }> =>
+    isConvertibleToRoth(
+      account,
+      conversionSourceContextForOwner(account.ownerPersonId ?? primary.id),
+    )
+  const ownedIraConversionTaxableFraction = (ownerPersonId: string) => {
+    const assumed = assumedLine8ByOwner.get(ownerPersonId)
+    if (assumed !== undefined && assumed.gross > 0) {
+      return Math.min(1, Math.max(0, assumed.taxable / assumed.gross))
+    }
+    return Math.min(
+      1,
+      Math.max(
+        0,
+        1 - (iraProRata.get(ownerPersonId)?.nontaxableFraction ?? 0),
+      ),
+    )
   }
-  return Math.min(
-    1,
-    Math.max(
-      0,
-      1 - (iraProRata.get(ownerPersonId)?.nontaxableFraction ?? 0),
-    ),
-  )
-}
 
-let rothConversion = 0
-/**
- * The snapshot the allocation policy weighted this year's owners by,
- * published on the year so the optimizer's promotion path can name the
- * same sources and the same cents the ledger moved instead of re-deriving
- * them. Set at the call below and nowhere else, which is what makes its
- * absence mean "the policy was never asked" -- see the field's own
- * contract on `YearResult`.
- */
-let aggregateRothConversionAllocationBalances:
-  Readonly<Record<string, number>> | undefined
-/**
- * The household amount that policy was asked for, before it trimmed an
- * owner who has nowhere to convert to. Set at the same call as the
- * snapshot above and nowhere else, so the two are present together or
- * absent together. A promotion that re-allocated the EXECUTED total would
- * trim the absent owner a second time; this is the figure that reproduces
- * what the ledger did.
- */
-let aggregateRothConversionAllocationDesired: number | undefined
-const aggregateRothConversionTarget =
-  annualAggregateRothConversionTargetPlan(Object.freeze({
-    strategy: plan.strategies.rothConversion,
-    namedConversionActionCount: currentYearConversionActions.length,
-    anyAlive,
-    year,
-    readSources: () => rmdBalances.map((state) => {
-      const convertible = yearConvertibleToRoth(state.account)
-      return Object.freeze({
-        balancePlanDollars: state.balance,
-        convertible,
-        taxableFraction: convertible && isAggregatedIra(state.account)
-          ? ownedIraConversionTaxableFraction(
-            state.account.ownerPersonId ?? primary.id,
-          )
-          : 1,
-      })
-    }),
-    sizing: Object.freeze({
-      pack,
-      filingStatus: taxFilingStatusForYear,
-      ordinaryIncomeBase: incomeBeforeConversion,
-      capitalGains: netCapitalForPreWithdrawalSizing,
-      qualifiedDividends: incomes.qualifiedDividends,
-      ssBenefits: incomes.socialSecurity,
-      peopleAged65Plus,
-      householdSize: aliveCount,
-      taxExemptInterest: yearTaxExemptInterest,
-      inflationScale: inflFactorFrom(pack.year, year),
-      itemizedDeductions,
-      aca: Object.freeze({
-        active: acaActive,
-        contract: acaContract,
-        initialSupportCodeCount: acaInitialSupportCodes.length,
-        generatedTaxExemptInterest,
-        planDerivedTaxExemptInterest,
-        fallbackTaxFamilySize: aliveCount,
-      }),
-    }),
-    safetyNet: Object.freeze({
-      floorTodayPlanDollars: safetyNetFloorToday,
-      inflationFactor: inflFactor,
-      readSpendableLiquidBalances: () => balances.flatMap((state) =>
-        state.account.type === 'cash' ||
-        state.account.type === 'taxable' ||
-        state.account.type === 'equityComp'
-          ? [isSpendableInYear(state.account, year) ? state.balance : 0]
-          : []),
-      preConversionInflows:
-        incomes.total -
-        taxableYieldReinvested +
-        rmdTotal -
-        qcdFromRmd -
-        namedQcdRmdSatisfied +
-        seppTotal +
-        inheritedTotal +
-        propertySaleProceedsTotal +
-        retirementActionProceeds,
-      totalExpenses: expensesTotal,
-      contributions,
-      computeTaxForTaxableConversion: (extraOrdinary: number) => {
-        const netted = applyCapitalLossCarryforward(
-          capitalLossPool,
-          Math.max(0, incomeBeforeConversion + extraOrdinary),
-          preWithdrawalCapitalResult,
-          pack.federalTax.capitalLossOrdinaryOffsetLimit,
-        )
-        return taxCalculator.compute({
-          year,
-          filingStatus: filingStatusForYear,
-          ordinaryIncome: netted.ordinaryAfter,
-          capitalGains: netted.netCapitalGain,
-          realizedCapitalGainsBeforeCarryforward:
-            preWithdrawalCapitalResult,
-          taxableInterestIncome:
-            incomes.taxableInterest + ladderTaxableInterest,
-          taxExemptInterest: yearTaxExemptInterest,
-          foreignExclusionAddback: acaForeignExclusionAddback,
-          usGovernmentInterest: ladderTaxableInterest,
-          ordinaryDividends: incomes.ordinaryDividends,
-          qualifiedDividends: incomes.qualifiedDividends,
-          ssBenefits: incomes.socialSecurity,
-          peopleAged65Plus,
-          inflationScale: limitGrowth,
-          state: residenceState,
-          stateResidency,
-          privateRetirementIncome: privateRetirementBase,
-          publicPensionIncome: publicPensionBase,
-          agesAlive,
-          itemizedDeductions,
+  let rothConversion = 0
+  /**
+   * The snapshot the allocation policy weighted this year's owners by,
+   * published on the year so the optimizer's promotion path can name the
+   * same sources and the same cents the ledger moved instead of re-deriving
+   * them. Set at the call below and nowhere else, which is what makes its
+   * absence mean "the policy was never asked" -- see the field's own
+   * contract on `YearResult`.
+   */
+  let aggregateRothConversionAllocationBalances:
+    Readonly<Record<string, number>> | undefined
+  /**
+   * The household amount that policy was asked for, before it trimmed an
+   * owner who has nowhere to convert to. Set at the same call as the
+   * snapshot above and nowhere else, so the two are present together or
+   * absent together. A promotion that re-allocated the EXECUTED total would
+   * trim the absent owner a second time; this is the figure that reproduces
+   * what the ledger did.
+   */
+  let aggregateRothConversionAllocationDesired: number | undefined
+  const aggregateRothConversionTarget =
+    annualAggregateRothConversionTargetPlan(Object.freeze({
+      strategy: plan.strategies.rothConversion,
+      namedConversionActionCount: currentYearConversionActions.length,
+      anyAlive,
+      year,
+      readSources: () => rmdBalances.map((state) => {
+        const convertible = yearConvertibleToRoth(state.account)
+        return Object.freeze({
+          balancePlanDollars: state.balance,
+          convertible,
+          taxableFraction: convertible && isAggregatedIra(state.account)
+            ? ownedIraConversionTaxableFraction(
+              state.account.ownerPersonId ?? primary.id,
+            )
+            : 1,
         })
-      },
-    }),
-  }))
-for (const warning of aggregateRothConversionTarget.warnings) {
-  warnings.add(warning)
-}
-const desired = aggregateRothConversionTarget.desiredPlanDollars
-if (desired > 0.01) {
-  // A conversion is a rollover inside one individual's own accounts:
-  // IRC 408(d)(3)(A)(i) admits it only where the amount is paid out of
-  // the account maintained for an individual and paid into an account
-  // for the benefit of that same individual, and 408A(d)(3)(B) imposes
-  // the same identity requirement on conversions directly. Who converts
-  // how much, out of which account and into which, is decided by one
-  // shared policy module -- the same one the optimizer's promotion
-  // chooser reads, so a promoted schedule cannot allocate by a different
-  // rule than the ledger executes. The snapshot it weights owners by is
-  // the planner's private shadow of the aggregate ID-keyed balances,
-  // after reserving any
-  // deferred first-year RMD (Treas. Reg. 1.408A-4 A-6(b) requires that
-  // amount to precede the conversion) and before anything below reduces
-  // live `state.balance`.
-  //
-  // That snapshot is published on the year, at the instant the policy
-  // reads it and over exactly the accounts the policy reads. A promotion
-  // that weighted owners by any other figures -- the Plan's opening
-  // balances, a neighbouring year's, a reconstruction from the closing
-  // ones -- would name sources and cents this projection never moved, on
-  // a schedule a person is invited to act on. Publishing here is the
-  // only way the two can be the same numbers rather than two numbers
-  // that agree today.
-  //
-  // Each selected ID retains its first Plan insertion position; that is
-  // how this snapshot is built, but plain-object enumeration does not
-  // promise that order for integer-like keys. Promotion reconstructs the
-  // same selected-facts-per-ID view before joining. Consumers must not
-  // join the raw Plan array, which can still contain physical aliases.
-  aggregateRothConversionAllocationDesired = desired
-  const plannedAllocation = annualAggregateRothConversionPlan({
-    balances: annualIdKeyedBalances,
-    iraRmdUnsatisfiedByOwner,
-    desiredPlanDollars: desired,
-    primaryPersonId: primary.id,
-    fundingTolerancePlanDollars: EPSILON,
-    sourceContextForOwner: conversionSourceContextForOwner,
-  })
-  aggregateRothConversionAllocationBalances =
-    plannedAllocation.allocationBalances
-  // Preserve the legacy temporary reservation's exact binary64
-  // subtract/add round trip. The pure planner used private shadows, so
-  // the caller alone mutates the live states, and restores them before
-  // any conversion draw or publication below.
-  const allocation = withAnnualAggregateRothConversionReservations(
-    plannedAllocation.reservations,
-    () => plannedAllocation.allocation,
-  )
-  if (allocation.status === 'refused') {
-    warnings.add(allocation.reason === 'householdHoldsNoRothAccount'
-      ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'
-      : 'Roth conversions were requested but every Roth account in the plan sits inside an employer plan, ' +
+      }),
+      sizing: Object.freeze({
+        pack,
+        filingStatus: taxFilingStatusForYear,
+        ordinaryIncomeBase: incomeBeforeConversion,
+        capitalGains: netCapitalForPreWithdrawalSizing,
+        qualifiedDividends: incomes.qualifiedDividends,
+        ssBenefits: incomes.socialSecurity,
+        peopleAged65Plus,
+        householdSize: aliveCount,
+        taxExemptInterest: yearTaxExemptInterest,
+        inflationScale: inflFactorFrom(pack.year, year),
+        itemizedDeductions,
+        aca: Object.freeze({
+          active: acaActive,
+          contract: acaContract,
+          initialSupportCodeCount: acaInitialSupportCodes.length,
+          generatedTaxExemptInterest,
+          planDerivedTaxExemptInterest,
+          fallbackTaxFamilySize: aliveCount,
+        }),
+      }),
+      safetyNet: Object.freeze({
+        floorTodayPlanDollars: safetyNetFloorToday,
+        inflationFactor: inflFactor,
+        readSpendableLiquidBalances: () => balances.flatMap((state) =>
+          state.account.type === 'cash' ||
+            state.account.type === 'taxable' ||
+            state.account.type === 'equityComp'
+            ? [isSpendableInYear(state.account, year) ? state.balance : 0]
+            : []),
+        preConversionInflows:
+          incomes.total -
+          taxableYieldReinvested +
+          rmdTotal -
+          qcdFromRmd -
+          namedQcdRmdSatisfied +
+          seppTotal +
+          inheritedTotal +
+          propertySaleProceedsTotal +
+          retirementActionProceeds,
+        totalExpenses: expensesTotal,
+        contributions,
+        computeTaxForTaxableConversion: (extraOrdinary: number) => {
+          const netted = applyCapitalLossCarryforward(
+            capitalLossPool,
+            Math.max(0, incomeBeforeConversion + extraOrdinary),
+            preWithdrawalCapitalResult,
+            pack.federalTax.capitalLossOrdinaryOffsetLimit,
+          )
+          return taxCalculator.compute({
+            year,
+            filingStatus: filingStatusForYear,
+            ordinaryIncome: netted.ordinaryAfter,
+            capitalGains: netted.netCapitalGain,
+            realizedCapitalGainsBeforeCarryforward:
+              preWithdrawalCapitalResult,
+            taxableInterestIncome:
+              incomes.taxableInterest + ladderTaxableInterest,
+            taxExemptInterest: yearTaxExemptInterest,
+            foreignExclusionAddback: acaForeignExclusionAddback,
+            usGovernmentInterest: ladderTaxableInterest,
+            ordinaryDividends: incomes.ordinaryDividends,
+            qualifiedDividends: incomes.qualifiedDividends,
+            ssBenefits: incomes.socialSecurity,
+            peopleAged65Plus,
+            inflationScale: limitGrowth,
+            state: residenceState,
+            stateResidency,
+            privateRetirementIncome: privateRetirementBase,
+            publicPensionIncome: publicPensionBase,
+            agesAlive,
+            itemizedDeductions,
+          })
+        },
+      }),
+    }))
+  for (const warning of aggregateRothConversionTarget.warnings) {
+    warnings.add(warning)
+  }
+  const desired = aggregateRothConversionTarget.desiredPlanDollars
+  if (desired > 0.01) {
+    // A conversion is a rollover inside one individual's own accounts:
+    // IRC 408(d)(3)(A)(i) admits it only where the amount is paid out of
+    // the account maintained for an individual and paid into an account
+    // for the benefit of that same individual, and 408A(d)(3)(B) imposes
+    // the same identity requirement on conversions directly. Who converts
+    // how much, out of which account and into which, is decided by one
+    // shared policy module -- the same one the optimizer's promotion
+    // chooser reads, so a promoted schedule cannot allocate by a different
+    // rule than the ledger executes. The snapshot it weights owners by is
+    // the planner's private shadow of the aggregate ID-keyed balances,
+    // after reserving any
+    // deferred first-year RMD (Treas. Reg. 1.408A-4 A-6(b) requires that
+    // amount to precede the conversion) and before anything below reduces
+    // live `state.balance`.
+    //
+    // That snapshot is published on the year, at the instant the policy
+    // reads it and over exactly the accounts the policy reads. A promotion
+    // that weighted owners by any other figures -- the Plan's opening
+    // balances, a neighbouring year's, a reconstruction from the closing
+    // ones -- would name sources and cents this projection never moved, on
+    // a schedule a person is invited to act on. Publishing here is the
+    // only way the two can be the same numbers rather than two numbers
+    // that agree today.
+    //
+    // Each selected ID retains its first Plan insertion position; that is
+    // how this snapshot is built, but plain-object enumeration does not
+    // promise that order for integer-like keys. Promotion reconstructs the
+    // same selected-facts-per-ID view before joining. Consumers must not
+    // join the raw Plan array, which can still contain physical aliases.
+    aggregateRothConversionAllocationDesired = desired
+    const plannedAllocation = annualAggregateRothConversionPlan({
+      balances: annualIdKeyedBalances,
+      iraRmdUnsatisfiedByOwner,
+      desiredPlanDollars: desired,
+      primaryPersonId: primary.id,
+      fundingTolerancePlanDollars: EPSILON,
+      sourceContextForOwner: conversionSourceContextForOwner,
+    })
+    aggregateRothConversionAllocationBalances =
+      plannedAllocation.allocationBalances
+    // Preserve the legacy temporary reservation's exact binary64
+    // subtract/add round trip. The pure planner used private shadows, so
+    // the caller alone mutates the live states, and restores them before
+    // any conversion draw or publication below.
+    const allocation = withAnnualAggregateRothConversionReservations(
+      plannedAllocation.reservations,
+      () => plannedAllocation.allocation,
+    )
+    if (allocation.status === 'refused') {
+      warnings.add(allocation.reason === 'householdHoldsNoRothAccount'
+        ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'
+        : 'Roth conversions were requested but every Roth account in the plan sits inside an employer plan, ' +
         'and a Roth conversion here can land only in a Roth IRA; conversions skipped.')
-  } else {
-    // An owner the policy trimmed converts nothing, and the two reasons
-    // it can trim for read differently to the person: no Roth at all,
-    // against a Roth that sits where this conversion cannot go.
-    for (const trim of allocation.trims) {
-      const ownerName = personById.get(trim.ownerPersonId)?.name ?? trim.ownerPersonId
-      warnings.add(trim.reason === 'ownerHoldsOnlyEmployerDesignatedRoth'
-        ? `${ownerName}’s only Roth account is inside an employer plan, and this Roth ` +
+    } else {
+      // An owner the policy trimmed converts nothing, and the two reasons
+      // it can trim for read differently to the person: no Roth at all,
+      // against a Roth that sits where this conversion cannot go.
+      for (const trim of allocation.trims) {
+        const ownerName = personById.get(trim.ownerPersonId)?.name ?? trim.ownerPersonId
+        warnings.add(trim.reason === 'ownerHoldsOnlyEmployerDesignatedRoth'
+          ? `${ownerName}’s only Roth account is inside an employer plan, and this Roth ` +
           `conversion can land only in ${ownerName}’s own Roth IRA, so ${ownerName}’s share ` +
           'was skipped. ' +
           `Opening a Roth IRA for ${ownerName} would let that share convert.`
-        : `${ownerName} has no Roth account, so ${ownerName}’s share of the Roth conversion was skipped — ` +
+          : `${ownerName} has no Roth account, so ${ownerName}’s share of the Roth conversion was skipped — ` +
           'a conversion has to land in the same person’s own Roth. ' +
           `Opening a Roth IRA for ${ownerName} would let that share convert.`)
-    }
-    interface OwnerConversionCredit {
-      readonly producerOccurrenceKeys: string[]
-      readonly sourceOwnerPersonIds: Array<string | null>
-      convertedPlanDollars: number
-      /** This owner's own share of `conversionNontaxable`. */
-      nontaxablePlanDollars: number
-    }
-    const creditByOwner = new Map<string, OwnerConversionCredit>()
-    let ownedIraConversionCaptured = false
-    // The policy decided every one of these movements, in Plan account
-    // order -- a single pass, not grouped by owner, because that is the
-    // order the ledger has always visited its balances in and the order
-    // the runtime journal records them in.
-    for (const draw of allocation.draws) {
-      const state = draw.sourceState
-      const sourceAccount = draw.sourceAccount
-      const destinationAccount = draw.destination.destinationAccount
-      const ownerId = draw.ownerPersonId
-      const take = draw.amountPlanDollars
-      const sourceBalanceBefore = state.balance
-      state.balance -= take
-      const kind = 'legacyRothConversion' as const
-      const producerOccurrenceKey = runtimeOccurrenceKey(
-        kind,
-        sourceAccount.id,
-        destinationAccount.id,
-      )
-      const credit = creditByOwner.get(ownerId) ?? {
-        producerOccurrenceKeys: [],
-        sourceOwnerPersonIds: [],
-        convertedPlanDollars: 0,
-        nontaxablePlanDollars: 0,
       }
-      credit.producerOccurrenceKeys.push(producerOccurrenceKey)
-      credit.sourceOwnerPersonIds.push(sourceAccount.ownerPersonId)
-      credit.convertedPlanDollars += take
-      creditByOwner.set(ownerId, credit)
-      recordAnnualRetirementRuntimeOccurrence({
-        producerOccurrenceKey,
-        kind,
-        grossAmountPlanDollars: take,
-        ownerPersonId: sourceAccount.ownerPersonId,
-        sourceAccountId: sourceAccount.id,
-        executionDate: null,
-        executionSequence: null,
-        movementAuthorityId: null,
-      })
-      let ownedIraApplication:
-        SimulatorRetirementRuntimeApplication | null = null
-      if (isAggregatedIra(sourceAccount)) {
-        ownedIraConversionCaptured = true
-        ownedIraApplication = recordAnnualRetirementRuntimeApplication({
-          applicationKind: 'debit',
+      interface OwnerConversionCredit {
+        readonly producerOccurrenceKeys: string[]
+        readonly sourceOwnerPersonIds: Array<string | null>
+        convertedPlanDollars: number
+        /** This owner's own share of `conversionNontaxable`. */
+        nontaxablePlanDollars: number
+      }
+      const creditByOwner = new Map<string, OwnerConversionCredit>()
+      let ownedIraConversionCaptured = false
+      // The policy decided every one of these movements, in Plan account
+      // order -- a single pass, not grouped by owner, because that is the
+      // order the ledger has always visited its balances in and the order
+      // the runtime journal records them in.
+      for (const draw of allocation.draws) {
+        const state = draw.sourceState
+        const sourceAccount = draw.sourceAccount
+        const destinationAccount = draw.destination.destinationAccount
+        const ownerId = draw.ownerPersonId
+        const take = draw.amountPlanDollars
+        const sourceBalanceBefore = state.balance
+        state.balance -= take
+        const kind = 'legacyRothConversion' as const
+        const producerOccurrenceKey = runtimeOccurrenceKey(
+          kind,
+          sourceAccount.id,
+          destinationAccount.id,
+        )
+        const credit = creditByOwner.get(ownerId) ?? {
+          producerOccurrenceKeys: [],
+          sourceOwnerPersonIds: [],
+          convertedPlanDollars: 0,
+          nontaxablePlanDollars: 0,
+        }
+        credit.producerOccurrenceKeys.push(producerOccurrenceKey)
+        credit.sourceOwnerPersonIds.push(sourceAccount.ownerPersonId)
+        credit.convertedPlanDollars += take
+        creditByOwner.set(ownerId, credit)
+        recordAnnualRetirementRuntimeOccurrence({
           producerOccurrenceKey,
-          simulatorPhase: 'legacyRothConversion',
+          kind,
+          grossAmountPlanDollars: take,
           ownerPersonId: sourceAccount.ownerPersonId,
           sourceAccountId: sourceAccount.id,
-          sourceBalanceBeforePlanDollars: sourceBalanceBefore,
-          appliedAmountPlanDollars: take,
-          sourceBalanceAfterPlanDollars: state.balance,
+          executionDate: null,
+          executionSequence: null,
+          movementAuthorityId: null,
         })
-      }
-      // Pro-rata return of basis on converted IRA dollars (step 5): the
-      // basis portion moves to Roth without creating ordinary income.
-      let drawNontaxable = 0
-      if (sourceAccount.kind === 'ira' &&
-          ownedIraApplication?.applicationKind === 'debit') {
-        const proRata = iraProRata.get(ownerId)
-        if (proRata) {
-          const split = splitWithAssumedCharacter(proRata, take, {
-            ownerPersonId: ownerId,
-            calculationScope: 'form8606Line8NetConversions',
-            occurrenceKind: 'legacyRothConversion',
+        let ownedIraApplication:
+          SimulatorRetirementRuntimeApplication | null = null
+        if (isAggregatedIra(sourceAccount)) {
+          ownedIraConversionCaptured = true
+          ownedIraApplication = recordAnnualRetirementRuntimeApplication({
+            applicationKind: 'debit',
             producerOccurrenceKey,
+            simulatorPhase: 'legacyRothConversion',
+            ownerPersonId: sourceAccount.ownerPersonId,
             sourceAccountId: sourceAccount.id,
-            mutationOrdinal: ownedIraApplication.mutationOrdinal,
+            sourceBalanceBeforePlanDollars: sourceBalanceBefore,
+            appliedAmountPlanDollars: take,
+            sourceBalanceAfterPlanDollars: state.balance,
           })
-          iraProRata.set(ownerId, split.next)
-          // The household scalar still drives the year's ordinary
-          // income; the per-owner figure drives that owner's own
-          // recapture layer below, which one scalar cannot do once the
-          // destinations are per owner.
-          conversionNontaxable += split.nontaxable
-          credit.nontaxablePlanDollars += split.nontaxable
-          drawNontaxable = split.nontaxable
-        } else {
-          noteForm8606Taxable(ownerId, take, 'conversions')
         }
-      }
-      if (publishCashFlow) {
-        aggregateConversionDraws!.push({
-          sourceAccountId: sourceAccount.id,
-          destinationAccountId: destinationAccount.id,
-          ownerPersonId: ownerId,
-          amount: take,
-          nontaxable: drawNontaxable,
-        })
-      }
-    }
-    rothConversion = [...creditByOwner.values()]
-      .reduce((total, credit) => total + credit.convertedPlanDollars, 0)
-    // Destination credits follow every debit, in Plan account order of
-    // the destinations. Only an owner's own first Plan Roth IRA is
-    // credited, so a second Roth IRA belonging to the same owner is
-    // skipped here rather than credited twice.
-    for (const destination of allocation.destinations) {
-      const destinationState = destination.destinationState
-      const destinationAccount = destination.destinationAccount
-      const credit = creditByOwner.get(destination.ownerPersonId)
-      if (credit === undefined || credit.convertedPlanDollars <= 0) continue
-      const destinationBalanceBefore = destinationState.balance
-      destinationState.balance += credit.convertedPlanDollars
-      if (ownedIraConversionCaptured) {
-        recordAnnualRetirementRuntimeApplication({
-          applicationKind: 'aggregateRothDestinationCredit',
-          simulatorPhase:
-            'legacyRothConversionAggregateDestinationCredit',
-          producerOccurrenceKey: null,
-          ownerPersonId: null,
-          sourceAccountId: null,
-          sourceBalanceBeforePlanDollars: null,
-          sourceBalanceAfterPlanDollars: null,
-          producerOccurrenceKeys: credit.producerOccurrenceKeys,
-          sourceOwnerPersonIds: credit.sourceOwnerPersonIds,
-          destinationRothAccountId: destinationAccount.id,
-          destinationOwnerPersonId: destinationAccount.ownerPersonId,
-          destinationBalanceBeforePlanDollars: destinationBalanceBefore,
-          destinationCreditedAmountPlanDollars:
-            credit.convertedPlanDollars,
-          destinationBalanceAfterPlanDollars: destinationState.balance,
-        })
-      }
-      // Converted principal starts its own 5-year recapture clock (the
-      // rule that gates an early-retirement conversion ladder). The full
-      // amount returns tax-free before earnings, but only the taxable
-      // portion is subject to the 10% recapture penalty — nondeductible
-      // basis rolled in was never included in income (IRS Pub 590-B).
-      // The layer is pushed per owner because the clock runs on the
-      // person whose Roth holds it.
-      if (credit.convertedPlanDollars > 0.01) {
-        const rb = rothBasis.get(rothPoolKey(destinationAccount))
-        if (rb) {
-          rb.conversionLayers.push({
-            year,
-            amount: credit.convertedPlanDollars,
-            taxableAmount: Math.max(
-              0,
-              credit.convertedPlanDollars - credit.nontaxablePlanDollars,
-            ),
+        // Pro-rata return of basis on converted IRA dollars (step 5): the
+        // basis portion moves to Roth without creating ordinary income.
+        let drawNontaxable = 0
+        if (sourceAccount.kind === 'ira' &&
+          ownedIraApplication?.applicationKind === 'debit') {
+          const proRata = iraProRata.get(ownerId)
+          if (proRata) {
+            const split = splitWithAssumedCharacter(proRata, take, {
+              ownerPersonId: ownerId,
+              calculationScope: 'form8606Line8NetConversions',
+              occurrenceKind: 'legacyRothConversion',
+              producerOccurrenceKey,
+              sourceAccountId: sourceAccount.id,
+              mutationOrdinal: ownedIraApplication.mutationOrdinal,
+            })
+            iraProRata.set(ownerId, split.next)
+            // The household scalar still drives the year's ordinary
+            // income; the per-owner figure drives that owner's own
+            // recapture layer below, which one scalar cannot do once the
+            // destinations are per owner.
+            conversionNontaxable += split.nontaxable
+            credit.nontaxablePlanDollars += split.nontaxable
+            drawNontaxable = split.nontaxable
+          } else {
+            noteForm8606Taxable(ownerId, take, 'conversions')
+          }
+        }
+        if (publishCashFlow) {
+          aggregateConversionDraws!.push({
+            sourceAccountId: sourceAccount.id,
+            destinationAccountId: destinationAccount.id,
+            ownerPersonId: ownerId,
+            amount: take,
+            nontaxable: drawNontaxable,
           })
         }
       }
-    }
-    // One cent, unchanged and still the right tolerance. Both sides are
-    // now cent-quantized rather than raw floats -- each slice crosses the
-    // exact-cent ledger and the takes are drawn from it -- so the only
-    // sub-cent gaps left are float noise and a source balance that ran
-    // out within a cent of its slice, neither of which is worth telling
-    // anyone about. Above it, the enclosing `desired > 0.01` guarantees
-    // the no-balance case clears the threshold and speaks.
-    if (rothConversion < allocation.convertibleTargetPlanDollars - 0.01) {
-      const gatedEmployerOwners = new Set<string>()
-      for (const state of rmdBalances) {
-        const account = state.account
-        if (
-          account.type !== 'traditional'
-          || account.inherited !== undefined
-          || account.kind !== 'employer'
-          || state.balance <= 0
-        ) continue
-        const ownerId = account.ownerPersonId ?? primary.id
-        if (yearConvertibleToRoth(account)) continue
-        gatedEmployerOwners.add(personById.get(ownerId)?.name ?? ownerId)
+      rothConversion = [...creditByOwner.values()]
+        .reduce((total, credit) => total + credit.convertedPlanDollars, 0)
+      // Destination credits follow every debit, in Plan account order of
+      // the destinations. Only an owner's own first Plan Roth IRA is
+      // credited, so a second Roth IRA belonging to the same owner is
+      // skipped here rather than credited twice.
+      for (const destination of allocation.destinations) {
+        const destinationState = destination.destinationState
+        const destinationAccount = destination.destinationAccount
+        const credit = creditByOwner.get(destination.ownerPersonId)
+        if (credit === undefined || credit.convertedPlanDollars <= 0) continue
+        const destinationBalanceBefore = destinationState.balance
+        destinationState.balance += credit.convertedPlanDollars
+        if (ownedIraConversionCaptured) {
+          recordAnnualRetirementRuntimeApplication({
+            applicationKind: 'aggregateRothDestinationCredit',
+            simulatorPhase:
+              'legacyRothConversionAggregateDestinationCredit',
+            producerOccurrenceKey: null,
+            ownerPersonId: null,
+            sourceAccountId: null,
+            sourceBalanceBeforePlanDollars: null,
+            sourceBalanceAfterPlanDollars: null,
+            producerOccurrenceKeys: credit.producerOccurrenceKeys,
+            sourceOwnerPersonIds: credit.sourceOwnerPersonIds,
+            destinationRothAccountId: destinationAccount.id,
+            destinationOwnerPersonId: destinationAccount.ownerPersonId,
+            destinationBalanceBeforePlanDollars: destinationBalanceBefore,
+            destinationCreditedAmountPlanDollars:
+              credit.convertedPlanDollars,
+            destinationBalanceAfterPlanDollars: destinationState.balance,
+          })
+        }
+        // Converted principal starts its own 5-year recapture clock (the
+        // rule that gates an early-retirement conversion ladder). The full
+        // amount returns tax-free before earnings, but only the taxable
+        // portion is subject to the 10% recapture penalty — nondeductible
+        // basis rolled in was never included in income (IRS Pub 590-B).
+        // The layer is pushed per owner because the clock runs on the
+        // person whose Roth holds it.
+        if (credit.convertedPlanDollars > 0.01) {
+          const rb = rothBasis.get(rothPoolKey(destinationAccount))
+          if (rb) {
+            rb.conversionLayers.push({
+              year,
+              amount: credit.convertedPlanDollars,
+              taxableAmount: Math.max(
+                0,
+                credit.convertedPlanDollars - credit.nontaxablePlanDollars,
+              ),
+            })
+          }
+        }
       }
-      if (gatedEmployerOwners.size > 0) {
-        // Name the unused locked employer balance whenever it caused
-        // the shortfall, including when an IRA filled only part of the
-        // request. Silence on that unused balance reads as assent.
-        for (const ownerName of gatedEmployerOwners) {
-          warnings.add(
-            `${ownerName}’s employer-plan balance is not distributable this year ` +
+      // One cent, unchanged and still the right tolerance. Both sides are
+      // now cent-quantized rather than raw floats -- each slice crosses the
+      // exact-cent ledger and the takes are drawn from it -- so the only
+      // sub-cent gaps left are float noise and a source balance that ran
+      // out within a cent of its slice, neither of which is worth telling
+      // anyone about. Above it, the enclosing `desired > 0.01` guarantees
+      // the no-balance case clears the threshold and speaks.
+      if (rothConversion < allocation.convertibleTargetPlanDollars - 0.01) {
+        const gatedEmployerOwners = new Set<string>()
+        for (const state of rmdBalances) {
+          const account = state.account
+          if (
+            account.type !== 'traditional'
+            || account.inherited !== undefined
+            || account.kind !== 'employer'
+            || state.balance <= 0
+          ) continue
+          const ownerId = account.ownerPersonId ?? primary.id
+          if (yearConvertibleToRoth(account)) continue
+          gatedEmployerOwners.add(personById.get(ownerId)?.name ?? ownerId)
+        }
+        if (gatedEmployerOwners.size > 0) {
+          // Name the unused locked employer balance whenever it caused
+          // the shortfall, including when an IRA filled only part of the
+          // request. Silence on that unused balance reads as assent.
+          for (const ownerName of gatedEmployerOwners) {
+            warnings.add(
+              `${ownerName}’s employer-plan balance is not distributable this year ` +
               `(no separation from service and under 59½), so that Roth conversion was skipped.`,
-          )
+            )
+          }
+        } else {
+          warnings.add('A requested Roth conversion exceeded the available traditional balance and was reduced.')
         }
-      } else {
-        warnings.add('A requested Roth conversion exceeded the available traditional balance and was reduced.')
       }
     }
   }
-}
 
-// The year converts by at most one authority: the target coordinator
-// suppresses the aggregate strategy whenever a named request exists, so it
-// never sizes a second conversion on top of a committed one. These sum both
-// paths anyway because the published figure has to be the year's conversions
-// and not whichever route happened to run.
-const totalRothConversion = rothConversion + namedRothConversionExecuted
-// Each authority nets its own basis return. The two are kept apart rather
-// than pooled because they are apportioned against different Form 8606
-// line-8 entry sets and reconciled against different evidence, even though
-// only one of them can have run this year.
-const totalRothConversionTaxable =
-  (rothConversion - conversionNontaxable) +
-  (namedRothConversionExecuted - namedRothConversionNontaxable)
+  // The year converts by at most one authority: the target coordinator
+  // suppresses the aggregate strategy whenever a named request exists, so it
+  // never sizes a second conversion on top of a committed one. These sum both
+  // paths anyway because the published figure has to be the year's conversions
+  // and not whichever route happened to run.
+  const totalRothConversion = rothConversion + namedRothConversionExecuted
+  // Each authority nets its own basis return. The two are kept apart rather
+  // than pooled because they are apportioned against different Form 8606
+  // line-8 entry sets and reconciled against different evidence, even though
+  // only one of them can have run this year.
+  const totalRothConversionTaxable =
+    (rothConversion - conversionNontaxable) +
+    (namedRothConversionExecuted - namedRothConversionNontaxable)
   return {
     incomeBeforeConversion,
     itemizedDeductions,
