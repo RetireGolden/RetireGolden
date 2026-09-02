@@ -98,26 +98,26 @@
       "id": "AF.callsite.context",
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot",
       "file": "projection/simulate.ts",
-      "lines": [5930, 6000],
+      "lines": [5738, 5808],
       "anchors": [
-        { "line": 5930, "text": "const fundingCandidateAcaContract = acaContract" },
-        { "line": 5947, "text": "const fundingCandidateEvaluationContext:" },
-        { "line": 5953, "text": "taxInputBase: Object.freeze({" },
-        { "line": 5977, "text": "aca: Object.freeze({" },
-        { "line": 5989, "text": "hsa: Object.freeze({" }
+        { "line": 5738, "text": "const fundingCandidateAcaContract = acaContract" },
+        { "line": 5755, "text": "const fundingCandidateEvaluationContext:" },
+        { "line": 5761, "text": "taxInputBase: Object.freeze({" },
+        { "line": 5785, "text": "aca: Object.freeze({" },
+        { "line": 5797, "text": "hsa: Object.freeze({" }
       ]
     },
     {
       "id": "AF.callsite.delegate",
       "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
       "file": "projection/simulate.ts",
-      "lines": [6001, 6025],
+      "lines": [5809, 5833],
       "anchors": [
-        { "line": 6004, "text": "const withdrawalPlan = planWithdrawals(" },
-        { "line": 6011, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 6014, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
-        { "line": 6020, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
-        { "line": 6025, "text": "return evaluation" }
+        { "line": 5812, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
+        { "line": 5819, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 5822, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 5828, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
+        { "line": 5833, "text": "return evaluation" }
       ]
     }
   ],

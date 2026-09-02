@@ -134,7 +134,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -435,7 +435,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 724
+              "line": 722
             }
           ]
         }
@@ -502,7 +502,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -559,7 +559,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
-        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "implementations": [
@@ -573,11 +573,11 @@
           ]
         },
         {
-          "path": "packages/engine/src/projection/simulate.ts",
+          "path": "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
           "functions": [
             {
-              "name": "planWithdrawals",
-              "line": 750
+              "name": "annualWithdrawalPlan",
+              "line": 132
             }
           ]
         },
@@ -648,7 +648,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -922,7 +922,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -1425,7 +1425,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1497,7 +1497,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1686,7 +1686,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1782,7 +1782,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1863,7 +1863,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1920,7 +1920,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }

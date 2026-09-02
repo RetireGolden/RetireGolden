@@ -310,13 +310,13 @@ export const investmentIncomeAndBasisRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
-      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts',
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#taxableAccountSchema',
-      'packages/engine/src/projection/simulate.ts#planWithdrawals',
+      'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts#annualWithdrawalPlan',
       'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
     ],
   },

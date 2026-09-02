@@ -1,0 +1,123 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-withdrawal-planning-boundary",
+  "why": "Measured reach for the pure annual withdrawal-order and candidate account-drain boundary. The full corpus exercises sequential, proportional, and bracket-targeted planning; spendability; the taxable safety-net holdback and release; account-order drains; exact taxable-basis sale character; and the fixed-point caller seam in all four equivalence modes. Direct contract tests independently pin lazy strategy sizing, bad-target and already-over-ceiling behavior, proportional arithmetic, bracket-cap ordering, reserve release, taxable basis, input purity, and the sub-cent traditional discharge. The hostile delegation test injects an impossible strategy and plan and proves simulatePlan consumes both outputs instead of rebuilding either policy inline.",
+  "entries": [
+    {
+      "id": "AL.helper.strategy",
+      "label": "configured mode routing and lazy bracket sizing",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [91, 108],
+      "anchors": [
+        { "line": 91, "text": "const configured = input.withdrawalOrder" },
+        { "line": 92, "text": "if (configured.mode === 'proportional') {" },
+        { "line": 95, "text": "if (configured.mode !== 'bracketTargeted') {" },
+        { "line": 99, "text": "const sized = sizeRothConversion(" },
+        { "line": 107, "text": "input.readSizing()," }
+      ]
+    },
+    {
+      "id": "AL.helper.strategyResult",
+      "label": "bad-bracket fallback and resolved traditional cap",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [109, 121],
+      "anchors": [
+        { "line": 109, "text": "if (!sized.ok && sized.reason === 'bad_target') {" },
+        { "line": 111, "text": "strategy: { mode: 'sequential' }," },
+        { "line": 118, "text": "traditionalCap: sized.ok ? sized.amount : 0," }
+      ]
+    },
+    {
+      "id": "AL.helper.setupAndReserve",
+      "label": "private availability snapshot and reverse liquid-floor reservation",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [142, 180],
+      "anchors": [
+        { "line": 142, "text": "const byCategory: YearWithdrawals = {" },
+        { "line": 155, "text": "const available = new Map(" },
+        { "line": 164, "text": "if (liquidReserve > 0) {" },
+        { "line": 166, "text": "for (const type of ['equityComp', 'taxable', 'cash'] as const) {" },
+        { "line": 173, "text": "const hold = Math.min(availableBalance, toReserve)" }
+      ]
+    },
+    {
+      "id": "AL.helper.take",
+      "label": "candidate debit, exact-cent discharge, equity basis, and result maps",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [182, 223],
+      "anchors": [
+        { "line": 182, "text": "const takeFrom = (state: PhysicalBalanceState, wanted: number): number => {" },
+        { "line": 193, "text": "if (" },
+        { "line": 195, "text": "planDollarsMoveNoLedgerCent(take)" },
+        { "line": 204, "text": "if (state.account.type === 'equityComp' && state.balance > 0) {" },
+        { "line": 213, "text": "byAccountId.set(" },
+        { "line": 221, "text": "remaining -= take" }
+      ]
+    },
+    {
+      "id": "AL.helper.order",
+      "label": "category drain, proportional rebalance, and bracket/sequential ordering",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [225, 271],
+      "anchors": [
+        { "line": 225, "text": "const drainCategory = (" },
+        { "line": 237, "text": "if (strategy.mode === 'proportional') {" },
+        { "line": 246, "text": "const poolTotal = poolStates.reduce(" },
+        { "line": 261, "text": "} else if (strategy.mode === 'bracketTargeted') {" },
+        { "line": 270, "text": "for (const category of SEQUENTIAL_ORDER) drainCategory(category)" }
+      ]
+    },
+    {
+      "id": "AL.helper.releaseAndBasis",
+      "label": "last-resort reserve release and one aggregate taxable sale per account",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [273, 300],
+      "anchors": [
+        { "line": 275, "text": "if (remaining > EPSILON && reservedByAccount.size > 0) {" },
+        { "line": 283, "text": "reserveUsed = before - remaining" },
+        { "line": 288, "text": "for (const state of states) {" },
+        { "line": 294, "text": "const sale = aggregateBasisSale({" },
+        { "line": 300, "text": "realizedGains += sale.realizedCapitalGainOrLoss" }
+      ]
+    },
+    {
+      "id": "AL.helper.result",
+      "label": "complete candidate category, identity, basis, shortfall, and reserve result",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [303, 316],
+      "anchors": [
+        { "line": 303, "text": "byCategory.total =" },
+        { "line": 309, "text": "return {" },
+        { "line": 314, "text": "shortfall: Math.max(0, remaining)," },
+        { "line": 315, "text": "reserveUsed," }
+      ]
+    },
+    {
+      "id": "AL.callsite.strategy",
+      "label": "frozen annual strategy contract, lazy sizing, warning, and resolved handoff",
+      "file": "projection/simulate.ts",
+      "lines": [5578, 5600],
+      "anchors": [
+        { "line": 5578, "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({" },
+        { "line": 5581, "text": "readSizing: () => Object.freeze({" },
+        { "line": 5594, "text": "itemizedDeductions," },
+        { "line": 5598, "text": "warnings.add(withdrawalStrategyResult.warning)" },
+        { "line": 5600, "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy" }
+      ]
+    },
+    {
+      "id": "AL.callsite.plan",
+      "label": "fixed-point request delegation and Form 8606 handoff by exact plan identity",
+      "file": "projection/simulate.ts",
+      "lines": [5812, 5828],
+      "anchors": [
+        { "line": 5812, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
+        { "line": 5814, "text": "states: Object.freeze([...rmdBalances])," },
+        { "line": 5819, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 5822, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 5826, "text": "iraCharacter: iraCharacterProbe," }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct unit tests own invalid-bracket, already-over-ceiling, exact sub-cent, and mutation-purity assertions when validated corpus members cannot select those defensive states. The hostile delegation suite owns output-consumption and frozen-envelope identity; byte-identical dumps and source ranges do not claim either."
+}
