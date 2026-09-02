@@ -74,9 +74,9 @@
     }
   },
   "attestations": {
-    "totalFiles": 310,
+    "totalFiles": 311,
     "byStatus": {
-      "partial": 45,
+      "partial": 46,
       "registered": 101,
       "rule-free": 164,
       "unswept": 0
@@ -227,9 +227,14 @@
       "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
     },
     {
+      "path": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "sweptOn": "2026-09-02",
+      "note": "the pure candidate evaluator composes registered federal capital-loss netting, federal/combined tax calculators, ACA household-MAGI and premium-credit pricing, and the separately attested traditional/HSA/Roth withdrawal-character coordinator. Its bounded HSA-cap refresh, informational ACA support-code filtering, gross-premium candidate handling, and exact ordering of those producers preserve reviewed simulator composition conventions rather than introducing new filing-grade rules. simulatePlan retains withdrawal-strategy selection, Form 8606 character, immutable annual-context construction, caller-owned warning insertion, accepted basis mutation, every balance/cash-flow/healthcare commit, and final publication"
+    },
+    {
       "path": "projection/internal/annualFundingWithdrawalEffects.ts",
       "sweptOn": "2026-09-02",
-      "note": "the annual candidate/final withdrawal-character coordinator composes the traditional and HSA penalty proxies in partially registered strategies/accountEligibility.ts (whose registry entry explicitly retains the S2 election-timing residual) with the registered strategies/rothBasis.ts ordering, conversion-layer recapture and nonqualified-earnings character. It preserves the pre-existing projection-only withdrawalTreatment policy (ordered capByMedicalExpenses allocation, assumeAllQualified, and legacy tax-free-but-penalized treatment), owner-wide Roth-IRA pooling, per-account employer-Roth pooling, inherited-Roth exclusion, and missing-basis silence; those simulator composition/pooling conventions remain residual rather than being presented as filing-grade rules. The caller retains Form 8606 character, warning insertion, tax/ACA reconciliation, accepted Roth-basis mutation, every account/ledger commit, and cash-flow publication"
+      "note": "the annual candidate/final withdrawal-character coordinator composes the traditional and HSA penalty proxies in partially registered strategies/accountEligibility.ts (whose registry entry explicitly retains the S2 election-timing residual) with the registered strategies/rothBasis.ts ordering, conversion-layer recapture and nonqualified-earnings character. It preserves the pre-existing projection-only withdrawalTreatment policy (ordered capByMedicalExpenses allocation, assumeAllQualified, and legacy tax-free-but-penalized treatment), owner-wide Roth-IRA pooling, per-account employer-Roth pooling, inherited-Roth exclusion, and missing-basis silence; those simulator composition/pooling conventions remain residual rather than being presented as filing-grade rules. Candidate tax/ACA reconciliation now belongs to projection/internal/annualFundingCandidateEvaluation.ts. simulatePlan retains Form 8606 character, warning insertion, accepted Roth-basis mutation, every account/ledger commit, and cash-flow publication"
     },
     {
       "path": "projection/internal/annualInheritedIraDistributions.ts",
@@ -264,7 +269,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-09-02",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual pension-and-annuity income planning is registered against internal/annualPensionAndAnnuityIncome.ts while this caller retains ordered exclusion-state and contract-value commits, runtime occurrence/application journaling, qualified-payment publication and cash-flow recording; post-solve liquid-account market growth is attested rule-free against internal/annualPostSolveAccountGrowth.ts while this caller retains the ordered market-balance/weight commits, HECM prior-return publication, and second-pass reinvestment/basis credits; retirement-action settlement publication is attested rule-free against internal/annualRetirementActionSettlementPublication.ts while this caller retains every economic commit; annual funding root selection is attested rule-free against internal/annualFundingFixedPoint.ts while this caller retains the tax/withdrawal/ACA economic evaluator and all healthcare, warning, HECM-debt, withdrawal, tax, penalty, balance, and publication commits; candidate/final traditional, HSA, and Roth withdrawal characterization is partially attested against internal/annualFundingWithdrawalEffects.ts while this caller retains Form 8606 character, tax/ACA reconciliation, warning insertion, accepted Roth-basis mutation, and every ledger/cash-flow commit; annual YearResult assembly is attested rule-free against internal/annualYearResultAssembly.ts while this caller retains settled-input construction, annual ordering, the outer settlement replay attachment, and the final result-array append; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual inherited-Roth post-flip and remaining evaluator/action orchestration"
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual pension-and-annuity income planning is registered against internal/annualPensionAndAnnuityIncome.ts while this caller retains ordered exclusion-state and contract-value commits, runtime occurrence/application journaling, qualified-payment publication and cash-flow recording; post-solve liquid-account market growth is attested rule-free against internal/annualPostSolveAccountGrowth.ts while this caller retains the ordered market-balance/weight commits, HECM prior-return publication, and second-pass reinvestment/basis credits; retirement-action settlement publication is attested rule-free against internal/annualRetirementActionSettlementPublication.ts while this caller retains every economic commit; annual funding root selection is attested rule-free against internal/annualFundingFixedPoint.ts and candidate capital-loss/tax/ACA/HSA pricing is partially attested against internal/annualFundingCandidateEvaluation.ts, while this caller retains withdrawal selection, Form 8606 character, immutable annual-context construction, warning insertion, and every healthcare/HECM-debt/withdrawal/tax/penalty/balance/publication commit; candidate/final traditional, HSA, and Roth withdrawal characterization is partially attested against internal/annualFundingWithdrawalEffects.ts while this caller retains accepted Roth-basis mutation and every ledger/cash-flow commit; annual YearResult assembly is attested rule-free against internal/annualYearResultAssembly.ts while this caller retains settled-input construction, annual ordering, the outer settlement replay attachment, and the final result-array append; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual inherited-Roth post-flip and remaining retirement-action execution/gross-up orchestration"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -404,9 +409,9 @@
     },
     {
       "directory": "projection",
-      "files": 74,
+      "files": 75,
       "byStatus": {
-        "partial": 10,
+        "partial": 11,
         "registered": 14,
         "rule-free": 50
       }
