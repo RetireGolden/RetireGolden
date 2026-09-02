@@ -190,6 +190,23 @@ export function seedPlanFromTenForty(
   // --- Lines 2b/3a/3b: estimated taxable account ----------------------------
   const investmentIncome = inputs.taxableInterest + inputs.ordinaryDividends
   if (investmentIncome > 0) {
+    /**
+     * What the estimate can honestly say about the qualified share.
+     *
+     * Line 3a is the qualified *portion* of line 3b, so with 3b at zero the
+     * account's qualified ratio is zero no matter what 3a says (the separate
+     * line-3a row below is what reports that), and 3a > 3b cannot happen on a
+     * filed return — the ratio is capped at 1, and calling that "kept" would
+     * be false. Only the ordinary case kept anything.
+     */
+    const qualifiedShareNote =
+      inputs.ordinaryDividends === 0
+        ? 'Line 3b (ordinary dividends) is $0, so the balance is implied by your line 2b interest alone and the account carries no dividend yield.'
+        : inputs.qualifiedDividends > inputs.ordinaryDividends
+          ? `Line 3a ($${inputs.qualifiedDividends.toLocaleString('en-US')}) is larger than line 3b ` +
+            `($${inputs.ordinaryDividends.toLocaleString('en-US')}), and 3a is the qualified portion of 3b, so the qualified share ` +
+            'was capped at 100%. Check both lines on your return, and the qualified share on the Accounts screen.'
+          : 'The qualified-dividend share was kept.'
     // Clamp: sub-dollar investment income must not round the denominator to 0.
     const estimatedBalance = Math.max(1, Math.round(investmentIncome / (ASSUMED_TAXABLE_YIELD_PCT / 100)))
     const qualifiedRatio = inputs.ordinaryDividends > 0 ? Math.min(1, inputs.qualifiedDividends / inputs.ordinaryDividends) : 0
@@ -216,15 +233,7 @@ export function seedPlanFromTenForty(
         `Your $${investmentIncome.toLocaleString('en-US')} of interest + dividends implies roughly a ` +
         `$${estimatedBalance.toLocaleString('en-US')} taxable balance at a ${ASSUMED_TAXABLE_YIELD_PCT}% yield, an estimate to replace ` +
         'with the real balance and cost basis on the Accounts screen. ' +
-        // Line 3a is the qualified *portion* of line 3b, so 3a > 3b cannot
-        // happen on a filed return. The account still takes a ratio (capped at
-        // 100%), but saying "the share was kept" would be false for a capped
-        // one — the honest line names the cap and points back at the return.
-        (inputs.qualifiedDividends > inputs.ordinaryDividends
-          ? `Line 3a ($${inputs.qualifiedDividends.toLocaleString('en-US')}) is larger than line 3b ` +
-            `($${inputs.ordinaryDividends.toLocaleString('en-US')}), and 3a is the qualified portion of 3b, so the qualified share ` +
-            'was capped at 100%. Check both lines on your return, and the qualified share on the Accounts screen.'
-          : 'The qualified-dividend share was kept.'),
+        qualifiedShareNote,
       locator: { kind: 'derived', from: [form1040('2b'), form1040('3a'), form1040('3b')], note: `balance implied by a ${ASSUMED_TAXABLE_YIELD_PCT}% yield` },
       confidence: 'estimated',
       target: `accounts[${plan.accounts.length - 1}]`,

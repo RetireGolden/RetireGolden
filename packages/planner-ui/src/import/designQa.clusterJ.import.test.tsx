@@ -99,6 +99,23 @@ describe('cluster J: a 1040 line never leaves the checklist silent (#568)', () =
     expect(estimate.detail).toContain('The qualified-dividend share was kept.')
   })
 
+  it('reports line 3a as dropped even when line 2b interest builds the account without it', () => {
+    // The account exists (sized from 2b alone), so the estimate row is there —
+    // but its qualified ratio is 0, and 3a still landed nowhere. Both facts
+    // have to be on the checklist, and neither row may claim the other's.
+    const { plan, review } = seed({ taxableInterest: 5_000, qualifiedDividends: 50_000, agi: 55_000 })
+    const account = plan.accounts[0]!
+    expect(account.type === 'taxable' && account.qualifiedRatio).toBe(0)
+    expect(account.type === 'taxable' && account.dividendYieldPct).toBe(0)
+    const estimate = review.find((i) => i.source.includes('2b/3a/3b'))!
+    expect(estimate.detail).not.toContain('The qualified-dividend share was kept.')
+    expect(estimate.detail).not.toContain('capped at 100%')
+    expect(estimate.detail).toContain('Line 3b (ordinary dividends) is $0')
+    const dropped = review.find((i) => i.source.includes('line 3a'))!
+    expect(dropped.status).toBe('unmapped')
+    expect(dropped.detail).toContain('$50,000')
+  })
+
   it('names the cap when line 3a exceeds line 3b instead of claiming the share was kept', () => {
     // 3a is the qualified portion of 3b, so 3a > 3b cannot be a filed return;
     // the ratio is capped at 1 and the copy has to say so (#568, deep108).
