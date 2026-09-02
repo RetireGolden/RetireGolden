@@ -29,12 +29,17 @@ const plannerUiSrc: string = fileURLToPath(new URL('..', import.meta.url))
  * hole on exactly the surfaces the rendered sweep cannot mount — which is the
  * whole reason the pin exists.
  *
- * The window is bounded and cannot cross `>`, so it stays inside one opening
- * tag. `type-chip--muted` is a modifier a call site may legitimately hand to
+ * The window is bounded and cannot cross `<`, which is what actually
+ * separates one element from the next. Bounding on `>` instead looked tighter
+ * and was wrong: `>` is a comparison and the tail of `=>`, so
+ * `className={count > 0 ? 'type-chip' : ''}` fell straight through the net
+ * the comment claimed covered conditionals.
+ *
+ * `type-chip--muted` is a modifier a call site may legitimately hand to
  * `TypeChip`, so the lookahead keeps modifiers out of the net; only the bare
  * class — the one `TypeChip` itself is responsible for — is caught.
  */
-const BADGE_CLASS_IN_MARKUP = /className=\s*\{?[^>]{0,160}?(["'`])[^"'`]*\btype-chip(?![\w-])/
+const BADGE_CLASS_IN_MARKUP = /className=\s*\{?[^<]{0,160}?(["'`])[^"'`]*\btype-chip(?![\w-])/
 
 /** Component sources under `planner-ui/src`; tests may name the class freely. */
 function componentSources(dir: string, found: string[] = []): string[] {
@@ -79,6 +84,14 @@ describe('cluster J: the kind badge markup has one home (#570)', () => {
       "<span className={muted ? 'type-chip type-chip--muted' : 'type-chip'}>Cash</span>",
       "<span className={classNames('type-chip', extra)}>Cash</span>",
       '<span\n  className="type-chip"\n>Cash</span>',
+      // Comparisons in the conditional test. The first two passed the old
+      // `[^>]` window; the rest are the ones a `>` used to hide.
+      "<span className={kind === 'cash' ? 'type-chip' : ''}>Cash</span>",
+      "<span className={kind !== 'cash' ? '' : 'type-chip'}>Cash</span>",
+      "<span className={count > 0 ? 'type-chip' : ''}>Cash</span>",
+      "<span className={count >= 2 ? 'type-chip' : ''}>Cash</span>",
+      "<span className={rows.filter((r) => r.on).length > 0 ? 'type-chip' : ''}>Cash</span>",
+      "<span className={active && 'type-chip'}>Cash</span>",
     ]
     for (const markup of caught) expect(BADGE_CLASS_IN_MARKUP.test(markup), markup).toBe(true)
 
