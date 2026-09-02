@@ -23,16 +23,33 @@ export function lastFundedYear(plan: { depletionYear: number | null; endYear: nu
   return plan.depletionYear === null ? plan.endYear : plan.depletionYear - 1
 }
 
+export interface MoneyLastsDelta {
+  /** Signed years on last funded years, B − A; drives the delta color. */
+  value: number
+  /** The cell text: a plain years delta, a bounded one, or a both-full reading. */
+  label: string
+}
+
 /**
- * Money-lasts delta in years, B − A, on last funded years. Always a number:
- * "Depletes in 2054" vs "Full plan through 2054" is one year, and two full
- * plans with different horizons differ by the horizon gap.
+ * Money-lasts delta in years, B − A, on last funded years. A plan that never
+ * depletes is funded through its horizon, but how much longer it would have
+ * lasted is unbounded, so a one-sided comparison is stated as a bound
+ * ("≥ +7 yrs": B lasts at least seven more years) rather than as an exact
+ * gap; two full plans read "same" on one horizon and "both full plan" on
+ * different ones, never as a horizon arithmetic.
  */
-export function moneyLastsDeltaYears(
+export function moneyLastsDelta(
   a: { depletionYear: number | null; endYear: number },
   b: { depletionYear: number | null; endYear: number },
-): number {
-  return lastFundedYear(b) - lastFundedYear(a)
+): MoneyLastsDelta {
+  const value = lastFundedYear(b) - lastFundedYear(a)
+  const aFull = a.depletionYear === null
+  const bFull = b.depletionYear === null
+  if (aFull && bFull) return { value: 0, label: a.endYear === b.endYear ? 'same' : 'both full plan' }
+  if (!aFull && !bFull) return { value, label: formatDelta(value, 'years') }
+  const bound = bFull ? '≥' : '≤'
+  const years = formatDelta(value, 'years')
+  return { value, label: years === 'same' ? `${bound} same` : `${bound} ${years}` }
 }
 
 /** Age delta, B − A; null when either side has no depletion age to compare. */

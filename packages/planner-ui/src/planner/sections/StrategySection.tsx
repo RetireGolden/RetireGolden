@@ -316,8 +316,10 @@ export function StrategySection() {
             </>
           ) : (
             <>
-              Scheduling one specific gift needs an owned traditional IRA on the plan: once Accounts has one, a{' '}
-              <strong>Retirement actions</strong> card appears above with <strong>{QCD_SECTION_HEADING}</strong>.
+              Scheduling one specific gift needs something for the card to work with: once the plan has an owned
+              traditional IRA, a person recording IRA contributions, a scheduled gift, or an action carried in from an
+              older plan, a <strong>Retirement actions</strong> card appears above with{' '}
+              <strong>{QCD_SECTION_HEADING}</strong>.
             </>
           )}{' '}
           {QCD_NAMED_STANDS_DOWN_SCALAR}

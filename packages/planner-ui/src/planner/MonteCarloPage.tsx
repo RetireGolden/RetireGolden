@@ -124,6 +124,8 @@ export function MonteCarloPage() {
   const [historicalRunning, setHistoricalRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [running, setRunning] = useState(false)
+  // The size of the run in flight, so the intro and the hero name it while it runs.
+  const [inFlightPaths, setInFlightPaths] = useState<number>(DEFAULT_PATH_COUNT)
   const [statusMessage, setStatusMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [frontierError, setFrontierError] = useState<string | null>(null)
@@ -139,6 +141,7 @@ export function MonteCarloPage() {
     (paths: number) => {
       const token = ++runToken.current
       setRunning(true)
+      setInFlightPaths(paths)
       setProgress(0)
       setError(null)
       setStatusMessage(`Simulating ${paths.toLocaleString()} market paths…`)
@@ -155,7 +158,7 @@ export function MonteCarloPage() {
         },
       })
       // The KPI bar attaches to this run instead of launching its own (#497).
-      if (headlineRun) registerMcHeadlineRun(plan, simulation)
+      if (headlineRun) registerMcHeadlineRun(plan, simulation, paths)
       void simulation
         .then((s) => {
           // A headline-configuration run is the headline number too, even when
@@ -284,7 +287,7 @@ export function MonteCarloPage() {
         <h2>Market model</h2>
         <p className="card-hint">
           Your deterministic projection assumes the same return and inflation every year. Monte Carlo replays the exact
-          same plan {(summary?.pathCount ?? DEFAULT_PATH_COUNT).toLocaleString()} times with markets that vary year to
+          same plan {(summary?.pathCount ?? inFlightPaths).toLocaleString()} times with markets that vary year to
           year, then reports how often the money lasts. The
           model below controls <em>how</em> those markets are generated, your expected returns and inflation from
           Assumptions stay the center of the distribution either way.
@@ -430,6 +433,14 @@ export function MonteCarloPage() {
             <SuccessGauge rate={summary.successRate} pathCount={summary.pathCount} />
             <div>
               <h2>{successBand(summary.successRate).verdict}</h2>
+              {running ? (
+                // The figures on show are the last completed run; say so while
+                // a replacement runs, instead of letting them pass as current.
+                <p className="small muted" role="status">
+                  Showing the last completed run ({summary.pathCount.toLocaleString()} paths) while{' '}
+                  {inFlightPaths.toLocaleString()} paths simulate.
+                </p>
+              ) : null}
               <p className="muted">
                 Median ending estate {fmtMoneyCompact(summary.endingAfterTaxEstate.percentiles.p50)} · worst 10%{' '}
                 {fmtMoneyCompact(summary.endingAfterTaxEstate.percentiles.p10)} · best 10%{' '}

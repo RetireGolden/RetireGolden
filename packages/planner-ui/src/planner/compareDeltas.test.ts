@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { ageDelta, deterministicSuccessPct, formatDelta, lastFundedYear, moneyLastsDeltaYears } from './compareDeltas'
+import { ageDelta, deterministicSuccessPct, formatDelta, lastFundedYear, moneyLastsDelta } from './compareDeltas'
 
 describe('compareDeltas (#499)', () => {
   it('formats the year gaps the finding named', () => {
@@ -19,18 +19,20 @@ describe('compareDeltas (#499)', () => {
     expect(ageDelta(65, null)).toBeNull()
   })
 
-  it('money lasts compares last funded years, so distinct labels never collapse to "same"', () => {
+  it('money lasts compares last funded years, bounded when one side never depletes', () => {
     // "Depletes in 2054" was funded through 2053; "Full plan through 2054" through 2054.
     expect(lastFundedYear({ depletionYear: 2054, endYear: 2054 })).toBe(2053)
     expect(lastFundedYear({ depletionYear: null, endYear: 2054 })).toBe(2054)
-    expect(moneyLastsDeltaYears({ depletionYear: 2054, endYear: 2054 }, { depletionYear: null, endYear: 2054 })).toBe(1)
-    // The finding's pair: depletes 2030 vs 2051.
-    expect(moneyLastsDeltaYears({ depletionYear: 2030, endYear: 2060 }, { depletionYear: 2051, endYear: 2060 })).toBe(21)
-    // Plan B never depletes: its last funded year is its end year.
-    expect(moneyLastsDeltaYears({ depletionYear: 2030, endYear: 2060 }, { depletionYear: null, endYear: 2060 })).toBe(31)
-    // Two full plans with different horizons differ by the horizon gap; equal horizons are "same".
-    expect(moneyLastsDeltaYears({ depletionYear: null, endYear: 2060 }, { depletionYear: null, endYear: 2062 })).toBe(2)
-    expect(formatDelta(moneyLastsDeltaYears({ depletionYear: null, endYear: 2060 }, { depletionYear: null, endYear: 2060 }), 'years')).toBe('same')
+    // The finding's pair: depletes 2030 vs 2051, an exact gap.
+    expect(moneyLastsDelta({ depletionYear: 2030, endYear: 2060 }, { depletionYear: 2051, endYear: 2060 })).toEqual({ value: 21, label: '+21 yrs' })
+    // Plan B never depletes: it lasts at least through its horizon, so the gap is a lower bound.
+    expect(moneyLastsDelta({ depletionYear: 2054, endYear: 2054 }, { depletionYear: null, endYear: 2054 })).toEqual({ value: 1, label: '≥ +1 yr' })
+    expect(moneyLastsDelta({ depletionYear: 2030, endYear: 2060 }, { depletionYear: null, endYear: 2060 })).toEqual({ value: 31, label: '≥ +31 yrs' })
+    // Plan A never depletes: an upper bound.
+    expect(moneyLastsDelta({ depletionYear: null, endYear: 2060 }, { depletionYear: 2054, endYear: 2060 })).toEqual({ value: -7, label: '≤ −7 yrs' })
+    // Two full plans: "same" on one horizon, "both full plan" on different ones, never horizon arithmetic.
+    expect(moneyLastsDelta({ depletionYear: null, endYear: 2060 }, { depletionYear: null, endYear: 2060 })).toEqual({ value: 0, label: 'same' })
+    expect(moneyLastsDelta({ depletionYear: null, endYear: 2060 }, { depletionYear: null, endYear: 2062 })).toEqual({ value: 0, label: 'both full plan' })
   })
 
   it('deterministic success deltas are percentage points, zero included', () => {

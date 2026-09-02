@@ -91,9 +91,10 @@ describe('Monte Carlo headline (#497)', () => {
   it('attaches to a Monte Carlo page run registered for the plan instead of launching its own', async () => {
     const plan = createSamplePlan()
     let settle: (s: MonteCarloSummary) => void = () => {}
-    registerMcHeadlineRun(plan, new Promise<MonteCarloSummary>((resolve) => { settle = resolve }))
+    registerMcHeadlineRun(plan, new Promise<MonteCarloSummary>((resolve) => { settle = resolve }), 10_000)
     await act(async () => root.render(<Probe plan={plan} />))
-    expect(container.textContent).toBe('running|null|1000')
+    // Busy copy names the run in flight, not the default (#497 review round 5).
+    expect(container.textContent).toBe('running|null|10000')
     // The page's run is in flight, so the hook attaches at once (no debounce) and starts nothing.
     // The count rides with the rate: the attached run was 10,000 paths, and
     // the KPI says so even though nothing has been published yet.

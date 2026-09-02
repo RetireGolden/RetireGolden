@@ -397,7 +397,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
   it('loading, recalculating, and failure states are labelled, and a flat objective crowns no best (#433, #453, #448, #454)', () => {
     const workspace: string = readFileSync(fileURLToPath(new URL('./PlanWorkspace.tsx', import.meta.url)), 'utf8')
     expect(workspace).toMatch(/className="kpi-value kpi-value--pending" aria-busy="true" aria-label="Simulating markets"/)
-    expect(workspace).toContain('simulating ${DEFAULT_PATH_COUNT.toLocaleString()} markets…')
+    expect(workspace).toContain('simulating ${mcPathCount.toLocaleString()} markets…')
     const solver: string = readFileSync(fileURLToPath(new URL('./SpendingSolverPage.tsx', import.meta.url)), 'utf8')
     expect(solver).toMatch(
       /<div className="callout callout--warn solver-failure" role="alert">\s*(\{\/\*[\s\S]*?\*\/\}\s*)?<h2 style=\{\{ marginTop: 0 \}\}>No sustainable spending level found<\/h2>/,

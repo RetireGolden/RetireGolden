@@ -9,7 +9,6 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'reac
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
-import { DEFAULT_PATH_COUNT } from '../mc/pool'
 import { useDialogs } from './dialogs'
 import { isPlanIncomplete } from './planCompleteness'
 import { ExamplePreviewBanner } from './examples/ExamplePreviewBanner'
@@ -156,7 +155,7 @@ function KpiBar() {
             ? `of ${mcPathCount.toLocaleString()} varied markets`
             : mcStatus === 'failed'
               ? 'simulation unavailable · open Monte Carlo to retry'
-              : `simulating ${DEFAULT_PATH_COUNT.toLocaleString()} markets…`}
+              : `simulating ${mcPathCount.toLocaleString()} markets…`}
         </span>
       </div>
       <div className="kpi">

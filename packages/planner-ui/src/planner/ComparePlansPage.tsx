@@ -15,7 +15,7 @@ import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
 import { projectPlan, type ProjectionView } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
-import { ageDelta, deterministicSuccessPct, formatDelta, moneyLastsDeltaYears, type DeltaUnit } from './compareDeltas'
+import { ageDelta, deterministicSuccessPct, formatDelta, moneyLastsDelta, type DeltaUnit } from './compareDeltas'
 
 const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
 
@@ -50,6 +50,7 @@ function MetricRow({
   a,
   b,
   delta,
+  deltaLabel,
   unit = 'money',
   higherIsGood = true,
 }: {
@@ -57,6 +58,8 @@ function MetricRow({
   a: string
   b: string
   delta: number | null
+  /** Pre-formatted cell text (a bounded years delta); `delta` still drives the color. */
+  deltaLabel?: string
   unit?: DeltaUnit
   higherIsGood?: boolean
 }) {
@@ -67,7 +70,7 @@ function MetricRow({
       <td>{a}</td>
       <td>{b}</td>
       <td className={adjustedDelta === null ? undefined : deltaClass(adjustedDelta)}>
-        {delta === null ? '—' : formatDelta(delta, unit)}
+        {delta === null ? '—' : (deltaLabel ?? formatDelta(delta, unit))}
       </td>
     </tr>
   )
@@ -120,15 +123,17 @@ export function ComparePlansPage() {
     const r = right.view.summary
     const ageA = primaryAgeIn(left.plan, l.depletionYear)
     const ageB = primaryAgeIn(right.plan, r.depletionYear)
+    const lasts = moneyLastsDelta(
+      { depletionYear: l.depletionYear, endYear: left.view.result.endYear },
+      { depletionYear: r.depletionYear, endYear: right.view.result.endYear },
+    )
     return [
       {
         label: 'Money lasts',
         a: resultLabel(l, left.view.result.endYear),
         b: resultLabel(r, right.view.result.endYear),
-        delta: moneyLastsDeltaYears(
-          { depletionYear: l.depletionYear, endYear: left.view.result.endYear },
-          { depletionYear: r.depletionYear, endYear: right.view.result.endYear },
-        ),
+        delta: lasts.value,
+        deltaLabel: lasts.label,
         unit: 'years',
       },
       {
@@ -239,7 +244,8 @@ export function ComparePlansPage() {
               <p className="field-hint compare-delta-legend">
                 Plan B − Plan A: <span className="delta-pos">green</span> means Plan B does better on that row,{' '}
                 <span className="delta-neg">red</span> means worse. Lifetime tax reads lower as better; every other row
-                reads higher or later as better. A dash means the difference is undefined for this pair.
+                reads higher or later as better. A dash means the difference is undefined for this pair; ≥ or ≤ means
+                one plan never runs out, so the gap is at least or at most that many years.
               </p>
             </>
           )}

@@ -29,11 +29,20 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
   const navigate = useNavigate()
 
   const [expanded, setExpanded] = useState(false)
-  const [exactImpact, setExactImpact] = useState<InsightImpact | null>(null)
+  // Preview results are keyed to the plan object they were computed for and
+  // read as absent once the plan changes, so a stale delta can never sit
+  // beside a newer plan's depletion year; the next Preview recomputes them.
+  const [exactImpactFor, setExactImpactFor] = useState<{ plan: Plan; impact: InsightImpact } | null>(null)
+  const exactImpact = exactImpactFor !== null && exactImpactFor.plan === plan ? exactImpactFor.impact : null
+  const setExactImpact = (impact: InsightImpact) => setExactImpactFor({ plan, impact })
   // Detectors may refine their action during evaluate() (e.g. the spending
   // headroom card solves the exact level); Add-as-scenario must use that one.
-  const [exactAction, setExactAction] = useState<InsightAction | null>(null)
-  const [mcDelta, setMcDelta] = useState<number | null>(null)
+  const [exactActionFor, setExactActionFor] = useState<{ plan: Plan; action: InsightAction } | null>(null)
+  const exactAction = exactActionFor !== null && exactActionFor.plan === plan ? exactActionFor.action : null
+  const setExactAction = (action: InsightAction) => setExactActionFor({ plan, action })
+  const [mcDeltaFor, setMcDeltaFor] = useState<{ plan: Plan; delta: number } | null>(null)
+  const mcDelta = mcDeltaFor !== null && mcDeltaFor.plan === plan ? mcDeltaFor.delta : null
+  const setMcDelta = (delta: number) => setMcDeltaFor({ plan, delta })
   const [loadingExact, setLoadingExact] = useState(false)
   const [loadingMc, setLoadingMc] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)

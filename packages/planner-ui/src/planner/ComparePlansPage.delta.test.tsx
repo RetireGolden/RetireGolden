@@ -87,8 +87,8 @@ describe('ComparePlansPage delta column (#499)', () => {
     const lasts = rowByLabel('Money lasts')
     expect(lasts[0]).toMatch(/^Full plan through \d{4}$/)
     expect(lasts[1]).toMatch(/^Depletes in \d{4}$/)
-    // Plan B runs out earlier than Plan A's end: a negative years delta, in red.
-    expect(lasts[2]).toMatch(/^−\d+ yrs?$/)
+    // Plan A never runs out, so Plan B's shortfall is an upper bound: at most that many years, in red.
+    expect(lasts[2]).toMatch(/^≤ −\d+ yrs?$/)
 
     const success = rowByLabel('Success % (deterministic)')
     expect(success).toEqual(['100%', '0%', '−100 pp'])

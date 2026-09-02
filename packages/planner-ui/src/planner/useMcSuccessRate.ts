@@ -63,6 +63,10 @@ interface McRunResult {
 }
 
 const inflight = new WeakMap<Plan, Promise<McRunResult>>()
+// The size of a Monte Carlo page run registered for a plan object, so busy
+// copy can name the run actually in flight (10,000, not the default) before
+// it resolves. Keyed like the maps above, so it dies with the plan object.
+const pendingPathCount = new WeakMap<Plan, number>()
 // The latest completed headline-configuration run per plan object, keyed
 // like the in-flight map: an edit produces a new plan object, so a published
 // run can never outlive its plan.
@@ -92,13 +96,21 @@ export function publishedMcSummary(plan: Plan): MonteCarloSummary | undefined {
  * the KPI bar attaches to it instead of launching a second simulation of the
  * same configuration. A run already in flight for this plan object is kept.
  */
-export function registerMcHeadlineRun(plan: Plan, run: Promise<MonteCarloSummary>): void {
+export function registerMcHeadlineRun(plan: Plan, run: Promise<MonteCarloSummary>, pathCount: number): void {
   if (inflight.get(plan) !== undefined) return
   const result = run.then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))
   result.catch(() => {
     inflight.delete(plan)
   })
   inflight.set(plan, result)
+  pendingPathCount.set(plan, pathCount)
+  for (const listener of listeners) listener()
+}
+
+/** The path count of the run registered for this plan object, if any (a subscription). */
+export function useInFlightMcPathCount(plan: Plan): number | undefined {
+  const snapshot = () => pendingPathCount.get(plan)
+  return useSyncExternalStore(subscribe, snapshot, snapshot)
 }
 
 function subscribe(listener: () => void): () => void {
@@ -172,6 +184,8 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   // A run the Monte Carlo page published for this exact plan object wins over
   // the hook's own default run.
   const headline = useMcHeadline(plan)
+  // While a page run is in flight the busy copy names its size, not the default.
+  const inFlightPathCount = useInFlightMcPathCount(plan)
   useEffect(() => {
     if (!enabled) return undefined
     // A published run already answers for this plan object: starting the
@@ -207,5 +221,5 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   if (enabled && headline !== undefined) return { rate: headline.successRate, status: 'done', pathCount: headline.pathCount }
   const current = enabled && snapshot !== null && snapshot.plan === plan ? snapshot : null
   const status: McSuccessRateStatus = !enabled ? 'idle' : current === null ? 'running' : current.failed ? 'failed' : 'done'
-  return { rate: current?.rate ?? null, status, pathCount: current?.pathCount ?? DEFAULT_PATH_COUNT }
+  return { rate: current?.rate ?? null, status, pathCount: current?.pathCount ?? inFlightPathCount ?? DEFAULT_PATH_COUNT }
 }

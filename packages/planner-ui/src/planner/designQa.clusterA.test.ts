@@ -12,12 +12,13 @@ import { readdirSync, readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
-function read(relative: string): string {
+/** A file with LF line endings whatever the checkout wrote, so multi-line pins hold on Windows too (same helper shape as designQa.chrome.test.ts). */
+function sheet(relative: string): string {
   return readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
 }
 
-const css = read('./planner.css')
-const indexCss = read('../index.css')
+const css = sheet('./planner.css')
+const indexCss = sheet('../index.css')
 // Everything this cluster added sits in one commented block at the end of the sheet.
 const clusterAt = css.indexOf('Design QA cluster A')
 const clusterA = css.slice(clusterAt)
@@ -147,6 +148,9 @@ describe('Design-QA cluster A: stylesheet pins', () => {
     // The chip keeps its width (visibility, not display) so the box does not jump on focus.
     const blank = rule('.input-affix > span.input-affix-unit--blank', clusterA)
     expect(blank).toMatch(/visibility:\s*hidden/)
+    // The comment describes the real behaviour: the chip returns on typing, not on focus.
+    expect(clusterA).toContain('returns with the first typed')
+    expect(clusterA).not.toContain('returns on focus')
     expect(blank).not.toMatch(/display/)
     // Every token either dark mechanism overrides is restated on paper, so a
     // dark-only value (the chevron included) can never leak into print.
@@ -177,20 +181,22 @@ describe('Design-QA cluster A: stylesheet pins', () => {
 
 describe('Design-QA cluster A: source pins', () => {
   it('the Market success KPI, the Results verdict, and the MC page quote one run (#497)', () => {
-    const workspace = read('./PlanWorkspace.tsx')
+    const workspace = sheet('./PlanWorkspace.tsx')
     expect(workspace).toContain('of ${mcPathCount.toLocaleString()} varied markets')
     expect(workspace).toContain('Share of ${mcPathCount.toLocaleString()} varied-market simulations')
     expect(workspace).not.toContain('of ${DEFAULT_PATH_COUNT.toLocaleString()} varied markets')
-    // The busy line still names the default run that is about to start.
-    expect(workspace).toContain('simulating ${DEFAULT_PATH_COUNT.toLocaleString()} markets…')
-    const results = read('./ResultsPage.tsx')
+    // The busy line names the run actually in flight (a registered 10,000-path
+    // page run included), never a hard-coded default.
+    expect(workspace).toContain('simulating ${mcPathCount.toLocaleString()} markets…')
+    expect(workspace).not.toContain('DEFAULT_PATH_COUNT')
+    const results = sheet('./ResultsPage.tsx')
     expect(results).toContain('Across {pathCountLabel} varied markets')
     expect(results).not.toContain('PATH_COUNT_LABEL')
-    const mc = read('./MonteCarloPage.tsx')
+    const mc = sheet('./MonteCarloPage.tsx')
     expect(mc).toContain('publishMcHeadline(plan, s)')
     // The store keeps the finest run and the hook never starts a default run
     // once a published one answers for the plan (review round 2).
-    const hook = read('./useMcSuccessRate.ts')
+    const hook = sheet('./useMcSuccessRate.ts')
     expect(hook).toContain('if (current !== undefined && current.pathCount > summary.pathCount) return')
     expect(hook).toContain('if (headline !== undefined) return undefined')
     // The page subscribes to the store (any publisher re-renders it), shares
@@ -198,13 +204,20 @@ describe('Design-QA cluster A: source pins', () => {
     // reader has already started one. The count-less wrapper is gone.
     expect(mc).toContain('const publishedHeadline = useMcHeadline(plan)')
     expect(mc).not.toContain('publishedMcSummary(plan)')
-    expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation)')
+    expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation, paths)')
     expect(mc).toContain('if (runToken.current === scheduledAt) run(DEFAULT_PATH_COUNT)')
     // A superseded headline run still publishes: the publish sits before the token check.
     expect(mc.indexOf('if (headlineRun) publishMcHeadline(plan, s)')).toBeLessThan(mc.indexOf('if (token === runToken.current) {\n            setSummary(s)'))
     // The in-flight result carries its path count, and the store snapshot serves both renders.
     expect(hook).toContain('.then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))')
     expect(hook).toContain('return useSyncExternalStore(subscribe, snapshot, snapshot)')
+    expect(hook).toContain('export function useInFlightMcPathCount(plan: Plan): number | undefined')
+    expect(hook).toContain('pathCount: current?.pathCount ?? inFlightPathCount ?? DEFAULT_PATH_COUNT')
+    // The MC intro names the run in flight, and the hero says the figures on
+    // show are the last completed run while a replacement runs.
+    expect(mc).toContain('same plan {(summary?.pathCount ?? inFlightPaths).toLocaleString()} times')
+    expect(mc).toContain('Showing the last completed run ({summary.pathCount.toLocaleString()} paths) while')
+    expect(mc).toContain('registerMcHeadlineRun(plan, simulation, paths)')
     expect(results).not.toContain('keeps verdict copy in sync')
     expect(hook).not.toMatch(/export function useMcSuccessRate\(/)
     expect(hook).toContain('export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined')
@@ -219,12 +232,14 @@ describe('Design-QA cluster A: source pins', () => {
     expect(mc).toContain('? publishedHeadline')
     // No literal "thousand" survives: the intro and the seed tip follow the run.
     expect(mc).not.toMatch(/a thousand times|same thousand markets/)
-    expect(mc).toContain('same plan {(summary?.pathCount ?? DEFAULT_PATH_COUNT).toLocaleString()} times')
   })
 
   it('the Compare delta column formats every row and explains its colors (#499)', () => {
-    const compare = read('./ComparePlansPage.tsx')
+    const compare = sheet('./ComparePlansPage.tsx')
     expect(compare).toContain("unit: 'years'")
+    // Money lasts renders a bounded label when one plan never depletes.
+    expect(compare).toContain('deltaLabel: lasts.label')
+    expect(compare).toContain('one plan never runs out, so the gap is at least or at most that many years')
     expect(compare).toContain("unit: 'pp'")
     expect(compare).toContain('className="field-hint compare-delta-legend"')
     // No hard-coded dash row remains outside MetricRow.
@@ -232,24 +247,24 @@ describe('Design-QA cluster A: source pins', () => {
   })
 
   it('the solver rules column says what its rows are (#510)', () => {
-    const solver = read('./SpendingSolverPage.tsx')
+    const solver = sheet('./SpendingSolverPage.tsx')
     expect(solver).toContain('>If your plan spent only this</th>')
     expect(solver).not.toContain('>On your plan<')
   })
 
   it('survivor timings with nothing on either side are not shown as results (#513)', () => {
-    const survivor = read('./SurvivorTransitionPage.tsx')
+    const survivor = sheet('./SurvivorTransitionPage.tsx')
     expect(survivor).toContain('data-survivor-empty="degenerate"')
     // The criterion covers lifetime tax; the shortfall count is deliberately
     // not a criterion (a lone red shortfall count is the finding itself).
-    const analysis = read('./survivorAnalysis.ts')
+    const analysis = sheet('./survivorAnalysis.ts')
     const gate = analysis.slice(analysis.indexOf('export function isDegenerateTiming'), analysis.indexOf('export interface SurvivorAnalysis {'))
     expect(gate.length).toBeGreaterThan(0)
     expect(gate).toContain('nearZero(row.baseLifetimeTax)')
     // Shortfall is symmetric across the transition: survivor shortfall counts
     // only when the last joint year had none (the death introduced it).
     expect(gate).toContain('(nearZero(row.survivorShortfallYears) || row.lastJointYear.shortfall > 0.5)')
-    expect(read('./survivorAnalysis.ts')).toContain('export function isDegenerateTiming(row: SurvivorScenarioRow): boolean')
+    expect(sheet('./survivorAnalysis.ts')).toContain('export function isDegenerateTiming(row: SurvivorScenarioRow): boolean')
     expect(survivor).toContain('live: rows.filter((r) => !isDegenerateTiming(r))')
     // The gate is the row's own content, never the base plan's depletion year:
     // a depleted plan with Social Security keeps its rows.
@@ -261,7 +276,7 @@ describe('Design-QA cluster A: source pins', () => {
   })
 
   it('the Relocation tables are named scroll regions, not bare divs (#514)', () => {
-    const relocation = read('./RelocationComparePage.tsx')
+    const relocation = sheet('./RelocationComparePage.tsx')
     expect(relocation).not.toContain('table-scroll')
     expect(relocation).toContain('<ScrollRegion label="Ranked relocation results" grow')
     expect(relocation).toContain('<ScrollRegion label={`Drivers for ${f.stateName}`} grow')
@@ -269,15 +284,19 @@ describe('Design-QA cluster A: source pins', () => {
   })
 
   it('the Strategy screen never points at a Retirement actions card that is not mounted (#518)', () => {
-    const strategy = read('./sections/StrategySection.tsx')
+    const strategy = sheet('./sections/StrategySection.tsx')
     expect(strategy).toContain('retirementActionsCardParts(plan, currentStartYear()).mounts')
     expect(strategy).toMatch(/\{retirementActionsCardShown \? \(/)
+    // The fallback names every trigger the shared predicate mounts on.
+    for (const trigger of ['owned', 'traditional IRA', 'recording IRA contributions', 'a scheduled gift', 'carried in from an', 'older plan']) {
+      expect(strategy, trigger).toContain(trigger)
+    }
     expect(strategy).toContain('placeholder="No floor"')
     expect(strategy).toContain('placeholder="No reserve"')
-    const editor = read('./sections/RetirementActionsEditor.tsx')
+    const editor = sheet('./sections/RetirementActionsEditor.tsx')
     expect(editor).toContain('retirementActionsCardParts(plan, currentStartYear())')
     expect(editor).toContain('if (!mounts) return null')
-    const fields = read('./fields.tsx')
+    const fields = sheet('./fields.tsx')
     expect(fields).toContain('placeholder={placeholder}')
     expect(fields).toContain("placeholder !== undefined && text.replace(/^\\$/, '') === '' ? 'input-affix-unit--blank' : undefined")
     expect(fields).toContain("className={placeholder !== undefined ? 'input-affix input-affix--optional' : 'input-affix'}")
@@ -293,7 +312,7 @@ describe('Design-QA cluster A: source pins', () => {
       './SpendingSolverPage.tsx',
       './sections/IncomeFloorSection.tsx',
     ]) {
-      expect(unscopedHeaderCells(read(file)), file).toEqual([])
+      expect(unscopedHeaderCells(sheet(file)), file).toEqual([])
     }
     // No `table-scroll` wrapper is left anywhere in planner-ui: the class has
     // no stylesheet rule, so it never scrolled; every wide table is a named
@@ -312,18 +331,18 @@ describe('Design-QA cluster A: source pins', () => {
       ['./RelocationComparePage.tsx', '<ScrollRegion label={`Drivers for ${f.stateName}`} grow style={{ border: \'none\' }}>'],
       ['./sections/IncomeFloorSection.tsx', '<ScrollRegion label="Nearest real TIPS per rung" grow style={{ border: \'none\' }}>'],
     ] as const
-    for (const [file, tag] of converted) expect(read(file), `${file}: ${tag}`).toContain(tag)
-    const report = read('./ReportPage.tsx')
+    for (const [file, tag] of converted) expect(sheet(file), `${file}: ${tag}`).toContain(tag)
+    const report = sheet('./ReportPage.tsx')
     expect(report.match(/<caption className="sr-only">/g)?.length).toBeGreaterThanOrEqual(8)
     expect(report).toContain('<caption className="sr-only">Year-by-year appendix, nominal dollars</caption>')
-    const results = read('./ResultsPage.tsx')
+    const results = sheet('./ResultsPage.tsx')
     expect(results).toMatch(
       /<ScrollRegion label="Year-by-year table">\s*<table className="year-table">\s*<caption className="sr-only">Year-by-year projection, one row per plan year<\/caption>/,
     )
   })
 
   it('the Insights preview paints no verdict color on a flat Monte Carlo delta and labels its wait (#527)', () => {
-    const card = read('./insights/InsightCardView.tsx')
+    const card = sheet('./insights/InsightCardView.tsx')
     expect(card).toContain('const mcLabel = mcDelta === null ? null : formatMcDelta(mcDelta)')
     expect(card).not.toContain("mcDelta >= 0 ? 'delta-pos'")
     expect(card).toMatch(/mcLabel\.flat \? \(\s*'no change'\s*\) : \(\s*<span className=\{mcLabel\.good \? 'delta-pos' : 'delta-neg'\}>\{mcLabel\.text\}<\/span>/)
@@ -335,6 +354,10 @@ describe('Design-QA cluster A: source pins', () => {
     expect(card).toContain('<p className="small muted">Re-simulating this plan…</p>')
     expect(rule('.insight-preview-wait', clusterA)).toMatch(/display:\s*grid/)
     expect(card).toContain('const anyDeltaDefined = definedDollarDeltas.length > 0 || card.impact.successRateDeltaPct !== undefined')
+    // Preview results are keyed to the plan they were computed for, so a stale
+    // delta never sits beside a newer plan's depletion year.
+    expect(card).toContain('const exactImpact = exactImpactFor !== null && exactImpactFor.plan === plan ? exactImpactFor.impact : null')
+    expect(card).toContain('const mcDelta = mcDeltaFor !== null && mcDeltaFor.plan === plan ? mcDeltaFor.delta : null')
     // The flat note states two facts and claims no cause; it needs at least
     // one defined dollar delta and a settled Monte Carlo line if the card has one.
     expect(card).toContain('Every delta shown is zero. The base plan runs out of money in {baseDepletionYear}.')
