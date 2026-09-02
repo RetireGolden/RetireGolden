@@ -340,7 +340,8 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     const files = readdirSync(srcDir, { recursive: true }) as string[]
     const rawWraps = files
       .filter((f: string) => f.endsWith('.tsx') && !f.endsWith('ScrollRegion.tsx'))
-      .filter((f: string) => readFileSync(`${srcDir}/${f}`, 'utf8').includes('<div className="year-table-wrap'))
+      // Any div whose attributes mention the class, however the JSX is shaped.
+      .filter((f: string) => /<div\b[^>]*year-table-wrap/s.test(readFileSync(`${srcDir}/${f}`, 'utf8')))
     expect(rawWraps).toEqual([])
     for (const label of ['{caption}', '"Annual ledger comparison"', '"Capacity solve status"']) {
       expect(scenarios).toContain(`<ScrollRegion label=${label}`)
@@ -362,11 +363,16 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
 
   it('frontier axes, skipped-control notes, and the report head follow the chrome rules (#449, #484, #474)', () => {
     const mc: string = readFileSync(fileURLToPath(new URL('./MonteCarloPage.tsx', import.meta.url)), 'utf8')
-    // Success-rate axes are bounded 0–100% like the depletion chart above them (#449).
+    // Every success-rate axis (two frontiers, annuitization) is bounded 0–100%
+    // with quarter ticks, so equal quantities never read on different scales (#449).
     const pinned = mc.match(/<YAxis domain=\{\[0, 1\]\} ticks=\{\[0, 0\.25, 0\.5, 0\.75, 1\]\} tickFormatter=\{\(v\) => `\$\{Math\.round\(Number\(v\) \* 100\)\}%`\}/g)
-    expect(pinned, 'both frontier charts pin their y-axis').toHaveLength(2)
+    expect(pinned, 'all three success-rate charts pin their y-axis').toHaveLength(3)
+    // No other fraction-as-percent axis is left unpinned.
+    expect(mc.match(/<YAxis tickFormatter=\{\(v\) => `\$\{Math\.round\(Number\(v\) \* 100\)\}%`\}/g)).toBeNull()
     // Skipped-control notes get callout chrome, not grey body text (#484).
     expect(mc).toMatch(/annuitization\.notes\.length > 0 \? \(\s*<div className="callout callout--note" role="note">/)
+    expect(rule('.callout--note')).toMatch(/border-color:\s*color-mix\(in srgb, var\(--fg\)/)
+    expect(rule('.report-head h1')).toMatch(/overflow-wrap:\s*anywhere/)
     // Report head: the title block owns the row and actions wrap under a long name (#474).
     expect(rule('.report-head')).toMatch(/flex-wrap:\s*wrap/)
     expect(rule('.report-head-title')).toMatch(/flex:\s*1 1 16rem/)

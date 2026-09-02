@@ -737,7 +737,7 @@ export function MonteCarloPage() {
                         >
                           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                           <XAxis dataKey="pct" tickFormatter={(v) => `${v}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} />
-                          <YAxis tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
+                          <YAxis domain={[0, 1]} ticks={[0, 0.25, 0.5, 0.75, 1]} tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
                           <Tooltip
                             formatter={(v: unknown) =>
                               Number.isFinite(Number(v)) ? `${(Number(v) * 100).toFixed(1)}%` : '—'
@@ -786,7 +786,7 @@ export function MonteCarloPage() {
                 </div>
                 {visibleFrontier.annuitization.notes.length > 0 ? (
                   <div className="callout callout--note" role="note">
-                    <strong>Some comparisons were skipped</strong>
+                    <strong>Notes on this comparison</strong>
                     <ul>
                       {visibleFrontier.annuitization.notes.map((note) => (
                         <li key={note}>{note}</li>

@@ -393,7 +393,7 @@ function PensionDecisionPanel({ plan, pensionId }: { plan: Plan; pensionId: stri
         control over the money favor the lump sum. The table shows how the comparison moves, and the Insights page can
         preview the rollover against your full plan. A tradeoff, not advice.
       </p>
-      <ScrollRegion label="Lump sum vs annuity" style={{ border: 'none' }}>
+      <ScrollRegion label={`Lump sum vs annuity: ${analysis.pensionName}`} style={{ border: 'none' }}>
         <table className="compare-table">
           <thead>
             <tr>

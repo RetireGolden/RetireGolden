@@ -150,7 +150,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
           </p>
           <details>
             <summary>Buy-list (planning-grade)</summary>
-            <ScrollRegion label="Buy-list">
+            <ScrollRegion label={`Buy-list: ${ladder.name}`}>
               <table>
                 <thead>
                   <tr>

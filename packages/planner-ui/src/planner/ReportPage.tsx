@@ -9,6 +9,7 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { ScrollRegion } from './ScrollRegion'
+import { usePlannerEdition } from './editionContext'
 import {
   Area,
   AreaChart,
@@ -136,6 +137,7 @@ function ReportBody() {
       magi: y.magi,
     }
   })
+  const { homeLabel } = usePlannerEdition()
 
   return (
     <article className="report">
@@ -146,7 +148,7 @@ function ReportBody() {
           <nav className="workspace-breadcrumb no-print" aria-label="Breadcrumb">
             <ol>
               <li>
-                <Link to="/">Your plans</Link>
+                <Link to="/">{homeLabel}</Link>
               </li>
               <li>
                 <Link to={`/plan/${plan.id}`}>{plan.name}</Link>

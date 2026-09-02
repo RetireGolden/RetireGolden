@@ -27,7 +27,7 @@ import { EditableFieldset } from './EditableFieldset'
 import { MoneyField, NumberField, PercentField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { ScrollRegion } from './ScrollRegion'
-import { uniqueScenarioName } from './scenarioNames'
+import { scenarioPatchSignature, uniqueScenarioName, withDistinctNames } from './scenarioNames'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
@@ -431,10 +431,10 @@ function AddScenario() {
             // Re-adding the same lever produced a second identical row with the
             // same accessible names for Compare and Remove (#480): refuse an
             // identical patch, and suffix a repeated name so rows stay tellable.
-            // Patches differ only by their creation stamp when the lever is the
-            // same, so compare what they do (the operations), not the envelope.
-            const opsOf = (patch: Record<string, unknown>) => JSON.stringify(patch.operations ?? patch)
-            const twin = plan.scenarios.find((s) => opsOf(s.patch) === opsOf(built.patch))
+            // Compare what the patches do, not their envelopes: stamps, generated
+            // ids, and `before` evidence differ between two builds of one lever.
+            const signature = scenarioPatchSignature(built.patch)
+            const twin = plan.scenarios.find((s) => scenarioPatchSignature(s.patch) === signature)
             if (twin) {
               setSaveError(`This scenario is already in the list as "${twin.name}".`)
               return
@@ -874,6 +874,8 @@ function ComparableScenariosPage() {
       ? `${baselineHash}:${proposalHash}:${startYear}:${withMc ? `mc-${seed}` : 'deterministic'}`
       : null
   const overview = overviewKey && overviewResult?.key === overviewKey ? overviewResult.value : null
+  // Legacy plans may already hold same-named rows; disambiguate at render (#480).
+  const overviewRows = useMemo(() => (overview ? withDistinctNames(overview.rows) : []), [overview])
   const detail = detailKey && detailResult?.key === detailKey ? detailResult.value : null
   const storedDetailError =
     detailKey && detailResult?.key === detailKey ? detailResult.error : null
@@ -1027,7 +1029,7 @@ function ComparableScenariosPage() {
                 </tr>
               </thead>
               <tbody>
-                {overview.rows.map((row) => (
+                {overviewRows.map((row) => (
                     <tr key={row.scenarioId ?? 'base'}>
                       <td>
                         {row.scenarioId === null ? (

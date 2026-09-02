@@ -1110,6 +1110,12 @@
   background: color-mix(in srgb, var(--accent) 8%, var(--surface-1));
 }
 
+/* Neutral notes (what a run included or skipped): ink-tinted, no alarm color. */
+.callout--note {
+  border-color: color-mix(in srgb, var(--fg) 22%, var(--border));
+  background: color-mix(in srgb, var(--fg) 4%, var(--surface-1));
+}
+
 .callout ul {
   margin: 0.25rem 0 0;
   padding-left: 1.2rem;
@@ -2265,6 +2271,8 @@ html:has(.kpi-bar) {
 .report-head h1 {
   margin: 0;
   font-size: 1.6rem;
+  /* A pasted token or generated id has no spaces to wrap at. */
+  overflow-wrap: anywhere;
 }
 
 /* The title block owns the row; actions wrap beneath a long plan name instead
@@ -3176,4 +3184,3 @@ html:has(.kpi-bar) {
     background: none;
   }
 }
-

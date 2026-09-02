@@ -56,7 +56,7 @@ import * as scenariosModule from '@retiregolden/engine/scenarios/scenarios'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import * as scenarioLeverModule from '../scenarioLevers'
 import { MetricTable, ScenariosPage } from './ScenariosPage'
-import { uniqueScenarioName } from './scenarioNames'
+import { scenarioPatchSignature, uniqueScenarioName, withDistinctNames } from './scenarioNames'
 import {
   formatMetricValue,
   formatScenarioDelta,
@@ -91,6 +91,32 @@ describe('scenario row names (#480)', () => {
       '15% spending cut (3)',
     )
     expect(uniqueScenarioName('Other', ['15% spending cut'])).toBe('Other')
+  })
+
+  it('makes legacy same-named rows distinct at render without touching unique ones', () => {
+    const rows = withDistinctNames([{ name: 'A' }, { name: 'B' }, { name: 'A' }, { name: 'A' }])
+    expect(rows.map((r) => r.name)).toEqual(['A', 'B', 'A (2)', 'A (3)'])
+  })
+
+  it('signs a patch by what it does, ignoring stamps, generated ids, before evidence, and key order', () => {
+    const op = (extra: Record<string, unknown>) => ({
+      op: 'set',
+      path: '/expenses/baseAnnual',
+      value: 110_400,
+      ...extra,
+    })
+    const a = { createdAtIso: '2026-01-01T00:00:00Z', operations: [op({ before: { present: true, value: 96_000 } })] }
+    const b = { createdAtIso: '2026-02-02T00:00:00Z', operations: [op({ before: { present: true, value: 99_000 } })] }
+    expect(scenarioPatchSignature(a)).toBe(scenarioPatchSignature(b))
+    // A care request carries a generated event id in its value; two adds still match.
+    const care = (id: string) => ({
+      operations: [{ op: 'add', path: '/careEvents/-', value: { id, kind: 'home-care', startAge: 82 } }],
+    })
+    expect(scenarioPatchSignature(care('evt-1'))).toBe(scenarioPatchSignature(care('evt-2')))
+    // Key order does not matter; a different value does.
+    const reordered = { operations: [{ value: 110_400, path: '/expenses/baseAnnual', op: 'set' }] }
+    expect(scenarioPatchSignature(reordered)).toBe(scenarioPatchSignature(a))
+    expect(scenarioPatchSignature({ operations: [op({ value: 120_000 })] })).not.toBe(scenarioPatchSignature(a))
   })
 })
 

@@ -1060,7 +1060,7 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
           return (
             <div key={person.id} className="callout callout--info" style={{ marginTop: '0.6rem' }}>
               <strong>{person.name}</strong>
-              <ScrollRegion label="Paid in vs. received" style={{ border: 'none' }}>
+              <ScrollRegion label={`Paid in vs. received: ${person.name}`} style={{ border: 'none' }}>
                 <table className="claim-table">
                   <tbody>
                     <tr><td>Paid in (OASDI)</td><td>{fmtMoney(paidIn.paidIn)}</td></tr>
