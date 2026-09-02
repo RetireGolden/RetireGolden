@@ -87,7 +87,7 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
       )
       // The sticky KPI bar owns the top of the viewport inside a plan; a bubble
       // that would open under it flips below its trigger instead (#469).
-      const barBottom = document.querySelector('.kpi-bar')?.getBoundingClientRect().bottom ?? 0
+      const barBottom = button.closest('.workspace')?.querySelector('.kpi-bar')?.getBoundingClientRect().bottom ?? 0
       const minTop = Math.max(margin, barBottom + margin)
       const above = btn.top - bub.height - margin
       bubble.style.left = `${left}px`
@@ -176,7 +176,6 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
 
 export function ReadonlyField({ label, help, learn, value }: BaseProps & { value: ReactNode }) {
   const id = useId()
-  const valueId = `${id}-value`
   // A caption and a value: no input chrome, so it never looks editable
   // (#462), and no <label> or <output>, since neither fits a value that is
   // not a control and <output> is an implicit live region that would announce
@@ -189,7 +188,7 @@ export function ReadonlyField({ label, help, learn, value }: BaseProps & { value
         </span>
         {help || learn ? <HelpTip text={help} learn={learn} id={`${id}-help`} /> : null}
       </span>
-      <p id={valueId} className="field-readonly" aria-labelledby={id}>
+      <p className="field-readonly" aria-labelledby={id}>
         {value}
       </p>
     </div>

@@ -468,9 +468,13 @@
     flex-shrink: 0;
     align-self: center;
     margin: 0 0.35rem 0 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* A rule separates a group from the one before it; the first has none. */
+  .workspace-rail > .rail-group ~ .rail-group {
     padding-left: 0.5rem;
     border-left: 1px solid var(--border);
-    white-space: nowrap;
   }
 }
 
@@ -926,8 +930,9 @@
 .field-readonly {
   display: block;
   margin: 0;
-  /* Same vertical rhythm as an input so it sits on the row's baseline, but no
-     border or fill: it is a value, not a control (#462). */
+  /* Same vertical rhythm as an input so it sits on the row's baseline: the
+     transparent border keeps the box height, and there is no visible border
+     or fill, because it is a value, not a control (#462). */
   padding: 0.45rem 0;
   border: 1px solid transparent;
   color: var(--fg);

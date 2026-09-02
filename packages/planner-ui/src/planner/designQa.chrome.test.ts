@@ -464,7 +464,8 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
 
   it('between the phone and two-column layouts the brand anchors top-left and only the theme cluster wraps (#440)', () => {
     expect(indexCss).toMatch(/@media \(min-width: 641px\) and \(max-width: 880px\) \{\s*\.app-header \{\s*align-items: flex-start;/)
-    expect(indexCss).toMatch(/\.nav \{\s*flex-wrap: nowrap;\s*flex-shrink: 0;/)
+    // The nav may wrap or shrink; the brand stays anchored because the header is top-aligned.
+    expect(indexCss).not.toMatch(/\.nav \{\s*flex-wrap: nowrap;\s*flex-shrink: 0;/)
   })
 
   it('the rail strip shows a scroll cue, snaps to chips, separates groups, and scrolls itself to the active chip (#439)', () => {
@@ -481,6 +482,10 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
     expect(workspace).not.toContain('scrollIntoView')
     expect(workspace).not.toContain("'(max-width: 880px)'")
     expect(workspace).toContain('rail.scrollLeft = Math.max(0, Math.min(target, rail.scrollWidth - rail.clientWidth))')
+    expect(workspace).toContain('}, [location.pathname, location.search])')
+    expect(workspace).toContain('new ResizeObserver(reveal)')
+    // The first group carries no separator.
+    expect(css).toMatch(/\.workspace-rail > \.rail-group ~ \.rail-group \{\s*padding-left: 0\.5rem;\s*border-left: 1px solid var\(--border\)/)
   })
 
   it('the Planning age compound field spans two columns, not the row (#467)', () => {
@@ -490,13 +495,22 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
     expect(css).not.toMatch(/span the\s+whole \.field-with-action with field-span-full/)
   })
 
-  it('every chart frame on Monte Carlo, Results, and the bucket lens is a named figure (#473)', () => {
+  it('every chart frame on Monte Carlo, Results, and the bucket lens is a figure with exactly one name (#473)', () => {
     for (const rel of ['./MonteCarloPage.tsx', './ResultsPage.tsx', './BucketLensCard.tsx']) {
-      const frames = src(rel).match(/<div className="chart-frame[^"]*"[^>]*>/g) ?? []
-      expect(frames.length, rel).toBeGreaterThan(0)
-      for (const frame of frames) {
-        expect(frame, `${rel}: ${frame}`).toMatch(/role="(figure|img)"/)
-        expect(frame, `${rel}: ${frame}`).toMatch(/aria-label="[^"]+"|aria-labelledby="[^"]+"/)
+      const text = src(rel)
+      // A frame tag may span lines; a tag never contains < or >.
+      const tags = [...text.matchAll(/<div\b[^<>]*className="chart-frame[^"]*"[^<>]*>/g)]
+      expect(tags.length, rel).toBeGreaterThan(0)
+      for (const tag of tags) {
+        const frame = tag[0]
+        expect(frame, `${rel}: ${frame}`).toMatch(/role="figure"/)
+        const framed = /aria-label=|aria-labelledby=/.test(frame)
+        // The chart element inside the frame (the next tag ending in Chart) may
+        // carry the name instead; exactly one of the two must.
+        const rest = text.slice(tag.index! + frame.length)
+        const chart = rest.match(/<[A-Za-z]*Chart\b[^<>]*>/)
+        const inner = chart ? /aria-label=/.test(chart[0]) : false
+        expect(framed !== inner, `${rel}: one name for ${frame.slice(0, 60)}`).toBe(true)
       }
     }
   })
@@ -506,11 +520,11 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
     expect(readonly).not.toMatch(/dashed/)
     expect(readonly).not.toMatch(/background:/)
     const fields = src('./fields.tsx')
-    expect(fields).toMatch(/<p id=\{valueId\} className="field-readonly" aria-labelledby=\{id\}>/)
+    expect(fields).toMatch(/<p className="field-readonly" aria-labelledby=\{id\}>/)
     expect(fields).not.toMatch(/<output id=/)
   })
 
-  it('the help bubble clamps below the sticky KPI bar (#469)', () => {
-    expect(src('./fields.tsx')).toContain("document.querySelector('.kpi-bar')?.getBoundingClientRect().bottom")
+  it('the help bubble reads the KPI bar of its own workspace (#469); behaviour is in helpTipClamp.test.tsx', () => {
+    expect(src('./fields.tsx')).toContain("button.closest('.workspace')?.querySelector('.kpi-bar')?.getBoundingClientRect().bottom")
   })
 })

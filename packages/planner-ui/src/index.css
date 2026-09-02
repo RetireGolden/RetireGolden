@@ -352,11 +352,14 @@ code {
   .header-menu {
     flex-wrap: wrap;
     row-gap: 0.35rem;
+    min-width: 0;
   }
 
+  /* The nav may still wrap or shrink at the low end of the range (long
+     labels, translations); with the header top-aligned that no longer moves
+     the brand, which is the anchor #440 asked for. */
   .nav {
-    flex-wrap: nowrap;
-    flex-shrink: 0;
+    min-width: 0;
   }
 }
 

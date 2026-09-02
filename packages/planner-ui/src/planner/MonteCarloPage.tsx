@@ -461,7 +461,7 @@ export function MonteCarloPage() {
               <div
                 className="chart-frame chart-frame--spaced"
                 style={frameH(220)}
-                role="img"
+                role="figure"
                 aria-label={`Depletion probability by year: by ${depletionRows[depletionRows.length - 1]!.year}, ${depletionRows[depletionRows.length - 1]!.cumulativeProbability.toFixed(1)} percent of paths have depleted.`}
               >
                 <ResponsiveContainer width="100%" height="100%">
@@ -858,7 +858,7 @@ export function MonteCarloPage() {
             <div
               className="chart-frame"
               style={frameH(340)}
-              role="img"
+              role="figure"
               aria-label={
                 fanRows.length > 0
                   ? `Fan chart of investable assets by year. In ${fanRows[fanRows.length - 1]!.year}, the median is ${fmtMoneyCompact(fanRows[fanRows.length - 1]!.p50)}, with the 10th to 90th percentile range spanning ${fmtMoneyCompact(fanRows[fanRows.length - 1]!.p10)} to ${fmtMoneyCompact(fanRows[fanRows.length - 1]!.p90)}.`
@@ -887,7 +887,7 @@ export function MonteCarloPage() {
               <div
                 className="chart-frame"
                 style={frameH(240)}
-                role="img"
+                role="figure"
                 aria-label={`Histogram of ending investable balances across ${summary.pathCount.toLocaleString()} simulated paths. Median ending estate ${fmtMoneyCompact(summary.endingAfterTaxEstate.percentiles.p50)}.`}
               >
                 <ResponsiveContainer width="100%" height="100%">
@@ -908,7 +908,7 @@ export function MonteCarloPage() {
                 <div
                   className="chart-frame"
                   style={frameH(240)}
-                  role="img"
+                  role="figure"
                   aria-label={`Histogram of first-depletion years for the ${summary.depletionYearCounts.reduce((a, r) => a + r.count, 0)} paths that ran out of money.`}
                 >
                   <ResponsiveContainer width="100%" height="100%">

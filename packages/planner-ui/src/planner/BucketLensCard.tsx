@@ -70,7 +70,7 @@ export function BucketLensCard({
       </div>
       {preset ? (
         <>
-          <div className="chart-frame" style={frameH(280)} role="figure" aria-label="Bucket view: balances by bucket, by year">
+          <div className="chart-frame" style={frameH(280)} role="figure">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={rows}
