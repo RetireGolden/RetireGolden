@@ -112,13 +112,13 @@
       "id": "AN.callsite.delegate",
       "label": "frozen accepted annual evidence, coordinator invocation, exact result and warning consumption",
       "file": "projection/simulate.ts",
-      "lines": [6141, 6193],
+      "lines": [6141, 6188],
       "anchors": [
         { "line": 6141, "text": "const acaPublication = annualAcaResultPublication(Object.freeze({" },
         { "line": 6143, "text": "evaluation: Object.freeze({" },
-        { "line": 6174, "text": "fplInflationScale:" },
-        { "line": 6192, "text": "yearAcaResult = acaPublication.yearAcaResult" },
-        { "line": 6193, "text": "for (const warning of acaPublication.warnings) warnings.add(warning)" }
+        { "line": 6174, "text": "fplInflationScale: inflFactorFrom(pack.year, year)," },
+        { "line": 6187, "text": "yearAcaResult = acaPublication.yearAcaResult" },
+        { "line": 6188, "text": "for (const warning of acaPublication.warnings) warnings.add(warning)" }
       ]
     }
   ],

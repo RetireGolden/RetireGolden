@@ -97,7 +97,7 @@ function input(
     taxExemptInterest: 2_000,
     foreignExclusionAddback: 1_000,
     grossEnrollmentPremium: 12_000,
-    slcspBenchmarkPremiums: [700, 900, 800],
+    slcspBenchmarkPremiums: [700, 0, 800],
     healthcare: 15_000,
     healthcareExcludingAcaEnrollment: 8_000,
     ...overrides,
@@ -130,6 +130,7 @@ describe('annualAcaResultPublication', () => {
         acaSupportCodes: [
           'tax-exempt-interest-plan-derived',
           'tax-exempt-interest-plan-derived',
+          'tax-exempt-interest-contract-contradicted',
         ],
         acaQuote,
       },
@@ -142,13 +143,24 @@ describe('annualAcaResultPublication', () => {
     ])
     expect(result.yearAcaResult).toMatchObject({
       readiness: 'actionable',
-      supportCodes: ['actionable', 'tax-exempt-interest-plan-derived'],
+      supportCodes: [
+        'actionable',
+        'tax-exempt-interest-plan-derived',
+        'tax-exempt-interest-contract-contradicted',
+      ],
       householdMagi: 55_000,
+      magiComponents: {
+        federalAgi: 45_000,
+        nontaxableSocialSecurity: 3_000,
+        taxExemptInterest: 2_000,
+        foreignExclusionAddback: 0,
+        requiredFilerDependentMagi: 5_000,
+      },
       fplRegion: 'alaska',
       fplPct: 450,
       taxFamilySize: 2,
       grossEnrollmentPremium: 12_000,
-      applicableSlcspPremium: 2_400,
+      applicableSlcspPremium: 1_500,
       modeledAllowablePtc: 5_000,
       economicNetPremium: 7_000,
       cliffState: 'above-cliff',
@@ -227,8 +239,6 @@ describe('annualAcaResultPublication', () => {
       coveredMembers: [{
         personId: 'alive',
         coveredMonths: [1, 2],
-        grossEnrollmentPremium: 220.00000000000003,
-        applicableSlcspPremium: 220.00000000000003,
       }],
       applicableSlcspPremium: null,
       modeledAllowablePtc: null,
@@ -241,9 +251,34 @@ describe('annualAcaResultPublication', () => {
         grossPremiumFallback: true,
       },
     })
+    expect(result.yearAcaResult?.coveredMembers[0]?.grossEnrollmentPremium)
+      .toBeCloseTo(220)
+    expect(result.yearAcaResult?.coveredMembers[0]?.applicableSlcspPremium)
+      .toBeCloseTo(220)
   })
 
-  it('suppresses fallback member synthesis for duplicate contracts and pins both lower cliff states', () => {
+  it('uses positional fallback members for mismatched example contracts', () => {
+    const result = annualAcaResultPublication(input({
+      exampleContractInputMismatch: true,
+      marketplaceMonthsByPersonPosition: [2],
+    }))
+
+    expect(result.yearAcaResult).toMatchObject({
+      taxFamilyMembers: [
+        expect.objectContaining({ personId: 'primary' }),
+        expect.objectContaining({ personId: 'dependent' }),
+      ],
+      coveredMembers: [{
+        personId: 'primary',
+        coveredMonths: [1, 2],
+      }],
+      applicableSlcspPremium: null,
+    })
+    expect(result.yearAcaResult?.coveredMembers[0]?.grossEnrollmentPremium)
+      .toBeCloseTo(220)
+  })
+
+  it('suppresses fallback member synthesis for duplicate contracts and pins every lower cliff state', () => {
     const duplicate = annualAcaResultPublication(input({
       evaluation: {
         ...input().evaluation,
@@ -272,5 +307,19 @@ describe('annualAcaResultPublication', () => {
       },
     }))
     expect(atCliff.yearAcaResult?.cliffState).toBe('at-cliff')
+
+    const belowCliff = annualAcaResultPublication(input())
+    expect(belowCliff.yearAcaResult?.cliffState).toBe('below-cliff')
+
+    const standIn = annualAcaResultPublication(input({ isStandIn: true }))
+    expect(standIn.yearAcaResult?.federalPovertyLine).toBeNull()
+
+    const emptyFamily = annualAcaResultPublication(input({
+      contract: {
+        ...input().contract!,
+        taxFamilyMembers: [],
+      },
+    }))
+    expect(emptyFamily.yearAcaResult?.federalPovertyLine).toBeNull()
   })
 })

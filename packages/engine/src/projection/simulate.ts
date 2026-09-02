@@ -6171,12 +6171,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         pre65MonthlyPremiumPerPerson,
         healthInflationScale: healthInflFactor,
         parameterPack: pack,
-        fplInflationScale:
-          acaContractSnapshot !== null &&
-          !isStandIn &&
-          acaContractSnapshot.taxFamilyMembers.length > 0
-            ? inflFactorFrom(pack.year, year)
-            : 1,
+        fplInflationScale: inflFactorFrom(pack.year, year),
         federalAgi: federalDetail.agiBeforeFloor,
         grossSocialSecurity: incomes.socialSecurity,
         taxableSocialSecurity: federalDetail.taxableSocialSecurity,

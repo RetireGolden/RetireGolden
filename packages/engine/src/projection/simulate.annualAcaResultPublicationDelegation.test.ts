@@ -122,6 +122,9 @@ describe('simulatePlan delegates annual ACA result publication', () => {
     expect(Object.isFrozen(
       call.input.contract?.coveredMembers[0]?.enrollmentPremiumByMonth,
     )).toBe(true)
+    expect(Object.isFrozen(
+      call.input.contract?.coveredMembers[0]?.slcspBenchmarkPremiumByMonth,
+    )).toBe(true)
     expect(Object.isFrozen(call.input.people)).toBe(true)
     expect(Object.isFrozen(call.input.marketplaceMonthsByPersonPosition)).toBe(true)
     expect(Object.isFrozen(call.input.slcspBenchmarkPremiums)).toBe(true)
@@ -133,6 +136,8 @@ describe('simulatePlan delegates annual ACA result publication', () => {
     )
     expect(call.input.contract?.coveredMembers[0]?.enrollmentPremiumByMonth)
       .not.toBe(sourceContract?.coveredMembers[0]?.enrollmentPremiumByMonth)
+    expect(call.input.contract?.coveredMembers[0]?.slcspBenchmarkPremiumByMonth)
+      .not.toBe(sourceContract?.coveredMembers[0]?.slcspBenchmarkPremiumByMonth)
     expect(call.output).toBe(call.original)
     expect(year.aca).toBe(call.original.yearAcaResult)
   })
