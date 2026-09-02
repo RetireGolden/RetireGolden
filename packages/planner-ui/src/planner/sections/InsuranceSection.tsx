@@ -2,7 +2,7 @@
 
 import { useId, useMemo } from 'react'
 
-import type { CareEvent, InsurancePolicy, Plan } from '@retiregolden/engine/model/plan'
+import { ltcPolicySchema, type CareEvent, type InsurancePolicy, type Plan } from '@retiregolden/engine/model/plan'
 import { compareLtcStress } from '@retiregolden/engine/projection/compare'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
@@ -87,13 +87,14 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
           update((d) => {
             const p = d.insurance[index]!
             p.premiumMode = v
-            // premiumEndAge exists only while premiums run until an age (the
-            // schema requires it then and still bounds a stale one otherwise),
-            // so leaving that mode clears it rather than keeping an issue on
-            // a field that is no longer shown; entering it stores the age the
-            // field already displays as its default (#503).
+            // The schema requires premiumEndAge while premiums run until an
+            // age and still bounds one otherwise. Entering that mode stores the
+            // age the field already displays as its default; leaving it keeps
+            // a valid age for the round trip back and drops only one the schema
+            // rejects, so no issue is left on a field that is no longer shown
+            // (#503). The bound is the engine's, read from the schema itself.
             if (v === 'untilAge') p.premiumEndAge ??= 65
-            else delete p.premiumEndAge
+            else if (!ltcPolicySchema.shape.premiumEndAge.safeParse(p.premiumEndAge).success) delete p.premiumEndAge
           })
         }
       />

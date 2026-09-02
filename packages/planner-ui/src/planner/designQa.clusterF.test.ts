@@ -13,8 +13,8 @@ import { readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
-import { fmtMoneyCompact } from './format'
-import { labelOfPath } from './validationIssues'
+import { fmtMoneyCompact, parseAmount } from './format'
+import { labelOfPath, parseIssue } from './validationIssues'
 
 const read = (rel: string): string =>
   readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
@@ -30,9 +30,6 @@ describe('cluster F: fields carry the engine bound or its path', () => {
         'path={`accounts.${index}.survivorPct`}',
         'path={`accounts.${index}.payoutForm.survivorPct`}',
         'path={`accounts.${index}.payoutForm.certainYears`}',
-        'path={`accounts.${index}.startAge`}',
-        'path={`accounts.${index}.colaPct`}',
-        'path={`accounts.${index}.monthlyAmount`}',
       ]],
       // #496: Qualified dividends 999% was clamped to 100 with no feedback.
       ['./sections/LiquidAccountEditors.tsx', ['path={`accounts.${index}.qualifiedRatio`}']],
@@ -40,6 +37,20 @@ describe('cluster F: fields carry the engine bound or its path', () => {
     for (const [file, paths] of pins) {
       const src = read(file)
       for (const p of paths) expect(src, `${file} ${p}`).toContain(p)
+    }
+  })
+
+  it('the pension editor and the annuity editor each carry the paths their shared fields need', () => {
+    // The two editors render the same three fields from separate JSX, so a
+    // single `toContain` could pass with one of them unwired.
+    const src = read('./sections/PensionAnnuityAccountEditors.tsx')
+    const split = src.indexOf('export function AnnuityAccountEditor')
+    expect(split).toBeGreaterThan(0)
+    const pension = src.slice(src.indexOf('export function PensionAccountEditor'), split)
+    const annuity = src.slice(split)
+    for (const p of ['path={`accounts.${index}.startAge`}', 'path={`accounts.${index}.colaPct`}', 'path={`accounts.${index}.monthlyAmount`}']) {
+      expect(pension, `pension ${p}`).toContain(p)
+      expect(annuity, `annuity ${p}`).toContain(p)
     }
   })
 
@@ -70,7 +81,7 @@ describe('cluster F: fields carry the engine bound or its path', () => {
   it('the premium mode select clears a premium end age the schema no longer wants (#503)', () => {
     const src = read('./sections/InsuranceSection.tsx')
     expect(src).toContain("if (v === 'untilAge') p.premiumEndAge ??= 65")
-    expect(src).toContain('else delete p.premiumEndAge')
+    expect(src).toContain('else if (!ltcPolicySchema.shape.premiumEndAge.safeParse(p.premiumEndAge).success) delete p.premiumEndAge')
   })
 
   it('issue labels for the newly wired paths read as the cards do', () => {
@@ -82,6 +93,15 @@ describe('cluster F: fields carry the engine bound or its path', () => {
     expect(labelOfPath('accounts.0.colaPct')).toBe('Account 1: COLA')
     expect(labelOfPath('accounts.0.monthlyAmount')).toBe('Account 1: Monthly amount')
   })
+
+  it('a stored qualifiedRatio outside the engine\'s 0–1 reads its bound in the field\'s percent unit', () => {
+    // The card shows "Qualified dividends" as a percent; the engine bounds the ratio.
+    expect(parseIssue('accounts.1.qualifiedRatio: Too big: expected number to be <=1').advice).toBe('Must be at most 100')
+    expect(parseIssue('accounts.1.qualifiedRatio: Too small: expected number to be >=0').advice).toBe('Must be at least 0')
+    expect(parseIssue('accounts.1.qualifiedRatio: Too big: expected number to be <=1').label).toBe('Account 2: Qualified dividends')
+    // Other bounds are untouched.
+    expect(parseIssue('accounts.1.taxablePct: Too big: expected number to be <=100').advice).toBe('Must be at most 100')
+  })
 })
 
 describe('cluster F: compact KPI money degrades by magnitude, never by digit count (#495, #548)', () => {
@@ -92,6 +112,10 @@ describe('cluster F: compact KPI money degrades by magnitude, never by digit cou
     expect(fmtMoneyCompact(1_240_000)).toBe('$1.24M')
     expect(fmtMoneyCompact(-1_240_000)).toBe('−$1.24M')
     expect(fmtMoneyCompact(999_990_000)).toBe('$999.99M')
+    // The k tier hands off before it would read $1000k.
+    expect(fmtMoneyCompact(999_499)).toBe('$999k')
+    expect(fmtMoneyCompact(999_500)).toBe('$1.00M')
+    expect(fmtMoneyCompact(999_999.6)).toBe('$1.00M')
   })
 
   it('scales to B and T instead of a six-digit mantissa in millions', () => {
@@ -108,10 +132,24 @@ describe('cluster F: compact KPI money degrades by magnitude, never by digit cou
   it('past 999T there is no unit left: a short bare exponent, never "e+37M"', () => {
     const s = fmtMoneyCompact(1.181e37)
     expect(s).toBe('$1.18e+37')
+    // The T tier hands off exactly where its mantissa would round to 1000, never $1000.00T.
+    expect(fmtMoneyCompact(999_994_000_000_000)).toBe('$999.99T')
+    expect(fmtMoneyCompact(999_995_000_000_000)).toBe('$1.00e+15')
+    expect(fmtMoneyCompact(1e15)).toBe('$1.00e+15')
     // The walk's "$3702613729.99M today's $" subline (#495) is 3.7 quadrillion.
     expect(fmtMoneyCompact(3_702_613_729_990_000)).toBe('$3.70e+15')
     expect(s).not.toMatch(/[kMBT]$/)
     expect(s.length).toBeLessThanOrEqual(10)
     expect(fmtMoneyCompact(Number.POSITIVE_INFINITY)).toBe('—')
+  })
+
+  it('every suffix the formatter emits parses back into a money field', () => {
+    expect(parseAmount(fmtMoneyCompact(2_500_000_000))).toBe(2_500_000_000)
+    expect(parseAmount(fmtMoneyCompact(1.2e12))).toBe(1.2e12)
+    expect(parseAmount('$45k')).toBe(45_000)
+    expect(parseAmount('1.5m')).toBe(1_500_000)
+    expect(parseAmount('3B')).toBe(3e9)
+    expect(parseAmount('0.5t')).toBe(5e11)
+    expect(parseAmount('nope')).toBeNull()
   })
 })

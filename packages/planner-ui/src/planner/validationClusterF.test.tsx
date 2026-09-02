@@ -241,6 +241,52 @@ describe('validation cluster F', () => {
     expect(parsePlan(seeded).ok).toBe(true)
   })
 
+  it('leaving "Until an age" keeps a premium end age the schema accepts, so the round trip does not lose it (#503)', async () => {
+    const plan = createSamplePlan()
+    plan.careEvents = []
+    plan.insurance = [
+      {
+        kind: 'permanentLife',
+        id: 'life-1',
+        name: 'Whole life',
+        insured: plan.household.people[0]!.id,
+        beneficiary: 'estate',
+        annualPremium: 1200,
+        premiumMode: 'untilAge',
+        premiumEndAge: 72,
+        deathBenefit: 100_000,
+        cashValue: 10_000,
+        cashValueMode: 'flatRate',
+        cashValueGrowthPct: 4,
+      },
+    ]
+    expect(parsePlan(plan).ok).toBe(true)
+    const update = vi.fn()
+    await render(
+      <PlanCtx.Provider value={contextFor(plan, [], update)}>
+        <InsuranceSection />
+      </PlanCtx.Provider>,
+    )
+    await choose(labelledControl<HTMLSelectElement>('Premium'), 'paidUp')
+    const kept = structuredClone(plan)
+    update.mock.calls[0]![0](kept)
+    expect(kept.insurance[0]!).toMatchObject({ premiumMode: 'paidUp', premiumEndAge: 72 })
+    expect(parsePlan(kept).ok).toBe(true)
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(kept, [], update)}>
+            <InsuranceSection />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await choose(labelledControl<HTMLSelectElement>('Premium'), 'untilAge')
+    const back = structuredClone(kept)
+    update.mock.calls[1]![0](back)
+    expect(back.insurance[0]!).toMatchObject({ premiumMode: 'untilAge', premiumEndAge: 72 })
+  })
+
   it('Spending: a rejected goal amount and phase multiplier show at their fields, and From age 200 is flagged while typing (#492, #526, #545)', async () => {
     const plan = createSamplePlan()
     plan.expenses.phases = [{ fromAge: 75, multiplier: 99.5 }]
