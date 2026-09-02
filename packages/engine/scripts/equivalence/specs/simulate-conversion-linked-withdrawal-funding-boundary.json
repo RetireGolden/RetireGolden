@@ -1,0 +1,72 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-conversion-linked-withdrawal-funding-boundary",
+  "why": "Measured reach for the annual conversion-linked withdrawal funding coordinator extracted from simulatePlan. The full corpus exercises years without a linked group, refused baselines, provisional staging, all-or-nothing authorization, and the same settlement-attempt callback wiring in all four equivalence modes. Direct contract tests pin every fail-closed result and the exact T0/staging request envelopes. The hostile delegation test replaces an earned authorization with refusal and proves both authored legs stop moving, so the caller cannot rebuild the coordinator decision locally.",
+  "entries": [
+    {
+      "id": "AG.helper.empty",
+      "label": "no-unit or no-group fail-closed decision",
+      "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
+      "lines": [99, 104],
+      "anchors": [
+        { "line": 99, "text": "if (input.taxUnitId === null || input.omitActionIds.length === 0) {" },
+        { "line": 102, "text": "release: REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS," }
+      ]
+    },
+    {
+      "id": "AG.helper.baseline",
+      "label": "T0 counterfactual read and refusal predicate",
+      "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
+      "lines": [106, 121],
+      "anchors": [
+        { "line": 106, "text": "const baselineRead = runCounterfactualAnnualLiability({" },
+        { "line": 112, "text": "omitActionIds: input.omitActionIds," },
+        { "line": 121, "text": "if (baselineRead.status !== 'counterfactualAnnualLiabilityRead') {" }
+      ]
+    },
+    {
+      "id": "AG.helper.baselineValue",
+      "label": "successful T0 baseline materialization",
+      "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
+      "lines": [128, 131],
+      "anchors": [
+        { "line": 128, "text": "const baseline: Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> = {" },
+        { "line": 129, "text": "liability: baselineRead.liability," }
+      ]
+    },
+    {
+      "id": "AG.helper.staging",
+      "label": "transactional staging and refusal predicate",
+      "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
+      "lines": [132, 139],
+      "anchors": [
+        { "line": 132, "text": "const staged = probeAnnualPassUnderTransaction({" },
+        { "line": 139, "text": "if (staged.status !== 'annualPassProbeRead' || staged.observation === null) {" }
+      ]
+    },
+    {
+      "id": "AG.helper.authorization",
+      "label": "all-or-nothing authorization decision",
+      "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
+      "lines": [146, 152],
+      "anchors": [
+        { "line": 146, "text": "const authorized = authorizeConversionLinkedWithdrawalGroups(" },
+        { "line": 152, "text": "authorized.status === 'conversionLinkedWithdrawalGroupsAuthorized'" }
+      ]
+    },
+    {
+      "id": "AG.callsite.attempt",
+      "label": "frozen annual contract sharing one settlement-assumption vector",
+      "file": "projection/simulate.ts",
+      "lines": [8565, 8584],
+      "anchors": [
+        { "line": 8565, "text": "const linkedGroupFundingForAttempt = (" },
+        { "line": 8568, "text": ") => annualConversionLinkedWithdrawalFunding(Object.freeze({" },
+        { "line": 8573, "text": "omitActionIds: annualLinkedGroupOmissionIds," },
+        { "line": 8575, "text": "runPass: (" },
+        { "line": 8577, "text": ") => runPostContributionAnnualPass(" }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Direct tests, not the corpus counts, own synthetic checkpoint and authorization-refusal paths. Callback sharing and hostile output consumption are delegation-test responsibilities, not claims made by byte-identical captures."
+}

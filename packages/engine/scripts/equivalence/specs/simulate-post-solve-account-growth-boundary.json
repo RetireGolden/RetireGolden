@@ -96,24 +96,24 @@
       "label": "annual invocation and ordered caller-owned two-pass commits",
       "file": "projection/simulate.ts",
       "lines": [
-        8034,
-        8071
+        8017,
+        8054
       ],
       "anchors": [
         {
-          "line": 8034,
+          "line": 8017,
           "text": "const accountGrowth = annualPostSolveAccountGrowth({"
         },
         {
-          "line": 8055,
+          "line": 8038,
           "text": "state.balance = row.marketClosingBalance"
         },
         {
-          "line": 8060,
+          "line": 8043,
           "text": "priorYearPortfolioReturnPct = accountGrowth.priorYearPortfolioReturnPct"
         },
         {
-          "line": 8070,
+          "line": 8053,
           "text": "if (state.account.type === 'taxable') state.costBasis += row.reinvestedYield"
         }
       ]

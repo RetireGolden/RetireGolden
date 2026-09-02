@@ -176,7 +176,6 @@ import {
   asPersonId,
   asUsdCents,
   assessConversionLinkedWithdrawalGroups,
-  authorizeConversionLinkedWithdrawalGroups,
   evaluateAnnualQcdExecutionPrerequisites,
   evaluateRetirementActionSchedule,
   executeAnnualQcds,
@@ -220,10 +219,15 @@ import {
   ownedIraFundedAnnuityContracts,
 } from '../internal/iraAnnuityContractValue.js'
 import {
-  probeAnnualPassUnderTransaction,
   runCounterfactualAnnualLiability,
   type CounterfactualAnnualLiabilityResult,
 } from '../internal/counterfactualAnnualLiability.js'
+import {
+  annualConversionLinkedWithdrawalFunding,
+  REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
+  type AnnualConversionLinkedWithdrawalFundingPassRequest,
+  type AnnualConversionLinkedWithdrawalRelease,
+} from './internal/annualConversionLinkedWithdrawalFunding.js'
 import type { AnnualLiabilityRunTaxInput } from '../actions/annualLiabilityRunIdentity.js'
 import type {
   ConversionTaxFundingTaxUnitEvidence,
@@ -342,28 +346,6 @@ export interface SimulateOptions {
  * receives is built inside the pass, below the point a pre-pass has to run.
  * Deriving them is the consumer slice's work.
  */
-/**
- * What one run of the annual pass may do with the year's linked funding groups.
- *
- * Module-scope rather than inline so that `REFUSE_LINKED_GROUPS` below can be
- * the shared default: a run that says nothing about its groups refuses them,
- * and there is one object every such run points at rather than a fresh literal
- * per call site that could drift.
- */
-type LinkedGroupRelease =
-  | Readonly<{ kind: 'refuseAll' }>
-  | Readonly<{ kind: 'stageProvisionally' }>
-  | Readonly<{
-      kind: 'proven'
-      authorizations:
-        readonly Readonly<ConversionLinkedWithdrawalGroupAuthorization>[]
-    }>
-
-/** The permission every run has until a staging run earns it one. */
-const REFUSE_LINKED_GROUPS: Readonly<LinkedGroupRelease> = Object.freeze({
-  kind: 'refuseAll' as const,
-})
-
 export interface SimulateAnnualCounterfactualRequest {
   /** Retirement-action IDs every year's counterfactual run omits. */
   readonly omitActionIds: readonly ActionId[]
@@ -3238,7 +3220,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
        *
        * Note which runs are *not* on that list. The two settlement fallbacks —
        * after a rolled-back settlement, and when the settlement feature is off
-       * — both go through `linkedGroupPermissionForAttempt([])` like every
+       * — both go through `linkedGroupFundingForAttempt([])` like every
        * other committed run, so each stages under the empty assumption vector
        * and can be handed `proven`. A fallback is a different assumption
        * vector, not a lesser permission: the group either proved out under the
@@ -3255,7 +3237,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
        * the authorizations it carries were minted by
        * `authorizeConversionLinkedWithdrawalGroups` from that run's own facts.
        */
-      linkedGroupRelease: Readonly<LinkedGroupRelease> = REFUSE_LINKED_GROUPS,
+      linkedGroupRelease: Readonly<AnnualConversionLinkedWithdrawalRelease> =
+        REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
       /**
        * When true, this committed pass publishes `YearResult.cashFlow`.
        * Default false so a forgotten T0, staging-probe, or option-counterfactual
@@ -8574,114 +8557,30 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     /**
-     * `T0` for this year's conversion-linked withdrawal groups: one
-     * counterfactual pass with both legs of every group removed.
-     *
-     * Called from inside the attempt driver's per-attempt scope rather than
-     * once before it, which is the placement the counterfactual driver reserved
-     * for its consumer. It matters: the settlement loop runs the annual pass
-     * repeatedly under different assumed Form 8606 effects, and a baseline
-     * taken under one assumption vector is not a counterfactual of a run taken
-     * under another. Sharing the vector is what makes the difference of the two
-     * liabilities the group's tax effect and not the settlement's.
-     *
-     * The cost is real and bounded: a year with no linked group runs nothing
-     * extra, and a year with one doubles that year's passes.
-     *
-     * Every refusal returns null, and null is not a failure the year has to
-     * survive — it is the ordinary answer for a year with no group, no
-     * unambiguous filing unit, or a counterfactual that could not be restored.
-     * The pass then keeps the `unsupported` funding reason it had before any of
-     * this existed.
+     * One funding decision per settlement attempt. The callback closes over the
+     * attempt's Form-8606 assumption vector, so T0, provisional staging, and the
+     * committed run all evaluate the same annual inputs. The coordinator owns
+     * rollback and fail-closed authorization; this caller retains pass ordering.
      */
-    const runLinkedGroupCounterfactualBaseline = (
+    const linkedGroupFundingForAttempt = (
       assumedEffects:
         readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[],
-    ): Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null => {
-      const unit = conversionFundingTaxUnitEvidence
-      if (unit === null || annualLinkedGroupOmissionIds.length === 0) return null
-      const read = runCounterfactualAnnualLiability({
-        state: annualPassState,
-        request: {
-          planId: plan.id,
-          taxUnitId: unit.taxUnitId,
-          taxYear: year,
-          omitActionIds: annualLinkedGroupOmissionIds,
-          nonGroupTaxInputs: annualLiabilityNonGroupTaxInputs,
-        },
-        // No baseline of its own: a counterfactual that ran a counterfactual
-        // would not terminate, and it has nothing to evidence anyway — the
-        // group whose funding is in question is exactly what it removed.
-        runPass: (omittedRetirementActionIds) =>
-          runPostContributionAnnualPass(assumedEffects, omittedRetirementActionIds),
-      })
-      return read.status === 'counterfactualAnnualLiabilityRead'
-        ? { liability: read.liability, identity: read.identity }
-        : null
-    }
-
-    /**
-     * `T0`, then the staging run, then the permission the committed run gets.
-     *
-     * Three passes for a year with a linked group, one for a year without, and
-     * the middle one is the one that could not be avoided. `T1(F)` is the
-     * unit's annual liability *with the conversions present and funded as
-     * stated*, so it exists only in a run where the group already moved — a
-     * gate that demanded the fixed point before letting anything move would be
-     * asking for a figure that only movement produces. So the year runs itself
-     * once with the groups provisionally released, reads what that cost and
-     * what the legs actually moved, checks the arithmetic, and throws the run
-     * away. What survives is a permission the committed run can be handed.
-     *
-     * All three share one assumption vector, which is what makes the baseline a
-     * counterfactual of *this* attempt and the staging run a rehearsal of it
-     * rather than of a different one.
-     *
-     * The staging run is discarded through the same transaction the
-     * counterfactual uses, and for the same reason: the pass mints runtime
-     * occurrences with a bare push and no dedupe, so a staging run that leaked
-     * one would not crash the year — it would silently disqualify an owner from
-     * the exact-cent replay and fall the year back to legacy pro-rata
-     * economics. Every refusal below therefore returns the committed run's
-     * default, which is to refuse the groups exactly as they refused before any
-     * of this existed. A staging run that threw is included in that: the throw
-     * is the fail-closed backstop for a conversion-side refusal the seam's
-     * capacity read could not see.
-     */
-    const linkedGroupPermissionForAttempt = (
-      assumedEffects:
-        readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[],
-    ): {
-      baseline: Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null
-      release: Readonly<LinkedGroupRelease>
-    } => {
-      const baseline = runLinkedGroupCounterfactualBaseline(assumedEffects)
-      if (baseline === null) {
-        return { baseline: null, release: REFUSE_LINKED_GROUPS }
-      }
-      const staged = probeAnnualPassUnderTransaction({
-        state: annualPassState,
-        runProbe: () => runPostContributionAnnualPass(
-          assumedEffects,
-          undefined,
-          baseline,
-          { kind: 'stageProvisionally' as const },
-        ).yearResult.conversionLinkedWithdrawalGroupExecution ?? null,
-      })
-      if (staged.status !== 'annualPassProbeRead' || staged.observation === null) {
-        return { baseline, release: REFUSE_LINKED_GROUPS }
-      }
-      const authorized = authorizeConversionLinkedWithdrawalGroups(
-        staged.observation,
-      )
-      return {
-        baseline,
-        release:
-          authorized.status === 'conversionLinkedWithdrawalGroupsAuthorized'
-            ? { kind: 'proven' as const, authorizations: authorized.authorizations }
-            : REFUSE_LINKED_GROUPS,
-      }
-    }
+    ) => annualConversionLinkedWithdrawalFunding(Object.freeze({
+      state: annualPassState,
+      planId: plan.id,
+      taxYear: year,
+      taxUnitId: conversionFundingTaxUnitEvidence?.taxUnitId ?? null,
+      omitActionIds: annualLinkedGroupOmissionIds,
+      nonGroupTaxInputs: annualLiabilityNonGroupTaxInputs,
+      runPass: (
+        request: Readonly<AnnualConversionLinkedWithdrawalFundingPassRequest>,
+      ) => runPostContributionAnnualPass(
+        assumedEffects,
+        request.omittedRetirementActionIds,
+        request.annualLiabilityBaseline,
+        request.release,
+      ),
+    }))
 
     // The counterfactual pre-pass, before anything commits this year.
     //
@@ -8762,7 +8661,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         projectionStartTaxYear: year,
         initialAssumedEffects: [],
         runAttempt: (context) => {
-          const permission = linkedGroupPermissionForAttempt(
+          const permission = linkedGroupFundingForAttempt(
             context.assumedEffects,
           )
           const attempt = runPostContributionAnnualPass(
@@ -8917,7 +8816,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             )
           }
         }
-        const permission = linkedGroupPermissionForAttempt([])
+        const permission = linkedGroupFundingForAttempt([])
         settledAnnualPass = runPostContributionAnnualPass(
           [],
           undefined,
@@ -8927,7 +8826,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         )
       }
     } else {
-      const permission = linkedGroupPermissionForAttempt([])
+      const permission = linkedGroupFundingForAttempt([])
       settledAnnualPass = runPostContributionAnnualPass(
         [],
         undefined,

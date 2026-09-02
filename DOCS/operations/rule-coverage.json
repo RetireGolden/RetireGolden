@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 311,
+    "totalFiles": 312,
     "byStatus": {
       "partial": 46,
       "registered": 101,
-      "rule-free": 164,
+      "rule-free": 165,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -269,7 +269,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-09-02",
-      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual pension-and-annuity income planning is registered against internal/annualPensionAndAnnuityIncome.ts while this caller retains ordered exclusion-state and contract-value commits, runtime occurrence/application journaling, qualified-payment publication and cash-flow recording; post-solve liquid-account market growth is attested rule-free against internal/annualPostSolveAccountGrowth.ts while this caller retains the ordered market-balance/weight commits, HECM prior-return publication, and second-pass reinvestment/basis credits; retirement-action settlement publication is attested rule-free against internal/annualRetirementActionSettlementPublication.ts while this caller retains every economic commit; annual funding root selection is attested rule-free against internal/annualFundingFixedPoint.ts and candidate capital-loss/tax/ACA/HSA pricing is partially attested against internal/annualFundingCandidateEvaluation.ts, while this caller retains withdrawal selection, Form 8606 character, immutable annual-context construction, warning insertion, and every healthcare/HECM-debt/withdrawal/tax/penalty/balance/publication commit; candidate/final traditional, HSA, and Roth withdrawal characterization is partially attested against internal/annualFundingWithdrawalEffects.ts while this caller retains accepted Roth-basis mutation and every ledger/cash-flow commit; annual YearResult assembly is attested rule-free against internal/annualYearResultAssembly.ts while this caller retains settled-input construction, annual ordering, the outer settlement replay attachment, and the final result-array append; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual inherited-Roth post-flip and remaining retirement-action execution/gross-up orchestration"
+      "note": "QCD/RMD/annuity/contribution/QLAC covered; annual pension-and-annuity income planning is registered against internal/annualPensionAndAnnuityIncome.ts while this caller retains ordered exclusion-state and contract-value commits, runtime occurrence/application journaling, qualified-payment publication and cash-flow recording; post-solve liquid-account market growth is attested rule-free against internal/annualPostSolveAccountGrowth.ts while this caller retains the ordered market-balance/weight commits, HECM prior-return publication, and second-pass reinvestment/basis credits; retirement-action settlement publication is attested rule-free against internal/annualRetirementActionSettlementPublication.ts while this caller retains every economic commit; annual funding root selection is attested rule-free against internal/annualFundingFixedPoint.ts and candidate capital-loss/tax/ACA/HSA pricing is partially attested against internal/annualFundingCandidateEvaluation.ts, while this caller retains withdrawal selection, Form 8606 character, immutable annual-context construction, warning insertion, and every healthcare/HECM-debt/withdrawal/tax/penalty/balance/publication commit; candidate/final traditional, HSA, and Roth withdrawal characterization is partially attested against internal/annualFundingWithdrawalEffects.ts while this caller retains accepted Roth-basis mutation and every ledger/cash-flow commit; conversion-linked withdrawal T0 evaluation, discarded staging, and all-or-nothing authorization are attested rule-free against internal/annualConversionLinkedWithdrawalFunding.ts while this caller retains annual-pass mutation, settlement-attempt ordering, and every live commit; annual YearResult assembly is attested rule-free against internal/annualYearResultAssembly.ts while this caller retains settled-input construction, annual ordering, the outer settlement replay attachment, and the final result-array append; annual contribution planning is registered against internal/annualContributionsAndEmployerMatch.ts while this caller retains atomic result detachment/preflight, exact physical effect application, cached-snapshot recorder publication, grouped-ledger observation, and downstream reconciled totals/maps; residual inherited-Roth post-flip and remaining retirement-action execution/gross-up orchestration"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -409,11 +409,11 @@
     },
     {
       "directory": "projection",
-      "files": 75,
+      "files": 76,
       "byStatus": {
         "partial": 11,
         "registered": 14,
-        "rule-free": 50
+        "rule-free": 51
       }
     },
     {
