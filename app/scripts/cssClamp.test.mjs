@@ -10,13 +10,14 @@ describe('cssClamp', () => {
   })
 
   it('accepts the unminified source form too', () => {
-    const source = '.plan-card-name {\n  display: -webkit-box;\n  -webkit-box-orient: vertical;\n  -webkit-line-clamp: 2;\n  line-clamp: 2;\n  overflow: hidden;\n}'
+    const source = '.plan-card-name {\n  display: -webkit-box;\n  -webkit-box-orient: vertical;\n  -webkit-line-clamp: 2;\n  line-clamp: 2;\n  overflow: hidden;\n  overflow-wrap: anywhere;\n}'
     expect(clampProblems(source)).toEqual([])
   })
 
   it('names the declaration a minifier dropped', () => {
     expect(clampProblems(GOOD.replace('-webkit-box-orient:vertical;', ''))).toEqual(['.plan-card-name lost -webkit-box-orient: vertical'])
     expect(clampProblems(GOOD.replace('display:-webkit-box;', ''))).toEqual(['.plan-card-name lost display: -webkit-box'])
+    expect(clampProblems(GOOD.replace('overflow-wrap:anywhere;', ''))).toEqual(['.plan-card-name lost overflow-wrap: anywhere'])
   })
 
   it('fails closed when the rule or the clamp is missing', () => {

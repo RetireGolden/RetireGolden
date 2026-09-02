@@ -125,20 +125,17 @@ export function PromptDialog({ opts, onResult }: { opts: PromptOptions; onResult
             autoComplete="off"
             onChange={(e) => setValue(e.target.value)}
             onFocus={(e) => {
-              // Select the default so typing replaces it, then show its start:
-              // a selection scrolls the box to its end, which for a long
-              // "Copy of …" default hid what was being named (#533). The
-              // reset waits a frame because the selection's own scroll can
-              // land on a later layout pass and undo a synchronous one, and
-              // repeats on the frame after in case that pass is the second.
+              // Select the default so typing replaces it, with the selection
+              // running backward so its focus point (what the box scrolls to
+              // keep in view) is the start of the text, not the end. select()
+              // anchors at the start and focuses at the end, which for a long
+              // "Copy of …" default showed only the tail (#533); a backward
+              // range is the same selection with the box scrolled to its
+              // start, with no frame timing to lose. The scrollLeft reset is
+              // belt and braces for the same layout pass.
               const input = e.target
-              input.select()
-              requestAnimationFrame(() => {
-                input.scrollLeft = 0
-                requestAnimationFrame(() => {
-                  input.scrollLeft = 0
-                })
-              })
+              input.setSelectionRange(0, input.value.length, 'backward')
+              input.scrollLeft = 0
             }}
           />
         </div>

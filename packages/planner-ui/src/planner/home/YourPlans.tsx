@@ -35,18 +35,18 @@ export function YourPlans({ plans, headingLevel = 'h2', actions, onOpenPlan, onD
       </div>
       <div className="plan-grid">
         {plans.map((s) => (
-          /* The open action is a real button stretched over the card via CSS
-             (::after), so the whole card stays clickable without nesting the
-             Duplicate/Delete buttons inside another interactive element. */
+          /* The open action is a real button stretched over the whole card, so
+             the card stays clickable without nesting the Duplicate/Delete
+             buttons inside another interactive element. The visible name is a
+             sibling, not the button's content: its two-line clamp (#533) is a
+             -webkit-box, which WebKit does not honour on a button's
+             descendants. The button carries the whole name as its accessible
+             name, so nothing is lost to assistive tech. */
           <div key={s.id} className="plan-card">
-            <button
-              type="button"
-              className="plan-card-open"
-              aria-label={`Open plan ${s.name}`}
-              onClick={() => onOpenPlan(s.id)}
-            >
-              <span className="plan-card-name">{s.name}</span>
-            </button>
+            <span className="plan-card-name" aria-hidden="true">
+              {s.name}
+            </span>
+            <button type="button" className="plan-card-open" aria-label={`Open plan ${s.name}`} onClick={() => onOpenPlan(s.id)} />
             <span className="plan-card-meta">{fmtUpdated(s.updatedAtIso)}</span>
             {/* Duplicate/Delete write through the seam — hidden when read-only.
                 Opening a plan (read) stays available. */}

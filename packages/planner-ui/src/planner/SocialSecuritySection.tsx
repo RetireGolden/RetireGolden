@@ -174,9 +174,14 @@ export function FormerSpousesEditor({
           <div key={r.id} className="item-row">
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">{kindLabel}</span>
+                {/* Chip and ordinal share one inline box, so the flex gap falls
+                    only before the "Not applied" chip, as it does between a
+                    chip and a name elsewhere. */}
+                <span>
+                  <span className="type-chip">{kindLabel}</span>
+                  {ordinals[i]}
+                </span>
                 {inapplicable ? <span className="type-chip type-chip--muted">Not applied</span> : null}
-                {ordinals[i] ? <span>{ordinals[i].trim()}</span> : null}
               </span>
               <button
                 type="button"

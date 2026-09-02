@@ -346,30 +346,20 @@
 }
 
 /* The primary "open" action stretched over the whole card; sibling action
-   buttons re-raise themselves above it. */
+   buttons re-raise themselves above it. The button is empty (its name is the
+   aria-label; the visible name is a sibling so its clamp is not a button
+   descendant, #533), so it is the overlay itself rather than a ::after. */
 .plan-card-open {
-  display: block;
+  position: absolute;
+  inset: 0;
   padding: 0;
   border: none;
+  border-radius: var(--radius);
   background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
   cursor: pointer;
 }
 
-.plan-card-open::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius);
-}
-
 .plan-card-open:focus-visible {
-  outline: none;
-}
-
-.plan-card-open:focus-visible::after {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

@@ -124,6 +124,17 @@ describe('Design-QA cluster E chrome pins', () => {
   })
 })
 
+describe('Design-QA cluster E: the open control is the overlay, not the name\'s ancestor (#533)', () => {
+  it('the plan-card open button is the absolutely positioned overlay and carries the focus ring itself', () => {
+    const open = rule('.plan-card-open')
+    expect(open).toMatch(/position:\s*absolute/)
+    expect(open).toMatch(/inset:\s*0/)
+    expect(rule('.plan-card-open:focus-visible')).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    // No ::after overlay is left: the button is the overlay.
+    expect(css).not.toMatch(/\.plan-card-open::after\s*\{/)
+  })
+})
+
 describe('Design-QA cluster E: disabled field chrome (#535)', () => {
   it('a disabled text field and an affixed box take the flat disabled tokens', () => {
     const input = rule(".field input:not([type='checkbox']):not([type='radio']):not([type='range']):disabled")

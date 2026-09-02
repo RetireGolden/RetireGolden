@@ -23,6 +23,8 @@ import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport
 import { advanceBy, waitFor, waitForText } from '../testSupport/settle'
 import { routeTitleOf } from '../routeTitles'
 import { PromptDialog } from './dialogViews'
+import { YourPlans } from './home/YourPlans'
+import { categorySummaries } from '../learn/learningRegistry'
 import { PlanCtx } from './planContextCore'
 import { PLAN_NAME_MAX_LENGTH, PLAN_NAME_TITLE_MAX_LENGTH } from './planName'
 import { AccountsSection, InsuranceSection } from './sections'
@@ -135,6 +137,10 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     const input = document.querySelector<HTMLInputElement>('.modal-panel input[type="text"]')!
     expect(input.getAttribute('maxlength')).toBe(String(PLAN_NAME_MAX_LENGTH))
     expect(input.value).toBe('Copy of X')
+    // The default is selected for replacement, backward, so the box shows
+    // its start rather than its tail; deterministic, no frame timing.
+    expect(document.activeElement).toBe(input)
+    expect([input.selectionStart, input.selectionEnd, input.selectionDirection]).toEqual([0, 'Copy of X'.length, 'backward'])
     // Emptying the box and confirming hands back '' (the handlers turn that
     // into the clamped default, see duplicateNameFor); it is not a cancel.
     await typeInto(input, '')
@@ -170,6 +176,21 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     const { unmount } = await mountApp(`/plan/${plan.id}/report`, storeFor(plan))
     await waitFor(() => document.title.includes('· Report ·'), { what: 'the report title' })
     expect(document.title).toBe(`${plan.name.slice(0, PLAN_NAME_TITLE_MAX_LENGTH).trimEnd()}… · Report · RetireGolden`)
+    await unmount()
+  })
+
+  it('renders the clamped card name beside the open button, never inside it', async () => {
+    const plans = [{ id: 'p1', name: `${'Long name '.repeat(19)}end`, updatedAtIso: '2026-01-01T00:00:00.000Z', origin: 'user' as const }]
+    const { container, unmount } = await mount(
+      <YourPlans plans={plans} onOpenPlan={() => undefined} onDuplicate={() => undefined} onDelete={() => undefined} />,
+    )
+    const card = container.querySelector('.plan-card')!
+    const name = card.querySelector('.plan-card-name')!
+    expect(name.textContent).toBe(plans[0]!.name)
+    expect(name.closest('button')).toBeNull()
+    const open = card.querySelector('button.plan-card-open')!
+    expect(open.getAttribute('aria-label')).toBe(`Open plan ${plans[0]!.name}`)
+    expect(open.textContent).toBe('')
     await unmount()
   })
 
@@ -215,6 +236,11 @@ describe('Learn search (#534)', () => {
     await typeInto(input, 'zzzz-no-such-topic')
     // The heading follows at once; the live region waits for the query to rest.
     expect(controlled.querySelector('h2')!.textContent).toBe('0 results for “zzzz-no-such-topic”')
+    // A no-match search keeps the category index under it, and its copy
+    // counts the categories that are really there.
+    expect(controlled.querySelector('section[aria-label="Browse by category"]')).not.toBeNull()
+    expect(controlled.querySelector('section[aria-label="Featured topics"]')).toBeNull()
+    expect(controlled.textContent).toContain(`browse the ${categorySummaries().length} categories below`)
     expect(status.textContent).toBe('')
     await settle()
     expect(status.textContent).toBe('0 results for “zzzz-no-such-topic”')
@@ -225,6 +251,8 @@ describe('Learn search (#534)', () => {
     await settle()
     expect(status.textContent).toMatch(/^\d+ results? for “roth”$/)
     expect(controlled.querySelector('section[aria-label="Search results"]')).not.toBeNull()
+    // With hits, the index steps aside.
+    expect(controlled.querySelector('section[aria-label="Browse by category"]')).toBeNull()
 
     expect(box.classList.contains('learn-search--has-query')).toBe(true)
     const clear = container.querySelector<HTMLButtonElement>('button.learn-search-clear')!
@@ -239,6 +267,15 @@ describe('Learn search (#534)', () => {
     await settle()
     expect(status.textContent).toBe(SEARCH_CLEARED_MESSAGE)
     expect(document.activeElement).toBe(input)
+    // Reducing a settled search to spaces by hand ends it the same way, and
+    // the region says so with the same state-naming words.
+    await typeInto(input, 'roth')
+    await settle()
+    expect(status.textContent).toMatch(/for “roth”$/)
+    await typeInto(input, '  ')
+    await advanceBy(1)
+    expect(status.textContent).toBe(SEARCH_CLEARED_MESSAGE)
+    expect(controlled.querySelector('section[aria-label="Browse by category"]')).not.toBeNull()
     expect(container.querySelector('.learn-search-clear')).toBeNull()
     expect(box.classList.contains('learn-search--has-query')).toBe(false)
     expect(controlled.querySelector('section[aria-label="Browse by category"]')).not.toBeNull()
@@ -364,7 +401,12 @@ describe('Former spouses (#535)', () => {
     const { container, unmount } = await mount(
       <FormerSpousesEditor stream={stream} setStream={() => undefined} householdIsSingle />,
     )
-    expect(rowTitles(container, '.item-row')).toEqual(['Divorced ex(1)', 'Divorced ex(2)'])
+    expect(rowTitles(container, '.item-row')).toEqual(['Divorced ex (1)', 'Divorced ex (2)'])
+    // Chip and ordinal are one inline box, the title's first child.
+    expect([...container.querySelectorAll('.item-row .item-row-title > :first-child')].map((el) => el.textContent)).toEqual([
+      'Divorced ex (1)',
+      'Divorced ex (2)',
+    ])
     expect(removeLabels(container, '.item-row')).toEqual(['Remove divorced ex record (1)', 'Remove divorced ex record (2)'])
     await unmount()
   })
@@ -388,6 +430,43 @@ describe('Plan-scoped site-level paths (#536)', () => {
       expect(household.getAttribute('href')).toBe(`/plan/${plan.id}/household`)
       await unmount()
     }
+  })
+
+  it('collapses a single page\'s extra segments to its root', async () => {
+    const plan = createSamplePlan()
+    for (const [splat, to] of [
+      ['compare/foo', '/compare'],
+      ['examples/x/y', '/examples'],
+    ] as const) {
+      const { container, unmount } = await mountApp(`/plan/${plan.id}/${splat}`, storeFor(plan))
+      await waitForText(container, 'This plan has no such section')
+      const escape = [...container.querySelectorAll('a')].find((a) => a.textContent === `Go to ${routeTitleOf(to)}`)!
+      expect(escape, `escape for ${splat}`).toBeDefined()
+      expect(escape.getAttribute('href')).toBe(to)
+      await unmount()
+    }
+  })
+
+  it('names a Learn article escape by the article, and sends an unknown slug to the landing page', async () => {
+    const plan = createSamplePlan()
+    const { container, unmount } = await mountApp(`/plan/${plan.id}/learn/about-retiregolden`, storeFor(plan))
+    await waitForText(container, 'This plan has no such section')
+    await waitFor(() => [...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to About RetireGolden'), {
+      what: 'the article-titled escape',
+    })
+    const escape = [...container.querySelectorAll('a')].find((a) => a.textContent === 'Go to About RetireGolden')!
+    expect(escape.getAttribute('href')).toBe('/learn/about-retiregolden')
+    expect([...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to Learning Center')).toBe(false)
+    await unmount()
+
+    const missing = await mountApp(`/plan/${plan.id}/learn/no-such-article`, storeFor(plan))
+    await waitForText(missing.container, 'This plan has no such section')
+    await waitFor(() => [...missing.container.querySelectorAll('a')].some((a) => a.textContent === 'Go to Learning Center'), {
+      what: 'the landing escape for an unknown slug',
+    })
+    const landing = [...missing.container.querySelectorAll('a')].find((a) => a.textContent === 'Go to Learning Center')!
+    expect(landing.getAttribute('href')).toBe('/learn')
+    await missing.unmount()
   })
 
   it('keeps a deep link path and sends /sources where the site redirects it', async () => {

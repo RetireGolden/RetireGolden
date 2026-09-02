@@ -110,9 +110,10 @@ module"),
 `index.css` (the design-token layer, exported as
 `@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke` /
 `appShell.theme` test files. The Design-QA chrome pins live beside the planner as
-`planner/designQa.*.test.ts` (`chrome`, `clusterA`, `clusterB`, `clusterE`, `validation`): each
-reads the stylesheet block its cluster appended rather than rendering it, since jsdom computes no
-layout; a cluster's rendered-DOM checks sit in a sibling `.dom.test.tsx` (`clusterE`).
+`planner/designQa.*.test.ts` (`chrome`, `clusterA`, `clusterB`, `clusterC`, `clusterE`,
+`validation`): each reads the stylesheet block its cluster appended rather than rendering it, since
+jsdom computes no layout. A cluster's rendered checks sit in a sibling file named for what they
+render: `designQa.clusterC.markup.test.tsx` (markup) and `designQa.clusterE.dom.test.tsx` (DOM).
 
 | Folder (`src/`) | What's here |
 |--------|-------------|

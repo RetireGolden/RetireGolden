@@ -23,8 +23,12 @@ import { ArticleCard } from './LearnCards'
  */
 export const SEARCH_ANNOUNCE_DELAY_MS = 400
 
-/** What the live region says when a settled search is cleared and the index is back. */
-export const SEARCH_CLEARED_MESSAGE = 'Search cleared. Showing every topic.'
+/**
+ * What the live region says when a settled search ends and the index is
+ * back, however it ended: the clear button, or the box emptied or reduced to
+ * spaces by hand. The wording names the state, not the gesture.
+ */
+export const SEARCH_CLEARED_MESSAGE = 'Search ended. Showing every topic.'
 
 export function LearningCenterPage() {
   const [query, setQuery] = useState('')
@@ -56,6 +60,11 @@ export function LearningCenterPage() {
   }, [resultsSummary])
 
   const featured = featuredArticles()
+  const categories = categorySummaries()
+  // A search with no hits keeps the category index under it, so the copy
+  // that points at the categories is true and the page is never a dead end;
+  // the featured strip is for the idle page only (#534 review).
+  const showIndex = results === null || results.length === 0
 
   return (
     <article className="page learn-home">
@@ -108,7 +117,10 @@ export function LearningCenterPage() {
           <section className="learn-section" aria-label="Search results">
             <h2 className="learn-section-title">{resultsSummary}</h2>
             {results.length === 0 ? (
-              <p className="muted">No matching topics yet. Try a broader word, or browse the categories below.</p>
+              <p className="muted">
+                No matching topics for “{trimmed}”. Try a broader word, or browse the {categories.length}{' '}
+                {categories.length === 1 ? 'category' : 'categories'} below.
+              </p>
             ) : (
               <div className="learn-card-grid">
                 {results.map((a) => (
@@ -117,9 +129,10 @@ export function LearningCenterPage() {
               </div>
             )}
           </section>
-        ) : (
+        ) : null}
+        {showIndex ? (
           <>
-            {featured.length > 0 && (
+            {results === null && featured.length > 0 && (
               <section className="learn-section" aria-label="Featured topics">
                 <h2 className="learn-section-title">Featured topics</h2>
                 <div className="learn-card-grid">
@@ -132,7 +145,7 @@ export function LearningCenterPage() {
 
             <section className="learn-section" aria-label="Browse by category">
               <h2 className="learn-section-title">Browse by category</h2>
-              {categorySummaries().map(({ category, count }) => (
+              {categories.map(({ category, count }) => (
                 <div key={category.id} className="learn-category">
                   <div className="learn-category-head">
                     <h3 className="learn-category-title">{category.label}</h3>
@@ -164,7 +177,7 @@ export function LearningCenterPage() {
               </Link>
             </section>
           </>
-        )}
+        ) : null}
       </div>
     </article>
   )

@@ -14,6 +14,8 @@ const REQUIRED = [
   [/-webkit-box-orient\s*:\s*vertical\b/, '-webkit-box-orient: vertical'],
   [/-webkit-line-clamp\s*:\s*2\b/, '-webkit-line-clamp: 2'],
   [/\boverflow\s*:\s*hidden\b/, 'overflow: hidden'],
+  // A 182-character run with no spaces must still break inside the card.
+  [/overflow-wrap\s*:\s*anywhere\b/, 'overflow-wrap: anywhere'],
 ]
 
 /** Bodies of every rule whose selector list is exactly `selector`. */
