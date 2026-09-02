@@ -12,12 +12,13 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 
 // The registry load behind a Learn-article escape can be held open, so the
 // frame the page shows while it waits is observable (review of #536).
-const registryGate = vi.hoisted(() => ({ hold: null as Promise<void> | null }))
+const registryGate = vi.hoisted(() => ({ hold: null as Promise<void> | null, fail: false }))
 vi.mock('./learnRegistryLoader', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./learnRegistryLoader')>()
   return {
     loadLearningRegistry: async () => {
       if (registryGate.hold) await registryGate.hold
+      if (registryGate.fail) throw new Error('chunk failed to load')
       return actual.loadLearningRegistry()
     },
   }
@@ -501,6 +502,26 @@ describe('Plan-scoped site-level paths (#536)', () => {
     } finally {
       registryGate.hold = null
       release()
+    }
+  })
+
+  it('falls back to the landing page, and leaves the busy frame, when the index cannot be loaded', async () => {
+    const plan = createSamplePlan()
+    registryGate.fail = true
+    try {
+      const { container, unmount } = await mountApp(`/plan/${plan.id}/learn/about-retiregolden`, storeFor(plan))
+      await waitFor(() => [...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to Learning Center'), {
+        what: 'the landing escape after a failed load',
+      })
+      const landing = [...container.querySelectorAll('a')].find((a) => a.textContent === 'Go to Learning Center')!
+      expect(landing.getAttribute('href')).toBe('/learn')
+      expect(container.querySelector('.empty-state[aria-busy="true"]')).toBeNull()
+      expect(container.textContent).toContain('This plan has no such section')
+      // The way back into the plan is offered as ever.
+      expect([...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to Household')).toBe(true)
+      await unmount()
+    } finally {
+      registryGate.fail = false
     }
   })
 

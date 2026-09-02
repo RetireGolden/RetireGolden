@@ -86,9 +86,11 @@ function siteLevelEscapeOf(splat: string | undefined): (Escape & { articleSlug?:
 /**
  * The escape with an article slug resolved against the Learning Center
  * index: the article's own title when it exists, the landing page when it
- * does not. The registry stays out of this chunk (as it does for the tab
- * title in App.tsx), so the answer arrives asynchronously; undefined while
- * it is pending.
+ * does not, and the landing page again when the index cannot be loaded at
+ * all (a chunk that fails offline or after a deploy replaced it), so the
+ * card never stays busy for good. The registry stays out of this chunk (as
+ * it does for the tab title in App.tsx), so the answer arrives
+ * asynchronously; undefined while it is pending.
  */
 function useResolvedEscape(candidate: (Escape & { articleSlug?: string }) | null): Escape | null | undefined {
   const slug = candidate?.articleSlug
@@ -96,14 +98,19 @@ function useResolvedEscape(candidate: (Escape & { articleSlug?: string }) | null
   useEffect(() => {
     if (slug === undefined) return
     let cancelled = false
-    void loadLearningRegistry().then((m) => {
-      if (cancelled) return
-      const article = m.getArticle(slug)
-      setResolved({
-        slug,
-        escape: article ? { to: `/learn/${slug}`, label: article.title } : { to: '/learn', label: routeTitleOf('/learn') ?? 'Learning Center' },
-      })
-    })
+    const landing: Escape = { to: '/learn', label: routeTitleOf('/learn') ?? 'Learning Center' }
+    loadLearningRegistry().then(
+      (m) => {
+        if (cancelled) return
+        const article = m.getArticle(slug)
+        setResolved({ slug, escape: article ? { to: `/learn/${slug}`, label: article.title } : landing })
+      },
+      () => {
+        // The index did not load: the landing page is a mounted route the
+        // reader can still reach, and it beats a card that never settles.
+        if (!cancelled) setResolved({ slug, escape: landing })
+      },
+    )
     return () => {
       cancelled = true
     }
