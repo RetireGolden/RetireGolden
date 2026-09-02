@@ -402,8 +402,12 @@ export function StrategySection() {
           <MoneyField
             label="Capital loss carryforward"
             help="The net capital loss carried into this plan's first year, in today's dollars. Treated as flat nominal (capital losses don't index). Nets against realized gains first, then up to $3,000/yr against other income."
+            // The engine's floor (nonNegative) reaches the field by path, so a
+            // negative entry is flagged while typing and not kept, rather than
+            // rewritten to 0 in the commit with nothing said (#553).
+            path="household.capitalLossCarryforward"
             value={plan.household.capitalLossCarryforward}
-            onCommit={(v) => update((d) => void (d.household.capitalLossCarryforward = Math.max(0, v ?? 0)))}
+            onCommit={(v) => update((d) => void (d.household.capitalLossCarryforward = v ?? 0))}
           />
         </div>
       </div>

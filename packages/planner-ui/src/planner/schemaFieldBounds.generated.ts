@@ -79,6 +79,7 @@ export const SCHEMA_FIELD_BOUNDS: Record<string, SchemaBounds> = {
   'expenses.phases.N.fromAge': { min: 40, max: 110 },
   'expenses.phases.N.multiplier': { min: 0, max: 3 },
   'expenses.requiredAnnual': { min: 0 },
+  'household.capitalLossCarryforward': { min: 0 },
   'household.people.N.longevity.planningAge': { min: 60, max: 120 },
   'household.people.N.retirementAge': { min: 30, max: 80 },
   'household.stateMoves.N.fromYear': { min: 1900, max: 2200 },

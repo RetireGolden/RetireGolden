@@ -1013,12 +1013,20 @@
   margin-bottom: 0.8rem;
 }
 
+/* Title and Remove sit on the first line's baseline. A long title (a goal
+   label, #526) wraps inside its own box rather than pushing the control out
+   of the row or, when the head centred its children, sliding the control
+   to the middle of a two-line block. */
 .item-row-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   gap: 0.75rem;
   margin-bottom: 0.6rem;
+}
+
+.item-row-head > .btn-ghost {
+  flex-shrink: 0;
 }
 
 .item-row-title {
@@ -1026,6 +1034,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .type-chip {
