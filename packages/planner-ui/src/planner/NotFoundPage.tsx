@@ -135,21 +135,18 @@ export function WorkspaceNotFound() {
   // answers with its own not-found.
   const importWithheld = importAvailability.resolved && !importAvailability.enabled
   const resolved = useResolvedEscape(siteLevelEscapeOf(splat))
-  if (resolved === undefined) {
-    // An article escape whose title is still loading: neither the generic
-    // heading nor the plan links, which would paint a story the resolved
-    // card then contradicts. Neutral copy, and the region says it is busy.
-    return (
-      <div className="card empty-state" aria-busy="true">
-        <p className="muted">Finding the page this address was reaching for…</p>
-      </div>
-    )
-  }
-  const escape = resolved && (!resolved.to.startsWith('/import') || !importWithheld) ? resolved : undefined
+  // An article escape whose title is still loading: the heading and the
+  // plan links stay (a hung chunk must never leave the card without a way
+  // back), the copy is neutral, and no button is primary until the escape
+  // can be named, so nothing is painted that the resolved card contradicts.
+  const pending = resolved === undefined
+  const escape = !pending && resolved && (!resolved.to.startsWith('/import') || !importWithheld) ? resolved : undefined
   return (
-    <div className="card empty-state">
+    <div className="card empty-state" aria-busy={pending ? true : undefined}>
       <h2>This plan has no such section</h2>
-      {escape ? (
+      {pending ? (
+        <p className="muted">Finding the page this address was reaching for…</p>
+      ) : escape ? (
         <p className="muted">
           {escape.label} is not a section of this plan; it has its own page outside the plan workspace.
         </p>
@@ -165,7 +162,7 @@ export function WorkspaceNotFound() {
             Go to {escape.label}
           </Link>
         ) : null}
-        <Link to={`/plan/${planId}/household`} className={escape ? 'btn btn-secondary' : 'btn btn-primary'}>
+        <Link to={`/plan/${planId}/household`} className={escape || pending ? 'btn btn-secondary' : 'btn btn-primary'}>
           Go to Household
         </Link>
         <Link to={`/plan/${planId}/results`} className="btn btn-secondary">

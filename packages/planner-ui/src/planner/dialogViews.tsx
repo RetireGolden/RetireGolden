@@ -104,6 +104,10 @@ export function PromptDialog({ opts, onResult }: { opts: PromptOptions; onResult
   const [value, setValue] = useState(opts.defaultValue ?? '')
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
+  // The default is selected for replacement on the first focus only: a
+  // person who clicks back into the box to fix one character keeps their
+  // caret, rather than having the whole name selected again.
+  const selectedDefault = useRef(false)
   return (
     <Modal title={opts.title} onClose={() => onResult(null)} initialFocus={inputRef}>
       <form
@@ -125,6 +129,8 @@ export function PromptDialog({ opts, onResult }: { opts: PromptOptions; onResult
             autoComplete="off"
             onChange={(e) => setValue(e.target.value)}
             onFocus={(e) => {
+              if (selectedDefault.current) return
+              selectedDefault.current = true
               // Select the default so typing replaces it, with the selection
               // running backward so its focus point (what the box scrolls to
               // keep in view) is the start of the text, not the end. select()

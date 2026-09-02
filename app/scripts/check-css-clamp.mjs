@@ -22,7 +22,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { clampProblems } from './cssClamp.mjs'
+import { clampProblems, lacksRule } from './cssClamp.mjs'
 
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))
 
@@ -49,14 +49,16 @@ if (files.length === 0) {
   process.exit(1)
 }
 
-// The clamp lives in exactly one sheet; report the best candidate's problems.
-let best = null
-for (const file of files) {
-  const name = relative(distDir, file)
-  const problems = clampProblems(readFileSync(file, 'utf8'))
-  if (best === null || problems.length < best.problems.length) best = { name, problems }
-  if (problems.length === 0) break
+// The clamp lives in exactly one sheet. A sheet that has the rule but has it
+// wrong is the one to blame; a vendor sheet with no rule at all is never
+// reported ahead of it, so the diagnostic points at the right file.
+const results = files.map((file) => ({ name: relative(distDir, file), problems: clampProblems(readFileSync(file, 'utf8')) }))
+const withRule = results.filter((r) => !lacksRule(r.problems))
+if (withRule.length === 0) {
+  console.error(`check-css-clamp: no clamp rule in any of ${results.length} stylesheet(s): ${results.map((r) => r.name).join(', ')}`)
+  process.exit(1)
 }
+const best = withRule.reduce((a, b) => (b.problems.length < a.problems.length ? b : a))
 if (best.problems.length > 0) {
   console.error(`check-css-clamp: ${best.name}: ${best.problems.join('; ')}`)
   process.exit(1)

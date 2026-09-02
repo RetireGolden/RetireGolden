@@ -28,6 +28,7 @@ import {
   PLAN_NAME_TITLE_MAX_LENGTH,
   planNameForTitle,
 } from './planName'
+import { SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { ordinalSuffixes } from './sections/sectionHelpers'
 
 /** A sheet with LF line endings whatever the checkout wrote, so multi-line selector pins hold on Windows too. */
@@ -96,7 +97,7 @@ function lastRule(selector: string, source = css): string {
 
 describe('Design-QA cluster E chrome pins', () => {
   it('a plan card clamps a long name to two lines instead of growing past its siblings (#533)', () => {
-    const body = lastRule('.plan-card-name')
+    const body = lastRule('.plan-card-open > .plan-card-name')
     expect(body).toMatch(/-webkit-line-clamp:\s*2/)
     // The clamp is inert without both halves of the -webkit-box pair.
     expect(body).toMatch(/display:\s*-webkit-box/)
@@ -127,14 +128,35 @@ describe('Design-QA cluster E chrome pins', () => {
   })
 })
 
-describe('Design-QA cluster E: the open control is the overlay, not the name\'s ancestor (#533)', () => {
-  it('the plan-card open button is the absolutely positioned overlay and carries the focus ring itself', () => {
+describe('Design-QA cluster E: the reconciled plan card (#533)', () => {
+  it('the open button is a block that holds the name and stretches over the card by its ::after', () => {
     const open = rule('.plan-card-open')
-    expect(open).toMatch(/position:\s*absolute/)
-    expect(open).toMatch(/inset:\s*0/)
-    expect(rule('.plan-card-open:focus-visible')).toMatch(/outline:\s*2px solid var\(--accent\)/)
-    // No ::after overlay is left: the button is the overlay.
-    expect(css).not.toMatch(/\.plan-card-open::after\s*\{/)
+    expect(open).toMatch(/display:\s*block/)
+    expect(open).toMatch(/min-width:\s*0/)
+    expect(open).not.toMatch(/position:\s*absolute/)
+    const overlay = rule('.plan-card-open::after')
+    expect(overlay).toMatch(/position:\s*absolute/)
+    expect(overlay).toMatch(/inset:\s*0/)
+    expect(rule('.plan-card-open:focus-visible::after')).toMatch(/outline:\s*2px solid var\(--accent\)/)
+  })
+
+  it('the clamp is scoped to the name inside the open button, and the bare class stays unclamped for the example library', () => {
+    expect(rule('.plan-card-name')).not.toMatch(/line-clamp|-webkit-box/)
+    expect(css).not.toMatch(/^\.plan-card-name \{[^}]*line-clamp/m)
+    const clamp = rule('.plan-card-open > .plan-card-name')
+    expect(clamp).toMatch(/display:\s*-webkit-box/)
+    expect(clamp).toMatch(/-webkit-box-orient:\s*vertical/)
+    expect(clamp).toMatch(/-webkit-line-clamp:\s*2/)
+    expect(clamp).toMatch(/min-width:\s*0/)
+    expect(clamp).toMatch(/overflow:\s*hidden/)
+    expect(clamp).toMatch(/overflow-wrap:\s*anywhere/)
+  })
+
+  it('the former-spouse kind box keeps the direct-child chip protection', () => {
+    const kind = rule('.item-row-title > .item-row-kind')
+    expect(kind).toMatch(/flex-shrink:\s*0/)
+    expect(kind).toMatch(/overflow-wrap:\s*normal/)
+    expect(rule('.item-row-title > .type-chip')).toMatch(/flex-shrink:\s*0/)
   })
 })
 
@@ -210,6 +232,12 @@ describe('plan-name presentation limits (#533)', () => {
     expect(title.endsWith('…')).toBe(true)
     expect(title.length).toBe(PLAN_NAME_TITLE_MAX_LENGTH + 1)
     expect(planNameForTitle('x'.repeat(PLAN_NAME_TITLE_MAX_LENGTH))).toBe('x'.repeat(PLAN_NAME_TITLE_MAX_LENGTH))
+  })
+})
+
+describe('survivor floor copy (#535 review)', () => {
+  it('the engine floor is a whole number of months, which the copy relies on', () => {
+    expect(Number.isInteger(SURVIVOR_MIN_MARRIAGE_YEARS * 12)).toBe(true)
   })
 })
 

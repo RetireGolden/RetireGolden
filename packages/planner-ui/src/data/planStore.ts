@@ -15,7 +15,7 @@ import {
   type Plan,
 } from '@retiregolden/engine/model/plan'
 import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
-import { duplicateNameFor } from '../planner/planName'
+import { duplicateNameDefault } from './planName'
 
 const DB_NAME = 'retiregolden.v2'
 const DB_VERSION = 1
@@ -130,10 +130,12 @@ export function cloneAsUserPlan(source: Plan, opts: DuplicatePlanOptions = {}): 
   const nowIso = now().toISOString()
   const clone: Plan = structuredClone(source)
   clone.id = (opts.newId ?? (() => crypto.randomUUID()))()
-  // The same cap and fallback the Duplicate prompt applies, so a name that
-  // reaches the store blank (or from a caller with no prompt) never exceeds
-  // what the prompt would have accepted (#533 review).
-  clone.name = duplicateNameFor(opts.name ?? '', source.name)
+  // A name the caller chose is stored as given (trimmed): the cap is a
+  // presentation limit the prompts apply to typed text, not a schema rule.
+  // Only the store's own fallback goes through it, so a Duplicate that
+  // reaches here blank never exceeds what the prompt would have accepted
+  // (#533 review).
+  clone.name = opts.name?.trim() || duplicateNameDefault(source.name)
   clone.origin = 'user'
   clone.exampleSourceId = source.exampleSourceId
   clone.createdAtIso = nowIso

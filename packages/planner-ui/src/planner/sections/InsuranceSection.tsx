@@ -438,22 +438,33 @@ export function InsuranceSection() {
       (a, b) =>
         INSURANCE_KIND_ORDER.indexOf(a.policy.kind) - INSURANCE_KIND_ORDER.indexOf(b.policy.kind) || a.index - b.index,
     )
+  // Keyed by kind and name because the displayed title is the kind chip
+  // plus the name: two "Whole life" policies of one kind repeat and get
+  // ordinals; an LTC and a permanent-life policy that share a name do not,
+  // since their chips already tell them apart. If the chip ever left the
+  // title, the key would have to drop the kind with it.
   const policyOrdinals = ordinalSuffixes(policies.map(({ policy }) => `${policy.kind} ${policy.name}`))
   // Grouping means a new card lands in its kind's group, which can be well
   // above the add row when the other kind fills the list; focus and view
   // follow it there so the add never looks like it did nothing (#550 review).
-  // A ref, not state: the id is consumed once the card exists and nothing
-  // renders from it, so no re-render is owed when it is set or cleared.
-  const addedPolicyId = useRef<string | null>(null)
+  // A ref, not state: the add is consumed once the card exists and nothing
+  // renders from it, so no re-render is owed when it is set or cleared. It
+  // remembers the control that was clicked, so focus is moved only while it
+  // is still there (or nowhere): a person who has already moved on to
+  // another field between the click and this effect keeps their place.
+  const sectionRef = useRef<HTMLElement>(null)
+  const addedPolicy = useRef<{ id: string; trigger: HTMLElement } | null>(null)
   useEffect(() => {
-    const id = addedPolicyId.current
-    if (id === null) return
-    // One attempt per add, found or not: a row that is not in the document
+    const added = addedPolicy.current
+    if (added === null) return
+    // One attempt per add, found or not: a row that is not in this section
     // by the time the plan holds it is never going to be, so the ref must
     // not keep retrying on every later change.
-    addedPolicyId.current = null
-    const row = document.querySelector<HTMLElement>(`[data-policy-id="${id}"]`)
+    addedPolicy.current = null
+    const row = sectionRef.current?.querySelector<HTMLElement>(`[data-policy-id="${added.id}"]`)
     if (!row) return
+    const active = document.activeElement
+    if (active !== null && active !== document.body && active !== added.trigger) return
     row.querySelector<HTMLElement>('input, select')?.focus()
     row.scrollIntoView?.({ block: 'nearest' })
   }, [plan.insurance])
@@ -464,7 +475,7 @@ export function InsuranceSection() {
   )
   const careOrdinals = ordinalSuffixes(careTitles)
   return (
-    <section>
+    <section ref={sectionRef}>
       <div className="card">
         <h2>Insurance</h2>
         <p className="card-hint">
@@ -498,9 +509,9 @@ export function InsuranceSection() {
               key={k}
               type="button"
               className="btn btn-secondary btn-small"
-              onClick={() => {
+              onClick={(e) => {
                 const policy = makeInsurance(k, firstPerson)
-                addedPolicyId.current = policy.id
+                addedPolicy.current = { id: policy.id, trigger: e.currentTarget }
                 update((d) => void d.insurance.push(policy))
               }}
             >

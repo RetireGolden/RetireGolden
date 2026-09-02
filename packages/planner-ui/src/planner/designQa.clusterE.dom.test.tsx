@@ -150,6 +150,10 @@ describe('Duplicate prompt and long plan names (#533)', () => {
       expect(clone.name.length).toBeLessThanOrEqual(PLAN_NAME_MAX_LENGTH)
     }
     expect(cloneAsUserPlan(source, { name: '  Kept  ' }).clone.name).toBe('Kept')
+    // A name the caller chose is stored as given: the cap is the prompt's,
+    // not the store's, so a programmatic clone keeps a longer name.
+    const chosen = 'c'.repeat(PLAN_NAME_MAX_LENGTH + 30)
+    expect(cloneAsUserPlan(source, { name: chosen }).clone.name).toBe(chosen)
   })
 
   it('caps the prompt input at the plan-name limit', async () => {
@@ -167,6 +171,13 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     // its start rather than its tail; deterministic, no frame timing.
     expect(document.activeElement).toBe(input)
     expect([input.selectionStart, input.selectionEnd, input.selectionDirection]).toEqual([0, 'Copy of X'.length, 'backward'])
+    // A later refocus keeps the caret where the person left it.
+    await act(async () => {
+      input.setSelectionRange(3, 3)
+      input.blur()
+      input.focus()
+    })
+    expect([input.selectionStart, input.selectionEnd]).toEqual([3, 3])
     // Emptying the box and confirming hands back '' (the handlers turn that
     // into the clamped default, see duplicateNameFor); it is not a cancel.
     await typeInto(input, '')
@@ -192,7 +203,14 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     // cluster A's #501 rule, pinned in designQa.clusterA.test.ts).
     expect(nameInput.getAttribute('maxlength')).toBe(String(plan.name.length))
     expect(nameInput.value).toBe(plan.name)
-    expect(container.querySelector('.workspace-breadcrumb [aria-current="page"]')!.textContent).toBe(plan.name)
+    // The cap is fixed at load: a Backspace does not shrink it, so the
+    // deleted character can be typed back.
+    const loadedLength = plan.name.length
+    await typeInto(nameInput, plan.name.slice(0, -1))
+    expect(nameInput.value.length).toBe(loadedLength - 1)
+    expect(nameInput.getAttribute('maxlength')).toBe(String(loadedLength))
+    // The crumb follows the input (the stored name is what was just typed).
+    expect(container.querySelector('.workspace-breadcrumb [aria-current="page"]')!.textContent).toBe(nameInput.value)
     await unmount()
   })
 
@@ -205,18 +223,19 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     await unmount()
   })
 
-  it('renders the clamped card name beside the open button, never inside it', async () => {
+  it('the open button holds the clamped name as its text, with no aria-label repeating it', async () => {
     const plans = [{ id: 'p1', name: `${'Long name '.repeat(19)}end`, updatedAtIso: '2026-01-01T00:00:00.000Z', origin: 'user' as const }]
     const { container, unmount } = await mount(
       <YourPlans plans={plans} onOpenPlan={() => undefined} onDuplicate={() => undefined} onDelete={() => undefined} />,
     )
     const card = container.querySelector('.plan-card')!
-    const name = card.querySelector('.plan-card-name')!
-    expect(name.textContent).toBe(plans[0]!.name)
-    expect(name.closest('button')).toBeNull()
     const open = card.querySelector('button.plan-card-open')!
-    expect(open.getAttribute('aria-label')).toBe(`Open plan ${plans[0]!.name}`)
-    expect(open.textContent).toBe('')
+    const name = open.querySelector(':scope > .plan-card-name')!
+    expect(name.textContent).toBe(plans[0]!.name)
+    expect(open.textContent).toBe(plans[0]!.name)
+    expect(open.hasAttribute('aria-label')).toBe(false)
+    // Sibling actions stay outside the open control.
+    expect(card.querySelector('.plan-card-actions')!.closest('button')).toBeNull()
     await unmount()
   })
 
@@ -479,7 +498,7 @@ describe('Plan-scoped site-level paths (#536)', () => {
     }
   })
 
-  it('shows neutral copy, not the generic heading or the plan links, while an article escape resolves', async () => {
+  it('keeps the plan exits and neutral copy, with nothing primary, while an article escape resolves', async () => {
     const plan = createSamplePlan()
     let release: () => void = () => undefined
     registryGate.hold = new Promise<void>((resolve) => {
@@ -489,8 +508,12 @@ describe('Plan-scoped site-level paths (#536)', () => {
       const { container, unmount } = await mountApp(`/plan/${plan.id}/learn/about-retiregolden`, storeFor(plan))
       await waitForSelector(container, '.empty-state[aria-busy="true"]', { what: 'the pending frame' })
       expect(container.textContent).toContain('Finding the page this address was reaching for')
-      expect(container.textContent).not.toContain('This plan has no such section')
-      expect([...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to Household')).toBe(false)
+      // The plan exits stay while the title loads; nothing is primary yet.
+      const household = [...container.querySelectorAll('a')].find((a) => a.textContent === 'Go to Household')!
+      expect(household).toBeDefined()
+      expect(household.className).toContain('btn-secondary')
+      expect(container.querySelector('.empty-state .btn-primary')).toBeNull()
+      expect([...container.querySelectorAll('a')].some((a) => a.textContent?.startsWith('Go to Learning'))).toBe(false)
       release()
       registryGate.hold = null
       await waitFor(() => [...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to About RetireGolden'), {

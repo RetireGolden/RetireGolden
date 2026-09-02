@@ -4,7 +4,7 @@
  * deterministic projection live as the plan changes.
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
@@ -240,18 +240,20 @@ function KpiBar() {
 function PlanName() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
+  // The cap is for what is typed, never for what is stored: a name that is
+  // already past it (imported, or saved before the cap) keeps its full
+  // length here, or the first keystroke would persist it silently
+  // truncated. The limit is fixed once per plan load (the component is
+  // keyed by plan id) at max(cap, stored length), so the value can never
+  // exceed the length the plan was loaded with, and a name shortened by a
+  // Backspace can be typed back out to that length (review of #533).
+  const [nameCap] = useState(() => Math.max(PLAN_NAME_MAX_LENGTH, plan.name.length))
   return (
     <input
       className="plan-name-input"
       value={plan.name}
       aria-label="Plan name"
-      // The cap is for what is typed, never for what is stored: a name that
-      // is already past it (imported, or saved before the cap) keeps its full
-      // length here, or the first keystroke would persist it silently
-      // truncated; the box's limit is then that length, so the value can
-      // never exceed the stored length, though within it a shortened name
-      // may be typed back out to that length (review of #533).
-      maxLength={Math.max(PLAN_NAME_MAX_LENGTH, plan.name.length)}
+      maxLength={nameCap}
       disabled={readOnly}
       onChange={(e) =>
         update((d) => {
@@ -345,7 +347,7 @@ function WorkspaceInner() {
               <li aria-current="page">{plan.name}</li>
             </ol>
           </nav>
-          <PlanName />
+          <PlanName key={plan.id} />
         </div>
         <div className="workspace-head-actions">
           {readOnly ? null : (

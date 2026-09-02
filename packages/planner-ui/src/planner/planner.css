@@ -345,21 +345,34 @@
   transform: none;
 }
 
-/* The primary "open" action stretched over the whole card; sibling action
-   buttons re-raise themselves above it. The button is empty (its name is the
-   aria-label; the visible name is a sibling so its clamp is not a button
-   descendant, #533), so it is the overlay itself rather than a ::after. */
+/* The primary "open" action: a block button holding the visible name,
+   stretched over the whole card by its ::after; sibling action buttons
+   re-raise themselves above it. min-width: 0 lets the button shrink to the
+   card as a flex item instead of sizing to an unbroken name (#533). */
 .plan-card-open {
-  position: absolute;
-  inset: 0;
+  display: block;
+  min-width: 0;
   padding: 0;
   border: none;
-  border-radius: var(--radius);
   background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
+.plan-card-open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
 .plan-card-open:focus-visible {
+  outline: none;
+}
+
+.plan-card-open:focus-visible::after {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -3520,19 +3533,35 @@ html:has(.kpi-bar) {
    The #501 breadcrumb truncation this cluster once carried is cluster A's
    above, for the workspace crumb and the report's linked crumb alike. */
 
-/* A long plan name clamps to two lines on its card, so one card never runs to
-   three times its siblings' height and pushes the grid rows apart (#533). The
-   open button still carries the whole name as its accessible name. The clamp
-   needs the -webkit-box display and orientation pair; the web build checks
-   the built sheet still carries it (app/scripts/check-css-clamp.mjs, run by
+/* A long plan name clamps to two lines on its Your-plans card, so one card
+   never runs to three times its siblings' height and pushes the grid rows
+   apart (#533). Scoped to the name inside the open button: the example
+   library's headings share the class and are not clamped. The name is a
+   block-level -webkit-box inside the button, not a flex item of the card,
+   so no min-height: auto can size it to unclamped content; min-width: 0
+   lets it shrink to the button. The button's accessible name is this text,
+   whole (line-clamp hides lines, it does not remove them). The clamp needs
+   the -webkit-box display and orientation pair; the web build checks the
+   built sheet still carries it (app/scripts/check-css-clamp.mjs, run by
    the app's build script after vite build). */
-.plan-card-name {
+.plan-card-open > .plan-card-name {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
+  min-width: 0;
   overflow: hidden;
   overflow-wrap: anywhere;
+}
+
+/* The former-spouse title leads with its kind chip and ordinal in one box;
+   the box keeps the direct-child chip protection (the title's
+   overflow-wrap: anywhere would otherwise let the chip wrap letter by
+   letter beside "Not applied"). */
+.item-row-title > .item-row-kind {
+  flex-shrink: 0;
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 
 /* The Learn search box ends in a real clear button (#534). The UA's own

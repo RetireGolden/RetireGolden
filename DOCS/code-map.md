@@ -110,10 +110,11 @@ module"),
 `index.css` (the design-token layer, exported as
 `@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke` /
 `appShell.theme` test files. The Design-QA chrome pins live beside the planner as
-`planner/designQa.*.test.ts` (`chrome`, `clusterA`, `clusterB`, `clusterC`, `clusterE`,
-`validation`): each reads the stylesheet block its cluster appended rather than rendering it, since
-jsdom computes no layout. A cluster's rendered checks sit in a sibling file named for what they
-render: `designQa.clusterC.markup.test.tsx` (markup) and `designQa.clusterE.dom.test.tsx` (DOM).
+`planner/designQa.*.test.ts` (`chrome`, `clusterA`, `clusterB`, `clusterC`, `clusterE`, `clusterF`,
+`clusterH`, `validation`): each reads the stylesheet block its cluster appended rather than rendering it,
+since jsdom computes no layout. A cluster's rendered checks sit in a sibling file named for what they
+render: `designQa.clusterC.markup.test.tsx` and `designQa.clusterH.markup.test.tsx` (markup) and
+`designQa.clusterE.dom.test.tsx` (DOM). The list is by hand; `ls planner/designQa.*` is the truth.
 
 | Folder (`src/`) | What's here |
 |--------|-------------|
@@ -205,7 +206,7 @@ these across all three workspace packages (engine, then planner-ui, then app); t
 | Command (repo root) | Does |
 |---------|------|
 | `pnpm dev` | Vite dev server (app) |
-| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build`, the bundle budget, and sitemap generation → `app/dist/` |
+| `pnpm build` | Engine `tsc -b`, planner-ui `tsc -b` (type check — the package ships source), then app `tsc -b && vite build`, the bundle budget, the CSS clamp gate (`check-css-clamp.mjs`), and sitemap generation → `app/dist/` |
 | `pnpm test` | Vitest in every workspace (co-located `*.test.ts(x)`) |
 | `pnpm test:coverage` | Vitest with the coverage thresholds CI enforces (per workspace) |
 | `pnpm lint` | ESLint in every workspace (incl. the engine-purity rule) |

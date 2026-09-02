@@ -17,6 +17,16 @@ import {
   summarizeComputation,
 } from '../socialSecurity/explain'
 import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
+
+/**
+ * The survivor floor as people read it: in months when the engine's value is
+ * a whole number of months, else in years as the engine states it, so the
+ * copy never rounds the floor to something the engine does not apply.
+ */
+function survivorFloorLabel(): string {
+  const months = SURVIVOR_MIN_MARRIAGE_YEARS * 12
+  return Number.isInteger(months) ? `${months} months (${SURVIVOR_MIN_MARRIAGE_YEARS} years)` : `${SURVIVOR_MIN_MARRIAGE_YEARS} years`
+}
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { parseSsaStatementXml } from '../socialSecurity/ssaStatementXml'
@@ -174,10 +184,10 @@ export function FormerSpousesEditor({
           <div key={r.id} className="item-row">
             <div className="item-row-head">
               <span className="item-row-title">
-                {/* Chip and ordinal share one inline box, so the flex gap falls
-                    only before the "Not applied" chip, as it does between a
-                    chip and a name elsewhere. */}
-                <span>
+                {/* Chip and ordinal share one box, so the flex gap falls only
+                    before the "Not applied" chip; the box carries the
+                    direct-child chip protection (item-row-kind). */}
+                <span className="item-row-kind">
                   <span className="type-chip">{kindLabel}</span>
                   {ordinals[i]}
                 </span>
@@ -223,7 +233,7 @@ export function FormerSpousesEditor({
                 hint={
                   r.relationship === 'divorced'
                     ? `${DIVORCED_MIN_MARRIAGE_YEARS}+ for divorced-spousal.`
-                    : `${Math.round(SURVIVOR_MIN_MARRIAGE_YEARS * 12)} months (${SURVIVOR_MIN_MARRIAGE_YEARS}) minimum.`
+                    : `${survivorFloorLabel()} minimum.`
                 }
                 value={r.marriageYears}
                 min={0}
@@ -285,7 +295,7 @@ export function FormerSpousesEditor({
               <p id={yearsNoteId} className="field-hint" style={{ color: 'var(--warn)' }}>
                 {r.relationship === 'divorced'
                   ? `A divorced-spousal benefit needs a marriage of ${DIVORCED_MIN_MARRIAGE_YEARS} or more years.`
-                  : `A survivor benefit needs a marriage of at least ${Math.round(SURVIVOR_MIN_MARRIAGE_YEARS * 12)} months (${SURVIVOR_MIN_MARRIAGE_YEARS} years).`}{' '}
+                  : `A survivor benefit needs a marriage of at least ${survivorFloorLabel()}.`}{' '}
                 Under that, this record pays nothing.
               </p>
             ) : null}
