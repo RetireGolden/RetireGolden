@@ -219,12 +219,12 @@ describe('simulatePlan delegates named-QCD execution input', () => {
     ['withholdExecution', 'the prepared executor call'],
     ['zeroSource', 'the prepared source-capacity snapshot'],
     ['dropPool', 'the prepared complete-pool capacity'],
-  ] as const)('consumes %s rather than rebuilding %s inline', (mutation, _label) => {
+  ] as const)('consumes %s rather than rebuilding %s inline', (mutation, label) => {
     seam.mutation = mutation
 
     const year = run()
 
-    expect(seam.calls).toHaveLength(2)
+    expect(seam.calls, label).toHaveLength(2)
     expect(seam.calls.every((call) => call.original.status === 'ready')).toBe(true)
     expect(year.qcd).toBe(0)
     expect(year.balances.ira).toBeGreaterThan(0)
