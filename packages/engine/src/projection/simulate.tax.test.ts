@@ -822,4 +822,3 @@ describe('capital loss carryforward', () => {
     ).toBe(true)
   })
 })
-

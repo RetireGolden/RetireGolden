@@ -308,4 +308,3 @@ describe('taxable brokerage yield tax drag', () => {
     expect(y2027.realizedGains).toBeCloseTo(0, 6)
   })
 })
-
