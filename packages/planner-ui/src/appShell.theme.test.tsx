@@ -75,5 +75,28 @@ describe('theme persistence (#434)', () => {
       window.dispatchEvent(new StorageEvent('storage', { key: 'other', newValue: 'dark' }))
     })
     expect(document.documentElement.dataset.theme).toBe('light')
+    // System is followed too: the attribute carries the mode, not a resolved color.
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'retiregolden.theme', newValue: 'system' }))
+    })
+    expect(document.documentElement.dataset.theme).toBe('system')
+    expect(pressed()).toEqual(['System'])
+  })
+
+  it('writes storage only from a click on the switcher, never from the follow', async () => {
+    localStorage.setItem('retiregolden.theme', 'dark')
+    await mount()
+    // Following another tab applies the mode without echoing it back.
+    localStorage.removeItem('retiregolden.theme')
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'retiregolden.theme', newValue: 'light' }))
+    })
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(localStorage.getItem('retiregolden.theme')).toBeNull()
+    // A click is the person's choice and is what gets stored.
+    const dark = [...container.querySelectorAll<HTMLButtonElement>('.theme-switcher-button')].find((b) => b.textContent === 'Dark')!
+    await act(async () => dark.click())
+    expect(localStorage.getItem('retiregolden.theme')).toBe('dark')
+    expect(document.documentElement.dataset.theme).toBe('dark')
   })
 })
