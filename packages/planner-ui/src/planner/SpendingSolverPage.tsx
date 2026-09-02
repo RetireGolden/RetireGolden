@@ -415,7 +415,7 @@ export function SpendingSolverPage() {
         {shapeRows !== null && !shapesRunning ? (
           <>
             <ScrollRegion label="Spending shape comparison" grow style={{ border: 'none' }}>
-              <table>
+              <table className="year-table">
                 <thead>
                   <tr>
                     <th scope="col" style={{ textAlign: 'left' }}>Spending shape</th>
@@ -462,7 +462,7 @@ export function SpendingSolverPage() {
           differ.
         </p>
         <ScrollRegion label="Published withdrawal rules on this plan" grow style={{ border: 'none' }}>
-          <table>
+          <table className="year-table">
             <thead>
               <tr>
                 <th scope="col" style={{ textAlign: 'left' }}>Rule</th>
@@ -471,7 +471,7 @@ export function SpendingSolverPage() {
                 {/* Each row is the plan spending only this rule's dollars, so the
                     header says so: it is not the plan's own path, which the KPI
                     bar's "Money lasts" already reports (#510). */}
-                <th scope="col" style={{ textAlign: 'left' }}>If your plan spent only this</th>
+                <th scope="col" className="year-table-text">If your plan spent only this</th>
                 <th scope="col" style={{ textAlign: 'right' }}>Ending estate (today&apos;s $)</th>
               </tr>
             </thead>
@@ -485,7 +485,7 @@ export function SpendingSolverPage() {
                     </td>
                     <td style={{ textAlign: 'right' }}>{row.initialRatePct.toFixed(2)}%</td>
                     <td style={{ textAlign: 'right' }}>{fmtMoney(row.initialAnnualSpend)}</td>
-                    <td>
+                    <td className="year-table-text">
                       {row.depletionYear === null ? (
                         <span style={{ color: 'var(--good)' }}>lasts through {row.endYear}</span>
                       ) : (
@@ -506,7 +506,7 @@ export function SpendingSolverPage() {
                   </td>
                   <td style={{ textAlign: 'right' }}>{((solvedRounded / startingInvestable) * 100).toFixed(2)}%</td>
                   <td style={{ textAlign: 'right' }}>{fmtMoney(solvedRounded)}</td>
-                  <td>solved on your exact plan</td>
+                  <td className="year-table-text">solved on your exact plan</td>
                   <td style={{ textAlign: 'right' }}>—</td>
                 </tr>
               ) : null}

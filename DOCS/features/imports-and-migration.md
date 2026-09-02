@@ -111,7 +111,22 @@ For everything else, including the Bogleheads Retiree Portfolio Model saved as C
 `analyzeGenericCsv` finds the header row past title junk and guesses a role per column (name /
 type / balance / cost basis / contribution / ignore); the wizard shows the first rows and lets the
 user correct the roles; then rows map to accounts (type from the type column, else name keywords,
-else taxable-with-review-item). Negative or unreadable balances are skipped items, never data.
+else taxable-with-review-item). Negative or unreadable balances are skipped items, never data. A row
+below the header with no dollar value in any column is never dropped in silence (#557), and the
+analyzer does not sort them: an account whose amount cell is blank (`I-bonds,`) and a footer
+(`Prepared by Chase,`) look the same to it, and a label test would call a fund named "Total Bond
+Market" a footer. Every such row is *set aside*: the map step counts and lists each by source row and
+text cells next to the data-row count, and the draft lists each as a skipped item led by its row
+number with a conditional remediation (a note needs nothing; an account with a missing amount can be
+entered on the Accounts screen). Row numbers are spreadsheet rows (`parseCsv` reports where each kept
+row began: blank separator lines count, a line break inside a quoted cell does not, as in Excel or
+Sheets), which is what the person sees beside the row. Every list is capped (`MAX_SET_ASIDE_LISTED` on
+the map step and in failure messages, `MAX_SET_ASIDE_ITEMS` per-row checklist entries) with an "and N
+more" tail that adds "(rows a to b)" only when the rest sit together, and each echoed cell is bounded
+(`MAX_CELL_PREVIEW_CHARS`, ellipsis past it), so a sheet of thousands of note lines or a megabyte cell
+is still counted without becoming that much DOM. When nothing maps, the failure message still names
+the set-aside rows; a sheet whose header has no dollar value below it fails with a message that names
+its rows too, calling the row a header only when its labels named columns the analyzer recognises.
 
 ### 1040 guided seed — `tenForty.ts`
 

@@ -217,10 +217,11 @@ function FieldShell({
   id,
   error,
   note,
+  wide,
   children,
-}: BaseProps & { id: string; error?: string | null; note?: string | null; children: ReactNode }) {
+}: BaseProps & { id: string; error?: string | null; note?: string | null; wide?: boolean; children: ReactNode }) {
   return (
-    <div className={error ? 'field field--invalid' : 'field'}>
+    <div className={['field', wide ? 'field--wide' : null, error ? 'field--invalid' : null].filter(Boolean).join(' ')}>
       {/* .field--invalid tints the caption; the control itself carries aria-invalid. */}
       <span className="field-label-row">
         <label className="field-label" htmlFor={id}>
@@ -618,6 +619,7 @@ export function SelectField<T extends string>({
   onCommit,
   describedBy: describedById,
   placeholder,
+  wide,
 }: BaseProps & {
   /** `''` renders the placeholder (when given) as an explicit not-yet-answered state. */
   value: T | ''
@@ -632,11 +634,17 @@ export function SelectField<T extends string>({
    * validation rather than committing whatever the default happened to be.
    */
   placeholder?: string
+  /**
+   * Span two form-grid columns. A select cannot wrap its options, so one
+   * whose labels outrun a single column (Goal Flexibility, #465) takes two
+   * beside its peers instead of clipping the selected label to an ellipsis.
+   */
+  wide?: boolean
 }) {
   const id = useId()
   const error = useFieldIssue(path)?.advice ?? null
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} wide={wide}>
       <select
         id={id}
         value={value}

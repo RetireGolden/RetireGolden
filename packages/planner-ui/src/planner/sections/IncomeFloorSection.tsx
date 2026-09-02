@@ -191,7 +191,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
           <details>
             <summary>Buy-list (planning-grade)</summary>
             <ScrollRegion label={`Buy-list: ${ladder.name}`}>
-              <table>
+              <table className="year-table">
                 <thead>
                   <tr>
                     <th scope="col">Matures</th>
@@ -373,13 +373,13 @@ export function LivePricesCard() {
             </button>
           ) : null}
           <ScrollRegion label="Nearest real TIPS per rung" grow style={{ border: 'none' }}>
-            <table>
+            <table className="year-table">
               <thead>
                 <tr>
                   <th scope="col">Rung year</th>
-                  <th scope="col">Nearest real TIPS (CUSIP)</th>
+                  <th scope="col" className="year-table-text">Nearest real TIPS (CUSIP)</th>
                   <th scope="col">Coupon</th>
-                  <th scope="col">Matures</th>
+                  <th scope="col" className="year-table-text">Matures</th>
                   <th scope="col">End-of-day price</th>
                 </tr>
               </thead>
@@ -389,9 +389,9 @@ export function LivePricesCard() {
                   return (
                     <tr key={year}>
                       <td>{year}</td>
-                      <td>{match ? match.cusip : '— none matures nearby —'}</td>
+                      <td className="year-table-text">{match ? match.cusip : '— none matures nearby —'}</td>
                       <td>{match ? `${match.ratePct.toFixed(3)}%` : ''}</td>
-                      <td>{match ? match.maturityIso : ''}</td>
+                      <td className="year-table-text">{match ? match.maturityIso : ''}</td>
                       <td>{match ? match.endOfDayPrice.toFixed(2) : ''}</td>
                     </tr>
                   )

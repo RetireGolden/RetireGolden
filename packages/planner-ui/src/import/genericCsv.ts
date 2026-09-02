@@ -33,11 +33,89 @@ export interface GenericCsvAnalysis {
   /** One guessed role per header column; the wizard lets the user override. */
   guessedRoles: ColumnRole[]
   /**
-   * 1-based parsed-row number for each `dataRows` entry (the header and any
-   * leading title rows are skipped). Additive/optional so a hand-built analysis
+   * 1-based source line for each `dataRows` entry: the row number a person
+   * sees in their spreadsheet, counting blank lines and quoted line breaks
+   * (`parseCsv`'s `sourceLines`). Additive/optional so a hand-built analysis
    * stays valid; when absent, locators fall back to a header-relative estimate.
    */
   dataRowNumbers?: number[]
+  /**
+   * Rows below the header that carry text but no money-ish cell anywhere: a
+   * balance typed as words, an account whose amount cell is blank, a note or
+   * footer line. The analyzer cannot tell those apart, so it sorts none of
+   * them: every one is set aside here, shown on the map step by source row,
+   * and reported as skipped by `draftPlanFromGenericCsv` — never dropped in
+   * silence (#557). Additive so a hand-built analysis stays valid.
+   */
+  skippedRows?: SkippedCsvRow[]
+}
+
+export interface SkippedCsvRow {
+  /** 1-based source line, like `dataRowNumbers`: what the spreadsheet shows. */
+  rowNumber: number
+  cells: string[]
+}
+
+/** Spreadsheet footers that re-state sums import as phantom accounts if kept. */
+const TOTAL_ROW_RE = /^(sub)?total\b|grand total/i
+
+/**
+ * How many set-aside rows a surface lists one by one before saying "and N
+ * more": the map step (the preview above it shows five data rows) and the
+ * text-only failure message. A sheet can carry thousands of note lines
+ * (`MAX_CSV_ROWS` is 20,000), and every one is still counted.
+ */
+export const MAX_SET_ASIDE_LISTED = 10
+/** Per-row checklist entries before the rest fold into one summary entry. */
+export const MAX_SET_ASIDE_ITEMS = 25
+
+/**
+ * Longest a cell is echoed back to the person, on the map step and in a
+ * checklist label: enough to recognise the row, never a megabyte cell as a
+ * DOM node. Longer text ends in an ellipsis.
+ */
+export const MAX_CELL_PREVIEW_CHARS = 40
+
+/** "Row 5", "Rows 5 and 7", "Rows 5, 7, and 9": the 1-based source rows, for people; "" for none. */
+export function formatCsvRowNumbers(rows: readonly SkippedCsvRow[]): string {
+  const numbers = rows.map((r) => String(r.rowNumber))
+  if (numbers.length === 0) return ''
+  if (numbers.length === 1) return `Row ${numbers[0]}`
+  if (numbers.length === 2) return `Rows ${numbers[0]} and ${numbers[1]}`
+  return `Rows ${numbers.slice(0, -1).join(', ')}, and ${numbers[numbers.length - 1]}`
+}
+
+/**
+ * " (rows 12 to 16)" for rows the person could scan as one block, "" when
+ * they are scattered among rows that did import: a range would then name
+ * rows that were not set aside at all.
+ */
+export function setAsideRange(rows: readonly SkippedCsvRow[]): string {
+  if (rows.length < 2) return ''
+  const contiguous = rows.every((row, i) => i === 0 || row.rowNumber === rows[i - 1]!.rowNumber + 1)
+  return contiguous ? ` (rows ${rows[0]!.rowNumber} to ${rows[rows.length - 1]!.rowNumber})` : ''
+}
+
+/** "Row 3: I-bonds; Row 4: Prepared by Chase; and 12 more (rows 5 to 16)": the first `limit` rows spelled out. */
+export function describeSetAsideRows(rows: readonly SkippedCsvRow[], limit = MAX_SET_ASIDE_LISTED): string {
+  const shown = rows.slice(0, limit).map((row) => `Row ${row.rowNumber}: ${describeCsvRowCells(row)}`)
+  const rest = rows.slice(limit)
+  if (rest.length > 0) shown.push(`and ${rest.length} more${setAsideRange(rest)}`)
+  return shown.join('; ')
+}
+
+/** A cell as it is echoed back: trimmed and bounded. */
+export function previewCell(cell: string): string {
+  const trimmed = cell.trim()
+  return trimmed.length > MAX_CELL_PREVIEW_CHARS ? `${trimmed.slice(0, MAX_CELL_PREVIEW_CHARS - 1)}…` : trimmed
+}
+
+/** The row's text cells, in order and each bounded, for showing which spreadsheet line is meant. */
+export function describeCsvRowCells(row: SkippedCsvRow): string {
+  return row.cells
+    .map(previewCell)
+    .filter((c) => c !== '')
+    .join(' · ')
 }
 
 export type GenericCsvAnalysisResult = { ok: true; analysis: GenericCsvAnalysis } | { ok: false; message: string }
@@ -67,6 +145,16 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
   const parsed = parseCsv(text)
   if (!parsed.ok) return { ok: false, message: parsed.message }
   const rows = parsed.rows
+  const lines = parsed.sourceLines
+
+  // The first header-shaped row whose rows below all lack a dollar value: a
+  // text-only sheet. It cannot be mapped, but its rows are still named in the
+  // failure, so the #557 case where every amount is blank or words is not
+  // the one place a row goes unmentioned. The row is called a header only
+  // when its labels named columns the analyzer recognises; a multi-cell title
+  // line above the real header would otherwise be reported as the header
+  // and the real header as a set-aside row.
+  let textOnly: { header: string[] | null; skippedRows: SkippedCsvRow[] } | null = null
 
   for (let r = 0; r < Math.min(rows.length, 30); r++) {
     const cells = rows[r]!
@@ -75,17 +163,53 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
     if (nonEmpty.some(isMoneyish)) continue // data row, not a header
     const dataRows: string[][] = []
     const dataRowNumbers: number[] = []
+    const skippedRows: SkippedCsvRow[] = []
     for (let k = r + 1; k < rows.length; k++) {
-      if (rows[k]!.some(isMoneyish)) {
-        dataRows.push(rows[k]!)
-        dataRowNumbers.push(k + 1) // 1-based parsed-row number
+      const row = rows[k]!
+      // Numbered by source line, so "Row 7" is row 7 in the spreadsheet even
+      // past a blank separator line the parser dropped.
+      const rowNumber = lines[k]!
+      if (row.some(isMoneyish)) {
+        dataRows.push(row)
+        dataRowNumbers.push(rowNumber)
+        continue
       }
+      // parseCsv already drops fully blank rows, so anything here has text.
+      // Nothing here sorts notes from truncated account rows: under a header,
+      // `I-bonds,` and `Prepared by Chase,` look the same to this analyzer
+      // (one text cell, no figure), and a label test would call "Total Bond
+      // Market" a footer. Every such row is set aside and shown, and the
+      // person decides which it was.
+      skippedRows.push({ rowNumber, cells: row })
     }
-    if (dataRows.length === 0) continue
+    if (dataRows.length === 0) {
+      if (skippedRows.length > 0) {
+        const recognised = cells.map(guessColumnRole).some((role) => role !== 'ignore')
+        // A recognised header wins over an earlier unrecognised candidate
+        // (the title line above it); the first of either kind is kept.
+        if (recognised && (textOnly === null || textOnly.header === null)) textOnly = { header: cells, skippedRows }
+        else textOnly ??= { header: null, skippedRows }
+      }
+      continue
+    }
     const guessedRoles = cells.map(guessColumnRole)
     // A usable table needs at least a name-ish and a money-ish column somewhere;
     // the user can still fix the guesses by hand.
-    return { ok: true, analysis: { header: cells, dataRows, guessedRoles, dataRowNumbers } }
+    return { ok: true, analysis: { header: cells, dataRows, guessedRoles, dataRowNumbers, skippedRows } }
+  }
+  if (textOnly) {
+    const n = textOnly.skippedRows.length
+    const lead = textOnly.header
+      ? `A header row (${textOnly.header.map(previewCell).filter((c) => c !== '').join(', ')}) was found, but no row below it has a dollar value.`
+      : 'No header row was recognised (no column named like an account, type, or balance), and no row has a dollar value.'
+    return {
+      ok: false,
+      message:
+        `${lead} ` +
+        `${n} row${n === 1 ? '' : 's'} with no dollar value in any column ${n === 1 ? 'was' : 'were'} set aside: ` +
+        `${describeSetAsideRows(textOnly.skippedRows)}. ` +
+        'Save the sheet with a header row (e.g. "Account, Type, Balance"), one row per account, and a dollar amount in each.',
+    }
   }
   return {
     ok: false,
@@ -129,8 +253,7 @@ export function draftPlanFromGenericCsv(
   const plan = createEmptyPlan({ newId, name: 'Imported from spreadsheet' })
   const ownerId = plan.household.people[0]!.id
 
-  // Spreadsheet footers that re-state sums import as phantom accounts if kept.
-  const totalRowRe = /^(sub)?total\b|grand total/i
+  const totalRowRe = TOTAL_ROW_RE
   const loanLikeRe = /\bloan\b|debt|mortgage|heloc|liabilit|credit/i
 
   for (let r = 0; r < analysis.dataRows.length; r++) {
@@ -323,8 +446,55 @@ export function draftPlanFromGenericCsv(
     }
   }
 
+  // Rows the analysis set aside because no cell read as money. They never
+  // reached the mapping loop, so without this entry a malformed row would
+  // vanish from the count and the checklist alike (#557).
+  // The row number leads, so two lines that share a first cell stay
+  // distinguishable and the line can be found in the spreadsheet. The
+  // remediation is conditional: the analyzer cannot tell a footer from an
+  // account whose amount cell is blank, so it says what each would need
+  // rather than calling the row either.
+  const skippedRows = analysis.skippedRows ?? []
+  const setAsideDetail =
+    'No cell in this row read as a dollar value, so nothing was imported from it. A note or footer needs nothing; an account whose amount is missing can be entered on the Accounts screen.'
+  for (const row of skippedRows.slice(0, MAX_SET_ASIDE_ITEMS)) {
+    const label = previewCell(row.cells.find((c) => c.trim() !== '') ?? '')
+    review.push({
+      status: 'skipped',
+      source: `Row ${row.rowNumber}${label ? `: ${label}` : ''}`,
+      detail: setAsideDetail,
+      // The whole row: no cell in it read as a figure, so pointing at the
+      // balance column (which the person may have re-assigned) would name a
+      // cell that says nothing.
+      locator: csvRow(row.rowNumber),
+      confidence: 'unmapped',
+    })
+  }
+  // Past the cap, one entry stands for the rest, still counted and ranged:
+  // a sheet of thousands of note lines must not become thousands of items.
+  if (skippedRows.length > MAX_SET_ASIDE_ITEMS) {
+    const rest = skippedRows.slice(MAX_SET_ASIDE_ITEMS)
+    // A row range only when the rest sit together; scattered among rows that
+    // imported, a range would name rows that were not set aside.
+    review.push({
+      status: 'skipped',
+      source: `${rest.length} more rows${setAsideRange(rest)}`,
+      detail: `Each of these also had no cell that read as a dollar value. ${setAsideDetail}`,
+      locator: { kind: 'none', note: `${rest.length} further rows with no dollar value${setAsideRange(rest)}` },
+      confidence: 'unmapped',
+    })
+  }
+
   if (plan.accounts.length === 0) {
-    return { ok: false, message: 'No rows with a readable balance were found with the current column assignment.' }
+    // The set-aside disclosure survives the failure: the message names them,
+    // since there is no checklist to carry the items.
+    // Capped like every other surface: the message is rendered in the
+    // import error callout, and a sheet can hold thousands of such rows.
+    const setAside =
+      skippedRows.length > 0
+        ? ` ${skippedRows.length} row${skippedRows.length === 1 ? '' : 's'} with no dollar value in any column ${skippedRows.length === 1 ? 'was' : 'were'} set aside: ${describeSetAsideRows(skippedRows)}.`
+        : ''
+    return { ok: false, message: `No rows with a readable balance were found with the current column assignment.${setAside}` }
   }
 
   review.push({

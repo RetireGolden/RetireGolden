@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from '../householdActions'
 import { updatePersonDob } from '../eligibilityFactActions'
+import { SINGLE_WITH_PARTNER_NOTE } from '../filingStatusNotice'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, DateField, NumberField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'
@@ -71,6 +72,25 @@ export function HouseholdSection() {
               })
             }
           />
+        </div>
+        {/* A status region that is always mounted, empty until it has
+            something to say: the notice appears while focus is still on the
+            filing-status select, and a live region has to exist before its
+            text arrives for assistive tech to announce the change (#555). */}
+        <div role="status" data-testid="single-with-partner-status">
+          {couple && plan.household.filingStatus === 'single' ? (
+            // The schema allows two people on a Single plan (an unmarried
+            // household), so nothing is removed or disabled; the plan just
+            // says out loud how the ledger reads that combination, here and
+            // on the report, instead of leaving the partner card to
+            // contradict the filing status.
+            <div className="callout callout--warn" data-testid="single-with-partner-notice">
+              <p className="card-hint" style={{ margin: 0 }}>
+                <strong>Two people on a Single-filing plan.</strong> {SINGLE_WITH_PARTNER_NOTE} Change the filing
+                status if you are married, or remove {plan.household.people[1]!.name} if the plan is for one person.
+              </p>
+            </div>
+          ) : null}
         </div>
         {plan.household.people.map((person, i) => (
           <div className="item-row" key={person.id} style={{ marginTop: '1rem' }}>

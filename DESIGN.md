@@ -302,6 +302,10 @@ transitions, restrained hover states that shift a border or tint a background by
 - **Compound field with actions** (`.field-with-action`): input plus its buttons in one cell.
   Add `.field-with-action--wide` to span two grid columns beside sibling fields; use
   `.field-span-full` only when the row really belongs to it.
+- **Wide field** (`.field--wide`, `SelectField wide`): a plain field that needs the same two
+  columns, for a select whose option labels outrun one column (Goal Flexibility). A select cannot
+  wrap its options, so it takes two columns beside its peers instead of clipping the selected
+  label to an ellipsis; it collapses to the full row on phones like the compound field.
 - **Read-only values** (`ReadonlyField`): a caption and a value with no visible border or fill
   (a transparent border keeps an input's box rhythm), sitting on the row's baseline. Not a
   `<label>` (nothing to label) and not an `<output>` (a live region).

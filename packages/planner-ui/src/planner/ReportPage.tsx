@@ -31,6 +31,7 @@ import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import { buildInheritedSchedules, incomeDetail } from '../report/reportModel'
 import { acaLedgerSummary, acaReportStatus } from './acaReportStatus'
+import { SINGLE_WITH_PARTNER_NOTE } from './filingStatusNotice'
 import { PlanProvider } from './PlanContext'
 import { usePlan } from './planContextCore'
 import { fmtMoney, fmtMoneyCompact, fmtPct } from './format'
@@ -272,6 +273,14 @@ function ReportBody() {
         <p className="muted">
           {plan.household.filingStatus === 'marriedFilingJointly' ? 'Married filing jointly' : 'Single'} · {stateName(plan.household.state)}
         </p>
+        {/* Two people under "Single" is a legal plan shape; the report says
+            how it was priced rather than leaving the header to contradict
+            the two-person table below it (#555). */}
+        {plan.household.filingStatus === 'single' && plan.household.people.length === 2 ? (
+          <p className="muted" data-testid="single-with-partner-notice">
+            Two people on a Single-filing plan: {SINGLE_WITH_PARTNER_NOTE}
+          </p>
+        ) : null}
         <table className="report-table">
           <caption className="sr-only">Household members</caption>
           <thead><tr><th scope="col">Person</th><th scope="col">Date of birth</th><th scope="col">Retirement age</th><th scope="col">Planning age</th></tr></thead>
