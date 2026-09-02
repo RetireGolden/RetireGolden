@@ -208,6 +208,21 @@ export function App({
     return () => media.removeEventListener('change', applyTheme)
   }, [themeMode])
 
+  // The mode lives in localStorage, which every tab (and every parallel
+  // session on the same device) shares. Without this, a change made in one
+  // tab leaves another tab's control and page out of step until a reload
+  // snaps it to whichever tab wrote last, which reads as the theme changing
+  // on its own (#434).
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== THEME_STORAGE_KEY) return
+      const next = e.newValue
+      if (next === 'light' || next === 'dark' || next === 'system') setThemeMode(next)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
   return (
     <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
       <PlanStoreProvider store={store} readOnly={readOnly}>
