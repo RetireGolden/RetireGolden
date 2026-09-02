@@ -49,7 +49,9 @@ export function HouseholdSection() {
           />
           {couple && plan.household.filingStatus === 'marriedFilingJointly' ? (
             <CheckboxField
-              label="Qualifying dependent for survivor"
+              // Short enough to stay on one line beside the Filing status and
+              // State labels; the ⓘ carries the filing-status detail (#467).
+              label="Survivor has a dependent"
               help="Opt in when the surviving spouse would qualify for qualifying surviving spouse filing status. RetireGolden does not model dependents, so this uses joint brackets and deductions for the two years after the spouse's death."
               value={plan.household.hasQualifyingDependent}
               onCommit={(v) => update((d) => void (d.household.hasQualifyingDependent = v))}

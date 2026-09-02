@@ -12,7 +12,15 @@ import { LEARN } from '../learnLinks'
 import { fmtMoneyCompact } from '../format'
 import { currentStartYear, taxCalculatorFor } from '../useProjection'
 import { Issues } from './shared'
-import { newId } from './sectionHelpers'
+import {
+  duplicateCareEvents,
+  duplicateScheduleAges,
+  formatAgeList,
+  hasIssueUnder,
+  makeCareEvent,
+  newId,
+  nextScheduleAge,
+} from './sectionHelpers'
 
 const INSURANCE_LABEL: Record<InsurancePolicy['kind'], string> = {
   permanentLife: 'Permanent life',
@@ -132,7 +140,15 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
                   <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule.splice(ri, 1) })}>Remove</button>
                 </div>
               ))}
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife') p.cashValueSchedule = [...(p.cashValueSchedule ?? []), { age: 65, value: 0 }] })}>+ Schedule row</button>
+              {duplicateScheduleAges(policy.cashValueSchedule ?? []).length > 0 ? (
+                <div className="callout callout--warn" role="status">
+                  Age {formatAgeList(duplicateScheduleAges(policy.cashValueSchedule ?? []))} appears more than once in this
+                  schedule. Keep one value per age so the illustration reads as one line.
+                </div>
+              ) : null}
+              {/* A new row opens at the next unused age, one past the latest row,
+                  so two clicks never create two identical rows (#489). */}
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife') p.cashValueSchedule = [...(p.cashValueSchedule ?? []), { age: nextScheduleAge(p.cashValueSchedule ?? []), value: 0 }] })}>+ Schedule row</button>
             </div>
           )}
         </>
@@ -188,10 +204,6 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
   )
 }
 
-function makeCareEvent(personId: string): CareEvent {
-  return { id: newId(), personId, startAge: 85, durationYears: 3, annualCost: 90_000 }
-}
-
 function CareEventFields({ event, index }: { event: CareEvent; index: number }) {
   const { plan, update } = usePlan()
   const set = (key: keyof CareEvent, value: unknown) =>
@@ -241,18 +253,40 @@ function CareEventFields({ event, index }: { event: CareEvent; index: number }) 
 const lastsLabel = (depletionYear: number | null) => (depletionYear === null ? 'full plan' : `until ${depletionYear}`)
 
 function LtcStressPanel() {
-  const { plan } = usePlan()
+  const { plan, issues } = usePlan()
+  // The entries this panel prices are the ones that can be mid-edit and
+  // invalid (a duration of 0, a schedule mode with no rows). While they are,
+  // the last table would read as authoritative for a plan the engine has
+  // refused, so the panel pauses instead (#517).
+  const onHold = hasIssueUnder(issues, 'careEvents', 'insurance')
   const cmp = useMemo(
-    () => compareLtcStress(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) }),
-    [plan],
+    () => (onHold ? null : compareLtcStress(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) })),
+    [plan, onHold],
   )
-  if (!cmp.hasCareEvents) return null
+  if (plan.careEvents.length === 0) return null
+  const many = plan.careEvents.length > 1
+  const ltcPolicies = plan.insurance.filter((i) => i.kind === 'ltc').length
+  const episodes = many ? 'the care episodes' : 'the care episode'
+  if (cmp === null) {
+    return (
+      <div className="card" style={{ marginTop: '1.25rem' }}>
+        <h3>LTC stress test</h3>
+        <div className="callout callout--warn" role="status">
+          Paused: a care event or policy entry above is invalid, so these scenarios cannot be re-run yet. The list below
+          names the field; the last result no longer applies.
+        </div>
+      </div>
+    )
+  }
   const policyValue = cmp.careInsured.endingNetWorth - cmp.careUninsured.endingNetWorth
   const careShock = cmp.noCare.endingNetWorth - cmp.careUninsured.endingNetWorth
   return (
     <div className="card" style={{ marginTop: '1.25rem' }}>
       <h3>LTC stress test</h3>
-      <p className="card-hint">Ending net worth if the care episode happens, with and without your LTC coverage offsetting it.</p>
+      <p className="card-hint">
+        Ending net worth if {episodes} {many ? 'happen' : 'happens'}, with and without your LTC coverage offsetting{' '}
+        {many ? 'them' : 'it'}.
+      </p>
       <table className="compare-table">
         <thead>
           <tr>
@@ -279,14 +313,22 @@ function LtcStressPanel() {
           </tr>
         </tbody>
       </table>
+      {/* Counts follow the plan: two care events or two LTC policies read as
+          plural, since both are modeled (#489). */}
       <p className="card-hint" style={{ marginTop: '0.75rem' }}>
-        Unprotected, the care episode would cost your estate <strong>{fmtMoneyCompact(careShock)}</strong>.{' '}
+        Unprotected, {episodes} would cost your estate <strong>{fmtMoneyCompact(careShock)}</strong>.{' '}
         {!cmp.hasLtcPolicy ? (
-          <>You have no LTC policy to offset it.</>
+          <>You have no LTC policy to offset {many ? 'them' : 'it'}.</>
         ) : policyValue >= 0 ? (
-          <>Your LTC policy improves the outcome by <strong>{fmtMoneyCompact(policyValue)}</strong>, net of its premiums.</>
+          <>
+            Your LTC {ltcPolicies > 1 ? 'policies improve' : 'policy improves'} the outcome by{' '}
+            <strong>{fmtMoneyCompact(policyValue)}</strong>, net of {ltcPolicies > 1 ? 'their' : 'its'} premiums.
+          </>
         ) : (
-          <>Here the policy's lifetime premiums outweigh its benefits by <strong>{fmtMoneyCompact(-policyValue)}</strong>.</>
+          <>
+            Here the {ltcPolicies > 1 ? "policies' lifetime premiums outweigh their" : "policy's lifetime premiums outweigh its"}{' '}
+            benefits by <strong>{fmtMoneyCompact(-policyValue)}</strong>.
+          </>
         )}
       </p>
     </div>
@@ -347,8 +389,14 @@ export function InsuranceSection() {
             <CareEventFields event={c} index={i} />
           </div>
         ))}
+        {duplicateCareEvents(plan).map((dupe) => (
+          <div className="callout callout--warn" role="status" key={`${dupe.name}@${dupe.startAge}`}>
+            {dupe.name} has more than one care event starting at age {dupe.startAge}. Both are modeled, so the stress test
+            below counts the cost twice; remove one if it was added twice.
+          </div>
+        ))}
         <div className="add-row">
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.careEvents.push(makeCareEvent(firstPerson)))}>
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.careEvents.push(makeCareEvent(d)))}>
             + Care event
           </button>
         </div>

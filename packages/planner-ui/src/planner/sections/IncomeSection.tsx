@@ -171,9 +171,14 @@ export function IncomeSection() {
                 <span className="type-chip">{INCOME_LABEL[s.type]}</span>
                 {'label' in s ? s.label : (plan.household.people.find((p) => 'personId' in s && p.id === s.personId)?.name ?? '')}
               </span>
-              <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.incomes.splice(i, 1))}>
-                Remove
-              </button>
+              {/* A Social Security row is managed (added and removed) on the
+                  Social Security step, as its summary copy says; a Remove here
+                  contradicted that (#462). */}
+              {s.type === 'socialSecurity' ? null : (
+                <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.incomes.splice(i, 1))}>
+                  Remove
+                </button>
+              )}
             </div>
             <IncomeFields stream={s} index={i} />
           </div>

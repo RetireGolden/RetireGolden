@@ -3,7 +3,7 @@
  * component files so react-refresh sees component-only modules).
  */
 
-import type { Account, AllocationWeights, Plan } from '@retiregolden/engine/model/plan'
+import type { Account, AllocationWeights, CareEvent, Plan } from '@retiregolden/engine/model/plan'
 import {
   ANNUITY_MAX_START_AGE,
   latestNonQlacQualifiedAnnuityStartAge,
@@ -12,6 +12,66 @@ import {
 import { ANNUITY_MIN_START_AGE } from '../../accountStartAgeBounds'
 
 export const newId = () => crypto.randomUUID()
+
+/**
+ * Whether any validation issue sits at or under one of the given plan paths.
+ * Issue strings are `path.segments: message` (engine `parsePlan`), so a panel
+ * derived from `careEvents` or `incomeFloor.ladders.2` can tell when the
+ * entries it reads are the ones currently failing, and go on hold instead of
+ * presenting a number computed from them as authoritative (#512, #517).
+ */
+export function hasIssueUnder(issues: readonly string[], ...paths: readonly string[]): boolean {
+  return issues.some((issue) => paths.some((path) => issue === path || issue.startsWith(`${path}.`) || issue.startsWith(`${path}:`)))
+}
+
+/** The first age past an illustration schedule's latest row (65 for an empty schedule), capped at the schema's 120. */
+export function nextScheduleAge(schedule: ReadonlyArray<{ age: number }>): number {
+  if (schedule.length === 0) return 65
+  return Math.min(120, Math.max(...schedule.map((row) => row.age)) + 1)
+}
+
+/** Ages that more than one schedule row carries, ascending, each once. */
+export function duplicateScheduleAges(schedule: ReadonlyArray<{ age: number }>): number[] {
+  const seen = new Set<number>()
+  const dupes = new Set<number>()
+  for (const row of schedule) {
+    if (seen.has(row.age)) dupes.add(row.age)
+    seen.add(row.age)
+  }
+  return [...dupes].sort((a, b) => a - b)
+}
+
+/** "65", "65 and 70", "65, 70, and 75". */
+export function formatAgeList(values: readonly number[]): string {
+  if (values.length <= 1) return values.join('')
+  if (values.length === 2) return `${values[0]} and ${values[1]}`
+  return `${values.slice(0, -1).join(', ')}, and ${values[values.length - 1]}`
+}
+
+/**
+ * A new care event starts on the first person who has none yet (a couple's
+ * second event then lands on the partner instead of duplicating the first),
+ * falling back to the first person once everyone has one (#489).
+ */
+export function makeCareEvent(plan: Plan): CareEvent {
+  const covered = new Set(plan.careEvents.map((c) => c.personId))
+  const personId = plan.household.people.find((p) => !covered.has(p.id))?.id ?? plan.household.people[0]!.id
+  return { id: newId(), personId, startAge: 85, durationYears: 3, annualCost: 90_000 }
+}
+
+/** Care events that repeat an earlier event's person and start age: one entry per repeated pair. */
+export function duplicateCareEvents(plan: Plan): { name: string; startAge: number }[] {
+  const seen = new Set<string>()
+  const dupes = new Map<string, { name: string; startAge: number }>()
+  for (const c of plan.careEvents) {
+    const key = `${c.personId}@${c.startAge}`
+    if (seen.has(key)) {
+      dupes.set(key, { name: plan.household.people.find((p) => p.id === c.personId)?.name ?? 'This person', startAge: c.startAge })
+    }
+    seen.add(key)
+  }
+  return [...dupes.values()]
+}
 
 export const MONTH_OPTIONS = [
   'January',

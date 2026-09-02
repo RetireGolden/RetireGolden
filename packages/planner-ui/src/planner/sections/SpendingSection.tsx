@@ -593,7 +593,10 @@ export function SpendingSection() {
           real decline with no late rise, per Blanchett&apos;s spending research. Or pick your own annual real
           drift, compiled to 5-year phase steps:
         </p>
-        <div className="add-row" style={{ alignItems: 'end' }}>
+        {/* In a form-grid, not a flex add-row, so the field takes the same
+            column width as every other field on this form; the action sits in
+            an add-row below it like the other shape buttons (#465). */}
+        <div className="form-grid">
           <PercentField
             label="Custom real change per year"
             help="Your own steady real spending drift, applied from retirement and compiled into 5-year phase steps (the compounded multiplier at each step age, to age 100). Research on actual retirees clusters around −1% to −2%/yr; a positive value plans rising real spending."
@@ -605,6 +608,8 @@ export function SpendingSection() {
             value={customDeltaPct}
             onCommit={(v) => setCustomDeltaPct(v ?? -1.5)}
           />
+        </div>
+        <div className="add-row">
           <button type="button" className="btn btn-secondary btn-small" onClick={applyCustomDelta}>
             Apply custom shape
           </button>

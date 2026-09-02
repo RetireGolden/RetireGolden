@@ -33,6 +33,7 @@ import { CheckboxField, MoneyField, NumberField, SelectField, TextField } from '
 import { fmtMoney, fmtMoneyCompact } from '../format'
 import { currentStartYear, useProjection } from '../useProjection'
 import { Issues } from './shared'
+import { hasIssueUnder } from './sectionHelpers'
 import { ScrollRegion } from '../ScrollRegion'
 
 const CURVE = EMBEDDED_REAL_YIELD_CURVE
@@ -51,8 +52,12 @@ function quoteLadder(ladder: TipsLadder, startYear: number): LadderBuild | null 
 }
 
 function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: number; startYear: number }) {
-  const { plan, update } = usePlan()
-  const quote = useMemo(() => quoteLadder(ladder, startYear), [ladder, startYear])
+  const { plan, update, issues } = usePlan()
+  // An invalid edit (last payout year before the first) used to swap the
+  // quote for the empty-state hint as if nothing had been entered; the quote
+  // pauses and says why instead (#512).
+  const onHold = hasIssueUnder(issues, `incomeFloor.ladders.${index}`)
+  const quote = useMemo(() => (onHold ? null : quoteLadder(ladder, startYear)), [ladder, startYear, onHold])
   const fundingOptions = plan.accounts
     .filter((a) => a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp')
     .map((a) => ({ value: a.id, label: a.name }))
@@ -141,7 +146,12 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
           </>
         ) : null}
       </div>
-      {quote ? (
+      {onHold ? (
+        <div className="callout callout--warn" role="status">
+          Quote paused: an entry on this ladder is invalid, so it cannot be priced yet. The list below names the field;
+          the last quoted cost no longer applies.
+        </div>
+      ) : quote ? (
         <>
           <p className="card-hint">
             Quoted cost <strong>{fmtMoney(quote.totalCost)}</strong> (today's $) for {quote.rungs.length} rung
@@ -187,7 +197,11 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
 
 /** Funded-ratio card, shared with the Results page (step 4 of the plan). */
 export function FundedRatioCard() {
-  const { plan } = usePlan()
+  const { plan, issues } = usePlan()
+  // The ratio prices the ledger's TIPS cash flows; while a ladder entry is
+  // invalid the projection runs on a plan the engine has refused to store, so
+  // the readout pauses rather than presenting that as authoritative (#512).
+  const onHold = hasIssueUnder(issues, 'incomeFloor')
   const { result, deflate } = useProjection(plan)
   const startYear = result.startYear
   const fr = useMemo(() => {
@@ -211,26 +225,33 @@ export function FundedRatioCard() {
         Pension accounting for your household: essential spending valued on the TIPS curve vs. the guaranteed income
         dedicated to it. <LearnLink {...LEARN.fundedRatio} />
       </p>
-      <div className="stat-grid">
-        <div>
-          <div className={`stat-value ${fr.fundedRatioPct >= 100 ? 'stat-value--good' : 'stat-value--neutral'}`}>
-            {Math.round(fr.fundedRatioPct)}%
+      {onHold ? (
+        <div className="callout callout--warn" role="status">
+          Paused: a TIPS ladder entry is invalid, so the ratio cannot be re-computed yet. It returns once the ladder
+          above is fixed; the last readout no longer applies.
+        </div>
+      ) : (
+        <div className="stat-grid">
+          <div>
+            <div className={`stat-value ${fr.fundedRatioPct >= 100 ? 'stat-value--good' : 'stat-value--neutral'}`}>
+              {Math.round(fr.fundedRatioPct)}%
+            </div>
+            <div className="muted">of the essential floor is funded by guaranteed income</div>
           </div>
-          <div className="muted">of the essential floor is funded by guaranteed income</div>
+          <div>
+            <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.essentialSpendingPv)}</div>
+            <div className="muted">essential spending, valued today</div>
+          </div>
+          <div>
+            <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.guaranteedIncomePv)}</div>
+            <div className="muted">guaranteed income, valued today</div>
+          </div>
+          <div>
+            <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.unfundedPv)}</div>
+            <div className="muted">gap riding on the portfolio</div>
+          </div>
         </div>
-        <div>
-          <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.essentialSpendingPv)}</div>
-          <div className="muted">essential spending, valued today</div>
-        </div>
-        <div>
-          <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.guaranteedIncomePv)}</div>
-          <div className="muted">guaranteed income, valued today</div>
-        </div>
-        <div>
-          <div className="stat-value stat-value--sm">{fmtMoneyCompact(fr.unfundedPv)}</div>
-          <div className="muted">gap riding on the portfolio</div>
-        </div>
-      </div>
+      )}
       <p className="card-hint">
         {plan.expenses.requiredAnnual === undefined
           ? 'Tip: you have not separated required spending from lifestyle on the Spending page, so the "floor" here is your whole budget and the ratio reads low.'
