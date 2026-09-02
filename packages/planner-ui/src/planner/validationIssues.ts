@@ -87,3 +87,18 @@ export function sectionsWithIssues(issues: readonly string[]): IssueSection[] {
   }
   return RAIL_ORDER.filter((s) => segments.has(s)).map((segment) => ({ segment, title: SECTION_TITLES[segment]! }))
 }
+
+/**
+ * The issues minus any whose path continues `listPath` with an index at or
+ * past `length`: a guard for a list that a row-level panel indexes into, so
+ * an index the current list does not have can never be attributed to a row.
+ */
+export function withoutIssuesBeyond(issues: readonly string[], listPath: string | readonly string[], length: number): string[] {
+  const list = toSegments(listPath)
+  return issues.filter((issue) => {
+    const { path } = parseIssue(issue)
+    if (path.length <= list.length || !list.every((segment, i) => path[i] === segment)) return true
+    const index = Number(path[list.length])
+    return !Number.isInteger(index) || index < length
+  })
+}

@@ -33,7 +33,7 @@ import { CheckboxField, MoneyField, NumberField, SelectField, TextField } from '
 import { fmtMoney, fmtMoneyCompact } from '../format'
 import { currentStartYear, useProjection } from '../useProjection'
 import { IssueSectionsSentence, Issues } from './shared'
-import { hasIssueAt, hasIssueUnder } from '../validationIssues'
+import { hasIssueAt, hasIssueUnder, withoutIssuesBeyond } from '../validationIssues'
 import { ScrollRegion } from '../ScrollRegion'
 
 const CURVE = EMBEDDED_REAL_YIELD_CURVE
@@ -57,15 +57,19 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
   // issue paths carry the index this ladder holds in the plan the issues
   // were computed from, which is the plan in hand, so the lookup is made
   // against that same plan at render time.
-  const ladderIndex = plan.incomeFloor?.ladders.findIndex((l) => l.id === ladder.id) ?? -1
+  const ladders = plan.incomeFloor?.ladders ?? []
+  const ladderIndex = ladders.findIndex((l) => l.id === ladder.id)
+  // Belt and braces for the index coupling: an issue whose ladder index the
+  // current list does not have is ignored rather than matched to any row.
+  const ladderIssues = withoutIssuesBeyond(issues, ['incomeFloor', 'ladders'], ladders.length)
   // An invalid edit (last payout year before the first) used to swap the
   // quote for the empty-state hint as if nothing had been entered; the quote
   // pauses and says why instead (#512). Scoped to this ladder: the quote
   // prices the ladder's rungs on the embedded curve and reads nothing else
   // from the plan, so another entry's issue does not touch it. An issue on
   // the ladder list itself (or on incomeFloor) pauses every ladder.
-  const ownIssue = ladderIndex >= 0 && hasIssueUnder(issues, ['incomeFloor', 'ladders', String(ladderIndex)])
-  const listIssue = ladderIndex < 0 || hasIssueAt(issues, ['incomeFloor']) || hasIssueAt(issues, ['incomeFloor', 'ladders'])
+  const ownIssue = ladderIndex >= 0 && hasIssueUnder(ladderIssues, ['incomeFloor', 'ladders', String(ladderIndex)])
+  const listIssue = ladderIndex < 0 || hasIssueAt(ladderIssues, ['incomeFloor']) || hasIssueAt(ladderIssues, ['incomeFloor', 'ladders'])
   const onHold = ownIssue || listIssue
   const quote = useMemo(() => (onHold ? null : quoteLadder(ladder, startYear)), [ladder, startYear, onHold])
   const fundingOptions = plan.accounts

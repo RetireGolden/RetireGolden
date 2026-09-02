@@ -27,9 +27,11 @@ export function Issues() {
 export function IssueSectionsSentence() {
   const { issues } = usePlan()
   const sections = sectionsWithIssues(issues)
-  const plural = issues.length > 1
+  // Number follows the linked sections (one issue list per section); "each
+  // field" is number-neutral, so the sentence never has to know how many
+  // issues a section holds.
   if (sections.length === 0) {
-    return <>Open the page that holds the {plural ? 'entries' : 'entry'}; its issue list names the {plural ? 'fields' : 'field'}.</>
+    return <>Open the page that holds the {issues.length > 1 ? 'entries' : 'entry'}; its issue list names each field.</>
   }
   const links = sections.map((section) => (
     <Link key={section.segment} to={`../${section.segment}`}>
@@ -43,8 +45,7 @@ export function IssueSectionsSentence() {
   })
   return (
     <>
-      The issue {sections.length > 1 ? 'lists' : 'list'} on {joined} {sections.length > 1 ? 'name' : 'names'} the{' '}
-      {plural ? 'fields' : 'field'}.
+      The issue {sections.length > 1 ? 'lists' : 'list'} on {joined} {sections.length > 1 ? 'name' : 'names'} each field.
     </>
   )
 }

@@ -29,6 +29,7 @@ import { CheckboxField, DateField, NumberField, MoneyField, SelectField } from '
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney } from './format'
 import { dobParts, resolvePia } from './ssAnalysis'
+import { PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
 
 const newId = () => crypto.randomUUID()
 
@@ -162,7 +163,7 @@ function FormerSpousesEditor({
             />
             <DateField label="Their date of birth" value={r.dob} onCommit={(v) => updateRecord(r.id, (x) => (x.dob = v))} />
             <MoneyField
-              label="Their PIA (monthly at FRA)"
+              label={`Their ${PIA_MONTHLY_AT_FRA_LABEL}`}
               help="Your estimate of the ex/deceased spouse's monthly benefit at their full retirement age, today's dollars."
               value={r.piaMonthly}
               onCommit={(v) => updateRecord(r.id, (x) => (x.piaMonthly = v ?? 0))}
@@ -398,10 +399,10 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
       {mode === 'quick' ? (
         <div className="form-grid">
           <MoneyField
-            // The same label the Income summary card uses, and the stem of the
-            // former-spouse record's "Their PIA (monthly at FRA)"; the longer
-            // "PIA (monthly benefit at FRA)" wrapped beside its ⓘ (#511).
-            label="PIA (monthly at FRA)"
+            // One shared constant with the Income summary card (and the stem of
+            // the former-spouse record's "Their …"); the longer "PIA (monthly
+            // benefit at FRA)" wrapped beside its ⓘ (#511).
+            label={PIA_MONTHLY_AT_FRA_LABEL}
             help="Your Primary Insurance Amount, the monthly benefit at full retirement age in today's dollars, from ssa.gov/myaccount."
             value={stream.piaMonthly}
             allowNull

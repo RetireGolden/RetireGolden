@@ -13,12 +13,14 @@ import { fmtMoneyCompact } from '../format'
 import { currentStartYear, taxCalculatorFor } from '../useProjection'
 import { IssueSectionsSentence, Issues } from './shared'
 import {
+  appendScheduleRow,
   duplicateCareEvents,
   duplicateScheduleAges,
   formatAgeList,
   makeCareEvent,
   maxScheduleAge,
   newId,
+  nextCareEvent,
   nextScheduleAge,
 } from './sectionHelpers'
 
@@ -166,9 +168,10 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
                   update((d) => {
                     const p = d.insurance[index]
                     if (p.kind !== 'permanentLife') return
-                    const age = nextScheduleAge(p.cashValueSchedule ?? [])
-                    if (age === null) return
-                    p.cashValueSchedule = [...(p.cashValueSchedule ?? []), { age, value: 0 }]
+                    // The same computation the disabled state read, run on the
+                    // draft: a stale click appends a free age or nothing.
+                    const next = appendScheduleRow(p.cashValueSchedule ?? [])
+                    if (next !== null) p.cashValueSchedule = next
                   })
                 }
               >
@@ -426,7 +429,20 @@ export function InsuranceSection() {
           </div>
         ))}
         <div className="add-row">
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.careEvents.push(makeCareEvent(d)))}>
+          {/* Disabled once every person has an event at every age the
+              schema allows, rather than appending a repeat (#489). */}
+          <button
+            type="button"
+            className="btn btn-secondary btn-small"
+            disabled={nextCareEvent(plan) === null}
+            title={nextCareEvent(plan) === null ? 'Every start age a care event can have is already taken.' : undefined}
+            onClick={() =>
+              update((d) => {
+                const event = makeCareEvent(d)
+                if (event !== null) d.careEvents.push(event)
+              })
+            }
+          >
             + Care event
           </button>
         </div>

@@ -25,6 +25,7 @@ import { IncomeSection } from './sections/IncomeSection'
 import { InsuranceSection } from './sections/InsuranceSection'
 import { SpendingSection } from './sections/SpendingSection'
 import { StrategySection } from './sections/StrategySection'
+import { PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
 
 // Monte Carlo auto-runs after a debounce; keep that run tiny (the existing
 // downside-copy test's arrangement) so the page mounts fast.
@@ -142,7 +143,7 @@ describe('Strategy (#477)', () => {
 })
 
 describe('Income (#462)', () => {
-  it('Social Security rows carry no Remove; wage rows keep theirs', async () => {
+  it('every row keeps Remove; a Social Security row says what it does and where the benefit is edited', async () => {
     const plan = validPlan()
     const host = await mount(plan, <IncomeSection />)
     const ssRows = [...host.querySelectorAll<HTMLElement>('.item-row')].filter(
@@ -150,9 +151,14 @@ describe('Income (#462)', () => {
     )
     expect(ssRows.length).toBeGreaterThan(0)
     for (const row of ssRows) {
-      expect([...row.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Remove')
-      // The copy that names where the stream is managed stays with the row.
-      expect(row.textContent).toContain('managed on the')
+      const remove = [...row.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
+      expect(remove).toBeTruthy()
+      // The clarify half of "drop Remove or clarify": the row says Remove
+      // deletes the benefit, the same as on the Social Security step, and
+      // that the benefit and claim age are edited there.
+      expect(remove.title).toContain('Deletes this benefit from the plan')
+      expect(row.textContent).toContain('edited on the Social Security step')
+      expect(row.textContent).toContain('Remove, above, deletes this benefit from the plan')
     }
     const wageRows = [...host.querySelectorAll<HTMLElement>('.item-row')].filter(
       (r) => r.querySelector('.type-chip')?.textContent === 'Wages',
@@ -172,6 +178,10 @@ describe('Household MFJ (#467)', () => {
     expect(plan.household.people).toHaveLength(2)
     const host = await mount(plan, <HouseholdSection />)
     const field = fieldLabelled(host, 'Qualifying surviving spouse')
+    // The filing-status name, verbatim; neither earlier label survives.
+    expect(field.querySelector('label.field-label')!.textContent).toBe('Qualifying surviving spouse')
+    expect(host.textContent).not.toContain('Qualifying dependent for survivor')
+    expect(host.textContent).not.toContain('Survivor has a dependent')
     expect(field.classList.contains('field--checkbox')).toBe(true)
     // Label row + control, nothing else: the shape the form-grid subgrids so
     // the box shares the row's control track with the two selects.
@@ -224,7 +234,7 @@ describe('Social Security (#511)', () => {
       .map((l) => l.textContent?.trim())
       .filter((t) => t?.startsWith('PIA'))
     expect(piaLabels.length).toBeGreaterThan(0)
-    for (const text of piaLabels) expect(text).toBe('PIA (monthly at FRA)')
+    for (const text of piaLabels) expect(text).toBe(PIA_MONTHLY_AT_FRA_LABEL)
     await act(async () => root!.unmount())
     root = null
     container?.remove()
@@ -233,7 +243,9 @@ describe('Social Security (#511)', () => {
       .map((l) => l.textContent?.trim())
       .filter((t) => t?.startsWith('PIA'))
     expect(summaryLabels.length).toBeGreaterThan(0)
-    for (const text of summaryLabels) expect(text).toBe('PIA (monthly at FRA)')
+    for (const text of summaryLabels) expect(text).toBe(PIA_MONTHLY_AT_FRA_LABEL)
+    // Both surfaces render the one constant, so they cannot drift apart.
+    expect(PIA_MONTHLY_AT_FRA_LABEL).toBe('PIA (monthly at FRA)')
   })
 })
 
@@ -254,6 +266,27 @@ describe('Insurance care events (#489)', () => {
     await act(async () => add.click())
     expect(itemRowTitled(host, 'Care', `${primary!.name} · age 89`)).toBeTruthy()
     expect(host.querySelectorAll('.callout--warn')).toHaveLength(0)
+  })
+
+  it('with every start age taken for everyone, + Care event disables instead of appending a repeat', async () => {
+    const plan = validPlan((p) => {
+      p.careEvents = p.household.people.flatMap((person) =>
+        Array.from({ length: 110 - 85 + 1 }, (_, i) => ({
+          id: `${person.id}-${85 + i}`,
+          personId: person.id,
+          startAge: 85 + i,
+          durationYears: 1,
+          annualCost: 1,
+        })),
+      )
+    })
+    const host = await mount(plan, <InsuranceSection />)
+    const add = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Care event')!
+    expect(add.disabled).toBe(true)
+    expect(add.title).toContain('already taken')
+    await act(async () => add.click())
+    expect(host.querySelectorAll('.callout--warn')).toHaveLength(0)
+    expect([...host.querySelectorAll('.type-chip')].filter((c) => c.textContent === 'Care')).toHaveLength(52)
   })
 
   it('names repeated events with their count, without promising a live stress test', async () => {
@@ -414,7 +447,7 @@ describe('Insurance LTC stress (#517)', () => {
     ])
     expect(host.querySelector('table.compare-table')).toBeNull()
     expect(host.textContent).toContain('Paused while the plan has 2 issues to fix')
-    expect(host.textContent).toContain('The issue lists on Accounts and Spending name the fields.')
+    expect(host.textContent).toContain('The issue lists on Accounts and Spending name each field.')
   })
 })
 
@@ -434,11 +467,11 @@ describe('Income orphaned Social Security row (#462 review)', () => {
     expect([...orphanRow.querySelectorAll('button')].map((b) => b.textContent)).toContain('Remove')
     // The Social Security step cannot show this stream, so the row does not
     // send the reader there; it links Household, where the person can return.
-    expect(orphanRow.textContent).not.toContain('managed on the')
+    expect(orphanRow.textContent).not.toContain('edited on the Social Security step')
     expect([...orphanRow.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toContain('/household')
     const healthyRow = ssRows.find((r) => r !== orphanRow)!
-    expect([...healthyRow.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Remove')
-    expect(healthyRow.textContent).toContain('managed on the')
+    expect([...healthyRow.querySelectorAll('button')].map((b) => b.textContent)).toContain('Remove')
+    expect(healthyRow.textContent).toContain('edited on the Social Security step')
     // Removing it drops the row.
     const remove = [...orphanRow.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
     await act(async () => remove.click())
@@ -492,8 +525,26 @@ describe('Income floor (#512)', () => {
     // The pause names and links the section the entry lives on, which is
     // what makes it actionable where no issue list renders (Results).
     const fundedCard = [...host.querySelectorAll('.card')].find((c) => c.querySelector('h2')?.textContent === 'Funded ratio')!
-    expect(fundedCard.textContent).toContain('The issue list on Income floor names the field.')
+    expect(fundedCard.textContent).toContain('The issue list on Income floor names each field.')
     expect([...fundedCard.querySelectorAll('a')].map((a) => a.getAttribute('href'))).toContain('/income-floor')
+  })
+
+  it('two issues on one section still read as one list; the number follows the linked sections', async () => {
+    const host = await mount(ladderPlan(), <IncomeFloorSection />, [
+      'expenses.baseAnnual: Invalid input',
+      'expenses.requiredAnnual: Invalid input',
+    ])
+    expect(host.textContent).toContain('Paused while the plan has 2 issues to fix')
+    expect(host.textContent).toContain('The issue list on Spending names each field.')
+  })
+
+  it('an issue index the ladder list does not have is ignored, so a surviving ladder is not paused by it', async () => {
+    // One ladder, an issue that names index 1: the shape a stale result
+    // would have after ladder 0 was removed. Neither blamed on this row nor
+    // treated as list-level.
+    const host = await mount(ladderPlan(), <IncomeFloorSection />, ['incomeFloor.ladders.1.endYear: stale'])
+    expect(host.textContent).toContain('Quoted cost')
+    expect(host.textContent).not.toContain('Quote paused')
   })
 
   it('an issue on the ladder list itself pauses every ladder quote', async () => {
@@ -527,7 +578,7 @@ describe('Income floor (#512)', () => {
     expect(host.textContent).not.toContain('Quote paused')
     expect(host.querySelector('.stat-grid')).toBeNull()
     expect(host.textContent).toContain('Paused while the plan has 2 issues to fix')
-    expect(host.textContent).toContain('The issue lists on Accounts and Spending name the fields.')
+    expect(host.textContent).toContain('The issue lists on Accounts and Spending name each field.')
     const hrefs = [...host.querySelectorAll('a')].map((a) => a.getAttribute('href'))
     expect(hrefs).toContain('/accounts')
     expect(hrefs).toContain('/spending')

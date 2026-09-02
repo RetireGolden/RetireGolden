@@ -11,13 +11,15 @@ import { permanentLifePolicySchema } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 
 import { createSamplePlan } from '../../testSupport/samplePlan'
-import { hasIssueAt, hasIssueUnder, parseIssue, sectionsWithIssues } from '../validationIssues'
+import { hasIssueAt, hasIssueUnder, parseIssue, sectionsWithIssues, withoutIssuesBeyond } from '../validationIssues'
 import {
+  appendScheduleRow,
   duplicateCareEvents,
   duplicateScheduleAges,
   formatAgeList,
   makeCareEvent,
   maxScheduleAge,
+  nextCareStartAge,
   nextScheduleAge,
 } from './sectionHelpers'
 
@@ -56,6 +58,12 @@ describe('illustration schedule rows (#489)', () => {
     expect(duplicateScheduleAges([{ age: 70 }, { age: 65 }, { age: 70 }, { age: 65 }, { age: 70 }])).toEqual([65, 70])
   })
 
+  it('appendScheduleRow is nextScheduleAge applied: one row at that age, or no change to make', () => {
+    expect(appendScheduleRow([])).toEqual([{ age: 65, value: 0 }])
+    expect(appendScheduleRow([{ age: 65, value: 1 }])).toEqual([{ age: 65, value: 1 }, { age: 66, value: 0 }])
+    expect(appendScheduleRow([{ age: MAX_SCHEDULE_AGE, value: 0 }])).toBeNull()
+  })
+
   it('lists ages in prose; an empty list is an empty string by contract', () => {
     expect(formatAgeList([])).toBe('')
     expect(formatAgeList([65])).toBe('65')
@@ -69,17 +77,17 @@ describe('care events (#489)', () => {
     const plan = createSamplePlan()
     const [primary, partner] = plan.household.people
     expect(plan.careEvents.map((c) => c.personId)).toEqual([primary!.id])
-    const second = makeCareEvent(plan)
+    const second = makeCareEvent(plan)!
     expect(second.personId).toBe(partner!.id)
     expect(second.startAge).toBe(85)
     plan.careEvents.push(second)
     // The primary's existing event is at 88, so 85 is free for them.
-    const third = makeCareEvent(plan)
+    const third = makeCareEvent(plan)!
     expect(third.personId).toBe(primary!.id)
     expect(third.startAge).toBe(85)
     plan.careEvents.push(third)
     // Now 85 is taken: one past their latest (88).
-    const fourth = makeCareEvent(plan)
+    const fourth = makeCareEvent(plan)!
     expect(fourth.personId).toBe(primary!.id)
     expect(fourth.startAge).toBe(89)
     plan.careEvents.push(fourth)
@@ -89,8 +97,29 @@ describe('care events (#489)', () => {
   it('in a one-person household repeated adds never repeat a person + age pair', () => {
     const plan = createEmptyPlan({ newId: () => crypto.randomUUID() })
     expect(plan.household.people).toHaveLength(1)
-    for (let i = 0; i < 4; i++) plan.careEvents.push(makeCareEvent(plan))
+    for (let i = 0; i < 4; i++) plan.careEvents.push(makeCareEvent(plan)!)
     expect(plan.careEvents.map((c) => c.startAge)).toEqual([85, 86, 87, 88])
+    expect(duplicateCareEvents(plan)).toEqual([])
+  })
+
+  it('at the 110 ceiling the next age fills a gap, never a repeat, and is null when the span is full', () => {
+    // Events at 85 and 110: one past the latest would pass the ceiling, so
+    // the lowest unused age between them opens instead.
+    expect(nextCareStartAge([85, 110])).toBe(86)
+    expect(nextCareStartAge([85, 86, 110])).toBe(87)
+    // Only a 110: 85 itself is free.
+    expect(nextCareStartAge([110])).toBe(85)
+    // Never below the earliest event.
+    expect(nextCareStartAge([85, 100, 110])).toBe(86)
+    expect(nextCareStartAge([100, 110])).toBe(85)
+    // 85 through 110 all taken: nothing to open.
+    const full = Array.from({ length: 110 - 85 + 1 }, (_, i) => 85 + i)
+    expect(nextCareStartAge(full)).toBeNull()
+    // A one-person plan at that point gets no event, and never a duplicate.
+    const plan = createEmptyPlan({ newId: () => crypto.randomUUID() })
+    const person = plan.household.people[0]!
+    for (const startAge of full) plan.careEvents.push({ id: `c${startAge}`, personId: person.id, startAge, durationYears: 3, annualCost: 1 })
+    expect(makeCareEvent(plan)).toBeNull()
     expect(duplicateCareEvents(plan)).toEqual([])
   })
 
@@ -155,6 +184,24 @@ describe('validation issues (#512, #517)', () => {
     expect(hasIssueAt(issues, 'insurance')).toBe(true)
     expect(hasIssueAt(issues, 'careEvents')).toBe(false)
     expect(hasIssueAt(issues, ['careEvents', '1', 'durationYears'])).toBe(true)
+  })
+
+  it('drops issues whose list index the current list does not have, and nothing else', () => {
+    const stale = [
+      'incomeFloor.ladders.1.endYear: stale, from before ladder 0 was removed',
+      'incomeFloor.ladders.0.endYear: current',
+      'incomeFloor.ladders: list-level',
+      'incomeFloor.ladders.x.endYear: not an index',
+      'careEvents.5.durationYears: another list',
+    ]
+    expect(withoutIssuesBeyond(stale, ['incomeFloor', 'ladders'], 1)).toEqual([
+      'incomeFloor.ladders.0.endYear: current',
+      'incomeFloor.ladders: list-level',
+      'incomeFloor.ladders.x.endYear: not an index',
+      'careEvents.5.durationYears: another list',
+    ])
+    expect(withoutIssuesBeyond(stale, 'incomeFloor.ladders', 2)).toEqual(stale)
+    expect(withoutIssuesBeyond(stale, 'incomeFloor.ladders', 0)).toHaveLength(3)
   })
 
   it('names the planner sections the failing entries live on, once each, in rail order', () => {

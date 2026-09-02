@@ -15,6 +15,13 @@ import { ANNUITY_MIN_START_AGE } from '../../accountStartAgeBounds'
 export const newId = () => crypto.randomUUID()
 
 /**
+ * The one label for a person's own PIA wherever a surface shows it: the
+ * Social Security step's quick-entry field and the Income page's summary
+ * card (#511). The former-spouse record prefixes it with "Their".
+ */
+export const PIA_MONTHLY_AT_FRA_LABEL = 'PIA (monthly at FRA)'
+
+/**
  * What the editor falls back to if the schema cannot be introspected; the
  * schema-oracle test in sectionHelpers.insurance.test.ts fails if this and
  * the engine ever disagree, so the fallback can never silently drift.
@@ -54,11 +61,34 @@ export function maxScheduleAge(): number {
  */
 export function nextScheduleAge(schedule: ReadonlyArray<{ age: number }>): number | null {
   if (schedule.length === 0) return 65
-  const ages = schedule.map((row) => row.age)
-  const latest = Math.max(...ages)
-  if (latest + 1 <= maxScheduleAge()) return latest + 1
-  const taken = new Set(ages)
-  for (let age = Math.min(...ages) + 1; age < latest; age++) if (!taken.has(age)) return age
+  return nextFreeAge(schedule.map((row) => row.age), maxScheduleAge())
+}
+
+/**
+ * The schedule with one row appended at nextScheduleAge, or null when there
+ * is no age to open. The add control's handler goes through this, so the
+ * age it appends and the age the control's disabled state was read from
+ * are one computation.
+ */
+export function appendScheduleRow(
+  schedule: ReadonlyArray<{ age: number; value: number }>,
+): Array<{ age: number; value: number }> | null {
+  const age = nextScheduleAge(schedule)
+  return age === null ? null : [...schedule, { age, value: 0 }]
+}
+
+/**
+ * One past the latest of `taken` while that fits `ceiling`; otherwise the
+ * lowest age strictly between the earliest and the latest that is not
+ * taken (never below the earliest); null when there is none. Shared by the
+ * illustration schedule and the care events, so neither can ever open a
+ * repeat.
+ */
+function nextFreeAge(taken: readonly number[], ceiling: number): number | null {
+  const latest = Math.max(...taken)
+  if (latest + 1 <= ceiling) return latest + 1
+  const held = new Set(taken)
+  for (let age = Math.min(...taken) + 1; age < latest; age++) if (!held.has(age)) return age
   return null
 }
 
@@ -87,19 +117,38 @@ export function formatAgeList(values: readonly number[]): string {
 const CARE_EVENT_MAX_START_AGE = 110
 
 /**
- * A new care event starts on the first person who has none yet (a couple's
- * second event then lands on the partner instead of duplicating the first),
- * falling back to the first person once everyone has one. It opens at 85
- * unless that person already has an event at 85, in which case it opens one
- * past their latest event, so a click never repeats an existing person + age
- * pair, in a one-person household included (#489).
+ * The start age a person's next care event opens at: 85 while they have no
+ * event at 85; otherwise one past their latest event while that fits the
+ * schema's ceiling; otherwise the lowest unused age between their earliest
+ * and latest events; null when that span is full. Never a repeat of a
+ * person + age pair, so the add control can disable instead (#489).
  */
-export function makeCareEvent(plan: Plan): CareEvent {
+export function nextCareStartAge(startAges: readonly number[]): number | null {
+  if (!startAges.includes(85)) return 85
+  return nextFreeAge(startAges, CARE_EVENT_MAX_START_AGE)
+}
+
+/**
+ * Who and when the next care event would be for, or null when nobody has an
+ * age left: the first person who has no event yet (a couple's second event
+ * lands on the partner instead of duplicating the first), then each person
+ * in household order, each at nextCareStartAge for their own events.
+ */
+export function nextCareEvent(plan: Plan): { personId: string; startAge: number } | null {
   const covered = new Set(plan.careEvents.map((c) => c.personId))
-  const personId = plan.household.people.find((p) => !covered.has(p.id))?.id ?? plan.household.people[0]!.id
-  const theirs = plan.careEvents.filter((c) => c.personId === personId).map((c) => c.startAge)
-  const startAge = theirs.includes(85) ? Math.min(CARE_EVENT_MAX_START_AGE, Math.max(...theirs) + 1) : 85
-  return { id: newId(), personId, startAge, durationYears: 3, annualCost: 90_000 }
+  const people = plan.household.people
+  const order = [...people.filter((p) => !covered.has(p.id)), ...people.filter((p) => covered.has(p.id))]
+  for (const person of order) {
+    const startAge = nextCareStartAge(plan.careEvents.filter((c) => c.personId === person.id).map((c) => c.startAge))
+    if (startAge !== null) return { personId: person.id, startAge }
+  }
+  return null
+}
+
+/** A new care event per nextCareEvent, with defaults, or null when there is none to add. */
+export function makeCareEvent(plan: Plan): CareEvent | null {
+  const next = nextCareEvent(plan)
+  return next === null ? null : { id: newId(), ...next, durationYears: 3, annualCost: 90_000 }
 }
 
 export interface RepeatedCareEvents {
