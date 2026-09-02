@@ -113,24 +113,24 @@
       "label": "grouped logical input, planner invocation, ordered deferral application and numeric result normalization",
       "file": "projection/simulate.ts",
       "lines": [
-        3710,
-        3743
+        3712,
+        3745
       ],
       "anchors": [
         {
-          "line": 3710,
+          "line": 3712,
           "text": "const ownerRmdPlan = annualOwnerRmdPlan({"
         },
         {
-          "line": 3711,
+          "line": 3713,
           "text": "balances: rmdBalances,"
         },
         {
-          "line": 3724,
+          "line": 3726,
           "text": "for (const operation of ownerRmdPlan.deferredFirstRmdOperations) {"
         },
         {
-          "line": 3741,
+          "line": 3743,
           "text": "const rmdTakeByAccount = new Map("
         }
       ]
@@ -140,28 +140,28 @@
       "label": "one logical debit, runtime occurrence/application, aggregate publication and deferred Form 8606 identity",
       "file": "projection/simulate.ts",
       "lines": [
-        3744,
-        3823
+        3746,
+        3825
       ],
       "anchors": [
         {
-          "line": 3744,
+          "line": 3746,
           "text": "for (const state of rmdBalances) {"
         },
         {
-          "line": 3771,
+          "line": 3773,
           "text": "state.balance -= take"
         },
         {
-          "line": 3774,
+          "line": 3776,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 3787,
+          "line": 3789,
           "text": "ownedIraApplication = recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 3814,
+          "line": 3816,
           "text": "deferredRmdDistributions.push({"
         }
       ]

@@ -307,6 +307,7 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/actions/annualQcdExecution.ts](../../../packages/engine/src/actions/annualQcdExecution.ts),
 [engine/actions/conversionLinkedWithdrawalGroupExecution.ts](../../../packages/engine/src/actions/conversionLinkedWithdrawalGroupExecution.ts),
 [engine/internal/ownedNonRothIraRuntimeSourceSeries.ts](../../../packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts),
-[engine/tax/propertySale.ts](../../../packages/engine/src/tax/propertySale.ts), threaded through
+[engine/tax/propertySale.ts](../../../packages/engine/src/tax/propertySale.ts),
+[engine/projection/internal/annualAggregateRothConversionTargetPlan.ts](../../../packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts), threaded through
 [engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts) and the after-tax estate metric in
 [engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts).
