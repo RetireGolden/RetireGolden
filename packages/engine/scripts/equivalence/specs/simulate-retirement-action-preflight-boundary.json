@@ -269,28 +269,28 @@
       "label": "annual action, balance snapshot, baseline and release contract",
       "file": "projection/simulate.ts",
       "lines": [
-        4449,
-        4460
+        4450,
+        4461
       ],
       "anchors": [
         {
-          "line": 4449,
+          "line": 4450,
           "text": "const retirementActionPreflight = annualRetirementActionPreflight(Object.freeze({"
         },
         {
-          "line": 4451,
+          "line": 4452,
           "text": "retirementActions: Object.freeze([...passRetirementActions]),"
         },
         {
-          "line": 4452,
+          "line": 4453,
           "text": "balances: Object.freeze(annualIdKeyedBalances.map((state) =>"
         },
         {
-          "line": 4457,
+          "line": 4458,
           "text": "annualLiabilityBaseline:"
         },
         {
-          "line": 4459,
+          "line": 4460,
           "text": "linkedGroupRelease,"
         }
       ]
@@ -300,28 +300,28 @@
       "label": "all executor-routing and linked-group output handoffs",
       "file": "projection/simulate.ts",
       "lines": [
-        4461,
-        4475
+        4462,
+        4476
       ],
       "anchors": [
         {
-          "line": 4461,
+          "line": 4462,
           "text": "const currentYearOrdinaryActions = retirementActionPreflight.ordinaryActions"
         },
         {
-          "line": 4464,
+          "line": 4465,
           "text": "const currentYearQcdExecutionActions ="
         },
         {
-          "line": 4468,
+          "line": 4469,
           "text": "const mixedKindScheduleBlocked ="
         },
         {
-          "line": 4470,
+          "line": 4471,
           "text": "const linkedGroupAssessmentRequests ="
         },
         {
-          "line": 4474,
+          "line": 4475,
           "text": "const conversionLinkedWithdrawalGroups ="
         }
       ]

@@ -98,26 +98,26 @@
       "id": "AF.callsite.context",
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot",
       "file": "projection/simulate.ts",
-      "lines": [5738, 5808],
+      "lines": [5739, 5809],
       "anchors": [
-        { "line": 5738, "text": "const fundingCandidateAcaContract = acaContract" },
-        { "line": 5755, "text": "const fundingCandidateEvaluationContext:" },
-        { "line": 5761, "text": "taxInputBase: Object.freeze({" },
-        { "line": 5785, "text": "aca: Object.freeze({" },
-        { "line": 5797, "text": "hsa: Object.freeze({" }
+        { "line": 5739, "text": "const fundingCandidateAcaContract = acaContract" },
+        { "line": 5756, "text": "const fundingCandidateEvaluationContext:" },
+        { "line": 5762, "text": "taxInputBase: Object.freeze({" },
+        { "line": 5786, "text": "aca: Object.freeze({" },
+        { "line": 5798, "text": "hsa: Object.freeze({" }
       ]
     },
     {
       "id": "AF.callsite.delegate",
       "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
       "file": "projection/simulate.ts",
-      "lines": [5809, 5833],
+      "lines": [5810, 5834],
       "anchors": [
-        { "line": 5812, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
-        { "line": 5819, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 5822, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
-        { "line": 5828, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
-        { "line": 5833, "text": "return evaluation" }
+        { "line": 5813, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
+        { "line": 5820, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 5823, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 5829, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
+        { "line": 5834, "text": "return evaluation" }
       ]
     }
   ],

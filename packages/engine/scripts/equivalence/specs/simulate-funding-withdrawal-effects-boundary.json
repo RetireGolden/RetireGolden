@@ -7,164 +7,341 @@
       "id": "AE.helper.traditional",
       "label": "ordered traditional taxable-share penalty characterization",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [210, 230],
+      "lines": [
+        210,
+        230
+      ],
       "anchors": [
-        { "line": 210, "text": "for (const row of input.accounts) {" },
-        { "line": 214, "text": "if (row.kind === 'traditional') {" },
-        { "line": 228, "text": "traditionalRows.push({ sourceAccountId: row.sourceAccountId, amount })" }
+        {
+          "line": 210,
+          "text": "for (const row of input.accounts) {"
+        },
+        {
+          "line": 214,
+          "text": "if (row.kind === 'traditional') {"
+        },
+        {
+          "line": 228,
+          "text": "traditionalRows.push({ sourceAccountId: row.sourceAccountId, amount })"
+        }
       ]
     },
     {
       "id": "AE.helper.hsaCap",
       "label": "ordered HSA medical-cap allocation and pre-65 penalty",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [120, 134],
+      "lines": [
+        120,
+        134
+      ],
       "anchors": [
-        { "line": 120, "text": "for (const row of input.accounts) {" },
-        { "line": 128, "text": "if (row.withdrawalTreatment === 'capByMedicalExpenses') {" },
-        { "line": 134, "text": "nonQualified * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)" }
+        {
+          "line": 120,
+          "text": "for (const row of input.accounts) {"
+        },
+        {
+          "line": 128,
+          "text": "if (row.withdrawalTreatment === 'capByMedicalExpenses') {"
+        },
+        {
+          "line": 134,
+          "text": "nonQualified * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)"
+        }
       ]
     },
     {
       "id": "AE.helper.hsaLegacyAndRows",
       "label": "legacy HSA treatment and complete ordered row/total accumulation",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [141, 158],
+      "lines": [
+        141,
+        158
+      ],
       "anchors": [
-        { "line": 141, "text": "qualified = taken" },
-        { "line": 144, "text": "penalty = taken * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)" },
-        { "line": 150, "text": "rows.push({" }
+        {
+          "line": 141,
+          "text": "qualified = taken"
+        },
+        {
+          "line": 144,
+          "text": "penalty = taken * hsaNonQualifiedPenaltyRate(row.ownerAgeAttained)"
+        },
+        {
+          "line": 150,
+          "text": "rows.push({"
+        }
       ]
     },
     {
       "id": "AE.helper.hsaResult",
       "label": "complete ordered HSA result and cap consumption",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [161, 168],
+      "lines": [
+        161,
+        168
+      ],
       "anchors": [
-        { "line": 161, "text": "return {" },
-        { "line": 167, "text": "capConsumed: input.hsaQualifiedCap - capLeft," }
+        {
+          "line": 161,
+          "text": "return {"
+        },
+        {
+          "line": 167,
+          "text": "capConsumed: input.hsaQualifiedCap - capLeft,"
+        }
       ]
     },
     {
       "id": "AE.helper.rothPoolSelection",
       "label": "inherited Roth exclusion, pool lookup, and multi-account accumulation",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [238, 241],
+      "lines": [
+        238,
+        241
+      ],
       "anchors": [
-        { "line": 238, "text": "if (row.poolKey === null) continue" },
-        { "line": 239, "text": "const pool = rothPools.get(row.poolKey)" },
-        { "line": 241, "text": "pool.taken += taken" }
+        {
+          "line": 238,
+          "text": "if (row.poolKey === null) continue"
+        },
+        {
+          "line": 239,
+          "text": "const pool = rothPools.get(row.poolKey)"
+        },
+        {
+          "line": 241,
+          "text": "pool.taken += taken"
+        }
       ]
     },
     {
       "id": "AE.helper.rothPoolFirstSeen",
       "label": "first-seen Roth pool identity and age snapshot",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [243, 248],
+      "lines": [
+        243,
+        248
+      ],
       "anchors": [
-        { "line": 243, "text": "rothPools.set(row.poolKey, {" }
+        {
+          "line": 243,
+          "text": "rothPools.set(row.poolKey, {"
+        }
       ]
     },
     {
       "id": "AE.helper.rothSplitSetup",
       "label": "ordered Roth-pool split setup and basis selection",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [250, 255],
+      "lines": [
+        250,
+        255
+      ],
       "anchors": [
-        { "line": 253, "text": "for (const [poolKey, { taken, ownerAgeAttained }] of rothPools) {" },
-        { "line": 255, "text": "const split = basis === undefined" }
+        {
+          "line": 253,
+          "text": "for (const [poolKey, { taken, ownerAgeAttained }] of rothPools) {"
+        },
+        {
+          "line": 255,
+          "text": "const split = basis === undefined"
+        }
       ]
     },
     {
       "id": "AE.helper.rothSplitCharacter",
       "label": "Roth split invocation and aggregate character",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [257, 268],
+      "lines": [
+        257,
+        268
+      ],
       "anchors": [
-        { "line": 257, "text": ": splitRothWithdrawal(" },
-        { "line": 267, "text": "rothRows.push({ poolKey, taken, ownerAgeAttained, split })" }
+        {
+          "line": 257,
+          "text": ": splitRothWithdrawal("
+        },
+        {
+          "line": 267,
+          "text": "rothRows.push({ poolKey, taken, ownerAgeAttained, split })"
+        }
       ]
     },
     {
       "id": "AE.helper.result",
       "label": "complete immutable withdrawal-character result",
       "file": "projection/internal/annualFundingWithdrawalEffects.ts",
-      "lines": [270, 286],
+      "lines": [
+        270,
+        286
+      ],
       "anchors": [
-        { "line": 270, "text": "const hsa = annualHsaWithdrawalEffects({" },
-        { "line": 276, "text": "return {" },
-        { "line": 284, "text": "penaltyExcludingRmdShortfallExcise:" }
+        {
+          "line": 270,
+          "text": "const hsa = annualHsaWithdrawalEffects({"
+        },
+        {
+          "line": 276,
+          "text": "return {"
+        },
+        {
+          "line": 284,
+          "text": "penaltyExcludingRmdShortfallExcise:"
+        }
       ]
     },
     {
       "id": "AE.callsite.snapshot",
       "label": "annual account-identity snapshot for every supported withdrawal domain",
       "file": "projection/simulate.ts",
-      "lines": [5686, 5726],
+      "lines": [
+        5687,
+        5727
+      ],
       "anchors": [
-        { "line": 5686, "text": "const fundingWithdrawalEffectAccounts = Object.freeze(" },
-        { "line": 5688, "text": "if (state.account.type === 'traditional') {" },
-        { "line": 5701, "text": "if (state.account.type === 'roth') {" },
-        { "line": 5712, "text": "if (state.account.type === 'hsa') {" },
-        { "line": 5724, "text": "const fundingHsaEffectAccounts = fundingWithdrawalEffectAccounts.filter(" }
+        {
+          "line": 5687,
+          "text": "const fundingWithdrawalEffectAccounts = Object.freeze("
+        },
+        {
+          "line": 5689,
+          "text": "if (state.account.type === 'traditional') {"
+        },
+        {
+          "line": 5702,
+          "text": "if (state.account.type === 'roth') {"
+        },
+        {
+          "line": 5713,
+          "text": "if (state.account.type === 'hsa') {"
+        },
+        {
+          "line": 5725,
+          "text": "const fundingHsaEffectAccounts = fundingWithdrawalEffectAccounts.filter("
+        }
       ]
     },
     {
       "id": "AE.callsite.probe",
       "label": "candidate withdrawal-character invocation inside the funding evaluator",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
-      "lines": [165, 175],
+      "lines": [
+        165,
+        175
+      ],
       "anchors": [
-        { "line": 165, "text": "const { request, withdrawalPlan, iraCharacter, aca } = input" },
-        { "line": 167, "text": "let withdrawalEffectsProbe = annualFundingWithdrawalEffects({" },
-        { "line": 170, "text": "traditionalTaxableByAccountId:" },
-        { "line": 174, "text": "hsaQualifiedCap: candidateHsaCap," }
+        {
+          "line": 165,
+          "text": "const { request, withdrawalPlan, iraCharacter, aca } = input"
+        },
+        {
+          "line": 167,
+          "text": "let withdrawalEffectsProbe = annualFundingWithdrawalEffects({"
+        },
+        {
+          "line": 170,
+          "text": "traditionalTaxableByAccountId:"
+        },
+        {
+          "line": 174,
+          "text": "hsaQualifiedCap: candidateHsaCap,"
+        }
       ]
     },
     {
       "id": "AE.callsite.penalties",
       "label": "complete candidate penalty and warning-gate handoff",
       "file": "projection/internal/annualFundingCandidateEvaluation.ts",
-      "lines": [323, 345],
+      "lines": [
+        323,
+        345
+      ],
       "anchors": [
-        { "line": 323, "text": "const penalties =" },
-        { "line": 324, "text": "withdrawalEffectsProbe.penaltyExcludingRmdShortfallExcise +" },
-        { "line": 344, "text": "traditionalEarlyWithdrawalPenaltyCharged:" }
+        {
+          "line": 323,
+          "text": "const penalties ="
+        },
+        {
+          "line": 324,
+          "text": "withdrawalEffectsProbe.penaltyExcludingRmdShortfallExcise +"
+        },
+        {
+          "line": 344,
+          "text": "traditionalEarlyWithdrawalPenaltyCharged:"
+        }
       ]
     },
     {
       "id": "AE.callsite.final",
       "label": "accepted-plan characterization and domain-result aliases",
       "file": "projection/simulate.ts",
-      "lines": [5928, 5942],
+      "lines": [
+        5929,
+        5943
+      ],
       "anchors": [
-        { "line": 5931, "text": "const withdrawalEffectsFinal = annualFundingWithdrawalEffects({" },
-        { "line": 5940, "text": "const rothEffectFinal = withdrawalEffectsFinal.roth" },
-        { "line": 5941, "text": "const hsaEffectFinal = withdrawalEffectsFinal.hsa" }
+        {
+          "line": 5932,
+          "text": "const withdrawalEffectsFinal = annualFundingWithdrawalEffects({"
+        },
+        {
+          "line": 5941,
+          "text": "const rothEffectFinal = withdrawalEffectsFinal.roth"
+        },
+        {
+          "line": 5942,
+          "text": "const hsaEffectFinal = withdrawalEffectsFinal.hsa"
+        }
       ]
     },
     {
       "id": "AE.callsite.cashFlow",
       "label": "traditional/HSA cash-flow character and Roth-row routing",
       "file": "projection/simulate.ts",
-      "lines": [5946, 5974],
+      "lines": [
+        5947,
+        5975
+      ],
       "anchors": [
-        { "line": 5946, "text": "for (const row of withdrawalEffectsFinal.traditional.rows) {" },
-        { "line": 5954, "text": "for (const row of withdrawalEffectsFinal.hsa.rows) {" },
-        { "line": 5970, "text": "for (const row of withdrawalEffectsFinal.roth.rows) {" },
-        { "line": 5972, "text": "if (row.poolKey.startsWith('rothira:')) {" }
+        {
+          "line": 5947,
+          "text": "for (const row of withdrawalEffectsFinal.traditional.rows) {"
+        },
+        {
+          "line": 5955,
+          "text": "for (const row of withdrawalEffectsFinal.hsa.rows) {"
+        },
+        {
+          "line": 5971,
+          "text": "for (const row of withdrawalEffectsFinal.roth.rows) {"
+        },
+        {
+          "line": 5973,
+          "text": "if (row.poolKey.startsWith('rothira:')) {"
+        }
       ]
     },
     {
       "id": "AE.callsite.rothCommit",
       "label": "accepted Roth split identity enters the existing basis commit",
       "file": "projection/simulate.ts",
-      "lines": [6871, 6879],
+      "lines": [
+        6465,
+        6473
+      ],
       "anchors": [
-        { "line": 6871, "text": "for (const row of withdrawalEffectsFinal.roth.rows) {" },
-        { "line": 6876, "text": "const split = row.split" },
-        { "line": 6879, "text": "const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0" }
+        {
+          "line": 6465,
+          "text": "for (const row of withdrawalEffectsFinal.roth.rows) {"
+        },
+        {
+          "line": 6470,
+          "text": "const split = row.split"
+        },
+        {
+          "line": 6473,
+          "text": "const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0"
+        }
       ]
     }
   ],
