@@ -345,6 +345,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
         <NumberField
           label="Claim age (years)"
           help="The age this person starts benefits. Earlier than full retirement age permanently reduces it; waiting past it adds ~8%/year until 70. Compare the options on Explore → Social Security."
+          path={`incomes.${streamIndex}.claimAge.years`}
           value={stream.claimAge.years}
           min={62}
           max={70}
@@ -352,6 +353,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
         />
         <NumberField
           label="Claim age (+ months)"
+          path={`incomes.${streamIndex}.claimAge.months`}
           value={stream.claimAge.months}
           min={0}
           max={11}
@@ -400,6 +402,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
           <MoneyField
             label="PIA (monthly benefit at FRA)"
             help="Your Primary Insurance Amount, the monthly benefit at full retirement age in today's dollars, from ssa.gov/myaccount."
+            path={`incomes.${streamIndex}.piaMonthly`}
             value={stream.piaMonthly}
             allowNull
             onCommit={(v) => setStream((s) => (s.piaMonthly = v ?? 0))}

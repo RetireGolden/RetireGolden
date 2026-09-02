@@ -74,6 +74,9 @@ const ITEM_NAMES: Record<string, string> = {
   ladders: 'TIPS ladder',
   phases: 'Phase',
   goals: 'Goal',
+  oneTimeGoals: 'Goal',
+  conversions: 'Conversion',
+  stateMoves: 'Move',
   scenarios: 'Scenario',
   earnings: 'Earnings year',
   cashValueSchedule: 'Schedule year',
@@ -85,11 +88,36 @@ const LEAF_LABELS: Record<string, string> = {
   taxableSafetyNetFloor: 'Taxable safety-net floor',
   stateAndLocalTaxes: 'State and local taxes',
   localIncomeTaxPct: 'Local income tax %',
+  // The schema key is `stateEffectiveTaxPct`; the Assumptions label calls it an override.
+  stateEffectiveTaxPct: 'State effective tax % (override)',
   stateEffectiveTaxPctOverride: 'State effective tax % (override)',
   inflationPct: 'Inflation %',
+  healthcareExtraInflationPct: 'Healthcare extra inflation %',
   healthcareInflationPct: 'Healthcare extra inflation %',
   defaultReturnPct: 'Default return %',
+  safeWithdrawalRatePct: 'Safe withdrawal rate %',
   heirTaxRatePct: 'Heir tax rate %',
+  recentAnnualMagi: 'Recent annual MAGI',
+  returnPct: 'Expected return %',
+  volatilityPct: 'Volatility %',
+  interestYieldPct: 'Interest yield %',
+  qualifiedRatioPct: 'Qualified share %',
+  qualifiedRatio: 'Qualified dividends (share, 0–1)',
+  interestPct: 'Interest rate %',
+  targetValue: 'Target',
+  annualPremium: 'Annual premium',
+  deathBenefit: 'Death benefit',
+  cashValue: 'Cash value',
+  annualCost: 'Annual cost',
+  annualAmount: 'Annual amount',
+  annualRealAmount: 'Annual real income',
+  requiredAnnual: 'Required floor',
+  fromYear: 'From year',
+  cutPct: 'Cut %',
+  annualPct: 'COLA rate %',
+  bracketPct: 'Target bracket %',
+  pre65MonthlyPremiumPerPerson: 'Pre-65 premium / person / month',
+  medicareExtrasMonthlyPerPerson: 'Medicare extras / person / month',
   cashValueSchedule: 'Cash value schedule',
   cashValueGrowthPct: 'Cash value growth %',
   premiumEndAge: 'Premium end age',
@@ -134,8 +162,23 @@ const GROUP_LABELS: Record<string, string> = {
   longevity: 'Longevity',
   rothConversion: 'Roth conversion',
   withdrawal: 'Withdrawal strategy',
+  withdrawalOrder: 'Withdrawal strategy',
   charitable: 'Charitable giving',
   survivor: 'Survivor',
+  assetClassParams: 'Asset classes',
+  ssHaircut: 'Social Security haircut',
+  ssCola: 'Social Security COLA',
+  heirTaxByClass: 'Heir tax by class',
+  healthcare: 'Healthcare',
+}
+
+/** Leaves that only read well with their parent object named ("Claim age (years)", not "Years"). */
+const NESTED_LEAF_LABELS: Record<string, string> = {
+  'claimAge.years': 'Claim age (years)',
+  'claimAge.months': 'Claim age (+ months)',
+  'deceasedClaimAge.years': 'When they claimed (age)',
+  'deceasedClaimAge.months': 'When they claimed (+ months)',
+  'purchase.year': 'Purchase year',
 }
 
 function words(camel: string): string {
@@ -173,16 +216,31 @@ export function labelOfPath(path: string): string {
     const container = segments[segments.length - 2] ?? ''
     return `${ITEM_NAMES[container] ?? words(container)} ${Number(leaf) + 1}`
   }
-  const field = LEAF_LABELS[leaf] ?? words(leaf)
+  const parent = segments[segments.length - 2] ?? ''
+  const field = NESTED_LEAF_LABELS[`${parent}.${leaf}`] ?? LEAF_LABELS[leaf] ?? words(leaf)
   return prefix && prefix !== field ? `${prefix}: ${field}` : field
+}
+
+/**
+ * The engine's cross-field messages that name schema keys rather than fields
+ * (packages/engine/src/model/plan.ts superRefine). Matched exactly, so a
+ * reworded engine message falls through to the pass-through below rather than
+ * being mistranslated.
+ */
+const CUSTOM_ADVICE: Record<string, string> = {
+  "cashValueSchedule is required when cashValueMode is 'schedule'": 'Add at least one schedule row, or grow cash value by a flat rate',
+  "premiumEndAge is required when premiumMode is 'untilAge'": 'Enter the age premiums end',
 }
 
 /**
  * Zod's wording, translated. Custom engine messages (anything not in Zod's
  * "Too small" / "Too big" / "Invalid input" family) pass through unchanged,
- * since those were written for people already.
+ * since those were written for people already; the few that name schema keys
+ * are translated exactly.
  */
 export function adviceOf(message: string): string {
+  const custom = CUSTOM_ADVICE[message]
+  if (custom) return custom
   let m: RegExpMatchArray | null
   if ((m = message.match(/^Too small: expected .* to be >=(-?[\d.]+)/))) return `Must be at least ${m[1]}`
   if ((m = message.match(/^Too small: expected .* to be >(-?[\d.]+)/))) return `Must be more than ${m[1]}`

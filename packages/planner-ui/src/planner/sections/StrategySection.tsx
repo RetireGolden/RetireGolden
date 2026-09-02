@@ -70,6 +70,7 @@ export function StrategySection() {
               help="Higher brackets tax each extra dollar more; this caps how much ordinary income the strategy realizes each year."
               hint="Fill ordinary income to the top of this bracket."
               learn={LEARN.marginalVsEffective}
+              path="strategies.withdrawalOrder.bracketPct"
               value={w.bracketPct}
               suffix="%"
               onCommit={(v) => update((d) => void (d.strategies.withdrawalOrder = { mode: 'bracketTargeted', bracketPct: v ?? 22 }))}
@@ -79,6 +80,7 @@ export function StrategySection() {
             label="Taxable safety-net floor"
             help="An optional minimum cash + taxable reserve (today's dollars) the plan tries to keep liquid. Spending is funded from other accounts first so this cushion stays intact, and fill-to-target Roth conversions are trimmed so their tax bill never forces you below the floor. It is only dipped into as a last resort. Leave blank for no floor."
             hint="Blank = no floor."
+            path="strategies.taxableSafetyNetFloor"
             value={plan.strategies.taxableSafetyNetFloor ?? null}
             allowNull
             onCommit={(v) => update((d) => void (d.strategies.taxableSafetyNetFloor = v ?? undefined))}
@@ -88,6 +90,7 @@ export function StrategySection() {
               label="Survivor reserve target (today's $)"
               help="The minimum investable balance the surviving spouse should have in the first survivor year, in today's dollars (deflated by inflation). Used as a hard constraint by the decision engine's protect-survivor-liquidity objective, candidates whose survivor-year investable falls below this target are disqualified. Leave blank for no reserve constraint."
               hint="Blank = no survivor reserve constraint."
+              path="strategies.survivorReserveTarget"
               value={plan.strategies.survivorReserveTarget ?? null}
               allowNull
               onCommit={(v) => update((d) => void (d.strategies.survivorReserveTarget = v ?? undefined))}
@@ -171,6 +174,7 @@ export function StrategySection() {
                 <div className="form-grid">
                   <NumberField
                     label="Year"
+                    path={`strategies.rothConversion.conversions.${i}.year`}
                     value={c.year}
                     min={1900}
                     max={2200}
@@ -183,6 +187,7 @@ export function StrategySection() {
                   />
                   <MoneyField
                     label="Amount"
+                    path={`strategies.rothConversion.conversions.${i}.amount`}
                     value={c.amount}
                     onCommit={(v) =>
                       update((d) => {
@@ -244,6 +249,7 @@ export function StrategySection() {
                 label={rc.target === 'topOfBracket' ? 'Bracket' : rc.target === 'irmaaTier' ? 'Tier index' : 'MAGI ($)'}
                 // The unit rides in the affix like every other percent field (#451).
                 suffix={rc.target === 'topOfBracket' ? '%' : undefined}
+                path="strategies.rothConversion.targetValue"
                 value={rc.targetValue}
                 allowNull
                 onCommit={(v) =>
@@ -256,6 +262,7 @@ export function StrategySection() {
             ) : null}
             <NumberField
               label="Start year"
+              path="strategies.rothConversion.startYear"
               value={rc.startYear}
               min={1900}
               max={2200}
@@ -268,6 +275,7 @@ export function StrategySection() {
             />
             <NumberField
               label="End year"
+              path="strategies.rothConversion.endYear"
               value={rc.endYear}
               min={1900}
               max={2200}
@@ -291,6 +299,7 @@ export function StrategySection() {
             learn={LEARN.qcd}
             source={provenanceSource('rmd-qcd')}
             hint="Routed out of RMDs from age 70½; excluded from income."
+            path="strategies.qcdAnnual"
             value={plan.strategies.qcdAnnual}
             onCommit={(v) => update((d) => void (d.strategies.qcdAnnual = v ?? 0))}
           />
@@ -339,16 +348,19 @@ export function StrategySection() {
             <MoneyField
               label="State & local taxes (SALT)"
               hint="State income + property tax; capped at the current-law SALT limit."
+              path="strategies.itemizedDeductions.stateAndLocalTaxes"
               value={plan.strategies.itemizedDeductions.stateAndLocalTaxes}
               onCommit={(v) => update((d) => { if (d.strategies.itemizedDeductions) d.strategies.itemizedDeductions.stateAndLocalTaxes = v ?? 0 })}
             />
             <MoneyField
               label="Mortgage interest"
+              path="strategies.itemizedDeductions.mortgageInterest"
               value={plan.strategies.itemizedDeductions.mortgageInterest}
               onCommit={(v) => update((d) => { if (d.strategies.itemizedDeductions) d.strategies.itemizedDeductions.mortgageInterest = v ?? 0 })}
             />
             <MoneyField
               label="Charitable gifts"
+              path="strategies.itemizedDeductions.charitable"
               value={plan.strategies.itemizedDeductions.charitable}
               onCommit={(v) => update((d) => { if (d.strategies.itemizedDeductions) d.strategies.itemizedDeductions.charitable = v ?? 0 })}
             />

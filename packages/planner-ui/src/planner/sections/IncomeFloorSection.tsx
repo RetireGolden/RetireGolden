@@ -78,7 +78,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
         </button>
       </div>
       <div className="form-grid">
-        <TextField label="Name" value={ladder.name} onCommit={(v) => edit((l) => void (l.name = v || 'TIPS ladder'))} />
+        <TextField label="Name" path={`incomeFloor.ladders.${index}.name`} value={ladder.name} onCommit={(v) => edit((l) => void (l.name = v || 'TIPS ladder'))} />
         <SelectField
           label="Purpose"
           help="Labeling only: a bridge covers the years until a delayed Social Security claim; a floor covers essential spending. The math is the same."
@@ -93,11 +93,13 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
           label="Annual real income (today's $)"
           help="The level inflation-adjusted income the ladder pays in each payout year. TIPS index to CPI, so this stays constant in today's dollars. Quotes price each rung on the embedded Treasury real-yield curve."
           source={provenanceSource('real-yield-curve')}
+          path={`incomeFloor.ladders.${index}.annualRealAmount`}
           value={ladder.annualRealAmount}
           onCommit={(v) => edit((l) => void (l.annualRealAmount = Math.max(0, v ?? 0)))}
         />
         <NumberField
           label="First payout year"
+          path={`incomeFloor.ladders.${index}.startYear`}
           value={ladder.startYear}
           min={1900}
           max={2200}
@@ -105,6 +107,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
         />
         <NumberField
           label="Last payout year"
+          path={`incomeFloor.ladders.${index}.endYear`}
           value={ladder.endYear}
           min={1900}
           max={2200}
@@ -133,6 +136,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
             <NumberField
               label="Purchase year"
               hint="Must be before the first payout year."
+              path={`incomeFloor.ladders.${index}.purchase.year`}
               value={ladder.purchase.year}
               min={1900}
               max={2200}

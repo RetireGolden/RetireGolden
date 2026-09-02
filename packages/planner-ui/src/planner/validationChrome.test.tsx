@@ -7,12 +7,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { MemoryRouter } from 'react-router'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { createSamplePlan } from '../testSupport/samplePlan'
-import { NumberField } from './fields'
+import { DateField, MoneyField, NumberField, SelectField, TextField } from './fields'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
+import { InsuranceSection } from './sections/InsuranceSection'
 import { Issues } from './sections/shared'
+import { StrategySection } from './sections/StrategySection'
 
 function contextFor(plan: Plan, issues: string[]): PlanContextValue {
   return { plan, update: () => undefined, discardPendingSave: () => undefined, saveState: 'invalid', issues }
@@ -85,6 +88,120 @@ describe('validation chrome', () => {
     expect(floor!.getAttribute('aria-invalid')).toBe('true')
     expect(floor!.closest('.field')?.querySelector('.field-error')?.textContent).toBe('Must be at least 0')
     expect(qcd!.hasAttribute('aria-invalid')).toBe(false)
+  })
+
+  it('money, text, date, and select fields show the engine issue for their path the same way (#489–#531)', async () => {
+    const plan = createSamplePlan()
+    const issues = [
+      'strategies.qcdAnnual: Too small: expected number to be >=0',
+      'household.people.0.name: Too small: expected string to have >=1 characters',
+      'household.people.0.dob: Invalid date',
+      'household.filingStatus: Invalid option: expected one of "single"|"marriedFilingJointly"',
+    ]
+    await act(async () => {
+      root.render(
+        <PlanCtx.Provider value={contextFor(plan, issues)}>
+          <MoneyField label="QCD per year (today's $)" path="strategies.qcdAnnual" value={-5000} onCommit={() => undefined} />
+          <MoneyField label="Charitable gifts" path="strategies.itemizedDeductions.charitable" value={100} onCommit={() => undefined} />
+          <TextField label="Name" path="household.people.0.name" value="" onCommit={() => undefined} />
+          <DateField label="Date of birth" path="household.people.0.dob" value="" onCommit={() => undefined} />
+          <SelectField
+            label="Filing status"
+            path="household.filingStatus"
+            value="single"
+            options={[{ value: 'single', label: 'Single' }]}
+            onCommit={() => undefined}
+          />
+          <SelectField label="Sex" path="household.people.0.sex" value="female" options={[{ value: 'female', label: 'Female' }]} onCommit={() => undefined} />
+        </PlanCtx.Provider>,
+      )
+    })
+    const controls = [...container.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select')]
+    const [qcd, charitable, name, dob, filing, sex] = controls
+    const expectInvalid = (control: HTMLElement, advice: string) => {
+      expect(control.getAttribute('aria-invalid')).toBe('true')
+      const field = control.closest('.field')!
+      expect(field.classList.contains('field--invalid')).toBe(true)
+      const error = field.querySelector('.field-error')!
+      expect(error.textContent).toBe(advice)
+      expect(control.getAttribute('aria-describedby')?.split(' ')).toContain(error.id)
+    }
+    expectInvalid(qcd!, 'Must be at least 0')
+    expectInvalid(name!, 'Add at least one entry')
+    expectInvalid(dob!, 'Enter a valid date')
+    expectInvalid(filing!, 'Choose one of the listed options')
+    for (const clean of [charitable!, sex!]) {
+      expect(clean.hasAttribute('aria-invalid')).toBe(false)
+      expect(clean.closest('.field')?.querySelector('.field-error')).toBeNull()
+    }
+  })
+
+  const labelledControl = (label: string): HTMLElement => {
+    const el = [...container.querySelectorAll<HTMLLabelElement>('label')].find((l) => l.textContent === label)
+    expect(el, label).toBeDefined()
+    return document.getElementById(el!.htmlFor)!
+  }
+
+  it('the Strategy screen flags the QCD input itself, so the card list is no longer the only locator (#531)', async () => {
+    const plan = createSamplePlan()
+    plan.strategies.qcdAnnual = -5000
+    await act(async () => {
+      root.render(
+        <PlanCtx.Provider value={contextFor(plan, ['strategies.qcdAnnual: Too small: expected number to be >=0'])}>
+          <MemoryRouter initialEntries={['/plan/example/strategy']}>
+            <StrategySection />
+          </MemoryRouter>
+        </PlanCtx.Provider>,
+      )
+    })
+    const qcd = labelledControl("QCD per year (today's $)")
+    expect(qcd.getAttribute('aria-invalid')).toBe('true')
+    const error = qcd.closest('.field')!.querySelector('.field-error')!
+    expect(error.textContent).toBe('Must be at least 0')
+    expect(qcd.getAttribute('aria-describedby')).toContain(error.id)
+    // The only invalid control on the screen is the QCD input, and the header
+    // chip's locator finds it ahead of the card-level list.
+    expect([...container.querySelectorAll('[aria-invalid="true"]')]).toEqual([qcd])
+    expect(container.querySelector('[aria-invalid="true"], .issue-list')).toBe(qcd)
+    // A sibling money field stays clean; the card list still names the same issue in words.
+    expect(labelledControl('Taxable safety-net floor').hasAttribute('aria-invalid')).toBe(false)
+    expect(container.querySelector('.issue-list li')?.textContent).toBe('Strategy: QCD annual amount: Must be at least 0')
+  })
+
+  it('an empty illustration schedule shows its issue on the schedule block, in words (#489)', async () => {
+    const plan = createSamplePlan()
+    plan.careEvents = []
+    plan.insurance = [
+      {
+        kind: 'permanentLife',
+        id: 'policy-1',
+        name: 'Whole life',
+        insured: plan.household.people[0]!.id,
+        beneficiary: 'estate',
+        annualPremium: 1200,
+        premiumMode: 'lifetime',
+        deathBenefit: 100_000,
+        cashValue: 10_000,
+        cashValueMode: 'schedule',
+      },
+    ]
+    await act(async () => {
+      root.render(
+        <PlanCtx.Provider value={contextFor(plan, ["insurance.0.cashValueSchedule: cashValueSchedule is required when cashValueMode is 'schedule'"])}>
+          <MemoryRouter initialEntries={['/plan/example/insurance']}>
+            <InsuranceSection />
+          </MemoryRouter>
+        </PlanCtx.Provider>,
+      )
+    })
+    const block = [...container.querySelectorAll<HTMLElement>('.field--invalid')]
+    expect(block).toHaveLength(1)
+    expect(block[0]!.textContent).toContain('Cash-value schedule (age → value)')
+    const error = block[0]!.querySelector('.field-error')!
+    expect(error.textContent).toBe('Add at least one schedule row, or grow cash value by a flat rate')
+    expect(container.textContent).not.toContain('cashValueMode')
+    const add = [...container.querySelectorAll('button')].find((b) => b.textContent === '+ Schedule row')!
+    expect(add.getAttribute('aria-describedby')).toBe(error.id)
   })
 
   it('a section lists only its own issues, in words, with the raw path kept as a title (#452)', async () => {
