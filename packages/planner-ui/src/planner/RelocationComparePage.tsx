@@ -24,6 +24,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { HelpTip, NumberField, PercentField, SelectField } from './fields'
 import { fmtMoney, fmtPct } from './format'
+import { TypeChip } from './TypeChip'
 import { LEARN } from './learnLinks'
 import { buildModel } from './marketModelPicker'
 import { ScrollRegion } from './ScrollRegion'
@@ -300,7 +301,7 @@ export function RelocationComparePage() {
           <div className="item-row" key={i} style={{ marginTop: i === 0 ? 0 : '0.75rem' }}>
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">Candidate</span>
+                <TypeChip>Candidate</TypeChip>
                 {US_STATES.find((s) => s.value === draft.state)?.label ?? draft.state}
               </span>
               <button

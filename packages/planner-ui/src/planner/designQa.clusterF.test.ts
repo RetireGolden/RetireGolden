@@ -145,28 +145,41 @@ describe('cluster F: compact KPI money degrades by magnitude, never by digit cou
     expect(fmtMoneyCompact(-370_261_372_999_000)).toBe('−$370.26T')
   })
 
-  it('past 999T there is no unit left: a short bare exponent, never "e+37M"', () => {
+  it('past 999T the ceiling label replaces the bare exponent (#572)', () => {
+    // Cluster F stopped "$1.18e+37M" by dropping the unit; cluster J drops the
+    // exponent too. A retiree reading a KPI cannot read "e+37", and the string
+    // has no width bound, so the top of the ladder is an open-ended magnitude.
     const s = fmtMoneyCompact(1.181e37)
-    expect(s).toBe('$1.18e+37')
+    expect(s).toBe('$999T+')
     // The T tier hands off exactly where its mantissa would round to 1000, never $1000.00T.
     expect(fmtMoneyCompact(999_994_000_000_000)).toBe('$999.99T')
-    expect(fmtMoneyCompact(999_995_000_000_000)).toBe('$1.00e+15')
-    expect(fmtMoneyCompact(1e15)).toBe('$1.00e+15')
+    expect(fmtMoneyCompact(999_995_000_000_000)).toBe('$999T+')
+    expect(fmtMoneyCompact(1e15)).toBe('$999T+')
     // The walk's "$3702613729.99M today's $" subline (#495) is 3.7 quadrillion.
-    expect(fmtMoneyCompact(3_702_613_729_990_000)).toBe('$3.70e+15')
+    expect(fmtMoneyCompact(3_702_613_729_990_000)).toBe('$999T+')
+    // The debt-interest repro on #572: a net worth of −8.49e+36 keeps its sign.
+    expect(fmtMoneyCompact(-8.489e36)).toBe('−$999T+')
+    // No exponent, from any magnitude the formatter can be handed.
+    for (const v of [1e15, -1e15, 1.181e37, -8.489e36, Number.MAX_VALUE, -Number.MAX_VALUE]) {
+      expect(fmtMoneyCompact(v), String(v)).not.toMatch(/e[+-]\d/i)
+      expect(fmtMoneyCompact(v).length, String(v)).toBeLessThanOrEqual(8)
+    }
     expect(s).not.toMatch(/[kMBT]$/)
-    expect(s.length).toBeLessThanOrEqual(10)
     expect(fmtMoneyCompact(Number.POSITIVE_INFINITY)).toBe('—')
   })
 
-  it('every form the formatter emits parses back into a money field, sign and all', () => {
-    // Each tier the formatter can emit, back through the field: the suffixes,
-    // the bare exponent past 999T, and the Unicode minus a negative carries.
+  it('every numeric form parses back into a money field, and the ceiling label does not', () => {
+    // Each tier the formatter can emit, back through the field: the suffixes
+    // and the Unicode minus a negative carries.
     expect(parseAmount(fmtMoneyCompact(45_000))).toBe(45_000)
     expect(parseAmount(fmtMoneyCompact(2_500_000_000))).toBe(2_500_000_000)
     expect(parseAmount(fmtMoneyCompact(1.2e12))).toBe(1.2e12)
-    expect(parseAmount(fmtMoneyCompact(1e15))).toBe(1e15)
-    expect(parseAmount(fmtMoneyCompact(1.181e37))).toBe(1.18e37)
+    // The ceiling label is the one form that deliberately does NOT parse back:
+    // "$999T+" names a range, and reading it as the number 999T would turn a
+    // display ceiling into a silently wrong balance in the field (#572).
+    expect(fmtMoneyCompact(1e15)).toBe('$999T+')
+    expect(parseAmount(fmtMoneyCompact(1e15))).toBeNull()
+    expect(parseAmount(fmtMoneyCompact(-1e15))).toBeNull()
     expect(fmtMoneyCompact(-370_261_372_999_000)).toBe('−$370.26T')
     expect(parseAmount('−$370.26T')).toBe(-370.26e12)
     expect(parseAmount('$45k')).toBe(45_000)

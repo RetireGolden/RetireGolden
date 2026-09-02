@@ -9,6 +9,7 @@ import { currentStartYear, taxCalculatorFor } from '../useProjection'
 import { retirementActionsCardParts } from '../retirementActionsCardVisibility'
 import { RetirementActionEligibilityFactsEditor } from './RetirementActionEligibilityFactsEditor'
 import { RetirementActionQcdAuthoringSection } from './RetirementActionQcdAuthoringSection'
+import { TypeChip } from '../TypeChip'
 import {
   CheckboxField,
   DateField,
@@ -199,7 +200,7 @@ function ManualReviewRow({
     <div className="item-row" data-retirement-action-id={target.actionId}>
       <div className="item-row-head">
         <span className="item-row-title">
-          <span className="type-chip">Needs source review</span>
+          <TypeChip>Needs source review</TypeChip>
           {retirementActionReviewLabel(target)} · {target.year} ·{' '}
           {formatPositiveUsdCents(target.requestedAmount)}
         </span>
@@ -411,7 +412,7 @@ function QcdManualReviewRow({
     <div className="item-row" data-retirement-action-id={targetActionId}>
       <div className="item-row-head">
         <span className="item-row-title">
-          <span className="type-chip">Needs source review</span>
+          <TypeChip>Needs source review</TypeChip>
           Qualified charitable distribution · {year} · {formatPositiveUsdCents(requestedAmount)}
         </span>
       </div>

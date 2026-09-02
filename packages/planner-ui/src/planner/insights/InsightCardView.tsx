@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
+import { TypeChip } from '../TypeChip'
 import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
 import { useProjection, taxCalculatorFor, seedFromPlanId } from '../useProjection'
 import { packForYear } from '@retiregolden/engine/params'
@@ -214,9 +215,9 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
   const allFlat = anyDeltaDefined && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat
 
   const confidenceChips = {
-    high: { className: 'type-chip type-chip--good', label: 'High Confidence' },
-    medium: { className: 'type-chip type-chip--warn', label: 'Medium Confidence' },
-    low: { className: 'type-chip type-chip--muted', label: 'Low Confidence' },
+    high: { className: 'type-chip--good', label: 'High Confidence' },
+    medium: { className: 'type-chip--warn', label: 'Medium Confidence' },
+    low: { className: 'type-chip--muted', label: 'Low Confidence' },
   }
   const confidence = confidenceChips[card.confidence]
 
@@ -250,7 +251,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
           category chip would just repeat it — only the confidence chip earns
           its place. */}
       <div className="insight-badges">
-        <span className={confidence.className}>{confidence.label}</span>
+        <TypeChip className={confidence.className}>{confidence.label}</TypeChip>
       </div>
 
       <h3 className="insight-card-title">{card.title}</h3>

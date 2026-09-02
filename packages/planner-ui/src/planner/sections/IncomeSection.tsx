@@ -8,6 +8,7 @@ import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, Se
 import { LEARN } from '../learnLinks'
 import { fmtMoney } from '../format'
 import { resolvePia } from '../ssAnalysis'
+import { TypeChip } from '../TypeChip'
 import { Issues } from './shared'
 import { PIA_MONTHLY_AT_FRA_LABEL, newId } from './sectionHelpers'
 
@@ -191,7 +192,7 @@ export function IncomeSection() {
           <div className="item-row" key={s.id}>
             <div className="item-row-head">
               <span className="item-row-title">
-                <span className="type-chip">{INCOME_LABEL[s.type]}</span>
+                <TypeChip>{INCOME_LABEL[s.type]}</TypeChip>
                 {'label' in s ? s.label : (plan.household.people.find((p) => 'personId' in s && p.id === s.personId)?.name ?? '')}
               </span>
               {/* Every row keeps Remove. A Social Security row's summary copy

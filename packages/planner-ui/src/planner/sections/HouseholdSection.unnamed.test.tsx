@@ -99,8 +99,9 @@ describe('Household unnamed people (#523)', () => {
     // Placeholder: the name is shown, the chip is not, so the role reads once.
     expect(titles).toContain('Unnamed partner')
     expect(titles).not.toContain('PartnerUnnamed partner')
-    // A real name keeps its chip.
-    expect(titles).toContain(`Primary${plan.household.people[0]!.name}`)
+    // A real name keeps its chip — with the separator the badge now carries,
+    // so the title reads "Primary Alex" rather than "PrimaryAlex" (#570).
+    expect(titles).toContain(`Primary ${plan.household.people[0]!.name}`)
     const chips = Array.from(el.querySelectorAll('.item-row-title .type-chip')).map((c) => c.textContent)
     expect(chips).toEqual(['Primary'])
   })

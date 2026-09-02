@@ -133,8 +133,15 @@ async function typeInto(input: HTMLInputElement, text: string) {
   })
 }
 
+/**
+ * The kind badge carries its own separator as whitespace-only text nodes,
+ * which render as nothing between flex items, so titles are compared with
+ * whitespace collapsed — what the reader actually sees. Collapsing still
+ * discriminates the #570 glue: "CashRiley" has no run to collapse.
+ */
+const flatText = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim()
 const rowTitles = (container: HTMLElement, selector: string) =>
-  [...container.querySelectorAll<HTMLElement>(selector)].map((row) => row.querySelector('.item-row-title')!.textContent)
+  [...container.querySelectorAll<HTMLElement>(selector)].map((row) => flatText(row.querySelector('.item-row-title')))
 const removeLabels = (container: HTMLElement, selector: string) =>
   [...container.querySelectorAll<HTMLElement>(selector)].map((row) =>
     [...row.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!.getAttribute('aria-label'),
@@ -462,7 +469,7 @@ describe('Former spouses (#535)', () => {
     )
     expect(rowTitles(container, '.item-row')).toEqual(['Divorced ex (1)', 'Divorced ex (2)'])
     // Chip and ordinal are one inline box, the title's first child.
-    expect([...container.querySelectorAll('.item-row .item-row-title > :first-child')].map((el) => el.textContent)).toEqual([
+    expect([...container.querySelectorAll('.item-row .item-row-title > :first-child')].map(flatText)).toEqual([
       'Divorced ex (1)',
       'Divorced ex (2)',
     ])
@@ -685,9 +692,9 @@ describe('Insurance cards (#541, #550)', () => {
     const rows = [...container.querySelectorAll<HTMLElement>('[data-testid="insurance-row"]')]
     expect(rows.map((r) => r.dataset.insuranceKind)).toEqual(['permanentLife', 'permanentLife', 'ltc'])
     expect(rowTitles(container, '[data-testid="insurance-row"]')).toEqual([
-      'Permanent lifeWhole life A',
-      'Permanent lifeWhole life C',
-      'Long-term careLTC policy',
+      'Permanent life Whole life A',
+      'Permanent life Whole life C',
+      'Long-term care LTC policy',
     ])
     // Remove on the displayed third card removes the LTC policy, stored second.
     const remove = [...rows[2]!.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
@@ -730,12 +737,12 @@ describe('Insurance cards (#541, #550)', () => {
     const { mounted } = mountSection(InsuranceSection, plan, '/plan/x/insurance')
     const { container, unmount } = await mounted
     expect(rowTitles(container, '[data-testid="care-event-row"]')).toEqual([
-      `Care${personName} · age 85 (1)`,
-      `Care${personName} · age 85 (2)`,
-      `Care${personName} · age 80`,
+      `Care ${personName} · age 85 (1)`,
+      `Care ${personName} · age 85 (2)`,
+      `Care ${personName} · age 80`,
     ])
     expect(
-      [...container.querySelectorAll('[data-testid="care-event-row"] .item-row-title > :last-child')].map((el) => el.textContent),
+      [...container.querySelectorAll('[data-testid="care-event-row"] .item-row-title > :last-child')].map(flatText),
     ).toEqual([`${personName} · age 85 (1)`, `${personName} · age 85 (2)`, `${personName} · age 80`])
     expect(removeLabels(container, '[data-testid="care-event-row"]')).toEqual([
       `Remove care event ${personName} · age 85 (1)`,
@@ -756,11 +763,15 @@ describe('Account cards (#549)', () => {
     ]
     const { drafts, mounted } = mountSection(AccountsSection, plan, '/plan/x/accounts')
     const { container, unmount } = await mounted
-    expect(rowTitles(container, '[data-testid="account-row"]')).toEqual(['DebtMortgage (1)', 'PropertyHome', 'DebtMortgage (2)'])
+    expect(rowTitles(container, '[data-testid="account-row"]')).toEqual([
+      'Debt Mortgage (1)',
+      'Property Home',
+      'Debt Mortgage (2)',
+    ])
     // The name and its ordinal are one inline box after the chip, not two
     // flex items with a gap between them.
     expect(
-      [...container.querySelectorAll('[data-testid="account-row"] .item-row-title > :last-child')].map((el) => el.textContent),
+      [...container.querySelectorAll('[data-testid="account-row"] .item-row-title > :last-child')].map(flatText),
     ).toEqual(['Mortgage (1)', 'Home', 'Mortgage (2)'])
     expect(removeLabels(container, '[data-testid="account-row"]')).toEqual([
       'Remove Debt Mortgage (1)',

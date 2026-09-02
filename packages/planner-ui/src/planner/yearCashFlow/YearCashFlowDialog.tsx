@@ -11,6 +11,7 @@ import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
 import { Modal } from '../Modal'
 import { fmtMoney } from '../format'
+import { TypeChip } from '../TypeChip'
 import type {
   YearCashFlowSankeyModel,
   YearCashFlowSankeyReady,
@@ -165,7 +166,7 @@ function SummaryStrip({
       >
         <div className="year-cash-flow-summary-label">
           Shortfall
-          {hasShortfall ? <span className="type-chip year-cash-flow-shortfall-badge">Shortfall</span> : null}
+          {hasShortfall ? <TypeChip className="year-cash-flow-shortfall-badge">Shortfall</TypeChip> : null}
         </div>
         <div className="year-cash-flow-summary-value year-cash-flow-num">{fmtMoney(shortfall)}</div>
       </div>

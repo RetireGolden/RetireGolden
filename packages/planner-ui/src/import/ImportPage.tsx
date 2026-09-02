@@ -24,6 +24,8 @@ import {
   COLUMN_ROLE_LABEL,
   describeCsvRowCells,
   draftPlanFromGenericCsv,
+  duplicateColumnRoles,
+  duplicateRoleMessage,
   MAX_SET_ASIDE_LISTED,
   setAsideRange,
   type ColumnRole,
@@ -82,6 +84,9 @@ const ROLE_OPTIONS = (Object.keys(COLUMN_ROLE_LABEL) as ColumnRole[]).map((value
   value,
   label: COLUMN_ROLE_LABEL[value],
 }))
+
+/** One alert, described by every select that shares a duplicated role. */
+const DUPLICATE_ROLE_ALERT_ID = 'import-duplicate-role-alert'
 
 const EMPTY_1040: TenFortyInputs = {
   filingStatus: 'single',
@@ -251,6 +256,10 @@ function EnabledImportPage() {
       setPendingSource({ file: file.name, sha256, bytes, mapper: 'genericCsv' })
     }
   }
+
+  // Roles the user (or the header-row guess) put on two columns at once. The
+  // mapping step warns on these and Continue waits for them.
+  const duplicateRoles = duplicateColumnRoles(roles)
 
   const buildGenericDraft = () => {
     if (!analysis || !pendingSource) return
@@ -488,23 +497,28 @@ function EnabledImportPage() {
                       ))}
                     </tr>
                     <tr>
-                      {analysis.header.map((_, i) => (
-                        <td key={i}>
-                          <select
-                            aria-label={`Role for column ${analysis.header[i] || i + 1}`}
-                            value={roles[i] ?? 'ignore'}
-                            onChange={(e) =>
-                              setRoles((prev) => prev.map((r, j) => (j === i ? (e.target.value as ColumnRole) : r)))
-                            }
-                          >
-                            {ROLE_OPTIONS.map((o) => (
-                              <option key={o.value} value={o.value}>
-                                {o.label}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      ))}
+                      {analysis.header.map((_, i) => {
+                        const clashes = duplicateRoles.includes(roles[i] ?? 'ignore')
+                        return (
+                          <td key={i}>
+                            <select
+                              aria-label={`Role for column ${analysis.header[i] || i + 1}`}
+                              aria-invalid={clashes || undefined}
+                              aria-describedby={clashes ? DUPLICATE_ROLE_ALERT_ID : undefined}
+                              value={roles[i] ?? 'ignore'}
+                              onChange={(e) =>
+                                setRoles((prev) => prev.map((r, j) => (j === i ? (e.target.value as ColumnRole) : r)))
+                              }
+                            >
+                              {ROLE_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                        )
+                      })}
                     </tr>
                   </thead>
                   <tbody>
@@ -518,8 +532,23 @@ function EnabledImportPage() {
                   </tbody>
                 </table>
               </ScrollRegion>
+              {/* A second column on the same role is read by nothing: the
+                  mapper takes the first match per role, so the rest used to be
+                  dropped with no message at all (#569). Say so here, beside
+                  the selects that caused it, and hold Continue until it is
+                  resolved — the mapper refuses the same mapping anyway. */}
+              {duplicateRoles.length > 0 ? (
+                <div className="callout callout--warn" role="alert" id={DUPLICATE_ROLE_ALERT_ID}>
+                  {duplicateRoleMessage(duplicateRoles)}
+                </div>
+              ) : null}
               <div className="picker-actions">
-                <button type="button" className="btn btn-primary" onClick={buildGenericDraft}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={buildGenericDraft}
+                  disabled={duplicateRoles.length > 0}
+                >
                   Continue with these columns
                 </button>
               </div>
