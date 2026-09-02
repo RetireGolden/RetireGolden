@@ -70,8 +70,9 @@ describe('Design-QA chrome pins: cluster C', () => {
     expect(supportsAt, 'rule sits inside a subgrid @supports block').toBeGreaterThanOrEqual(0)
     const closeAt = css.indexOf('\n}\n', supportsAt)
     expect(closeAt).toBeGreaterThan(at)
-    // It outranks the app-wide checkbox placement (a two-class, one-attribute
-    // selector) without an !important: three classes plus the attribute.
+    // It outranks the app-wide checkbox placement without an !important:
+    // that rule is one class + one attribute + one element (0,2,1); this one
+    // is two classes + one attribute + one element (0,3,1).
     expect(rule(".field--checkbox input[type='checkbox']")).toMatch(/align-self:\s*flex-start/)
   })
 

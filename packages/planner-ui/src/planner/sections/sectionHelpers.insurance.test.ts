@@ -17,11 +17,19 @@ import {
 } from './sectionHelpers'
 
 describe('illustration schedule rows (#489)', () => {
-  it('opens a new row one age past the latest row, from 65 on an empty schedule, capped at 120', () => {
+  it('opens a new row one age past the latest row, from 65 on an empty schedule', () => {
     expect(nextScheduleAge([])).toBe(65)
     expect(nextScheduleAge([{ age: 65 }])).toBe(66)
     expect(nextScheduleAge([{ age: 70 }, { age: 65 }])).toBe(71)
-    expect(nextScheduleAge([{ age: 120 }])).toBe(120)
+  })
+
+  it('never opens a repeat: past the schema cap it takes the lowest free age, and null once every age is taken', () => {
+    expect(nextScheduleAge([{ age: 120 }])).toBe(0)
+    expect(nextScheduleAge([{ age: 120 }, { age: 0 }])).toBe(1)
+    expect(nextScheduleAge([{ age: 120 }, { age: 0 }, { age: 1 }, { age: 3 }])).toBe(2)
+    const full = Array.from({ length: 121 }, (_, age) => ({ age }))
+    expect(nextScheduleAge(full)).toBeNull()
+    expect(nextScheduleAge(full.filter((row) => row.age !== 77))).toBe(77)
   })
 
   it('names each repeated age once, ascending', () => {
@@ -48,16 +56,29 @@ describe('care events (#489)', () => {
     expect(makeCareEvent(plan).personId).toBe(primary!.id)
   })
 
-  it('reports a repeated person + start age once, by name', () => {
+  it('reports a repeated person + start age once, by person id, with how many events share it', () => {
     const plan = createSamplePlan()
     expect(duplicateCareEvents(plan)).toEqual([])
     const first = plan.careEvents[0]!
-    plan.careEvents.push({ ...first, id: 'dupe-1' }, { ...first, id: 'dupe-2' })
-    const primaryName = plan.household.people[0]!.name
-    expect(duplicateCareEvents(plan)).toEqual([{ name: primaryName, startAge: first.startAge }])
+    const primary = plan.household.people[0]!
+    plan.careEvents.push({ ...first, id: 'dupe-1' })
+    expect(duplicateCareEvents(plan)).toEqual([{ personId: primary.id, name: primary.name, startAge: first.startAge, count: 2 }])
+    plan.careEvents.push({ ...first, id: 'dupe-2' })
+    expect(duplicateCareEvents(plan)[0]!.count).toBe(3)
     // A different start age for the same person is a second episode, not a duplicate.
     plan.careEvents.push({ ...first, id: 'later', startAge: first.startAge + 5 })
     expect(duplicateCareEvents(plan)).toHaveLength(1)
+  })
+
+  it('keeps two same-named people apart', () => {
+    const plan = createSamplePlan()
+    const [primary, partner] = plan.household.people
+    partner!.name = primary!.name
+    const first = plan.careEvents[0]!
+    plan.careEvents.push({ ...first, id: 'p-dupe' }, { ...first, id: 'q-1', personId: partner!.id }, { ...first, id: 'q-2', personId: partner!.id })
+    const groups = duplicateCareEvents(plan)
+    expect(groups.map((g) => g.personId)).toEqual([primary!.id, partner!.id])
+    expect(new Set(groups.map((g) => `${g.personId}@${g.startAge}`)).size).toBe(2)
   })
 })
 

@@ -16,7 +16,6 @@ import {
   duplicateCareEvents,
   duplicateScheduleAges,
   formatAgeList,
-  hasIssueUnder,
   makeCareEvent,
   newId,
   nextScheduleAge,
@@ -51,6 +50,9 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
       ;(d.insurance[index] as unknown as Record<string, unknown>)[key] = value
     })
   const policyLearn = policy.kind === 'ltc' ? LEARN.ltcInsurance : LEARN.permanentLife
+  const schedule = policy.kind === 'permanentLife' ? (policy.cashValueSchedule ?? []) : []
+  const repeatedAges = duplicateScheduleAges(schedule)
+  const nextAge = nextScheduleAge(schedule)
   return (
     <div className="form-grid">
       <TextField label="Name" value={policy.name} onCommit={(v) => set('name', v || INSURANCE_LABEL[policy.kind])} />
@@ -140,15 +142,33 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
                   <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule.splice(ri, 1) })}>Remove</button>
                 </div>
               ))}
-              {duplicateScheduleAges(policy.cashValueSchedule ?? []).length > 0 ? (
+              {repeatedAges.length > 0 ? (
                 <div className="callout callout--warn" role="status">
-                  Age {formatAgeList(duplicateScheduleAges(policy.cashValueSchedule ?? []))} appears more than once in this
-                  schedule. Keep one value per age so the illustration reads as one line.
+                  {repeatedAges.length === 1 ? 'Age' : 'Ages'} {formatAgeList(repeatedAges)}{' '}
+                  {repeatedAges.length === 1 ? 'appears' : 'each appear'} more than once in this schedule. Keep one value
+                  per age so the illustration reads as one line.
                 </div>
               ) : null}
-              {/* A new row opens at the next unused age, one past the latest row,
-                  so two clicks never create two identical rows (#489). */}
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife') p.cashValueSchedule = [...(p.cashValueSchedule ?? []), { age: nextScheduleAge(p.cashValueSchedule ?? []), value: 0 }] })}>+ Schedule row</button>
+              {/* A new row opens at an age no row holds yet (one past the latest
+                  while that fits), so a click never creates a repeat; with
+                  every age taken there is nothing to add (#489). */}
+              <button
+                type="button"
+                className="btn btn-secondary btn-small"
+                disabled={nextAge === null}
+                title={nextAge === null ? 'Every age from 0 to 120 already has a row.' : undefined}
+                onClick={() =>
+                  update((d) => {
+                    const p = d.insurance[index]
+                    if (p.kind !== 'permanentLife') return
+                    const age = nextScheduleAge(p.cashValueSchedule ?? [])
+                    if (age === null) return
+                    p.cashValueSchedule = [...(p.cashValueSchedule ?? []), { age, value: 0 }]
+                  })
+                }
+              >
+                + Schedule row
+              </button>
             </div>
           )}
         </>
@@ -254,11 +274,11 @@ const lastsLabel = (depletionYear: number | null) => (depletionYear === null ? '
 
 function LtcStressPanel() {
   const { plan, issues } = usePlan()
-  // The entries this panel prices are the ones that can be mid-edit and
-  // invalid (a duration of 0, a schedule mode with no rows). While they are,
-  // the last table would read as authoritative for a plan the engine has
-  // refused, so the panel pauses instead (#517).
-  const onHold = hasIssueUnder(issues, 'careEvents', 'insurance')
+  // The scenarios are full projections of the plan, so while any entry is
+  // invalid (a duration of 0, a schedule mode with no rows, or an entry on
+  // another page) the last table would read as authoritative for a plan the
+  // engine has refused to store; the panel pauses instead (#517).
+  const onHold = issues.length > 0
   const cmp = useMemo(
     () => (onHold ? null : compareLtcStress(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) })),
     [plan, onHold],
@@ -272,8 +292,9 @@ function LtcStressPanel() {
       <div className="card" style={{ marginTop: '1.25rem' }}>
         <h3>LTC stress test</h3>
         <div className="callout callout--warn" role="status">
-          Paused: a care event or policy entry above is invalid, so these scenarios cannot be re-run yet. The list below
-          names the field; the last result no longer applies.
+          Paused: the plan has {issues.length === 1 ? 'an entry' : `${issues.length} entries`} to fix before these
+          scenarios can be re-run, so the last result no longer applies. The issue list on the page with the entry names
+          the field{issues.length === 1 ? '' : 's'}.
         </div>
       </div>
     )
@@ -390,9 +411,10 @@ export function InsuranceSection() {
           </div>
         ))}
         {duplicateCareEvents(plan).map((dupe) => (
-          <div className="callout callout--warn" role="status" key={`${dupe.name}@${dupe.startAge}`}>
-            {dupe.name} has more than one care event starting at age {dupe.startAge}. Both are modeled, so the stress test
-            below counts the cost twice; remove one if it was added twice.
+          <div className="callout callout--warn" role="status" key={`${dupe.personId}@${dupe.startAge}`}>
+            {dupe.name} has {dupe.count} care events starting at age {dupe.startAge}. All {dupe.count} are modeled, so the
+            stress test below counts that cost {dupe.count === 2 ? 'twice' : `${dupe.count} times`}; remove the extra
+            {dupe.count === 2 ? '' : 's'} if {dupe.count === 2 ? 'it was' : 'they were'} added by mistake.
           </div>
         ))}
         <div className="add-row">

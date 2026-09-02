@@ -2,7 +2,7 @@
 
 import { Link } from 'react-router'
 
-import type { IncomeStream } from '@retiregolden/engine/model/plan'
+import type { IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'
@@ -16,6 +16,11 @@ const INCOME_LABEL: Record<IncomeStream['type'], string> = {
   socialSecurity: 'Social Security',
   recurring: 'Recurring',
   oneTime: 'One-time',
+}
+
+/** A person-bound stream whose person is no longer in the household (the plan fails validation until it goes). */
+function isOrphanStream(plan: Plan, stream: IncomeStream): boolean {
+  return 'personId' in stream && !plan.household.people.some((p) => p.id === stream.personId)
 }
 
 function makeIncome(type: IncomeStream['type'], personId: string): IncomeStream {
@@ -82,6 +87,12 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
             <ReadonlyField label="PIA (monthly at FRA)" value={pia != null ? `${fmtMoney(pia)} (${sourceLabel})` : 'Not set'} />
             <ReadonlyField label="Claim age" value={claim} />
           </div>
+          {ssPerson ? null : (
+            <div className="callout callout--warn" role="status">
+              This benefit belongs to a person who is no longer in the household, so the plan cannot be stored until it
+              is removed here or the person is added back on the Household page.
+            </div>
+          )}
           <p className="field-hint">
             Social Security is managed on the <Link to="../social-security">Social Security</Link> step so the
             earnings-derived benefit stays in one place. Edit the benefit and claim age there; the{' '}
@@ -173,8 +184,11 @@ export function IncomeSection() {
               </span>
               {/* A Social Security row is managed (added and removed) on the
                   Social Security step, as its summary copy says; a Remove here
-                  contradicted that (#462). */}
-              {s.type === 'socialSecurity' ? null : (
+                  contradicted that (#462). The one exception is a stream whose
+                  person has left the household: the Social Security step
+                  renders per person, so this row is the only place it can be
+                  removed. */}
+              {s.type === 'socialSecurity' && !isOrphanStream(plan, s) ? null : (
                 <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => void d.incomes.splice(i, 1))}>
                   Remove
                 </button>

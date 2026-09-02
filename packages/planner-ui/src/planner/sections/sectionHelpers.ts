@@ -24,10 +24,22 @@ export function hasIssueUnder(issues: readonly string[], ...paths: readonly stri
   return issues.some((issue) => paths.some((path) => issue === path || issue.startsWith(`${path}.`) || issue.startsWith(`${path}:`)))
 }
 
-/** The first age past an illustration schedule's latest row (65 for an empty schedule), capped at the schema's 120. */
-export function nextScheduleAge(schedule: ReadonlyArray<{ age: number }>): number {
+/** The schema's ceiling on an illustration-schedule age. */
+const MAX_SCHEDULE_AGE = 120
+
+/**
+ * The age a new illustration row opens at: 65 for an empty schedule, one past
+ * the latest row while that fits the schema's 120, otherwise the lowest age
+ * no row holds yet; null once every age is taken, which is when the add
+ * control disables rather than appending a row that repeats one (#489).
+ */
+export function nextScheduleAge(schedule: ReadonlyArray<{ age: number }>): number | null {
   if (schedule.length === 0) return 65
-  return Math.min(120, Math.max(...schedule.map((row) => row.age)) + 1)
+  const taken = new Set(schedule.map((row) => row.age))
+  const past = Math.max(...taken) + 1
+  if (past <= MAX_SCHEDULE_AGE) return past
+  for (let age = 0; age <= MAX_SCHEDULE_AGE; age++) if (!taken.has(age)) return age
+  return null
 }
 
 /** Ages that more than one schedule row carries, ascending, each once. */
@@ -59,18 +71,31 @@ export function makeCareEvent(plan: Plan): CareEvent {
   return { id: newId(), personId, startAge: 85, durationYears: 3, annualCost: 90_000 }
 }
 
-/** Care events that repeat an earlier event's person and start age: one entry per repeated pair. */
-export function duplicateCareEvents(plan: Plan): { name: string; startAge: number }[] {
-  const seen = new Set<string>()
-  const dupes = new Map<string, { name: string; startAge: number }>()
+export interface RepeatedCareEvents {
+  personId: string
+  name: string
+  startAge: number
+  /** How many events share this person and start age (always 2 or more). */
+  count: number
+}
+
+/** Person + start age pairs that more than one care event carries, with how many, keyed by person id (two people may share a name). */
+export function duplicateCareEvents(plan: Plan): RepeatedCareEvents[] {
+  const groups = new Map<string, RepeatedCareEvents>()
   for (const c of plan.careEvents) {
     const key = `${c.personId}@${c.startAge}`
-    if (seen.has(key)) {
-      dupes.set(key, { name: plan.household.people.find((p) => p.id === c.personId)?.name ?? 'This person', startAge: c.startAge })
+    const group = groups.get(key)
+    if (group) group.count += 1
+    else {
+      groups.set(key, {
+        personId: c.personId,
+        name: plan.household.people.find((p) => p.id === c.personId)?.name ?? 'This person',
+        startAge: c.startAge,
+        count: 1,
+      })
     }
-    seen.add(key)
   }
-  return [...dupes.values()]
+  return [...groups.values()].filter((g) => g.count > 1)
 }
 
 export const MONTH_OPTIONS = [

@@ -55,7 +55,9 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
   const { plan, update, issues } = usePlan()
   // An invalid edit (last payout year before the first) used to swap the
   // quote for the empty-state hint as if nothing had been entered; the quote
-  // pauses and says why instead (#512).
+  // pauses and says why instead (#512). Scoped to this ladder's own issues:
+  // the quote prices the ladder's rungs on the embedded curve and reads
+  // nothing else from the plan, so another entry's issue does not touch it.
   const onHold = hasIssueUnder(issues, `incomeFloor.ladders.${index}`)
   const quote = useMemo(() => (onHold ? null : quoteLadder(ladder, startYear)), [ladder, startYear, onHold])
   const fundingOptions = plan.accounts
@@ -198,10 +200,12 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
 /** Funded-ratio card, shared with the Results page (step 4 of the plan). */
 export function FundedRatioCard() {
   const { plan, issues } = usePlan()
-  // The ratio prices the ledger's TIPS cash flows; while a ladder entry is
-  // invalid the projection runs on a plan the engine has refused to store, so
-  // the readout pauses rather than presenting that as authoritative (#512).
-  const onHold = hasIssueUnder(issues, 'incomeFloor')
+  // The ratio is read off a full projection, so while any entry in the plan
+  // is invalid (a ladder's, or one on another page) that projection runs on a
+  // plan the engine has refused to store; the readout pauses rather than
+  // presenting it as authoritative (#512). Shared with Results, so the copy
+  // points at the header count, not at a control "above".
+  const onHold = issues.length > 0
   const { result, deflate } = useProjection(plan)
   const startYear = result.startYear
   const fr = useMemo(() => {
@@ -227,8 +231,9 @@ export function FundedRatioCard() {
       </p>
       {onHold ? (
         <div className="callout callout--warn" role="status">
-          Paused: a TIPS ladder entry is invalid, so the ratio cannot be re-computed yet. It returns once the ladder
-          above is fixed; the last readout no longer applies.
+          Paused: the plan has {issues.length === 1 ? 'an entry' : `${issues.length} entries`} to fix before the ratio can
+          be re-computed, so the last readout no longer applies. The issue list on the page with the entry names the
+          field{issues.length === 1 ? '' : 's'}.
         </div>
       ) : (
         <div className="stat-grid">
@@ -252,11 +257,14 @@ export function FundedRatioCard() {
           </div>
         </div>
       )}
-      <p className="card-hint">
-        {plan.expenses.requiredAnnual === undefined
-          ? 'Tip: you have not separated required spending from lifestyle on the Spending page, so the "floor" here is your whole budget and the ratio reads low.'
-          : `Counted from ${fr.fromYear} through ${fr.toYear}, discounted at Treasury real yields as of ${CURVE.asOfIso}.`}
-      </p>
+      {/* The footer reads the same projection as the ratio, so it pauses with it. */}
+      {onHold ? null : (
+        <p className="card-hint">
+          {plan.expenses.requiredAnnual === undefined
+            ? 'Tip: you have not separated required spending from lifestyle on the Spending page, so the "floor" here is your whole budget and the ratio reads low.'
+            : `Counted from ${fr.fromYear} through ${fr.toYear}, discounted at Treasury real yields as of ${CURVE.asOfIso}.`}
+        </p>
+      )}
     </div>
   )
 }

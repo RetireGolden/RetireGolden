@@ -240,7 +240,29 @@ describe('Insurance care events (#489)', () => {
     await act(async () => add.click())
     const warnings = [...host.querySelectorAll('.callout--warn')]
     expect(warnings).toHaveLength(1)
-    expect(warnings[0]!.textContent).toContain(`${primary!.name} has more than one care event starting at age 85`)
+    expect(warnings[0]!.textContent).toContain(`${primary!.name} has 2 care events starting at age 85`)
+    expect(warnings[0]!.textContent).toContain('counts that cost twice')
+    // A fifth makes three: the copy follows the count.
+    await act(async () => add.click())
+    const again = [...host.querySelectorAll('.callout--warn')]
+    expect(again).toHaveLength(1)
+    expect(again[0]!.textContent).toContain(`${primary!.name} has 3 care events starting at age 85`)
+    expect(again[0]!.textContent).toContain('counts that cost 3 times')
+  })
+
+  it('warns once per person even when two people share a name', async () => {
+    const plan = validPlan((p) => {
+      const [primary, partner] = p.household.people
+      partner!.name = primary!.name
+      const first = p.careEvents[0]!
+      p.careEvents.push(
+        { ...first, id: 'p-dupe' },
+        { ...first, id: 'q-1', personId: partner!.id },
+        { ...first, id: 'q-2', personId: partner!.id },
+      )
+    })
+    const host = await mount(plan, <InsuranceSection />)
+    expect(host.querySelectorAll('.callout--warn')).toHaveLength(2)
   })
 
   it('the stress copy pluralises with two care events', async () => {
@@ -280,18 +302,51 @@ describe('Insurance care events (#489)', () => {
     expect(host.querySelectorAll('.callout--warn')).toHaveLength(0)
   })
 
-  it('names a repeated schedule age', async () => {
-    const plan = validPlan((p) => {
+  function schedulePlan(rows: { age: number; value: number }[]): Plan {
+    return validPlan((p) => {
       const life = p.insurance.find((i) => i.kind === 'permanentLife')!
       if (life.kind === 'permanentLife') {
         life.cashValueMode = 'schedule'
-        life.cashValueSchedule = [{ age: 65, value: 0 }, { age: 65, value: 0 }]
+        life.cashValueSchedule = rows
       }
     })
-    const host = await mount(plan, <InsuranceSection />)
-    const warnings = [...host.querySelectorAll('.callout--warn')]
+  }
+
+  it('names a repeated schedule age, and several with plural wording', async () => {
+    const one = await mount(schedulePlan([{ age: 65, value: 0 }, { age: 65, value: 0 }]), <InsuranceSection />)
+    const warnings = [...one.querySelectorAll('.callout--warn')]
     expect(warnings).toHaveLength(1)
     expect(warnings[0]!.textContent).toContain('Age 65 appears more than once')
+    await act(async () => root!.unmount())
+    root = null
+    container?.remove()
+    const two = await mount(
+      schedulePlan([{ age: 65, value: 0 }, { age: 70, value: 0 }, { age: 65, value: 0 }, { age: 70, value: 0 }]),
+      <InsuranceSection />,
+    )
+    expect(two.querySelector('.callout--warn')!.textContent).toContain('Ages 65 and 70 each appear more than once')
+  })
+
+  it('past the schema cap a new row takes a free age; with every age taken the add control disables', async () => {
+    const atCap = await mount(schedulePlan([{ age: 120, value: 0 }]), <InsuranceSection />)
+    const add = [...atCap.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Schedule row')!
+    expect(add.disabled).toBe(false)
+    await act(async () => add.click())
+    const ages = [...atCap.querySelectorAll<HTMLLabelElement>('label.field-label')]
+      .filter((l) => l.textContent === 'Age')
+      .map((l) => atCap.querySelector<HTMLInputElement>(`[id="${l.htmlFor}"]`)!.value)
+    expect(ages).toEqual(['120', '0'])
+    expect(atCap.querySelectorAll('.callout--warn')).toHaveLength(0)
+    await act(async () => root!.unmount())
+    root = null
+    container?.remove()
+    const full = await mount(
+      schedulePlan(Array.from({ length: 121 }, (_, age) => ({ age, value: 0 }))),
+      <InsuranceSection />,
+    )
+    const addFull = [...full.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Schedule row')!
+    expect(addFull.disabled).toBe(true)
+    expect(addFull.title).toContain('already has a row')
   })
 })
 
@@ -306,13 +361,42 @@ describe('Insurance LTC stress (#517)', () => {
     const paused = await mount(plan, <InsuranceSection />, ['careEvents.0.durationYears: Invalid input'])
     expect(paused.querySelector('table.compare-table')).toBeNull()
     expect(paused.textContent).toContain('LTC stress test')
-    expect(paused.textContent).toContain('Paused: a care event or policy entry above is invalid')
+    expect(paused.textContent).toContain('Paused: the plan has an entry to fix')
     expect(paused.textContent).not.toContain('Unprotected, the care episode')
   })
 
-  it('keeps running under an issue elsewhere in the plan', async () => {
-    const host = await mount(validPlan(), <InsuranceSection />, ['expenses.baseAnnual: Invalid input'])
-    expect(host.querySelector('table.compare-table')).not.toBeNull()
+  it('pauses under an issue anywhere in the plan, since the scenarios are full projections of it', async () => {
+    const host = await mount(validPlan(), <InsuranceSection />, [
+      'expenses.baseAnnual: Invalid input',
+      'accounts.0.balance: Invalid input',
+    ])
+    expect(host.querySelector('table.compare-table')).toBeNull()
+    expect(host.textContent).toContain('Paused: the plan has 2 entries to fix')
+  })
+})
+
+describe('Income orphaned Social Security row (#462 review)', () => {
+  it('a stream whose person left the household keeps a Remove and says why; a healthy one does not', async () => {
+    // Not run through parsePlan: the orphan is exactly what fails validation.
+    const plan = createSamplePlan()
+    const orphan = plan.incomes.find((s) => s.type === 'socialSecurity')!
+    if (orphan.type === 'socialSecurity') orphan.personId = 'no-such-person'
+    const host = await mount(plan, <IncomeSection />, ['incomes.2.personId: unknown person id "no-such-person"'])
+    const ssRows = [...host.querySelectorAll<HTMLElement>('.item-row')].filter(
+      (r) => r.querySelector('.type-chip')?.textContent === 'Social Security',
+    )
+    expect(ssRows).toHaveLength(2)
+    const orphanRow = ssRows.find((r) => r.querySelector('.callout--warn') !== null)!
+    expect(orphanRow.textContent).toContain('no longer in the household')
+    expect([...orphanRow.querySelectorAll('button')].map((b) => b.textContent)).toContain('Remove')
+    const healthyRow = ssRows.find((r) => r !== orphanRow)!
+    expect([...healthyRow.querySelectorAll('button')].map((b) => b.textContent)).not.toContain('Remove')
+    // Removing it drops the row.
+    const remove = [...orphanRow.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
+    await act(async () => remove.click())
+    expect(
+      [...host.querySelectorAll<HTMLElement>('.item-row')].filter((r) => r.querySelector('.type-chip')?.textContent === 'Social Security'),
+    ).toHaveLength(1)
   })
 })
 
@@ -348,18 +432,19 @@ describe('Income floor (#512)', () => {
     expect(host.textContent).toContain('Quote paused')
     expect(host.textContent).not.toContain('Quoted cost')
     expect(host.textContent).not.toContain('Set an amount and a payout window')
-    expect(host.textContent).toContain('Paused: a TIPS ladder entry is invalid')
+    expect(host.textContent).toContain('Paused: the plan has an entry to fix')
     expect(host.querySelector('.stat-grid')).toBeNull()
-    // The card and its explanation stay; only the readout pauses.
+    // The card and its explanation stay; the readout and the footer that
+    // reads the same projection pause together.
     expect(host.textContent).toContain('Funded ratio')
+    expect(host.textContent).not.toMatch(/Counted from \d{4} through|the ratio reads low/)
   })
 
-  it('a different ladder\'s issue leaves this ladder quoted', async () => {
-    const host = await mount(ladderPlan(), <IncomeFloorSection />, [
-      'incomeFloor.ladders.1.endYear: a ladder must end in or after its first payout year',
-    ])
+  it('an issue elsewhere in the plan pauses the ratio (a full projection) but not this ladder\'s quote (its own rungs)', async () => {
+    const host = await mount(ladderPlan(), <IncomeFloorSection />, ['expenses.baseAnnual: Invalid input'])
     expect(host.textContent).toContain('Quoted cost')
-    // The ratio prices every ladder, so it pauses on any ladder issue.
+    expect(host.textContent).not.toContain('Quote paused')
     expect(host.querySelector('.stat-grid')).toBeNull()
+    expect(host.textContent).toContain('Paused: the plan has an entry to fix')
   })
 })

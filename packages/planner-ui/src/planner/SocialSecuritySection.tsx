@@ -398,8 +398,9 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
       {mode === 'quick' ? (
         <div className="form-grid">
           <MoneyField
-            // The same label the Income summary and the former-spouse record
-            // use; the longer form wrapped beside its ⓘ (#511).
+            // The same label the Income summary card uses, and the stem of the
+            // former-spouse record's "Their PIA (monthly at FRA)"; the longer
+            // "PIA (monthly benefit at FRA)" wrapped beside its ⓘ (#511).
             label="PIA (monthly at FRA)"
             help="Your Primary Insurance Amount, the monthly benefit at full retirement age in today's dollars, from ssa.gov/myaccount."
             value={stream.piaMonthly}
