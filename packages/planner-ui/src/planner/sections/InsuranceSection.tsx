@@ -1,6 +1,6 @@
 /** Insurance section: policies, care events, LTC stress. */
 
-import { useId, useMemo } from 'react'
+import { useEffect, useId, useMemo, useRef } from 'react'
 
 import {
   ltcPolicySchema,
@@ -439,6 +439,21 @@ export function InsuranceSection() {
         INSURANCE_KIND_ORDER.indexOf(a.policy.kind) - INSURANCE_KIND_ORDER.indexOf(b.policy.kind) || a.index - b.index,
     )
   const policyOrdinals = ordinalSuffixes(policies.map(({ policy }) => `${policy.kind} ${policy.name}`))
+  // Grouping means a new card lands in its kind's group, which can be well
+  // above the add row when the other kind fills the list; focus and view
+  // follow it there so the add never looks like it did nothing (#550 review).
+  // A ref, not state: the id is consumed once the card exists and nothing
+  // renders from it, so no re-render is owed when it is set or cleared.
+  const addedPolicyId = useRef<string | null>(null)
+  useEffect(() => {
+    const id = addedPolicyId.current
+    if (id === null) return
+    const row = document.querySelector<HTMLElement>(`[data-policy-id="${id}"]`)
+    if (!row) return
+    addedPolicyId.current = null
+    row.querySelector<HTMLElement>('input, select')?.focus()
+    row.scrollIntoView?.({ block: 'nearest' })
+  }, [plan.insurance])
   // Two events for the same person at the same age would read identically;
   // the ordinal keeps the cards and their Remove buttons apart (#541).
   const careTitles = plan.careEvents.map(
@@ -456,7 +471,7 @@ export function InsuranceSection() {
         </p>
         {plan.insurance.length === 0 ? <div className="empty-state"><p>No policies yet. Add one below.</p></div> : null}
         {policies.map(({ policy: p, index: i }, position) => (
-          <div className="item-row" key={p.id} data-testid="insurance-row" data-insurance-kind={p.kind}>
+          <div className="item-row" key={p.id} data-testid="insurance-row" data-insurance-kind={p.kind} data-policy-id={p.id}>
             <div className="item-row-head">
               <span className="item-row-title">
                 <span className="type-chip">{INSURANCE_LABEL[p.kind]}</span>
@@ -476,7 +491,16 @@ export function InsuranceSection() {
         ))}
         <div className="add-row">
           {(Object.keys(INSURANCE_LABEL) as InsurancePolicy['kind'][]).map((k) => (
-            <button key={k} type="button" className="btn btn-secondary btn-small" onClick={() => update((d) => void d.insurance.push(makeInsurance(k, firstPerson)))}>
+            <button
+              key={k}
+              type="button"
+              className="btn btn-secondary btn-small"
+              onClick={() => {
+                const policy = makeInsurance(k, firstPerson)
+                addedPolicyId.current = policy.id
+                update((d) => void d.insurance.push(policy))
+              }}
+            >
               + {INSURANCE_LABEL[k]}
             </button>
           ))}

@@ -9,7 +9,7 @@
  */
 import 'fake-indexeddb/auto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { act, type ReactNode } from 'react'
+import { act, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
@@ -20,6 +20,7 @@ import { LearningCenterPage, SEARCH_ANNOUNCE_DELAY_MS } from '../learn/LearningC
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { LAZY_ROUTE_PRELOAD_TIMEOUT_MS, preloadLazyRoutes } from '../testSupport/lazyRoutes'
 import { advanceBy, waitFor, waitForText } from '../testSupport/settle'
+import { routeTitleOf } from '../routeTitles'
 import { PromptDialog } from './dialogViews'
 import { PlanCtx } from './planContextCore'
 import { PLAN_NAME_MAX_LENGTH, PLAN_NAME_TITLE_MAX_LENGTH } from './planName'
@@ -27,7 +28,7 @@ import { AccountsSection, InsuranceSection } from './sections'
 import { FormerSpousesEditor } from './SocialSecuritySection'
 
 beforeAll(async () => {
-  await preloadLazyRoutes('plan')
+  await preloadLazyRoutes('plan', 'report')
 }, LAZY_ROUTE_PRELOAD_TIMEOUT_MS)
 
 async function mount(node: ReactNode) {
@@ -87,6 +88,25 @@ function mountSection(Section: () => ReactNode, plan: Plan, path: string) {
   }
 }
 
+/**
+ * A section under a plan context that really re-renders on update, for a
+ * test that needs the DOM after an add rather than only the draft it made.
+ */
+function StatefulSection({ Section, initial }: { Section: () => ReactNode; initial: Plan }) {
+  const [plan, setPlan] = useState(initial)
+  const update = (mutator: (draft: Plan) => void) =>
+    setPlan((current) => {
+      const draft = structuredClone(current)
+      mutator(draft)
+      return draft
+    })
+  return (
+    <PlanCtx.Provider value={{ plan, update, discardPendingSave: () => undefined, saveState: 'saved', issues: [] }}>
+      <Section />
+    </PlanCtx.Provider>
+  )
+}
+
 async function typeInto(input: HTMLInputElement, text: string) {
   const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
   await act(async () => {
@@ -140,6 +160,15 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     expect(nameInput.getAttribute('maxlength')).toBe(String(plan.name.length))
     expect(nameInput.value).toBe(plan.name)
     expect(container.querySelector('.workspace-breadcrumb [aria-current="page"]')!.textContent).toBe(plan.name)
+    await unmount()
+  })
+
+  it('shortens a long plan name in the report tab title the same way', async () => {
+    const plan = createSamplePlan()
+    plan.name = `${'Long name '.repeat(19)}end`
+    const { unmount } = await mountApp(`/plan/${plan.id}/report`, storeFor(plan))
+    await waitFor(() => document.title.includes('· Report ·'), { what: 'the report title' })
+    expect(document.title).toBe(`${plan.name.slice(0, PLAN_NAME_TITLE_MAX_LENGTH).trimEnd()}… · Report · RetireGolden`)
     await unmount()
   })
 
@@ -299,12 +328,12 @@ describe('Former spouses (#535)', () => {
 })
 
 describe('Plan-scoped site-level paths (#536)', () => {
-  it('offers the site-level destination from /plan/:id/compare and /plan/:id/import', async () => {
+  it('offers the site-level destination, named by the shared route title, from every plan-scoped twin', async () => {
     const plan = createSamplePlan()
-    for (const [segment, label, to] of [
-      ['compare', 'Compare plans', '/compare'],
-      ['import', 'Import & migrate', '/import'],
-    ] as const) {
+    for (const to of ['/compare', '/import', '/examples', '/learn'] as const) {
+      const segment = to.slice(1)
+      const label = routeTitleOf(to)!
+      expect(label).toBeTruthy()
       const { container, unmount } = await mountApp(`/plan/${plan.id}/${segment}`, storeFor(plan))
       await waitForText(container, 'This plan has no such section')
       const escape = [...container.querySelectorAll('a')].find((a) => a.textContent === `Go to ${label}`)!
@@ -322,7 +351,7 @@ describe('Plan-scoped site-level paths (#536)', () => {
     const plan = createSamplePlan()
     const { container, unmount } = await mountApp(`/plan/${plan.id}/import`, storeFor(plan), { importEnabled: false })
     await waitForText(container, 'This plan has no such section')
-    expect([...container.querySelectorAll('a')].some((a) => a.textContent === 'Go to Import & migrate')).toBe(false)
+    expect([...container.querySelectorAll('a')].some((a) => a.textContent === `Go to ${routeTitleOf('/import')}`)).toBe(false)
     expect(container.textContent).not.toContain('is not a section of this plan')
     const household = [...container.querySelectorAll('a')].find((a) => a.textContent === 'Go to Household')!
     expect(household.className).toContain('btn-primary')
@@ -380,6 +409,28 @@ describe('Insurance cards (#541, #550)', () => {
     const remove = [...rows[2]!.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
     await act(async () => remove.click())
     expect(drafts.at(-1)!.insurance.map((p) => p.id)).toEqual(['perm-a', 'perm-c'])
+    await unmount()
+  })
+
+  it('moves focus and view to a card added into a group above the add row', async () => {
+    const plan = createSamplePlan()
+    plan.insurance = [
+      { kind: 'ltc', id: 'ltc-1', name: 'LTC one', owner: plan.household.people[0]!.id, annualPremium: 0, premiumMode: 'lifetime', benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
+      { kind: 'ltc', id: 'ltc-2', name: 'LTC two', owner: plan.household.people[0]!.id, annualPremium: 0, premiumMode: 'lifetime', benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
+    ]
+    const { container, unmount } = await mount(
+      <MemoryRouter initialEntries={['/plan/x/insurance']}>
+        <StatefulSection Section={InsuranceSection} initial={plan} />
+      </MemoryRouter>,
+    )
+    const add = [...container.querySelectorAll('button')].find((b) => b.textContent === '+ Permanent life')!
+    await act(async () => add.click())
+    const rows = [...container.querySelectorAll<HTMLElement>('[data-testid="insurance-row"]')]
+    // The new card is grouped first, above both LTC cards ...
+    expect(rows.map((r) => r.dataset.insuranceKind)).toEqual(['permanentLife', 'ltc', 'ltc'])
+    // ... and it, not the add row, holds focus.
+    expect(document.activeElement).not.toBeNull()
+    expect(rows[0]!.contains(document.activeElement)).toBe(true)
     await unmount()
   })
 

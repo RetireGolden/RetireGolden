@@ -10,6 +10,7 @@
 import { Link, useParams } from 'react-router'
 
 import { useImportAvailability } from '../import/importAvailability'
+import { routeTitleOf } from '../routeTitles'
 import { usePlannerEdition } from './editionContext'
 
 export function NotFoundPage() {
@@ -42,15 +43,14 @@ export function NotFoundPage() {
 /**
  * Site-level pages a plan URL is likely to be guessed for (#536): the rail's
  * "Compare plans" sits among the plan links, so `/plan/:id/compare` is a
- * natural miss, and `/plan/:id/import` the same for the import wizard. The
- * label matches the destination's own title (App.tsx ROUTE_TITLES).
+ * natural miss, and `/plan/:id/import` the same for the import wizard. Keyed
+ * by the first path segment; the label is the destination's own tab title,
+ * read from the shared table so a rename there renames the button here.
  */
-const SITE_LEVEL_ESCAPES: Readonly<Record<string, { to: string; label: string }>> = {
-  compare: { to: '/compare', label: 'Compare plans' },
-  import: { to: '/import', label: 'Import & migrate' },
-  examples: { to: '/examples', label: 'Examples' },
-  learn: { to: '/learn', label: 'Learning Center' },
-}
+const SITE_LEVEL_ESCAPE_PATHS = ['/compare', '/import', '/examples', '/learn'] as const
+const SITE_LEVEL_ESCAPES: Readonly<Record<string, { to: string; label: string }>> = Object.fromEntries(
+  SITE_LEVEL_ESCAPE_PATHS.map((to) => [to.slice(1), { to, label: routeTitleOf(to) ?? to.slice(1) }]),
+)
 
 export function WorkspaceNotFound() {
   const { planId, '*': splat } = useParams()

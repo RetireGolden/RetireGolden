@@ -160,6 +160,33 @@ describe('plan-name presentation limits (#533)', () => {
     expect(duplicateNameFor('x'.repeat(PLAN_NAME_MAX_LENGTH + 5), atCap).length).toBe(PLAN_NAME_MAX_LENGTH)
   })
 
+  it('never cuts inside a surrogate pair or a joined emoji at either cap', () => {
+    // A four-person family emoji: four code points joined by three ZWJs, 11
+    // UTF-16 units. The cap falls after exactly one whole family here, and
+    // a second one would not fit, so the cut must stop on that boundary.
+    const family = '👩‍👩‍👧‍👦'
+    expect(family.length).toBe(11)
+    const loneSurrogate = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
+    const name = `${'x'.repeat(PLAN_NAME_MAX_LENGTH - family.length)}${family.repeat(3)}`
+    const clamped = clampPlanName(name)
+    expect(clamped).toBe(`${'x'.repeat(PLAN_NAME_MAX_LENGTH - family.length)}${family}`)
+    expect(clamped.length).toBeLessThanOrEqual(PLAN_NAME_MAX_LENGTH)
+    expect(clamped).not.toMatch(loneSurrogate)
+    // One unit less room and the whole family is dropped, not split.
+    const tight = `${'x'.repeat(PLAN_NAME_MAX_LENGTH - family.length + 1)}${family.repeat(2)}`
+    expect(clampPlanName(tight)).toBe('x'.repeat(PLAN_NAME_MAX_LENGTH - family.length + 1))
+    // The title cap behaves the same way, then adds its ellipsis.
+    const title = planNameForTitle(`${'x'.repeat(PLAN_NAME_TITLE_MAX_LENGTH - 5)}${family.repeat(2)}`)
+    expect(title).toBe(`${'x'.repeat(PLAN_NAME_TITLE_MAX_LENGTH - 5)}…`)
+    expect(title).not.toMatch(loneSurrogate)
+    // A plain surrogate pair (no ZWJ) at the boundary is also kept whole.
+    const pair = '😀'
+    expect(pair.length).toBe(2)
+    const straddle = `${'x'.repeat(PLAN_NAME_MAX_LENGTH - 1)}${pair}`
+    expect(clampPlanName(straddle)).toBe('x'.repeat(PLAN_NAME_MAX_LENGTH - 1))
+    expect(clampPlanName(straddle)).not.toMatch(loneSurrogate)
+  })
+
   it('shortens the name for the tab title with an ellipsis, and only past the cap', () => {
     const long = 'x'.repeat(PLAN_NAME_TITLE_MAX_LENGTH + 40)
     const title = planNameForTitle(long)
