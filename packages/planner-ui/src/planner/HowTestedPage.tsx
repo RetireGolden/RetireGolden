@@ -45,7 +45,7 @@ const HAS_SUITE_DATA = ALL_TEST_FILES.length > 0
 
 export function HowTestedPage() {
   return (
-    <article className="page" style={{ maxWidth: '46rem', margin: '0 auto', textAlign: 'left' }}>
+    <article className="page" style={{ maxWidth: '48rem', margin: '0 auto', textAlign: 'left' }}>
       {/* Reached from the Disclaimer; give it a chrome way back, not only the
           mid-prose provenance link (#419). */}
       <Link to="/disclaimer" className="page-back">

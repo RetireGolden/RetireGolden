@@ -7,7 +7,7 @@
  * type into.
  */
 
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { GLOSSARY_TERMS } from './glossary'
 
@@ -20,6 +20,14 @@ function matches(term: (typeof GLOSSARY_TERMS)[number], query: string): boolean 
 export function GlossaryPage() {
   const [query, setQuery] = useState('')
   const filterId = useId()
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Clearing from the empty state unmounts the Clear button; focus goes back
+  // to the filter so a keyboard user is not dropped at the top of the page.
+  const clear = () => {
+    setQuery('')
+    inputRef.current?.focus()
+  }
+  const filtering = query.trim() !== ''
   const shown = GLOSSARY_TERMS.filter((t) => matches(t, query))
   const total = GLOSSARY_TERMS.length
   return (
@@ -33,6 +41,7 @@ export function GlossaryPage() {
       <div className="field learn-glossary-filter">
         <label htmlFor={filterId}>Filter terms</label>
         <input
+          ref={inputRef}
           id={filterId}
           type="search"
           value={query}
@@ -42,13 +51,13 @@ export function GlossaryPage() {
         />
       </div>
       <p className="small muted" role="status" aria-live="polite">
-        {shown.length === total ? `${total} terms` : `${shown.length} of ${total} terms match`}
+        {!filtering ? `${total} terms` : shown.length === total ? `All ${total} terms match` : `${shown.length} of ${total} terms match`}
       </p>
 
       {shown.length === 0 ? (
         <div className="empty-state">
           <p>No terms match “{query.trim()}”.</p>
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => setQuery('')}>
+          <button type="button" className="btn btn-secondary btn-small" onClick={clear}>
             Clear filter
           </button>
         </div>

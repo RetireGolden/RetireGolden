@@ -16,7 +16,7 @@
    and @media screen leaves the print reset (max-width: none, below)
    uncontested. The reading routes (#443) are excluded the same way. */
 @media screen {
-  .app-shell.planner-shell:not(.app-shell--landing):not(.app-shell--reading) {
+  .app-shell.planner-shell:not(.app-shell--landing):not(.app-shell--reading):not(.app-shell--reading-narrow) {
     max-width: 80rem;
   }
 }
@@ -2782,6 +2782,12 @@ html:has(.kpi-bar) {
   grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-content: start;
+}
+
+/* The card is the grid item; without this its automatic minimum size could
+   still follow the zoomed stage's explicit width in some engines. */
+.household-map-page > .card {
+  min-width: 0;
 }
 
 .household-map-controls {

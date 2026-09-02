@@ -126,9 +126,14 @@ export function App({
     plannerNotFoundRoute,
   ])
   const isLanding = location.pathname === '/' || location.pathname === '/examples'
-  // Reading routes render a 48rem column; the shell narrows to match it so the
-  // header's brand sits on the same left edge as the page's H1 (#443).
-  const isReading = location.pathname === '/learn' || location.pathname.startsWith('/learn/') || location.pathname === '/disclaimer'
+  // Reading routes: the shell narrows to the page's own measure so the header's
+  // brand sits on the same left edge as the page's H1 (#443). The Learn home,
+  // Disclaimer, and How-tested are 48rem columns; Learn articles, the glossary,
+  // and the sources page use the tighter 42rem reading measure (learn.css).
+  const isReadingNarrow = location.pathname.startsWith('/learn/')
+  const isReading =
+    !isReadingNarrow &&
+    (location.pathname === '/learn' || location.pathname === '/disclaimer' || location.pathname === '/how-tested')
   // How-tested is reached from Disclaimer and has no nav item of its own, so
   // Disclaimer stays the active place while it is open (#419). NavLink only
   // sets aria-current for its own route match, hence a plain Link below.
@@ -207,7 +212,9 @@ export function App({
     <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
       <PlanStoreProvider store={store} readOnly={readOnly}>
         <ReportBrandingContext.Provider value={reportBranding ?? null}>
-          <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}${isReading ? ' app-shell--reading' : ''}`}>
+          <div
+            className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}${isReading ? ' app-shell--reading' : ''}${isReadingNarrow ? ' app-shell--reading-narrow' : ''}`}
+          >
             <a className="skip-link" href="#main-content">
               Skip to content
             </a>

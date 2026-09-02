@@ -75,18 +75,21 @@ describe('Workspace chrome', () => {
     await unmount()
   })
 
-  it('narrows the shell to the reading column on Learn and Disclaimer, not on the home route (#443)', async () => {
+  it('narrows the shell to each reading page\'s own measure, and not on the home routes (#443)', async () => {
     const plan = createSamplePlan()
-    for (const [path, reading] of [
-      ['/learn', true],
-      ['/learn/glossary', true],
-      ['/disclaimer', true],
-      ['/', false],
-      ['/examples', false],
+    for (const [path, expected] of [
+      ['/learn', 'app-shell--reading'],
+      ['/disclaimer', 'app-shell--reading'],
+      ['/how-tested', 'app-shell--reading'],
+      ['/learn/glossary', 'app-shell--reading-narrow'],
+      ['/learn/sources', 'app-shell--reading-narrow'],
+      ['/', null],
+      ['/examples', null],
     ] as const) {
       const { container, unmount } = await mountAt(path, storeFor(plan))
       const shell = container.querySelector('.app-shell')!
-      expect(shell.classList.contains('app-shell--reading'), `${path} reading shell`).toBe(reading)
+      const reading = [...shell.classList].filter((c) => c.startsWith('app-shell--reading'))
+      expect(reading, `${path} shell classes`).toEqual(expected ? [expected] : [])
       await unmount()
     }
   })

@@ -49,16 +49,32 @@ describe('GlossaryPage filter', () => {
     expect(container.querySelector('[role="status"]')?.textContent).toBe(`${GLOSSARY_TERMS.length} terms`)
   })
 
-  it('narrows live on term, expansion, or definition text, case-insensitively', async () => {
-    const probe = GLOSSARY_TERMS[0]!
-    await type(probe.term.slice(0, 4).toUpperCase())
-    const shown = [...container.querySelectorAll('.learn-glossary-term')].map((el) => el.textContent ?? '')
-    expect(shown.length).toBeGreaterThan(0)
-    expect(shown.length).toBeLessThanOrEqual(GLOSSARY_TERMS.length)
-    expect(shown.some((s) => s.startsWith(probe.term))).toBe(true)
-    expect(container.querySelector('[role="status"]')?.textContent).toMatch(/^\d+ of \d+ terms match$/)
+  const shownIds = () => [...container.querySelectorAll('.learn-glossary-item')].map((el) => el.id)
+
+  it('matches an expansion, case-insensitively, and reports the count', async () => {
+    // "affordable care act" appears only as the ACA expansion, and only in that case.
+    await type('affordable care act')
+    expect(shownIds()).toEqual(['aca'])
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(`1 of ${GLOSSARY_TERMS.length} terms match`)
     // Anchors survive filtering so deep links still land.
-    expect(document.getElementById(probe.id)).not.toBeNull()
+    expect(document.getElementById('aca')).not.toBeNull()
+  })
+
+  it('matches a term in lower case and a definition-only phrase', async () => {
+    await type('irmaa')
+    expect(shownIds()).toContain('irmaa')
+    await type('nursing home')
+    // "nursing home" is in the LTC definition only, not its term or expansion.
+    expect(shownIds()).toContain('ltc')
+    expect(shownIds()).not.toContain('aca')
+  })
+
+  it('announces a query that matches everything as a match, not as the unfiltered list', async () => {
+    const all = GLOSSARY_TERMS.length
+    // Every term, expansion, or definition contains the letter a.
+    await type('a')
+    expect(shownIds()).toHaveLength(all)
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(`All ${all} terms match`)
   })
 
   it('shows an empty state with a clear action when nothing matches', async () => {
@@ -69,6 +85,9 @@ describe('GlossaryPage filter', () => {
     const clear = [...empty.querySelectorAll('button')].find((b) => b.textContent === 'Clear filter')!
     await act(async () => clear.click())
     expect(container.querySelectorAll('.learn-glossary-item')).toHaveLength(GLOSSARY_TERMS.length)
-    expect(container.querySelector<HTMLInputElement>('input[type="search"]')!.value).toBe('')
+    const input = container.querySelector<HTMLInputElement>('input[type="search"]')!
+    expect(input.value).toBe('')
+    // The Clear button unmounts; focus lands back on the filter.
+    expect(document.activeElement).toBe(input)
   })
 })

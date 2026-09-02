@@ -12,9 +12,14 @@ import { readdirSync, readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
-const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
-const learnCss: string = readFileSync(fileURLToPath(new URL('../learn/learn.css', import.meta.url)), 'utf8')
-const indexCss: string = readFileSync(fileURLToPath(new URL('../index.css', import.meta.url)), 'utf8')
+/** A sheet with LF line endings whatever the checkout wrote, so multi-line selector pins hold on Windows too. */
+function sheet(rel: string): string {
+  return readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
+}
+
+const css: string = sheet('./planner.css')
+const learnCss: string = sheet('../learn/learn.css')
+const indexCss: string = sheet('../index.css')
 
 function ruleBodyAt(source: string, start: number, selector: string): string {
   expect(start, `rule ${selector} present`).toBeGreaterThanOrEqual(0)
@@ -408,10 +413,18 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
 
   it('reading routes narrow the shell, and the household map scrolls inside its column (#443, #457)', () => {
     expect(rule('.app-shell.app-shell--reading', indexCss)).toMatch(/max-width:\s*calc\(48rem \+ 2\.5rem\)/)
+    // Articles, glossary, and sources use learn.css's 42rem measure; their shell matches it.
+    expect(rule('.app-shell.app-shell--reading-narrow', indexCss)).toMatch(/max-width:\s*calc\(42rem \+ 2\.5rem\)/)
+    expect(rule('.learn-article,\n.learn-glossary,\n.learn-sources-page', learnCss)).toMatch(/max-width:\s*42rem/)
+    expect(rule('.household-map-page > .card')).toMatch(/min-width:\s*0/)
     // The order-proof 80rem workspace rule must not swallow the reading shell.
-    expect(css).toMatch(/\.app-shell\.planner-shell:not\(\.app-shell--landing\):not\(\.app-shell--reading\) \{\s*max-width: 80rem/)
+    expect(css).toMatch(
+      /\.app-shell\.planner-shell:not\(\.app-shell--landing\):not\(\.app-shell--reading\):not\(\.app-shell--reading-narrow\) \{\s*max-width: 80rem/,
+    )
     const app: string = readFileSync(fileURLToPath(new URL('../App.tsx', import.meta.url)), 'utf8')
     expect(app).toContain("isReading ? ' app-shell--reading' : ''")
+    expect(app).toContain("isReadingNarrow ? ' app-shell--reading-narrow' : ''")
+    expect(app).toContain("location.pathname === '/how-tested'")
     expect(rule('.household-map-page')).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/)
     const scroll = rule('.household-map-scroll')
     expect(scroll).toMatch(/overflow:\s*auto/)

@@ -116,7 +116,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
           />
           <CheckboxField
             label="Inflation-adjusted"
-            help="On: the annual amount is in today's dollars and the plan grows it each year with inflation. Off: the amount stays fixed in the dollars of each year."
+            help="On: the annual amount is in today's dollars and the plan grows it each year with inflation. Off: the same dollar amount is used every year, so it buys less as prices rise."
             value={stream.inflationAdjusted}
             onCommit={(v) => set('inflationAdjusted', v)}
           />
