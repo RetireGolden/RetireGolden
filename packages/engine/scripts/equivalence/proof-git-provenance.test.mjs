@@ -24,12 +24,16 @@ function withRepository(run) {
     git(repoDir, ['init', '--quiet'])
     git(repoDir, ['config', 'user.name', 'Proof Test'])
     git(repoDir, ['config', 'user.email', 'proof@example.invalid'])
+    writeFileSync(join(repoDir, 'README.md'), 'proof provenance fixture\n')
+    git(repoDir, ['add', '.'])
+    git(repoDir, ['commit', '--quiet', '-m', 'before source'])
+    const commitWithoutSource = git(repoDir, ['rev-parse', 'HEAD'])
     const sourceDir = join(repoDir, 'packages', 'engine', 'src')
     mkdirSync(sourceDir, { recursive: true })
     writeFileSync(join(sourceDir, 'index.ts'), 'export const marker = 1\n')
     git(repoDir, ['add', '.'])
     git(repoDir, ['commit', '--quiet', '-m', 'source'])
-    run(repoDir)
+    run(repoDir, commitWithoutSource)
   } finally {
     rmSync(repoDir, { recursive: true, force: true })
   }
@@ -53,13 +57,49 @@ describe('proof Git provenance', () => {
   it('falls back to the identical reachable HEAD subtree after squash', () => {
     withRepository((repoDir) => {
       const tree = git(repoDir, ['rev-parse', 'HEAD:packages/engine/src'])
+      const writes = []
+      const originalWrite = process.stderr.write
+      process.stderr.write = (chunk) => {
+        writes.push(String(chunk))
+        return true
+      }
+      try {
+        expect(authenticateObservedEngineTree({
+          repoDir,
+          observedAtCommit: '0000000000000000000000000000000000000000',
+          engineSourceTree: tree,
+          label: 'observed proof',
+        })).toBe('current-tree-fallback')
+      } finally {
+        process.stderr.write = originalWrite
+      }
+      expect(writes.join('')).toContain('observed commit 000000000000')
+    })
+  })
 
-      expect(authenticateObservedEngineTree({
+  it('does not fallback when a present commit lacks the source path', () => {
+    withRepository((repoDir, commitWithoutSource) => {
+      const tree = git(repoDir, ['rev-parse', 'HEAD:packages/engine/src'])
+
+      expect(() => authenticateObservedEngineTree({
         repoDir,
-        observedAtCommit: '0000000000000000000000000000000000000000',
+        observedAtCommit: commitWithoutSource,
         engineSourceTree: tree,
         label: 'observed proof',
-      })).toBe('current-tree-fallback')
+      })).toThrow('observed proof could not resolve')
+    })
+  })
+
+  it('rejects a reachable Git object that is not a commit', () => {
+    withRepository((repoDir) => {
+      const tree = git(repoDir, ['rev-parse', 'HEAD:packages/engine/src'])
+
+      expect(() => authenticateObservedEngineTree({
+        repoDir,
+        observedAtCommit: tree,
+        engineSourceTree: tree,
+        label: 'observed proof',
+      })).toThrow('must resolve to commit')
     })
   })
 
