@@ -1,54 +1,55 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-withdrawal-planning-boundary",
-  "why": "Measured reach for the pure annual withdrawal-order and candidate account-drain boundary. The full corpus exercises sequential, proportional, and bracket-targeted planning; spendability; the taxable safety-net holdback and release; account-order drains; exact taxable-basis sale character; and the fixed-point caller seam in all four equivalence modes. Direct contract tests independently pin lazy strategy sizing, bad-target and already-over-ceiling behavior, proportional arithmetic, bracket-cap ordering, reserve release, taxable basis, input purity, and the sub-cent traditional discharge. The hostile delegation test injects an impossible strategy and plan and proves simulatePlan consumes both outputs instead of rebuilding either policy inline.",
+  "why": "Measured reach for the pure annual withdrawal-order and candidate account-drain boundary. The full corpus exercises sequential routing, spendability snapshots, candidate debit and category-drain primitives, exact taxable-basis sale character, complete candidate results, and the fixed-point caller seam in all four equivalence modes. Direct contract tests independently pin lazy bracket sizing, bad-target and already-over-ceiling behavior, proportional arithmetic, bracket-cap ordering, safety-net holdback and release, taxable basis, input purity, and the sub-cent traditional discharge. The hostile delegation test injects an impossible strategy and plan and proves simulatePlan consumes both outputs instead of rebuilding either policy inline.",
   "entries": [
     {
       "id": "AL.helper.strategy",
-      "label": "configured mode routing and lazy bracket sizing",
+      "label": "configured proportional-mode test",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [91, 108],
+      "lines": [91, 92],
       "anchors": [
         { "line": 91, "text": "const configured = input.withdrawalOrder" },
-        { "line": 92, "text": "if (configured.mode === 'proportional') {" },
-        { "line": 95, "text": "if (configured.mode !== 'bracketTargeted') {" },
-        { "line": 99, "text": "const sized = sizeRothConversion(" },
-        { "line": 107, "text": "input.readSizing()," }
+        { "line": 92, "text": "if (configured.mode === 'proportional') {" }
       ]
     },
     {
-      "id": "AL.helper.strategyResult",
-      "label": "bad-bracket fallback and resolved traditional cap",
+      "id": "AL.helper.sequentialStrategy",
+      "label": "configured sequential routing before optional bracket sizing",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [109, 121],
+      "lines": [95, 97],
       "anchors": [
-        { "line": 109, "text": "if (!sized.ok && sized.reason === 'bad_target') {" },
-        { "line": 111, "text": "strategy: { mode: 'sequential' }," },
-        { "line": 118, "text": "traditionalCap: sized.ok ? sized.amount : 0," }
+        { "line": 95, "text": "if (configured.mode !== 'bracketTargeted') {" }
       ]
     },
     {
       "id": "AL.helper.setupAndReserve",
-      "label": "private availability snapshot and reverse liquid-floor reservation",
+      "label": "private result and spendable-availability snapshots plus reserve gate",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [142, 180],
+      "lines": [142, 164],
       "anchors": [
         { "line": 142, "text": "const byCategory: YearWithdrawals = {" },
         { "line": 155, "text": "const available = new Map(" },
-        { "line": 164, "text": "if (liquidReserve > 0) {" },
-        { "line": 166, "text": "for (const type of ['equityComp', 'taxable', 'cash'] as const) {" },
-        { "line": 173, "text": "const hold = Math.min(availableBalance, toReserve)" }
+        { "line": 164, "text": "if (liquidReserve > 0) {" }
       ]
     },
     {
       "id": "AL.helper.take",
-      "label": "candidate debit, exact-cent discharge, equity basis, and result maps",
+      "label": "candidate debit sizing and exact-cent discharge guard",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [182, 223],
+      "lines": [182, 196],
       "anchors": [
         { "line": 182, "text": "const takeFrom = (state: PhysicalBalanceState, wanted: number): number => {" },
         { "line": 193, "text": "if (" },
-        { "line": 195, "text": "planDollarsMoveNoLedgerCent(take)" },
+        { "line": 195, "text": "planDollarsMoveNoLedgerCent(take)" }
+      ]
+    },
+    {
+      "id": "AL.helper.takeResult",
+      "label": "equity basis character and candidate result-map updates",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [204, 223],
+      "anchors": [
         { "line": 204, "text": "if (state.account.type === 'equityComp' && state.balance > 0) {" },
         { "line": 213, "text": "byAccountId.set(" },
         { "line": 221, "text": "remaining -= take" }
@@ -56,25 +57,31 @@
     },
     {
       "id": "AL.helper.order",
-      "label": "category drain, proportional rebalance, and bracket/sequential ordering",
+      "label": "category-drain primitive and configured-order branch",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [225, 271],
+      "lines": [225, 237],
       "anchors": [
         { "line": 225, "text": "const drainCategory = (" },
-        { "line": 237, "text": "if (strategy.mode === 'proportional') {" },
-        { "line": 246, "text": "const poolTotal = poolStates.reduce(" },
-        { "line": 261, "text": "} else if (strategy.mode === 'bracketTargeted') {" },
+        { "line": 230, "text": "for (const state of states) {" },
+        { "line": 233, "text": "capLeft -= takeFrom(state, capLeft)" },
+        { "line": 237, "text": "if (strategy.mode === 'proportional') {" }
+      ]
+    },
+    {
+      "id": "AL.helper.sequentialOrder",
+      "label": "ordered default category drain",
+      "file": "projection/internal/annualWithdrawalPlanning.ts",
+      "lines": [270, 271],
+      "anchors": [
         { "line": 270, "text": "for (const category of SEQUENTIAL_ORDER) drainCategory(category)" }
       ]
     },
     {
-      "id": "AL.helper.releaseAndBasis",
-      "label": "last-resort reserve release and one aggregate taxable sale per account",
+      "id": "AL.helper.basis",
+      "label": "one aggregate taxable sale per account",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [273, 300],
+      "lines": [286, 300],
       "anchors": [
-        { "line": 275, "text": "if (remaining > EPSILON && reservedByAccount.size > 0) {" },
-        { "line": 283, "text": "reserveUsed = before - remaining" },
         { "line": 288, "text": "for (const state of states) {" },
         { "line": 294, "text": "const sale = aggregateBasisSale({" },
         { "line": 300, "text": "realizedGains += sale.realizedCapitalGainOrLoss" }
@@ -94,14 +101,30 @@
     },
     {
       "id": "AL.callsite.strategy",
-      "label": "frozen annual strategy contract, lazy sizing, warning, and resolved handoff",
+      "label": "frozen annual strategy contract and lazy sizing callback handoff",
       "file": "projection/simulate.ts",
-      "lines": [5578, 5600],
+      "lines": [5578, 5581],
       "anchors": [
         { "line": 5578, "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({" },
-        { "line": 5581, "text": "readSizing: () => Object.freeze({" },
-        { "line": 5594, "text": "itemizedDeductions," },
-        { "line": 5598, "text": "warnings.add(withdrawalStrategyResult.warning)" },
+        { "line": 5581, "text": "readSizing: () => Object.freeze({" }
+      ]
+    },
+    {
+      "id": "AL.callsite.strategyResult",
+      "label": "optional warning gate and resolved strategy handoff",
+      "file": "projection/simulate.ts",
+      "lines": [5596, 5597],
+      "anchors": [
+        { "line": 5596, "text": "}))" },
+        { "line": 5597, "text": "if (withdrawalStrategyResult.warning !== null) {" }
+      ]
+    },
+    {
+      "id": "AL.callsite.resolvedStrategy",
+      "label": "resolved strategy selected for candidate planning",
+      "file": "projection/simulate.ts",
+      "lines": [5600, 5600],
+      "anchors": [
         { "line": 5600, "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy" }
       ]
     },
