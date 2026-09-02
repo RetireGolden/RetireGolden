@@ -11,6 +11,9 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
+import { boundsForPath, checkRange, nativeMax, nativeMin, notKeptNote, type SchemaBounds } from './schemaBounds'
+import { useFieldIssue } from './useFieldIssue'
+
 import { LearnLink, type LearnHook } from '../learn/LearnLink'
 import { capIsoDateYear, editingMoneyText, nextMoneyFieldText } from './fieldInput'
 import { fmtMoney, parseAmount } from './format'
@@ -24,6 +27,12 @@ export interface SourceLink {
 
 interface BaseProps {
   label: string
+  /**
+   * Schema path of the value this field edits (`strategies.qcdAnnual`,
+   * `incomes.0.endAge`). When the engine rejects the plan at that path, the
+   * field shows the issue inline instead of leaving it to a card-level list.
+   */
+  path?: string
   /** Short inline note shown below the field — only for things that change what you type. */
   hint?: string
   /** Longer explanation behind an ⓘ help button (hover/focus/click). Prefer this over hint for background detail. */
@@ -199,9 +208,20 @@ export function ReadonlyField({ label, help, learn, value }: BaseProps & { value
   )
 }
 
-function FieldShell({ label, hint, help, learn, source, id, children }: BaseProps & { id: string; children: ReactNode }) {
+function FieldShell({
+  label,
+  hint,
+  help,
+  learn,
+  source,
+  id,
+  error,
+  note,
+  children,
+}: BaseProps & { id: string; error?: string | null; note?: string | null; children: ReactNode }) {
   return (
-    <div className="field">
+    <div className={error ? 'field field--invalid' : 'field'}>
+      {/* .field--invalid tints the caption; the control itself carries aria-invalid. */}
       <span className="field-label-row">
         <label className="field-label" htmlFor={id}>
           {label}
@@ -209,8 +229,32 @@ function FieldShell({ label, hint, help, learn, source, id, children }: BaseProp
         {help || hint || learn || source ? <HelpTip text={help} hint={hint} learn={learn} source={source} id={`${id}-help`} /> : null}
       </span>
       {children}
+      {/* The message the input's aria-describedby points at; rendered only
+          while there is one, so nothing announces on a valid field. */}
+      {error ? (
+        <p className="field-error" id={`${id}-error`}>
+          {error}
+        </p>
+      ) : null}
+      {/* What the field did with an entry it did not keep ("Not kept: 150 is
+          above the highest allowed, 120"). It is described, not an error: the
+          value the plan holds is valid, so the control does not stay
+          aria-invalid and the save chip's jump does not land on it (#476, #494). */}
+      {!error && note ? (
+        // A status: the note appears after focus has already moved on (a
+        // blur wrote it), so it has to announce itself to be heard.
+        <p className="field-note" id={`${id}-note`} role="status">
+          {note}
+        </p>
+      ) : null}
     </div>
   )
+}
+
+/** aria-describedby from the ids that exist. */
+function describedBy(...ids: Array<string | undefined | false | null>): string | undefined {
+  const list = ids.filter((x): x is string => typeof x === 'string' && x !== '')
+  return list.length > 0 ? list.join(' ') : undefined
 }
 
 interface NumericProps extends BaseProps {
@@ -249,6 +293,7 @@ export function MoneyField({
   help,
   learn,
   source,
+  path,
   value,
   onCommit,
   allowNull,
@@ -257,6 +302,15 @@ export function MoneyField({
   placeholder,
 }: MoneyFieldProps) {
   const id = useId()
+  // The engine's range for this path, so a money field refuses what the schema
+  // forbids instead of storing it and reporting it afterwards (r3-2). Nothing
+  // here invents a limit: an unwired money field (the import wizard, a lever)
+  // has no bounds and commits as before.
+  const bounds = boundsForPath(path)
+  const [rangeError, setRangeError] = useState<string | null>(null)
+  const [notKept, setNotKept] = useState<string | null>(null)
+  const issue = useFieldIssue(path)
+  const error = rangeError ?? issue?.advice ?? null
   const formatted = value === null
     ? ''
     : fractionDigits === undefined
@@ -272,9 +326,18 @@ export function MoneyField({
   const selectOnFocus = useRef(false)
   const commitText = (next: string) => {
     setText(next)
+    setNotKept(null)
     const parsed = parseAmount(next)
-    if (parsed !== null) onCommit(parsed)
-    else if (next.trim() === '') onCommit(allowNull ? null : 0)
+    if (parsed !== null) {
+      const { message } = checkRange(parsed, bounds)
+      // Flag it and commit nothing: the same rule the number fields follow, so
+      // an amount the engine would reject never reaches the plan.
+      setRangeError(message)
+      if (message === null) onCommit(parsed)
+      return
+    }
+    setRangeError(null)
+    if (next.trim() === '') onCommit(allowNull ? null : 0)
     else onInvalid?.()
   }
   useLayoutEffect(() => {
@@ -283,7 +346,7 @@ export function MoneyField({
     inputRef.current?.select()
   }, [focused, text])
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} note={notKept}>
       <div className={placeholder !== undefined ? 'input-affix input-affix--optional' : 'input-affix'}>
         {/* A blank optional field is a non-amount state, so the unit chip steps
             back for as long as the placeholder is showing, focused or not; it
@@ -300,6 +363,9 @@ export function MoneyField({
           autoCorrect="off"
           spellCheck={false}
           placeholder={placeholder}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(error ? `${id}-error` : notKept && `${id}-note`)}
+          data-path={path}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.preventDefault()
           }}
@@ -311,6 +377,12 @@ export function MoneyField({
           }}
           onBlur={() => {
             setFocused(false)
+            // An amount outside the engine's range is not kept: the plan's own
+            // value comes back and a note says what the field allows.
+            const parsed = parseAmount(text)
+            const { side } = parsed === null ? { side: null } : checkRange(parsed, bounds)
+            if (side !== null && parsed !== null) setNotKept(notKeptNote(String(parsed), side, bounds))
+            setRangeError(null)
             setText(formatted)
           }}
           onChange={(e) => {
@@ -335,6 +407,7 @@ export function NumberField({
   help,
   learn,
   source,
+  path,
   value,
   onCommit,
   allowNull,
@@ -345,6 +418,30 @@ export function NumberField({
 }: NumericProps & { suffix?: string; step?: number; min?: number; max?: number }) {
   const id = useId()
   const { text, setText, setFocused } = useLocalText(value === null ? '' : String(value))
+  // The range is the engine's, read from its schema by path (r3-3): a local
+  // min/max could be tighter than what the engine allows and refuse a value it
+  // would have accepted. The props remain for controls with no schema path
+  // (the import wizard, the lever editors).
+  const schema = boundsForPath(path)
+  const bounds: SchemaBounds | null = schema ?? (min === undefined && max === undefined ? null : { min, max })
+  // While typing, a value outside that range (or text that is not a number at
+  // all) is flagged beside the field and commits nothing, so an intermediate
+  // keystroke never stores a bound the person did not choose and the engine is
+  // never handed an age or rate it cannot model (#476, #494). Leaving the
+  // field does not clamp: the entry is not kept, the plan's value comes back,
+  // and a note says what the field allows — a blur is often a Tab or the save
+  // chip mid-edit, and "9" on the way to "95" must not become 60.
+  const [rangeError, setRangeError] = useState<string | null>(null)
+  const [adjustedNote, setAdjustedNote] = useState<string | null>(null)
+  const issue = useFieldIssue(path)
+  const error = rangeError ?? issue?.advice ?? null
+  const outOfRange = (n: number): 'low' | 'high' | null => checkRange(n, bounds).side
+  // Clearing a required field commits 0 when 0 is a value the engine allows
+  // here, which is the documented "off" state for the rate overrides and every
+  // other zero-floored field. Where 0 is out of range (a claim age, a planning
+  // age) there is nothing safe to commit, so the field says so and keeps what
+  // the plan holds.
+  const emptyCommitsZero = !allowNull && outOfRange(0) === null
   // The suffix names the unit ("%"); it is the input's description, not
   // decoration, so a screen reader announces "22, percent" and not just "22".
   const suffixId = suffix ? `${id}-unit` : undefined
@@ -355,21 +452,71 @@ export function NumberField({
       inputMode="decimal"
       value={text}
       step={step}
-      min={min}
-      max={max}
-      aria-describedby={suffixId}
+      min={nativeMin(bounds)}
+      max={nativeMax(bounds)}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={describedBy(suffixId, error ? `${id}-error` : adjustedNote && `${id}-note`)}
+      data-path={path}
       onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
+      onBlur={(e) => {
+        setFocused(false)
+        const trimmed = text.trim()
+        const n = Number(trimmed)
+        const badInput = e.target.validity?.badInput === true
+        if (trimmed === '' && badInput) {
+          // Text the field could not parse: the plan kept its value, so show it.
+          setText(value === null ? '' : String(value))
+          setRangeError(null)
+          return
+        }
+        if (trimmed === '' ? !allowNull && !emptyCommitsZero : !Number.isFinite(n)) {
+          // Nothing was committed for non-numeric text ("1e", "-"), or for an
+          // emptied field with no safe zero: show the value the plan kept.
+          setText(value === null ? '' : String(value))
+          setRangeError(null)
+          return
+        }
+        const side = trimmed !== '' && Number.isFinite(n) ? outOfRange(n) : null
+        if (side === null) {
+          setRangeError(null)
+          return
+        }
+        // Out of range on leaving: the entry is not kept and the plan's value
+        // comes back, with a note naming the bound it missed.
+        setText(value === null ? '' : String(value))
+        setRangeError(null)
+        setAdjustedNote(notKeptNote(trimmed, side, bounds))
+      }}
       onChange={(e) => {
         setText(e.target.value)
-        const n = Number(e.target.value)
-        if (e.target.value.trim() === '') onCommit(allowNull ? null : 0)
-        else if (Number.isFinite(n)) onCommit(n)
+        setAdjustedNote(null)
+        const trimmed = e.target.value.trim()
+        const n = Number(trimmed)
+        // A number input reports text it cannot parse ("1e", "-", "1.2.3") as
+        // an empty value with badInput set, so the two empty cases are told
+        // apart by the browser's own flag rather than guessed at.
+        const badInput = e.target.validity?.badInput === true
+        if (trimmed === '' && badInput) {
+          // Say so while the text is on screen, rather than letting it sit
+          // there with no feedback until blur silently reverts it.
+          setRangeError('Enter a number')
+        } else if (trimmed === '') {
+          setRangeError(null)
+          if (allowNull) onCommit(null)
+          else if (emptyCommitsZero) onCommit(0)
+          else setRangeError('Enter a value')
+        } else if (!Number.isFinite(n)) {
+          setRangeError('Enter a number')
+        } else {
+          const { message } = checkRange(n, bounds)
+          setRangeError(message)
+          if (message === null) onCommit(n)
+        }
       }}
     />
   )
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} note={adjustedNote}>
       {suffix ? (
         <div className="input-affix">
           {input}
@@ -392,13 +539,23 @@ export function TextField({
   help,
   learn,
   source,
+  path,
   value,
   onCommit,
 }: BaseProps & { value: string; onCommit: (v: string) => void }) {
   const id = useId()
+  const error = useFieldIssue(path)?.advice ?? null
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
-      <input id={id} type="text" value={value} onChange={(e) => onCommit(e.target.value)} />
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(error && `${id}-error`)}
+        data-path={path}
+        onChange={(e) => onCommit(e.target.value)}
+      />
     </FieldShell>
   )
 }
@@ -409,18 +566,23 @@ export function DateField({
   help,
   learn,
   source,
+  path,
   value,
   onCommit,
 }: BaseProps & { value: string; onCommit: (v: string) => void }) {
   const id = useId()
+  const error = useFieldIssue(path)?.advice ?? null
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
       <input
         id={id}
         type="date"
         min="1900-01-01"
         max="9999-12-31"
         value={capIsoDateYear(value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(error && `${id}-error`)}
+        data-path={path}
         onChange={(e) => onCommit(capIsoDateYear(e.target.value))}
       />
     </FieldShell>
@@ -433,10 +595,11 @@ export function SelectField<T extends string>({
   help,
   learn,
   source,
+  path,
   value,
   options,
   onCommit,
-  describedBy,
+  describedBy: describedById,
   placeholder,
 }: BaseProps & {
   /** `''` renders the placeholder (when given) as an explicit not-yet-answered state. */
@@ -454,13 +617,16 @@ export function SelectField<T extends string>({
   placeholder?: string
 }) {
   const id = useId()
+  const error = useFieldIssue(path)?.advice ?? null
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
       <select
         id={id}
         value={value}
         required={placeholder !== undefined}
-        aria-describedby={describedBy}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(describedById, error && `${id}-error`)}
+        data-path={path}
         title={options.find((o) => o.value === value)?.label ?? placeholder}
         onChange={(e) => {
           const v = e.target.value

@@ -4,7 +4,7 @@
  * deterministic projection live as the plan changes.
  */
 
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
@@ -24,6 +24,7 @@ import { successBand } from './successBand'
 import { useMcSuccessRateState } from './useMcSuccessRate'
 import { useProjection } from './useProjection'
 import { SECTION_TITLES } from './sectionTitles'
+import { firstIssue, focusIssueTarget, retryFocus, routeForIssues, workspaceRoot } from './issueJump'
 
 const railClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'rail-link rail-link--active' : 'rail-link')
 
@@ -35,9 +36,24 @@ function sectionSegmentOf(pathname: string): string | undefined {
 
 function SaveIndicator() {
   const { plan, saveState, issues } = usePlan()
+  const navigate = useNavigate()
   const readOnly = useWorkspaceReadOnly()
   const { homeLabel, storageTooltip } = usePlannerEdition()
   const isExample = plan.origin === 'example'
+  const { pathname } = useLocation()
+  // The retry loop that waits for the destination page to render, and where
+  // it was headed. A second click, a route change to anywhere else, focus
+  // moving to a control the person chose, or unmounting cancels it, so a
+  // late frame can never pull focus away from what they are doing.
+  const pendingJump = useRef<{ cancel: () => void; target: string } | null>(null)
+  const cancelJump = useCallback(() => {
+    pendingJump.current?.cancel()
+    pendingJump.current = null
+  }, [])
+  useEffect(() => {
+    if (pendingJump.current && pendingJump.current.target !== pathname) cancelJump()
+  }, [pathname, cancelJump])
+  useEffect(() => cancelJump, [cancelJump])
   // Read-only wins over any save state: nothing is being stored, so the
   // "Stored on this device" / "Storing…" copy would be misleading. Keep the
   // label generic — planner-ui doesn't know the reason (the host explains it).
@@ -63,9 +79,57 @@ function SaveIndicator() {
   const title = isExample
     ? `This example is saved on this device under its own slot: your edits stick across reloads, but it stays out of ${homeLabel} until you use 'Save to my plans'. 'Load a fresh copy' resets it.`
     : storageTooltip
+  if (saveState === 'invalid') {
+    // The chip names the count (the live region announces it); the button
+    // takes you to the first invalid control on this page, else to the issue
+    // list of the section that owns the first issue, navigating there when
+    // that is another section. With nothing placeable, it still goes to an
+    // entry page, where every list shows the unplaceable issues (#494).
+    const jump = () => {
+      cancelJump()
+      const { section, path } = firstIssue(issues)
+      if (focusIssueTarget(workspaceRoot(), section, path)) return
+      const route = routeForIssues(issues)
+      if (!route) return
+      const target = `/plan/${plan.id}/${route}`
+      const chip = document.activeElement
+      navigate(target)
+      // The target renders after navigation; look for it over the next
+      // frames, unless the person has moved on: focus resting anywhere but
+      // the chip, the page body, or the outlet itself means they picked a
+      // control, and that choice wins. Route changes cancel via the effect.
+      const focusMoved = () => {
+        const active = document.activeElement
+        return (
+          active !== null &&
+          active !== chip &&
+          active !== document.body &&
+          active !== document.documentElement &&
+          active.id !== 'plan-content'
+        )
+      }
+      pendingJump.current = { target, cancel: retryFocus(workspaceRoot, section, path, focusMoved) }
+    }
+    return (
+      <>
+        <span className="sr-only" role="status" aria-live="polite">
+          {text}
+        </span>
+        <button
+          type="button"
+          className="save-state save-state--error save-state--button"
+          aria-label={`${text}. Show what to fix`}
+          title="Go to the first thing to fix. The plan is stored once it is valid."
+          onClick={jump}
+        >
+          {text}
+        </button>
+      </>
+    )
+  }
   return (
     <span
-      className={saveState === 'invalid' || saveState === 'error' ? 'save-state save-state--error' : 'save-state'}
+      className={saveState === 'error' ? 'save-state save-state--error' : 'save-state'}
       role="status"
       aria-live="polite"
       title={title}

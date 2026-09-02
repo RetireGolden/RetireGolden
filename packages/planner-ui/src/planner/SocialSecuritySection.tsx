@@ -30,6 +30,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney } from './format'
 import { dobParts, resolvePia } from './ssAnalysis'
 import { PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
+import { Issues } from './sections/shared'
 
 const newId = () => crypto.randomUUID()
 
@@ -346,16 +347,14 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
         <NumberField
           label="Claim age (years)"
           help="The age this person starts benefits. Earlier than full retirement age permanently reduces it; waiting past it adds ~8%/year until 70. Compare the options on Explore → Social Security."
+          path={`incomes.${streamIndex}.claimAge.years`}
           value={stream.claimAge.years}
-          min={62}
-          max={70}
           onCommit={(v) => setStream((s) => (s.claimAge = { years: Math.round(v ?? 67), months: s.claimAge.months }))}
         />
         <NumberField
           label="Claim age (+ months)"
+          path={`incomes.${streamIndex}.claimAge.months`}
           value={stream.claimAge.months}
-          min={0}
-          max={11}
           onCommit={(v) => setStream((s) => (s.claimAge = { years: s.claimAge.years, months: Math.round(v ?? 0) }))}
         />
       </div>
@@ -404,6 +403,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             // benefit at FRA)" wrapped beside its ⓘ (#511).
             label={PIA_MONTHLY_AT_FRA_LABEL}
             help="Your Primary Insurance Amount, the monthly benefit at full retirement age in today's dollars, from ssa.gov/myaccount."
+            path={`incomes.${streamIndex}.piaMonthly`}
             value={stream.piaMonthly}
             allowNull
             onCommit={(v) => setStream((s) => (s.piaMonthly = v ?? 0))}
@@ -539,10 +539,13 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
 }
 
 export function SocialSecuritySection() {
+  // Claim ages, PIA, and earnings are edited here, so their engine issues are
+  // listed here (#476, #511), not on the Income page.
   const { plan } = usePlan()
   const couple = plan.household.people.length === 2
   return (
     <section>
+      <Issues section="social-security" />
       <div className="card">
         <h2>Social Security</h2>
         <p className="card-hint">

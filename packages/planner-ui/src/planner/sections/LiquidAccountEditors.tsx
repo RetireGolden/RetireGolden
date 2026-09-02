@@ -38,9 +38,11 @@ function TaxExemptInterestYieldField({
 
 export function TaxableAccountEditor({
   account,
+  index,
   onCommit,
 }: {
   account: Extract<Account, { type: 'taxable' }>
+  index: number
   onCommit: CommitAccountFieldFor<Extract<Account, { type: 'taxable' }>>
 }) {
   return (
@@ -48,6 +50,7 @@ export function TaxableAccountEditor({
       <MoneyField
         label="Cost basis"
         hint="Aggregate basis; gains realize pro-rata."
+        path={`accounts.${index}.costBasis`}
         value={account.costBasis}
         onCommit={(value) => onCommit('costBasis', value ?? 0)}
       />
@@ -56,18 +59,21 @@ export function TaxableAccountEditor({
           <PercentField
             label="Interest yield"
             help="Annual taxable interest yield generated from this brokerage account before market-price growth."
+            path={`accounts.${index}.interestYieldPct`}
             value={account.interestYieldPct ?? 0}
             onCommit={(value) => onCommit('interestYieldPct', value ?? 0)}
           />
           <PercentField
             label="Dividend yield"
             help="Annual dividend yield generated from this brokerage account before market-price growth."
+            path={`accounts.${index}.dividendYieldPct`}
             value={account.dividendYieldPct ?? 0}
             onCommit={(value) => onCommit('dividendYieldPct', value ?? 0)}
           />
           <PercentField
             label="Qualified dividends"
             help="Share of dividends taxed at long-term capital-gain rates federally. The rest is taxed as ordinary dividends."
+            path={`accounts.${index}.qualifiedRatio`}
             value={(account.qualifiedRatio ?? 0.85) * 100}
             onCommit={(value) => onCommit('qualifiedRatio', Math.min(1, Math.max(0, (value ?? 85) / 100)))}
           />

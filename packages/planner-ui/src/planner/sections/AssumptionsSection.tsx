@@ -56,15 +56,15 @@ function AssetClassAssumptions() {
           <div key={id} className="nested-form-section" data-testid={`asset-class-${id}`}>
             <h4>{p.label}</h4>
             <div className="form-grid nested-control-grid">
-              <PercentField label="Expected return" help="Assumed average annual nominal return for this class. Accounts that model asset classes blend it by allocation into their growth in the steady projection; Monte Carlo shocks each year around it using the volatility below." learn={LEARN.investmentReturns} value={p.returnPct} onCommit={(v) => setParam(id, 'returnPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].returnPct)} />
-              <PercentField label="Volatility" help="Annual standard deviation of returns; drives the size of this class's Monte Carlo shocks." value={p.volatilityPct} min={0} onCommit={(v) => setParam(id, 'volatilityPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].volatilityPct)} />
+              <PercentField label="Expected return" help="Assumed average annual nominal return for this class. Accounts that model asset classes blend it by allocation into their growth in the steady projection; Monte Carlo shocks each year around it using the volatility below." learn={LEARN.investmentReturns} path={`assumptions.assetClassParams.${id}.returnPct`} value={p.returnPct} onCommit={(v) => setParam(id, 'returnPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].returnPct)} />
+              <PercentField label="Volatility" help="Annual standard deviation of returns; drives the size of this class's Monte Carlo shocks." path={`assumptions.assetClassParams.${id}.volatilityPct`} value={p.volatilityPct} onCommit={(v) => setParam(id, 'volatilityPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].volatilityPct)} />
               {stockLike ? (
                 <>
-                  <PercentField label="Dividend yield" help="Distributed as dividends each year; taxable in a brokerage account." value={p.dividendYieldPct} min={0} onCommit={(v) => setParam(id, 'dividendYieldPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].dividendYieldPct)} />
-                  <PercentField label="Qualified share" help="Share of this class's dividends taxed at long-term capital-gain rates." value={p.qualifiedRatioPct} min={0} max={100} onCommit={(v) => setParam(id, 'qualifiedRatioPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].qualifiedRatioPct)} />
+                  <PercentField label="Dividend yield" help="Distributed as dividends each year; taxable in a brokerage account." path={`assumptions.assetClassParams.${id}.dividendYieldPct`} value={p.dividendYieldPct} onCommit={(v) => setParam(id, 'dividendYieldPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].dividendYieldPct)} />
+                  <PercentField label="Qualified share" help="Share of this class's dividends taxed at long-term capital-gain rates." path={`assumptions.assetClassParams.${id}.qualifiedRatioPct`} value={p.qualifiedRatioPct} onCommit={(v) => setParam(id, 'qualifiedRatioPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].qualifiedRatioPct)} />
                 </>
               ) : (
-                <PercentField label="Interest yield" help="Distributed as taxable interest each year in a brokerage account." value={p.interestYieldPct} min={0} onCommit={(v) => setParam(id, 'interestYieldPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].interestYieldPct)} />
+                <PercentField label="Interest yield" help="Distributed as taxable interest each year in a brokerage account." path={`assumptions.assetClassParams.${id}.interestYieldPct`} value={p.interestYieldPct} onCommit={(v) => setParam(id, 'interestYieldPct', v ?? DEFAULT_ASSET_CLASS_PARAMS[id].interestYieldPct)} />
               )}
             </div>
           </div>
@@ -87,6 +87,7 @@ export function AssumptionsSection() {
             label="Inflation"
             help="How fast prices rise each year. Results are shown in today's dollars, so this sets how much future dollars are discounted back."
             learn={LEARN.generalInflation}
+            path="assumptions.inflationPct"
             value={a.inflationPct}
             onCommit={(v) => update((d) => void (d.assumptions.inflationPct = v ?? 2.5))}
           />
@@ -95,6 +96,7 @@ export function AssumptionsSection() {
             hint="On top of general inflation."
             help="Additional inflation applied to healthcare and Medicare costs."
             learn={LEARN.healthcareInflation}
+            path="assumptions.healthcareExtraInflationPct"
             value={a.healthcareExtraInflationPct}
             onCommit={(v) => update((d) => void (d.assumptions.healthcareExtraInflationPct = v ?? 3))}
           />
@@ -103,6 +105,7 @@ export function AssumptionsSection() {
             hint="For accounts without their own."
             help="Assumed long-term nominal return rate for investment accounts."
             learn={LEARN.investmentReturns}
+            path="assumptions.defaultReturnPct"
             value={a.defaultReturnPct}
             onCommit={(v) => update((d) => void (d.assumptions.defaultReturnPct = v ?? 5.5))}
           />
@@ -112,18 +115,16 @@ export function AssumptionsSection() {
             hint="0 = use modeled state brackets."
             learn={LEARN.stateTaxOverride}
             source={provenanceSource('state-income-tax')}
+            path="assumptions.stateEffectiveTaxPct"
             value={a.stateEffectiveTaxPct}
-            min={0}
-            max={20}
             onCommit={(v) => update((d) => void (d.assumptions.stateEffectiveTaxPct = v ?? 0))}
           />
           <PercentField
             label="Local income tax"
             help="Optional flat city/county income tax. When modeled state brackets are active, this applies to state taxable income; with the state override, it adds to the same flat override base."
             hint="For MD counties, NYC, OH municipalities."
+            path="assumptions.localIncomeTaxPct"
             value={a.localIncomeTaxPct}
-            min={0}
-            max={10}
             onCommit={(v) => update((d) => void (d.assumptions.localIncomeTaxPct = v ?? 0))}
           />
           <MoneyField
@@ -132,6 +133,7 @@ export function AssumptionsSection() {
             help="Used to seed the two-year lookback for Medicare premium calculations during your first two years."
             learn={LEARN.recentMagi}
             source={provenanceSource('medicare-irmaa')}
+            path="assumptions.recentAnnualMagi"
             value={a.recentAnnualMagi}
             onCommit={(v) => update((d) => void (d.assumptions.recentAnnualMagi = v ?? 0))}
           />
@@ -139,8 +141,8 @@ export function AssumptionsSection() {
             label="Safe withdrawal rate (SWR)"
             help="The percentage of your portfolio you assume is safe to withdraw in the first year of retirement, adjusted for inflation thereafter. For example, 4% is the common rule-of-thumb lens."
             learn={LEARN.fiNumber}
+            path="assumptions.safeWithdrawalRatePct"
             value={a.safeWithdrawalRatePct ?? 4}
-            min={0.1}
             onCommit={(v) => update((d) => void (d.assumptions.safeWithdrawalRatePct = v ?? 4))}
           />
           <SelectField
@@ -163,6 +165,7 @@ export function AssumptionsSection() {
               label="COLA rate"
               help="The annual cost-of-living adjustment rate."
               learn={LEARN.ssCola}
+              path="assumptions.ssCola.annualPct"
               value={a.ssCola.annualPct}
               onCommit={(v) => update((d) => void (d.assumptions.ssCola = { mode: 'fixed', annualPct: v ?? 2 }))}
             />
@@ -171,9 +174,8 @@ export function AssumptionsSection() {
             label="Heir tax rate"
             help="Assumed tax rate heirs pay on inherited traditional pre-tax balances, used for the after-tax estate metric."
             learn={LEARN.heirTaxRate}
+            path="assumptions.heirTaxRatePct"
             value={a.heirTaxRatePct}
-            min={0}
-            max={50}
             onCommit={(v) => update((d) => void (d.assumptions.heirTaxRatePct = v ?? 25))}
           />
           <CheckboxField
@@ -189,9 +191,8 @@ export function AssumptionsSection() {
               <PercentField
                 label="Traditional heir tax"
                 help="Tax rate heirs pay on inherited traditional IRA/401(k) balances. Overrides the flat heir tax rate for this account class."
+                path="assumptions.heirTaxByClass.traditional"
                 value={a.heirTaxByClass.traditional ?? a.heirTaxRatePct}
-                min={0}
-                max={50}
                 onCommit={(v) =>
                   update((d) => {
                     if (!d.assumptions.heirTaxByClass) return
@@ -202,9 +203,8 @@ export function AssumptionsSection() {
               <PercentField
                 label="HSA heir tax"
                 help="Tax rate heirs pay on inherited HSA balances (non-spouse beneficiary). Overrides the flat heir tax rate for this account class."
+                path="assumptions.heirTaxByClass.hsa"
                 value={a.heirTaxByClass.hsa ?? a.heirTaxRatePct}
-                min={0}
-                max={50}
                 onCommit={(v) =>
                   update((d) => {
                     if (!d.assumptions.heirTaxByClass) return
@@ -231,8 +231,8 @@ export function AssumptionsSection() {
           />
           {a.ssHaircut ? (
             <>
-              <NumberField label="From year" value={a.ssHaircut.fromYear} min={1900} max={2200} onCommit={(v) => update((d) => void (d.assumptions.ssHaircut!.fromYear = Math.round(v ?? TRUSTEES_DEFAULT_SS_HAIRCUT.fromYear)))} />
-              <PercentField label="Cut" value={a.ssHaircut.cutPct} min={0} max={100} onCommit={(v) => update((d) => void (d.assumptions.ssHaircut!.cutPct = v ?? TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct))} />
+              <NumberField label="From year" path="assumptions.ssHaircut.fromYear" value={a.ssHaircut.fromYear} onCommit={(v) => update((d) => void (d.assumptions.ssHaircut!.fromYear = Math.round(v ?? TRUSTEES_DEFAULT_SS_HAIRCUT.fromYear)))} />
+              <PercentField label="Cut" path="assumptions.ssHaircut.cutPct" value={a.ssHaircut.cutPct} onCommit={(v) => update((d) => void (d.assumptions.ssHaircut!.cutPct = v ?? TRUSTEES_DEFAULT_SS_HAIRCUT.cutPct))} />
             </>
           ) : null}
         </div>
@@ -242,7 +242,7 @@ export function AssumptionsSection() {
           {LATEST_PACK_YEAR} figures. <Link to="/disclaimer">See where the numbers come from →</Link>{' '}
           <Link to={`/plan/${plan.id}/assumptions-card`}>See every live assumption on one card →</Link>
         </p>
-        <Issues />
+        <Issues section="assumptions" />
       </div>
       <LearnAboutScreen route="/plan/:planId/assumptions" limit={10} />
     </section>

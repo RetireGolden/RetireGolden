@@ -50,6 +50,23 @@ import {
 } from './scenarioComparisonView'
 import { currentStartYear, seedFromPlanId, taxCalculatorFor } from './useProjection'
 import { US_STATES } from './usStates'
+import { labelOfSegments } from './validationIssues'
+
+/**
+ * A JSON-pointer or dotted plan path as a person reads it:
+ * `/assumptions/ssHaircut` → "Assumptions: Social Security haircut". Pointer
+ * escapes are decoded (~1 is /, ~0 is ~) and a trailing `/-` (append) names the list.
+ */
+function fieldName(path: string): string {
+  const trimmed = path.replace(/\/-$/, '')
+  // A pointer's segments are decoded after the split, so a key holding a
+  // slash ("~1") or a dot stays one segment and is never read as a step down
+  // into another object.
+  const segments = trimmed.startsWith('/')
+    ? trimmed.slice(1).split('/').map((seg) => seg.replace(/~1/g, '/').replace(/~0/g, '~'))
+    : trimmed.split('.')
+  return labelOfSegments(segments)
+}
 
 const newId = () => crypto.randomUUID()
 const LEVER_PREVIEW_DEBOUNCE_MS = 50
@@ -407,7 +424,7 @@ function AddScenario() {
       ) : preview?.ok ? (
         <p className="card-hint">
           <strong>Fields this scenario changes:</strong>{' '}
-          <code>{preview.operationPaths.join(', ')}</code>
+          {preview.operationPaths.map(fieldName).join('; ')}
         </p>
       ) : null}
       {saveError ? <p className="card-hint" role="alert">{saveError}</p> : null}
@@ -1055,7 +1072,7 @@ function ComparableScenariosPage() {
                       <td style={{ maxWidth: '16rem', textAlign: 'left' }}>
                         {row.diff.slice(0, 4).map((d) => (
                           <span key={d.path} className="diff-chip" title={`${d.path}: ${JSON.stringify(d.baseValue)} → ${JSON.stringify(d.scenarioValue)}`}>
-                            {d.path.split('.').slice(-2).join('.')}
+                            {fieldName(d.path)}
                           </span>
                         ))}
                         {row.diff.length > 4 ? <span className="diff-chip">+{row.diff.length - 4} more</span> : null}

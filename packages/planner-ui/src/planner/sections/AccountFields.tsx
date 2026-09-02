@@ -27,7 +27,7 @@ function accountTypeFields(
 ): ReactNode {
   switch (account.type) {
     case 'taxable':
-      return <TaxableAccountEditor account={account} onCommit={onCommit} />
+      return <TaxableAccountEditor account={account} index={index} onCommit={onCommit} />
     case 'equityComp':
       return <EquityCompAccountEditor account={account} onCommit={onCommit} />
     case 'cash':
@@ -44,7 +44,7 @@ function accountTypeFields(
     case 'property':
       return <PropertyAccountEditor account={account} index={index} onCommit={onCommit} />
     case 'debt':
-      return <DebtAccountEditor account={account} onCommit={onCommit} />
+      return <DebtAccountEditor account={account} index={index} onCommit={onCommit} />
   }
   return exhaustiveAccountFallback(account)
 }

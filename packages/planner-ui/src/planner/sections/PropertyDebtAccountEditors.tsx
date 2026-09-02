@@ -20,13 +20,12 @@ export function PropertyAccountEditor({
 
   return (
     <>
-      <MoneyField label="Value" value={account.value} onCommit={(v) => onCommit('value', v ?? 0)} />
+      <MoneyField label="Value" path={`accounts.${index}.value`} value={account.value} onCommit={(v) => onCommit('value', v ?? 0)} />
       <NumberField
         label="Planned sale year"
+        path={`accounts.${index}.plannedSaleYear`}
         value={account.plannedSaleYear}
         allowNull
-        min={1900}
-        max={2200}
         onCommit={(v) => onCommit('plannedSaleYear', v === null ? null : Math.round(v))}
       />
       <MoneyField
@@ -156,18 +155,21 @@ export function PropertyAccountEditor({
 
 export function DebtAccountEditor({
   account,
+  index,
   onCommit,
 }: {
   account: Extract<Account, { type: 'debt' }>
+  index: number
   onCommit: CommitAccountFieldFor<Extract<Account, { type: 'debt' }>>
 }) {
   return (
     <>
-      <PercentField label="Interest rate" value={account.interestPct} onCommit={(v) => onCommit('interestPct', v ?? 0)} />
+      <PercentField label="Interest rate" path={`accounts.${index}.interestPct`} value={account.interestPct} onCommit={(v) => onCommit('interestPct', v ?? 0)} />
       <MoneyField
         label="Monthly payment"
         help="Principal & interest only. Don't include escrowed property tax or homeowner's insurance here. Put those on the home (property) account so they correctly continue after the loan is paid off."
         hint="P&I only, escrow goes on the home account."
+        path={`accounts.${index}.monthlyPayment`}
         value={account.monthlyPayment}
         onCommit={(v) => onCommit('monthlyPayment', v ?? 0)}
       />
@@ -175,10 +177,9 @@ export function DebtAccountEditor({
         label="Lump-sum payoff year"
         help="Optional. In this year the entire remaining balance is paid off at once, funded from your withdrawal order (selling taxable holdings realizes gains/tax, just like any other withdrawal). Use it to compare keeping a low-rate loan vs. paying it off early or mid-retirement."
         hint="Blank = run to term."
+        path={`accounts.${index}.payoffYear`}
         value={account.payoffYear ?? null}
         allowNull
-        min={1900}
-        max={2200}
         onCommit={(v) => onCommit('payoffYear', v === null ? undefined : Math.round(v))}
       />
     </>

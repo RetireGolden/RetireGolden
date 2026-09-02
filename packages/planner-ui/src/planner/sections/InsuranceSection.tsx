@@ -1,11 +1,12 @@
 /** Insurance section: policies, care events, LTC stress. */
 
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
 
 import type { CareEvent, InsurancePolicy, Plan } from '@retiregolden/engine/model/plan'
 import { compareLtcStress } from '@retiregolden/engine/projection/compare'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
+import { useFieldIssue } from '../useFieldIssue'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
@@ -56,9 +57,11 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
   const schedule = policy.kind === 'permanentLife' ? (policy.cashValueSchedule ?? []) : []
   const repeatedAges = duplicateScheduleAges(schedule)
   const nextAge = nextScheduleAge(schedule)
+  const scheduleId = useId()
+  const scheduleIssue = useFieldIssue(`insurance.${index}.cashValueSchedule`)
   return (
     <div className="form-grid">
-      <TextField label="Name" value={policy.name} onCommit={(v) => set('name', v || INSURANCE_LABEL[policy.kind])} />
+      <TextField label="Name" path={`insurance.${index}.name`} value={policy.name} onCommit={(v) => set('name', v || INSURANCE_LABEL[policy.kind])} />
       <SelectField
         label={policy.kind === 'ltc' ? 'Owner' : 'Insured'}
         value={policy.kind === 'ltc' ? policy.owner : policy.insured}
@@ -70,6 +73,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
         label="Annual premium"
         help="The yearly cost of keeping this policy in force. Premiums reduce spending capacity even in years when no claim or death benefit is paid."
         learn={policyLearn}
+        path={`insurance.${index}.annualPremium`}
         value={policy.annualPremium}
         onCommit={(v) => set('annualPremium', v ?? 0)}
       />
@@ -86,9 +90,8 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
           label="Premiums end at age"
           help="The age when scheduled premiums stop. Leave the mode as pay for life if premiums continue indefinitely."
           learn={policyLearn}
+          path={`insurance.${index}.premiumEndAge`}
           value={policy.premiumEndAge ?? 65}
-          min={40}
-          max={110}
           onCommit={(v) => set('premiumEndAge', Math.round(v ?? 65))}
         />
       ) : null}
@@ -106,6 +109,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
             help="The modeled face amount paid when the insured person dies. RetireGolden treats it as income-tax-free at death, while avoiding double-counting cash value and death benefit."
             learn={LEARN.permanentLife}
             hint="Face amount, paid income-tax-free at death."
+            path={`insurance.${index}.deathBenefit`}
             value={policy.deathBenefit}
             onCommit={(v) => set('deathBenefit', v ?? 0)}
           />
@@ -113,6 +117,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
             label="Cash value (today)"
             help="Current policy cash value while the insured is alive. Use the policy statement value, not the death benefit."
             learn={LEARN.permanentLife}
+            path={`insurance.${index}.cashValue`}
             value={policy.cashValue}
             onCommit={(v) => set('cashValue', v ?? 0)}
           />
@@ -132,16 +137,32 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
               label="Cash value growth"
               help="A simple annual growth assumption for cash value. If you have an illustration, use the schedule instead because real policy values rarely grow in a straight line."
               learn={LEARN.permanentLife}
+              path={`insurance.${index}.cashValueGrowthPct`}
               value={policy.cashValueGrowthPct ?? 0}
               onCommit={(v) => set('cashValueGrowthPct', v ?? 0)}
             />
           ) : (
-            <div className="field field-span-full">
-              <span className="field-label">Cash-value schedule (age → value)</span>
+            // The block is the control for the schedule as a whole: when the
+            // engine rejects it, it carries aria-invalid and takes focus, so
+            // the save chip's jump lands here rather than on a list (#489).
+            <div
+              className={scheduleIssue ? 'field field-span-full field--invalid' : 'field field-span-full'}
+              role="group"
+              aria-labelledby={`${scheduleId}-label`}
+              aria-invalid={scheduleIssue ? true : undefined}
+              aria-describedby={scheduleIssue ? `${scheduleId}-error` : undefined}
+              tabIndex={scheduleIssue ? -1 : undefined}
+              data-path={`insurance.${index}.cashValueSchedule`}
+            >
+              {/* The same caption structure as every field, so the invalid
+                  tint on .field--invalid > .field-label-row > .field-label applies. */}
+              <span className="field-label-row">
+                <span className="field-label" id={`${scheduleId}-label`}>Cash-value schedule (age → value)</span>
+              </span>
               {(policy.cashValueSchedule ?? []).map((row, ri) => (
                 <div className="add-row" key={ri} style={{ alignItems: 'flex-end' }}>
-                  <NumberField label="Age" value={row.age} min={0} max={120} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.age = Math.round(v ?? row.age) })} />
-                  <MoneyField label="Value" value={row.value} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.value = v ?? 0 })} />
+                  <NumberField label="Age" path={`insurance.${index}.cashValueSchedule.${ri}.age`} value={row.age} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.age = Math.round(v ?? row.age) })} />
+                  <MoneyField label="Value" path={`insurance.${index}.cashValueSchedule.${ri}.value`} value={row.value} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.value = v ?? 0 })} />
                   <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule.splice(ri, 1) })}>Remove</button>
                 </div>
               ))}
@@ -152,6 +173,14 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
                   per age so the illustration reads as one line.
                 </div>
               ) : null}
+              {/* The engine's issue for the schedule as a whole (an empty schedule
+                  under the schedule mode, #489) sits on the block, by the button
+                  that adds the first row, rather than in the card-level list. */}
+              {scheduleIssue ? (
+                <p className="field-error" id={`${scheduleId}-error`}>
+                  {scheduleIssue.advice}
+                </p>
+              ) : null}
               {/* A new row opens one past the latest, so a click never creates a
                   repeat; once the schedule reaches the schema's highest age
                   there is nothing left to add (#489). */}
@@ -159,6 +188,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
                 type="button"
                 className="btn btn-secondary btn-small"
                 disabled={nextAge === null}
+                aria-describedby={scheduleIssue ? `${scheduleId}-error` : undefined}
                 title={
                   nextAge === null
                     ? `Every age up to ${maxScheduleAge()}, the highest an illustration can hold, already has a row.`
@@ -252,18 +282,16 @@ function CareEventFields({ event, index }: { event: CareEvent; index: number }) 
         label="Starts at age"
         help="The age when the care event begins for the selected person."
         learn={LEARN.ltcCosts}
+        path={`careEvents.${index}.startAge`}
         value={event.startAge}
-        min={40}
-        max={110}
         onCommit={(v) => set('startAge', Math.round(v ?? 85))}
       />
       <NumberField
         label="Duration (years)"
         help="How long the care event lasts. Longer episodes can outlast a policy benefit period and shift more cost back to the household."
         learn={LEARN.ltcCosts}
+        path={`careEvents.${index}.durationYears`}
         value={event.durationYears}
-        min={1}
-        max={25}
         onCommit={(v) => set('durationYears', Math.round(v ?? 3))}
       />
       <MoneyField
@@ -271,6 +299,7 @@ function CareEventFields({ event, index }: { event: CareEvent; index: number }) 
         help="The annual care cost in today's dollars before any LTC policy benefit. This is added on top of baseline spending during the event."
         learn={LEARN.ltcCosts}
         hint="Additive to baseline spending; an LTC policy on this person offsets it."
+        path={`careEvents.${index}.annualCost`}
         value={event.annualCost}
         onCommit={(v) => set('annualCost', v ?? 0)}
       />
@@ -448,7 +477,7 @@ export function InsuranceSection() {
         </div>
 
         <LtcStressPanel />
-        <Issues />
+        <Issues section="insurance" />
       </div>
       <LearnAboutScreen route="/plan/:planId/insurance" />
     </section>

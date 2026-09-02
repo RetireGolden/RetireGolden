@@ -1781,7 +1781,11 @@ html:has(.kpi-bar) {
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--muted);
-  white-space: nowrap;
+  /* A chip holds a full field label now ("Itemized deductions: State & local
+     taxes (SALT)"), which is longer than the 16rem cell it sits in: it wraps
+     inside the chip and never stretches the comparison table. */
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .delta-pos { color: var(--good); }
@@ -3420,4 +3424,74 @@ html:has(.kpi-bar) {
 
 .insight-preview-wait p {
   margin: 0;
+}
+
+/* Validation for people (#452, #476, #494): an invalid control is outlined in
+   the danger token and its message sits under it; the save chip becomes a
+   button that jumps to the problem. */
+.field input[aria-invalid='true'],
+.field select[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.field-error {
+  margin: 0.3rem 0 0;
+  color: var(--bad);
+  font-size: 0.85rem;
+}
+
+/* What the field did to a value it accepted — a note, not a fault, so it reads
+   in the muted token rather than the danger one. */
+.field-note {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.save-state--button {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--bad);
+  /* `font: inherit` takes the header's size with it; the chip keeps the
+     0.85rem every save state shares. */
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* A whole block the engine rejected (the cash-value schedule) is outlined in
+   the danger token at rest, as an invalid input is bordered. */
+.field[role='group'][aria-invalid='true'] {
+  outline: 1px solid var(--bad);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+
+/* The chip is a real button, so it shows the same keyboard focus ring the
+   buttons and rail links do (it is not a .btn, so it needs its own rule). */
+.save-state--button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Focus arrives here programmatically from the save chip when a whole block —
+   the cash-value schedule — is what the engine rejected. */
+.field--invalid[tabindex]:focus {
+  outline: 2px solid var(--bad);
+  outline-offset: 2px;
+}
+
+/* The caption of an invalid field reads in the danger token too. */
+.field--invalid > .field-label-row > .field-label {
+  color: var(--bad);
+}
+
+/* Focus arrives here programmatically from the save chip, including after a
+   mouse click, so the outline is not left to :focus-visible alone. */
+.issue-list:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
