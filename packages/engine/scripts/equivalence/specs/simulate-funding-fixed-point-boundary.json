@@ -103,18 +103,18 @@
       "id": "AD.callsite.inputs",
       "label": "settled annual funding facts grouped at the coordinator callsite",
       "file": "projection/simulate.ts",
-      "lines": [6354, 6364],
+      "lines": [6162, 6172],
       "anchors": [
         {
-          "line": 6354,
+          "line": 6162,
           "text": "const fundingFixedPoint = annualFundingFixedPoint({"
         },
         {
-          "line": 6355,
+          "line": 6163,
           "text": "spendingUsesBeforeTax: expenses.total + contributions,"
         },
         {
-          "line": 6363,
+          "line": 6171,
           "text": "evaluate: evaluateWithdrawalNeed,"
         }
       ]
@@ -123,18 +123,18 @@
       "id": "AD.callsite.outputs",
       "label": "accepted cash, HECM, evaluation, and convergence handoff",
       "file": "projection/simulate.ts",
-      "lines": [6365, 6374],
+      "lines": [6173, 6182],
       "anchors": [
         {
-          "line": 6365,
+          "line": 6173,
           "text": "const cashInflows = fundingFixedPoint.acceptedCashInflows"
         },
         {
-          "line": 6366,
+          "line": 6174,
           "text": "hecmDraw = fundingFixedPoint.acceptedCoordinatedHecmDraw"
         },
         {
-          "line": 6372,
+          "line": 6180,
           "text": "evaluationCount: acaEvaluationCount,"
         }
       ]

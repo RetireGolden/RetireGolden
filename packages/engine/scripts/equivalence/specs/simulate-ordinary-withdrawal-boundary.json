@@ -208,24 +208,24 @@
       "label": "no-action defaults, guarded boundary invocation, and scalar consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        5111,
-        5138
+        4919,
+        4946
       ],
       "anchors": [
         {
-          "line": 5111,
+          "line": 4919,
           "text": "let retirementActionExecution:"
         },
         {
-          "line": 5118,
+          "line": 4926,
           "text": "if (currentYearOrdinaryExecutionActions.length > 0) {"
         },
         {
-          "line": 5119,
+          "line": 4927,
           "text": "const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({"
         },
         {
-          "line": 5138,
+          "line": 4946,
           "text": "if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {"
         }
       ],
@@ -236,20 +236,20 @@
       "label": "ordinary-withdrawal positional operation selection",
       "file": "projection/simulate.ts",
       "lines": [
-        5141,
-        5145
+        4949,
+        4953
       ],
       "anchors": [
         {
-          "line": 5141,
+          "line": 4949,
           "text": "for (const [index, operation] of"
         },
         {
-          "line": 5143,
+          "line": 4951,
           "text": "if (operation.kind === 'none') continue"
         },
         {
-          "line": 5145,
+          "line": 4953,
           "text": "if (state === undefined || state.account.id !== operation.accountId) {"
         }
       ],
@@ -260,20 +260,20 @@
       "label": "ordinary-withdrawal basis and balance mutation",
       "file": "projection/simulate.ts",
       "lines": [
-        5148,
-        5151
+        4956,
+        4959
       ],
       "anchors": [
         {
-          "line": 5148,
+          "line": 4956,
           "text": "if (operation.closingCostBasis !== null) {"
         },
         {
-          "line": 5149,
+          "line": 4957,
           "text": "state.costBasis = operation.closingCostBasis"
         },
         {
-          "line": 5151,
+          "line": 4959,
           "text": "state.balance = operation.closingBalance"
         }
       ]
