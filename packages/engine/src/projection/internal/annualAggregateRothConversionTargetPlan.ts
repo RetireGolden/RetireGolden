@@ -1,9 +1,9 @@
 /**
  * Pure annual target planning for the legacy aggregate Roth-conversion path.
  *
- * The caller supplies immutable balance/tax snapshots taken after forced and
- * named retirement actions. This coordinator owns strategy selection, taxable
- * to gross translation, fill-to-target sizing, and safety-net-floor trimming.
+ * The caller supplies annual scalars and lazy readers of then-current state
+ * after forced/named actions. This coordinator owns strategy selection,
+ * taxable/gross translation, fill-to-target sizing, and safety-net trimming.
  * It never mutates balances or publishes warnings; `simulatePlan` retains the
  * ordered debit, credit, basis, runtime-journal, and warning commits.
  */

@@ -411,7 +411,7 @@ describe('annualAggregateRothConversionTargetPlan', () => {
     expect(zero.warnings).toHaveLength(1)
   })
 
-  it('keeps invalid and non-actionable targets fail-closed with distinct warnings', () => {
+  it('keeps every sizing refusal fail-closed with reason-specific warnings', () => {
     const strategy: Strategy = {
       mode: 'fillToTarget',
       target: 'acaCliff',
@@ -446,5 +446,17 @@ describe('annualAggregateRothConversionTargetPlan', () => {
         ],
       }),
     )
+
+    sizeRothConversionMock.mockReturnValueOnce({
+      ok: false,
+      reason: 'already_over_ceiling',
+    })
+    expect(annualAggregateRothConversionTargetPlan(input)).toEqual(
+      expect.objectContaining({
+        desiredPlanDollars: 0,
+        warnings: [],
+      }),
+    )
+    expect(input.readSources).not.toHaveBeenCalled()
   })
 })
