@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
-import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies } from './ssAnalysis'
+import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, type SweepRow } from './ssAnalysis'
 
 let counter = 0
 const id = () => `ssa-${++counter}`
@@ -209,3 +209,14 @@ describe('benefitsOnlyRanking', () => {
     expect(r.ranked[0]!.claimByPersonId['p1']!).toBeGreaterThanOrEqual(r.ranked[0]!.claimByPersonId['p2']!)
   })
 })
+describe('objectiveIsFlat (#454)', () => {
+  const row = (primaryValue: number) =>
+    ({ claimByPersonId: { p1: 62 }, primaryValue, eligible: true, lossReason: null }) as unknown as SweepRow
+  it('is flat only when two or more candidates all score the same', () => {
+    expect(objectiveIsFlat([])).toBe(false)
+    expect(objectiveIsFlat([row(0)])).toBe(false)
+    expect(objectiveIsFlat([row(0), row(0), row(0)])).toBe(true)
+    expect(objectiveIsFlat([row(0), row(0), row(1_500)])).toBe(false)
+  })
+})
+

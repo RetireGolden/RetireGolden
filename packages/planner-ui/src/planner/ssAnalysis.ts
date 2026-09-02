@@ -323,3 +323,14 @@ export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear 
   const ranked = [...rows].sort((x, y) => y.expectedPv - x.expectedPv)
   return { personIds, rows, ranked }
 }
+/**
+ * True when the selected objective scores every candidate the same (for
+ * example, every after-tax estate is $0 on a plan with no assets), so no
+ * claim age can honestly be called best on it (#454).
+ */
+export function objectiveIsFlat(ranked: readonly SweepRow[]): boolean {
+  if (ranked.length < 2) return false
+  const first = ranked[0]!.primaryValue
+  return ranked.every((row) => row.primaryValue === first)
+}
+

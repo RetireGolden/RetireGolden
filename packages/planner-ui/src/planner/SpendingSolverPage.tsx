@@ -253,14 +253,24 @@ export function SpendingSolverPage() {
 
       {result && !running ? (
         result.maxBaseAnnual === null ? (
-          <div className="card">
-            <h2 style={{ color: 'var(--bad)' }}>No sustainable spending level found</h2>
+          <div className="callout callout--warn solver-failure" role="alert">
+            {/* Failure reads as failure (#448): the warning well, announced, with
+                the two places a fix usually lives. */}
+            <h2 style={{ marginTop: 0 }}>No sustainable spending level found</h2>
             <p className="muted">
               {result.diagnostics.length > 0
                 ? result.diagnostics.join(' ')
                 : 'Even minimal base spending depletes the portfolio or breaks the bequest target within the plan horizon.'}{' '}
               Fixed costs modeled outside baseline spending (healthcare, debt service, property carrying costs, one-time
               goals) may already exceed what the plan can fund.
+            </p>
+            <p className="picker-actions">
+              <Link to={`/plan/${plan.id}/spending`} className="btn btn-secondary btn-small">
+                Review Spending
+              </Link>
+              <Link to={`/plan/${plan.id}/assumptions`} className="btn btn-secondary btn-small">
+                Review Assumptions
+              </Link>
             </p>
           </div>
         ) : (

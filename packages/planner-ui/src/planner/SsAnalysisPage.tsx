@@ -51,6 +51,7 @@ import {
   type MonthlyClaim,
   type MonthlyRefinement,
   type SweepRow,
+  objectiveIsFlat,
 } from './ssAnalysis'
 import { chartTooltipStyle } from './chartStyle'
 import { ScrollRegion } from './ScrollRegion'
@@ -438,6 +439,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   const [refined, setRefined] = useState<MonthlyRefinement | null>(null)
 
   const best = sweep.ranked[0]
+  const flatObjective = objectiveIsFlat(sweep.ranked)
   const current = currentClaim(plan, personIds)
   const currentRow = sweep.rows.find((r) => personIds.every((id) => r.claimByPersonId[id] === current[id]))
   const keyOf = (r: SweepRow) => personIds.map((id) => r.claimByPersonId[id]).join('-')
@@ -494,7 +496,13 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       </div>
 
-      {best ? (
+      {best && flatObjective ? (
+        <div className="callout callout--note" role="note">
+          <strong>No best claim age on {sweep.primaryMetricLabel.toLowerCase()}</strong>: every candidate scores the
+          same, so this objective cannot rank them. Rank on a metric that varies, such as when money runs out, or add
+          the assets an estate comparison needs.
+        </div>
+      ) : best ? (
         <div className="callout callout--info">
           <strong>Best by {objectivePolicies[objectiveId].label.toLowerCase()}: claim at {ageLabel(best.claimByPersonId, personIds)}</strong>
           {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}

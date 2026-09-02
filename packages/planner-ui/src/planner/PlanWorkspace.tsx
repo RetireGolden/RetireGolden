@@ -138,11 +138,17 @@ function KpiBar() {
             {Math.round(mcRate * 100)}%
           </Link>
         ) : (
-          <span className="kpi-value kpi-value--pending" aria-label="Simulating markets">
+          <span className="kpi-value kpi-value--pending" aria-busy="true" aria-label="Simulating markets">
             …
           </span>
         )}
-        <span className="kpi-sub">of {DEFAULT_PATH_COUNT.toLocaleString()} varied markets</span>
+        {/* While the simulation runs the sub-label says so, instead of
+            describing a number that is not there yet (#453). */}
+        <span className="kpi-sub">
+          {mcRate !== null
+            ? `of ${DEFAULT_PATH_COUNT.toLocaleString()} varied markets`
+            : `simulating ${DEFAULT_PATH_COUNT.toLocaleString()} markets…`}
+        </span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Lifetime tax</span>

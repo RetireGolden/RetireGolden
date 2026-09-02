@@ -38,3 +38,17 @@ it('renders the loading contract that lazy-route waits watch for', async () => {
 
   expect(container.querySelector(ROUTE_FALLBACK_SELECTOR)).not.toBeNull()
 })
+
+it('shows a visible caption and is busy while the chunk loads (#433)', async () => {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  await act(async () => root!.render(<RouteFallback />))
+
+  const status = container.querySelector('[role="status"]')!
+  expect(status.getAttribute('aria-busy')).toBe('true')
+  // The bare shimmer read as a dead grey page; the caption names the wait.
+  expect(status.querySelector('.route-fallback-caption')?.textContent).toBe('Loading this section…')
+  // The skeletons stay decorative.
+  for (const bar of status.querySelectorAll('.skeleton')) expect(bar.getAttribute('aria-hidden')).toBe('true')
+})
