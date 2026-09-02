@@ -107,9 +107,14 @@ import {
   type AnnualFundingFixedPointEvaluationRequest,
 } from './internal/annualFundingFixedPoint.js'
 import {
-  annualFundingWithdrawalEffects, recharacterizeAnnualFundingWithdrawalHsaCap,
+  annualFundingWithdrawalEffects,
   type AnnualFundingWithdrawalEffectAccount, type AnnualHsaWithdrawalEffectAccount,
 } from './internal/annualFundingWithdrawalEffects.js'
+// The inner evaluator prices an already-planned withdrawal. The outer fixed-
+// point coordinator still selects which candidate simulatePlan commits.
+import {
+  annualFundingCandidateEvaluation, type AnnualFundingCandidateEvaluationContext,
+} from './internal/annualFundingCandidateEvaluation.js'
 import {
   annualDebtServiceRows,
   annualLongTermCarePlan,
@@ -240,11 +245,7 @@ import {
 } from '../spending/guardrails.js'
 import { createGoalScheduler, toSchedulableGoal, type GoalScheduler } from '../spending/flexibleGoals.js'
 import {
-  acaEconomicPremiumByMonth,
   acaFederalPovertyLine,
-  buildAcaHouseholdMagi,
-  type AcaHouseholdMagiResult,
-  type AcaResult,
 } from '../tax/aca.js'
 import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from '../tax/federalTax.js'
 import {
@@ -258,7 +259,6 @@ import {
   type TaxCalculator,
   type TaxYearInput,
   type YearAcaResult,
-  type AcaSupportCode,
   type YearResult,
   type YearWithdrawals,
   type InheritedAccountYearEvidence,
@@ -6575,60 +6575,32 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // iteration); netting reduces ordinary + gains before both federal and state
     // tax so the AGI cascade (taxable SS, IRMAA, ACA, state) falls out for free.
     const lossOffsetLimit = pack.federalTax.capitalLossOrdinaryOffsetLimit
-    const evaluateWithdrawalNeed = ({
-      need,
-      forceGrossAca,
-      cashInflows: candidateCashInflows,
-    }: AnnualFundingFixedPointEvaluationRequest) => {
-      const withdrawalPlan = planWithdrawals(
-        need,
-        rmdBalances,
-        withdrawalStrategy,
-        year,
-        floorReserveNominal,
-      )
-      const iraCharacterProbe = needBasedOwnedIraCharacter(
-        withdrawalPlan.byAccountId,
-      )
-      const iraNontaxableProbe = iraCharacterProbe.nontaxable
-      let candidateHsaCap = hsaQualifiedCap
-      let withdrawalEffectsProbe = annualFundingWithdrawalEffects({
-        accounts: fundingWithdrawalEffectAccounts,
-        withdrawalsByAccountId: withdrawalPlan.byAccountId,
-        traditionalTaxableByAccountId:
-          iraCharacterProbe.taxableBySourceAccountId,
+    const fundingCandidateAcaContract = acaContract
+      ? Object.freeze({
+          taxFamilySize: acaContract.taxFamilyMembers.length,
+          fplRegion: acaContract.fplRegion,
+          taxExemptInterest: acaContract.taxExemptInterest,
+          foreignExclusionAddback: acaContract.foreignExclusionAddback,
+          dependents: Object.freeze(
+            acaContract.taxFamilyMembers
+              .filter((member) => member.relationship === 'dependent')
+              .map((member) => Object.freeze({
+                personId: member.personId,
+                requiredToFile: member.requiredToFile,
+                magi: member.magi,
+              })),
+          ),
+        })
+      : null
+    const fundingCandidateEvaluationContext:
+      AnnualFundingCandidateEvaluationContext = Object.freeze({
+        withdrawalEffectAccounts: fundingWithdrawalEffectAccounts,
+        hsaEffectAccounts: fundingHsaEffectAccounts,
         rothBasisByPool: rothBasis,
-        year,
-        hsaQualifiedCap: candidateHsaCap,
-      })
-      let nettedProbe!: ReturnType<typeof applyCapitalLossCarryforward>
-      let tax = 0
-      let acaMagiProbe: AcaHouseholdMagiResult | null = null
-      let acaQuote: AcaResult | null = null
-      let acaSupportCodes: AcaSupportCode[] = [...acaInitialSupportCodes]
-      let candidateHealthcare = healthcare
-      let hsaCapConverged = false
-      // Reconcile HSA taxability explicitly. ACA enrollment premiums are
-      // excluded from the qualified-expense cap, so the supported model is
-      // normally stable immediately; the bound remains defensive.
-      for (let hsaPass = 0; hsaPass < 16; hsaPass++) {
-        nettedProbe = applyCapitalLossCarryforward(
-          capitalLossPool,
-          ordinaryBase +
-            withdrawalPlan.byCategory.traditional -
-            iraNontaxableProbe +
-            withdrawalEffectsProbe.roth.taxableOrdinary +
-            withdrawalEffectsProbe.hsa.taxableOrdinary,
-          preWithdrawalCapitalResult + withdrawalPlan.realizedGains,
-          lossOffsetLimit,
-        )
-        const taxInput = {
+        taxCalculator,
+        taxInputBase: Object.freeze({
           year,
           filingStatus: filingStatusForYear,
-          ordinaryIncome: nettedProbe.ordinaryAfter,
-          capitalGains: nettedProbe.netCapitalGain,
-          realizedCapitalGainsBeforeCarryforward:
-            preWithdrawalCapitalResult + withdrawalPlan.realizedGains,
           taxableInterestIncome: incomes.taxableInterest + ladderTaxableInterest,
           taxExemptInterest: yearTaxExemptInterest,
           foreignExclusionAddback: acaForeignExclusionAddback,
@@ -6640,132 +6612,65 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           inflationScale: limitGrowth,
           state: residenceState,
           stateResidency,
-          privateRetirementIncome:
-            privateRetirementBase + withdrawalPlan.byCategory.traditional - iraNontaxableProbe,
           publicPensionIncome: publicPensionBase,
           agesAlive,
           itemizedDeductions,
-        }
-        tax = taxCalculator.compute(taxInput)
-        acaMagiProbe = null
-        acaQuote = null
-        acaSupportCodes = [...acaInitialSupportCodes]
-        candidateHealthcare = healthcareExcludingAcaEnrollment + acaGrossEnrollmentPremium
-        if (acaActive && acaContract) {
-          const federalProbe = computeFederalTax(taxInput)
-          let acaMagiTaxExemptInterest = acaContract.taxExemptInterest
-          if (acaContract.taxExemptInterest.state === 'known') {
-            acaMagiTaxExemptInterest = {
-              state: 'known',
-              amount: Math.max(
-                Math.max(0, acaContract.taxExemptInterest.amount ?? 0),
-                generatedTaxExemptInterest,
-              ),
-            }
-          } else if (planDerivedTaxExemptInterest) {
-            if (acaContract.taxExemptInterest.state === 'unknown') {
-              acaMagiTaxExemptInterest = {
-                state: 'known',
-                amount: generatedTaxExemptInterest,
-              }
-              acaSupportCodes.push('tax-exempt-interest-plan-derived')
-            } else if (acaContract.taxExemptInterest.state === 'notApplicable') {
-              acaMagiTaxExemptInterest = {
-                state: 'known',
-                amount: generatedTaxExemptInterest,
-              }
-              acaSupportCodes.push('tax-exempt-interest-contract-contradicted')
-            }
-          }
-          acaMagiProbe = buildAcaHouseholdMagi({
-            federalAgi: federalProbe.agiBeforeFloor,
-            grossSocialSecurity: incomes.socialSecurity,
-            taxableSocialSecurity: federalProbe.taxableSocialSecurity,
-            taxExemptInterest: acaMagiTaxExemptInterest,
-            foreignExclusionAddback: acaContract.foreignExclusionAddback,
-            dependents: acaContract.taxFamilyMembers
-              .filter((member) => member.relationship === 'dependent')
-              .map((member) => ({
-                personId: member.personId,
-                requiredToFile: member.requiredToFile,
-                magi: member.magi,
-              })),
-          })
-          acaSupportCodes.push(...acaMagiProbe.blockers)
-          // Informational provenance codes (plan-derived, contract-contradicted)
-          // annotate the MAGI component's source; they are not blockers and must
-          // not stop the quote from pricing.
-          const blockingAcaCodes = acaSupportCodes.filter(
-            (code) =>
-              code !== 'tax-exempt-interest-plan-derived' &&
-              code !== 'tax-exempt-interest-contract-contradicted',
-          )
-          if (blockingAcaCodes.length === 0 && acaMagiProbe.magi !== null && !forceGrossAca) {
-            const priced = acaEconomicPremiumByMonth(
-              pack,
-              acaContract.taxFamilyMembers.length,
-              acaMagiProbe.magi,
-              acaEnrollmentPremiums,
-              acaSlcspBenchmarkPremiums,
-              acaContract.fplRegion,
-              inflFactorFrom(pack.year, year),
-            )
-            if (priced.belowEligibilityFloor) {
-              acaQuote = priced
-              acaSupportCodes.push('below-100-fpl-exception-unsupported')
-            } else {
-              acaQuote = priced
-              candidateHealthcare = healthcareExcludingAcaEnrollment + priced.economicNetPremium
-            }
-          }
-        }
-        const nextHsaCap =
-          healthcareExcludingMarketplacePremium +
-          netCare +
-          (hsaReimburseLaterActive ? hsaReimbursablePool : 0)
-        if (Math.abs(nextHsaCap - candidateHsaCap) <= EPSILON) {
-          hsaCapConverged = true
-          break
-        }
-        candidateHsaCap = nextHsaCap
-        // Traditional and Roth character are invariant across this cap loop.
-        withdrawalEffectsProbe = recharacterizeAnnualFundingWithdrawalHsaCap(withdrawalEffectsProbe, {
-          accounts: fundingHsaEffectAccounts,
-          withdrawalsByAccountId: withdrawalPlan.byAccountId,
-          hsaQualifiedCap: candidateHsaCap,
-        })
-      }
-      if (!hsaCapConverged && acaActive) {
-        acaSupportCodes.push('hsa-cap-fixed-point-nonconvergent')
-        candidateHealthcare = healthcareExcludingAcaEnrollment + acaGrossEnrollmentPremium
-      }
-      if (withdrawalEffectsProbe.traditional.penalty > 0) {
+        }),
+        ordinaryIncomeBase: ordinaryBase,
+        privateRetirementIncomeBase: privateRetirementBase,
+        preWithdrawalCapitalResult,
+        capitalLossCarryforward: capitalLossPool,
+        capitalLossOrdinaryOffsetLimit: lossOffsetLimit,
+        currentHealthcare: healthcare,
+        aca: Object.freeze({
+          active: acaActive,
+          contract: fundingCandidateAcaContract,
+          initialSupportCodes: acaInitialSupportCodes,
+          generatedTaxExemptInterest,
+          planDerivedTaxExemptInterest,
+          grossEnrollmentPremium: acaGrossEnrollmentPremium,
+          enrollmentPremiums: acaEnrollmentPremiums,
+          slcspBenchmarkPremiums: acaSlcspBenchmarkPremiums,
+          healthcareExcludingEnrollment: healthcareExcludingAcaEnrollment,
+          pricingInflationScale: inflFactorFrom(pack.year, year),
+        }),
+        hsa: Object.freeze({
+          initialQualifiedCap: hsaQualifiedCap,
+          qualifiedExpenseCap:
+            healthcareExcludingMarketplacePremium +
+            netCare +
+            (hsaReimburseLaterActive ? hsaReimbursablePool : 0),
+        }),
+        parameterPack: pack,
+        spendingAndContributions: expenses.total + contributions,
+        rmdShortfallExciseTax,
+        tolerancePlanDollars: EPSILON,
+      })
+    const evaluateWithdrawalNeed = (
+      request: AnnualFundingFixedPointEvaluationRequest,
+    ) => {
+      const withdrawalPlan = planWithdrawals(
+        request.need,
+        rmdBalances,
+        withdrawalStrategy,
+        year,
+        floorReserveNominal,
+      )
+      const iraCharacterProbe = needBasedOwnedIraCharacter(
+        withdrawalPlan.byAccountId,
+      )
+      const evaluation = annualFundingCandidateEvaluation(Object.freeze({
+        ...fundingCandidateEvaluationContext,
+        request,
+        withdrawalPlan,
+        iraCharacter: iraCharacterProbe,
+      }))
+      if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {
         warnings.add(
           'Early-withdrawal penalties were charged (pre-59½ traditional or pre-65 HSA).',
         )
       }
-      const penalties =
-        withdrawalEffectsProbe.penaltyExcludingRmdShortfallExcise +
-        rmdShortfallExciseTax
-      return {
-        withdrawalPlan,
-        tax,
-        penalties,
-        requiredNeed: Math.max(
-          0,
-          expenses.total +
-            (candidateHealthcare - healthcare) +
-            contributions +
-            tax +
-            penalties -
-            candidateCashInflows,
-        ),
-        acaMagiProbe,
-        acaQuote,
-        acaSupportCodes: [...new Set(acaSupportCodes)],
-        healthcare: candidateHealthcare,
-        hsaQualifiedCap: candidateHsaCap,
-      }
+      return evaluation
     }
     // The selected plan, tax, and premium stay paired; never recompute from accepted cash.
     const fundingFixedPoint = annualFundingFixedPoint({

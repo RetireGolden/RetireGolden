@@ -1,0 +1,125 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-funding-candidate-evaluation-boundary",
+  "why": "Measured reach for the pure annual candidate capital-loss, tax, ACA, HSA-cap, penalty, and required-need evaluation extracted behind the funding fixed point. The full corpus exercises non-ACA and actionable/non-actionable ACA years, subsidized and gross-premium probes, capital-loss netting, traditional/Roth/HSA character, cap-dependent HSA refresh, tax/penalty assembly, and all four equivalence modes. Direct contract tests pin the independently recomputable Form 8606/capital-loss/penalty worksheet, the two-pass HSA-cap worksheet, plan-derived tax-exempt-interest pricing, a forced gross basin, caller-input purity, and exact withdrawal-plan identity. The hostile delegation test injects impossible evaluation values and proves simulatePlan consumes the coordinator result instead of locally rebuilding it.",
+  "entries": [
+    {
+      "id": "AF.helper.withdrawalCharacter",
+      "label": "candidate withdrawal-character invocation and probe state",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [165, 182],
+      "anchors": [
+        { "line": 165, "text": "const { request, withdrawalPlan, iraCharacter, aca } = input" },
+        { "line": 167, "text": "let withdrawalEffectsProbe = annualFundingWithdrawalEffects({" },
+        { "line": 180, "text": "let acaSupportCodes: AcaSupportCode[] = [...aca.initialSupportCodes]" }
+      ]
+    },
+    {
+      "id": "AF.helper.tax",
+      "label": "capital-loss netting, complete tax input, and gross healthcare default",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [187, 231],
+      "anchors": [
+        { "line": 187, "text": "for (let hsaPass = 0; hsaPass < 16; hsaPass++) {" },
+        { "line": 190, "text": "const nettedProbe = applyCapitalLossCarryforward(" },
+        { "line": 201, "text": "const taxInput: TaxYearInput = {" },
+        { "line": 226, "text": "tax = input.taxCalculator.compute(taxInput)" },
+        { "line": 230, "text": "candidateHealthcare =" }
+      ]
+    },
+    {
+      "id": "AF.helper.acaKnownCharacter",
+      "label": "federal ACA probe and known-character branch selection",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [233, 236],
+      "anchors": [
+        { "line": 233, "text": "if (aca.active && aca.contract !== null) {" },
+        { "line": 234, "text": "const federalProbe = computeFederalTax(taxInput)" },
+        { "line": 236, "text": "if (aca.contract.taxExemptInterest.state === 'known') {" }
+      ]
+    },
+    {
+      "id": "AF.helper.acaPlanDerivedCharacter",
+      "label": "plan-derived unknown-attestation tax-exempt-interest provenance",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [245, 250],
+      "anchors": [
+        { "line": 245, "text": "if (aca.contract.taxExemptInterest.state === 'unknown') {" },
+        { "line": 246, "text": "acaMagiTaxExemptInterest = {" },
+        { "line": 250, "text": "acaSupportCodes.push('tax-exempt-interest-plan-derived')" }
+      ]
+    },
+    {
+      "id": "AF.helper.acaMagi",
+      "label": "household ACA MAGI construction and blocker publication",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [259, 267],
+      "anchors": [
+        { "line": 259, "text": "acaMagiProbe = buildAcaHouseholdMagi({" },
+        { "line": 267, "text": "acaSupportCodes.push(...acaMagiProbe.blockers)" }
+      ]
+    },
+    {
+      "id": "AF.helper.acaPricing",
+      "label": "informational-code filtering and monthly ACA premium pricing",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [268, 296],
+      "anchors": [
+        { "line": 268, "text": "const blockingAcaCodes = acaSupportCodes.filter(" },
+        { "line": 278, "text": "const priced = acaEconomicPremiumByMonth(" },
+        { "line": 287, "text": "if (priced.belowEligibilityFloor) {" },
+        { "line": 292, "text": "candidateHealthcare =" }
+      ]
+    },
+    {
+      "id": "AF.helper.hsaCap",
+      "label": "stable HSA-cap acceptance predicate",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [298, 305],
+      "anchors": [
+        { "line": 298, "text": "const nextHsaCap = input.hsa.qualifiedExpenseCap" },
+        { "line": 303, "text": "hsaCapConverged = true" },
+        { "line": 304, "text": "break" }
+      ]
+    },
+    {
+      "id": "AF.helper.result",
+      "label": "complete tax, penalty, required-need, ACA, HSA, and warning-gate result",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [323, 346],
+      "anchors": [
+        { "line": 323, "text": "const penalties =" },
+        { "line": 327, "text": "return {" },
+        { "line": 331, "text": "requiredNeed: Math.max(" },
+        { "line": 344, "text": "traditionalEarlyWithdrawalPenaltyCharged:" }
+      ]
+    },
+    {
+      "id": "AF.callsite.context",
+      "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot",
+      "file": "projection/simulate.ts",
+      "lines": [6578, 6648],
+      "anchors": [
+        { "line": 6578, "text": "const fundingCandidateAcaContract = acaContract" },
+        { "line": 6595, "text": "const fundingCandidateEvaluationContext:" },
+        { "line": 6601, "text": "taxInputBase: Object.freeze({" },
+        { "line": 6625, "text": "aca: Object.freeze({" },
+        { "line": 6637, "text": "hsa: Object.freeze({" }
+      ]
+    },
+    {
+      "id": "AF.callsite.delegate",
+      "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
+      "file": "projection/simulate.ts",
+      "lines": [6649, 6673],
+      "anchors": [
+        { "line": 6652, "text": "const withdrawalPlan = planWithdrawals(" },
+        { "line": 6659, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 6662, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 6668, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
+        { "line": 6673, "text": "return evaluation" }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. Corpus-cold known-attestation merge, contradicted-attestation provenance, HSA-only recharacterization, and the defensive nonconvergent HSA-cap fallback are intentionally excluded from steady-state ranges and pinned by direct contract tests where reachable. Object identity and hostile output consumption are delegation-test responsibilities, not claims made by a byte-identical dump or coverage range."
+}

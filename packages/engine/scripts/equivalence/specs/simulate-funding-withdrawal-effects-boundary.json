@@ -112,59 +112,59 @@
     },
     {
       "id": "AE.callsite.probe",
-      "label": "candidate invocation and tax/penalty consumption inside the funding evaluator",
-      "file": "projection/simulate.ts",
-      "lines": [6590, 6621],
+      "label": "candidate withdrawal-character invocation inside the funding evaluator",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [165, 175],
       "anchors": [
-        { "line": 6590, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 6595, "text": "let withdrawalEffectsProbe = annualFundingWithdrawalEffects({" },
-        { "line": 6620, "text": "withdrawalEffectsProbe.roth.taxableOrdinary +" },
-        { "line": 6621, "text": "withdrawalEffectsProbe.hsa.taxableOrdinary," }
+        { "line": 165, "text": "const { request, withdrawalPlan, iraCharacter, aca } = input" },
+        { "line": 167, "text": "let withdrawalEffectsProbe = annualFundingWithdrawalEffects({" },
+        { "line": 170, "text": "traditionalTaxableByAccountId:" },
+        { "line": 174, "text": "hsaQualifiedCap: candidateHsaCap," }
       ]
     },
     {
       "id": "AE.callsite.penalties",
-      "label": "candidate warning and complete penalty handoff",
-      "file": "projection/simulate.ts",
-      "lines": [6742, 6749],
+      "label": "complete candidate penalty and warning-gate handoff",
+      "file": "projection/internal/annualFundingCandidateEvaluation.ts",
+      "lines": [323, 345],
       "anchors": [
-        { "line": 6742, "text": "if (withdrawalEffectsProbe.traditional.penalty > 0) {" },
-        { "line": 6747, "text": "const penalties =" },
-        { "line": 6748, "text": "withdrawalEffectsProbe.penaltyExcludingRmdShortfallExcise +" }
+        { "line": 323, "text": "const penalties =" },
+        { "line": 324, "text": "withdrawalEffectsProbe.penaltyExcludingRmdShortfallExcise +" },
+        { "line": 344, "text": "traditionalEarlyWithdrawalPenaltyCharged:" }
       ]
     },
     {
       "id": "AE.callsite.final",
       "label": "accepted-plan characterization and domain-result aliases",
       "file": "projection/simulate.ts",
-      "lines": [6863, 6877],
+      "lines": [6768, 6782],
       "anchors": [
-        { "line": 6866, "text": "const withdrawalEffectsFinal = annualFundingWithdrawalEffects({" },
-        { "line": 6875, "text": "const rothEffectFinal = withdrawalEffectsFinal.roth" },
-        { "line": 6876, "text": "const hsaEffectFinal = withdrawalEffectsFinal.hsa" }
+        { "line": 6771, "text": "const withdrawalEffectsFinal = annualFundingWithdrawalEffects({" },
+        { "line": 6780, "text": "const rothEffectFinal = withdrawalEffectsFinal.roth" },
+        { "line": 6781, "text": "const hsaEffectFinal = withdrawalEffectsFinal.hsa" }
       ]
     },
     {
       "id": "AE.callsite.cashFlow",
       "label": "traditional/HSA cash-flow character and Roth-row routing",
       "file": "projection/simulate.ts",
-      "lines": [6881, 6909],
+      "lines": [6786, 6814],
       "anchors": [
-        { "line": 6881, "text": "for (const row of withdrawalEffectsFinal.traditional.rows) {" },
-        { "line": 6889, "text": "for (const row of withdrawalEffectsFinal.hsa.rows) {" },
-        { "line": 6905, "text": "for (const row of withdrawalEffectsFinal.roth.rows) {" },
-        { "line": 6907, "text": "if (row.poolKey.startsWith('rothira:')) {" }
+        { "line": 6786, "text": "for (const row of withdrawalEffectsFinal.traditional.rows) {" },
+        { "line": 6794, "text": "for (const row of withdrawalEffectsFinal.hsa.rows) {" },
+        { "line": 6810, "text": "for (const row of withdrawalEffectsFinal.roth.rows) {" },
+        { "line": 6812, "text": "if (row.poolKey.startsWith('rothira:')) {" }
       ]
     },
     {
       "id": "AE.callsite.rothCommit",
       "label": "accepted Roth split identity enters the existing basis commit",
       "file": "projection/simulate.ts",
-      "lines": [7845, 7853],
+      "lines": [7750, 7758],
       "anchors": [
-        { "line": 7845, "text": "for (const row of withdrawalEffectsFinal.roth.rows) {" },
-        { "line": 7850, "text": "const split = row.split" },
-        { "line": 7853, "text": "const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0" }
+        { "line": 7750, "text": "for (const row of withdrawalEffectsFinal.roth.rows) {" },
+        { "line": 7755, "text": "const split = row.split" },
+        { "line": 7758, "text": "const assumedRemaining = rothAssumedContributionRemaining.get(key) ?? 0" }
       ]
     }
   ],
