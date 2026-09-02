@@ -33,23 +33,31 @@ describe('equivalence CLI: operator-input failures', () => {
   })
 
   it('reach content-locates a positional range, then refuses when an anchor drifts', () => {
-    const entries = [{
-      id: 'phase',
-      file: 'phase.ts',
-      lines: [2, 4] as [number, number],
-      anchors: [
-        { line: 2, text: 'const phase = () => {' },
-        { line: 3, text: 'return 1' },
-      ],
-    }]
+    const entries = [
+      {
+        id: 'context',
+        file: 'phase.ts',
+        lines: [1, 1] as [number, number],
+        anchors: [{ line: 1, text: 'header' }],
+      },
+      {
+        id: 'phase',
+        file: 'phase.ts',
+        lines: [2, 4] as [number, number],
+        anchors: [
+          { line: 2, text: 'const phase = () => {' },
+          { line: 3, text: 'return 1' },
+        ],
+      },
+    ]
     const unchanged = ['header', 'const phase = () => {', 'return 1', '}'].join('\n')
     const resolved = resolveReachSpecEntries(entries, 'spec.json', () => unchanged)
-    expect(resolved[0].lines).toEqual([2, 4])
+    expect(resolved[1].lines).toEqual([2, 4])
     expect(() => assertReachEntryAnchors(resolved, 'spec.json', () => unchanged)).not.toThrow()
 
     const inserted = ['inserted', 'header', 'const phase = () => {', 'return 1', '}'].join('\n')
     const shifted = resolveReachSpecEntries(entries, 'spec.json', () => inserted)
-    expect(shifted[0].lines).toEqual([3, 5])
+    expect(shifted[1].lines).toEqual([3, 5])
     expect(() => assertReachEntryAnchors(shifted, 'spec.json', () => inserted)).not.toThrow()
 
     expect(() => resolveReachSpecEntries(
