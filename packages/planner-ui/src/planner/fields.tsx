@@ -85,9 +85,17 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
         margin,
         Math.min(btn.left + btn.width / 2 - bub.width / 2, window.innerWidth - bub.width - margin),
       )
+      // The sticky KPI bar owns the top of the viewport inside a plan; a bubble
+      // that would open under it flips below its trigger instead (#469). The
+      // bar is a sibling of the workspace outlet, so walk up to the nearest
+      // ancestor that contains one rather than assuming where it sits.
+      let scope: HTMLElement | null = button.parentElement
+      while (scope && !scope.querySelector('.kpi-bar')) scope = scope.parentElement
+      const barBottom = scope?.querySelector('.kpi-bar')?.getBoundingClientRect().bottom ?? 0
+      const minTop = Math.max(margin, barBottom + margin)
       const above = btn.top - bub.height - margin
       bubble.style.left = `${left}px`
-      bubble.style.top = `${above >= margin ? above : btn.bottom + margin}px`
+      bubble.style.top = `${above >= minTop ? above : btn.bottom + margin}px`
     }
     place()
     window.addEventListener('scroll', place, true)
@@ -172,6 +180,10 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
 
 export function ReadonlyField({ label, help, learn, value }: BaseProps & { value: ReactNode }) {
   const id = useId()
+  // A caption and a value: no input chrome, so it never looks editable
+  // (#462), and no <label> or <output>, since neither fits a value that is
+  // not a control and <output> is an implicit live region that would announce
+  // every recalculation (review of #532).
   return (
     <div className="field">
       <span className="field-label-row">

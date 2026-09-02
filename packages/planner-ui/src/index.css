@@ -339,6 +339,30 @@ code {
   z-index: 1;
 }
 
+/* Between the two-column breakpoint and the phone layout the nav used to wrap
+   inside its own box, which made the first header line tall and centred the
+   brand in it, so the wordmark read as dropped (#440). The brand stays the
+   top-left anchor, the nav stays on one line beside it, and the theme cluster
+   is the only thing that wraps. */
+@media (min-width: 641px) and (max-width: 880px) {
+  .app-header {
+    align-items: flex-start;
+  }
+
+  .header-menu {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+    min-width: 0;
+  }
+
+  /* The nav may still wrap or shrink at the low end of the range (long
+     labels, translations); with the header top-aligned that no longer moves
+     the brand, which is the anchor #440 asked for. */
+  .nav {
+    min-width: 0;
+  }
+}
+
 @media (max-width: 640px) {
   /* Compact two-row header, no hamburger: the nav shares the top row with the
      logo mark, and the theme switcher wraps to its own right-aligned row below

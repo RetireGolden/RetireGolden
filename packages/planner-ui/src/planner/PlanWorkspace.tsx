@@ -196,6 +196,31 @@ function WorkspaceInner() {
   const { homeLabel } = usePlannerEdition()
   const navigate = useNavigate()
   const location = useLocation()
+  // When the rail is a horizontal strip the active chip can sit off-screen
+  // after a navigation; bring it into view (about centred, then the strip's
+  // own snap settles it) by scrolling the rail itself, never the window
+  // (#439). Overflow on the rail is the test for the strip layout, so no
+  // breakpoint is repeated here. Chips can also move without a navigation
+  // (a conditional chip appears, the strip resizes), so the rail is observed.
+  useEffect(() => {
+    const rail = document.querySelector<HTMLElement>('.workspace-rail')
+    if (!rail) return
+    const reveal = () => {
+      const active = rail.querySelector<HTMLElement>('.rail-link--active')
+      if (!active || rail.scrollWidth <= rail.clientWidth) return
+      const railBox = rail.getBoundingClientRect()
+      const chipBox = active.getBoundingClientRect()
+      const chipLeft = chipBox.left - railBox.left + rail.scrollLeft
+      const target = chipLeft - (rail.clientWidth - chipBox.width) / 2
+      rail.scrollLeft = Math.max(0, Math.min(target, rail.scrollWidth - rail.clientWidth))
+    }
+    reveal()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(reveal)
+    observer.observe(rail)
+    for (const child of rail.children) observer.observe(child)
+    return () => observer.disconnect()
+  }, [location.pathname, location.search])
   const { prompt, alert, dialogs } = useDialogs()
 
   // Page identity: retitle the tab per section so history and multi-tab

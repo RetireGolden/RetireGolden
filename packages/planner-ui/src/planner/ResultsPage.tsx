@@ -442,7 +442,7 @@ function FireLens({
         ) : null}
       </div>
 
-      <div className="chart-frame" style={frameH(320)}>
+      <div className="chart-frame" style={frameH(320)} role="figure">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={[...rows]}
@@ -1036,7 +1036,7 @@ export function ResultsPage() {
             </>
           ) : null}
         </p>
-        <div className="chart-frame" style={frameH(320)}>
+        <div className="chart-frame" style={frameH(320)} role="figure">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={rows}
@@ -1077,7 +1077,7 @@ export function ResultsPage() {
         <p className="card-hint">
           Spending includes taxes and penalties; the gap is funded by withdrawals. Shown in {dollarLabel}.
         </p>
-        <div className="chart-frame" style={frameH(280)}>
+        <div className="chart-frame" style={frameH(280)} role="figure">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={rows} margin={{ left: 12, right: 8, top: 8 }} aria-label="Income vs. spending, year by year">
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
@@ -1099,7 +1099,7 @@ export function ResultsPage() {
           Gross income streams each year, shown in {dollarLabel}. Any shortfall below spending is funded by portfolio
           withdrawals.
         </p>
-        <div className="chart-frame" style={frameH(280)}>
+        <div className="chart-frame" style={frameH(280)} role="figure">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={incomeRows} margin={{ left: 12, right: 8, top: 8 }} aria-label="Income by source, year by year">
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
@@ -1124,7 +1124,7 @@ export function ResultsPage() {
           principal &amp; interest is "Debt payments"; property tax &amp; insurance are their own band; everything else
           lives in "Baseline living."
         </p>
-        <div className="chart-frame" style={frameH(280)}>
+        <div className="chart-frame" style={frameH(280)} role="figure">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={expenseRows}
@@ -1151,7 +1151,7 @@ export function ResultsPage() {
           and the marketplace health-insurance credit (ACA) before 65. Threshold checks always use each year's nominal
           dollars.
         </p>
-        <div className="chart-frame" style={frameH(280)}>
+        <div className="chart-frame" style={frameH(280)} role="figure">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={rows} margin={{ left: 12, right: 8, top: 8 }} aria-label="Tax and MAGI, year by year">
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />

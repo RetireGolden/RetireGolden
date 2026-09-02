@@ -432,6 +432,24 @@
     gap: 0.25rem;
     padding-bottom: 0.35rem;
     -webkit-overflow-scrolling: touch;
+    /* Scroll cue (#439): page-colored covers that scroll with the chips and
+       ink-tinted edge shadows that stay put, so a clipped chip reads as
+       "more this way" rather than cut off. Same technique as .year-table-wrap. */
+    background-image:
+      linear-gradient(to right, var(--bg) 40%, transparent),
+      linear-gradient(to left, var(--bg) 40%, transparent),
+      linear-gradient(to right, color-mix(in srgb, var(--fg) 18%, transparent), transparent),
+      linear-gradient(to left, color-mix(in srgb, var(--fg) 18%, transparent), transparent);
+    background-position: left center, right center, left center, right center;
+    background-repeat: no-repeat;
+    background-size: 2rem 100%, 2rem 100%, 0.75rem 100%, 0.75rem 100%;
+    background-attachment: local, local, scroll, scroll;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.5rem;
+  }
+
+  .workspace-rail .rail-link {
+    scroll-snap-align: start;
   }
 }
 
@@ -451,6 +469,12 @@
     align-self: center;
     margin: 0 0.35rem 0 0.5rem;
     white-space: nowrap;
+  }
+
+  /* A rule separates a group from the one before it; the first has none. */
+  .workspace-rail > .rail-group ~ .rail-group {
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--border);
   }
 }
 
@@ -803,6 +827,19 @@
   }
 }
 
+/* A compound field (input + actions) that keeps the grid rhythm: two
+   columns beside its peers instead of the whole row (#467). Declared before
+   .field-span-full so an explicit full span still wins. */
+.form-grid > .field-with-action--wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  .form-grid > .field-with-action--wide {
+    grid-column: 1 / -1;
+  }
+}
+
 .form-grid > .field-span-full {
   grid-column: 1 / -1;
 }
@@ -891,13 +928,16 @@
 }
 
 .field-readonly {
+  display: block;
   margin: 0;
-  padding: 0.45rem 0.55rem;
-  border-radius: 8px;
-  border: 1px dashed var(--border);
-  background: var(--surface-2);
+  /* Same vertical rhythm as an input so it sits on the row's baseline: the
+     transparent border keeps the box height, and there is no visible border
+     or fill, because it is a value, not a control (#462). */
+  padding: 0.45rem 0;
+  border: 1px solid transparent;
   color: var(--fg);
   font-size: 0.98rem;
+  font-weight: 500;
 }
 
 .field input:focus-visible,
@@ -1980,8 +2020,8 @@ html:has(.kpi-bar) {
 
 /* One suffix slot beside the control. Multiple actions must share this cell
    via .field-with-action-actions (flex + gap); pinning each > button here
-   stacks their boxes on the same ~one-chip rect. On Household, span the
-   whole .field-with-action with field-span-full so the input keeps width. */
+   stacks their boxes on the same ~one-chip rect. On Household the compound
+   field spans two grid columns via .field-with-action--wide (#467). */
 .field-with-action > .field-with-action-actions,
 .field-with-action > button {
   grid-column: 2;

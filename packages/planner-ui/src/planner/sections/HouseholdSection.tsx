@@ -117,7 +117,7 @@ export function HouseholdSection() {
                 max={80}
                 onCommit={(v) => update((d) => void (d.household.people[i]!.retirementAge = v))}
               />
-              <div className="field-with-action field-span-full">
+              <div className="field-with-action field-with-action--wide">
                 <NumberField
                   label="Planning age"
                   help="How long the plan runs for this person. The age the money must last to, not a prediction of death. Planning beyond average life expectancy is prudent; 'Calculate' estimates an age from a short health questionnaire, and 'Percentile' anchors it to a survival probability (e.g. the age you have a 25% chance of reaching). Typing a number always overrides."

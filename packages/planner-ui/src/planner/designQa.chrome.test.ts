@@ -458,3 +458,79 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(rule(".field--checkbox input[type='checkbox']")).not.toMatch(/width:\s*auto/)
   })
 })
+
+describe('Narrow viewports and the remaining partial-issue items (#439, #440, #462, #467, #469, #473)', () => {
+  const src = (rel: string): string => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
+
+  it('between the phone and two-column layouts the brand anchors top-left and only the theme cluster wraps (#440)', () => {
+    expect(indexCss).toMatch(/@media \(min-width: 641px\) and \(max-width: 880px\) \{\s*\.app-header \{\s*align-items: flex-start;/)
+    // The nav may wrap or shrink; the brand stays anchored because the header is top-aligned.
+    expect(indexCss).not.toMatch(/\.nav \{\s*flex-wrap: nowrap;\s*flex-shrink: 0;/)
+  })
+
+  it('the rail strip shows a scroll cue, snaps to chips, separates groups, and scrolls itself to the active chip (#439)', () => {
+    // Anchor on the strip rule itself, not on whichever 880px block comes first.
+    const at = css.indexOf('.workspace-rail {\n    position: static;')
+    expect(at, 'the strip rule').toBeGreaterThan(0)
+    const rail = css.slice(at, css.indexOf('}', at))
+    expect(rail).toMatch(/background-attachment: local, local, scroll, scroll/)
+    expect(rail).toMatch(/scroll-snap-type: x proximity/)
+    expect(css).toMatch(/\.workspace-rail \.rail-link \{\s*scroll-snap-align: start/)
+    const workspace = src('./PlanWorkspace.tsx')
+    // Rail-local scrolling: no scrollIntoView (which can move the window and
+    // mishandles its options on older Safari) and no repeated breakpoint.
+    expect(workspace).not.toContain('scrollIntoView')
+    expect(workspace).not.toContain("'(max-width: 880px)'")
+    expect(workspace).toContain('rail.scrollLeft = Math.max(0, Math.min(target, rail.scrollWidth - rail.clientWidth))')
+    expect(workspace).toContain('}, [location.pathname, location.search])')
+    expect(workspace).toContain('new ResizeObserver(reveal)')
+    // The first group carries no separator.
+    expect(css).toMatch(/\.workspace-rail > \.rail-group ~ \.rail-group \{\s*padding-left: 0\.5rem;\s*border-left: 1px solid var\(--border\)/)
+  })
+
+  it('the Planning age compound field spans two columns, not the row (#467)', () => {
+    expect(rule('.form-grid > .field-with-action--wide')).toMatch(/grid-column:\s*span 2/)
+    expect(css.indexOf('.form-grid > .field-with-action--wide')).toBeLessThan(css.indexOf('.form-grid > .field-span-full'))
+    expect(src('./sections/HouseholdSection.tsx')).toContain('className="field-with-action field-with-action--wide"')
+    expect(css).not.toMatch(/span the\s+whole \.field-with-action with field-span-full/)
+  })
+
+  it('every chart frame on Monte Carlo, Results, and the bucket lens is a figure with exactly one name (#473)', () => {
+    for (const rel of ['./MonteCarloPage.tsx', './ResultsPage.tsx', './BucketLensCard.tsx']) {
+      const text = src(rel)
+      // A frame tag may span lines; a tag never contains < or >.
+      const tags = [...text.matchAll(/<div\b[^<>]*className="chart-frame[^"]*"[^<>]*>/g)]
+      expect(tags.length, rel).toBeGreaterThan(0)
+      // Every frame in the file was matched as a tag; an attribute expression
+      // with a > before className would otherwise let one slip past unchecked.
+      const occurrences = text.match(/className="chart-frame/g) ?? []
+      expect(tags.length, `${rel}: every chart-frame occurrence is a checked tag`).toBe(occurrences.length)
+      for (const tag of tags) {
+        const frame = tag[0]
+        expect(frame, `${rel}: ${frame}`).toMatch(/role="figure"/)
+        const framed = /aria-label=|aria-labelledby=/.test(frame)
+        // The chart element inside the frame (the next tag ending in Chart) may
+        // carry the name instead; exactly one of the two must.
+        const rest = text.slice(tag.index! + frame.length)
+        const chart = rest.match(/<[A-Za-z]*Chart\b[^<>]*>/)
+        const inner = chart ? /aria-label=/.test(chart[0]) : false
+        expect(framed !== inner, `${rel}: one name for ${frame.slice(0, 60)}`).toBe(true)
+      }
+    }
+  })
+
+  it('a read-only value is a captioned paragraph without input chrome, not a live output (#462)', () => {
+    const readonly = rule('.field-readonly')
+    expect(readonly).not.toMatch(/dashed/)
+    expect(readonly).not.toMatch(/background:/)
+    const fields = src('./fields.tsx')
+    expect(fields).toMatch(/<p className="field-readonly" aria-labelledby=\{id\}>/)
+    expect(fields).not.toMatch(/<output id=/)
+  })
+
+  it('the help bubble reads the KPI bar of its own workspace (#469); behaviour is in helpTipClamp.test.tsx', () => {
+    const fields = src('./fields.tsx')
+    expect(fields).toContain("while (scope && !scope.querySelector('.kpi-bar')) scope = scope.parentElement")
+    expect(fields).not.toContain("button.closest('.workspace')")
+  })
+})
