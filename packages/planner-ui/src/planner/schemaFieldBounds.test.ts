@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 
 import { planJsonSchema } from '@retiregolden/engine/schema/current'
 
-import { wiredFieldPaths } from '../testSupport/wiredFieldPaths'
+import { WILDCARD, wiredFieldPaths } from '../testSupport/wiredFieldPaths'
 import { boundsForPath, boundsKey } from './schemaBounds'
 import { SCHEMA_FIELD_BOUNDS, type SchemaBounds } from './schemaFieldBounds.generated'
 
@@ -34,9 +34,36 @@ function nodeAt(node: unknown, path: readonly string[]): Node | null {
   return null
 }
 
+/**
+ * The numeric branch of a leaf: a nullable number is emitted as
+ * `anyOf: [{ type: 'number', minimum: … }, { type: 'null' }]`, and its bounds
+ * live on the number branch (r4-2).
+ */
+function numericLeaf(node: Node | null): Node | null {
+  if (!node) return null
+  if (node.type === 'number' || node.type === 'integer') return node
+  for (const key of ['anyOf', 'oneOf']) {
+    for (const sub of (node[key] as unknown[] | undefined) ?? []) {
+      const hit = numericLeaf(sub as Node)
+      if (hit) return hit
+    }
+  }
+  return null
+}
+
+/** Every concrete path a wildcard path stands for: one per property the schema has at that segment. */
+function expandWildcard(path: string): string[] {
+  const segments = path.split('.')
+  const at = segments.indexOf(WILDCARD)
+  if (at < 0) return [path]
+  const parent = nodeAt(planJsonSchema, segments.slice(0, at))
+  const keys = Object.keys((parent?.properties as Node | undefined) ?? {})
+  return keys.flatMap((key) => expandWildcard([...segments.slice(0, at), key, ...segments.slice(at + 1)].join('.')))
+}
+
 function boundsFromSchema(path: string): SchemaBounds | null {
-  const node = nodeAt(planJsonSchema, path.split('.'))
-  if (!node || (node.type !== 'number' && node.type !== 'integer')) return null
+  const node = numericLeaf(nodeAt(planJsonSchema, path.split('.')))
+  if (!node) return null
   const bounds: SchemaBounds = {}
   if (typeof node.minimum === 'number') bounds.min = node.minimum
   if (typeof node.maximum === 'number') bounds.max = node.maximum
@@ -50,9 +77,11 @@ describe('schema field bounds', () => {
 
   it('every numeric wired path has the engine schema’s own range, and no other entry exists', () => {
     const expected = new Map<string, SchemaBounds>()
-    for (const path of paths) {
-      const bounds = boundsFromSchema(path)
-      if (bounds) expected.set(boundsKey(path), bounds)
+    for (const wired of paths) {
+      for (const path of expandWildcard(wired)) {
+        const bounds = boundsFromSchema(path)
+        if (bounds) expected.set(boundsKey(path), bounds)
+      }
     }
     // Both directions: a bound that drifted from the schema, and an entry for a
     // field no longer wired (or one newly wired with no entry).
@@ -60,6 +89,26 @@ describe('schema field bounds', () => {
       Object.fromEntries(Object.entries(SCHEMA_FIELD_BOUNDS).sort(([a], [b]) => a.localeCompare(b))),
     )
     expect(expected.size).toBeGreaterThan(60)
+  })
+
+  it('covers every asset class the schema allows, not only the first one wired (r4-1)', () => {
+    const classes = Object.keys((nodeAt(planJsonSchema, ['assumptions', 'assetClassParams'])?.properties as Node) ?? {})
+    expect(classes).toEqual(expect.arrayContaining(['usStocks', 'intlStocks', 'bonds', 'cash']))
+    for (const cls of classes) {
+      expect(boundsForPath(`assumptions.assetClassParams.${cls}.returnPct`), cls).toEqual({ exclusiveMin: -100, exclusiveMax: 1000 })
+      expect(boundsForPath(`assumptions.assetClassParams.${cls}.qualifiedRatioPct`), cls).toEqual({ min: 0, max: 100 })
+    }
+  })
+
+  it('keeps the range of a nullable number, which the schema wraps in anyOf (r4-2)', () => {
+    expect(boundsForPath('household.people.0.retirementAge')).toEqual({ min: 30, max: 80 })
+    expect(boundsForPath('incomes.0.endAge')).toEqual({ min: 30, max: 80 })
+    expect(boundsForPath('accounts.6.plannedSaleYear')).toEqual({ min: 1900, max: 2200 })
+    expect(boundsForPath('accounts.7.payoffYear')).toEqual({ min: 1900, max: 2200 })
+    expect(boundsForPath('incomes.4.startYear')).toEqual({ min: 1900, max: 2200 })
+    expect(boundsForPath('incomes.2.piaMonthly')).toEqual({ min: 0 })
+    // A nullable number the engine leaves unbounded has no entry, and that is right.
+    expect(boundsForPath('strategies.rothConversion.targetValue')).toBeNull()
   })
 
   it('reads a bound for a path whatever index it carries, and nothing for an unwired one', () => {

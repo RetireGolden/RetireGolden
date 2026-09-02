@@ -204,10 +204,15 @@ describe('validation chrome', () => {
     await typeInto(input, '0.05')
     expect(onCommit).toHaveBeenLastCalledWith(0.05)
     expect(container.querySelector('.field-error')).toBeNull()
-    // 0 itself is outside the engine's exclusive bound, and is refused.
+    // 0 itself is outside the engine's exclusive bound, and is refused; on
+    // leaving, the note says the bound is one to be beyond, not the lowest
+    // allowed value (r4-3).
     await typeInto(input, '0')
     expect(onCommit).toHaveBeenLastCalledWith(0.05)
     expect(container.querySelector('.field-error')?.textContent).toBe('Must be more than 0')
+    await blur(input)
+    expect(container.querySelector('.field-note')?.textContent).toBe('Not kept: 0 must be more than 0')
+    expect(input.value).toBe('4')
   })
 
   it('a field with a schema path shows the engine issue for that path inline (#491)', async () => {

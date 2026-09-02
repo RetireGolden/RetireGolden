@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest'
 
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 
-import { wiredFieldPaths } from '../testSupport/wiredFieldPaths'
+import { WILDCARD, wiredFieldPaths } from '../testSupport/wiredFieldPaths'
 import { buildExampleCouple } from './examples/buildExampleCouple'
 import { parseIssues } from './validationIssues'
 
@@ -30,6 +30,10 @@ import { parseIssues } from './validationIssues'
  */
 const UNSAFE_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
 
+/** An own property's value, read through its descriptor so the walk never touches the prototype chain (Semgrep code-scanning 57). */
+const ownValue = (object: unknown, key: string): unknown =>
+  object !== null && typeof object === 'object' ? Object.getOwnPropertyDescriptor(object, key)?.value : undefined
+
 function setAt(plan: Plan, path: string, value: unknown): string | null {
   const segments = path.split('.')
   // A path comes from the source scan, not from input, but the walk below
@@ -41,14 +45,14 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i]!
     const rest = segments.slice(i + 1)
-    let next = node[seg]
+    let next = ownValue(node, seg)
     if (Array.isArray(node) && /^\d+$/.test(seg)) {
       const at = node as unknown as unknown[]
       const holds = (item: unknown) => {
         let cursor = item
         for (const key of rest.slice(0, -1)) {
           if (cursor === null || typeof cursor !== 'object') return false
-          cursor = (cursor as Record<string, unknown>)[key]
+          cursor = ownValue(cursor, key)
         }
         return cursor !== null && typeof cursor === 'object' && Object.prototype.hasOwnProperty.call(cursor, rest[rest.length - 1]!)
       }
@@ -166,7 +170,10 @@ function fixtureFor(path: string): Plan {
 }
 
 describe('every wired schema path, against real engine output', () => {
-  const paths = wiredFieldPaths()
+  // A wildcard segment (the asset class) is one concrete class here: the
+  // spelling of the leaf is what the round trip proves, and the bounds drift
+  // test covers every class the schema allows.
+  const paths = wiredFieldPaths().map((p) => p.split(WILDCARD).join('usStocks'))
 
   it('the fixture is a valid plan, so each failure below comes from the one field under test', () => {
     const r = parsePlan(fixture())

@@ -70,13 +70,21 @@ export function checkRange(n: number, bounds: SchemaBounds | null): RangeCheck {
   return { side: null, message: null }
 }
 
-/** What the field says about an entry it did not keep, naming the bound it missed. */
+/**
+ * What the field says about an entry it did not keep, naming the bound it
+ * missed the way the range message does: an inclusive bound is "the lowest
+ * allowed", an exclusive one is a value the entry has to be beyond, so 0 is
+ * never presented as an allowed safe-withdrawal rate (r4-3).
+ */
 export function notKeptNote(entry: string, side: 'low' | 'high', bounds: SchemaBounds | null): string {
-  const low = bounds?.min ?? bounds?.exclusiveMin
-  const high = bounds?.max ?? bounds?.exclusiveMax
-  const edge = side === 'low' ? low : high
-  const which = side === 'low' ? 'below the lowest allowed' : 'above the highest allowed'
-  return edge === undefined ? `Not kept: ${entry} is ${which}` : `Not kept: ${entry} is ${which}, ${edge}`
+  if (side === 'low') {
+    if (bounds?.min !== undefined) return `Not kept: ${entry} is below the lowest allowed, ${bounds.min}`
+    if (bounds?.exclusiveMin !== undefined) return `Not kept: ${entry} must be more than ${bounds.exclusiveMin}`
+    return `Not kept: ${entry} is below the lowest allowed`
+  }
+  if (bounds?.max !== undefined) return `Not kept: ${entry} is above the highest allowed, ${bounds.max}`
+  if (bounds?.exclusiveMax !== undefined) return `Not kept: ${entry} must be less than ${bounds.exclusiveMax}`
+  return `Not kept: ${entry} is above the highest allowed`
 }
 
 /** The bounds a native number input can advertise (an exclusive bound has no HTML equivalent). */

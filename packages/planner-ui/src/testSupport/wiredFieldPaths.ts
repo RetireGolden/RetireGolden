@@ -17,14 +17,21 @@ import { readdirSync, readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
-/** What each interpolation in a wired path template stands for in a fixture plan. */
+/**
+ * What each interpolation in a wired path template stands for. List indexes
+ * resolve to a fixture position; the asset-class id resolves to `*`, since the
+ * same field is wired once for every class the schema allows and a consumer
+ * must expand it to all of them rather than test the first (review r4-1).
+ */
+export const WILDCARD = '*'
+
 const INDEX_OF: Record<string, string> = {
   index: '0',
   i: '0',
   ri: '0',
   streamIndex: '2',
   ladderIndex: '0',
-  id: 'usStocks',
+  id: WILDCARD,
 }
 
 /**
