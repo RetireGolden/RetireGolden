@@ -114,15 +114,22 @@ describe('validation cluster F', () => {
     expect(share.getAttribute('max')).toBe('100')
     // The header chip's locator now finds this control.
     expect(container.querySelector('[aria-invalid="true"]')).toBe(share)
-    // A fresh out-of-range keystroke is flagged and commits nothing; leaving stores the bound.
+    // A fresh out-of-range keystroke is flagged and commits nothing; leaving
+    // does not keep it either (the field never clamps for the person), so the
+    // stored 250 comes back still carrying the engine's message.
     await typeInto(share, '150')
     expect(update).not.toHaveBeenCalled()
     expect(share.closest('.field')!.querySelector('.field-error')!.textContent).toBe('Must be at most 100')
     await blur(share)
+    expect(update).not.toHaveBeenCalled()
+    expect(share.value).toBe('250')
+    expectInvalid(share, 'Must be at most 100')
+    // An in-range entry is what commits.
+    await typeInto(share, '60')
     expect(update).toHaveBeenCalledTimes(1)
     const draft = structuredClone(plan)
     update.mock.calls[0]![0](draft)
-    expect(draft.accounts[0]!.estateBeneficiary).toEqual({ destination: 'charity', charityPct: 100 })
+    expect(draft.accounts[0]!.estateBeneficiary).toEqual({ destination: 'charity', charityPct: 60 })
   })
 
   it('an Annuity taxable share the engine rejects shows at the field with the engine bound (#516)', async () => {

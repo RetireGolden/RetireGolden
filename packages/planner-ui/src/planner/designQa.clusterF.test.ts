@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { fmtMoneyCompact, parseAmount } from './format'
+import { boundsForPath } from './schemaBounds'
 import { labelOfPath, parseIssue } from './validationIssues'
 
 const read = (rel: string): string =>
@@ -41,29 +42,39 @@ describe('cluster F: fields carry the engine bound or its path', () => {
   })
 
   it('the pension editor and the annuity editor each carry the paths their shared fields need', () => {
-    // The two editors render the same three fields from separate JSX, so a
-    // single `toContain` could pass with one of them unwired.
+    // The two editors render the same fields from separate JSX, so a single
+    // `toContain` could pass with one of them unwired.
     const src = read('./sections/PensionAnnuityAccountEditors.tsx')
     const split = src.indexOf('export function AnnuityAccountEditor')
     expect(split).toBeGreaterThan(0)
     const pension = src.slice(src.indexOf('export function PensionAccountEditor'), split)
     const annuity = src.slice(split)
-    for (const p of ['path={`accounts.${index}.startAge`}', 'path={`accounts.${index}.colaPct`}', 'path={`accounts.${index}.monthlyAmount`}']) {
+    for (const p of ['path={`accounts.${index}.colaPct`}', 'path={`accounts.${index}.monthlyAmount`}']) {
       expect(pension, `pension ${p}`).toContain(p)
       expect(annuity, `annuity ${p}`).toContain(p)
     }
+    // Start age is the pension's alone. A bound read by path is one number for
+    // `accounts.N.startAge` (the schema's pension branch, 40–80), while the
+    // annuity's ceiling is the contract's own: the QLAC / non-QLAC latest start
+    // for its purchase, computed per account.
+    expect(pension).toContain('path={`accounts.${index}.startAge`}')
+    expect(annuity).not.toContain('path={`accounts.${index}.startAge`}')
+    expect(annuity).toContain('max={startAgeBounds?.binding ?? ANNUITY_MAX_START_AGE}')
   })
 
-  it('shares stored as engine-bounded percents carry that bound in the field (0–100, or 1–100 for a joint-survivor share)', () => {
+  it('shares stored as engine-bounded percents reach the field as that bound (0–100, or 1–100 for a joint-survivor share)', () => {
+    // Every bound is the engine's, read from its schema by the path the field
+    // carries (schemaBounds.ts): nothing here is a range the UI chose.
+    expect(boundsForPath('accounts.0.estateBeneficiary.charityPct')).toEqual({ min: 0, max: 100 })
+    expect(boundsForPath('accounts.0.taxablePct')).toEqual({ min: 0, max: 100 })
+    expect(boundsForPath('accounts.0.survivorPct')).toEqual({ min: 0, max: 100 })
+    expect(boundsForPath('accounts.0.payoutForm.survivorPct')).toEqual({ min: 1, max: 100 })
+    expect(boundsForPath('accounts.0.payoutForm.certainYears')).toEqual({ min: 1, max: 40 })
+    // The engine's 0–1 ratio, in the percent unit the card shows it in.
+    expect(boundsForPath('accounts.0.qualifiedRatio')).toMatchObject({ min: 0, max: 100 })
+    // Both Qualified dividends fields (plain and override) carry that path.
     const liquid = read('./sections/LiquidAccountEditors.tsx')
-    // Both Qualified dividends fields (plain and override): the engine's 0–1 ratio in percent.
-    expect(liquid.match(/path=\{`accounts\.\$\{index\}\.qualifiedRatio`\}[\s\S]*?min=\{0\}\s*max=\{100\}/g)).toHaveLength(2)
-    const pension = read('./sections/PensionAnnuityAccountEditors.tsx')
-    expect(pension).toMatch(/path=\{`accounts\.\$\{index\}\.taxablePct`\}[\s\S]*?min=\{0\}\s*max=\{100\}/)
-    expect(pension).toMatch(/path=\{`accounts\.\$\{index\}\.survivorPct`\}[^\n]*min=\{0\} max=\{100\}/)
-    expect(pension).toMatch(/path=\{`accounts\.\$\{index\}\.payoutForm\.survivorPct`\}[\s\S]*?min=\{1\}\s*max=\{100\}/)
-    const shared = read('./sections/AccountEditorSharedFields.tsx')
-    expect(shared).toMatch(/path=\{`accounts\.\$\{index\}\.estateBeneficiary\.charityPct`\}[\s\S]*?min=\{0\}\s*max=\{100\}/)
+    expect(liquid.match(/path=\{`accounts\.\$\{index\}\.qualifiedRatio`\}/g)).toHaveLength(2)
   })
 
   it('the Relocation candidate knobs keep the ranges they already had, which the number field now enforces (#490, #551)', () => {
@@ -75,7 +86,8 @@ describe('cluster F: fields carry the engine bound or its path', () => {
 
   it('the Social Security claim-age months field carries the engine range and its path (#511)', () => {
     const src = read('./SocialSecuritySection.tsx')
-    expect(src).toMatch(/path=\{`incomes\.\$\{streamIndex\}\.claimAge\.months`\}[\s\S]*?min=\{0\}\s*max=\{11\}/)
+    expect(src).toContain('path={`incomes.${streamIndex}.claimAge.months`}')
+    expect(boundsForPath('incomes.2.claimAge.months')).toEqual({ min: 0, max: 11 })
   })
 
   it('the premium mode select clears a premium end age the schema no longer wants (#503)', () => {

@@ -124,7 +124,54 @@ function fixture(): Plan {
   brokerage.interestYieldPct = 1
   brokerage.dividendYieldPct = 1.8
   brokerage.qualifiedRatio = 0.85
-  plan.accounts = [property, debt, brokerage, ...plan.accounts.filter((a) => a !== property && a !== debt && a !== brokerage)]
+  // The estate destination the accounts editor offers, so its Charity share is a
+  // field of this plan (#540).
+  brokerage.estateBeneficiary = { destination: 'charity', charityPct: 50 }
+  // A pension and the two annuity payout forms: the guaranteed-income editors
+  // wire the same leaves from separate JSX, and a payout form is one branch of a
+  // union, so each shape a wired path needs is present here (#516).
+  const owner = plan.household.people[0]!.id
+  const pension: Plan['accounts'][number] = {
+    type: 'pension',
+    id: 'pension-fixture',
+    name: 'Pension',
+    ownerPersonId: owner,
+    annualReturnPct: null,
+    startAge: 65,
+    monthlyAmount: 2_000,
+    colaPct: 2,
+    survivorPct: 50,
+  }
+  const annuityBase = {
+    type: 'annuity',
+    ownerPersonId: owner,
+    annualReturnPct: null,
+    startAge: 70,
+    monthlyAmount: 1_000,
+    colaPct: 0,
+    taxablePct: 80,
+  } as const
+  const periodCertain: Plan['accounts'][number] = {
+    ...annuityBase,
+    id: 'annuity-certain-fixture',
+    name: 'Annuity (period certain)',
+    payoutForm: { kind: 'periodCertain', certainYears: 10 },
+  }
+  const jointSurvivor: Plan['accounts'][number] = {
+    ...annuityBase,
+    id: 'annuity-joint-fixture',
+    name: 'Annuity (joint & survivor)',
+    payoutForm: { kind: 'jointSurvivor', survivorPct: 50 },
+  }
+  plan.accounts = [
+    property,
+    debt,
+    brokerage,
+    ...plan.accounts.filter((a) => a !== property && a !== debt && a !== brokerage),
+    pension,
+    periodCertain,
+    jointSurvivor,
+  ]
   const life = plan.insurance.find((p) => p.kind === 'permanentLife') as Extract<Plan['insurance'][number], { kind: 'permanentLife' }>
   life.premiumMode = 'untilAge'
   life.premiumEndAge = 75

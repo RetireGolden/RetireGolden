@@ -75,10 +75,6 @@ export function TaxableAccountEditor({
             help="Share of dividends taxed at long-term capital-gain rates federally. The rest is taxed as ordinary dividends."
             path={`accounts.${index}.qualifiedRatio`}
             value={(account.qualifiedRatio ?? 0.85) * 100}
-            // The engine stores this share as a 0–1 ratio; 0–100 is that same
-            // bound in the field's unit, flagged while typing (#496).
-            min={0}
-            max={100}
             onCommit={(value) => onCommit('qualifiedRatio', Math.min(1, Math.max(0, (value ?? 85) / 100)))}
           />
           <TaxExemptInterestYieldField
@@ -112,8 +108,6 @@ export function TaxableAccountEditor({
             path={`accounts.${index}.qualifiedRatio`}
             value={account.qualifiedRatio === undefined ? null : account.qualifiedRatio * 100}
             allowNull
-            min={0}
-            max={100}
             onCommit={(value) =>
               onCommit(
                 'qualifiedRatio',

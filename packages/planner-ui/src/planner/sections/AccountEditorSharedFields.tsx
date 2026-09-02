@@ -326,8 +326,6 @@ function EstateBeneficiaryFields({
           help="What percentage of this account goes to charity. The remainder goes to a non-spouse heir and is taxed at the heir tax rate."
           path={`accounts.${index}.estateBeneficiary.charityPct`}
           value={account.estateBeneficiary.charityPct ?? 100}
-          min={0}
-          max={100}
           onCommit={(value) =>
             onCommit('estateBeneficiary', { destination: 'charity', charityPct: value ?? 100 })
           }
