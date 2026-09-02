@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 /**
  * Unnamed people (#523): clearing a name stores a placeholder that reads as
- * one ("Unnamed partner" / "Unnamed person") rather than a literal "Person",
+ * one ("Unnamed partner" / "Unnamed primary") rather than a literal "Person",
  * and the Name field says so. The header always shows the stored name — a
  * person really called that is never hidden.
  */
