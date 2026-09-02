@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 
-import { adviceOf, issuesForSection, labelOfPath, labelOfSegments, parseIssue, parseIssues, sectionOfPath } from './validationIssues'
+import { adviceOf, issuesForSection, labelOfPath, labelOfSegments, parseIssue, parseIssues, sectionOfPath, sectionsWithIssues } from './validationIssues'
 
 describe('real engine output', () => {
   it('translates what parsePlan actually reports for a planning age of 9, a QCD of -5, and inflation of -999', () => {
@@ -127,6 +127,11 @@ describe('sectionOfPath', () => {
     // …while the wage and recurring leaves stay on Income.
     ['incomes.0.realGrowthPct', 'income'],
     ['incomes.0.annualAmount', 'income'],
+    // The carryforward is stored under household and edited on Strategy (#553);
+    // the rest of household stays where it is.
+    ['household.capitalLossCarryforward', 'strategy'],
+    ['household.filingStatus', 'household'],
+    ['household.people.0.retirementAge', 'household'],
     ['insurance.0.premiumEndAge', 'insurance'],
     ['careEvents.0.durationYears', 'insurance'],
     ['incomeFloor.ladders.0.endYear', 'income-floor'],
@@ -228,5 +233,23 @@ describe('issuesForSection', () => {
       'schemaVersion',
     ])
     expect(issuesForSection(issues, 'spending').map((i) => i.path)).toEqual(['schemaVersion'])
+  })
+})
+
+describe('the capital-loss carryforward, stored under household and edited on Strategy (#553)', () => {
+  const issue = 'household.capitalLossCarryforward: Too small: expected number to be >=0'
+
+  it('is labelled as the Strategy card captions it, not as a Household field', () => {
+    expect(labelOfPath('household.capitalLossCarryforward')).toBe('Capital loss carryforward')
+    expect(parseIssue(issue).advice).toBe('Must be at least 0')
+  })
+
+  it("sits in Strategy's list and not Household's, and a paused panel links to Strategy", () => {
+    const parsed = parseIssues([issue, 'household.filingStatus: Invalid option'])
+    expect(issuesForSection(parsed, 'strategy').map((i) => i.path)).toEqual(['household.capitalLossCarryforward'])
+    expect(issuesForSection(parsed, 'household').map((i) => i.path)).toEqual(['household.filingStatus'])
+    expect(sectionsWithIssues([issue])).toEqual([{ segment: 'strategy', title: 'Strategy' }])
+    // Household still links when a household field is the one failing, in rail order.
+    expect(sectionsWithIssues([issue, 'household.filingStatus: Invalid option']).map((s) => s.segment)).toEqual(['household', 'strategy'])
   })
 })

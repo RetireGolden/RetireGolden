@@ -84,10 +84,24 @@ const SOCIAL_SECURITY_LEAVES = new Set([
   'disability',
 ])
 
+/**
+ * Household-level tax attributes that the Strategy page edits: the capital
+ * loss carryforward is stored under `household` (it belongs to the return,
+ * not to a person) but its field is the Strategy page's card, so its issue
+ * belongs in Strategy's list and the chip's jump goes there (#553).
+ */
+const STRATEGY_HOUSEHOLD_LEAVES = new Set(['capitalLossCarryforward'])
+
+/** Whole paths whose label is the card's own caption rather than "Root: Leaf". */
+const PATH_LABELS: Record<string, string> = {
+  'household.capitalLossCarryforward': 'Capital loss carryforward',
+}
+
 export function sectionOfPath(path: string): IssueSection {
   const segments = path.split('.')
   const root = segments[0] ?? ''
   if (root === 'incomes' && segments[2] !== undefined && SOCIAL_SECURITY_LEAVES.has(segments[2])) return 'social-security'
+  if (root === 'household' && segments.length === 2 && STRATEGY_HOUSEHOLD_LEAVES.has(segments[1]!)) return 'strategy'
   return SECTION_BY_ROOT[root] ?? 'unknown'
 }
 
@@ -286,7 +300,7 @@ function isIndex(segment: string): boolean {
  */
 export function labelOfPath(path: string, plan?: Plan): string {
   if (path === '(root)' || path === '$' || path === '') return 'Plan'
-  return labelOfSegments(path.split('.'), plan)
+  return PATH_LABELS[path] ?? labelOfSegments(path.split('.'), plan)
 }
 
 /**
@@ -535,11 +549,13 @@ export interface IssueSectionLink {
 export function sectionsWithIssues(issues: readonly string[]): IssueSectionLink[] {
   const segments = new Set<string>()
   for (const issue of issues) {
-    // A Social Security stream lives in `incomes` but is edited on its own
-    // page, so the router's answer wins wherever it can place the path.
+    // The router's answer wins wherever it can place the path: a Social
+    // Security stream lives in `incomes` and the capital-loss carryforward in
+    // `household`, and each is edited on another page. The key map is only
+    // for a plan key the router does not know (the retirement-action facts).
     const routed = sectionOfPath(parseIssue(issue).path)
     const key = issuePathSegments(issue)[0]
-    const segment = routed === 'social-security' ? 'social-security' : key === undefined ? undefined : SECTION_BY_PLAN_KEY[key]
+    const segment = routed !== 'unknown' ? routed : key === undefined ? undefined : SECTION_BY_PLAN_KEY[key]
     if (segment !== undefined) segments.add(segment)
   }
   return RAIL_ORDER.filter((s) => segments.has(s)).map((segment) => ({ segment, title: SECTION_TITLES[segment]! }))

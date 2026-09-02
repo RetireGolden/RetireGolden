@@ -21,6 +21,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 
 import { createSamplePlan } from '../testSupport/samplePlan'
+import { focusIssueTarget } from './issueJump'
 import { PlanCtx } from './planContextCore'
 import { SocialSecuritySection } from './SocialSecuritySection'
 import { HouseholdSection } from './sections/HouseholdSection'
@@ -338,7 +339,7 @@ describe('Strategy itemized deductions and capital loss (#553)', () => {
     expect(noteOf(carryforward)).toBe('Not kept: -9999999 is below the lowest allowed, 0')
   })
 
-  it('a stored negative carryforward (an import) is refused at the field, in words', async () => {
+  it("a stored negative carryforward (an import) is refused at the field, in words, and listed on Strategy, whose card holds the field, not Household", async () => {
     const { plan, issues } = invalidPlan((p) => {
       p.household.capitalLossCarryforward = -5
     })
@@ -347,5 +348,19 @@ describe('Strategy itemized deductions and capital loss (#553)', () => {
     const carryforward = controlAt(host, 'household.capitalLossCarryforward')
     expect(carryforward.getAttribute('aria-invalid')).toBe('true')
     expect(errorOf(carryforward)).toBe('Must be at least 0')
+    // The path is under `household`, but the field is on this page: the
+    // Strategy list names it as the card does, and the chip's jump lands on
+    // the control here rather than on Household's list (review r2-1).
+    const list = host.querySelector('#plan-issues-strategy')
+    expect(list?.textContent).toContain('Capital loss carryforward')
+    expect(list?.textContent).not.toContain('Household')
+    expect(focusIssueTarget(host, 'strategy', 'household.capitalLossCarryforward')).toBe(true)
+    expect(document.activeElement).toBe(carryforward)
+    await act(async () => root!.unmount())
+    root = null
+    container?.remove()
+    const household = await mount(plan, <HouseholdSection />, issues)
+    expect(household.querySelector('#plan-issues-household')).toBeNull()
+    expect(household.querySelector('[aria-invalid="true"]')).toBeNull()
   })
 })
