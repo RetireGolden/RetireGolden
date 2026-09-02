@@ -86,9 +86,12 @@ describe('validation chrome pins', () => {
         'path={`household.people.${i}.longevity.planningAge`}',
         'path={`household.people.${i}.retirementAge`}',
       ]],
+      // The ladder row is addressed by id (#512), so its field paths carry the
+      // index the issues were computed against, via one helper.
       ['./sections/IncomeFloorSection.tsx', [
-        'path={`incomeFloor.ladders.${index}.startYear`}',
-        'path={`incomeFloor.ladders.${index}.endYear`}',
+        'const fieldPath = (leaf: string) =>',
+        "path={fieldPath('startYear')}",
+        "path={fieldPath('endYear')}",
       ]],
       ['./sections/SpendingSection.tsx', [
         'path="expenses.baseAnnual"',

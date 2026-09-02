@@ -211,7 +211,7 @@ describe('validation chrome', () => {
       expect(control.getAttribute('aria-describedby')?.split(' ')).toContain(error.id)
     }
     expectInvalid(qcd!, 'Must be at least 0')
-    expectInvalid(name!, 'Add at least one entry')
+    expectInvalid(name!, 'Enter a value')
     expectInvalid(dob!, 'Enter a valid date')
     expectInvalid(filing!, 'Choose one of the listed options')
     for (const clean of [charitable!, sex!]) {
@@ -246,10 +246,11 @@ describe('validation chrome', () => {
     // The only invalid control on the screen is the QCD input, and the header
     // chip's locator finds it ahead of the card-level list.
     expect([...container.querySelectorAll('[aria-invalid="true"]')]).toEqual([qcd])
-    expect(container.querySelector('[aria-invalid="true"], .issue-list')).toBe(qcd)
+    // The chip prefers an invalid control wherever the section list sits (it is above the cards now).
+    expect(container.querySelector('[aria-invalid="true"]') ?? container.querySelector('.issue-list')).toBe(qcd)
     // A sibling money field stays clean; the card list still names the same issue in words.
     expect(labelledControl('Taxable safety-net floor').hasAttribute('aria-invalid')).toBe(false)
-    expect(container.querySelector('.issue-list li')?.textContent).toBe('Strategy: QCD annual amount: Must be at least 0')
+    expect(container.querySelector('.issue-list li')?.textContent).toBe("Strategy: QCD per year (today's $): Must be at least 0")
   })
 
   it('an empty illustration schedule shows its issue on the schedule block, in words (#489)', async () => {

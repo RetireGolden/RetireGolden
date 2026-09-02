@@ -11,7 +11,7 @@ import { permanentLifePolicySchema } from '@retiregolden/engine/model/plan'
 import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 
 import { createSamplePlan } from '../../testSupport/samplePlan'
-import { hasIssueAt, hasIssueUnder, parseIssue, sectionsWithIssues, withoutIssuesBeyond } from '../validationIssues'
+import { hasIssueAt, hasIssueUnder, issuePathSegments, parseIssue, sectionsWithIssues, withoutIssuesBeyond } from '../validationIssues'
 import {
   appendScheduleRow,
   duplicateCareEvents,
@@ -158,12 +158,17 @@ describe('validation issues (#512, #517)', () => {
   ]
 
   it('parses path segments and the message', () => {
-    expect(parseIssue(issues[0]!)).toEqual({
-      path: ['incomeFloor', 'ladders', '10', 'endYear'],
+    // `parseIssue` also carries the section, label, and advice the chrome reads
+    // (#452); the predicates below work off the segments this exposes.
+    expect(parseIssue(issues[0]!)).toMatchObject({
+      path: 'incomeFloor.ladders.10.endYear',
       message: 'a ladder must end in or after its first payout year',
     })
-    expect(parseIssue(issues[3]!)).toEqual({ path: [], message: 'something plan-wide' })
-    expect(parseIssue('no separator here')).toEqual({ path: [], message: 'no separator here' })
+    expect(issuePathSegments(issues[0]!)).toEqual(['incomeFloor', 'ladders', '10', 'endYear'])
+    expect(parseIssue(issues[3]!)).toMatchObject({ path: '(root)', message: 'something plan-wide' })
+    expect(issuePathSegments(issues[3]!)).toEqual([])
+    expect(parseIssue('no separator here')).toMatchObject({ path: '(root)', message: 'no separator here' })
+    expect(issuePathSegments('no separator here')).toEqual([])
   })
 
   it('matches whole segments, so ladder 1 is not covered by an issue on ladder 10', () => {

@@ -71,6 +71,9 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
   const ownIssue = ladderIndex >= 0 && hasIssueUnder(ladderIssues, ['incomeFloor', 'ladders', String(ladderIndex)])
   const listIssue = ladderIndex < 0 || hasIssueAt(ladderIssues, ['incomeFloor']) || hasIssueAt(ladderIssues, ['incomeFloor', 'ladders'])
   const onHold = ownIssue || listIssue
+  // The path an issue for this row's fields is reported at, from the same
+  // index the lookups above use; a row the plan does not hold has no path.
+  const fieldPath = (leaf: string) => (ladderIndex >= 0 ? `incomeFloor.ladders.${ladderIndex}.${leaf}` : undefined)
   const quote = useMemo(() => (onHold ? null : quoteLadder(ladder, startYear)), [ladder, startYear, onHold])
   const fundingOptions = plan.accounts
     .filter((a) => a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp')
@@ -102,7 +105,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
         </button>
       </div>
       <div className="form-grid">
-        <TextField label="Name" path={`incomeFloor.ladders.${index}.name`} value={ladder.name} onCommit={(v) => edit((l) => void (l.name = v || 'TIPS ladder'))} />
+        <TextField label="Name" path={fieldPath('name')} value={ladder.name} onCommit={(v) => edit((l) => void (l.name = v || 'TIPS ladder'))} />
         <SelectField
           label="Purpose"
           help="Labeling only: a bridge covers the years until a delayed Social Security claim; a floor covers essential spending. The math is the same."
@@ -117,13 +120,13 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
           label="Annual real income (today's $)"
           help="The level inflation-adjusted income the ladder pays in each payout year. TIPS index to CPI, so this stays constant in today's dollars. Quotes price each rung on the embedded Treasury real-yield curve."
           source={provenanceSource('real-yield-curve')}
-          path={`incomeFloor.ladders.${index}.annualRealAmount`}
+          path={fieldPath('annualRealAmount')}
           value={ladder.annualRealAmount}
           onCommit={(v) => edit((l) => void (l.annualRealAmount = Math.max(0, v ?? 0)))}
         />
         <NumberField
           label="First payout year"
-          path={`incomeFloor.ladders.${index}.startYear`}
+          path={fieldPath('startYear')}
           value={ladder.startYear}
           min={1900}
           max={2200}
@@ -131,7 +134,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
         />
         <NumberField
           label="Last payout year"
-          path={`incomeFloor.ladders.${index}.endYear`}
+          path={fieldPath('endYear')}
           value={ladder.endYear}
           min={1900}
           max={2200}
@@ -160,7 +163,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
             <NumberField
               label="Purchase year"
               hint="Must be before the first payout year."
-              path={`incomeFloor.ladders.${index}.purchase.year`}
+              path={fieldPath('purchase.year')}
               value={ladder.purchase.year}
               min={1900}
               max={2200}
