@@ -21,6 +21,15 @@ import { fileURLToPath } from 'node:url'
 
 const plannerUiSrc: string = fileURLToPath(new URL('..', import.meta.url))
 
+/**
+ * A className that writes the *base* badge class into markup.
+ *
+ * `type-chip--muted` is a modifier a call site may legitimately hand to
+ * `TypeChip`, so the lookahead keeps modifiers out of the net; only the bare
+ * class — the one `TypeChip` itself is responsible for — is caught.
+ */
+const BADGE_CLASS_IN_MARKUP = /className=(["'`])[^"'`]*\btype-chip(?![\w-])/
+
 /** Component sources under `planner-ui/src`; tests may name the class freely. */
 function componentSources(dir: string, found: string[] = []): string[] {
   const entries = readdirSync(dir, { withFileTypes: true }) as Array<{ name: string; isDirectory(): boolean }>
@@ -51,10 +60,19 @@ describe('cluster J: the kind badge markup has one home (#570)', () => {
     expect(files.some((f) => f.endsWith('planner/sections/AccountsSection.tsx'))).toBe(true)
   })
 
+  it('catches a bare badge span and lets a modifier through', () => {
+    // Calibration: a net that matched nothing would make the pin below vacuous,
+    // and one that matched modifiers would forbid a legitimate call.
+    expect(BADGE_CLASS_IN_MARKUP.test('<span className="type-chip">Cash</span>')).toBe(true)
+    expect(BADGE_CLASS_IN_MARKUP.test('<span className="type-chip year-cash-flow-shortfall-badge">')).toBe(true)
+    expect(BADGE_CLASS_IN_MARKUP.test('<TypeChip className="type-chip--muted">Not applied</TypeChip>')).toBe(false)
+    expect(BADGE_CLASS_IN_MARKUP.test('<TypeChip>Cash</TypeChip>')).toBe(false)
+  })
+
   it('only TypeChip.tsx writes the type-chip class into markup', () => {
     const offenders = files
       .filter((file) => !file.endsWith('planner/TypeChip.tsx'))
-      .filter((file) => /className=(["'`])[^"'`]*\btype-chip\b/.test(source(file)))
+      .filter((file) => BADGE_CLASS_IN_MARKUP.test(source(file)))
       .map((file) => file.slice(plannerUiSrc.length))
     expect(offenders).toEqual([])
   })
