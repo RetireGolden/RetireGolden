@@ -33,13 +33,17 @@ function gitObject(revision) {
   }).trim()
 }
 
-function gitText(path) {
-  return execFileSync('git', ['show', `HEAD:${path}`], {
+function gitBlobText(blob) {
+  return execFileSync('git', ['cat-file', 'blob', blob], {
     cwd: repoDir,
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,
   })
 }
+
+// Resolve the moving ref exactly once. Every committed byte read below is then
+// addressed through this immutable commit or a blob ID authenticated from it.
+const headCommit = gitObject('HEAD^{commit}')
 
 function workingTreeBlob(path) {
   return execFileSync('git', ['hash-object', `--path=${path}`, '--', path], {
@@ -68,19 +72,13 @@ function sha256(value) {
 }
 
 function authenticateSpec() {
-  const committedBlob = gitObject(`HEAD:${specRepoPath}`)
+  const committedBlob = gitObject(`${headCommit}:${specRepoPath}`)
   assertEqual(
     workingTreeBlob(specRepoPath),
     committedBlob,
     'proof spec working-tree input',
   )
-  const body = gitText(specRepoPath)
-  assertEqual(
-    workingTreeBlob(specRepoPath),
-    committedBlob,
-    'proof spec stable working-tree input',
-  )
-  return body
+  return gitBlobText(committedBlob)
 }
 
 const specBody = authenticateSpec()
@@ -128,9 +126,9 @@ function authenticateHarnessClosure() {
     if (expected === undefined) {
       throw new Error(`unrecorded transitive harness input: ${path}`)
     }
-    assertEqual(gitObject(`HEAD:${path}`), expected, `${path} committed input`)
+    assertEqual(gitObject(`${headCommit}:${path}`), expected, `${path} committed input`)
     assertEqual(workingTreeBlob(path), expected, `${path} working-tree input`)
-    const source = gitText(path)
+    const source = gitBlobText(expected)
     authenticatedSources.set(path, source)
     for (const specifier of localImportSpecifiers(source)) {
       const dependency = resolveLocalImport(path, specifier)
