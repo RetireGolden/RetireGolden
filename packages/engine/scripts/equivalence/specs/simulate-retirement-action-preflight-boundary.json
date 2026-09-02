@@ -103,7 +103,7 @@
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
         138,
-        163
+        157
       ],
       "anchors": [
         {
@@ -117,22 +117,37 @@
         {
           "line": 156,
           "text": "const mixedKindScheduleBlocked ="
-        },
-        {
-          "line": 160,
-          "text": "const qcdActions = currentYearActions.filter("
         }
       ]
     },
     {
-      "id": "AI.helper.executorRouting",
-      "label": "QCD and ordinary executor request routing",
+      "id": "AI.helper.qcdPartition",
+      "label": "current-year QCD partition",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        160,
+        163
+      ],
+      "anchors": [
+        {
+          "line": 160,
+          "text": "const qcdActions = currentYearActions.filter("
+        },
+        {
+          "line": 162,
+          "text": "request.kind === 'qcd',"
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.collisionSetup",
+      "label": "cross-executor QCD collision scan setup",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
         168,
-        184
+        170
       ],
-      "note": "Validated corpus members reach the normal QCD and ordinary routes. Cross-kind collision selection and mixed-kind widening are pinned by direct tests because those diagnostics are intentionally rare in accepted plans.",
+      "note": "The corpus reaches construction of the collision set. The callback body is intentionally excluded because validated corpus schedules do not collide; direct tests pin both cross-kind and QCD-only collision routing.",
       "anchors": [
         {
           "line": 168,
@@ -141,7 +156,19 @@
         {
           "line": 169,
           "text": "const crossKindCollidingQcdActionIds = new Set("
-        },
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.executorRouting",
+      "label": "QCD and ordinary executor request routing",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        177,
+        184
+      ],
+      "note": "Validated corpus members reach the normal QCD and ordinary routes. Cross-kind collision selection and mixed-kind widening are pinned by direct tests because those diagnostics are intentionally rare in accepted plans.",
+      "anchors": [
         {
           "line": 177,
           "text": "const qcdExecutionActions = qcdActions.filter("
@@ -176,18 +203,34 @@
       ]
     },
     {
-      "id": "AI.helper.release",
-      "label": "outer release selection and final group assessment",
+      "id": "AI.helper.releaseGate",
+      "label": "outer linked-group release gate",
       "file": "projection/internal/annualRetirementActionPreflight.ts",
       "lines": [
         203,
-        222
+        204
       ],
+      "note": "The corpus reaches the release discriminant. Direct tests pin proven-authority forwarding, the corpus-cold true arm on the following line.",
       "anchors": [
         {
           "line": 203,
           "text": "const linkedGroupAuthorizations ="
         },
+        {
+          "line": 204,
+          "text": "input.linkedGroupRelease.kind === 'proven'"
+        }
+      ]
+    },
+    {
+      "id": "AI.helper.stagingAndAssessment",
+      "label": "provisional selection and final linked-group assessment",
+      "file": "projection/internal/annualRetirementActionPreflight.ts",
+      "lines": [
+        206,
+        222
+      ],
+      "anchors": [
         {
           "line": 206,
           "text": ": input.linkedGroupRelease.kind === 'stageProvisionally'"
