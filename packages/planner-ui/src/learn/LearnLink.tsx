@@ -29,6 +29,8 @@ export type LearnHook = {
 }
 
 type LearnLinkProps = LearnHook & {
+  /** Accessible name when the visible label is shared by several links on one page (e.g. per-card "Learn about this example"). */
+  ariaLabel?: string
   /**
    * - `inline`: a quiet inline link (default), e.g. inside a screen cluster.
    * - `tip`: sized and spaced to sit at the bottom of a help bubble.
@@ -45,7 +47,7 @@ function originLabel(pathname: string): string | undefined {
   return segment ? SEGMENT_LABELS[segment] : undefined
 }
 
-export function LearnLink({ slug, label = 'Learn more', anchor, variant = 'inline', className }: LearnLinkProps) {
+export function LearnLink({ slug, label = 'Learn more', anchor, variant = 'inline', className, ariaLabel }: LearnLinkProps) {
   const location = useLocation()
   const article = getArticle(slug)
   if (!article) {
@@ -63,6 +65,7 @@ export function LearnLink({ slug, label = 'Learn more', anchor, variant = 'inlin
     <Link
       to={to}
       className={classes}
+      aria-label={ariaLabel}
       state={safeFrom ? { learnFrom: safeFrom, learnFromLabel: originLabel(location.pathname) } : undefined}
     >
       {/* Label + ` →` share one inline box. `.btn` is inline-flex with no gap,

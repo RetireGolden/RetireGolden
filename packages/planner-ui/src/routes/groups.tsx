@@ -28,6 +28,7 @@ import { Navigate, type RouteObject } from 'react-router'
 
 import { PlanPickerPage } from '../planner/PlanPickerPage'
 import { DisclaimerPage } from '../planner/DisclaimerPage'
+import { NotFoundPage } from '../planner/NotFoundPage'
 import { RouteErrorBoundary } from '../RouteErrorBoundary'
 import { RouteFallback } from './RouteFallback'
 import { ComparePlansPage, ExamplesPage, HowTestedPage, ImportPage, LearnRoutes, PlanRoutes } from './lazyPages'
@@ -70,6 +71,15 @@ export const plannerContentRoutes: RouteObject[] = [
   { path: 'disclaimer', element: <DisclaimerPage /> },
   { path: 'how-tested', element: suspended(<HowTestedPage />) },
 ]
+
+/**
+ * Site-level catch-all (#442): not-found chrome for an unmatched URL instead
+ * of a blank main. A single route rather than a member of a group, so a host
+ * that mounts the groups under its own router keeps its own fallback (equal-
+ * rank splats resolve to whichever comes first); `<PlannerApp/>` spreads it
+ * after the three groups.
+ */
+export const plannerNotFoundRoute: RouteObject = { path: '*', element: <NotFoundPage /> }
 
 /**
  * The web app's plans-management surfaces: the home page (plan list, backup

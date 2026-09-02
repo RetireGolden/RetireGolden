@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useRoutes } from 'react-router'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
-import { plannerContentRoutes, plannerHomeRoutes, plannerWorkspaceRoutes } from './routes/groups'
+import { plannerContentRoutes, plannerHomeRoutes, plannerNotFoundRoute, plannerWorkspaceRoutes } from './routes/groups'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
 import { listPlansVia, usePlanStore, type PlanStore } from './data/planStoreContext'
 import { PlanStoreProvider } from './data/PlanStoreProvider'
@@ -119,7 +119,12 @@ export function App({
   const location = useLocation()
   // The full route table — <Routes> is exactly useRoutes over its children,
   // so composing the exported groups this way renders identically.
-  const routeTree = useRoutes([...plannerHomeRoutes, ...plannerWorkspaceRoutes, ...plannerContentRoutes])
+  const routeTree = useRoutes([
+    ...plannerHomeRoutes,
+    ...plannerWorkspaceRoutes,
+    ...plannerContentRoutes,
+    plannerNotFoundRoute,
+  ])
   const isLanding = location.pathname === '/' || location.pathname === '/examples'
   // How-tested is reached from Disclaimer and has no nav item of its own, so
   // Disclaimer stays the active place while it is open (#419). NavLink only

@@ -310,6 +310,51 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(page.slice(overview)).toMatch(/className="btn-ghost btn-ghost-danger"/)
   })
 
+  it('wide-table wraps show a scroll cue, take focus, and can opt out of the height cap (#468, #480, #483)', () => {
+    const wrap = rule('.year-table-wrap')
+    // Two cover layers that scroll with the content and two shadow layers that stay put.
+    expect(wrap).toMatch(/background-attachment:\s*local, local, scroll, scroll/)
+    expect(wrap).toMatch(/color-mix\(in srgb, var\(--fg\) 18%, transparent\)/)
+    // Token colors only (comments stripped: the rule's own comment cites issue numbers).
+    expect(wrap.replace(/\/\*[\s\S]*?\*\//g, '')).not.toMatch(/#[0-9a-f]{3,6}\b/i)
+    expect(rule('.year-table-wrap:focus-visible')).toMatch(/outline:\s*2px solid var\(--accent\)/)
+    expect(rule('.year-table-wrap--grow')).toMatch(/max-height:\s*none/)
+    // The sticky first column covers the wrap's left cue, so it carries its own
+    // scroll-driven edge shadow, behind @supports and off while nothing overflows.
+    const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
+    expect(css).toMatch(
+      /@supports \(animation-timeline: scroll\(\)\) \{\s*\.year-table th:first-child,\s*\.year-table td:first-child \{[^}]*animation-timeline:\s*scroll\(nearest inline\)/,
+    )
+    expect(css).toMatch(/@keyframes sticky-column-edge \{[\s\S]*?box-shadow: [^;]*color-mix\(in srgb, var\(--fg\) 18%, transparent\)/)
+    // The three tables the findings named are ScrollRegions, and the Results
+    // year table prints $0 in the columns that used to go blank at zero.
+    const survivor: string = readFileSync(fileURLToPath(new URL('./SurvivorTransitionPage.tsx', import.meta.url)), 'utf8')
+    expect(survivor).toMatch(/<ScrollRegion label=\{`Death-timing scenarios for \$\{personName\}`\} grow/)
+    const scenarios: string = readFileSync(fileURLToPath(new URL('./ScenariosPage.tsx', import.meta.url)), 'utf8')
+    expect(scenarios).toMatch(/<ScrollRegion label="Scenario overview table"/)
+    const results: string = readFileSync(fileURLToPath(new URL('./ResultsPage.tsx', import.meta.url)), 'utf8')
+    expect(results).toMatch(/<ScrollRegion label="Year-by-year table">/)
+    // No raw wrap is left on the pages this batch edited: every table there is named and reachable.
+    expect(results).not.toMatch(/<div className="year-table-wrap"/)
+    expect(scenarios).not.toMatch(/<div className="year-table-wrap"/)
+    for (const label of ['{caption}', '"Annual ledger comparison"', '"Capacity solve status"']) {
+      expect(scenarios).toContain(`<ScrollRegion label=${label}`)
+    }
+    expect(results).toContain('<ScrollRegion label="Roth conversion details"')
+    // The Learning Center article describes the cell the table now prints.
+    const article: string = readFileSync(
+      fileURLToPath(new URL('../learn/content/reading-the-results-page.ts', import.meta.url)),
+      'utf8',
+    )
+    expect(article).toContain('A $0 shortfall cell is good news')
+    expect(article).not.toMatch(/blank shortfall cell/i)
+    for (const field of ['contributions', 'employerMatch', 'shortfall']) {
+      expect(results, `${field} cell prints a formatted zero`).toMatch(new RegExp(`fmtMoney\\(adj\\(y\\.year, y\\.${field}\\)\\)`))
+      // The row-depleted class toggle keeps its threshold; only the cell shape is banned.
+      expect(results, `${field} cell no longer blanks at zero`).not.toMatch(new RegExp(`y\\.${field} > 0\\.005 \\? fmtMoney`))
+    }
+  })
+
   it('text, select, and affixed inputs share one height token', () => {
     const affix = rule('.input-affix')
     expect(affix).toMatch(/min-height:\s*var\(--control-height\)/)

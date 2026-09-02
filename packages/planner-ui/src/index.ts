@@ -47,6 +47,7 @@ export { useImportAvailability, useImportEnabled } from './import/importAvailabi
 export {
   plannerContentRoutes,
   plannerHomeRoutes,
+  plannerNotFoundRoute,
   plannerWorkspaceRoutes,
 } from './routes/groups.tsx'
 

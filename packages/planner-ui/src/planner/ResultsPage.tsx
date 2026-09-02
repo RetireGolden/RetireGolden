@@ -54,6 +54,7 @@ import {
   hasCapitalLossCarryforward,
 } from './capitalLossCarryforwardVisibility'
 import { ProfessionalConfirmationMarker } from './ProfessionalConfirmationMarker'
+import { ScrollRegion } from './ScrollRegion'
 import { citationHref } from './provenanceLinks'
 import { buildYearCashFlowSankey, type YearCashFlowSankeyViewId } from './yearCashFlow'
 import { YearCashFlowDialog } from './yearCashFlow/YearCashFlowDialog'
@@ -338,7 +339,7 @@ function InheritedAccountSchedule({
           </ul>
         </>
       ) : null}
-      <div className="year-table-wrap" style={{ border: 'none', marginTop: '0.5rem' }}>
+      <ScrollRegion label="Roth conversion details" style={{ border: 'none', marginTop: '0.5rem' }}>
         <table className="year-table">
           <thead>
             <tr>
@@ -361,7 +362,7 @@ function InheritedAccountSchedule({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </details>
   )
 }
@@ -553,7 +554,7 @@ export function YearByYearLedger({
       {invalidFlowRedirect !== null ? (
         <Navigate to={{ pathname: location.pathname, search: invalidFlowRedirect }} replace />
       ) : null}
-      <div className="year-table-wrap">
+      <ScrollRegion label="Year-by-year table">
         <table className="year-table">
           <thead>
             <tr>
@@ -600,8 +601,10 @@ export function YearByYearLedger({
                       : ''}
                   </td>
                 ) : null}
-                <td>{y.contributions > 0.005 ? fmtMoney(adj(y.year, y.contributions)) : ''}</td>
-                <td>{y.employerMatch > 0.005 ? fmtMoney(adj(y.year, y.employerMatch)) : ''}</td>
+                {/* Zero prints as $0, the convention the RMD / Conversion / Withdrawals
+                    columns already follow; a blank read as missing data (#483). */}
+                <td>{fmtMoney(adj(y.year, y.contributions))}</td>
+                <td>{fmtMoney(adj(y.year, y.employerMatch))}</td>
                 <td>{fmtMoney(adj(y.year, y.rmd))}</td>
                 <td>{fmtMoney(adj(y.year, y.rothConversion))}</td>
                 <td>{fmtMoney(adj(y.year, y.withdrawals.total))}</td>
@@ -610,7 +613,7 @@ export function YearByYearLedger({
                 <td>{fmtMoney(adj(y.year, y.magi))}</td>
                 <td>{y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining > 0.5 ? fmtMoney(adj(y.year, y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining)) : ''}</td>
                 {hasCarryforward ? <td>{y.capitalLossCarryforwardRemaining > 0.5 ? fmtMoney(adj(y.year, y.capitalLossCarryforwardRemaining)) : '—'}</td> : null}
-                <td>{y.shortfall > 0.005 ? fmtMoney(adj(y.year, y.shortfall)) : ''}</td>
+                <td>{fmtMoney(adj(y.year, y.shortfall))}</td>
                 {hasLayeredSpending ? (
                   <td>
                     {y.requiredShortfall + y.targetShortfall + y.idealShortfall + y.excessShortfall > 0.5 ? (
@@ -656,7 +659,7 @@ export function YearByYearLedger({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       {selectedYear !== undefined && model !== null ? (
         <YearCashFlowDialog
           model={model}

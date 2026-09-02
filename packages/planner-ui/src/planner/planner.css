@@ -298,6 +298,15 @@
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
   gap: 1rem;
   margin: 1.25rem 0;
+  /* Rendered as a <ul> on the example library (#478): no bullets or indent. */
+  list-style: none;
+  padding: 0;
+}
+
+/* A card heading is a title, not a section heading: keep the card-name size. */
+.plan-grid h2.plan-card-name {
+  margin: 0;
+  font-size: 1.05rem;
 }
 
 .home-paths-grid.plan-grid {
@@ -1279,6 +1288,33 @@ html:has(.kpi-bar) {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-1);
+  /* Scroll cue (#468, #480, #483): edge shadows that exist only while there
+     is more to see in that direction. Two background layers per edge — a
+     surface-colored cover that scrolls with the content (attachment: local)
+     and an ink-tinted shadow that stays put (attachment: scroll). At rest the
+     cover hides the shadow; scrolling moves the cover away and the shadow
+     shows. Token colors only, so both themes get it. */
+  background-image:
+    linear-gradient(to right, var(--surface-1) 40%, transparent),
+    linear-gradient(to left, var(--surface-1) 40%, transparent),
+    linear-gradient(to right, color-mix(in srgb, var(--fg) 18%, transparent), transparent),
+    linear-gradient(to left, color-mix(in srgb, var(--fg) 18%, transparent), transparent);
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 2.5rem 100%, 2.5rem 100%, 0.9rem 100%, 0.9rem 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* A keyboard-reachable scroller shows the app focus ring like any control. */
+.year-table-wrap:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Opt out of the height cap when a table has few rows: capping sliced the
+   survivor tables mid-row with no cue that more existed (#468). */
+.year-table-wrap--grow {
+  max-height: none;
 }
 
 .year-table {
@@ -1303,6 +1339,29 @@ html:has(.kpi-bar) {
   z-index: 1;
   background: var(--surface-1);
   font-weight: 600;
+}
+
+/* The opaque sticky column paints over the wrap's left-edge cue, so once the
+   wrap has scrolled inline the column carries the shadow itself: a
+   scroll-driven animation fades it in over the first 2rem of travel and the
+   timeline stays inactive (no shadow) while nothing overflows. Browsers
+   without scroll timelines keep the plain column. */
+@supports (animation-timeline: scroll()) {
+  .year-table th:first-child,
+  .year-table td:first-child {
+    animation: sticky-column-edge linear both;
+    animation-timeline: scroll(nearest inline);
+    animation-range: 0 2rem;
+  }
+}
+
+@keyframes sticky-column-edge {
+  from {
+    box-shadow: none;
+  }
+  to {
+    box-shadow: 0.35rem 0 0.5rem -0.25rem color-mix(in srgb, var(--fg) 18%, transparent);
+  }
 }
 
 .year-table thead th {

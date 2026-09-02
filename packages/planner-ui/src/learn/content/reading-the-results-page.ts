@@ -55,7 +55,7 @@ export const blocks: ArticleBlock[] = [
   {
     type: 'callout',
     tone: 'note',
-    md: 'A blank shortfall cell is good news for that year. It means the modeled accounts covered the plan\'s cash needs for that year.',
+    md: 'A $0 shortfall cell is good news for that year. It means the modeled accounts covered the plan\'s cash needs for that year.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

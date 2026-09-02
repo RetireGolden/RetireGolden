@@ -13,6 +13,7 @@ import {
 } from '../planner/sections'
 import { SocialSecuritySection } from '../planner/SocialSecuritySection'
 import { EditableFieldset } from '../planner/EditableFieldset'
+import { WorkspaceNotFound } from '../planner/NotFoundPage'
 import { RouteErrorBoundary } from '../RouteErrorBoundary'
 import { RouteFallback } from './RouteFallback'
 import {
@@ -76,6 +77,9 @@ export default function PlanRoutes() {
         <Route path="optimize" element={suspended(<OptimizePage />)} />
         <Route path="spending-solver" element={suspended(<SpendingSolverPage />)} />
         <Route path="insights" element={suspended(<InsightsPage />)} />
+        {/* An unknown section segment renders not-found chrome inside the
+            workspace instead of a skeleton that never resolves (#464). */}
+        <Route path="*" element={<WorkspaceNotFound />} />
       </Route>
       <Route path=":planId/report" element={suspended(<ReportPage />)} />
     </Routes>

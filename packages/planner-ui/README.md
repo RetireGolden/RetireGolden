@@ -413,6 +413,7 @@ workspace group mounted:
 | `plannerWorkspaceRoutes` | `plan/:planId/*` (sections, results, Monte Carlo, scenarios, survivor, relocation, optimizers, report) + `compare` | The plan workspace a host wraps in its own chrome |
 | `plannerContentRoutes` | `examples`, `learn/*`, `disclaimer`, `how-tested` | Storage-independent content; workspace pages link into it, so mount it (or redirect those paths) |
 | `plannerHomeRoutes` | `` (index), `import`, retired-route redirects | The web plans-management home — omit it if the host owns plan management |
+| `plannerNotFoundRoute` | `*` | A single route (not a group): the planner's not-found page for unmatched URLs. Spread it last, and only if the host has no catch-all of its own |
 
 ```tsx
 import { useRoutes } from 'react-router'

@@ -62,6 +62,39 @@ describe('example library page', () => {
     expect(browse!.getAttribute('aria-controls')).toBeNull()
   })
 
+  it('renders cards as a labelled list with headings and per-example action names (#478)', async () => {
+    await renderExamples()
+    const grid = container.querySelector('ul.plan-grid[role="list"][aria-label="Featured examples"]')!
+    expect(grid).not.toBeNull()
+    const cards = [...grid.querySelectorAll(':scope > li.example-card')]
+    expect(cards).toHaveLength(3)
+    const titles = cards.map((c) => c.querySelector('h2.plan-card-name')?.textContent)
+    expect(titles.every(Boolean)).toBe(true)
+    // Every action names its example, so no two cards share an accessible name,
+    // and the visible label stays a contiguous prefix of that name (Label in Name).
+    const names = actionNames(cards)
+    expect(new Set(names).size).toBe(names.length)
+    expect(names).toContain(`Open ${titles[0]}`)
+    expect(names).toContain(`Save to my plans: ${titles[0]}`)
+    expect(names).toContain(`Learn about this example: ${titles[0]}`)
+    // Expanding announces the change to assistive tech.
+    const status = container.querySelector('[role="status"][aria-live="polite"]')!
+    expect(status.textContent).toBe('Showing 3 featured examples.')
+    const browse = Array.from(container.querySelectorAll('button')).find((b) =>
+      /Show all \d+ examples/.test(b.textContent ?? ''),
+    )!
+    await act(async () => {
+      browse.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(status.textContent).toMatch(/^Showing all \d+ examples\.$/)
+    expect(container.querySelector('ul#examples-full-grid[role="list"][aria-label="All other examples"]')).not.toBeNull()
+    // Uniqueness holds across the whole expanded library, not just the three starters.
+    const allNames = actionNames([...container.querySelectorAll('.example-card')])
+    expect(allNames).toHaveLength(EXAMPLE_PLANS.length * 3)
+    expect(new Set(allNames).size).toBe(allNames.length)
+  })
+
   it('keeps the toggle after the rows it controls and keeps focus on it across a collapse (#445)', async () => {
     await renderExamples()
     const browse = Array.from(container.querySelectorAll('button')).find((b) =>
@@ -158,6 +191,25 @@ describe('example library page', () => {
     }
   })
 })
+
+/**
+ * The accessible names of a card's actions. Asserts along the way that each
+ * name starts with the control's visible text (minus the decorative arrow),
+ * which is what lets a speech-input user activate it by reading the label.
+ */
+function actionNames(cards: Element[]): string[] {
+  return cards.flatMap((card) =>
+    [...card.querySelectorAll('button, a')].map((el) => {
+      const name = el.getAttribute('aria-label')
+      const clone = el.cloneNode(true) as Element
+      for (const hidden of clone.querySelectorAll('[aria-hidden="true"]')) hidden.remove()
+      const visible = clone.textContent!.trim()
+      expect(name, `${visible} has an accessible name`).toBeTruthy()
+      expect(name!.startsWith(visible), `"${name}" starts with its visible label "${visible}"`).toBe(true)
+      return name!
+    }),
+  )
+}
 
 /** Label + ` →` must share one inline box so `.btn` flex cannot collapse the space. */
 function expectLearnArrowSharesLabelBox(link: Element) {

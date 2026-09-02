@@ -15,6 +15,7 @@ import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { LEARN } from './learnLinks'
+import { ScrollRegion } from './ScrollRegion'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
 import {
@@ -65,7 +66,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
     )
   }
   return (
-    <div className="year-table-wrap" style={{ border: 'none' }}>
+    <ScrollRegion label={`Death-timing scenarios for ${personName}`} grow style={{ border: 'none' }}>
       {/* survivor-table: a column floor so headers wrap on word boundaries at
           most once, and the wrap scrolls instead of stacking them (#431). */}
       <table className="compare-table survivor-table">
@@ -159,7 +160,7 @@ function ScenarioTable({ rows, personName }: { rows: SurvivorScenarioRow[]; pers
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   )
 }
 
