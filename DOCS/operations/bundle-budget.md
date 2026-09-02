@@ -73,6 +73,12 @@ asserted a second time, from the outside, by planner-ui's
 [`pack-smoke.mjs`](../../packages/planner-ui/scripts/pack-smoke.mjs): a scratch Vite consumer of the
 published tarball must emit exactly one worker chunk.
 
+The worker is emitted as an ES-module graph because its one spawn site already uses
+`{ type: 'module' }`. That lets selected, high-contract annual publication coordinators remain small
+static chunks in both the app and worker graphs instead of forcing their explicit snapshot contracts
+back into either already-tight entry. Those chunks stay precached; the split changes parsing and chunk
+ownership, not the offline guarantee or the one-worker-entry invariant.
+
 A chunk rolldown names differently after a refactor stops matching its row and falls through to the
 260 KiB default. That is intended: a chunk that changed identity should be looked at, not silently
 inherit a large allowance. The app entry is the exception — it is identified by the script `index.html`

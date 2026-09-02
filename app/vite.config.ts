@@ -8,8 +8,30 @@ import { defineConfig } from 'vitest/config'
 const engineSrc = fileURLToPath(new URL('../packages/engine/src', import.meta.url)).replaceAll('\\', '/')
 const plannerUiSrc = fileURLToPath(new URL('../packages/planner-ui/src', import.meta.url)).replaceAll('\\', '/')
 
+const annualProjectionPublicationChunk = (id: string): string | undefined =>
+  id.endsWith('/packages/engine/src/projection/internal/annualAcaResultPublication.ts')
+    ? 'annualProjectionPublications'
+    : undefined
+
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      output: {
+        manualChunks: annualProjectionPublicationChunk,
+      },
+    },
+  },
+  worker: {
+    // The sole worker is already spawned as `type: 'module'`. ES output lets
+    // its graph share the same deliberate static split as the app build.
+    format: 'es',
+    rolldownOptions: {
+      output: {
+        manualChunks: annualProjectionPublicationChunk,
+      },
+    },
+  },
   resolve: {
     // Dev, tests, and the bundled build all consume the workspace packages
     // straight from their TypeScript source — no rebuild step while
