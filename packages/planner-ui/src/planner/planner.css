@@ -1021,11 +1021,39 @@
   margin-bottom: 0.6rem;
 }
 
+/* An item row's head: a chip-and-text title beside Remove. The two sit on
+   the first line's baseline, so a long title (a goal label, #526) wraps
+   inside its own box rather than pushing the control out of the row or,
+   centred, sliding it to the middle of a two-line block. Scoped to heads
+   that hold a title: the same class also heads a card with an h2 beside a
+   button or a checkbox (Monte Carlo, Scenarios), which keeps centring. */
+.item-row-head:has(> .item-row-title) {
+  align-items: baseline;
+}
+
+.item-row-head > .btn-ghost {
+  flex-shrink: 0;
+}
+
 .item-row-title {
   font-weight: 650;
   display: flex;
-  align-items: center;
+  /* The chip shares the text's baseline. Centred, a chip beside a two-line
+     title floated between the lines, and the head (whose baseline is the
+     chip's) put Remove there too. */
+  align-items: baseline;
   gap: 0.5rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* `overflow-wrap: anywhere` inherits, and it counts every character as a
+   break opportunity when a flex item's minimum width is measured, so the
+   chip would shrink and wrap "GOAL" onto two lines beside a long title. The
+   chip keeps its width; only the title text breaks. */
+.item-row-title > .type-chip {
+  flex-shrink: 0;
+  overflow-wrap: normal;
 }
 
 .type-chip {

@@ -145,4 +145,20 @@ describe('issue jump (#494)', () => {
     expect(routeForIssues(['incomes.0.claimAge.years: Too small: expected number to be >=62'])).toBe('social-security')
     expect(routeForIssues([])).toBeNull()
   })
+
+  it('sends a capital-loss carryforward issue to Strategy, where its field is, and lands on that field (#553)', () => {
+    const issues = ['household.capitalLossCarryforward: Too small: expected number to be >=0']
+    expect(firstIssue(issues)).toEqual({ section: 'strategy', path: 'household.capitalLossCarryforward' })
+    expect(routeForIssues(issues)).toBe('strategy')
+    // On Strategy the control wired to the path is the target, not the list.
+    document.body.innerHTML = `
+      <ul class="issue-list" id="plan-issues-strategy" tabindex="-1"></ul>
+      <input id="carry" aria-invalid="true" data-path="household.capitalLossCarryforward" />
+    `
+    expect(focusIssueTarget(document, 'strategy', 'household.capitalLossCarryforward')).toBe(true)
+    expect(document.activeElement?.id).toBe('carry')
+    // On Household there is no such field and no Strategy list: nothing to land on, so the caller navigates.
+    document.body.innerHTML = `<ul class="issue-list" id="plan-issues-household" tabindex="-1"></ul>`
+    expect(focusIssueTarget(document, 'strategy', 'household.capitalLossCarryforward')).toBe(false)
+  })
 })
