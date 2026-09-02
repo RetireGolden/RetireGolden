@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 323,
+    "totalFiles": 324,
     "byStatus": {
       "partial": 53,
       "registered": 102,
-      "rule-free": 168,
+      "rule-free": 169,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -239,7 +239,7 @@
     {
       "path": "projection/internal/annualAggregateRothConversionTargetPlan.ts",
       "sweptOn": "2026-09-02",
-      "note": "the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. simulatePlan retains source-context construction and lazy current-balance readers, every conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer publication, and all live annual commits"
+      "note": "the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. internal/annualAggregateRothConversionPhase.ts retains source-context construction and lazy current-balance readers, every aggregate conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer inputs, and all live aggregate-conversion commits; simulatePlan supplies the surrounding annual facts and consumes the typed phase result"
     },
     {
       "path": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
@@ -269,12 +269,12 @@
     {
       "path": "projection/internal/annualQcdExecutionInput.ts",
       "sweptOn": "2026-09-02",
-      "note": "the immutable named-QCD preparation coordinator composes the registered annual prerequisite and physical-staging producers. It owns donor alive/prior-offset evidence assembly, including the same registered 846-calendar-month threshold-year convention, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, and complete owned-IRA Form 8606 pool-capacity inputs. These are evidence, transaction-snapshot, and projection-composition semantics; the underlying QCD eligibility, section 219 offset, RMD coordination, and Form 8606 rules remain in their registered action producers. simulatePlan supplies post-forced-distribution balances plus owner RMD/basis/offset state and retains the executor call, all gift debits, basis/RMD character, runtime journaling, warnings, cash-flow writes, settlement, and publication"
+      "note": "the immutable named-QCD preparation coordinator composes the registered annual prerequisite and physical-staging producers. It owns donor alive/prior-offset evidence assembly, including the same registered 846-calendar-month threshold-year convention, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, and complete owned-IRA Form 8606 pool-capacity inputs. These are evidence, transaction-snapshot, and projection-composition semantics; the underlying QCD eligibility, section 219 offset, RMD coordination, and Form 8606 rules remain in their registered action producers. internal/annualForcedDistributionQcdAndRetirementActions.ts supplies post-forced-distribution balances plus owner RMD/basis/offset state and retains the executor call, all gift debits, basis/RMD character, runtime journaling, warnings, cash-flow writes, settlement, and publication"
     },
     {
       "path": "projection/internal/annualRothConversionExecutionInput.ts",
       "sweptOn": "2026-09-02",
-      "note": "the immutable named Roth-conversion preparation coordinator owns request-keyed alive, annual owner-RMD satisfaction, and aggregated-IRA basis evidence; exact-cent floored source-capacity and half-up destination snapshots; and withdrawal-result narrowing of a provisional linked-group release. It composes the registered conversion eligibility producers and already-attested linked-group assessment rather than introducing a new filing-grade rule. simulatePlan supplies live post-RMD and post-ordinary-withdrawal balances plus settled owner RMD/basis facts, and retains the named-conversion executor, every debit and credit, Form 8606 and Roth-basis mutation, runtime/application journaling, warnings, settlement, cash-flow publication, and final YearResult publication"
+      "note": "the immutable named Roth-conversion preparation coordinator owns request-keyed alive, annual owner-RMD satisfaction, and aggregated-IRA basis evidence; exact-cent floored source-capacity and half-up destination snapshots; and withdrawal-result narrowing of a provisional linked-group release. It composes the registered conversion eligibility producers and already-attested linked-group assessment rather than introducing a new filing-grade rule. internal/annualForcedDistributionQcdAndRetirementActions.ts supplies live post-RMD and post-ordinary-withdrawal balances plus settled owner RMD/basis facts, and retains the named-conversion executor, every debit and credit, Form 8606 and Roth-basis mutation, runtime/application journaling, warnings, settlement, cash-flow publication, and typed result publication to simulatePlan"
     },
     {
       "path": "projection/internal/annualSocialSecurity.ts",
@@ -444,11 +444,11 @@
     },
     {
       "directory": "projection",
-      "files": 87,
+      "files": 88,
       "byStatus": {
         "partial": 18,
         "registered": 15,
-        "rule-free": 54
+        "rule-free": 55
       }
     },
     {

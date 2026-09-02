@@ -93,8 +93,8 @@ import {
 } from './internal/annualContributionsAndEmployerMatch.js'
 import { annualForcedDistributionQcdAndRetirementActions } from
   './internal/annualForcedDistributionQcdAndRetirementActions.js'
-import { annualAggregateRothConversionPhase } from
-  './internal/annualAggregateRothConversionPhase.js'
+import { annualAggregateRothConversionPhase } from './internal/annualAggregateRothConversionPhase.js'
+import { annualRothBasisPoolKey } from './internal/annualRothBasisPoolKey.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountGrowth.js'
@@ -1025,7 +1025,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // disclosure-only). Documented v1 residual: basis migration into the owned
   // Roth pool after the flip is future work (matrix §7 WS4 residuals).
   const rothPoolKey = (account: Extract<Account, { type: 'roth' }>): string =>
-    account.kind === 'ira' ? `rothira:${account.ownerPersonId ?? primary.id}` : `roth:${account.id}`
+    annualRothBasisPoolKey(account, primary.id)
   /** True when this Roth still carries an inherited block (never joins owned pool in v1). */
   const isInheritedRothOutsideOwnedPool = (
     account: Extract<Account, { type: 'roth' }>,

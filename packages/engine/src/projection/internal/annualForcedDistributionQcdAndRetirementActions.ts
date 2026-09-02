@@ -52,10 +52,10 @@ import {
 } from '../../actions/index.js'
 import { compareUtf16CodeUnits } from '../../actions/structuralId.js'
 import type { SimulatorAnnualPassDeferredFirstRmd } from '../annualPassTransaction.js'
-import type {
-  AnnualConversionLinkedWithdrawalRelease,
-} from './annualConversionLinkedWithdrawalFunding.js'
+import type { AnnualConversionLinkedWithdrawalRelease }
+  from './annualConversionLinkedWithdrawalFunding.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
+import { annualRothBasisPoolKey } from './annualRothBasisPoolKey.js'
 
 type TreatAsOwnAccount = Parameters<typeof isTreatAsOwnEffective>[0]
 type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
@@ -381,10 +381,10 @@ export function annualForcedDistributionQcdAndRetirementActions(
     grossAmountPlanDollars: number
     nonQualifiedLine7GrossPlanDollars: number
   }[] = []
-  const rothPoolKey = (account: Extract<Account, { type: 'roth' }>): string =>
-    account.kind === 'ira'
-      ? `rothira:${account.ownerPersonId ?? primary.id}`
-      : `roth:${account.id}`
+  const rothPoolKey = (
+    account: Extract<Account, { type: 'roth' }>,
+  ): string =>
+    annualRothBasisPoolKey(account, primary.id)
   // This year's FALLBACK Form-8606 pro-rata denominator per owner (step 5):
   // the aggregated pre-distribution IRA balance — after contributions, before
   // any RMD/SEPP/conversion/withdrawal depletes it. Fallback because the
@@ -489,14 +489,14 @@ export function annualForcedDistributionQcdAndRetirementActions(
    * belongs on Form 8606 line 7, in the line-9 denominator, and it recovers
    * basis pro rata.
    */
-  interface DeferredLegacyQcdDistribution {
-    readonly ownerId: string
-    readonly amount: number
-    readonly producerOccurrenceKey: string
-    readonly sourceAccountId: string
-    readonly mutationOrdinal: number
-  }
-  const deferredLegacyQcdDistributions: DeferredLegacyQcdDistribution[] = []
+  /**
+   * The live buffer and exported result intentionally share the module-level
+   * element type. One named contract keeps future field additions aligned
+   * across execution and publication without a structurally duplicate shape.
+   * The array itself remains mutable until the phase returns it.
+   */
+  const deferredLegacyQcdDistributions:
+    DeferredLegacyQcdDistribution[] = []
   /**
    * Per-occurrence characterization of the moving half of the gift, published
    * with the year so the replay never has to re-derive it.

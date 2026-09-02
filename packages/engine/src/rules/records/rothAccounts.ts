@@ -281,7 +281,7 @@ export const rothAccountRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registry slice. Pub 590-B’s year-aggregate reading takes the year’s taxable conversion principal before any nontaxable principal from that year. The engine records one layer per named conversion action (projection/simulate.ts) and `splitRothWithdrawal` walks those layers in array order, so a nontaxable 2024 layer ahead of a taxable 2024 layer can be fully consumed first. On the fixture — two same-year $5,000 layers with the nontaxable one first, then a $5,000 draw at age 50 — year-aggregate taxable-first yields $500 of additional tax; array order yields $0. The per-contribution FIFO record cannot carry this gap because both layers share a year.',
+      'DEFECT — no behavior change in this registry slice. Pub 590-B’s year-aggregate reading takes the year’s taxable conversion principal before any nontaxable principal from that year. The engine records one layer per named conversion action (projection/internal/annualForcedDistributionQcdAndRetirementActions.ts) and `splitRothWithdrawal` walks those layers in array order, so a nontaxable 2024 layer ahead of a taxable 2024 layer can be fully consumed first. On the fixture — two same-year $5,000 layers with the nontaxable one first, then a $5,000 draw at age 50 — year-aggregate taxable-first yields $500 of additional tax; array order yields $0. The per-contribution FIFO record cannot carry this gap because both layers share a year.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -302,10 +302,10 @@ export const rothAccountRecords = {
     verifiedOn: '2026-08-25',
     implementedBy: [
       'packages/engine/src/strategies/rothBasis.ts',
-      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts#annualForcedDistributionQcdAndRetirementActions',
       'packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal',
     ],
   },

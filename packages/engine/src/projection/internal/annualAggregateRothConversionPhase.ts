@@ -33,9 +33,9 @@ import type { OwnedNonRothIraAnnualSettlementEffect } from '../../internal/owned
 import { ledgerCentsToPlanDollars } from '../../actions/index.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
 import type { FilingStatus } from '../../params/types.js'
-import type {
-  AnnualForcedDistributionQcdRetirementActionsResult,
-} from './annualForcedDistributionQcdAndRetirementActions.js'
+import type { AnnualForcedDistributionQcdRetirementActionsResult }
+  from './annualForcedDistributionQcdAndRetirementActions.js'
+import { annualRothBasisPoolKey } from './annualRothBasisPoolKey.js'
 
 type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
   SimulatorRetirementRuntimeApplication extends infer Application
@@ -273,10 +273,10 @@ export function annualAggregateRothConversionPhase(
   const aggregateConversionDraws = capture?.aggregateConversionDraws ?? null
   const rmdBalances = annualIdKeyedBalances
   let conversionNontaxable = 0
-  const rothPoolKey = (account: Extract<Account, { type: 'roth' }>): string =>
-    account.kind === 'ira'
-      ? `rothira:${account.ownerPersonId ?? primary.id}`
-      : `roth:${account.id}`
+  const rothPoolKey = (
+    account: Extract<Account, { type: 'roth' }>,
+  ): string =>
+    annualRothBasisPoolKey(account, primary.id)
   // --- Roth conversions (after RMDs — RMDs must be satisfied first) -------
   const peopleAged65Plus = peopleStates.filter((s) => s.alive && s.ageAttained >= 65).length
   // Forced IRA distributions count only their taxable (post-pro-rata) part as
