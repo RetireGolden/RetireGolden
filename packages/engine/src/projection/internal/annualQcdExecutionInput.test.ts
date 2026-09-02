@@ -138,6 +138,14 @@ function input(
 
 describe('annualQcdExecutionInput', () => {
   it('builds the executor input from floored capacity and complete owner pools', () => {
+    // Independent worksheet, not production output:
+    // - spending capacity: floor($19,999.999 × 100) = 1,999,999 cents;
+    // - staged gift: min(2,000,000 requested, 1,999,999 capacity);
+    // - Form 8606 year-end pool: $300,000 + $200,000 - $19,999.99
+    //   = $480,000.01 = 48,000,001 cents.
+    // The capacity floor prevents the executor from drawing a rounded-up cent;
+    // the complete pool is the Form 8606 denominator described in
+    // DOCS/domain/domain-rules-reference/06-rmds-secure-20.md.
     const result = annualQcdExecutionInput(input())
 
     expect(result.status).toBe('ready')
@@ -171,7 +179,33 @@ describe('annualQcdExecutionInput', () => {
     ])
   })
 
+  it('starts the section 219 sweep in the 846-month threshold year', () => {
+    // IRC 408(d)(8)(A)'s second sentence counts section 219 deductions for
+    // taxable years ending on or after age 70½. Born 1950-12-31 reaches 70½
+    // on 2021-06-30, so the fixture's sole positive 2020 deduction is outside
+    // the sweep. Using 840 months (age 70) would incorrectly apply 3,000 cents.
+    // See rule records irc-408-d-8-A-post-70-half-deduction-offset and
+    // irc-408-d-8-B-ii-age-70-half. The latter registers the exact leap-day /
+    // month-end convention as unsettled; this annual filter consumes only the
+    // resulting threshold year, while the exact-date prerequisite suite owns
+    // the day-level contrary-reading tests.
+    const result = annualQcdExecutionInput(input({
+      people: [{ personId: 'p1', dob: '1950-12-31', alive: true }],
+    }))
+
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') throw new Error('expected ready input')
+    expect(
+      result.executorInput.physicalInput.runtimeEvidence
+        .priorQcdOffsetEvidence,
+    ).toEqual([expect.objectContaining({ priorOffsetApplied: 0 })])
+  })
+
   it('omits an unprovable prior-offset fact instead of inventing zero', () => {
+    // Notice 2020-68 reads the IRC 408(d)(8)(A) reduction as a lifetime
+    // running total. A positive post-70½ section 219 total with unprovable
+    // prior consumption therefore has no honest zero fact to publish; omission
+    // lets the prerequisite refuse qcd-contribution-history-unknown.
     const result = annualQcdExecutionInput(input({
       offsetHistoryUnprovableDonorIds: ['p1'],
     }))

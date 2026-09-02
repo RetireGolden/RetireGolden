@@ -39,7 +39,7 @@
       "id": "AJ.helper.priorOffsetCalculation",
       "label": "threshold-year contribution and prior-consumption calculation",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [151, 162],
+      "lines": [151, 169],
       "note": "The corpus takes the present-donor, provable-history route. Direct tests own missing threshold and unprovable-history returns.",
       "anchors": [
         { "line": 151, "text": ": addCalendarMonths(donor.dob, 846)" },
@@ -51,104 +51,104 @@
       "id": "AJ.helper.priorOffsetEvidence",
       "label": "provable prior-offset evidence result",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [166, 179],
+      "lines": [173, 186],
       "note": "The corpus owns the zero-consumption evidence route; the direct positive-offset test owns the consumed branch.",
       "anchors": [
-        { "line": 166, "text": "const actionDate = request.executionDate ?? null" },
-        { "line": 178, "text": "priorOffsetApplied: asUsdCents(offsetTotalCents === 0n ? 0 : consumed)," }
+        { "line": 173, "text": "const actionDate = request.executionDate ?? null" },
+        { "line": 185, "text": "priorOffsetApplied: asUsdCents(offsetTotalCents === 0n ? 0 : consumed)," }
       ]
     },
     {
       "id": "AJ.helper.prerequisite",
       "label": "runtime evidence and named-QCD prerequisite handoff",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [182, 199],
+      "lines": [189, 206],
       "note": "The blocked result arm immediately below this success range is pinned directly with an invalid tax year.",
       "anchors": [
-        { "line": 182, "text": "const runtimeEvidenceFor = (" },
-        { "line": 194, "text": "const prerequisite = evaluateAnnualQcdExecutionPrerequisites({" },
-        { "line": 198, "text": "runtimeEvidence: runtimeEvidenceFor(input.requests)," }
+        { "line": 189, "text": "const runtimeEvidenceFor = (" },
+        { "line": 201, "text": "const prerequisite = evaluateAnnualQcdExecutionPrerequisites({" },
+        { "line": 205, "text": "runtimeEvidence: runtimeEvidenceFor(input.requests)," }
       ]
     },
     {
       "id": "AJ.helper.executionIdentity",
       "label": "evaluated request, donor, source, RMD, and basis identity",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [208, 217],
+      "lines": [215, 224],
       "note": "The corpus creates the owner-basis map but its named-QCD members have no positive basis entry. Direct pool-arithmetic tests pin the owner-basis callback and propagated opening basis.",
       "anchors": [
-        { "line": 208, "text": "const requests = prerequisite.requests" },
-        { "line": 209, "text": "const donorIds = [...new Set(requests.map((request) =>" },
-        { "line": 213, "text": "const ownerRmdById = new Map(input.ownerRmd.map((row) => [" },
-        { "line": 217, "text": "const ownerBasisById = new Map(input.ownerBasis.map((row) => [" }
+        { "line": 215, "text": "const requests = prerequisite.requests" },
+        { "line": 216, "text": "const donorIds = [...new Set(requests.map((request) =>" },
+        { "line": 220, "text": "const ownerRmdById = new Map(input.ownerRmd.map((row) => [" },
+        { "line": 224, "text": "const ownerBasisById = new Map(input.ownerBasis.map((row) => [" }
       ]
     },
     {
       "id": "AJ.helper.sourceCapacity",
       "label": "exact-cent floored source-capacity snapshot",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [225, 232],
+      "lines": [232, 239],
       "anchors": [
-        { "line": 225, "text": "const openingBalances = freezeRows(input.balances" },
-        { "line": 229, "text": "openingBalance: planDollarsToFlooredLedgerCents(" }
+        { "line": 232, "text": "const openingBalances = freezeRows(input.balances" },
+        { "line": 236, "text": "openingBalance: planDollarsToFlooredLedgerCents(" }
       ]
     },
     {
       "id": "AJ.helper.rmdPools",
       "label": "complete owner RMD-pool opening snapshots",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [234, 274],
+      "lines": [241, 281],
       "anchors": [
-        { "line": 234, "text": "const rmdPools = freezeRows(donorIds.map((donorId) => {" },
-        { "line": 243, "text": "const sourceAccountIds = Object.freeze(input.balances" },
-        { "line": 262, "text": "rmdRequiredAmount: required," },
-        { "line": 266, "text": "rmdRemainingBefore: remaining," }
+        { "line": 241, "text": "const rmdPools = freezeRows(donorIds.map((donorId) => {" },
+        { "line": 250, "text": "const sourceAccountIds = Object.freeze(input.balances" },
+        { "line": 269, "text": "rmdRequiredAmount: required," },
+        { "line": 273, "text": "rmdRemainingBefore: remaining," }
       ]
     },
     {
       "id": "AJ.helper.physicalStaging",
       "label": "immutable physical input and staged gift attribution",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [276, 298],
+      "lines": [283, 305],
       "anchors": [
-        { "line": 276, "text": "const physicalInput: Readonly<StageAnnualQcdPhysicalExecutionInput> =" },
-        { "line": 287, "text": "const staging = stageAnnualQcdPhysicalExecution(physicalInput)" },
-        { "line": 290, "text": "for (const application of staging.applications) {" },
-        { "line": 295, "text": "application.executedAmount," }
+        { "line": 283, "text": "const physicalInput: Readonly<StageAnnualQcdPhysicalExecutionInput> =" },
+        { "line": 294, "text": "const staging = stageAnnualQcdPhysicalExecution(physicalInput)" },
+        { "line": 297, "text": "for (const application of staging.applications) {" },
+        { "line": 302, "text": "application.executedAmount," }
       ]
     },
     {
       "id": "AJ.helper.poolMembers",
       "label": "owned-IRA pool member balance and subtype assembly",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [300, 311],
+      "lines": [307, 318],
       "note": "Corpus members reach pool filtering and sort setup. Their named QCDs use one owned IRA, so direct tests own the multi-account comparator and deterministic account order.",
       "anchors": [
-        { "line": 300, "text": "const subtypeById = new Map(" },
-        { "line": 307, "text": "const poolCapacityInputs = Object.freeze(donorIds.map((donorId) => {" },
-        { "line": 311, "text": ".sort((left, right) =>" }
+        { "line": 307, "text": "const subtypeById = new Map(" },
+        { "line": 314, "text": "const poolCapacityInputs = Object.freeze(donorIds.map((donorId) => {" },
+        { "line": 318, "text": ".sort((left, right) =>" }
       ]
     },
     {
       "id": "AJ.helper.poolMemberRows",
       "label": "owned-IRA pool member balances and complete pool total",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [313, 347],
+      "lines": [320, 354],
       "anchors": [
-        { "line": 313, "text": "const poolMembers = freezeRows(poolAccounts.map((account) => {" },
-        { "line": 343, "text": "const poolBalance = asUsdCents(Number(poolMembers.reduce(" }
+        { "line": 320, "text": "const poolMembers = freezeRows(poolAccounts.map((account) => {" },
+        { "line": 350, "text": "const poolBalance = asUsdCents(Number(poolMembers.reduce(" }
       ]
     },
     {
       "id": "AJ.helper.poolEvidenceAndResult",
       "label": "complete Form 8606 pool evidence and executor input result",
       "file": "projection/internal/annualQcdExecutionInput.ts",
-      "lines": [348, 402],
+      "lines": [355, 409],
       "anchors": [
-        { "line": 348, "text": "const poolId = `projection-owned-ira-pool:${JSON.stringify([" },
-        { "line": 356, "text": "completePoolEvidence: Object.freeze({" },
-        { "line": 381, "text": "annualFacts: Object.freeze({" },
-        { "line": 398, "text": "return Object.freeze({" }
+        { "line": 355, "text": "const poolId = `projection-owned-ira-pool:${JSON.stringify([" },
+        { "line": 363, "text": "completePoolEvidence: Object.freeze({" },
+        { "line": 388, "text": "annualFacts: Object.freeze({" },
+        { "line": 405, "text": "return Object.freeze({" }
       ]
     },
     {

@@ -159,6 +159,13 @@ export function annualQcdExecutionInput(
       record.taxYear >= thresholdYear && record.taxYear <= request.year)
       .reduce((sum, record) => sum + BigInt(record.amountCents), 0n)
     const consumed = priorOffsetByDonor.get(request.donorPersonId) ?? 0
+    // IRC 408(d)(8)(A)'s second sentence, read with Notice 2020-68, is a
+    // lifetime net: post-70½ section 219 deductions less reductions already
+    // taken before this year. Zero is honest when no deduction ever entered
+    // limb (i). Once the deduction total is positive, however, unprovable
+    // prior consumption cannot be replaced with zero: doing so would invent
+    // unused deductions and overstate the exclusion. Omit the evidence so the
+    // prerequisite can refuse qcd-contribution-history-unknown instead.
     if (offsetTotalCents > 0n &&
         offsetHistoryUnprovable.has(request.donorPersonId)) {
       return null

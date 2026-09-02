@@ -192,6 +192,11 @@ describe('simulatePlan delegates named-QCD execution input', () => {
   it('hands the coordinator the live post-RMD balance and complete owner seeds', () => {
     const year = run()
     const call = seam.calls.at(-1)
+    // Uniform Lifetime Table age-76 divisor: 23.7. With no growth, the forced
+    // distribution is $500,000 / 23.7 and this QCD seam must see the remainder,
+    // not the $500,000 pre-distribution snapshot it separately carries.
+    const requiredRmd = 500_000 / 23.7
+    const postRmdBalance = 500_000 - requiredRmd
 
     expect(year.qcd).toBe(GIFT_DOLLARS)
     // One discarded settlement counterfactual pass, then the committed pass.
@@ -202,11 +207,12 @@ describe('simulatePlan delegates named-QCD execution input', () => {
       .toEqual(expect.objectContaining({
         ownerPersonId: 'p1',
         isAggregatedIra: true,
+        balancePlanDollars: expect.closeTo(postRmdBalance, 8),
         preDistributionBalancePlanDollars: 500_000,
       }))
     expect(call?.input.ownerRmd).toEqual([expect.objectContaining({
       ownerPersonId: 'p1',
-      requiredPlanDollars: expect.any(Number),
+      requiredPlanDollars: expect.closeTo(requiredRmd, 8),
       unsatisfiedPlanDollars: 0,
     })])
     expect(call?.input.ownerBasis).toEqual([{
