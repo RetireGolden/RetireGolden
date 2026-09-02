@@ -111,10 +111,10 @@ module"),
 `@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke` /
 `appShell.theme` test files. The Design-QA chrome pins live beside the planner as
 `planner/designQa.*.test.ts` (`chrome`, `clusterA`, `clusterB`, `clusterC`, `clusterE`, `clusterF`,
-`clusterH`, `validation`): each reads the stylesheet block its cluster appended rather than rendering it,
-since jsdom computes no layout. A cluster's rendered checks sit in a sibling file named for what they
-render: `designQa.clusterC.markup.test.tsx` and `designQa.clusterH.markup.test.tsx` (markup) and
-`designQa.clusterE.dom.test.tsx` (DOM). The list is by hand; `ls planner/designQa.*` is the truth.
+`clusterH`, `clusterI`, `validation`): each reads the stylesheet block its cluster appended rather than
+rendering it, since jsdom computes no layout. A cluster's rendered checks sit in a sibling file named for
+what they render: `designQa.clusterC.markup.test.tsx`, `designQa.clusterH.markup.test.tsx` and
+`designQa.clusterI.markup.test.tsx` (markup) and `designQa.clusterE.dom.test.tsx` (DOM). The list is by hand; `ls planner/designQa.*` is the truth.
 
 | Folder (`src/`) | What's here |
 |--------|-------------|

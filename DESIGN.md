@@ -313,17 +313,20 @@ transitions, restrained hover states that shift a border or tint a background by
   an `aria-label` on the frame saying what is plotted and over what, or, where the chart element
   inside already carries its own `aria-label`, that one alone. The figure role keeps the chart's own
   keyboard layer meaningful. A pin enforces this on Monte Carlo, Results, and the bucket lens.
-- **Help bubbles** (`HelpTip`): fixed-positioned and clamped to the viewport, treating the sticky
-  KPI bar's bottom edge as the top inside a plan; Escape and re-click dismiss a pinned bubble.
+- **Help bubbles** (`HelpTip`): fixed-positioned and clamped to the viewport, treating the KPI
+  bar's bottom edge as the top inside a plan while the bar is holding that edge; where it is not
+  — a phone, where the bar scrolls away — the clamp falls back to the viewport's own margin.
+  Escape and re-click dismiss a pinned bubble.
 
 ### The KPI Bar (signature component)
 Sticky verdict strip at the top of every planner page: auto-fit grid of KPIs, each an uppercase
 Label over a bold tabular value in clamp(1.15rem–1.5rem). Values wear verdict colors —
 good/bad/pending — and KPI values that route somewhere underline in their own tone at 55%
 opacity, sharpening on hover. Translucent surface with 8px backdrop blur so the ledger stays
-readable while the plan scrolls beneath. On phones (≤640px) it becomes one horizontally
-scrollable row and stops sticking: at that width the strip is ~100px tall and shows two of the
-five KPIs, so holding the top of the screen cost more of the form than the verdict it kept.
+readable while the plan scrolls beneath. Two narrow-viewport steps, and they are separate:
+under 880px the grid becomes one horizontally scrollable row, still sticky; under 640px that row
+also stops sticking, because at phone width the strip is ~100px tall and shows two of the five
+KPIs at a time, so holding the top of the screen cost more of the form than the verdict it kept.
 Stickiness is the rule wherever the viewport can afford it, not a property of the component.
 
 ## 6. Do's and Don'ts

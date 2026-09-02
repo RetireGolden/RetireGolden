@@ -176,10 +176,20 @@ describe('cluster I: the KPI bar does not hold the top of a phone screen (#566)'
     expect(phone).toMatch(/html:has\(\.kpi-bar\) \{\s*scroll-padding-top: 1rem;/)
   })
 
-  it('DESIGN.md says so too, so the doc and the stylesheet do not disagree about a signature component', () => {
+  it('DESIGN.md says so too, and keeps the two narrow-viewport steps apart (r1-2, r1-5)', () => {
     const design: string = sheet('../../../../DESIGN.md')
     expect(design).toContain('stops sticking')
     expect(design).toContain('Stickiness is the rule wherever the viewport can afford it')
+    // The scroll row and the unstick are different breakpoints; the doc has to
+    // say both, or a reader takes the 880px layout for the 640px behaviour.
+    expect(design).toMatch(/under 880px[\s\S]*?still sticky/)
+    expect(design).toMatch(/under 640px[\s\S]*?stops sticking/)
+    // And the HelpTip clamp cannot still call that edge unconditional, since
+    // on a phone the bar scrolls off and the clamp falls back to the margin.
+    // Read the bullet as one line, since the doc hard-wraps mid-sentence.
+    const tip = design.slice(design.indexOf('**Help bubbles**'), design.indexOf('### The KPI Bar')).replace(/\s+/g, ' ')
+    expect(tip).not.toContain("the sticky KPI bar's bottom edge as the top inside a plan;")
+    expect(tip).toContain('while the bar is holding that edge')
   })
 })
 
@@ -199,8 +209,18 @@ describe('cluster I: the help ⓘ never widows onto its own line (#573)', () => 
     expect(rules('.field-label-row > .field-label')[0]).toMatch(/margin-right:\s*0\.3rem/)
     expect(reserved[0]).toMatch(/padding-right:\s*1\.3rem/)
     expect(reserved[0]).toMatch(/margin-right:\s*0;/)
-    const tip = rules('.field-label-row > .help-tip')
-    expect(tip[tip.length - 1]).toMatch(/margin-left:\s*-1rem/)
+    // The pull-back names the label that reserved the room, so it can only
+    // apply where the reservation did, and both sit behind one feature query:
+    // without :has() the pair drops together and the original 0.3rem margin
+    // stands, rather than the icon sliding over the label text (r1-4).
+    const pull = rules('.field-label-row > .field-label:has(+ .help-tip) + .help-tip')
+    expect(pull).toHaveLength(1)
+    expect(pull[0]).toMatch(/margin-left:\s*-1rem/)
+    expect(rules('.field-label-row > .help-tip')[0]).not.toMatch(/margin-left/)
+    const gated = css.slice(css.indexOf('@supports selector(:has(*))'))
+    expect(css).toContain('@supports selector(:has(*))')
+    expect(gated.indexOf('padding-right: 1.3rem')).toBeGreaterThan(0)
+    expect(gated.indexOf('margin-left: -1rem')).toBeGreaterThan(0)
     // The label row stays inline formatting: flex would park the icon at the
     // cell's far edge instead of after the last word (#470, #471).
     expect(rules('.field-label-row')[0]).toMatch(/display:\s*block/)

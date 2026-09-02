@@ -65,6 +65,18 @@ function ownControlSelector(path: string): string {
   return `${INVALID_CONTROL_SELECTOR}[data-path="${escaped}"]`
 }
 
+function revealDisclosures(target: HTMLElement): void {
+  // A wired control can sit inside a collapsed <details> (the Social Security
+  // card keeps SSDI and the AIME explainer behind one). Focus does nothing to
+  // a control in a closed disclosure, so the chip would report success and
+  // leave the person on a card with the flagged field still hidden (r1-1).
+  let details: HTMLDetailsElement | null = target.closest('details')
+  while (details) {
+    details.open = true
+    details = details.parentElement?.closest('details') ?? null
+  }
+}
+
 /**
  * Scroll to and focus the control for the issue, else an issue list; true
  * when something was found. In order: the control wired to the first issue's
@@ -89,6 +101,8 @@ export function focusIssueTarget(root: ParentNode, section: IssueSection | null,
   const anyInvalid = path === null ? root.querySelector<HTMLElement>(INVALID_CONTROL_SELECTOR) : null
   const target = own ?? anyInvalid ?? list
   if (!target) return false
+  // Reveal before scrolling: a closed disclosure has no box to scroll to.
+  revealDisclosures(target)
   target.scrollIntoView?.({ block: 'center' })
   target.focus?.()
   return true

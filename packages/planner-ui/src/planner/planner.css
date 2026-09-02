@@ -3807,11 +3807,17 @@ html:has(.kpi-bar) {
    box does: the text now reflows to leave space on its last line and the icon
    is pulled back into it, so it always follows the label's last word (#470,
    #471). */
-.field-label-row > .field-label:has(+ .help-tip) {
-  margin-right: 0;
-  padding-right: 1.3rem;
-}
+@supports selector(:has(*)) {
+  .field-label-row > .field-label:has(+ .help-tip) {
+    margin-right: 0;
+    padding-right: 1.3rem;
+  }
 
-.field-label-row > .help-tip {
-  margin-left: -1rem;
+  /* The pull-back is only correct for the icon whose label reserved the room,
+     and only where the reservation itself applied — both halves are one rule
+     behind one feature query, so a browser without :has() keeps the original
+     0.3rem margin rather than sliding the icon over the label text (r1-4). */
+  .field-label-row > .field-label:has(+ .help-tip) + .help-tip {
+    margin-left: -1rem;
+  }
 }
