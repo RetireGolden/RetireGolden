@@ -31,6 +31,7 @@
  *   AB retirement-action settlement publication
  *   AE annual funding withdrawal effects
  *   AF annual funding candidate evaluation
+ *   AG conversion-linked withdrawal funding coordination
  *
  * A, B, C and E are the earlier "simulate batch" extraction. Block D's phase
  * was extracted concurrently and independently on main as
@@ -40,7 +41,7 @@
  * reach spec. In `simulate-expense-sepp-boundaries.json`, block J's expense
  * members measure entries A through D and block K's SEPP members measure entry
  * E; the entry letters identify extracted boundaries, not corpus block names.
- * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z, AB, AE and AF, each have a
+ * Blocks J through O, plus P, R, T, U, V, W, X, Y, Z, AB, AE, AF and AG, each have a
  * phase-specific reach spec beside the earlier batch instruments.
  *
  * The 29 curated example plans exercise A, D and E's growth leg incidentally,
@@ -68,13 +69,14 @@
  * `scripts/equivalence/specs/simulate-year-result-assembly-boundary.json`,
  * `scripts/equivalence/specs/simulate-funding-fixed-point-boundary.json`,
  * `scripts/equivalence/specs/simulate-funding-withdrawal-effects-boundary.json`,
- * and `scripts/equivalence/specs/simulate-funding-candidate-evaluation-boundary.json`
+ * `scripts/equivalence/specs/simulate-funding-candidate-evaluation-boundary.json`,
+ * and `scripts/equivalence/specs/simulate-conversion-linked-withdrawal-funding-boundary.json`
  * are the
  * line-range specs that turn those claims into measured hit counts
  * (`equivalence.mjs reach`).
  * The YearResult assembly and funding-fixed-point boundaries have no dedicated
  * corpus blocks: their specs measure the existing full corpus and use `AC`,
- * `AD`, and `AF` only as reach-entry namespaces. Block AE pins the otherwise-cold
+ * `AD`, `AF`, and `AG` only as reach-entry namespaces. Block AE pins the otherwise-cold
  * multi-account Roth-pool accumulation in the withdrawal-effects coordinator.
  *
  * Everything here is built from `@retiregolden/engine/testing/planFixtures`, so

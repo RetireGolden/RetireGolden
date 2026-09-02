@@ -181,7 +181,7 @@
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "8fd7dff5a1b152a794afacd9b9938397b47894f4",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "f2f3fd5ae2f97c13c4adbfe380871432b06525f3",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "86ac9eb07ca7b71f1afa99658c0fbabbd679daad",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
