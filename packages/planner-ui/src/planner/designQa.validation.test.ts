@@ -47,7 +47,7 @@ describe('validation chrome pins', () => {
     // by focus moving to a control the person chose, and on unmount (r2-1, r2-3).
     expect(workspace).toContain('focusIssueTarget(workspaceRoot(), section, path)')
     expect(workspace).toContain('if (pendingJump.current && pendingJump.current.target !== pathname) cancelJump()')
-    expect(workspace).toContain('useEffect(() => cancelJump, [])')
+    expect(workspace).toContain('useEffect(() => cancelJump, [cancelJump])')
     expect(workspace).toContain('retryFocus(workspaceRoot, section, path, focusMoved)')
     expect(workspace).toContain('title="Go to the first thing to fix. The plan is stored once it is valid."')
   })

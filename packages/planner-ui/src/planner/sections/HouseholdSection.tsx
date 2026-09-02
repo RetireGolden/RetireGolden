@@ -130,8 +130,6 @@ export function HouseholdSection() {
                 path={`household.people.${i}.retirementAge`}
                 value={person.retirementAge}
                 allowNull
-                min={30}
-                max={80}
                 onCommit={(v) => update((d) => void (d.household.people[i]!.retirementAge = v))}
               />
               <div className="field-with-action field-with-action--wide">
@@ -141,8 +139,6 @@ export function HouseholdSection() {
                   learn={LEARN.longevity}
                   path={`household.people.${i}.longevity.planningAge`}
                   value={person.longevity.planningAge}
-                  min={60}
-                  max={120}
                   onCommit={(v) =>
                     update((d) =>
                       updatePersonLongevity(d, i, {
@@ -255,8 +251,6 @@ export function HouseholdSection() {
                 help="The calendar year of residence in the new state. The projection allocates this year by move month."
                 path={`household.stateMoves.${i}.fromYear`}
                 value={move.fromYear}
-                min={1900}
-                max={2200}
                 onCommit={(v) =>
                   update((d) => {
                     d.household.stateMoves[i]!.fromYear = Math.round(v ?? move.fromYear)

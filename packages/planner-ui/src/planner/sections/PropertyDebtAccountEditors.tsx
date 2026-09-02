@@ -26,8 +26,6 @@ export function PropertyAccountEditor({
         path={`accounts.${index}.plannedSaleYear`}
         value={account.plannedSaleYear}
         allowNull
-        min={1900}
-        max={2200}
         onCommit={(v) => onCommit('plannedSaleYear', v === null ? null : Math.round(v))}
       />
       <MoneyField
@@ -182,8 +180,6 @@ export function DebtAccountEditor({
         path={`accounts.${index}.payoffYear`}
         value={account.payoffYear ?? null}
         allowNull
-        min={1900}
-        max={2200}
         onCommit={(v) => onCommit('payoffYear', v === null ? undefined : Math.round(v))}
       />
     </>

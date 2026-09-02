@@ -7,12 +7,12 @@
 
 import { Link } from 'react-router'
 
-import { usePlan } from '../planContextCore'
-import { issuesForSection, parseIssues, sectionsWithIssues, type IssueSection } from '../validationIssues'
+import { usePlan, useParsedIssues } from '../planContextCore'
+import { issuesForSection, sectionsWithIssues, type IssueSection } from '../validationIssues'
 
 export function Issues({ section }: { section: IssueSection }) {
-  const { plan, issues } = usePlan()
-  const mine = issuesForSection(parseIssues(issues, plan), section)
+  const parsed = useParsedIssues()
+  const mine = issuesForSection(parsed?.all ?? [], section)
   if (mine.length === 0) return null
   return (
     <ul className="issue-list" id={`plan-issues-${section}`} tabIndex={-1} aria-label="Fix these to store the plan">

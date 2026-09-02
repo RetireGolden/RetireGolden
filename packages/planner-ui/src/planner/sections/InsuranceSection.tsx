@@ -92,8 +92,6 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
           learn={policyLearn}
           path={`insurance.${index}.premiumEndAge`}
           value={policy.premiumEndAge ?? 65}
-          min={40}
-          max={110}
           onCommit={(v) => set('premiumEndAge', Math.round(v ?? 65))}
         />
       ) : null}
@@ -163,7 +161,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
               </span>
               {(policy.cashValueSchedule ?? []).map((row, ri) => (
                 <div className="add-row" key={ri} style={{ alignItems: 'flex-end' }}>
-                  <NumberField label="Age" path={`insurance.${index}.cashValueSchedule.${ri}.age`} value={row.age} min={0} max={120} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.age = Math.round(v ?? row.age) })} />
+                  <NumberField label="Age" path={`insurance.${index}.cashValueSchedule.${ri}.age`} value={row.age} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.age = Math.round(v ?? row.age) })} />
                   <MoneyField label="Value" path={`insurance.${index}.cashValueSchedule.${ri}.value`} value={row.value} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.value = v ?? 0 })} />
                   <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule.splice(ri, 1) })}>Remove</button>
                 </div>
@@ -286,8 +284,6 @@ function CareEventFields({ event, index }: { event: CareEvent; index: number }) 
         learn={LEARN.ltcCosts}
         path={`careEvents.${index}.startAge`}
         value={event.startAge}
-        min={40}
-        max={110}
         onCommit={(v) => set('startAge', Math.round(v ?? 85))}
       />
       <NumberField
@@ -296,8 +292,6 @@ function CareEventFields({ event, index }: { event: CareEvent; index: number }) 
         learn={LEARN.ltcCosts}
         path={`careEvents.${index}.durationYears`}
         value={event.durationYears}
-        min={1}
-        max={25}
         onCommit={(v) => set('durationYears', Math.round(v ?? 3))}
       />
       <MoneyField

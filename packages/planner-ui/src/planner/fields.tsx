@@ -11,6 +11,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
+import { boundsForPath, checkRange, nativeMax, nativeMin, notKeptNote, type SchemaBounds } from './schemaBounds'
 import { useFieldIssue } from './useFieldIssue'
 
 import { LearnLink, type LearnHook } from '../learn/LearnLink'
@@ -301,7 +302,15 @@ export function MoneyField({
   placeholder,
 }: MoneyFieldProps) {
   const id = useId()
-  const error = useFieldIssue(path)?.advice ?? null
+  // The engine's range for this path, so a money field refuses what the schema
+  // forbids instead of storing it and reporting it afterwards (r3-2). Nothing
+  // here invents a limit: an unwired money field (the import wizard, a lever)
+  // has no bounds and commits as before.
+  const bounds = boundsForPath(path)
+  const [rangeError, setRangeError] = useState<string | null>(null)
+  const [notKept, setNotKept] = useState<string | null>(null)
+  const issue = useFieldIssue(path)
+  const error = rangeError ?? issue?.advice ?? null
   const formatted = value === null
     ? ''
     : fractionDigits === undefined
@@ -317,9 +326,18 @@ export function MoneyField({
   const selectOnFocus = useRef(false)
   const commitText = (next: string) => {
     setText(next)
+    setNotKept(null)
     const parsed = parseAmount(next)
-    if (parsed !== null) onCommit(parsed)
-    else if (next.trim() === '') onCommit(allowNull ? null : 0)
+    if (parsed !== null) {
+      const { message } = checkRange(parsed, bounds)
+      // Flag it and commit nothing: the same rule the number fields follow, so
+      // an amount the engine would reject never reaches the plan.
+      setRangeError(message)
+      if (message === null) onCommit(parsed)
+      return
+    }
+    setRangeError(null)
+    if (next.trim() === '') onCommit(allowNull ? null : 0)
     else onInvalid?.()
   }
   useLayoutEffect(() => {
@@ -328,7 +346,7 @@ export function MoneyField({
     inputRef.current?.select()
   }, [focused, text])
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} note={notKept}>
       <div className={placeholder !== undefined ? 'input-affix input-affix--optional' : 'input-affix'}>
         {/* A blank optional field is a non-amount state, so the unit chip steps
             back for as long as the placeholder is showing, focused or not; it
@@ -346,7 +364,7 @@ export function MoneyField({
           spellCheck={false}
           placeholder={placeholder}
           aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy(error && `${id}-error`)}
+          aria-describedby={describedBy(error ? `${id}-error` : notKept && `${id}-note`)}
           data-path={path}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.preventDefault()
@@ -359,6 +377,12 @@ export function MoneyField({
           }}
           onBlur={() => {
             setFocused(false)
+            // An amount outside the engine's range is not kept: the plan's own
+            // value comes back and a note says what the field allows.
+            const parsed = parseAmount(text)
+            const { side } = parsed === null ? { side: null } : checkRange(parsed, bounds)
+            if (side !== null && parsed !== null) setNotKept(notKeptNote(String(parsed), side, bounds))
+            setRangeError(null)
             setText(formatted)
           }}
           onChange={(e) => {
@@ -394,22 +418,29 @@ export function NumberField({
 }: NumericProps & { suffix?: string; step?: number; min?: number; max?: number }) {
   const id = useId()
   const { text, setText, setFocused } = useLocalText(value === null ? '' : String(value))
-  // While typing, a value outside the field's own min/max (or text that is not
-  // a number at all) is flagged beside the field and commits nothing, so an
-  // intermediate keystroke never stores a bound the person did not choose and
-  // the engine is never handed an age or rate it cannot model (#476, #494).
-  // On leaving the field the nearest allowed value is committed and a note
-  // says what was adjusted; non-numeric text goes back to the stored value.
+  // The range is the engine's, read from its schema by path (r3-3): a local
+  // min/max could be tighter than what the engine allows and refuse a value it
+  // would have accepted. The props remain for controls with no schema path
+  // (the import wizard, the lever editors).
+  const schema = boundsForPath(path)
+  const bounds: SchemaBounds | null = schema ?? (min === undefined && max === undefined ? null : { min, max })
+  // While typing, a value outside that range (or text that is not a number at
+  // all) is flagged beside the field and commits nothing, so an intermediate
+  // keystroke never stores a bound the person did not choose and the engine is
+  // never handed an age or rate it cannot model (#476, #494). Leaving the
+  // field does not clamp: the entry is not kept, the plan's value comes back,
+  // and a note says what the field allows — a blur is often a Tab or the save
+  // chip mid-edit, and "9" on the way to "95" must not become 60.
   const [rangeError, setRangeError] = useState<string | null>(null)
   const [adjustedNote, setAdjustedNote] = useState<string | null>(null)
   const issue = useFieldIssue(path)
   const error = rangeError ?? issue?.advice ?? null
-  const outOfRange = (n: number): 'low' | 'high' | null =>
-    min !== undefined && n < min ? 'low' : max !== undefined && n > max ? 'high' : null
-  // Clearing a required field commits 0 when 0 is a value this field allows,
-  // which is the documented "off" state for the rate overrides and every other
-  // min=0 field. Where 0 is out of range (a claim age, a planning age) there is
-  // nothing safe to commit, so the field says so and keeps what the plan holds.
+  const outOfRange = (n: number): 'low' | 'high' | null => checkRange(n, bounds).side
+  // Clearing a required field commits 0 when 0 is a value the engine allows
+  // here, which is the documented "off" state for the rate overrides and every
+  // other zero-floored field. Where 0 is out of range (a claim age, a planning
+  // age) there is nothing safe to commit, so the field says so and keeps what
+  // the plan holds.
   const emptyCommitsZero = !allowNull && outOfRange(0) === null
   // The suffix names the unit ("%"); it is the input's description, not
   // decoration, so a screen reader announces "22, percent" and not just "22".
@@ -421,8 +452,8 @@ export function NumberField({
       inputMode="decimal"
       value={text}
       step={step}
-      min={min}
-      max={max}
+      min={nativeMin(bounds)}
+      max={nativeMax(bounds)}
       aria-invalid={error ? true : undefined}
       aria-describedby={describedBy(suffixId, error ? `${id}-error` : adjustedNote && `${id}-note`)}
       data-path={path}
@@ -451,15 +482,10 @@ export function NumberField({
           return
         }
         // Out of range on leaving: the entry is not kept and the plan's value
-        // comes back. A blur is often a Tab, a rail link, or the save chip
-        // mid-edit ("9" on the way to "95"), so committing the bound here
-        // would store an age the person never typed (#476). The note says
-        // what was not kept and what the field allows, in its own range.
+        // comes back, with a note naming the bound it missed.
         setText(value === null ? '' : String(value))
         setRangeError(null)
-        setAdjustedNote(
-          `Not kept: ${trimmed} is ${side === 'low' ? `below the lowest allowed, ${min}` : `above the highest allowed, ${max}`}`,
-        )
+        setAdjustedNote(notKeptNote(trimmed, side, bounds))
       }}
       onChange={(e) => {
         setText(e.target.value)
@@ -482,13 +508,9 @@ export function NumberField({
         } else if (!Number.isFinite(n)) {
           setRangeError('Enter a number')
         } else {
-          const side = outOfRange(n)
-          if (side === 'low') setRangeError(`Must be at least ${min}`)
-          else if (side === 'high') setRangeError(`Must be at most ${max}`)
-          else {
-            setRangeError(null)
-            onCommit(n)
-          }
+          const { message } = checkRange(n, bounds)
+          setRangeError(message)
+          if (message === null) onCommit(n)
         }
       }}
     />

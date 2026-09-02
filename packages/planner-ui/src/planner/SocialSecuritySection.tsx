@@ -349,16 +349,12 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
           help="The age this person starts benefits. Earlier than full retirement age permanently reduces it; waiting past it adds ~8%/year until 70. Compare the options on Explore → Social Security."
           path={`incomes.${streamIndex}.claimAge.years`}
           value={stream.claimAge.years}
-          min={62}
-          max={70}
           onCommit={(v) => setStream((s) => (s.claimAge = { years: Math.round(v ?? 67), months: s.claimAge.months }))}
         />
         <NumberField
           label="Claim age (+ months)"
           path={`incomes.${streamIndex}.claimAge.months`}
           value={stream.claimAge.months}
-          min={0}
-          max={11}
           onCommit={(v) => setStream((s) => (s.claimAge = { years: s.claimAge.years, months: Math.round(v ?? 0) }))}
         />
       </div>

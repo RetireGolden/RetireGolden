@@ -1,0 +1,96 @@
+/**
+ * GENERATED FILE - DO NOT EDIT BY HAND.
+ *
+ * The numeric range the engine's Plan JSON Schema states for each schema path
+ * a field is wired to, keyed by path with `N` standing for a list index. The
+ * engine decides what is valid; this is only that decision in a form a field
+ * can read without shipping the 190 KB schema document to the browser.
+ *
+ * Regenerate by running `schemaFieldBounds.test.ts`, which recomputes this map
+ * from `@retiregolden/engine/schema/current` and fails on any drift, printing
+ * the map to paste back.
+ */
+
+export interface SchemaBounds {
+  /** Lowest allowed value, inclusive. */
+  min?: number
+  /** Highest allowed value, inclusive. */
+  max?: number
+  /** The value the schema requires the entry to be strictly above. */
+  exclusiveMin?: number
+  /** The value the schema requires the entry to be strictly below. */
+  exclusiveMax?: number
+}
+
+export const SCHEMA_FIELD_BOUNDS: Record<string, SchemaBounds> = {
+  'accounts.N.balance': { min: 0 },
+  'accounts.N.costBasis': { min: 0 },
+  'accounts.N.dividendYieldPct': { min: 0 },
+  'accounts.N.interestPct': { exclusiveMin: -100, exclusiveMax: 1000 },
+  'accounts.N.interestYieldPct': { min: 0 },
+  'accounts.N.monthlyPayment': { min: 0 },
+  'accounts.N.qualifiedRatio': { min: 0, max: 1 },
+  'accounts.N.value': { min: 0 },
+  'assumptions.assetClassParams.usStocks.dividendYieldPct': { min: 0 },
+  'assumptions.assetClassParams.usStocks.interestYieldPct': { min: 0 },
+  'assumptions.assetClassParams.usStocks.qualifiedRatioPct': { min: 0, max: 100 },
+  'assumptions.assetClassParams.usStocks.returnPct': { exclusiveMin: -100, exclusiveMax: 1000 },
+  'assumptions.assetClassParams.usStocks.volatilityPct': { min: 0 },
+  'assumptions.defaultReturnPct': { exclusiveMin: -100, exclusiveMax: 1000 },
+  'assumptions.healthcareExtraInflationPct': { exclusiveMin: -100, exclusiveMax: 1000 },
+  'assumptions.heirTaxByClass.hsa': { min: 0, max: 50 },
+  'assumptions.heirTaxByClass.traditional': { min: 0, max: 50 },
+  'assumptions.heirTaxRatePct': { min: 0, max: 50 },
+  'assumptions.inflationPct': { exclusiveMin: -100, exclusiveMax: 1000 },
+  'assumptions.localIncomeTaxPct': { min: 0, max: 10 },
+  'assumptions.recentAnnualMagi': { min: 0 },
+  'assumptions.safeWithdrawalRatePct': { exclusiveMin: 0, exclusiveMax: 1000 },
+  'assumptions.ssCola.annualPct': { exclusiveMin: -100, exclusiveMax: 1000 },
+  'assumptions.ssHaircut.cutPct': { min: 0, max: 100 },
+  'assumptions.ssHaircut.fromYear': { min: 1900, max: 2200 },
+  'assumptions.stateEffectiveTaxPct': { min: 0, max: 20 },
+  'careEvents.N.annualCost': { min: 0 },
+  'careEvents.N.durationYears': { min: 1, max: 25 },
+  'careEvents.N.startAge': { min: 40, max: 110 },
+  'expenses.baseAnnual': { min: 0 },
+  'expenses.healthcare.medicareExtrasMonthlyPerPerson': { min: 0 },
+  'expenses.healthcare.pre65MonthlyPremiumPerPerson': { min: 0 },
+  'expenses.oneTimeGoals.N.amount': { min: 0 },
+  'expenses.oneTimeGoals.N.earliestYear': { min: 1900, max: 2200 },
+  'expenses.oneTimeGoals.N.latestYear': { min: 1900, max: 2200 },
+  'expenses.oneTimeGoals.N.year': { min: 1900, max: 2200 },
+  'expenses.phases.N.fromAge': { min: 40, max: 110 },
+  'expenses.phases.N.multiplier': { min: 0, max: 3 },
+  'expenses.requiredAnnual': { min: 0 },
+  'household.people.N.longevity.planningAge': { min: 60, max: 120 },
+  'household.stateMoves.N.fromYear': { min: 1900, max: 2200 },
+  'incomeFloor.ladders.N.annualRealAmount': { min: 0 },
+  'incomeFloor.ladders.N.endYear': { min: 1900, max: 2200 },
+  'incomeFloor.ladders.N.purchase.year': { min: 1900, max: 2200 },
+  'incomeFloor.ladders.N.startYear': { min: 1900, max: 2200 },
+  'incomes.N.amount': { min: 0 },
+  'incomes.N.annualAmount': { min: 0 },
+  'incomes.N.annualGross': { min: 0 },
+  'incomes.N.claimAge.months': { min: 0, max: 11 },
+  'incomes.N.claimAge.years': { min: 62, max: 70 },
+  'incomes.N.realGrowthPct': { exclusiveMin: -100, exclusiveMax: 1000 },
+  'incomes.N.year': { min: 1900, max: 2200 },
+  'insurance.N.annualPremium': { min: 0 },
+  'insurance.N.cashValue': { min: 0 },
+  'insurance.N.cashValueGrowthPct': { exclusiveMin: -100, exclusiveMax: 1000 },
+  'insurance.N.cashValueSchedule.N.age': { min: 0, max: 120 },
+  'insurance.N.cashValueSchedule.N.value': { min: 0 },
+  'insurance.N.deathBenefit': { min: 0 },
+  'insurance.N.premiumEndAge': { min: 40, max: 110 },
+  'strategies.itemizedDeductions.charitable': { min: 0 },
+  'strategies.itemizedDeductions.mortgageInterest': { min: 0 },
+  'strategies.itemizedDeductions.stateAndLocalTaxes': { min: 0 },
+  'strategies.qcdAnnual': { min: 0 },
+  'strategies.rothConversion.conversions.N.amount': { min: 0 },
+  'strategies.rothConversion.conversions.N.year': { min: 1900, max: 2200 },
+  'strategies.rothConversion.endYear': { min: 1900, max: 2200 },
+  'strategies.rothConversion.startYear': { min: 1900, max: 2200 },
+  'strategies.survivorReserveTarget': { min: 0 },
+  'strategies.taxableSafetyNetFloor': { min: 0 },
+  'strategies.withdrawalOrder.bracketPct': { exclusiveMin: 0 },
+}

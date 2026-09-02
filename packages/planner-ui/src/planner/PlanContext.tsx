@@ -6,7 +6,7 @@
  * and section forms.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import type { PlanLoadRepair } from '@retiregolden/engine/model/migrations'
@@ -16,7 +16,7 @@ import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { EXAMPLE_PLAN_ID_PREFIX, isExamplePlanId } from '../data/planOrigin'
 import { getExampleById } from './examples/registry'
 import { saveFreshDemo } from './examples/loadExample'
-import { PlanCtx, type PlanContextValue, type SaveState } from './planContextCore'
+import { ParsedIssuesCtx, PlanCtx, parsedIssuesOf, type PlanContextValue, type SaveState } from './planContextCore'
 import { PlanRepairCtx } from './planRepairContext'
 import { usePlannerEdition } from './editionContext'
 
@@ -49,6 +49,10 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
   const [loadError, setLoadError] = useState<{ planId: string; reason: string } | null>(null)
   const [saveState, setSaveState] = useState<SaveState>('loading')
   const [issues, setIssues] = useState<string[]>([])
+  // Parsed once per (plan, issues) pair and shared through ParsedIssuesCtx: a
+  // field asking for its own issue must not re-parse the whole list, and the
+  // card lists read the same objects (r3-7).
+  const parsedIssues = useMemo(() => (plan ? parsedIssuesOf(issues, plan) : null), [issues, plan])
   // What the load changed in the stored document. Set from the load result and
   // never from an edit, so the notice describes the document as it was found.
   //
@@ -297,7 +301,8 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
   }
   const contextValue: PlanContextValue = { plan, update, discardPendingSave, saveState, issues }
   return (
-    <PlanCtx.Provider value={contextValue}>
+    <ParsedIssuesCtx.Provider value={parsedIssues}>
+      <PlanCtx.Provider value={contextValue}>
       {/* A list tagged for a different plan belongs to the one being navigated
           away from, so it reads as empty here rather than as that plan's news. */}
       <PlanRepairCtx.Provider
@@ -308,6 +313,7 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
       >
         {children}
       </PlanRepairCtx.Provider>
-    </PlanCtx.Provider>
+      </PlanCtx.Provider>
+    </ParsedIssuesCtx.Provider>
   )
 }

@@ -409,10 +409,20 @@ export function humanizeSchemaKeys(message: string): string {
  */
 const DISPLAY_SCALE: Record<string, number> = { qualifiedRatio: 100 }
 
-function boundInDisplayUnit(raw: string, path: string | undefined): string {
+/**
+ * How many display units one stored unit is worth at this path: 100 for the
+ * brokerage qualified-dividend share, 1 everywhere else. The field's range
+ * (schemaBounds.ts) and its advice both read this, so a bound and a message
+ * never disagree about the unit.
+ */
+export function displayScaleFor(path: string | undefined): number {
   const leaf = path?.split('.').pop() ?? ''
-  const scale = DISPLAY_SCALE[leaf]
-  if (!scale) return raw
+  return DISPLAY_SCALE[leaf] ?? 1
+}
+
+function boundInDisplayUnit(raw: string, path: string | undefined): string {
+  const scale = displayScaleFor(path)
+  if (scale === 1) return raw
   const n = Number(raw)
   return Number.isFinite(n) ? String(n * scale) : raw
 }

@@ -14,44 +14,11 @@
  */
 import { describe, expect, it } from 'vitest'
 
-// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
-import { readdirSync, readFileSync } from 'node:fs'
-// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
-import { fileURLToPath } from 'node:url'
-
 import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
 
+import { wiredFieldPaths } from '../testSupport/wiredFieldPaths'
 import { buildExampleCouple } from './examples/buildExampleCouple'
 import { parseIssues } from './validationIssues'
-
-/** Index a wired path template resolves to in the fixture below. */
-const INDEX_OF: Record<string, number> = { index: 0, i: 0, ri: 0, streamIndex: 2, id: 0 }
-
-/** Every `path=` a field component is given, with `${…}` interpolations resolved. */
-function wiredPaths(): string[] {
-  const dir = fileURLToPath(new URL('.', import.meta.url))
-  const files: string[] = []
-  const walk = (at: string) => {
-    for (const entry of readdirSync(at, { withFileTypes: true }) as Array<{ name: string; isDirectory: () => boolean }>) {
-      const full = `${at}/${entry.name}`
-      if (entry.isDirectory()) walk(full)
-      else if (entry.name.endsWith('.tsx') && !entry.name.includes('.test.')) files.push(full)
-    }
-  }
-  walk(dir)
-  const found = new Set<string>()
-  for (const file of files) {
-    const src = readFileSync(file, 'utf8')
-    for (const [, quoted] of src.matchAll(/\bpath="([^"]+)"/g)) if (quoted!.includes('.')) found.add(quoted!)
-    for (const [, tpl] of src.matchAll(/\bpath=\{`([^`]+)`\}/g)) {
-      const resolved = tpl!.replace(/\$\{(\w+)\}/g, (_m: string, name: string) =>
-        name === 'id' ? 'usStocks' : String(INDEX_OF[name] ?? 0),
-      )
-      if (!resolved.includes('${')) found.add(resolved)
-    }
-  }
-  return [...found].sort()
-}
 
 /**
  * Write `value` at a dot path, creating nothing, and return the path it was
@@ -61,8 +28,14 @@ function wiredPaths(): string[] {
  * resolved to the item in that same list that does — the field's spelling is
  * what is under test, not its position.
  */
+const UNSAFE_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
+
 function setAt(plan: Plan, path: string, value: unknown): string | null {
   const segments = path.split('.')
+  // A path comes from the source scan, not from input, but the walk below
+  // writes by key: refuse the three that reach Object.prototype rather than
+  // rely on that (Semgrep prototype-pollution-loop).
+  if (segments.some((segment) => UNSAFE_KEYS.has(segment))) return null
   const resolved: string[] = []
   let node: Record<string, unknown> = plan as unknown as Record<string, unknown>
   for (let i = 0; i < segments.length - 1; i++) {
@@ -77,7 +50,7 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
           if (cursor === null || typeof cursor !== 'object') return false
           cursor = (cursor as Record<string, unknown>)[key]
         }
-        return cursor !== null && typeof cursor === 'object' && rest[rest.length - 1]! in (cursor as object)
+        return cursor !== null && typeof cursor === 'object' && Object.prototype.hasOwnProperty.call(cursor, rest[rest.length - 1]!)
       }
       const index = holds(at[Number(seg)]) ? Number(seg) : at.findIndex(holds)
       if (index < 0) return null
@@ -90,8 +63,8 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
     node = next as Record<string, unknown>
   }
   const leaf = segments[segments.length - 1]!
-  if (!(leaf in node)) return null
-  node[leaf] = value
+  if (!Object.prototype.hasOwnProperty.call(node, leaf)) return null
+  Object.defineProperty(node, leaf, { value, writable: true, enumerable: true, configurable: true })
   resolved.push(leaf)
   return resolved.join('.')
 }
@@ -193,7 +166,7 @@ function fixtureFor(path: string): Plan {
 }
 
 describe('every wired schema path, against real engine output', () => {
-  const paths = wiredPaths()
+  const paths = wiredFieldPaths()
 
   it('the fixture is a valid plan, so each failure below comes from the one field under test', () => {
     const r = parsePlan(fixture())
@@ -201,6 +174,16 @@ describe('every wired schema path, against real engine output', () => {
     // A guard on the reader itself: the walk wired dozens of paths, so a
     // regex that stopped matching would otherwise make this suite vacuous.
     expect(paths.length).toBeGreaterThan(50)
+  })
+
+  it('sees the paths wired through a helper, not only the literal ones (r3-5, r3-6)', () => {
+    // The income-floor rows address their ladder by id and pass leaves to a
+    // `fieldPath` helper; those paths are exercised below like any other.
+    expect(paths).toContain('incomeFloor.ladders.0.startYear')
+    expect(paths).toContain('incomeFloor.ladders.0.endYear')
+    expect(paths).toContain('incomeFloor.ladders.0.annualRealAmount')
+    expect(paths).toContain('incomeFloor.ladders.0.name')
+    expect(paths).toContain('incomeFloor.ladders.0.purchase.year')
   })
 
   it.each(paths)('%s is a path the engine reports, with a readable label and advice', (path) => {

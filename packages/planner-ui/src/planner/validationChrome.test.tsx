@@ -154,6 +154,62 @@ describe('validation chrome', () => {
     expect(container.querySelector('.field-error')).toBeNull()
   })
 
+  it('a money field refuses an amount the engine forbids, and keeps the plan’s value on leaving (r3-2)', async () => {
+    const onCommit = vi.fn()
+    await act(async () => {
+      root.render(
+        <PlanCtx.Provider value={contextFor(createSamplePlan(), [])}>
+          <MoneyField label="QCD per year (today's $)" path="strategies.qcdAnnual" value={5000} onCommit={onCommit} />
+        </PlanCtx.Provider>,
+      )
+    })
+    const input = container.querySelector<HTMLInputElement>('input')!
+    // strategies.qcdAnnual is nonNegative in the schema, so -100 is refused
+    // here rather than stored and reported back as an engine issue.
+    await typeInto(input, '-100')
+    expect(onCommit).not.toHaveBeenCalled()
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(container.querySelector('.field-error')?.textContent).toBe('Must be at least 0')
+    await blur(input)
+    expect(onCommit).not.toHaveBeenCalled()
+    expect(container.querySelector('.field-note')?.textContent).toBe('Not kept: -100 is below the lowest allowed, 0')
+    // An amount inside the range still commits as before.
+    await typeInto(input, '250')
+    expect(onCommit).toHaveBeenLastCalledWith(250)
+    expect(container.querySelector('.field-error')).toBeNull()
+  })
+
+  it('a money field with no schema path is unbounded, as the import wizard and lever editors need (r3-2)', async () => {
+    const onCommit = vi.fn()
+    await act(async () => {
+      root.render(<MoneyField label="Adjustment" value={0} onCommit={onCommit} />)
+    })
+    const input = container.querySelector<HTMLInputElement>('input')!
+    await typeInto(input, '-100')
+    expect(onCommit).toHaveBeenLastCalledWith(-100)
+    expect(container.querySelector('.field-error')).toBeNull()
+  })
+
+  it('takes the engine’s range for a wired number field, so an engine-valid rate is not refused (r3-3)', async () => {
+    const onCommit = vi.fn()
+    await act(async () => {
+      root.render(
+        <PlanCtx.Provider value={contextFor(createSamplePlan(), [])}>
+          <NumberField label="Safe withdrawal rate (SWR)" path="assumptions.safeWithdrawalRatePct" value={4} onCommit={onCommit} />
+        </PlanCtx.Provider>,
+      )
+    })
+    const input = container.querySelector<HTMLInputElement>('input')!
+    // The schema says > 0; a hand-written min of 0.1 used to refuse this.
+    await typeInto(input, '0.05')
+    expect(onCommit).toHaveBeenLastCalledWith(0.05)
+    expect(container.querySelector('.field-error')).toBeNull()
+    // 0 itself is outside the engine's exclusive bound, and is refused.
+    await typeInto(input, '0')
+    expect(onCommit).toHaveBeenLastCalledWith(0.05)
+    expect(container.querySelector('.field-error')?.textContent).toBe('Must be more than 0')
+  })
+
   it('a field with a schema path shows the engine issue for that path inline (#491)', async () => {
     const plan = createSamplePlan()
     await act(async () => {

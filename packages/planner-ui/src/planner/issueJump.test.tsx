@@ -108,6 +108,23 @@ describe('issue jump (#494)', () => {
     }
   })
 
+  it('never settles for another invalid control when the first issue names a path (r3-1)', () => {
+    // The first engine issue is on Household; the page in front is Accounts,
+    // where a balance is invalid too. The chip promises the first thing to
+    // fix, so this must fail and let the caller navigate.
+    document.body.innerHTML = `<input id="other" aria-invalid="true" data-path="accounts.0.balance" />`
+    for (const el of document.body.querySelectorAll<HTMLElement>('*')) el.scrollIntoView = vi.fn()
+    expect(focusIssueTarget(document, 'household', 'household.people.0.longevity.planningAge')).toBe(false)
+    expect(document.activeElement?.id).not.toBe('other')
+    // A transient range flag on the field being typed in is the same story.
+    document.body.innerHTML = `
+      <input id="typing" aria-invalid="true" />
+      <ul class="issue-list" id="plan-issues-household" tabindex="-1"></ul>`
+    for (const el of document.body.querySelectorAll<HTMLElement>('*')) el.scrollIntoView = vi.fn()
+    expect(focusIssueTarget(document, 'household', 'household.people.0.longevity.planningAge')).toBe(true)
+    expect(document.activeElement?.id).toBe('plan-issues-household')
+  })
+
   it('never settles for another section’s list, so the caller navigates instead (r1-10)', () => {
     document.body.innerHTML = `<ul class="issue-list" id="plan-issues-strategy" tabindex="-1"></ul>`
     for (const el of document.body.querySelectorAll<HTMLElement>('*')) el.scrollIntoView = vi.fn()

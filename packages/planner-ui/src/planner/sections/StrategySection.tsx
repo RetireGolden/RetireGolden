@@ -193,8 +193,6 @@ export function StrategySection() {
                     label="Year"
                     path={`strategies.rothConversion.conversions.${i}.year`}
                     value={c.year}
-                    min={1900}
-                    max={2200}
                     onCommit={(v) =>
                       update((d) => {
                         const m = d.strategies.rothConversion
@@ -281,8 +279,6 @@ export function StrategySection() {
               label="Start year"
               path="strategies.rothConversion.startYear"
               value={rc.startYear}
-              min={1900}
-              max={2200}
               onCommit={(v) =>
                 update((d) => {
                   const m = d.strategies.rothConversion
@@ -294,8 +290,6 @@ export function StrategySection() {
               label="End year"
               path="strategies.rothConversion.endYear"
               value={rc.endYear}
-              min={1900}
-              max={2200}
               onCommit={(v) =>
                 update((d) => {
                   const m = d.strategies.rothConversion

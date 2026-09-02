@@ -1,0 +1,79 @@
+/**
+ * Every schema path a field component is wired to, read out of the source.
+ *
+ * Two suites depend on this being complete: the engine round-trip
+ * (`validationIssues.enginePaths.test.ts`) proves each path is one the engine
+ * actually reports, and the bounds drift guard
+ * (`schemaFieldBounds.test.ts`) proves each one's range comes from the engine
+ * schema. A wiring form this scanner cannot see is a path that escapes both,
+ * so the forms are enumerated here rather than in either suite (review r3-5,
+ * r3-6).
+ *
+ * Test-support only: nothing here is imported by the app.
+ */
+
+// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
+import { readdirSync, readFileSync } from 'node:fs'
+// @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
+import { fileURLToPath } from 'node:url'
+
+/** What each interpolation in a wired path template stands for in a fixture plan. */
+const INDEX_OF: Record<string, string> = {
+  index: '0',
+  i: '0',
+  ri: '0',
+  streamIndex: '2',
+  ladderIndex: '0',
+  id: 'usStocks',
+}
+
+/**
+ * Substitutes the index names above and leaves anything else (`${leaf}`, which
+ * the helper form fills in per call site) intact, so an interpolation this
+ * scanner does not know is never silently resolved to the wrong path.
+ */
+const resolveTemplate = (tpl: string): string =>
+  tpl.replace(/\$\{(\w+)\}/g, (whole: string, name: string) => INDEX_OF[name] ?? whole)
+
+function sourceFiles(from: string): string[] {
+  const files: string[] = []
+  const walk = (at: string) => {
+    for (const entry of readdirSync(at, { withFileTypes: true }) as Array<{ name: string; isDirectory: () => boolean }>) {
+      const full = `${at}/${entry.name}`
+      if (entry.isDirectory()) walk(full)
+      else if (entry.name.endsWith('.tsx') && !entry.name.includes('.test.')) files.push(full)
+    }
+  }
+  walk(from)
+  return files
+}
+
+/**
+ * The three wiring forms in use:
+ *   path="strategies.qcdAnnual"
+ *   path={`incomes.${index}.endAge`}
+ *   path={fieldPath('startYear')}, where a helper in the same file builds the
+ *     template — the income-floor rows address their ladder by id, so the
+ *     index is computed once and the leaves are passed in (#512).
+ */
+export function wiredFieldPaths(dirUrl: string | URL = new URL('../planner/', import.meta.url)): string[] {
+  const found = new Set<string>()
+  for (const file of sourceFiles(fileURLToPath(dirUrl))) {
+    const src = readFileSync(file, 'utf8')
+    for (const [, quoted] of src.matchAll(/\bpath="([^"]+)"/g)) if (quoted!.includes('.')) found.add(quoted!)
+    for (const [, tpl] of src.matchAll(/\bpath=\{`([^`]+)`\}/g)) {
+      const resolved = resolveTemplate(tpl!)
+      if (!resolved.includes('${')) found.add(resolved)
+    }
+    // A helper of the form `const NAME = (leaf: string) => (… ? `TEMPLATE` : undefined)`
+    // paired with `path={NAME('leaf')}` call sites.
+    for (const [, helper, tpl] of src.matchAll(/const (\w+) = \(leaf: string\) =>[^`]*`([^`]+)`/g)) {
+      const template = resolveTemplate(tpl!)
+      for (const [, leaf] of src.matchAll(new RegExp(`\\bpath=\\{${helper}\\('([^']+)'\\)\\}`, 'g'))) {
+        const resolved = template.replace('${leaf}', leaf!)
+        if (!resolved.includes('${')) found.add(resolved)
+      }
+    }
+  }
+  return [...found].sort()
+}

@@ -76,12 +76,18 @@ function ownControlSelector(path: string): string {
  * list will do, since they all show it.
  */
 export function focusIssueTarget(root: ParentNode, section: IssueSection | null, path: string | null = null): boolean {
+  // The first engine issue's own control, then that section's list. Any other
+  // invalid control counts only when the first issue names no path at all:
+  // preferring one would let a later issue on this page — or a range flag
+  // raised by the keystroke being typed — stand in for the issue the chip
+  // promises to go to, and would tell the caller not to navigate (r3-1).
   const own = path ? root.querySelector<HTMLElement>(ownControlSelector(path)) : null
   const list =
     section && section !== 'unknown'
       ? root.querySelector<HTMLElement>(`#plan-issues-${section}`)
       : root.querySelector<HTMLElement>(ISSUE_LIST_SELECTOR)
-  const target = own ?? root.querySelector<HTMLElement>(INVALID_CONTROL_SELECTOR) ?? list
+  const anyInvalid = path === null ? root.querySelector<HTMLElement>(INVALID_CONTROL_SELECTOR) : null
+  const target = own ?? anyInvalid ?? list
   if (!target) return false
   target.scrollIntoView?.({ block: 'center' })
   target.focus?.()

@@ -69,8 +69,6 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
             path={`incomes.${index}.endAge`}
             value={stream.endAge}
             allowNull
-            min={30}
-            max={80}
             onCommit={(v) => set('endAge', v)}
           />
         </div>
@@ -124,8 +122,8 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
             value={stream.annualAmount}
             onCommit={(v) => set('annualAmount', v ?? 0)}
           />
-          <NumberField label="Start year" path={`incomes.${index}.startYear`} value={stream.startYear} allowNull min={1900} max={2200} onCommit={(v) => set('startYear', v === null ? null : Math.round(v))} />
-          <NumberField label="End year" path={`incomes.${index}.endYear`} value={stream.endYear} allowNull min={1900} max={2200} onCommit={(v) => set('endYear', v === null ? null : Math.round(v))} />
+          <NumberField label="Start year" path={`incomes.${index}.startYear`} value={stream.startYear} allowNull onCommit={(v) => set('startYear', v === null ? null : Math.round(v))} />
+          <NumberField label="End year" path={`incomes.${index}.endYear`} value={stream.endYear} allowNull onCommit={(v) => set('endYear', v === null ? null : Math.round(v))} />
           {/* Same control on both row types, same order (#481): Ordinary income
               first, Not taxed last. The engine allows Capital gain only for a
               one-time event, so it appears only there. */}
@@ -150,7 +148,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
       return (
         <div className="form-grid">
           <TextField label="Label" path={`incomes.${index}.label`} value={stream.label} onCommit={(v) => set('label', v || 'Event')} />
-          <NumberField label="Year" path={`incomes.${index}.year`} value={stream.year} min={1900} max={2200} onCommit={(v) => set('year', Math.round(v ?? new Date().getFullYear()))} />
+          <NumberField label="Year" path={`incomes.${index}.year`} value={stream.year} onCommit={(v) => set('year', Math.round(v ?? new Date().getFullYear()))} />
           <MoneyField
             label={stream.inflationAdjusted ? "Amount (today's $)" : `Amount (${stream.year} $)`}
             path={`incomes.${index}.amount`}

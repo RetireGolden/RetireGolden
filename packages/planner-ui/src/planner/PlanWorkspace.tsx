@@ -4,7 +4,7 @@
  * deterministic projection live as the plan changes.
  */
 
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
@@ -46,14 +46,14 @@ function SaveIndicator() {
   // moving to a control the person chose, or unmounting cancels it, so a
   // late frame can never pull focus away from what they are doing.
   const pendingJump = useRef<{ cancel: () => void; target: string } | null>(null)
-  const cancelJump = () => {
+  const cancelJump = useCallback(() => {
     pendingJump.current?.cancel()
     pendingJump.current = null
-  }
+  }, [])
   useEffect(() => {
     if (pendingJump.current && pendingJump.current.target !== pathname) cancelJump()
-  }, [pathname])
-  useEffect(() => cancelJump, [])
+  }, [pathname, cancelJump])
+  useEffect(() => cancelJump, [cancelJump])
   // Read-only wins over any save state: nothing is being stored, so the
   // "Stored on this device" / "Storing…" copy would be misleading. Keep the
   // label generic — planner-ui doesn't know the reason (the host explains it).

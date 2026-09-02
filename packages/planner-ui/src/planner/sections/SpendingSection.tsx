@@ -548,8 +548,6 @@ export function SpendingSection() {
                 learn={LEARN.spendingProfiles}
                 path={`expenses.phases.${i}.fromAge`}
                 value={p.fromAge}
-                min={40}
-                max={110}
                 onCommit={(v) => update((d) => void (d.expenses.phases[i]!.fromAge = Math.round(v ?? 65)))}
               />
               <NumberField
@@ -562,8 +560,6 @@ export function SpendingSection() {
                 step={0.01}
                 path={`expenses.phases.${i}.multiplier`}
                 value={p.multiplier}
-                min={0}
-                max={3}
                 onCommit={(v) => update((d) => void (d.expenses.phases[i]!.multiplier = v ?? 1))}
               />
             </div>
@@ -712,8 +708,6 @@ export function SpendingSection() {
                 learn={LEARN.spendingBudget}
                 path={`expenses.oneTimeGoals.${i}.year`}
                 value={g.year}
-                min={1900}
-                max={2200}
                 onCommit={(v) =>
                   update((d) => {
                     const goal = d.expenses.oneTimeGoals[i]!
@@ -786,8 +780,6 @@ export function SpendingSection() {
                     learn={LEARN.spendingBudget}
                     path={`expenses.oneTimeGoals.${i}.earliestYear`}
                     value={g.earliestYear ?? g.year}
-                    min={1900}
-                    max={2200}
                     onCommit={(v) =>
                       update((d) => void (d.expenses.oneTimeGoals[i]!.earliestYear = Math.min(Math.round(v ?? g.year), g.year)))
                     }
@@ -798,8 +790,6 @@ export function SpendingSection() {
                     learn={LEARN.spendingBudget}
                     path={`expenses.oneTimeGoals.${i}.latestYear`}
                     value={g.latestYear ?? g.year}
-                    min={1900}
-                    max={2200}
                     onCommit={(v) =>
                       update((d) => void (d.expenses.oneTimeGoals[i]!.latestYear = Math.max(Math.round(v ?? g.year), g.year)))
                     }

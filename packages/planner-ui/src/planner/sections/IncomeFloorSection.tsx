@@ -128,16 +128,12 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
           label="First payout year"
           path={fieldPath('startYear')}
           value={ladder.startYear}
-          min={1900}
-          max={2200}
           onCommit={(v) => edit((l) => void (l.startYear = Math.round(v ?? l.startYear)))}
         />
         <NumberField
           label="Last payout year"
           path={fieldPath('endYear')}
           value={ladder.endYear}
-          min={1900}
-          max={2200}
           onCommit={(v) => edit((l) => void (l.endYear = Math.round(v ?? l.endYear)))}
         />
         <CheckboxField
@@ -165,8 +161,6 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
               hint="Must be before the first payout year."
               path={fieldPath('purchase.year')}
               value={ladder.purchase.year}
-              min={1900}
-              max={2200}
               onCommit={(v) => edit((l) => void (l.purchase && (l.purchase.year = Math.round(v ?? l.purchase.year))))}
             />
           </>
