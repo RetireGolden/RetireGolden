@@ -62,6 +62,10 @@ import {
 } from './internal/annualCoordinatedHecm.js'
 import { annualHecmBackstopPlan } from './internal/annualHecmBackstop.js'
 import {
+  annualAcaResultPublication,
+  type AnnualAcaResultPublicationResult,
+} from './internal/annualAcaResultPublication.js'
+import {
   annualOrdinaryWithdrawalBoundary,
   type AnnualOrdinaryWithdrawalBoundaryResult,
 } from './internal/annualOrdinaryWithdrawalBoundary.js'
@@ -242,9 +246,6 @@ import {
   type GuardrailPolicy,
 } from '../spending/guardrails.js'
 import { createGoalScheduler, toSchedulableGoal, type GoalScheduler } from '../spending/flexibleGoals.js'
-import {
-  acaFederalPovertyLine,
-} from '../tax/aca.js'
 import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from '../tax/federalTax.js'
 import {
   taxParameterFilingStatus,
@@ -256,7 +257,6 @@ import {
   type SimulatorRetirementRuntimeApplication,
   type TaxCalculator,
   type TaxYearInput,
-  type YearAcaResult,
   type YearResult,
   type InheritedAccountYearEvidence,
   type YearCashFlowTransferEndpoint,
@@ -6102,135 +6102,90 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       warnings.add('The planning-grade AMT screen bound in at least one year; tax includes the AMT excess.')
     }
 
-    let yearAcaResult: YearAcaResult | undefined
+    let yearAcaResult: AnnualAcaResultPublicationResult['yearAcaResult']
     if (acaActive) {
-      const supportCodes = [...evaluation.acaSupportCodes]
-      if (acaFixedPointFailed || !converged) supportCodes.push('fixed-point-nonconvergent')
-      if (acaConflictingCliffBasins) supportCodes.push('conflicting-cliff-fixed-points')
-      const uniqueSupportCodes = [...new Set(supportCodes)]
-      const informationalAcaCodes = uniqueSupportCodes.filter(
-        (code) =>
-          code === 'tax-exempt-interest-plan-derived' ||
-          code === 'tax-exempt-interest-contract-contradicted',
-      )
-      const actionable =
-        uniqueSupportCodes.filter(
-          (code) =>
-            code !== 'tax-exempt-interest-plan-derived' &&
-            code !== 'tax-exempt-interest-contract-contradicted',
-        ).length === 0 &&
-        evaluation.acaQuote !== null
-      const pricedQuote = evaluation.acaQuote
-      const quote = actionable ? pricedQuote : null
-      if (quote?.overCliff) {
-        warnings.add('Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).')
-      }
-      const dependentEvidence = new Map(
-        (evaluation.acaMagiProbe?.dependents ?? []).map((dependent) => [dependent.personId, dependent]),
-      )
-      const taxFamilyMembers =
-        acaContract?.taxFamilyMembers.map((member) => ({
-          ...member,
-          includedMagi:
-            member.relationship === 'dependent'
-              ? (dependentEvidence.get(member.personId)?.includedMagi ?? 0)
-              : 0,
-        })) ?? []
-      const coveredMembers = acaContract && !exampleContractInputMismatch
-        ? acaContract.coveredMembers.map((member) => ({
-            personId: member.personId,
-            coveredMonths: member.enrollmentPremiumByMonth
-              .map((premium, month) => (premium > 0 ? month + 1 : 0))
-              .filter((month) => month > 0),
-            grossEnrollmentPremium: member.enrollmentPremiumByMonth.reduce((sum, premium) => sum + premium, 0),
-            applicableSlcspPremium: member.slcspBenchmarkPremiumByMonth.reduce(
-              (sum, premium, month) =>
-                sum + ((member.enrollmentPremiumByMonth[month] ?? 0) > 0 ? premium : 0),
-              0,
+      const acaContractSnapshot = acaContract
+        ? Object.freeze({
+            fplRegion: acaContract.fplRegion,
+            taxFamilyMembers: Object.freeze(
+              acaContract.taxFamilyMembers.map((member) => Object.freeze({
+                personId: member.personId,
+                relationship: member.relationship,
+                requiredToFile: member.requiredToFile,
+                magi: member.magi,
+              })),
             ),
-          }))
-        : acaContractsForYear.length > 1
-          ? []
-          : peopleStates
-            .map((person, position) => ({
-              person,
-              months: marketplaceMonthsByPersonPosition[position]!,
-            }))
-            .filter(({ person, months }) =>
-              person.alive && months > 0 && pre65MonthlyPremiumPerPerson > 0)
-            .map(({ person, months }) => {
-              const premium = pre65MonthlyPremiumPerPerson * healthInflFactor
-              return {
-                personId: person.personId,
-                coveredMonths: Array.from({ length: months }, (_, month) => month + 1),
-                grossEnrollmentPremium: premium * months,
-                applicableSlcspPremium: premium * months,
-              }
-            })
-      const fpl =
-        acaContract && !isStandIn && acaContract.taxFamilyMembers.length > 0
-          ? acaFederalPovertyLine(
-              pack,
-              acaContract.taxFamilyMembers.length,
-              acaContract.fplRegion,
-              inflFactorFrom(pack.year, year),
-            )
-          : null
-      const fplPct = pricedQuote?.fplPct ?? null
-      const cliffState: YearAcaResult['cliffState'] =
-        uniqueSupportCodes.includes('below-100-fpl-exception-unsupported')
-          ? 'below-eligibility-floor'
-          : !actionable || fplPct === null
-            ? 'unsupported'
-            : quote!.overCliff
-              ? 'above-cliff'
-              : Math.abs(fplPct - pack.aca.maxFplPctForCredit) <= 1e-9
-                ? 'at-cliff'
-                : 'below-cliff'
-      yearAcaResult = {
-        readiness: actionable ? 'actionable' : 'nonActionable',
-        supportCodes: actionable
-          ? ['actionable', ...informationalAcaCodes]
-          : uniqueSupportCodes,
-        householdMagi: actionable ? evaluation.acaMagiProbe?.magi ?? null : null,
-        magiComponents: evaluation.acaMagiProbe?.components ?? {
-          federalAgi: federalDetail.agiBeforeFloor,
-          nontaxableSocialSecurity: Math.max(0, incomes.socialSecurity - federalDetail.taxableSocialSecurity),
-          taxExemptInterest: yearTaxExemptInterest,
-          foreignExclusionAddback: acaForeignExclusionAddback,
-          requiredFilerDependentMagi: 0,
-        },
-        fplRegion: acaContract?.fplRegion ?? null,
-        federalPovertyLine: fpl,
-        fplPct,
-        taxFamilySize: acaContract?.taxFamilyMembers.length ?? null,
-        taxFamilyMembers,
-        coveredMembers,
+            coveredMembers: Object.freeze(
+              acaContract.coveredMembers.map((member) => Object.freeze({
+                personId: member.personId,
+                enrollmentPremiumByMonth: Object.freeze([
+                  ...member.enrollmentPremiumByMonth,
+                ]),
+                slcspBenchmarkPremiumByMonth: Object.freeze([
+                  ...member.slcspBenchmarkPremiumByMonth,
+                ]),
+              })),
+            ),
+          })
+        : null
+      const acaMagiProbeSnapshot = evaluation.acaMagiProbe === null
+        ? null
+        : Object.freeze({
+            magi: evaluation.acaMagiProbe.magi,
+            components: Object.freeze({ ...evaluation.acaMagiProbe.components }),
+            dependents: Object.freeze(
+              evaluation.acaMagiProbe.dependents.map((dependent) =>
+                Object.freeze({ ...dependent })),
+            ),
+          })
+      const acaPublication = annualAcaResultPublication(Object.freeze({
+        active: true,
+        evaluation: Object.freeze({
+          requiredNeed: evaluation.requiredNeed,
+          withdrawalTotal: evaluation.withdrawalPlan.byCategory.total,
+          withdrawalShortfall: evaluation.withdrawalPlan.shortfall,
+          acaSupportCodes: Object.freeze([...evaluation.acaSupportCodes]),
+          acaQuote: evaluation.acaQuote === null
+            ? null
+            : Object.freeze({ ...evaluation.acaQuote }),
+          acaMagiProbe: acaMagiProbeSnapshot,
+        }),
+        fixedPointFailed: acaFixedPointFailed,
+        converged,
+        conflictingCliffBasins: acaConflictingCliffBasins,
+        evaluationCount: acaEvaluationCount,
+        maxEvaluationCount,
+        contract: acaContractSnapshot,
+        contractCount: acaContractsForYear.length,
+        exampleContractInputMismatch,
+        isStandIn,
+        people: Object.freeze(
+          peopleStates.map((person) => Object.freeze({
+            personId: person.personId,
+            alive: person.alive,
+          })),
+        ),
+        marketplaceMonthsByPersonPosition: Object.freeze([
+          ...marketplaceMonthsByPersonPosition,
+        ]),
+        pre65MonthlyPremiumPerPerson,
+        healthInflationScale: healthInflFactor,
+        parameterPack: pack,
+        fplInflationScale: inflFactorFrom(pack.year, year),
+        federalAgi: federalDetail.agiBeforeFloor,
+        grossSocialSecurity: incomes.socialSecurity,
+        taxableSocialSecurity: federalDetail.taxableSocialSecurity,
+        taxExemptInterest: yearTaxExemptInterest,
+        foreignExclusionAddback: acaForeignExclusionAddback,
         grossEnrollmentPremium: acaGrossEnrollmentPremium,
-        applicableSlcspPremium: acaContract && !exampleContractInputMismatch
-          ? acaSlcspBenchmarkPremiums.reduce((sum, premium) => sum + premium, 0)
-          : null,
-        modeledAllowablePtc: quote?.modeledAllowablePtc ?? null,
-        economicNetPremium: healthcare - healthcareExcludingAcaEnrollment,
-        aptcModeled: false,
-        form8962ReconciliationSupported: false,
-        cliffState,
-        convergence: {
-          converged: actionable && converged && !acaFixedPointFailed,
-          iterations: Math.min(acaEvaluationCount, maxEvaluationCount),
-          maxIterations: maxEvaluationCount,
-          residualDollars: Math.abs(
-            evaluation.requiredNeed -
-              (evaluation.withdrawalPlan.byCategory.total + evaluation.withdrawalPlan.shortfall),
-          ),
-          grossPremiumFallback: !actionable,
-        },
-      }
-      if (!actionable) {
-        warnings.add(
-          'Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.',
-        )
-      }
+        slcspBenchmarkPremiums: Object.freeze([
+          ...acaSlcspBenchmarkPremiums,
+        ]),
+        healthcare,
+        healthcareExcludingAcaEnrollment,
+      }))
+      yearAcaResult = acaPublication.yearAcaResult
+      for (const warning of acaPublication.warnings) warnings.add(warning)
     }
 
     // V8 optimizer linearization probe (no-op unless a sink is supplied). The
