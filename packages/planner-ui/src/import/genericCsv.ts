@@ -286,12 +286,20 @@ export function duplicateColumnRoles(roles: ColumnRole[]): ColumnRole[] {
   return [...duplicated]
 }
 
-/** The wizard's inline warning and the mapper's refusal say the same thing. */
+/**
+ * The wizard's inline warning and the mapper's refusal say the same thing.
+ *
+ * It counts nothing: `guessColumnRole` sends `account`, `name` and
+ * `description` all to `name`, so a three-column clash is an ordinary header
+ * row, and two roles can clash at once — "Two columns" would be wrong for
+ * both. "More than one column" is true of every case.
+ */
 export function duplicateRoleMessage(duplicated: ColumnRole[]): string {
-  const named = duplicated.map((r) => `“${COLUMN_ROLE_LABEL[r]}”`).join(', ')
+  const named = duplicated.map((r) => `“${COLUMN_ROLE_LABEL[r]}”`)
+  const list = named.length < 2 ? (named[0] ?? '') : `${named.slice(0, -1).join(', ')} and ${named[named.length - 1]}`
   return (
-    `Two columns are set to the same role (${named}). Only the first would be read and the rest would be dropped ` +
-    'without a trace, so give each column its own role, or set the extra ones to “Ignore”.'
+    `More than one column is set to ${list}. Only the first would be read and the rest would be dropped ` +
+    'without a trace, so give each column its own role, or set the extras to “Ignore”.'
   )
 }
 

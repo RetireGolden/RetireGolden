@@ -54,7 +54,16 @@ export function fmtPct(v: number, digits = 0): string {
   return `${(v * 100).toFixed(digits)}%`
 }
 
-/** Magnitude suffixes a typed amount may carry: every one `fmtMoneyCompact` emits, so a copied KPI parses back. */
+/**
+ * Magnitude suffixes a typed amount may carry: every one `fmtMoneyCompact`
+ * emits as a *number*, so a copied KPI parses back.
+ *
+ * The `$999T+` ceiling is deliberately NOT among them and must not be added.
+ * It names a range, not a value; teaching this table to read it would turn a
+ * display ceiling into a silently wrong balance the first time someone pastes
+ * a KPI into a money field (#572). `Number('999t+')` is NaN, so it already
+ * returns null — the cluster F pin holds that.
+ */
 const AMOUNT_SUFFIX: Record<string, number> = { k: 1e3, m: 1e6, b: 1e9, t: 1e12 }
 
 /** Parses a user-typed money/number string ("1,200,000", "$45k", "−$2.5B") to a number, or null. */

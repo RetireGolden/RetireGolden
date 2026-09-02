@@ -165,7 +165,7 @@ function SummaryStrip({
         }
       >
         <div className="year-cash-flow-summary-label">
-          Shortfall{' '}
+          Shortfall
           {hasShortfall ? <TypeChip className="year-cash-flow-shortfall-badge">Shortfall</TypeChip> : null}
         </div>
         <div className="year-cash-flow-summary-value year-cash-flow-num">{fmtMoney(shortfall)}</div>

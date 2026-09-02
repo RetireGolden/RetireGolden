@@ -28,6 +28,7 @@ import {
   analyzeGenericCsv,
   draftPlanFromGenericCsv,
   duplicateColumnRoles,
+  duplicateRoleMessage,
   type ColumnRole,
 } from './genericCsv'
 import { seedPlanFromTenForty, type TenFortyInputs } from './tenForty'
@@ -150,6 +151,20 @@ describe('cluster J: two columns cannot quietly share one role (#569)', () => {
     const analysis = analyzed(DUPLICATE_ROLE_CSV)
     expect(analysis.guessedRoles).toEqual(['name', 'name', 'balance'])
     expect(duplicateColumnRoles(analysis.guessedRoles)).toEqual(['name'])
+  })
+
+  it('the warning counts nothing: three name columns and two clashing roles both read true', () => {
+    // `guessColumnRole` sends account / name / description all to `name`, so a
+    // three-way clash is an ordinary header row, not an exotic hand mapping.
+    const three = analyzed('Account,Name,Description,Balance\nBrokerage,Riley taxable,Joint,120000\n')
+    expect(three.guessedRoles).toEqual(['name', 'name', 'name', 'balance'])
+    const message = duplicateRoleMessage(duplicateColumnRoles(three.guessedRoles))
+    expect(message).toContain('More than one column is set to “Account name”')
+    expect(message).not.toContain('Two columns')
+    // Two roles at once are named as a list, not as a count either.
+    const both = duplicateRoleMessage(duplicateColumnRoles(['name', 'name', 'balance', 'balance']))
+    expect(both).toContain('“Account name” and “Balance / value”')
+    expect(both).not.toContain('Two columns')
   })
 
   it('"ignore" is the one role a sheet may repeat', () => {

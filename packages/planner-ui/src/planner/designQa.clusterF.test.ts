@@ -168,7 +168,7 @@ describe('cluster F: compact KPI money degrades by magnitude, never by digit cou
     expect(fmtMoneyCompact(Number.POSITIVE_INFINITY)).toBe('—')
   })
 
-  it('every form the formatter emits parses back into a money field, sign and all', () => {
+  it('every numeric form parses back into a money field, and the ceiling label does not', () => {
     // Each tier the formatter can emit, back through the field: the suffixes
     // and the Unicode minus a negative carries.
     expect(parseAmount(fmtMoneyCompact(45_000))).toBe(45_000)
