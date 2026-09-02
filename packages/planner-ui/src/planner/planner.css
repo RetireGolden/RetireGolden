@@ -2254,6 +2254,7 @@ html:has(.kpi-bar) {
 
 .report-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
@@ -2266,8 +2267,16 @@ html:has(.kpi-bar) {
   font-size: 1.6rem;
 }
 
+/* The title block owns the row; actions wrap beneath a long plan name instead
+   of floating over its first line (#474). */
+.report-head-title {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
 .report-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   flex-shrink: 0;
 }
@@ -3158,3 +3167,13 @@ html:has(.kpi-bar) {
 .year-table td.year-table-year {
   font-weight: 600;
 }
+/* On paper the appendix regions are plain tables: no scroll, cap, or cue. */
+@media print {
+  .report .year-table-wrap {
+    overflow: visible;
+    max-height: none;
+    border: 0;
+    background: none;
+  }
+}
+

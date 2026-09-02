@@ -23,6 +23,7 @@ import {
   YearCashFlowSankey,
   type YearCashFlowDisplayAmount,
 } from './YearCashFlowSankey'
+import { ScrollRegion } from '../ScrollRegion'
 
 export type YearCashFlowDollarMode = 'nominal' | 'today'
 
@@ -185,7 +186,7 @@ function DetailTable({
 }) {
   const mode = dollarMode === 'today' ? "today's dollars" : 'nominal dollars'
   return (
-    <div className="year-table-wrap year-cash-flow-table-wrap">
+    <ScrollRegion label={`Cash-flow lines for ${year}`} className="year-cash-flow-table-wrap">
       <table className="year-table year-cash-flow-table">
         <caption>
           Cash-flow lines for {year} ({mode})
@@ -236,7 +237,7 @@ function DetailTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   )
 }
 

@@ -7,6 +7,8 @@
 
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
+
+import { ScrollRegion } from './ScrollRegion'
 import {
   Area,
   AreaChart,
@@ -138,9 +140,24 @@ function ReportBody() {
   return (
     <article className="report">
       <header className="report-head">
-        <div>
+        <div className="report-head-title">
+          {/* The report sits outside the workspace shell; the breadcrumb is its
+              way back into the plan (#432). Screen only: paper has no links. */}
+          <nav className="workspace-breadcrumb no-print" aria-label="Breadcrumb">
+            <ol>
+              <li>
+                <Link to="/">Your plans</Link>
+              </li>
+              <li>
+                <Link to={`/plan/${plan.id}`}>{plan.name}</Link>
+              </li>
+              <li aria-current="page">Report</li>
+            </ol>
+          </nav>
           <h1>{plan.name}</h1>
-          <p className="muted">Retirement plan report · prepared {new Date().toLocaleDateString()}</p>
+          <p className="muted">
+            Retirement plan report · <span className="nowrap">prepared {new Date().toLocaleDateString()}</span>
+          </p>
         </div>
         <div className="report-actions no-print">
           <button type="button" className="btn btn-primary btn-small" onClick={() => window.print()}>
@@ -161,7 +178,7 @@ function ReportBody() {
           >
             Download HTML report
           </button>
-          <Link to={`/plan/${plan.id}/results`} className="btn btn-secondary btn-small">
+          <Link to={`/plan/${plan.id}`} className="btn btn-secondary btn-small">
             Back to plan
           </Link>
         </div>
@@ -377,7 +394,8 @@ function ReportBody() {
       {/* Appendix */}
       <section className="report-section report-appendix">
         <h2>Year-by-year appendix (nominal $)</h2>
-        <table className="report-table report-appendix-table">
+        <ScrollRegion label="Year-by-year appendix" grow>
+          <table className="report-table report-appendix-table">
           <thead>
             <tr>
               <th>Year</th><th>Age</th><th style={{ textAlign: 'right' }}>Income</th><th style={{ textAlign: 'right' }}>Expenses</th>
@@ -406,6 +424,7 @@ function ReportBody() {
             ))}
           </tbody>
         </table>
+        </ScrollRegion>
       </section>
 
       {inheritedSchedules.length > 0 ? (
@@ -438,7 +457,8 @@ function ReportBody() {
                 <p className="muted small">Final deadline year: {account.finalDeadlineYear}</p>
               ) : null}
               {account.needsProfessionalConfirmation ? <ProfessionalConfirmationMarker compact /> : null}
-              <table className="report-table report-appendix-table">
+              <ScrollRegion label={`${account.accountName} schedule`} grow>
+                <table className="report-table report-appendix-table">
                 <thead>
                   <tr>
                     <th>Year</th>
@@ -458,6 +478,7 @@ function ReportBody() {
                   ))}
                 </tbody>
               </table>
+              </ScrollRegion>
             </div>
           ))}
         </section>

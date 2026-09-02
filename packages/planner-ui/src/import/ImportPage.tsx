@@ -41,6 +41,7 @@ import {
   IMPORT_UNAVAILABLE_MESSAGE,
   useImportAvailability,
 } from './importAvailability'
+import { ScrollRegion } from '../planner/ScrollRegion'
 
 type SourceId = 'projectionlab' | 'broker' | 'generic' | 'tenforty'
 
@@ -446,7 +447,7 @@ function EnabledImportPage() {
                 that are wrong, then continue. {analysis.dataRows.length} data row
                 {analysis.dataRows.length === 1 ? '' : 's'} found.
               </p>
-              <div className="year-table-wrap">
+              <ScrollRegion label="Import preview">
                 <table className="year-table">
                   <thead>
                     <tr>
@@ -486,7 +487,7 @@ function EnabledImportPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
               <div className="picker-actions">
                 <button type="button" className="btn btn-primary" onClick={buildGenericDraft}>
                   Continue with these columns

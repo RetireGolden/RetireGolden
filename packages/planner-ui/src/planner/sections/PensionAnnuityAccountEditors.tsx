@@ -25,6 +25,7 @@ import {
   clampedAnnuityStartAge,
 } from './sectionHelpers'
 import type { CommitAccountFieldFor } from './AccountEditorTypes'
+import { ScrollRegion } from '../ScrollRegion'
 
 /**
  * The lowest election year the engine's parse rule will accept for an elected
@@ -392,7 +393,7 @@ function PensionDecisionPanel({ plan, pensionId }: { plan: Plan; pensionId: stri
         control over the money favor the lump sum. The table shows how the comparison moves, and the Insights page can
         preview the rollover against your full plan. A tradeoff, not advice.
       </p>
-      <div className="year-table-wrap" style={{ border: 'none' }}>
+      <ScrollRegion label="Lump sum vs annuity" style={{ border: 'none' }}>
         <table className="compare-table">
           <thead>
             <tr>
@@ -415,7 +416,7 @@ function PensionDecisionPanel({ plan, pensionId }: { plan: Plan; pensionId: stri
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </div>
   )
 }

@@ -33,6 +33,7 @@ import { CheckboxField, MoneyField, NumberField, SelectField, TextField } from '
 import { fmtMoney, fmtMoneyCompact } from '../format'
 import { currentStartYear, useProjection } from '../useProjection'
 import { Issues } from './shared'
+import { ScrollRegion } from '../ScrollRegion'
 
 const CURVE = EMBEDDED_REAL_YIELD_CURVE
 
@@ -149,7 +150,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
           </p>
           <details>
             <summary>Buy-list (planning-grade)</summary>
-            <div className="year-table-wrap">
+            <ScrollRegion label="Buy-list">
               <table>
                 <thead>
                   <tr>
@@ -170,7 +171,7 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
             <p className="card-hint">
               Execute at your brokerage or TreasuryDirect. RetireGolden never places orders. Annual coupons and par-rung
               pricing are planning simplifications; real quotes differ slightly.

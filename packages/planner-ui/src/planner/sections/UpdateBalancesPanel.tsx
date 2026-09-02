@@ -90,6 +90,7 @@ import {
   type RefreshProtectionEntry,
 } from '../refreshProtectionContext'
 import { fmtMoney } from '../format'
+import { ScrollRegion } from '../ScrollRegion'
 
 // The reconciliation identity is exact to the cent; rounding its display to
 // whole dollars would show 0 for a real 1-cent remainder.
@@ -932,7 +933,7 @@ function UpdateBalancesPanelBody({
       ) : null}
       {parsed && delta ? (
         <>
-          <div className="year-table-wrap">
+          <ScrollRegion label="Previous balances">
             <table className="year-table">
               <thead>
                 <tr>
@@ -1037,7 +1038,7 @@ function UpdateBalancesPanelBody({
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
           {delta.reconciliation ? (
             <div className="callout callout--info" role="status">
               Reconciliation: file total {fmtCents(delta.reconciliation.fileTotal)}; matched total{' '}

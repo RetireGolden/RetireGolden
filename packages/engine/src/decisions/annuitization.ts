@@ -155,7 +155,7 @@ export function buildAnnuitizationSweep(
   const staticWeights = fundingAllocation?.mode === 'static' ? fundingAllocation.weights : undefined
   if (!staticWeights) {
     notes.push(
-      'Glidepath attribution needs a static asset allocation on the funding account (so shifting the premium out of bonds is well-defined); controls were skipped.',
+      'Glidepath attribution was skipped. It needs a fixed asset allocation on the account funding the annuity, so the model can treat the premium as coming out of bonds.',
     )
   }
 

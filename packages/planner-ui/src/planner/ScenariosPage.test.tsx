@@ -56,6 +56,7 @@ import * as scenariosModule from '@retiregolden/engine/scenarios/scenarios'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import * as scenarioLeverModule from '../scenarioLevers'
 import { MetricTable, ScenariosPage } from './ScenariosPage'
+import { uniqueScenarioName } from './scenarioNames'
 import {
   formatMetricValue,
   formatScenarioDelta,
@@ -81,6 +82,17 @@ function deferred<T>() {
   })
   return { promise, resolve }
 }
+
+describe('scenario row names (#480)', () => {
+  it('suffixes a repeated name until it is unique, and leaves a free name alone', () => {
+    expect(uniqueScenarioName('15% spending cut', [])).toBe('15% spending cut')
+    expect(uniqueScenarioName('15% spending cut', ['15% spending cut'])).toBe('15% spending cut (2)')
+    expect(uniqueScenarioName('15% spending cut', ['15% spending cut', '15% spending cut (2)'])).toBe(
+      '15% spending cut (3)',
+    )
+    expect(uniqueScenarioName('Other', ['15% spending cut'])).toBe('Other')
+  })
+})
 
 describe('scenario comparison presentation', () => {
   it('formats proposal-minus-baseline changes with an explicit sign and stable zero', () => {
@@ -389,6 +401,59 @@ describe('ScenariosPage comparison lifecycle', () => {
     )
     expect(applied.ok).toBe(true)
     if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(110_400)
+  })
+
+  it('refuses to add a scenario whose patch is already in the list (#480)', async () => {
+    const plan = createSamplePlan()
+    let updatedPlan: Plan | null = null
+    const track = (mutator: (draft: Plan) => void) => {
+      const next = structuredClone(plan)
+      mutator(next)
+      updatedPlan = next
+    }
+    await mount(plan, [], false, track, false)
+    // Re-selecting the default lever fires no change event, so step through
+    // another lever first, as the preview-lifecycle test above does.
+    const pickSpending = async () => {
+      const select = container.querySelector<HTMLSelectElement>('select')!
+      for (const lever of ['pension', 'spending']) {
+        await act(async () => {
+          select.value = lever
+          select.dispatchEvent(new Event('change', { bubbles: true }))
+        })
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(25)
+        })
+      }
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(25)
+      })
+      const add = Array.from(container.querySelectorAll('button')).find(
+        (button) => button.textContent?.includes('Add scenario'),
+      )!
+      expect(add.disabled).toBe(false)
+      return add
+    }
+    const addOnce = await pickSpending()
+    await act(async () => addOnce.click())
+    const once = updatedPlan as Plan | null
+    // The sample plan already carries scenarios; the lever adds exactly one more.
+    expect(once?.scenarios).toHaveLength(plan.scenarios.length + 1)
+
+    // The same lever again, against the plan that now holds it: refused, explained, nothing saved.
+    updatedPlan = null
+    const withOne = once!
+    await mount(withOne, [], false, (mutator) => {
+      const next = structuredClone(withOne)
+      mutator(next)
+      updatedPlan = next
+    }, false)
+    const addAgain = await pickSpending()
+    await act(async () => addAgain.click())
+    expect(updatedPlan).toBeNull()
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(
+      `already in the list as "${withOne.scenarios.at(-1)!.name}"`,
+    )
   })
 
   it('keeps lever explanations visible while native controls are read-only', async () => {

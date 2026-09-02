@@ -1,4 +1,5 @@
 import type { ScenarioPlanComparison } from '@retiregolden/engine/scenarios/comparison'
+import { ScrollRegion } from './ScrollRegion'
 
 type ActionComparisonRow = ScenarioPlanComparison['actionRows'][number]
 type ActionSide = NonNullable<ActionComparisonRow['baseline']>
@@ -140,7 +141,7 @@ export function ScenarioActionComparisonTable({
         Exact execution evidence from the canonical scenario ledger. IDs are shown so each action,
         person, source, destination, and charity designation can be traced without inferring identity.
       </p>
-      <div className="year-table-wrap">
+      <ScrollRegion label="Retirement action execution">
         <table className="compare-table">
           <caption>Identity-bearing retirement actions (exact dollars and cents)</caption>
           <thead>
@@ -179,7 +180,7 @@ export function ScenarioActionComparisonTable({
             ])}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </details>
   )
 }

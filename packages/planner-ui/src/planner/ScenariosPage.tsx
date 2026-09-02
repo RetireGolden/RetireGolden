@@ -27,6 +27,7 @@ import { EditableFieldset } from './EditableFieldset'
 import { MoneyField, NumberField, PercentField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { ScrollRegion } from './ScrollRegion'
+import { uniqueScenarioName } from './scenarioNames'
 import { runSpendingSolve } from '../optimize/spendingRunner'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
@@ -427,8 +428,20 @@ function AddScenario() {
               setSaveError(built.issues.join(' '))
               return
             }
+            // Re-adding the same lever produced a second identical row with the
+            // same accessible names for Compare and Remove (#480): refuse an
+            // identical patch, and suffix a repeated name so rows stay tellable.
+            // Patches differ only by their creation stamp when the lever is the
+            // same, so compare what they do (the operations), not the envelope.
+            const opsOf = (patch: Record<string, unknown>) => JSON.stringify(patch.operations ?? patch)
+            const twin = plan.scenarios.find((s) => opsOf(s.patch) === opsOf(built.patch))
+            if (twin) {
+              setSaveError(`This scenario is already in the list as "${twin.name}".`)
+              return
+            }
+            const name = uniqueScenarioName(built.name, plan.scenarios.map((s) => s.name))
             update((d) => {
-              d.scenarios.push({ id: newId(), name: built.name, patch: built.patch })
+              d.scenarios.push({ id: newId(), name, patch: built.patch })
             })
           }}
         >
@@ -1050,6 +1063,7 @@ function ComparableScenariosPage() {
                           <button
                             type="button"
                             className="btn-ghost btn-ghost-danger"
+                            aria-label={`Remove ${row.name}`}
                             disabled={readOnly}
                             onClick={() =>
                               update((d) => {
