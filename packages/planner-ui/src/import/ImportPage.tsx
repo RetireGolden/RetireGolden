@@ -22,7 +22,10 @@ import { MAX_CSV_CHARS } from './csv'
 import {
   analyzeGenericCsv,
   COLUMN_ROLE_LABEL,
+  describeCsvRowCells,
   draftPlanFromGenericCsv,
+  MAX_SET_ASIDE_LISTED,
+  setAsideRange,
   type ColumnRole,
   type GenericCsvAnalysis,
 } from './genericCsv'
@@ -450,7 +453,30 @@ function EnabledImportPage() {
                 Tell RetireGolden what each column means. The guesses below come from your header row; fix any
                 that are wrong, then continue. {analysis.dataRows.length} data row
                 {analysis.dataRows.length === 1 ? '' : 's'} found.
+                {/* A row with no dollar value anywhere is not a data row; say
+                    so here, at the count, list the rows so they can be found
+                    in the spreadsheet, and say it again on the checklist (#557). */}
+                {analysis.skippedRows && analysis.skippedRows.length > 0
+                  ? ` ${analysis.skippedRows.length} row${analysis.skippedRows.length === 1 ? '' : 's'} with no dollar value in any column ${analysis.skippedRows.length === 1 ? 'was' : 'were'} set aside and will be reported as skipped after Continue:`
+                  : null}
               </p>
+              {analysis.skippedRows && analysis.skippedRows.length > 0 ? (
+                // Capped like the preview above it: the first rows one by one,
+                // then "and N more" with the range, so a sheet of thousands of
+                // note lines does not become thousands of list items here.
+                <ul className="field-hint import-set-aside" data-testid="set-aside-rows">
+                  {analysis.skippedRows.slice(0, MAX_SET_ASIDE_LISTED).map((row) => (
+                    <li key={row.rowNumber}>
+                      Row {row.rowNumber}: {describeCsvRowCells(row)}
+                    </li>
+                  ))}
+                  {analysis.skippedRows.length > MAX_SET_ASIDE_LISTED ? (
+                    <li>
+                      and {analysis.skippedRows.length - MAX_SET_ASIDE_LISTED} more{setAsideRange(analysis.skippedRows.slice(MAX_SET_ASIDE_LISTED))}
+                    </li>
+                  ) : null}
+                </ul>
+              ) : null}
               <ScrollRegion label="Import preview">
                 <table className="year-table">
                   <thead>

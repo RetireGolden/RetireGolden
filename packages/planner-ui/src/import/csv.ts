@@ -13,7 +13,21 @@ export const MAX_CSV_FIELDS_PER_ROW = 100
 /** Balances above this are assumed to be a parsing mistake, not a portfolio. */
 export const MAX_REASONABLE_DOLLARS = 1e12
 
-export type CsvParseResult = { ok: true; rows: string[][] } | { ok: false; message: string }
+export type CsvParseResult =
+  | {
+      ok: true
+      rows: string[][]
+      /**
+       * For each kept row, its 1-based row number in the spreadsheet the
+       * file came from: every row terminator advances it, the blank rows this
+       * parser drops included, while a line break inside a quoted cell stays
+       * within that one row, as it does in Excel or Sheets. It is the number
+       * a person sees beside the row, so anything that names a row to them
+       * uses this, not the row's index in `rows` (#557 review).
+       */
+      sourceLines: number[]
+    }
+  | { ok: false; message: string }
 
 /**
  * RFC-4180-style parser: quoted fields (embedded commas/newlines/`""` escapes),
@@ -26,10 +40,15 @@ export function parseCsv(text: string): CsvParseResult {
   const src = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
 
   const rows: string[][] = []
+  const sourceLines: number[] = []
   let row: string[] = []
   let field = ''
   let inQuotes = false
   let i = 0
+  // Spreadsheet row of the source: every row terminator advances it (a
+  // dropped blank row too), so a kept row is numbered where it began.
+  let line = 1
+  let rowStartLine = 1
 
   const endField = () => {
     row.push(field)
@@ -41,6 +60,7 @@ export function parseCsv(text: string): CsvParseResult {
     // Keep rows that carry any content; blank separator lines are structure, not data.
     if (row.some((f) => f.trim() !== '')) {
       rows.push(row)
+      sourceLines.push(rowStartLine)
       if (rows.length > MAX_CSV_ROWS) return 'File has too many rows to be a supported export.'
     }
     row = []
@@ -60,6 +80,8 @@ export function parseCsv(text: string): CsvParseResult {
         i++
         continue
       }
+      // A line break inside a quoted value stays in the value and does not
+      // advance the row: a multi-line cell is still one spreadsheet row.
       field += ch
       i++
       continue
@@ -78,6 +100,8 @@ export function parseCsv(text: string): CsvParseResult {
       if (ch === '\r' && src[i + 1] === '\n') i++
       const err = endRow()
       if (err) return { ok: false, message: err }
+      line++
+      rowStartLine = line
       i++
       continue
     }
@@ -94,7 +118,7 @@ export function parseCsv(text: string): CsvParseResult {
   if (rows.length === 0) {
     return { ok: false, message: 'File is empty.' }
   }
-  return { ok: true, rows }
+  return { ok: true, rows, sourceLines }
 }
 
 /**

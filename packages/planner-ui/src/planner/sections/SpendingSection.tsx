@@ -746,6 +746,9 @@ export function SpendingSection() {
               />
               <SelectField
                 label="Flexibility"
+                // The option labels ("Skippable (drop if unaffordable)") outrun
+                // one goal-row column; two columns show the whole label (#465).
+                wide
                 help="Fixed happens in its year no matter what. Movable funds in its year normally, but is delayed up to the latest year while guardrails are cutting discretionary spending. Skippable is the same but dropped entirely if it is still unaffordable at the latest year. Only matters when Spending guardrails are on."
                 learn={LEARN.spendingBudget}
                 value={g.flexibility ?? 'fixed'}

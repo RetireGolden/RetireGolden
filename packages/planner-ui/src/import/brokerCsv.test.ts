@@ -276,12 +276,13 @@ describe('brokerCsv provenance (WS1)', () => {
     expect(balance.confidence).toBe('derived')
     expect(balance.locator?.kind).toBe('derived')
     if (balance.locator?.kind === 'derived') {
-      // AAPL is the first counted position: parsed rows are Positions title (1),
-      // header (2), then AAPL at parsed-row 3.
-      expect(balance.locator.from).toContainEqual({ kind: 'csvRow', row: 3, column: 'market value' })
+      // AAPL is the first counted position. Rows are spreadsheet rows: the
+      // Positions title (1), the blank `""` line (2, dropped by the parser but
+      // still a row in the sheet), the header (3), then AAPL at row 4.
+      expect(balance.locator.from).toContainEqual({ kind: 'csvRow', row: 4, column: 'market value' })
       // The reported cost basis derives from AAPL's basis cell — the report
       // must point at it too, or the basis cannot be reproduced from the file.
-      expect(balance.locator.from).toContainEqual({ kind: 'csvRow', row: 3, column: 'cost basis' })
+      expect(balance.locator.from).toContainEqual({ kind: 'csvRow', row: 4, column: 'cost basis' })
       expect(balance.locator.from).toHaveLength(4) // three value cells + one basis cell
     }
   })
@@ -325,5 +326,28 @@ describe('brokerCsv provenance (WS1)', () => {
     const remainder = r.review.find((i) => i.source === 'Everything except balances')!
     expect(remainder.confidence).toBe('unmapped')
     expect(remainder.target).toBeUndefined()
+  })
+})
+
+describe('broker row locators use spreadsheet rows (#557 review)', () => {
+  it('a blank separator line shifts the row a skipped position is located at, as it does in the sheet', () => {
+    // The hostile file above with a blank line after the header: GOOD is
+    // spreadsheet row 4 and EVIL row 5, whatever the parser kept.
+    const spaced = `"Positions for account Test ...111 as of 07/07/2026"
+"Symbol","Description","Mkt Val (Market Value)","Cost Basis"
+
+"GOOD","FINE FUND","$1,000.00","$900.00"
+"EVIL","BROKEN ROW","not-a-number","$1.00"
+`
+    const r = parseBrokerPositionsCsv(spaced)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const skipped = r.review.find((i) => i.status === 'skipped' && i.source.includes('EVIL'))!
+    expect(skipped.locator).toEqual({ kind: 'csvRow', row: 5, column: 'market value' })
+    const balance = r.review.find((i) => i.status === 'mapped' && i.locator?.kind === 'derived')!
+    expect(balance).toBeDefined()
+    if (balance.locator?.kind === 'derived') {
+      expect(balance.locator.from).toContainEqual({ kind: 'csvRow', row: 4, column: 'market value' })
+    }
   })
 })

@@ -25,6 +25,7 @@ import {
   PARAMETER_DATA_AS_OF,
   PARAMETER_PROVENANCE,
 } from '@retiregolden/engine/params'
+import { SINGLE_WITH_PARTNER_NOTE } from './filingStatusNotice'
 import { fmtMoney } from './format'
 
 /** Where a shown value comes from. */
@@ -45,6 +46,12 @@ export interface AssumptionGroup {
   id: string
   label: string
   rows: AssumptionRow[]
+  /**
+   * A reading the engine gives the group's rows, printed under the heading.
+   * Not a row: a row is a value someone or some source set, with a
+   * provenance chip, and an engine fact is neither.
+   */
+  note?: string
 }
 
 export interface AssumptionsSnapshot {
@@ -187,6 +194,13 @@ function longevityGroup(plan: Plan): AssumptionGroup {
   return {
     id: 'longevity',
     label: 'Household & longevity',
+    // Two people under Single is a legal plan shape; wherever the filing
+    // status is echoed above both people's rows, the same reading Household
+    // and the report give travels with it (#555) — as a note on the group,
+    // since it is how the engine reads the rows, not a setting anyone made.
+    ...(plan.household.filingStatus === 'single' && plan.household.people.length === 2
+      ? { note: `Two people on a Single-filing plan: ${SINGLE_WITH_PARTNER_NOTE}` }
+      : {}),
     rows: [
       {
         id: 'filing',
@@ -350,6 +364,7 @@ export function assumptionsExportText(snapshot: AssumptionsSnapshot): string {
   ]
   for (const group of snapshot.groups) {
     lines.push(`## ${group.label}`)
+    if (group.note) lines.push(group.note)
     for (const row of group.rows) {
       const source = row.sourceId ? sourceById.get(row.sourceId) : undefined
       const sourceNote = source ? ` [${source.publisher}: ${source.url}]` : ''

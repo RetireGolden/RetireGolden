@@ -838,8 +838,19 @@
   grid-column: span 2;
 }
 
+/* A plain field that needs the same two columns: a select whose option
+   labels outrun one column (Goal Flexibility, #465) cannot wrap them, so it
+   takes two beside its peers instead of clipping the selected label. */
+.form-grid > .field--wide {
+  grid-column: span 2;
+}
+
 @media (max-width: 640px) {
   .form-grid > .field-with-action--wide {
+    grid-column: 1 / -1;
+  }
+
+  .form-grid > .field--wide {
     grid-column: 1 / -1;
   }
 }
@@ -1470,6 +1481,15 @@ html:has(.kpi-bar) {
 .year-table thead th:first-child {
   z-index: 3;
   background: var(--surface-2);
+}
+
+/* Help inside a header cell is not header text: the header's small caps and
+   tracking stop at the ⓘ trigger and its bubble (Relocation's column help
+   read as shouting, and its "i" as "I"). */
+.year-table thead th .help-tip,
+.year-table thead th .help-tip-bubble {
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .year-table tbody tr:hover td {
@@ -2842,6 +2862,14 @@ html:has(.kpi-bar) {
   max-width: 78ch;
 }
 
+/* The map step's list of rows set aside for having no dollar value: a hint
+   list with the review checklist's indent and measure (#557). */
+.import-set-aside {
+  margin: 0 0 0.85rem;
+  padding-left: 1.2rem;
+  max-width: 78ch;
+}
+
 .import-review-group li {
   margin: 0.25rem 0;
   font-size: 0.92rem;
@@ -3262,6 +3290,36 @@ html:has(.kpi-bar) {
     height: 100dvh;
     border-radius: 0;
   }
+}
+
+/* A prose column in a figures table (a rule's description, a CUSIP, "lasts
+   through 2059"): left-aligned and free to wrap, unlike the right-aligned
+   nowrap money columns around it. */
+.year-table th.year-table-text,
+.year-table td.year-table-text {
+  text-align: left;
+  white-space: normal;
+  /* A prose column's title is prose too: no small caps or tracking. */
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* A prose column that must not collapse to a sliver beside the figures (the
+   Relocation driver's rule text). */
+.year-table .year-table-text--wide {
+  min-width: 16rem;
+}
+
+/* Tables that took year-table for its cell chrome, not its timeline (the
+   Relocation, Spending-solver, and Income-floor tables, #514): no sticky
+   first column painting over the figures, no sticky header stacking inside
+   the scroll region, and no edge cue keyed to the sticky column. */
+.year-table--plain thead th,
+.year-table--plain th:first-child,
+.year-table--plain td:first-child {
+  position: static;
+  z-index: auto;
+  animation: none;
 }
 
 /* Trailing Flow control. Year remains the sticky first data column. */

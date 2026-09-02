@@ -67,6 +67,13 @@ export function AssumptionsCardPage() {
       {snapshot.groups.map((group) => (
         <div className="card" key={group.id}>
           <h3 style={{ marginTop: 0 }}>{group.label}</h3>
+          {/* An engine reading of the rows below, not an assumption: no
+              provenance chip, since nobody set it (#555). */}
+          {group.note ? (
+            <p className="card-hint" data-testid={`assumption-group-note-${group.id}`}>
+              {group.note}
+            </p>
+          ) : null}
           <table className="provenance-table">
             <thead>
               <tr>
