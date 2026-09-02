@@ -177,19 +177,21 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
 export function ReadonlyField({ label, help, learn, value }: BaseProps & { value: ReactNode }) {
   const id = useId()
   const valueId = `${id}-value`
-  // A real label for a real (labelable) output, and no input chrome on the
-  // value, so it never looks editable (#462).
+  // A caption and a value: no input chrome, so it never looks editable
+  // (#462), and no <label> or <output>, since neither fits a value that is
+  // not a control and <output> is an implicit live region that would announce
+  // every recalculation (review of #532).
   return (
     <div className="field">
       <span className="field-label-row">
-        <label className="field-label" id={id} htmlFor={valueId}>
+        <span className="field-label" id={id}>
           {label}
-        </label>
+        </span>
         {help || learn ? <HelpTip text={help} learn={learn} id={`${id}-help`} /> : null}
       </span>
-      <output id={valueId} className="field-readonly" aria-labelledby={id}>
+      <p id={valueId} className="field-readonly" aria-labelledby={id}>
         {value}
-      </output>
+      </p>
     </div>
   )
 }

@@ -344,7 +344,7 @@ code {
    brand in it, so the wordmark read as dropped (#440). The brand stays the
    top-left anchor, the nav stays on one line beside it, and the theme cluster
    is the only thing that wraps. */
-@media (max-width: 880px) {
+@media (min-width: 641px) and (max-width: 880px) {
   .app-header {
     align-items: flex-start;
   }

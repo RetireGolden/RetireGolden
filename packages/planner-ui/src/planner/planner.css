@@ -2015,8 +2015,8 @@ html:has(.kpi-bar) {
 
 /* One suffix slot beside the control. Multiple actions must share this cell
    via .field-with-action-actions (flex + gap); pinning each > button here
-   stacks their boxes on the same ~one-chip rect. On Household, span the
-   whole .field-with-action with field-span-full so the input keeps width. */
+   stacks their boxes on the same ~one-chip rect. On Household the compound
+   field spans two grid columns via .field-with-action--wide (#467). */
 .field-with-action > .field-with-action-actions,
 .field-with-action > button {
   grid-column: 2;

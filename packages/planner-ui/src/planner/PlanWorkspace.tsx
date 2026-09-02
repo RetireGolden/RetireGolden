@@ -196,12 +196,19 @@ function WorkspaceInner() {
   const { homeLabel } = usePlannerEdition()
   const navigate = useNavigate()
   const location = useLocation()
-  // In the horizontal strip (under 880px) the active chip can sit off-screen
-  // after a navigation; bring it into view without moving the page (#439).
+  // When the rail is a horizontal strip the active chip can sit off-screen
+  // after a navigation; centre it by scrolling the rail itself, never the
+  // window (#439). Overflow on the rail is the test for the strip layout, so
+  // no breakpoint is repeated here.
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
-    if (!window.matchMedia('(max-width: 880px)').matches) return
-    document.querySelector('.rail-link--active')?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' })
+    const rail = document.querySelector<HTMLElement>('.workspace-rail')
+    const active = rail?.querySelector<HTMLElement>('.rail-link--active')
+    if (!rail || !active || rail.scrollWidth <= rail.clientWidth) return
+    const railBox = rail.getBoundingClientRect()
+    const chipBox = active.getBoundingClientRect()
+    const chipLeft = chipBox.left - railBox.left + rail.scrollLeft
+    const target = chipLeft - (rail.clientWidth - chipBox.width) / 2
+    rail.scrollLeft = Math.max(0, Math.min(target, rail.scrollWidth - rail.clientWidth))
   }, [location.pathname])
   const { prompt, alert, dialogs } = useDialogs()
 

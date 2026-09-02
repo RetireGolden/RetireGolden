@@ -284,8 +284,25 @@ transitions, restrained hover states that shift a border or tint a background by
   link, not the gold primary-button fill.
 - **Workspace rail** (`.rail-link`): the planner's left spine; sticky at 13.5rem wide, collapsing
   to a horizontal chip strip under 880px. Active item is Ledger Gold at 650 on a 12% gold tint.
-  Group headers use the Label style.
+  Group headers use the Label style. The strip shows the shared scroll cue (page-colored covers
+  that move with the chips, ink-tinted edge shadows that stay), snaps to chip starts, renders group
+  headers as separators with a left rule, and scrolls itself, never the window, to keep the active
+  chip in view after a navigation.
+- **Header between 641px and 880px:** the brand stays the top-left anchor, the nav stays on one
+  line beside it, and only the theme cluster wraps below. Under 640px the phone layout applies.
 - **Breadcrumbs:** muted with `/` separators; current page is Ink at 550.
+
+### Forms and figures
+- **Compound field with actions** (`.field-with-action`): input plus its buttons in one cell.
+  Add `.field-with-action--wide` to span two grid columns beside sibling fields; use
+  `.field-span-full` only when the row really belongs to it.
+- **Read-only values** (`ReadonlyField`): a caption and a value, no border or fill, sitting on
+  the row's baseline. Not a `<label>` (nothing to label) and not an `<output>` (a live region).
+- **Chart frames** (`.chart-frame`): every one is `role="figure"` with an `aria-label` that
+  says what is plotted and over what, so the chart list reads as named figures and the chart's own
+  keyboard layer keeps its semantics. A pin enforces this on Monte Carlo, Results, and the bucket lens.
+- **Help bubbles** (`HelpTip`): fixed-positioned and clamped to the viewport, treating the sticky
+  KPI bar's bottom edge as the top inside a plan; Escape and re-click dismiss a pinned bubble.
 
 ### The KPI Bar (signature component)
 Sticky verdict strip at the top of every planner page: auto-fit grid of KPIs, each an uppercase
