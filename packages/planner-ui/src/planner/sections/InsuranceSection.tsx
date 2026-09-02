@@ -2,7 +2,13 @@
 
 import { useId, useMemo } from 'react'
 
-import { ltcPolicySchema, type CareEvent, type InsurancePolicy, type Plan } from '@retiregolden/engine/model/plan'
+import {
+  ltcPolicySchema,
+  permanentLifePolicySchema,
+  type CareEvent,
+  type InsurancePolicy,
+  type Plan,
+} from '@retiregolden/engine/model/plan'
 import { compareLtcStress } from '@retiregolden/engine/projection/compare'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
@@ -92,9 +98,11 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
             // age the field already displays as its default; leaving it keeps
             // a valid age for the round trip back and drops only one the schema
             // rejects, so no issue is left on a field that is no longer shown
-            // (#503). The bound is the engine's, read from the schema itself.
+            // (#503). The bound is the engine's, read from this policy kind's
+            // own schema.
+            const schema = p.kind === 'ltc' ? ltcPolicySchema : permanentLifePolicySchema
             if (v === 'untilAge') p.premiumEndAge ??= 65
-            else if (!ltcPolicySchema.shape.premiumEndAge.safeParse(p.premiumEndAge).success) delete p.premiumEndAge
+            else if (!schema.shape.premiumEndAge.safeParse(p.premiumEndAge).success) delete p.premiumEndAge
           })
         }
       />

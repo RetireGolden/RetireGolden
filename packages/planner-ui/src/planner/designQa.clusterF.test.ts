@@ -81,7 +81,9 @@ describe('cluster F: fields carry the engine bound or its path', () => {
   it('the premium mode select clears a premium end age the schema no longer wants (#503)', () => {
     const src = read('./sections/InsuranceSection.tsx')
     expect(src).toContain("if (v === 'untilAge') p.premiumEndAge ??= 65")
-    expect(src).toContain('else if (!ltcPolicySchema.shape.premiumEndAge.safeParse(p.premiumEndAge).success) delete p.premiumEndAge')
+    // The keep/drop check reads the schema of the policy kind being edited.
+    expect(src).toContain("const schema = p.kind === 'ltc' ? ltcPolicySchema : permanentLifePolicySchema")
+    expect(src).toContain('else if (!schema.shape.premiumEndAge.safeParse(p.premiumEndAge).success) delete p.premiumEndAge')
   })
 
   it('issue labels for the newly wired paths read as the cards do', () => {
