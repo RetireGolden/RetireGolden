@@ -134,7 +134,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -435,7 +435,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 724
+              "line": 722
             }
           ]
         }
@@ -502,7 +502,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -549,7 +549,7 @@
       "title": "Wash-sale losses are disallowed for substantially identical securities acquired in the 61-day window",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale and deducts net losses through the capital-loss path in simulate.ts; nothing here fails closed. The accepted Plan surface is model/plan.ts: a taxable account carries aggregate balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. The companion fixture drives one taxable account (basis above balance) through simulatePlan with a year-one one-time goal forcing its full sale and wages high enough to absorb the section 1211(b) ordinary offset, then stands that single observed ordinary-offset figure against both authority limbs: (1) replacement inside the 61-day window (deduction disallowed → $0) and (2) no replacement purchase (loss allowed → $3,000). The Plan cannot express a replacement purchase, so the annual projection observably deducts $3,000 under both limbs — that collapse is the approximation. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.",
+      "conventionRationale": "Approximated rather than out of scope because annualWithdrawalPlanning.ts emits the realized gain or loss for the companion fixture's need-based taxable-account sale and federalTax.ts deducts net losses through the capital-loss path; other sale-producing coordinators characterize their own transactions, and none fails closed on wash-sale evidence. The accepted Plan surface is model/plan.ts: a taxable account carries aggregate balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. The companion fixture drives one taxable account (basis above balance) through simulatePlan with a year-one one-time goal forcing its full sale and wages high enough to absorb the section 1211(b) ordinary offset, then stands that single observed ordinary-offset figure against both authority limbs: (1) replacement inside the 61-day window (deduction disallowed → $0) and (2) no replacement purchase (loss allowed → $3,000). The Plan cannot express a replacement purchase, so the annual projection observably deducts $3,000 under both limbs — that collapse is the approximation. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -559,7 +559,7 @@
       "dueOn": "2027-08-27",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
-        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "implementations": [
@@ -573,11 +573,11 @@
           ]
         },
         {
-          "path": "packages/engine/src/projection/simulate.ts",
+          "path": "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
           "functions": [
             {
-              "name": "planWithdrawals",
-              "line": 750
+              "name": "annualWithdrawalPlan",
+              "line": 132
             }
           ]
         },
@@ -648,7 +648,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -922,7 +922,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -1425,7 +1425,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1497,7 +1497,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1686,7 +1686,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1782,7 +1782,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1863,7 +1863,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1920,7 +1920,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }

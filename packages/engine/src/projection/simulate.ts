@@ -86,6 +86,10 @@ import { annualSeppDistributions } from './internal/annualSeppDistributions.js'
 import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
 import { annualSnapshot } from './internal/annualSnapshot.js'
 import { annualWithdrawalApplyFlowPlan } from './internal/annualWithdrawalApplyFlowPlan.js'
+import {
+  annualWithdrawalPlan,
+  annualWithdrawalStrategy,
+} from './internal/annualWithdrawalPlanning.js'
 import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
 import {
   annualContributionsAndEmployerMatch,
@@ -148,7 +152,6 @@ import {
 import {
   rmdApplicablePlanForAccount as identifyRmdApplicablePlan,
 } from '../rmd/rmdApplicablePlanForAccount.js'
-import { sizeRothConversion } from '../strategies/rothConversion.js'
 import {
   ROTH_QUALIFIED_AGE,
   applyConversionPrincipalDebt,
@@ -173,10 +176,6 @@ import {
 import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
 import { splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from './moneyTolerance.js'
-import {
-  aggregateBasisSale,
-  type AggregateBasisSaleResult,
-} from '../tax/aggregateBasisSale.js'
 import {
   asAccountId,
   asPersonId,
@@ -259,7 +258,6 @@ import {
   type TaxYearInput,
   type YearAcaResult,
   type YearResult,
-  type YearWithdrawals,
   type InheritedAccountYearEvidence,
   type YearCashFlowTransferEndpoint,
 } from './types.js'
@@ -722,190 +720,6 @@ function canonicalRuntimeOccurrenceOrder(
     || compareNullableUtf16(left.movementAuthorityId, right.movementAuthorityId)
 }
 type BalanceState = PhysicalBalanceState
-
-interface WithdrawalPlanResult {
-  byCategory: YearWithdrawals
-  byAccountId: Map<string, number>
-  realizedGains: number
-  taxableSales: ReadonlyMap<string, Readonly<AggregateBasisSaleResult>>
-  shortfall: number
-  /** Dollars taken out of the taxable safety-net reserve as a last resort. */
-  reserveUsed: number
-}
-
-const SEQUENTIAL_ORDER = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
-const PROPORTIONAL_POOL = ['cash', 'taxable', 'equityComp', 'traditional', 'roth'] as const
-
-function spendableBalance(state: BalanceState, year: number): number {
-  return isSpendableInYear(state.account, year) ? state.balance : 0
-}
-
-/** Strategy with year-specific parameters resolved (bracket headroom in dollars). */
-type ResolvedWithdrawalStrategy =
-  | { mode: 'sequential' }
-  | { mode: 'proportional' }
-  | { mode: 'bracketTargeted'; traditionalCap: number }
-
-/** Drain plan over a copy of balances; pure with respect to engine state. */
-function planWithdrawals(
-  amount: number,
-  states: BalanceState[],
-  strategy: ResolvedWithdrawalStrategy = { mode: 'sequential' },
-  year = 0,
-  liquidReserve = 0,
-): WithdrawalPlanResult {
-  const byCategory: YearWithdrawals = { cash: 0, taxable: 0, traditional: 0, roth: 0, hsa: 0, total: 0 }
-  const byAccountId = new Map<string, number>()
-  const taxableSales = new Map<
-    string,
-    Readonly<AggregateBasisSaleResult>
-  >()
-  const available = new Map(states.map((s) => [s.account.id, spendableBalance(s, year)]))
-  let realizedGains = 0
-  let remaining = amount
-
-  // Taxable safety-net floor (step 7): hold `liquidReserve` back from the
-  // liquid (cash/taxable/vested equity-comp) accounts so other account types
-  // fund spending first. Protection is allocated to the last-drained accounts
-  // first, and released below only when everything else still falls short —
-  // the floor is a preference, never a manufactured shortfall.
-  const reservedByAccount = new Map<string, number>()
-  if (liquidReserve > 0) {
-    let toReserve = liquidReserve
-    for (const type of ['equityComp', 'taxable', 'cash'] as const) {
-      for (let i = states.length - 1; i >= 0 && toReserve > EPSILON; i--) {
-        const s = states[i]!
-        if (s.account.type !== type) continue
-        const avail = available.get(s.account.id) ?? 0
-        const hold = Math.min(avail, toReserve)
-        if (hold <= 0) continue
-        available.set(s.account.id, avail - hold)
-        reservedByAccount.set(s.account.id, hold)
-        toReserve -= hold
-      }
-    }
-  }
-
-  const takeFrom = (state: BalanceState, want: number): number => {
-    const take = Math.min(available.get(state.account.id) ?? 0, want, remaining)
-    if (take <= 0) return 0
-    // A traditional draw the exact-cent ledger records as zero is discharged
-    // here rather than at the apply loop below, and the difference is the whole
-    // year's consistency. The apply loop only moves balances; this function is
-    // where `byCategory`, `byAccountId` and `remaining` are decided together,
-    // and every downstream figure -- the published traditional withdrawal
-    // total, the ordinary income it produces, the tax on that income, and the
-    // shortfall -- is read from what it returns. Skipping the movement alone
-    // would leave the year publishing a withdrawal the runtime journal has no
-    // occurrence for, which the source series refuses outright: the draw would
-    // no longer happen and the total would still claim it did.
-    //
-    // Confined to traditional accounts because they are the ones under the
-    // journal's explains-every-movement contract. Nothing else drained here
-    // publishes a runtime occurrence, and a taxable account additionally
-    // carries planned cost-basis state that this plan settles, so widening the
-    // condition would be a different change with a different blast radius.
-    if (state.account.type === 'traditional' && planDollarsMoveNoLedgerCent(take)) {
-      // Discharged, not deferred, on the same terms as a sub-cent required
-      // distribution: the quantum comes off both the account's availability and
-      // the outstanding need, and no plan entry records it. The alternative is
-      // to leave the need standing and send the household to another account
-      // for a fraction of a cent, which would change which balances fund a real
-      // need over a quantity no ledger can express.
-      available.set(state.account.id, (available.get(state.account.id) ?? 0) - take)
-      remaining -= take
-      return 0
-    }
-    if (state.account.type === 'equityComp' && state.balance > 0) {
-      const basisRatio = Math.min(1, state.costBasis / state.balance)
-      realizedGains += take * (1 - basisRatio)
-    }
-    const category = state.account.type === 'equityComp' ? 'taxable' : state.account.type
-    byCategory[category as keyof Omit<YearWithdrawals, 'total'>] += take
-    byAccountId.set(state.account.id, (byAccountId.get(state.account.id) ?? 0) + take)
-    available.set(state.account.id, (available.get(state.account.id) ?? 0) - take)
-    remaining -= take
-    return take
-  }
-
-  const drainCategory = (category: BalanceState['account']['type'], cap = Infinity): void => {
-    let capLeft = cap
-    for (const state of states) {
-      if (state.account.type !== category) continue
-      if (remaining <= EPSILON || capLeft <= EPSILON) break
-      capLeft -= takeFrom(state, capLeft)
-    }
-  }
-
-  if (strategy.mode === 'proportional') {
-    // Pro-rata passes; accounts that empty shift their share to the rest.
-    for (let pass = 0; pass < 6 && remaining > EPSILON; pass++) {
-      const poolStates = states.filter(
-        (s) => (PROPORTIONAL_POOL as readonly string[]).includes(s.account.type) && (available.get(s.account.id) ?? 0) > 0,
-      )
-      const poolTotal = poolStates.reduce((sum, s) => sum + (available.get(s.account.id) ?? 0), 0)
-      if (poolTotal <= 0) break
-      const target = remaining
-      for (const state of poolStates) {
-        takeFrom(state, (target * (available.get(state.account.id) ?? 0)) / poolTotal)
-      }
-    }
-    for (const category of PROPORTIONAL_POOL) drainCategory(category) // numerical cleanup
-    drainCategory('hsa')
-  } else if (strategy.mode === 'bracketTargeted') {
-    drainCategory('traditional', strategy.traditionalCap)
-    drainCategory('cash')
-    drainCategory('taxable')
-    drainCategory('equityComp')
-    drainCategory('roth')
-    drainCategory('traditional')
-    drainCategory('hsa')
-  } else {
-    for (const category of SEQUENTIAL_ORDER) drainCategory(category)
-  }
-
-  // Release the safety-net reserve as a last resort.
-  let reserveUsed = 0
-  if (remaining > EPSILON && reservedByAccount.size > 0) {
-    const before = remaining
-    for (const [id, hold] of reservedByAccount) {
-      available.set(id, (available.get(id) ?? 0) + hold)
-    }
-    for (const category of ['cash', 'taxable', 'equityComp'] as const) drainCategory(category)
-    reserveUsed = before - remaining
-  }
-
-  // Proportional planning may visit one account more than once. Characterize
-  // each taxable account's final aggregate sale once so planning and commit
-  // share identical signed basis math.
-  for (const state of states) {
-    if (state.account.type !== 'taxable') continue
-    // A protected balance can be visited once before, then once after, reserve
-    // release. Clamp the summed floating-point proceeds at the account boundary
-    // while keeping the shared sale helper's validation strict.
-    const saleProceeds = Math.min(
-      state.balance,
-      Math.max(0, byAccountId.get(state.account.id) ?? 0),
-    )
-    const sale = aggregateBasisSale({
-      openingFairMarketValue: state.balance,
-      openingCostBasis: state.costBasis,
-      saleProceeds,
-    })
-    taxableSales.set(state.account.id, sale)
-    realizedGains += sale.realizedCapitalGainOrLoss
-  }
-
-  byCategory.total = byCategory.cash + byCategory.taxable + byCategory.traditional + byCategory.roth + byCategory.hsa
-  return {
-    byCategory,
-    byAccountId,
-    realizedGains,
-    taxableSales,
-    shortfall: Math.max(0, remaining),
-    reserveUsed,
-  }
-}
 
 export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
   const { startYear, taxCalculator, market } = opts
@@ -5393,7 +5207,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
             state.account.type === 'cash' ||
             state.account.type === 'taxable' ||
             state.account.type === 'equityComp'
-              ? [spendableBalance(state, year)]
+              ? [isSpendableInYear(state.account, year) ? state.balance : 0]
               : []),
           preConversionInflows:
             incomes.total -
@@ -5759,16 +5573,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       propertySaleProceedsTotal +
       retirementActionProceeds
 
-    // Resolve the year's withdrawal strategy. Bracket targeting reuses the
-    // conversion solver to size remaining ordinary-income headroom.
-    let withdrawalStrategy: ResolvedWithdrawalStrategy = { mode: 'sequential' }
-    const ws = plan.strategies.withdrawalOrder
-    if (ws.mode === 'proportional') {
-      withdrawalStrategy = { mode: 'proportional' }
-    } else if (ws.mode === 'bracketTargeted') {
-      const sized = sizeRothConversion(
-        { mode: 'fillToTarget', target: 'topOfBracket', targetValue: ws.bracketPct, startYear: year, endYear: year },
-        {
+    // The coordinator owns withdrawal-order resolution and candidate account
+    // drains; the caller retains every accepted balance/basis/journal commit.
+    const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({
+      withdrawalOrder: plan.strategies.withdrawalOrder,
+      year,
+      readSizing: () => Object.freeze({
           year,
           pack,
           filingStatus: taxFilingStatusForYear,
@@ -5782,14 +5592,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           aca: aggregateRothConversionTarget.acaSizingInput,
           inflationScale: inflFactorFrom(pack.year, year),
           itemizedDeductions,
-        },
-      )
-      if (!sized.ok && sized.reason === 'bad_target') {
-        warnings.add('The bracket-targeted withdrawal strategy names an unknown bracket; sequential order was used.')
-      } else {
-        withdrawalStrategy = { mode: 'bracketTargeted', traditionalCap: sized.ok ? sized.amount : 0 }
-      }
+      }),
+    }))
+    if (withdrawalStrategyResult.warning !== null) {
+      warnings.add(withdrawalStrategyResult.warning)
     }
+    const withdrawalStrategy = withdrawalStrategyResult.strategy
 
     // Form 8606 character for need-based owned-IRA withdrawals. The separate
     // annualFundingWithdrawalEffects coordinator applies traditional, HSA, and
@@ -6001,13 +5809,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const evaluateWithdrawalNeed = (
       request: AnnualFundingFixedPointEvaluationRequest,
     ) => {
-      const withdrawalPlan = planWithdrawals(
-        request.need,
-        rmdBalances,
-        withdrawalStrategy,
+      const withdrawalPlan = annualWithdrawalPlan(Object.freeze({
+        needPlanDollars: request.need,
+        states: Object.freeze([...rmdBalances]),
+        strategy: withdrawalStrategy,
         year,
-        floorReserveNominal,
-      )
+        liquidReservePlanDollars: floorReserveNominal,
+      }))
       const iraCharacterProbe = needBasedOwnedIraCharacter(
         withdrawalPlan.byAccountId,
       )
@@ -7049,7 +6857,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       }
       const taken = operation.taken
       // No sub-cent discharge here. A traditional draw the exact-cent ledger
-      // records as zero never reaches this loop: `planWithdrawals` refuses to
+      // records as zero never reaches this loop: `annualWithdrawalPlan` refuses to
       // allocate one, so the year's published traditional total, its ordinary
       // income and this movement are all derived from the same plan and cannot
       // disagree about whether the draw happened. Discharging here instead

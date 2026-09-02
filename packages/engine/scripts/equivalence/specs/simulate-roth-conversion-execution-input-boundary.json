@@ -108,33 +108,33 @@
       "id": "AK.callsite.contract",
       "label": "post-RMD and post-withdrawal conversion preparation snapshot",
       "file": "projection/simulate.ts",
-      "lines": [4951, 4986],
+      "lines": [4765, 4800],
       "anchors": [
-        { "line": 4951, "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({" },
-        { "line": 4960, "text": "balances: Object.freeze(balances.map((state) => Object.freeze({" },
-        { "line": 4964, "text": "ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>" },
-        { "line": 4971, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(([" },
-        { "line": 4977, "text": "ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map(" }
+        { "line": 4765, "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({" },
+        { "line": 4774, "text": "balances: Object.freeze(balances.map((state) => Object.freeze({" },
+        { "line": 4778, "text": "ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>" },
+        { "line": 4785, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(([" },
+        { "line": 4791, "text": "ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map(" }
       ]
     },
     {
       "id": "AK.callsite.effectiveGroups",
       "label": "shared narrowed linked-group verdict",
       "file": "projection/simulate.ts",
-      "lines": [4993, 4994],
+      "lines": [4807, 4808],
       "anchors": [
-        { "line": 4993, "text": "const effectiveLinkedWithdrawalGroups =" },
-        { "line": 4994, "text": "rothConversionExecutionInput.effectiveLinkedWithdrawalGroups" }
+        { "line": 4807, "text": "const effectiveLinkedWithdrawalGroups =" },
+        { "line": 4808, "text": "rothConversionExecutionInput.effectiveLinkedWithdrawalGroups" }
       ]
     },
     {
       "id": "AK.callsite.execute",
       "label": "caller-owned named-conversion executor call",
       "file": "projection/simulate.ts",
-      "lines": [4995, 4997],
+      "lines": [4809, 4811],
       "anchors": [
-        { "line": 4995, "text": "if (rothConversionExecutionInput.status === 'ready') {" },
-        { "line": 4997, "text": "rothConversionExecutionInput.executorInput," }
+        { "line": 4809, "text": "if (rothConversionExecutionInput.status === 'ready') {" },
+        { "line": 4811, "text": "rothConversionExecutionInput.executorInput," }
       ]
     }
   ],

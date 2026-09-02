@@ -296,7 +296,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale and deducts net losses through the capital-loss path in simulate.ts; nothing here fails closed. The accepted Plan surface is model/plan.ts: a taxable account carries aggregate balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. The companion fixture drives one taxable account (basis above balance) through simulatePlan with a year-one one-time goal forcing its full sale and wages high enough to absorb the section 1211(b) ordinary offset, then stands that single observed ordinary-offset figure against both authority limbs: (1) replacement inside the 61-day window (deduction disallowed → $0) and (2) no replacement purchase (loss allowed → $3,000). The Plan cannot express a replacement purchase, so the annual projection observably deducts $3,000 under both limbs — that collapse is the approximation. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.',
+      'Approximated rather than out of scope because annualWithdrawalPlanning.ts emits the realized gain or loss for the companion fixture\'s need-based taxable-account sale and federalTax.ts deducts net losses through the capital-loss path; other sale-producing coordinators characterize their own transactions, and none fails closed on wash-sale evidence. The accepted Plan surface is model/plan.ts: a taxable account carries aggregate balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. The companion fixture drives one taxable account (basis above balance) through simulatePlan with a year-one one-time goal forcing its full sale and wages high enough to absorb the section 1211(b) ordinary offset, then stands that single observed ordinary-offset figure against both authority limbs: (1) replacement inside the 61-day window (deduction disallowed → $0) and (2) no replacement purchase (loss allowed → $3,000). The Plan cannot express a replacement purchase, so the annual projection observably deducts $3,000 under both limbs — that collapse is the approximation. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -310,13 +310,13 @@ export const investmentIncomeAndBasisRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
-      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts',
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/model/plan.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#taxableAccountSchema',
-      'packages/engine/src/projection/simulate.ts#planWithdrawals',
+      'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts#annualWithdrawalPlan',
       'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
     ],
   },

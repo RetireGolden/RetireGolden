@@ -1015,10 +1015,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-05',
     implementedBy: [
-      // Where the draws are sized and the discharge decided: the forced
-      // distribution block, aggregate gift and conversion sweeps, and the
-      // need-based withdrawal planner.
+      // Where forced distributions and aggregate conversion sweeps size draws
+      // and decide the discharge.
       'packages/engine/src/projection/simulate.ts',
+      // Where need-based withdrawals size candidate account drains and decide
+      // the same discharge before the caller commits accepted movements.
+      'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts',
       // Where an annual SEPP payment applies the same no-ledger-cent discharge.
       'packages/engine/src/projection/internal/annualSeppDistributions.ts',
       // Where the aggregate scalar-QCD source planner applies that discharge.
@@ -1031,6 +1033,7 @@ export const requiredMinimumDistributionRecords = {
       'packages/engine/src/actions/planBalanceAdapter.ts#planDollarsMoveNoLedgerCent',
       'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan',
       'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
+      'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts#annualWithdrawalPlan',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

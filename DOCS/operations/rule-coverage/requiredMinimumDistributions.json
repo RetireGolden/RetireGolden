@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -102,7 +102,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -184,7 +184,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -259,7 +259,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -331,7 +331,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -549,7 +549,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -639,7 +639,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -737,7 +737,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -839,7 +839,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -911,7 +911,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -986,7 +986,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1059,7 +1059,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -1211,7 +1211,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -1464,7 +1464,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -1565,7 +1565,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -1847,7 +1847,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -1969,7 +1969,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -2056,7 +2056,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -2146,7 +2146,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -2223,7 +2223,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -2357,7 +2357,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -2451,7 +2451,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -2657,7 +2657,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -2886,7 +2886,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
@@ -2997,6 +2997,7 @@
         "packages/engine/src/actions/planBalanceAdapter.ts",
         "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
         "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+        "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -3028,17 +3029,27 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
+          "functions": [
+            {
+              "name": "annualWithdrawalPlan",
+              "line": 132
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         }
       ],
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.test.ts",
+        "packages/engine/src/projection/internal/annualWithdrawalPlanning.test.ts",
         "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts"
       ],
       "fixtures": [
@@ -3050,6 +3061,21 @@
             {
               "title": "discharges a scalar-QCD source residue below one ledger cent",
               "line": 163
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualWithdrawalPlanning.test.ts",
+          "line": 332,
+          "note": "need-based traditional-withdrawal half-cent boundary",
+          "tests": [
+            {
+              "title": "discharges a below-half-cent traditional quantum without publishing it",
+              "line": 342
+            },
+            {
+              "title": "retains an above-half-cent quantum that the exact ledger publishes as one cent",
+              "line": 350
             }
           ]
         },
@@ -3140,7 +3166,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -3247,7 +3273,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -3314,7 +3340,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -3375,7 +3401,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
@@ -3436,7 +3462,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 910
+              "line": 724
             }
           ]
         },
