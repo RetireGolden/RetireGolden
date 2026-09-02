@@ -155,6 +155,113 @@ describe('annualAggregateRothConversionTargetPlan', () => {
     expect(input.safetyNet.computeTaxForTaxableConversion).not.toHaveBeenCalled()
   })
 
+  it('keeps none, no-survivor, and out-of-window decisions lazy and fail-closed', () => {
+    const fillStrategy: Strategy = {
+      mode: 'fillToTarget',
+      target: 'fixedMagi',
+      targetValue: 100_000,
+      startYear: YEAR,
+      endYear: YEAR,
+    }
+    const readSources = vi.fn(() => {
+      throw new Error('inactive target must not read conversion sources')
+    })
+    const inactiveAca = {
+      active: true,
+      contract: undefined,
+      initialSupportCodeCount: 0,
+      generatedTaxExemptInterest: 0,
+      planDerivedTaxExemptInterest: false,
+      fallbackTaxFamilySize: 2,
+    } as const
+    const inputs = [
+      baseInput({ mode: 'none' }, {
+        readSources,
+        sizing: { ...baseInput({ mode: 'none' }).sizing, aca: inactiveAca },
+      }),
+      baseInput(fillStrategy, { anyAlive: false, readSources }),
+      baseInput({ ...fillStrategy, startYear: YEAR + 1, endYear: YEAR + 2 }, {
+        readSources,
+      }),
+    ]
+
+    expect(inputs.map((input) =>
+      annualAggregateRothConversionTargetPlan(input).desiredPlanDollars,
+    )).toStrictEqual([0, 0, 0])
+    expect(
+      annualAggregateRothConversionTargetPlan(inputs[0]!).acaSizingInput,
+    ).toStrictEqual({
+      actionable: false,
+      taxFamilySize: 2,
+      fplRegion: 'contiguous',
+      fixedMagiAddbacks: 0,
+      taxExemptInterest: 0,
+      foreignExclusionAddback: 0,
+    })
+    expect(sizeRothConversionMock).not.toHaveBeenCalled()
+    expect(readSources).not.toHaveBeenCalled()
+  })
+
+  it('adapts unknown ACA attestations without inventing income', () => {
+    sizeRothConversionMock.mockReturnValue({ ok: true, amount: 0 })
+    const unknownContract = contract()
+    unknownContract.taxExemptInterest = { state: 'unknown', amount: null }
+    unknownContract.foreignExclusionAddback = { state: 'unknown', amount: null }
+    const input = baseInput({
+      mode: 'fillToTarget',
+      target: 'acaCliff',
+      targetValue: null,
+      startYear: YEAR,
+      endYear: YEAR,
+    }, {
+      sizing: {
+        ...baseInput({ mode: 'none' }).sizing,
+        aca: {
+          active: true,
+          contract: unknownContract,
+          initialSupportCodeCount: 1,
+          generatedTaxExemptInterest: 2_000,
+          planDerivedTaxExemptInterest: true,
+          fallbackTaxFamilySize: 1,
+        },
+      },
+    })
+
+    annualAggregateRothConversionTargetPlan(input)
+
+    expect(sizeRothConversionMock).toHaveBeenCalledWith(
+      input.strategy,
+      expect.objectContaining({
+        aca: {
+          actionable: false,
+          taxFamilySize: 3,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 1_500,
+          taxExemptInterest: 2_000,
+          foreignExclusionAddback: 0,
+        },
+      }),
+    )
+  })
+
+  it('exposes a lazy then-current gross-to-taxable translator', () => {
+    let taxableFraction = 0.25
+    const readSources = vi.fn(() => [{
+      balancePlanDollars: 100,
+      convertible: true,
+      taxableFraction,
+    }])
+    const result = annualAggregateRothConversionTargetPlan(
+      baseInput({ mode: 'none' }, { readSources }),
+    )
+
+    expect(readSources).not.toHaveBeenCalled()
+    expect(result.taxableAmountForGross(40)).toBe(10)
+    taxableFraction = 0.5
+    expect(result.taxableAmountForGross(40)).toBe(20)
+    expect(readSources).toHaveBeenCalledTimes(2)
+  })
+
   it('grosses a taxable target through ordered zero-, partial-, and fully-taxable sources', () => {
     sizeRothConversionMock.mockReturnValue({ ok: true, amount: 80 })
     const input = baseInput({
@@ -250,6 +357,58 @@ describe('annualAggregateRothConversionTargetPlan', () => {
       100,
       50,
     ])
+  })
+
+  it('bounds safety-net refinement to three passes and can trim to zero', () => {
+    sizeRothConversionMock.mockReturnValue({ ok: true, amount: 100 })
+    const strategy: Strategy = {
+      mode: 'fillToTarget',
+      target: 'fixedMagi',
+      targetValue: 100_000,
+      startYear: YEAR,
+      endYear: YEAR,
+    }
+    const threePassTax = vi.fn((taxable: number) =>
+      taxable === 0 ? 0 : 50 + taxable * 1.5)
+    const threePass = annualAggregateRothConversionTargetPlan(
+      baseInput(strategy, {
+        safetyNet: {
+          floorTodayPlanDollars: 100,
+          inflationFactor: 1,
+          readSpendableLiquidBalances: vi.fn(() => [150]),
+          preConversionInflows: 0,
+          totalExpenses: 0,
+          contributions: 0,
+          computeTaxForTaxableConversion: threePassTax,
+        },
+      }),
+    )
+
+    expect(threePass.desiredPlanDollars).toBeCloseTo(10)
+    expect(threePassTax).toHaveBeenCalledTimes(4)
+    expect(threePass.warnings).toHaveLength(1)
+
+    const trimToZeroTax = vi.fn((taxable: number) => taxable)
+    const zero = annualAggregateRothConversionTargetPlan(
+      baseInput(strategy, {
+        safetyNet: {
+          floorTodayPlanDollars: 100,
+          inflationFactor: 1,
+          readSpendableLiquidBalances: vi.fn(() => [100]),
+          preConversionInflows: 0,
+          totalExpenses: 0,
+          contributions: 0,
+          computeTaxForTaxableConversion: trimToZeroTax,
+        },
+      }),
+    )
+
+    expect(zero.desiredPlanDollars).toBe(0)
+    expect(trimToZeroTax.mock.calls.map(([taxable]) => taxable)).toStrictEqual([
+      0,
+      100,
+    ])
+    expect(zero.warnings).toHaveLength(1)
   })
 
   it('keeps invalid and non-actionable targets fail-closed with distinct warnings', () => {
