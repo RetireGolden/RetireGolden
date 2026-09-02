@@ -12,9 +12,14 @@ import { readdirSync, readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
-const css: string = readFileSync(fileURLToPath(new URL('./planner.css', import.meta.url)), 'utf8')
-const learnCss: string = readFileSync(fileURLToPath(new URL('../learn/learn.css', import.meta.url)), 'utf8')
-const indexCss: string = readFileSync(fileURLToPath(new URL('../index.css', import.meta.url)), 'utf8')
+/** A sheet with LF line endings whatever the checkout wrote, so multi-line selector pins hold on Windows too. */
+function sheet(rel: string): string {
+  return readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
+}
+
+const css: string = sheet('./planner.css')
+const learnCss: string = sheet('../learn/learn.css')
+const indexCss: string = sheet('../index.css')
 
 function ruleBodyAt(source: string, start: number, selector: string): string {
   expect(start, `rule ${selector} present`).toBeGreaterThanOrEqual(0)
@@ -404,6 +409,44 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     expect(workspace).toContain("mcStatus === 'failed'")
     expect(rule('.route-fallback-caption')).toMatch(/margin:\s*0 0 0\.75rem/)
     expect(rule('.solver-failure .picker-actions')).toMatch(/margin:\s*0\.75rem 0 0/)
+  })
+
+  it('reading routes narrow the shell, and the household map scrolls inside its column (#443, #457)', () => {
+    expect(rule('.app-shell.app-shell--reading', indexCss)).toMatch(/max-width:\s*calc\(48rem \+ 2\.5rem\)/)
+    // Articles, glossary, and sources use learn.css's 42rem measure; their shell matches it.
+    expect(rule('.app-shell.app-shell--reading-narrow', indexCss)).toMatch(/max-width:\s*calc\(42rem \+ 2\.5rem\)/)
+    expect(rule('.learn-article,\n.learn-glossary,\n.learn-sources-page', learnCss)).toMatch(/max-width:\s*42rem/)
+    expect(rule('.household-map-page > .card')).toMatch(/min-width:\s*0/)
+    // The order-proof 80rem workspace rule must not swallow the reading shell.
+    expect(css).toMatch(
+      /\.app-shell\.planner-shell:not\(\.app-shell--landing\):not\(\.app-shell--reading\):not\(\.app-shell--reading-narrow\) \{\s*max-width: 80rem/,
+    )
+    const app: string = readFileSync(fileURLToPath(new URL('../App.tsx', import.meta.url)), 'utf8')
+    expect(app).toContain("isReading ? ' app-shell--reading' : ''")
+    expect(app).toContain("isReadingNarrow ? ' app-shell--reading-narrow' : ''")
+    expect(app).toContain("location.pathname === '/how-tested'")
+    expect(rule('.household-map-page')).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/)
+    const scroll = rule('.household-map-scroll')
+    expect(scroll).toMatch(/overflow:\s*auto/)
+    expect(scroll).toMatch(/max-width:\s*100%/)
+    expect(scroll).toMatch(/min-width:\s*0/)
+    expect(rule('.learn-glossary-filter', learnCss)).toMatch(/max-width:\s*24rem/)
+  })
+
+  it('recurring and one-time income share one Tax treatment order and one Inflation help (#481)', () => {
+    const income: string = readFileSync(fileURLToPath(new URL('./sections/IncomeSection.tsx', import.meta.url)), 'utf8')
+    const orders = [...income.matchAll(/options=\{\[\s*((?:\{ value: '[a-zA-Z]+', label: '[^']+' \},?\s*)+)\]\}/g)].map((m) =>
+      [...m[1]!.matchAll(/value: '([a-zA-Z]+)'/g)].map((v) => v[1]),
+    )
+    const taxOrders = orders.filter((o) => o.includes('ordinary') && o.includes('none'))
+    expect(taxOrders).toHaveLength(2)
+    for (const order of taxOrders) {
+      expect(order[0]).toBe('ordinary')
+      expect(order[order.length - 1]).toBe('none')
+    }
+    // Both Inflation-adjusted checkboxes carry a help affordance.
+    const inflation = income.match(/<CheckboxField\s+label="Inflation-adjusted"\s+help="/g)
+    expect(inflation).toHaveLength(2)
   })
 
   it('text, select, and affixed inputs share one height token', () => {

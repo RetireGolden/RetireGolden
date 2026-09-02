@@ -514,3 +514,11 @@ img.learn-figure-media {
   background: color-mix(in srgb, var(--fg) 3%, transparent);
   font-weight: 600;
 }
+
+/* Glossary filter (#487): a single field above the list, capped to a
+   comfortable typing width inside the reading column. */
+.learn-glossary-filter {
+  max-width: 24rem;
+  margin: 1rem 0 0.25rem;
+}
+

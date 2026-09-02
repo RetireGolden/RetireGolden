@@ -160,6 +160,17 @@ code {
   max-width: 60rem;
 }
 
+/* Reading routes (Learn, Disclaimer): the shell is the 48rem reading column
+   plus its own gutters, so header and content share a left edge (#443).
+   planner.css excludes it from the 80rem workspace rule the same way. */
+.app-shell.app-shell--reading {
+  max-width: calc(48rem + 2.5rem);
+}
+
+.app-shell.app-shell--reading-narrow {
+  max-width: calc(42rem + 2.5rem);
+}
+
 /* Standalone-robustness contract: the Examples page is the only content route
    with no internal container of its own (DisclaimerPage centers itself inline;
    Learn articles use ArticleShell). So it centers its own column here — matching
