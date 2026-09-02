@@ -65,6 +65,8 @@ import {
   annualAcaResultPublication,
   type AnnualAcaResultPublicationResult,
 } from './internal/annualAcaResultPublication.js'
+import { annualOptimizerProbePublication } from
+  './internal/annualOptimizerProbePublication.js'
 import {
   annualOrdinaryWithdrawalBoundary,
   type AnnualOrdinaryWithdrawalBoundaryResult,
@@ -189,7 +191,6 @@ import {
   ledgerCentsToPlanDollars,
   planDollarsMoveNoLedgerCent,
   planDollarsToLedgerCents,
-  signedLedgerCentTotalToPlanDollars,
   type ActionId,
   type ConversionLinkedWithdrawalGroupLiabilityRun,
   type ExecuteAnnualQcdsResult,
@@ -6195,572 +6196,165 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // income; the baseline taxable-SS portion is folded in as a constant.
     let optimizerProbe: OptimizerYearProbe | null = null
     if (opts.captureOptimizerInputs) {
-      // Bucket by inherited vs owned only (same rule as `optimizerOpeningBuckets`):
-      // S2 treat-as-own stays inherited-traditional for the whole LP horizon.
-      // Post-flip owner-RMD obligation shares remap into the inherited forced
-      // flow below so the LP's static inheritedTraditional bucket sees
-      // consistent floors; YearResult.rmd / inherited* fields are unchanged.
-      let startTraditional = 0
-      let startInheritedTraditional = 0
-      for (const state of rmdBalances) {
-        if (state.account.type !== 'traditional') continue
-        const opening = startOfYearBalance.get(state.account.id) ?? 0
-        if (!state.account.inherited) {
-          startTraditional += opening
-        } else {
-          startInheritedTraditional += opening
-        }
-      }
-      // S2 post-flip: accounts in the inheritedTraditional opening bucket
-      // whose owner-RMD obligation executed this year after the flip. Remap the
-      // obligation share — not the account-keyed executed debit, which can
-      // include IRA sweep from another account — into the probe's inherited
-      // forced flow only (ledger YearResult fields stay on the owner-RMD path).
-      let s2FlipOwnerRmdObligationRemap = 0
-      let s2FlipOwnerRmdObligationRemapTaxable = 0
-      let s2FlipOwnerRmdObligationRemapNontaxable = 0
-      const ownerRmdNontaxableFraction =
-        rmdTotal > 0 ? rmdNontaxable / rmdTotal : 0
-      for (const state of rmdBalances) {
-        if (state.account.type !== 'traditional') continue
-        if (!hasSpouseTreatAsOwnElection(state.account)) continue
-        if (!isTreatAsOwnEffective(state.account, year)) continue
-        const obligation = rmdObligationByAccount.get(state.account.id) ?? 0
-        if (obligation <= 0 || planDollarsMoveNoLedgerCent(obligation)) continue
-        // Pro-rata attribution: each remapped obligation dollar carries the
-        // same nontaxable share as the year's aggregate owner-RMD gross.
-        const shareNontaxable = obligation * ownerRmdNontaxableFraction
-        s2FlipOwnerRmdObligationRemap += obligation
-        s2FlipOwnerRmdObligationRemapTaxable += obligation - shareNontaxable
-        s2FlipOwnerRmdObligationRemapNontaxable += shareNontaxable
-      }
-      const probeRmd = Math.max(0, rmdTotal - s2FlipOwnerRmdObligationRemap)
-      // GROSS remapped obligation — the LP's `wi` is cash, bucket debit, and
-      // income at coefficient 1 (optimizer.ts cash / inh recursion / tifloor),
-      // so netting Form 8606 basis here understates spendable cash and
-      // inherited-bucket depletion. Basis rides the income side only, through
-      // `forcedDistributionOrdinaryIncomeExclusion` (S2 nontaxable share) and
-      // the owned-RMD `probeRmdTaxable` pathway.
-      const probeInheritedDistribution =
-        inheritedOrdinaryIncome + s2FlipOwnerRmdObligationRemap
-      const rmdTaxableTotal = Math.max(0, rmdTotal - rmdNontaxable)
-      const probeRmdTaxable = Math.max(
-        0,
-        rmdTaxableTotal - s2FlipOwnerRmdObligationRemapTaxable,
+      const traditionalAccountSnapshots = Object.freeze(
+        rmdBalances.flatMap((state) => {
+          if (state.account.type !== 'traditional') return []
+          const inheritedOpeningBucket =
+            state.account.inherited !== undefined
+          const treatAsOwnEffective =
+            isTreatAsOwnEffective(state.account, year)
+          const includedInOwnerTraditional =
+            !inheritedOpeningBucket || treatAsOwnEffective
+          const remainingTaxableFraction =
+            includedInOwnerTraditional &&
+            isAggregatedIraThisYear(state.account)
+              ? ownedIraConversionTaxableFraction(
+                  state.account.ownerPersonId ?? primary.id,
+                )
+              : 1
+          return [Object.freeze({
+            openingBalance:
+              startOfYearBalance.get(state.account.id) ?? 0,
+            closingBalance: state.balance,
+            inheritedOpeningBucket,
+            hasSpouseTreatAsOwnElection:
+              hasSpouseTreatAsOwnElection(state.account),
+            treatAsOwnEffective,
+            rmdObligation:
+              rmdObligationByAccount.get(state.account.id) ?? 0,
+            ownerWithdrawal:
+              withdrawalPlan.byAccountId.get(state.account.id) ?? 0,
+            includedInOwnerTraditional,
+            remainingTaxableFraction,
+            convertibleToRoth: yearConvertibleToRoth(state.account),
+          })]
+        }),
       )
-      // The charitable exclusion riding on this year's forced owned-IRA
-      // distribution, carried on its own term instead of inside the base.
-      //
-      // WHY IT CANNOT STAY IN THE BASE. `incomeBeforeConversion` books the
-      // forced distribution NET of the gifts routed out of it (it carries
-      // `− qcdIncomeOffset − namedQcdIncomeOffset`), so subtracting the WHOLE
-      // `rmdTotal − rmdNontaxable` below removes more than the RMD ever
-      // contributed and leaves the exclusion behind as a negative residue. The
-      // `Math.max(0, …)` guard exists for a different shape — non-forced income
-      // that goes negative under pre-tax contributions — and it deleted that
-      // residue outright whenever non-forced income was smaller than the gift,
-      // which is the ordinary retiree whose income IS the RMD. The LP then
-      // charged full ordinary income on the RMD it re-decides as `wt`, saw its
-      // low brackets already full, and under-recommended the year's conversion
-      // by the whole gift, every year the gift ran.
-      //
-      // Netting the RMD's NET contribution leaves the clamp guarding exactly
-      // the non-forced income it was written for, and the exclusion reaches the
-      // LP as a term the bracket model applies against the forced dollars it
-      // books itself.
-      //
-      // `Math.min` against the taxable forced total is still true by
-      // construction, but NOT for the reason it used to be. The aggregate arm no
-      // longer caps itself at the requirement's taxable share — under
-      // §408(d)(8)(D) the qualified gift is the routed GROSS — so the guarantee
-      // now comes from the other side: `rmdNontaxable` is basis recovered on the
-      // requirement AFTER the gift was carved out of its line-7 gross, so it can
-      // never exceed `ownedIraRmdTotal − qcdIncomeOffset`, which leaves
-      // `rmdTotal − rmdNontaxable ≥ qcdIncomeOffset`. The named arm still caps
-      // at the requirement's taxable share and stands the aggregate one down, so
-      // the two never sum. The `Math.min` is written down so the LP's term can
-      // promise it never exceeds the income it excludes without depending on
-      // which arm produced it.
-      //
-      // The exclusion GREW for every basis-holding household when the aggregate
-      // arm was corrected, and that is the point: the term now carries the whole
-      // gift the statute excludes instead of the clamped share the old ceiling
-      // left behind.
-      const optimizerForcedDistributionOrdinaryExclusion = Math.max(
-        0,
-        Math.min(
-          qcdIncomeOffset + namedQcdIncomeOffset,
-          rmdTotal - rmdNontaxable,
-        ) + s2FlipOwnerRmdObligationRemapNontaxable,
-      )
-      // The CASH side of the same gift, which the exclusion above does not
-      // touch and cannot: one is dollars taken out of the year's INCOME, the
-      // other is dollars taken out of the year's SPENDABLE MONEY, and a QCD
-      // routed out of an RMD does both.
-      //
-      // `baseCashInflows` below books the forced distribution and then nets
-      // these dollars straight back out (`+ rmdTotal − qcdFromRmd −
-      // namedQcdRmdSatisfied`), because a distribution paid to a charity is
-      // never in the household's hand. The LP has no such netting: it
-      // re-decides the whole forced distribution as its own `wt` and the cash
-      // constraint credits `wt` at 1.0, so the solve funds spending from
-      // dollars the household gave away and never has to raise them anywhere
-      // real. The gift is free money to the solver and the error compounds:
-      // every gifted dollar it spends is a dollar it never withdrew, so the
-      // buckets it carries forward are too big as well.
-      //
-      // THE GROSS, NOT THE TAXABLE SHARE, and still deliberately a different
-      // figure from the exclusion above. What left the cash flow is every routed
-      // dollar; what left income is only the part of them that qualified. There
-      // is no double adjustment between them: they are subtracted from different
-      // constants on different sides of the model.
-      //
-      // THE TWO NOW COINCIDE ON THE ORDINARY HOUSEHOLD, and that is a result
-      // rather than a coincidence. §408(d)(8)(D) deems the gift to consist of
-      // otherwise-includible dollars up to the owner's AGGREGATE includible
-      // amount — the whole of their individual retirement plans treated as one
-      // contract, less basis — so on any household whose IRAs hold more pre-tax
-      // dollars than the gift, the qualified amount IS the gross and the two
-      // terms carry the same number. They separate only where the gift runs past
-      // that aggregate amount, on a near-all-basis IRA: there part of the gift is
-      // not a QCD, the cash still left the household, and the income term
-      // legitimately falls short of the gross.
-      //
-      // This used to be the site of a registered defect — `qcdIncomeOffset`
-      // capped at `ownedIraRmdTotal − rmdNontaxable`, the required
-      // distribution's own taxable share, which is a far smaller ceiling than
-      // the statute's on every shape where the owner's IRAs hold more includible
-      // dollars than one year's RMD. That is fixed above and the record on
-      // `taxRuleRegistry.ts`, `irc-408-d-8-D-projection-qcd-after-pro-rata`, is
-      // settled. The CASH term never moved: it is the gross, and the gross was
-      // never in dispute.
-      //
-      // The BEYOND-RMD arm is deliberately not here, on the same reasoning that
-      // keeps it off `exogenousStrategyAccountMovement`'s exclusion list and
-      // ON its debit list: those dollars never entered `baseCashInflows` at all
-      // — they leave the IRA directly, with no distribution to route — so the
-      // LP never credited cash for them, and giving cash back for them would
-      // charge the solve twice for one gift.
-      //
-      // `Math.min` against the forced total is true by construction (the
-      // aggregate arm caps at `ownedIraRmdTotal`, the named arm at the owner's
-      // still-unmet requirement, and a named request stands the aggregate one
-      // down so the two never sum) and is written down so the LP's term can
-      // promise it never exceeds the forced draw whose cash it takes back.
-      const optimizerForcedDistributionCashDiversion = Math.max(
-        0,
-        Math.min(qcdFromRmd + namedQcdRmdSatisfied, rmdTotal),
-      )
-      const optimizerOrdinaryIncomeBase =
-        Math.max(
-          0,
-          incomeBeforeConversion -
-            (probeRmdTaxable - optimizerForcedDistributionOrdinaryExclusion) -
-            inheritedOrdinaryIncome -
-            s2FlipOwnerRmdObligationRemap,
-        ) + taxableSs
-      // Deliberate conservative MILP boundary: the linear optimizer does not
-      // model a signed capital-loss pool, so it never receives a negative base.
-      // Candidate schedules are still repriced authoritatively by this exact
-      // ledger, which preserves the signed result and carryforward.
-      const optimizerCapitalGainsBase =
-        Math.max(0, preWithdrawalCapitalResult) + incomes.qualifiedDividends
-      let optimizerOwnerTraditionalWithdrawal = 0
-      for (const state of rmdBalances) {
-        if (state.account.type !== 'traditional') continue
-        // S2 post-election is owner-side; pre-transition inherited stays out.
-        if (
-          state.account.inherited &&
-          !isTreatAsOwnEffective(state.account, year)
-        ) continue
-        optimizerOwnerTraditionalWithdrawal +=
-          withdrawalPlan.byAccountId.get(state.account.id) ?? 0
-      }
-      const optimizerTraditionalGross =
-        rmdTotal + optimizerOwnerTraditionalWithdrawal
-      const optimizerTraditionalTaxable =
-        (rmdTotal - rmdNontaxable) +
-        (optimizerOwnerTraditionalWithdrawal - iraNontaxableFinal)
-      let remainingTraditionalGross = 0
-      let remainingTraditionalTaxable = 0
-      let remainingConvertibleGross = 0
-      for (const state of rmdBalances) {
-        if (
-          state.account.type === 'traditional' &&
-          (!state.account.inherited || isTreatAsOwnEffective(state.account, year))
-        ) {
-          const gross = Math.max(0, state.balance)
-          const fraction = isAggregatedIraThisYear(state.account)
-            ? ownedIraConversionTaxableFraction(
-              state.account.ownerPersonId ?? primary.id,
-            )
-            : 1
-          remainingTraditionalGross += gross
-          remainingTraditionalTaxable += gross * fraction
-        }
-        if (yearConvertibleToRoth(state.account)) {
-          remainingConvertibleGross += Math.max(0, state.balance)
-        }
-      }
-      // Committed action movement for the LP's balance recursion. Every
-      // exact-cent executor that moved an account this year reports here,
-      // each behind the same `committed` gate its own apply loop above ran
-      // on — so the solver's buckets move by the dollars this ledger actually
-      // moved, not by the dollars the requests asked for. A refused or
-      // partially executed request therefore reports what executed and
-      // nothing more.
-      //
-      // THREE executors move balances, and this reads all three:
-      //   - ordinary withdrawals, whose result carries opening/closing
-      //     snapshots, so the movement is their difference;
-      //   - named Roth conversions, a debit per executed allocation and one
-      //     credit to the destination the action named (PR #182);
-      //   - named QCDs, a debit only — the gift leaves the household (#213).
-      // The last two are recent. The netting this feeds (PR #177) was built
-      // when `executeRothConversions` and `executeAnnualQcds` published
-      // evidence and moved nothing, and the sentence recording that outlived
-      // the fact: from #182 the LP carried a traditional bucket the ledger
-      // had already debited, growing it for every remaining year.
-      //
-      // Cash is `committedActionProceeds` and remains the ordinary
-      // withdrawal's alone. Neither of the other two delivers spendable cash:
-      // a conversion reallocates between buckets, and a gift leaves.
-      //
-      // Absent here, and still deliberately so: a committed conversion's
-      // ORDINARY INCOME, and the aggregate QCD strategy's balance debit.
-      // Neither is a retirement action, or is one this field may carry:
-      //   - the conversion's income is income, not movement, and the LP takes
-      //     it as a forced floor (`committedConversionOrdinaryIncome` below,
-      //     read by `OptimizerYear.committedOrdinaryIncome`);
-      //   - the aggregate `strategies.qcdAnnual` gift is a strategy, not a
-      //     recorded action, so it reports through
-      //     `exogenousStrategyAccountMovement` below — putting it here would
-      //     make this field's name a lie.
-      //
-      // The deltas are accumulated and converted in CENTS, once per account.
-      // `ledgerCentsToPlanDollars` guarantees each endpoint round-trips, not
-      // that their difference does: subtracting two separately-rounded dollar
-      // numbers routinely lands a ULP off an exact cent (100000.02 − 50000.02
-      // is 50000.00000000001), and that residue would ride into the LP's
-      // coefficients. One conversion of the exact-cent total keeps the amount
-      // exactly the cents that moved, which is also why an account named by
-      // two executors is summed here rather than reported twice.
-      const committedActionCentsByAccountId = new Map<string, bigint>()
-      const addCommittedActionCents = (accountId: string, cents: bigint): void => {
-        committedActionCentsByAccountId.set(
-          accountId,
-          (committedActionCentsByAccountId.get(accountId) ?? 0n) + cents,
-        )
-      }
-      if (retirementActionExecution?.committed) {
-        for (const snapshot of retirementActionExecution.balances) {
-          addCommittedActionCents(
-            String(snapshot.accountId),
-            BigInt(snapshot.closingBalance) - BigInt(snapshot.openingBalance),
-          )
-        }
-      }
-      if (rothConversionActionExecution?.committed) {
-        for (const evidence of rothConversionActionExecution.evidence) {
-          if (evidence.outcome !== 'executed') continue
-          // The destination credit is the sum of this action's executed
-          // allocations, which is what the credit pass above adds — not the
-          // requested amount, and not a figure read from a second field that
-          // could disagree with the debits.
-          let creditedCents = 0n
-          for (const allocation of evidence.allocations) {
-            const movedCents = BigInt(allocation.executedAmount)
-            creditedCents += movedCents
-            addCommittedActionCents(String(allocation.sourceAccountId), -movedCents)
-          }
-          addCommittedActionCents(
-            String(evidence.destinationRothAccountId),
-            creditedCents,
-          )
-        }
-      }
-      if (qcdActionExecution?.committed) {
-        for (const evidence of qcdActionExecution.evidence) {
-          if (evidence.executedAmount <= 0) continue
-          addCommittedActionCents(
-            String(evidence.sourceAccountId),
-            -BigInt(evidence.executedAmount),
-          )
-        }
-      }
-      const optimizerCommittedActionAccountMovement =
-        [...committedActionCentsByAccountId]
-          .filter(([, cents]) => cents !== 0n)
-          .map(([accountId, cents]) => ({
-            accountId,
-            amount: signedLedgerCentTotalToPlanDollars(cents),
-          }))
-          .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
-      // Strategy movement for the same balance recursion, on its own channel.
-      //
-      // FIVE producers, each a balance the exact ledger has already moved and
-      // the LP re-decides no part of:
-      //   - the aggregate `strategies.qcdAnnual` gift taken BEYOND the year's
-      //     owned-IRA RMD, which debits its source IRAs directly. The dollars
-      //     leave the household, so there is no cash side to book — the whole
-      //     point of a gift — while its charitable exclusion reaches the LP
-      //     through `forcedDistributionOrdinaryIncomeExclusion` above.
-      //   - a 72(t) SEPP series payment, which debits its account every series
-      //     year. Its ORDINARY INCOME is already booked (`incomeBeforeConversion`
-      //     carries `+ seppTotal − seppNontaxable`, so it survives into
-      //     `ordinaryIncomeBase`), and the LP re-decides none of the movement:
-      //     `incumbentTraditionalDistribution` below is the RMD plus
-      //     discretionary owner draws and excludes `seppTotal` entirely. Income
-      //     charged with no debit is the same one-sided booking as the gift,
-      //     with the sides swapped. Unlike the gift it DOES deliver cash — the
-      //     ledger's `baseCashInflows` carries `+ seppTotal` — so it reports
-      //     proceeds and the gift does not.
-      //   - an annuity purchase premium, which leaves an LP bucket for a
-      //     contract the LP does not carry. No proceeds: the premium buys the
-      //     contract, and the contract pays back later through
-      //     `incomes.annuity`, which is already inside `exogenousCash`.
-      //   - a TIPS-ladder purchase, which is the same transfer in the same
-      //     direction — its own block says so — leaving an LP bucket for a
-      //     ladder the LP carries in no bucket, and paying back later through
-      //     `incomes.tipsLadder`, also already inside `exogenousCash`. No
-      //     proceeds, for the premium's reason.
-      //   - an elected pension lump sum, the one producer that CREDITS. It
-      //     rolls the commuted offer into the named traditional account while
-      //     the pension stream stops paying, so the LP already sees half the
-      //     fact: the income vanishes out of `exogenousCash` in that year and
-      //     every year after. Booking only that half made the solve poorer than
-      //     the household by the whole offer, compounding for the rest of the
-      //     horizon. No proceeds either, and for a reason the other four do not
-      //     share: nothing arrives in hand. It is a DIRECT rollover — the money
-      //     goes plan-to-IRA, never through the year's cash flow, which is also
-      //     why it puts no income on the return for the bracket terms to price.
-      //
-      // Read back off what each producer published, never re-derived from the
-      // strategy or election that asked for it. The QCD arm caps its request at
-      // the year's annual limit, truncates a draining take to whole cents,
-      // skips a take the ledger records as zero, and gives nothing at all when
-      // a named QCD stands it down; the SEPP arm skips a sub-cent payment and
-      // clamps to the remaining balance; a purchase is clamped to what the
-      // funding account could actually spend. Every one of those is a place a
-      // parallel recomputation would drift, and a published movement cannot.
-      // The runtime OCCURRENCE is the record used rather than the runtime
-      // application, because the application is gated on `isAggregatedIra` — a
-      // SEPP may run on an employer plan, and a lump sum may roll into one —
-      // while the occurrence is emitted at the mutation site for every account
-      // shape its own block can reach. Two producers publish no occurrence that
-      // covers their whole reach: the annuity premium emits one only for a
-      // traditional source, and the TIPS-ladder purchase emits none at all, so
-      // both arrive through `exogenousStrategyDebits`, captured at their own
-      // mutation sites.
-      //
-      // The QCD's RMD-routed part (`qcdFromRmd`) is deliberately NOT here:
-      // those dollars leave the IRA through the RMD, which the LP re-decides as
-      // its own `wt`, so booking them would debit the bucket twice. `legacyQcd`
-      // occurrences are the arm's beyond-RMD takes alone. Their CASH side is a
-      // separate term (`forcedDistributionCashDiversion` above), because that
-      // is a credit the LP made on its own `wt` rather than a movement this
-      // channel could take back.
-      //
-      // KNOWN AND ABSENT, so this channel's contract is not read as a universal
-      // claim. What remains is one class, not a list of unrelated holes: cash
-      // and value that cross between the household and an asset the LP carries
-      // in NO bucket, where the LP has no way to book the far side.
-      //   - a planned property sale's net proceeds join `baseCashInflows`
-      //     (`propertySaleProceedsTotal`, the exact-taxed path) or land
-      //     straight in a cash/taxable account (the legacy `expectedNetProceeds`
-      //     path, in the property-events block below), and the LP sees neither
-      //     — though it is already charged the sale's gain, which rides into
-      //     `capitalGainsBase` through `preWithdrawalCapitalResult`. That is
-      //     tax with no cash, the SEPP's defect shape.
-      //   - a coordinated or backstop HECM draw adds `hecmDraw` to the year's
-      //     cash and the same dollars to a loan balance that accrues.
-      //   - a permanent-life death benefit is deposited into a cash/taxable
-      //     account (the insurance block below) from a policy the LP does not
-      //     carry.
-      // ALL FOUR — the two property-sale paths, the HECM draw, and the death
-      // benefit — RUN THE SAME WAY: they make the solve POORER than the
-      // household, which is why omitting them is the conservative answer while
-      // the shape that would fix them — a channel for assets outside the four
-      // buckets, and a bucket for the debt — is designed. The HECM draw is
-      // measured rather than assumed: it funds the ledger's own spending while
-      // this probe reports `exogenousCash` of 0 and the whole `spendingNeed`,
-      // so the LP pays for the year out of buckets the household never touched.
-      // What sets it apart is its FIX, not its direction — booking the draw's
-      // cash ALONE, with no bucket for the loan it creates, would flip the
-      // solve from poorer to richer and hand it a line of free money it never
-      // repays. That is a separate slice, and a debt bucket is part of it.
-      //
-      // Cents per account, converted once, for the reason spelled out above:
-      // differencing or summing separately-rounded dollar figures leaves a
-      // sub-cent residue that would ride into the LP's coefficients. Signed at
-      // the boundary rather than inside: the magnitude is what rounds to cents,
-      // and the sign is applied to the rounded figure, so a credit and a debit
-      // of the same dollars cancel exactly.
-      const exogenousStrategyCentsByAccountId = new Map<string, bigint>()
-      const addExogenousStrategyMovementCents = (
-        accountId: string,
-        signedAmountPlanDollars: number,
-      ): void => {
-        const magnitude = BigInt(
-          planDollarsToLedgerCents(Math.abs(signedAmountPlanDollars)),
-        )
-        const cents = signedAmountPlanDollars < 0 ? -magnitude : magnitude
-        exogenousStrategyCentsByAccountId.set(
-          accountId,
-          (exogenousStrategyCentsByAccountId.get(accountId) ?? 0n) + cents,
-        )
-      }
-      for (const occurrence of annualRetirementRuntimeOccurrences) {
-        if (occurrence.sourceAccountId === null) continue
-        // A gift and a series payment DEBIT; a lump-sum rollover CREDITS the
-        // account its occurrence names (the block sets `sourceAccountId` to the
-        // rollover TARGET, which is the account whose balance moved).
-        const signedAmountPlanDollars =
-          occurrence.kind === 'legacyQcd' ||
-          occurrence.kind === 'automaticSeppDistribution'
-            ? -occurrence.grossAmountPlanDollars
-            : occurrence.kind === 'rolloverInflow'
-              ? occurrence.grossAmountPlanDollars
-              : 0
-        if (signedAmountPlanDollars === 0) continue
-        addExogenousStrategyMovementCents(
-          String(occurrence.sourceAccountId),
-          signedAmountPlanDollars,
-        )
-      }
-      for (const debit of exogenousStrategyDebits) {
-        addExogenousStrategyMovementCents(debit.accountId, -debit.amountPlanDollars)
-      }
-      // The SEPP's cash side. Taken from the year's own `seppTotal` — the same
-      // figure `baseCashInflows` adds and the same one the
-      // `automaticSeppDistribution` occurrences above sum to — rather than
-      // re-derived from the series schedule. The other
-      // four producers contribute nothing: a gift leaves, the two purchases buy
-      // instruments that pay back later through `exogenousCash`, and a direct
-      // rollover never passes through the household's hands at all.
-      const optimizerExogenousStrategyProceeds = seppTotal
-      const optimizerExogenousStrategyAccountMovement =
-        [...exogenousStrategyCentsByAccountId]
-          .filter(([, cents]) => cents !== 0n)
-          .map(([accountId, cents]) => ({
-            accountId,
-            amount: signedLedgerCentTotalToPlanDollars(cents),
-          }))
-          .sort((left, right) => compareUtf16CodeUnits(left.accountId, right.accountId))
-      optimizerProbe = {
+      const ordinaryActionSnapshot =
+        retirementActionExecution?.committed
+          ? Object.freeze({
+              committed: true,
+              balances: Object.freeze(
+                retirementActionExecution.balances.map((snapshot) =>
+                  Object.freeze({
+                    accountId: String(snapshot.accountId),
+                    openingBalanceCents: BigInt(snapshot.openingBalance),
+                    closingBalanceCents: BigInt(snapshot.closingBalance),
+                  })),
+              ),
+            })
+          : retirementActionExecution === undefined
+            ? null
+            : Object.freeze({ committed: false, balances: Object.freeze([]) })
+      const conversionActionSnapshot =
+        rothConversionActionExecution?.committed
+          ? Object.freeze({
+              committed: true,
+              evidence: Object.freeze(
+                rothConversionActionExecution.evidence.map((evidence) =>
+                  Object.freeze({
+                    outcome: evidence.outcome,
+                    destinationRothAccountId:
+                      String(evidence.destinationRothAccountId),
+                    allocations: Object.freeze(
+                      evidence.allocations.map((allocation) =>
+                        Object.freeze({
+                          sourceAccountId:
+                            String(allocation.sourceAccountId),
+                          executedAmountCents:
+                            BigInt(allocation.executedAmount),
+                        })),
+                    ),
+                  })),
+              ),
+            })
+          : rothConversionActionExecution === undefined
+            ? null
+            : Object.freeze({ committed: false, evidence: Object.freeze([]) })
+      const qcdActionSnapshot = qcdActionExecution?.committed
+        ? Object.freeze({
+            committed: true,
+            evidence: Object.freeze(
+              qcdActionExecution.evidence.map((evidence) =>
+                Object.freeze({
+                  sourceAccountId: String(evidence.sourceAccountId),
+                  executedAmountCents: BigInt(evidence.executedAmount),
+                })),
+            ),
+          })
+        : qcdActionExecution === undefined
+          ? null
+          : Object.freeze({ committed: false, evidence: Object.freeze([]) })
+      const optimizerAcaSnapshot = yearAcaResult === undefined
+        ? undefined
+        : Object.freeze({
+            readiness: yearAcaResult.readiness,
+            federalPovertyLine: yearAcaResult.federalPovertyLine,
+            householdMagi: yearAcaResult.householdMagi,
+            modeledAllowablePtc: yearAcaResult.modeledAllowablePtc,
+            cliffState: yearAcaResult.cliffState,
+          })
+      optimizerProbe = annualOptimizerProbePublication(Object.freeze({
         year,
-        committedActionAccountMovement: optimizerCommittedActionAccountMovement,
-        exogenousStrategyAccountMovement: optimizerExogenousStrategyAccountMovement,
-        exogenousStrategyProceeds: optimizerExogenousStrategyProceeds,
-        forcedDistributionOrdinaryIncomeExclusion:
-          optimizerForcedDistributionOrdinaryExclusion,
-        forcedDistributionCashDiversion:
-          optimizerForcedDistributionCashDiversion,
-        // The taxable half of what the named conversion executor committed,
-        // built from the two figures the year's own published
-        // `totalRothConversionTaxable` is built from — the named authority's
-        // credited dollars less the Form 8606 line-8 basis return the
-        // settlement apportioned against them — restricted to that authority.
-        // The aggregate strategy's share of the same published figure is
-        // excluded: it is precisely what the LP re-decides as `conv`.
-        //
-        // Both accumulators are only ever incremented inside the executor's
-        // own `committed` gate, so a refused or uncommitted conversion action
-        // reports zero here without a second gate to keep in step.
-        committedConversionOrdinaryIncome: Math.max(
-          0,
-          namedRothConversionExecuted - namedRothConversionNontaxable,
+        traditionalAccounts: traditionalAccountSnapshots,
+        ordinaryAction: ordinaryActionSnapshot,
+        conversionAction: conversionActionSnapshot,
+        qcdAction: qcdActionSnapshot,
+        runtimeOccurrences: Object.freeze(
+          annualRetirementRuntimeOccurrences.map((occurrence) =>
+            Object.freeze({
+              sourceAccountId: occurrence.sourceAccountId === null
+                ? null
+                : String(occurrence.sourceAccountId),
+              kind: occurrence.kind,
+              grossAmountPlanDollars:
+                occurrence.grossAmountPlanDollars,
+            })),
         ),
-        committedActionProceeds: retirementActionProceeds,
-        ordinaryIncomeBase: optimizerOrdinaryIncomeBase,
-        spendingNeed: expenses.total + contributions,
-        exogenousCash: incomes.total - taxableYieldReinvested,
+        exogenousStrategyDebits: Object.freeze(
+          exogenousStrategyDebits.map((debit) => Object.freeze({
+            accountId: debit.accountId,
+            amountPlanDollars: debit.amountPlanDollars,
+          })),
+        ),
+        rmdTotal,
+        rmdNontaxable,
+        inheritedOrdinaryIncome,
+        qcdIncomeOffset,
+        namedQcdIncomeOffset,
+        qcdFromRmd,
+        namedQcdRmdSatisfied,
+        incomeBeforeConversion,
+        taxableSocialSecurity: taxableSs,
+        preWithdrawalCapitalResult,
+        qualifiedDividends: incomes.qualifiedDividends,
+        iraNontaxableFinal,
+        namedRothConversionExecuted,
+        namedRothConversionNontaxable,
+        retirementActionProceeds,
+        expensesTotal: expenses.total,
+        contributions,
+        incomesTotal: incomes.total,
+        taxableYieldReinvested,
         traditionalInflow,
         otherInflow,
         taxableInflow,
-        ssBenefits: incomes.socialSecurity,
-        taxableSsBase: taxableSs,
-        ssProvisionalIncomeAddbacks: yearTaxExemptInterest + acaForeignExclusionAddback,
-        magiTaxExemptInterest: yearTaxExemptInterest,
-        // Includes fixed taxable-action character, but excludes residual legacy
-        // taxable-withdrawal realizations: the optimizer re-decides those draws
-        // as its own `wtax` variable and adds their gain share itself.
-        // (Pre-netting components; carryforward refinement is left to the exact
-        // ledger, and the MILP boundary stays conservatively nonnegative.)
-        capitalGainsBase: optimizerCapitalGainsBase,
-        acaConversionMagiHeadroom:
-          yearAcaResult?.readiness === 'actionable' &&
-          yearAcaResult.federalPovertyLine !== null &&
-          yearAcaResult.householdMagi !== null
-            ? Math.max(
-                0,
-                yearAcaResult.federalPovertyLine * (pack.aca.maxFplPctForCredit / 100) -
-                  yearAcaResult.householdMagi,
-              )
-            : null,
-        // The exclusion is subtracted here for the same reason the LP subtracts
-        // it from its own MAGI base: the exact ledger's MAGI is net of the
-        // gift, which is most of what a QCD is for. This line adds the forced
-        // distribution back at its GROSS taxable figure, so without the
-        // subtraction the reconstructed incumbent — and the ACA ceiling built
-        // from it — would overstate MAGI by the whole gift.
-        incumbentModeledMagiBeforeTaxableWithdrawalGains:
-          optimizerOrdinaryIncomeBase +
-          optimizerCapitalGainsBase +
-          (rmdTotal - rmdNontaxable) -
-          optimizerForcedDistributionOrdinaryExclusion +
-          inheritedOrdinaryIncome +
-          totalRothConversionTaxable +
-          withdrawalPlan.byCategory.traditional -
-          iraNontaxableFinal,
-        incumbentTaxableWithdrawal: withdrawalPlan.byCategory.taxable,
-        acaModeledAllowablePtc: yearAcaResult?.modeledAllowablePtc ?? null,
-        acaCliffState: yearAcaResult?.cliffState ?? null,
-        incumbentRothConversion: totalRothConversion,
-        rothConversionTaxableFraction:
-          totalRothConversion > 0
-            ? Math.min(
-              1,
-              Math.max(
-                0,
-                totalRothConversionTaxable / totalRothConversion,
-              ),
-            )
-            : remainingConvertibleGross > 0
-              ? aggregateRothConversionTarget.taxableAmountForGross(
-                remainingConvertibleGross,
-              ) /
-                remainingConvertibleGross
-              : 1,
-        // Probe-only remap: post-flip S2 owner-RMD obligation shares ride the
-        // inherited forced flow so the LP's static inheritedTraditional bucket
-        // stays consistent (see comment at startTraditional). YearResult.rmd is
-        // unchanged.
-        rmd: probeRmd,
-        rmdTaxable: probeRmdTaxable,
-        incumbentTraditionalDistribution: optimizerTraditionalGross,
-        traditionalWithdrawalTaxableFraction:
-          optimizerTraditionalGross > 0
-            ? Math.min(
-              1,
-              Math.max(
-                0,
-                optimizerTraditionalTaxable / optimizerTraditionalGross,
-              ),
-            )
-            : remainingTraditionalGross > 0
-              ? remainingTraditionalTaxable / remainingTraditionalGross
-              : 1,
-        startTraditional,
-        // Traditional forced only — matches OptimizerYearProbe / LP ordinary base.
-        // Includes post-flip S2 owner-RMD obligation shares remapped above at
-        // GROSS (probe only); basis is netted on the income side via
-        // `forcedDistributionOrdinaryIncomeExclusion`.
-        inheritedDistribution: probeInheritedDistribution,
-        startInheritedTraditional,
+        grossSocialSecurity: incomes.socialSecurity,
+        taxExemptInterest: yearTaxExemptInterest,
+        acaForeignExclusionAddback,
+        yearAcaResult: optimizerAcaSnapshot,
+        maxFplPctForCredit: pack.aca.maxFplPctForCredit,
+        totalRothConversionTaxable,
+        traditionalWithdrawal:
+          withdrawalPlan.byCategory.traditional,
+        taxableWithdrawal: withdrawalPlan.byCategory.taxable,
+        totalRothConversion,
+        taxableAmountForGrossConversion: (gross: number) =>
+          aggregateRothConversionTarget.taxableAmountForGross(gross),
+        seppTotal,
         peopleAged65Plus,
         ssa44IrmaaRedetermination: ssa44ActiveInYear(year),
-      }
+      }))
     }
 
     // --- apply flows -------------------------------------------------------

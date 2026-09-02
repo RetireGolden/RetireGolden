@@ -155,32 +155,32 @@
       "id": "AJ.callsite.contract",
       "label": "post-forced-distribution QCD preparation snapshot",
       "file": "projection/simulate.ts",
-      "lines": [4498, 4540],
+      "lines": [4499, 4541],
       "anchors": [
-        { "line": 4498, "text": "const qcdExecutionInput = annualQcdExecutionInput(Object.freeze({" },
-        { "line": 4503, "text": "people: Object.freeze(people.map((person) => Object.freeze({" },
-        { "line": 4508, "text": "balances: Object.freeze(rmdBalances.map((state) => Object.freeze({" },
-        { "line": 4525, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(" },
-        { "line": 4537, "text": "offsetHistoryUnprovableDonorIds: Object.freeze([" }
+        { "line": 4499, "text": "const qcdExecutionInput = annualQcdExecutionInput(Object.freeze({" },
+        { "line": 4504, "text": "people: Object.freeze(people.map((person) => Object.freeze({" },
+        { "line": 4509, "text": "balances: Object.freeze(rmdBalances.map((state) => Object.freeze({" },
+        { "line": 4526, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(" },
+        { "line": 4538, "text": "offsetHistoryUnprovableDonorIds: Object.freeze([" }
       ]
     },
     {
       "id": "AJ.callsite.outputs",
       "label": "prerequisite publication and retained executor handoff",
       "file": "projection/simulate.ts",
-      "lines": [4541, 4541],
+      "lines": [4542, 4542],
       "anchors": [
-        { "line": 4541, "text": "const qcdActionPrerequisiteResult = qcdExecutionInput.prerequisite" }
+        { "line": 4542, "text": "const qcdActionPrerequisiteResult = qcdExecutionInput.prerequisite" }
       ]
     },
     {
       "id": "AJ.callsite.execute",
       "label": "caller-owned named-QCD executor call",
       "file": "projection/simulate.ts",
-      "lines": [4582, 4583],
+      "lines": [4583, 4584],
       "anchors": [
-        { "line": 4582, "text": "if (qcdExecutionInput.status === 'ready') {" },
-        { "line": 4583, "text": "qcdActionExecution = executeAnnualQcds(qcdExecutionInput.executorInput)" }
+        { "line": 4583, "text": "if (qcdExecutionInput.status === 'ready') {" },
+        { "line": 4584, "text": "qcdActionExecution = executeAnnualQcds(qcdExecutionInput.executorInput)" }
       ]
     }
   ],

@@ -7,64 +7,130 @@
       "id": "AG.helper.empty",
       "label": "no-unit or no-group fail-closed decision",
       "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
-      "lines": [99, 104],
+      "lines": [
+        99,
+        104
+      ],
       "anchors": [
-        { "line": 99, "text": "if (input.taxUnitId === null || input.omitActionIds.length === 0) {" },
-        { "line": 102, "text": "release: REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS," }
+        {
+          "line": 99,
+          "text": "if (input.taxUnitId === null || input.omitActionIds.length === 0) {"
+        },
+        {
+          "line": 102,
+          "text": "release: REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,"
+        }
       ]
     },
     {
       "id": "AG.helper.baseline",
       "label": "T0 counterfactual read and refusal predicate",
       "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
-      "lines": [106, 121],
+      "lines": [
+        106,
+        121
+      ],
       "anchors": [
-        { "line": 106, "text": "const baselineRead = runCounterfactualAnnualLiability({" },
-        { "line": 112, "text": "omitActionIds: input.omitActionIds," },
-        { "line": 121, "text": "if (baselineRead.status !== 'counterfactualAnnualLiabilityRead') {" }
+        {
+          "line": 106,
+          "text": "const baselineRead = runCounterfactualAnnualLiability({"
+        },
+        {
+          "line": 112,
+          "text": "omitActionIds: input.omitActionIds,"
+        },
+        {
+          "line": 121,
+          "text": "if (baselineRead.status !== 'counterfactualAnnualLiabilityRead') {"
+        }
       ]
     },
     {
       "id": "AG.helper.baselineValue",
       "label": "successful T0 baseline materialization",
       "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
-      "lines": [128, 131],
+      "lines": [
+        128,
+        131
+      ],
       "anchors": [
-        { "line": 128, "text": "const baseline: Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> = {" },
-        { "line": 129, "text": "liability: baselineRead.liability," }
+        {
+          "line": 128,
+          "text": "const baseline: Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> = {"
+        },
+        {
+          "line": 129,
+          "text": "liability: baselineRead.liability,"
+        }
       ]
     },
     {
       "id": "AG.helper.staging",
       "label": "transactional staging and refusal predicate",
       "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
-      "lines": [132, 139],
+      "lines": [
+        132,
+        139
+      ],
       "anchors": [
-        { "line": 132, "text": "const staged = probeAnnualPassUnderTransaction({" },
-        { "line": 139, "text": "if (staged.status !== 'annualPassProbeRead' || staged.observation === null) {" }
+        {
+          "line": 132,
+          "text": "const staged = probeAnnualPassUnderTransaction({"
+        },
+        {
+          "line": 139,
+          "text": "if (staged.status !== 'annualPassProbeRead' || staged.observation === null) {"
+        }
       ]
     },
     {
       "id": "AG.helper.authorization",
       "label": "all-or-nothing authorization decision",
       "file": "projection/internal/annualConversionLinkedWithdrawalFunding.ts",
-      "lines": [146, 152],
+      "lines": [
+        146,
+        152
+      ],
       "anchors": [
-        { "line": 146, "text": "const authorized = authorizeConversionLinkedWithdrawalGroups(" },
-        { "line": 152, "text": "authorized.status === 'conversionLinkedWithdrawalGroupsAuthorized'" }
+        {
+          "line": 146,
+          "text": "const authorized = authorizeConversionLinkedWithdrawalGroups("
+        },
+        {
+          "line": 152,
+          "text": "authorized.status === 'conversionLinkedWithdrawalGroupsAuthorized'"
+        }
       ]
     },
     {
       "id": "AG.callsite.attempt",
       "label": "frozen annual contract sharing one settlement-assumption vector",
       "file": "projection/simulate.ts",
-      "lines": [7703, 7722],
+      "lines": [
+        7297,
+        7316
+      ],
       "anchors": [
-        { "line": 7703, "text": "const linkedGroupFundingForAttempt = (" },
-        { "line": 7706, "text": ") => annualConversionLinkedWithdrawalFunding(Object.freeze({" },
-        { "line": 7711, "text": "omitActionIds: annualLinkedGroupOmissionIds," },
-        { "line": 7713, "text": "runPass: (" },
-        { "line": 7715, "text": ") => runPostContributionAnnualPass(" }
+        {
+          "line": 7297,
+          "text": "const linkedGroupFundingForAttempt = ("
+        },
+        {
+          "line": 7300,
+          "text": ") => annualConversionLinkedWithdrawalFunding(Object.freeze({"
+        },
+        {
+          "line": 7305,
+          "text": "omitActionIds: annualLinkedGroupOmissionIds,"
+        },
+        {
+          "line": 7307,
+          "text": "runPass: ("
+        },
+        {
+          "line": 7309,
+          "text": ") => runPostContributionAnnualPass("
+        }
       ]
     }
   ],

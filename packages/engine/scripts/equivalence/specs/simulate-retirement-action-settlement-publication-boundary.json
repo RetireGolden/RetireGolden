@@ -7,7 +7,10 @@
       "id": "AB.helper.sources",
       "label": "publication eligibility, QCD selection, and ordered request/source joins",
       "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
-      "lines": [89, 136],
+      "lines": [
+        89,
+        136
+      ],
       "anchors": [
         {
           "line": 89,
@@ -23,7 +26,10 @@
       "id": "AB.helper.requests",
       "label": "executor request ordering for canonical publication",
       "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
-      "lines": [138, 142],
+      "lines": [
+        138,
+        142
+      ],
       "anchors": [
         {
           "line": 138,
@@ -35,7 +41,10 @@
       "id": "AB.helper.liability",
       "label": "settled candidate liability and exact funding-vector identity",
       "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
-      "lines": [155, 158],
+      "lines": [
+        155,
+        158
+      ],
       "anchors": [
         {
           "line": 155,
@@ -47,7 +56,10 @@
       "id": "AB.helper.liabilityIdentity",
       "label": "executed-funding vector and candidate T1 identity publication",
       "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
-      "lines": [160, 191],
+      "lines": [
+        160,
+        191
+      ],
       "anchors": [
         {
           "line": 164,
@@ -63,7 +75,10 @@
       "id": "AB.helper.linkedGroups",
       "label": "linked-group movement and Form 8606 member evidence",
       "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
-      "lines": [201, 260],
+      "lines": [
+        201,
+        260
+      ],
       "anchors": [
         {
           "line": 201,
@@ -83,7 +98,10 @@
       "id": "AB.helper.linkedUnknownCharacter",
       "label": "executed conversion whose Form 8606 character remains unknown",
       "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
-      "lines": [262, 266],
+      "lines": [
+        262,
+        266
+      ],
       "anchors": [
         {
           "line": 262,
@@ -99,7 +117,10 @@
       "id": "AB.helper.linkedFunding",
       "label": "nonexecuted character and withdrawal-funded amount evidence",
       "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
-      "lines": [270, 277],
+      "lines": [
+        270,
+        277
+      ],
       "anchors": [
         {
           "line": 270,
@@ -115,7 +136,10 @@
       "id": "AB.helper.publication",
       "label": "canonical annual publication and optional output channels",
       "file": "projection/internal/annualRetirementActionSettlementPublication.ts",
-      "lines": [278, 304],
+      "lines": [
+        278,
+        304
+      ],
       "anchors": [
         {
           "line": 278,
@@ -131,18 +155,21 @@
       "id": "AB.callsite",
       "label": "post-settlement invocation before entity facts and YearResult publication",
       "file": "projection/simulate.ts",
-      "lines": [7411, 7425],
+      "lines": [
+        7005,
+        7019
+      ],
       "anchors": [
         {
-          "line": 7411,
+          "line": 7005,
           "text": "const settlementPublication = annualRetirementActionSettlementPublication({"
         },
         {
-          "line": 7414,
+          "line": 7008,
           "text": "taxPlanDollars: tax,"
         },
         {
-          "line": 7424,
+          "line": 7018,
           "text": "annualLiabilityNonGroupTaxInputs,"
         }
       ]

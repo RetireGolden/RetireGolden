@@ -7,7 +7,10 @@
       "id": "AC.helper.core",
       "label": "chronology, ledger, entity-fact, and retirement publication",
       "file": "projection/internal/annualYearResultAssembly.ts",
-      "lines": [148, 180],
+      "lines": [
+        148,
+        180
+      ],
       "anchors": [
         {
           "line": 148,
@@ -27,7 +30,10 @@
       "id": "AC.helper.optional",
       "label": "optional inherited, action, QCD, and aggregate-conversion channels",
       "file": "projection/internal/annualYearResultAssembly.ts",
-      "lines": [181, 233],
+      "lines": [
+        181,
+        233
+      ],
       "anchors": [
         {
           "line": 181,
@@ -47,7 +53,10 @@
       "id": "AC.helper.tax",
       "label": "tax, ACA, IRMAA, and AMT publication",
       "file": "projection/internal/annualYearResultAssembly.ts",
-      "lines": [234, 249],
+      "lines": [
+        234,
+        249
+      ],
       "anchors": [
         {
           "line": 236,
@@ -63,7 +72,10 @@
       "id": "AC.helper.funding",
       "label": "funding publication and exact realized-gain association",
       "file": "projection/internal/annualYearResultAssembly.ts",
-      "lines": [250, 269],
+      "lines": [
+        250,
+        269
+      ],
       "anchors": [
         {
           "line": 251,
@@ -79,7 +91,10 @@
       "id": "AC.helper.balanceSheet",
       "label": "snapshot, exact net-worth association, and optional cash-flow assembly",
       "file": "projection/internal/annualYearResultAssembly.ts",
-      "lines": [270, 287],
+      "lines": [
+        270,
+        287
+      ],
       "anchors": [
         {
           "line": 270,
@@ -99,18 +114,21 @@
       "id": "AC.callsite.inputs",
       "label": "settled annual inputs grouped at the final-publication callsite",
       "file": "projection/simulate.ts",
-      "lines": [7441, 7528],
+      "lines": [
+        7035,
+        7122
+      ],
       "anchors": [
         {
-          "line": 7441,
+          "line": 7035,
           "text": "const yearResult = annualYearResultAssembly({"
         },
         {
-          "line": 7482,
+          "line": 7076,
           "text": "settlement: settlementPublication,"
         },
         {
-          "line": 7523,
+          "line": 7117,
           "text": "balanceSheet: {"
         }
       ]
@@ -119,18 +137,21 @@
       "id": "AC.callsite.cashFlow",
       "label": "cash-flow publication gate and pass-local evidence handoff",
       "file": "projection/simulate.ts",
-      "lines": [7529, 7622],
+      "lines": [
+        7123,
+        7216
+      ],
       "anchors": [
         {
-          "line": 7529,
+          "line": 7123,
           "text": "...(publishCashFlow"
         },
         {
-          "line": 7532,
+          "line": 7126,
           "text": "yearSites: yearSites!,"
         },
         {
-          "line": 7619,
+          "line": 7213,
           "text": "shortfallAfterHecm,"
         }
       ]
