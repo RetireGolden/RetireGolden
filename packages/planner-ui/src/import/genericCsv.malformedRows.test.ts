@@ -282,6 +282,24 @@ describe('generic CSV import — bounds and completeness of what is echoed back 
     expect(describeCsvRowCells({ rowNumber: 3, cells: huge }).length).toBeLessThan((MAX_CELL_PREVIEW_CHARS + 3) * (MAX_CELLS_PREVIEWED + 1))
   })
 
+  it('a sheet that imports still sets aside the rows above its header, by spreadsheet row, on the map step and the checklist', () => {
+    const r = analyzeGenericCsv('My net worth,as of year end\n\nAccount,Type,Balance\nBrokerage,Taxable,"$120,000"\nI-bonds,,\n')
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.analysis.header).toEqual(['Account', 'Type', 'Balance'])
+    expect(r.analysis.dataRowNumbers).toEqual([4])
+    // The title line (row 1; row 2 is blank) comes first, then the row below the header.
+    expect(r.analysis.skippedRows).toEqual([
+      { rowNumber: 1, cells: ['My net worth', 'as of year end'] },
+      { rowNumber: 5, cells: ['I-bonds', '', ''] },
+    ])
+    const d = draftPlanFromGenericCsv(r.analysis, r.analysis.guessedRoles, testIds)
+    expect(d.ok).toBe(true)
+    if (!d.ok) return
+    expect(d.plan.accounts.map((a) => a.name)).toEqual(['Brokerage'])
+    expect(d.review.filter((item) => item.status === 'skipped').map((item) => item.source)).toEqual(['Row 1: My net worth', 'Row 5: I-bonds'])
+  })
+
   it('a text-only failure names the rows above the recognised header too, not only those below it', () => {
     const r = analyzeGenericCsv('Title line,for the sheet\nnote about nothing,x\nAccount,Type,Balance\nI-bonds,,\n')
     expect(r.ok).toBe(false)

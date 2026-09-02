@@ -83,7 +83,7 @@ describe('Import map step: rows with no dollar value (#557)', () => {
     await chooseCsv(el, `Account,Type,Balance\nBrokerage,Taxable,"$120,000"\nMystery,???,${long}\n`, () => mapStepShown(el), 'the map step')
     const hint = el.querySelector('.card-hint')!.textContent ?? ''
     expect(el.textContent).toContain('1 data row found.')
-    expect(el.textContent).toContain('1 row with no dollar value in any column was set aside and will be listed as skipped:')
+    expect(el.textContent).toContain('1 row with no dollar value in any column was set aside and will be reported as skipped after Continue:')
     expect(hint).not.toContain('were set aside')
     expect(listed(el)).toEqual([`Row 3: Mystery · ??? · ${long.slice(0, MAX_CELL_PREVIEW_CHARS - 1)}…`])
     expect(el.textContent).not.toContain(long)
@@ -103,15 +103,17 @@ describe('Import map step: rows with no dollar value (#557)', () => {
   it('several set-aside rows: plural sentence and every row listed, a truncated account and a footer alike, by source line', async () => {
     const el = render()
     click(el.querySelector('[data-source="generic"]'))
-    // A blank line before the footer: it is row 6 in the sheet, and is called row 6.
+    // A title line above the header is set aside too (row 1); a blank line
+    // before the footer makes it row 7 in the sheet, and it is called row 7.
     await chooseCsv(
       el,
-      'Account,Type,Balance\nBrokerage,Taxable,"$120,000"\nNotes,first,n/a\nI-bonds,,\n\nPrepared by Chase,,\n',
+      'Net worth,2025\nAccount,Type,Balance\nBrokerage,Taxable,"$120,000"\nNotes,first,n/a\nI-bonds,,\n\nPrepared by Chase,,\n',
       () => mapStepShown(el),
       'the map step',
     )
-    expect(el.textContent).toContain('3 rows with no dollar value in any column were set aside and will be listed as skipped:')
-    expect(listed(el)).toEqual(['Row 3: Notes · first · n/a', 'Row 4: I-bonds', 'Row 6: Prepared by Chase'])
+    expect(el.textContent).toContain('4 rows with no dollar value in any column were set aside and will be reported as skipped after Continue:')
+    expect(listed(el)).toEqual(['Row 1: Net worth · 2025', 'Row 4: Notes · first · n/a', 'Row 5: I-bonds', 'Row 7: Prepared by Chase'])
+    expect(el.textContent).not.toContain('Row 2: Account')
     // The preview table itself still shows only the data rows.
     expect(el.querySelectorAll('.year-table tbody tr')).toHaveLength(1)
   })

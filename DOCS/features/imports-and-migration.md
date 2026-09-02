@@ -115,7 +115,8 @@ else taxable-with-review-item). Negative or unreadable balances are skipped item
 below the header with no dollar value in any column is never dropped in silence (#557), and the
 analyzer does not sort them: an account whose amount cell is blank (`I-bonds,`) and a footer
 (`Prepared by Chase,`) look the same to it, and a label test would call a fund named "Total Bond
-Market" a footer. Every such row is *set aside*: the map step counts and lists each by source row and
+Market" a footer. Every such row is *set aside*, the rows above the header (title lines, a "balances
+as of" note) included: the map step counts and lists each by source row and
 text cells next to the data-row count, and the draft lists each as a skipped item led by its row
 number with a conditional remediation (a note needs nothing; an account with a missing amount can be
 entered on the Accounts screen). Row numbers are spreadsheet rows: `parseCsv` reports where each kept

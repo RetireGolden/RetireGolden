@@ -457,7 +457,7 @@ function EnabledImportPage() {
                     so here, at the count, list the rows so they can be found
                     in the spreadsheet, and say it again on the checklist (#557). */}
                 {analysis.skippedRows && analysis.skippedRows.length > 0
-                  ? ` ${analysis.skippedRows.length} row${analysis.skippedRows.length === 1 ? '' : 's'} with no dollar value in any column ${analysis.skippedRows.length === 1 ? 'was' : 'were'} set aside and will be listed as skipped:`
+                  ? ` ${analysis.skippedRows.length} row${analysis.skippedRows.length === 1 ? '' : 's'} with no dollar value in any column ${analysis.skippedRows.length === 1 ? 'was' : 'were'} set aside and will be reported as skipped after Continue:`
                   : null}
               </p>
               {analysis.skippedRows && analysis.skippedRows.length > 0 ? (

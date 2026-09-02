@@ -154,17 +154,22 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
   // and the real header as a set-aside row.
   let textOnly: { header: string[] | null; skippedRows: SkippedCsvRow[] } | null = null
 
-  for (let r = 0; r < Math.min(rows.length, 30); r++) {
-    const cells = rows[r]!
-    const nonEmpty = cells.filter((c) => c.trim() !== '')
-    if (nonEmpty.length < 2) continue
-    if (nonEmpty.some(isMoneyish)) continue // data row, not a header
+  const searchLimit = Math.min(rows.length, 30)
+  /** Two or more text cells and no figure: the shape of a header (or of a title line). */
+  const headerShaped = (r: number): boolean => {
+    const nonEmpty = rows[r]!.filter((c) => c.trim() !== '')
+    return nonEmpty.length >= 2 && !nonEmpty.some(isMoneyish)
+  }
+  /** Whether any label on the row names a column the analyzer knows. */
+  const recognisedHeader = (r: number): boolean => rows[r]!.map(guessColumnRole).some((role) => role !== 'ignore')
+  /** Rows below `r` sorted into data rows (a money-ish cell) and set-aside rows, numbered by spreadsheet row. */
+  const collect = (r: number) => {
     const dataRows: string[][] = []
     const dataRowNumbers: number[] = []
     const skippedRows: SkippedCsvRow[] = []
     for (let k = r + 1; k < rows.length; k++) {
       const row = rows[k]!
-      // Numbered by source line, so "Row 7" is row 7 in the spreadsheet even
+      // Numbered by spreadsheet row, so "Row 7" is row 7 in the sheet even
       // past a blank separator line the parser dropped.
       const rowNumber = lines[k]!
       if (row.some(isMoneyish)) {
@@ -180,24 +185,59 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
       // person decides which it was.
       skippedRows.push({ rowNumber, cells: row })
     }
-    if (dataRows.length === 0) {
-      if (skippedRows.length > 0) {
-        const recognised = cells.map(guessColumnRole).some((role) => role !== 'ignore')
+    return { dataRows, dataRowNumbers, skippedRows }
+  }
+  const success = (r: number, found: ReturnType<typeof collect>): GenericCsvAnalysisResult => {
+    // Rows above the header (title lines, a "balances as of" note, junk) had
+    // no header to map under, so they are set aside like the text-only rows
+    // below it and named by spreadsheet row, ahead of them, rather than
+    // passed over in silence because the header search stepped past them.
+    const above = rows.slice(0, r).map((row, k) => ({ rowNumber: lines[k]!, cells: row }))
+    // A usable table needs at least a name-ish and a money-ish column somewhere;
+    // the user can still fix the guesses by hand.
+    return {
+      ok: true,
+      analysis: {
+        header: rows[r]!,
+        dataRows: found.dataRows,
+        guessedRoles: rows[r]!.map(guessColumnRole),
+        dataRowNumbers: found.dataRowNumbers,
+        skippedRows: [...above, ...found.skippedRows],
+      },
+    }
+  }
+
+  for (let r = 0; r < searchLimit; r++) {
+    if (!headerShaped(r)) continue
+    const found = collect(r)
+    if (found.dataRows.length === 0) {
+      if (found.skippedRows.length > 0) {
         // A recognised header wins over an earlier unrecognised candidate
         // (the title line above it); the first of either kind is kept. The
         // rows named are every row but the header, those above it included:
         // a title line or junk above the header is set aside like the rest,
         // not dropped because the search passed over it.
         const allButHeader = rows.flatMap((row, k) => (k === r ? [] : [{ rowNumber: lines[k]!, cells: row }]))
-        if (recognised && (textOnly === null || textOnly.header === null)) textOnly = { header: cells, skippedRows: allButHeader }
+        if (recognisedHeader(r) && (textOnly === null || textOnly.header === null)) textOnly = { header: rows[r]!, skippedRows: allButHeader }
         else textOnly ??= { header: null, skippedRows: allButHeader }
       }
       continue
     }
-    const guessedRoles = cells.map(guessColumnRole)
-    // A usable table needs at least a name-ish and a money-ish column somewhere;
-    // the user can still fix the guesses by hand.
-    return { ok: true, analysis: { header: cells, dataRows, guessedRoles, dataRowNumbers, skippedRows } }
+    // A header-shaped row nobody recognises, followed before any data row by
+    // one the analyzer does recognise, is a title line over the real header
+    // ("My net worth,as of year end" above "Account,Type,Balance"): the
+    // recognised row is the header and the title is set aside above it. A
+    // sheet with no recognised header at all keeps its first header-shaped
+    // row, and the person assigns the columns by hand.
+    if (!recognisedHeader(r)) {
+      for (let r2 = r + 1; r2 < searchLimit && !rows[r2]!.some(isMoneyish); r2++) {
+        if (headerShaped(r2) && recognisedHeader(r2)) {
+          const below = collect(r2)
+          if (below.dataRows.length > 0) return success(r2, below)
+        }
+      }
+    }
+    return success(r, found)
   }
   if (textOnly) {
     const n = textOnly.skippedRows.length
