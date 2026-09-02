@@ -13,11 +13,11 @@ import { fmtMoneyCompact } from '../format'
 import { currentStartYear, taxCalculatorFor } from '../useProjection'
 import { IssueSectionsSentence, Issues } from './shared'
 import {
-  MAX_SCHEDULE_AGE,
   duplicateCareEvents,
   duplicateScheduleAges,
   formatAgeList,
   makeCareEvent,
+  maxScheduleAge,
   newId,
   nextScheduleAge,
 } from './sectionHelpers'
@@ -159,7 +159,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
                 disabled={nextAge === null}
                 title={
                   nextAge === null
-                    ? `The schedule already reaches age ${MAX_SCHEDULE_AGE}, the highest age an illustration can hold.`
+                    ? `Every age up to ${maxScheduleAge()}, the highest an illustration can hold, already has a row.`
                     : undefined
                 }
                 onClick={() =>
@@ -288,8 +288,11 @@ function LtcStressPanel() {
     () => (onHold ? null : compareLtcStress(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) })),
     [plan, onHold],
   )
-  if (plan.careEvents.length === 0) return null
-  const many = plan.careEvents.length > 1
+  // Only events on a current household member are priced; a set left over
+  // from removed people is an entry to fix, not a stress test to show.
+  const liveEvents = plan.careEvents.filter((c) => plan.household.people.some((p) => p.id === c.personId))
+  if (liveEvents.length === 0) return null
+  const many = liveEvents.length > 1
   const ltcPolicies = plan.insurance.filter((i) => i.kind === 'ltc').length
   const episodes = many ? 'the care episodes' : 'the care episode'
   if (cmp === null) {
@@ -297,8 +300,9 @@ function LtcStressPanel() {
       <div className="card" style={{ marginTop: '1.25rem' }}>
         <h3>LTC stress test</h3>
         <div className="callout callout--warn" role="status">
-          Paused: the plan has {issues.length === 1 ? 'an entry' : `${issues.length} entries`} to fix before these
-          scenarios can be re-run, so the last result no longer applies. <IssueSectionsSentence />
+          Paused while the plan has {issues.length === 1 ? 'an issue' : `${issues.length} issues`} to fix, which may
+          be anywhere in the plan: these scenarios are full projections, and a projection is not re-run on a plan the
+          engine will not store, so the last result no longer applies. <IssueSectionsSentence />
         </div>
       </div>
     )

@@ -29,7 +29,7 @@ export function IssueSectionsSentence() {
   const sections = sectionsWithIssues(issues)
   const plural = issues.length > 1
   if (sections.length === 0) {
-    return <>The issue list on the page with the {plural ? 'entries names the fields' : 'entry names the field'}.</>
+    return <>Open the page that holds the {plural ? 'entries' : 'entry'}; its issue list names the {plural ? 'fields' : 'field'}.</>
   }
   const links = sections.map((section) => (
     <Link key={section.segment} to={`../${section.segment}`}>

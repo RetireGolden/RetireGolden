@@ -14,9 +14,15 @@ import { readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
-/** A sheet with LF line endings whatever the checkout wrote, so multi-line selector pins hold on Windows too. */
+/**
+ * A sheet with LF line endings whatever the checkout wrote, so multi-line
+ * selector pins hold on Windows too, and with its comments removed, so a
+ * commented-out rule can never satisfy a pin.
+ */
 function sheet(rel: string): string {
-  return readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n')
+  return readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
+    .replace(/\r\n/g, '\n')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
 }
 
 const css: string = sheet('./planner.css')

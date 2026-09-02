@@ -590,8 +590,8 @@ export function SpendingSection() {
         <p className="field-hint" style={{ margin: '0.6rem 0 0.25rem' }}>
           The smile is the shape of <em>average</em> retiree spending, a decline that late healthcare partly
           reverses (the preset approximates it as two downward steps); the smirk is the <em>median</em>: a steady
-          real decline with no late rise, per Blanchett&apos;s spending research. Or pick your own annual real
-          drift, compiled to 5-year phase steps:
+          real decline with no late rise, per Blanchett&apos;s spending research. Or set your own annual real drift
+          in the field below; Apply custom shape compiles it to 5-year phase steps.
         </p>
         {/* In a form-grid, not a flex add-row, so the field takes the same
             column width as every other field on this form; the action sits in

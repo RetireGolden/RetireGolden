@@ -64,11 +64,9 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
   // prices the ladder's rungs on the embedded curve and reads nothing else
   // from the plan, so another entry's issue does not touch it. An issue on
   // the ladder list itself (or on incomeFloor) pauses every ladder.
-  const onHold =
-    ladderIndex < 0 ||
-    hasIssueAt(issues, ['incomeFloor']) ||
-    hasIssueAt(issues, ['incomeFloor', 'ladders']) ||
-    hasIssueUnder(issues, ['incomeFloor', 'ladders', String(ladderIndex)])
+  const ownIssue = ladderIndex >= 0 && hasIssueUnder(issues, ['incomeFloor', 'ladders', String(ladderIndex)])
+  const listIssue = ladderIndex < 0 || hasIssueAt(issues, ['incomeFloor']) || hasIssueAt(issues, ['incomeFloor', 'ladders'])
+  const onHold = ownIssue || listIssue
   const quote = useMemo(() => (onHold ? null : quoteLadder(ladder, startYear)), [ladder, startYear, onHold])
   const fundingOptions = plan.accounts
     .filter((a) => a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp')
@@ -165,8 +163,18 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
       </div>
       {onHold ? (
         <div className="callout callout--warn" role="status">
-          Quote paused: an entry on this ladder is invalid, so it cannot be priced yet. The issue list at the end of this
-          section names the field; the last quoted cost no longer applies.
+          {ownIssue ? (
+            <>
+              Quote paused: an entry on this ladder is invalid, so it cannot be priced yet. The issue list at the end of
+              this section names the field; the last quoted cost no longer applies.
+            </>
+          ) : (
+            <>
+              Quote paused: the ladder list itself has an issue to fix before any ladder can be priced; this ladder's
+              own entries may be fine. The issue list at the end of this section names it; the last quoted cost no
+              longer applies.
+            </>
+          )}
         </div>
       ) : quote ? (
         <>
@@ -242,8 +250,9 @@ export function FundedRatioCard() {
     <div className="card">
       <FundedRatioIntro />
       <div className="callout callout--warn" role="status">
-        Paused: the plan has {issues.length === 1 ? 'an entry' : `${issues.length} entries`} to fix before the ratio can
-        be re-computed, so the last readout no longer applies. <IssueSectionsSentence />
+        Paused while the plan has {issues.length === 1 ? 'an issue' : `${issues.length} issues`} to fix, which may be
+        anywhere in the plan: the ratio is read off a full projection, and a projection is not re-run on a plan the
+        engine will not store, so the last readout no longer applies. <IssueSectionsSentence />
       </div>
     </div>
   )

@@ -171,7 +171,7 @@ describe('Household MFJ (#467)', () => {
     })
     expect(plan.household.people).toHaveLength(2)
     const host = await mount(plan, <HouseholdSection />)
-    const field = fieldLabelled(host, 'Survivor has a dependent')
+    const field = fieldLabelled(host, 'Qualifying surviving spouse')
     expect(field.classList.contains('field--checkbox')).toBe(true)
     // Label row + control, nothing else: the shape the form-grid subgrids so
     // the box shares the row's control track with the two selects.
@@ -188,9 +188,10 @@ describe('Household MFJ (#467)', () => {
 
 describe('Monte Carlo model controls (#473)', () => {
   it('Model longevity and Model an LTC shock are shared checkbox fields in the model-controls grid', async () => {
-    vi.mocked(pool.runMonteCarlo).mockImplementation((plan, opts) =>
-      actualPool.runMonteCarlo(plan, { ...opts, pathCount: 8 }),
-    )
+    // Scoped to this test: restored in its own finally, not only by afterEach.
+    const mocked = vi.mocked(pool.runMonteCarlo)
+    mocked.mockImplementation((plan, opts) => actualPool.runMonteCarlo(plan, { ...opts, pathCount: 8 }))
+    try {
     const host = await mount(validPlan(), <MonteCarloPage />)
     const grid = fieldLabelled(host, 'Market draw').parentElement!
     expect(grid.classList.contains('form-grid')).toBe(true)
@@ -209,6 +210,9 @@ describe('Monte Carlo model controls (#473)', () => {
       expect(field.querySelector('.help-tip-hint')).not.toBeNull()
     }
     expect(grid.querySelector('.radio-option')).toBeNull()
+    } finally {
+      mocked.mockRestore()
+    }
   })
 })
 
@@ -234,34 +238,50 @@ describe('Social Security (#511)', () => {
 })
 
 describe('Insurance care events (#489)', () => {
-  it('a second + Care event lands on the partner, and repeats are named', async () => {
+  it('+ Care event never repeats a person + age: partner first, then the primary at a free age', async () => {
     const plan = validPlan()
     const [primary, partner] = plan.household.people
     const host = await mount(plan, <InsuranceSection />)
     expect(host.querySelectorAll('.callout--warn')).toHaveLength(0)
     const add = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Care event')!
     await act(async () => add.click())
-    // One Care row per person, no duplicate warning.
     expect(itemRowTitled(host, 'Care', `${partner!.name} · age 85`)).toBeTruthy()
-    expect(host.querySelectorAll('.callout--warn')).toHaveLength(0)
-    // Everyone has one now, so the third lands on the primary again. The
-    // example couple's own event starts at 88, so an 85 is a second episode,
-    // not a repeat...
+    // Everyone has one now, so the next lands on the primary again. Their
+    // example event starts at 88, so 85 is free...
     await act(async () => add.click())
     expect(itemRowTitled(host, 'Care', `${primary!.name} · age 85`)).toBeTruthy()
+    // ...and the one after opens past their latest (88), not at 85 again.
+    await act(async () => add.click())
+    expect(itemRowTitled(host, 'Care', `${primary!.name} · age 89`)).toBeTruthy()
     expect(host.querySelectorAll('.callout--warn')).toHaveLength(0)
-    // ...and a fourth repeats that 85: name it, once.
-    await act(async () => add.click())
-    const warnings = [...host.querySelectorAll('.callout--warn')]
+  })
+
+  it('names repeated events with their count, without promising a live stress test', async () => {
+    const two = await mount(
+      validPlan((p) => {
+        const first = p.careEvents[0]!
+        p.careEvents.push({ ...first, id: 'dupe-1' })
+      }),
+      <InsuranceSection />,
+    )
+    const primaryName = createSamplePlan().household.people[0]!.name
+    const warnings = [...two.querySelectorAll('.callout--warn')]
     expect(warnings).toHaveLength(1)
-    expect(warnings[0]!.textContent).toContain(`${primary!.name} has 2 care events starting at age 85`)
-    // No promise of a live readout: the stress test may be paused.
+    expect(warnings[0]!.textContent).toContain(`${primaryName} has 2 care events starting at age 88`)
     expect(warnings[0]!.textContent).toContain('All 2 count toward the care cost the stress test prices when it runs')
-    // A fifth makes three: the copy follows the count.
-    await act(async () => add.click())
-    const again = [...host.querySelectorAll('.callout--warn')]
+    await act(async () => root!.unmount())
+    root = null
+    container?.remove()
+    const three = await mount(
+      validPlan((p) => {
+        const first = p.careEvents[0]!
+        p.careEvents.push({ ...first, id: 'dupe-1' }, { ...first, id: 'dupe-2' })
+      }),
+      <InsuranceSection />,
+    )
+    const again = [...three.querySelectorAll('.callout--warn')]
     expect(again).toHaveLength(1)
-    expect(again[0]!.textContent).toContain(`${primary!.name} has 3 care events starting at age 85`)
+    expect(again[0]!.textContent).toContain(`${primaryName} has 3 care events starting at age 88`)
     expect(again[0]!.textContent).toContain('All 3 count toward')
     expect(again[0]!.textContent).toContain('remove the extras if they were added by mistake')
   })
@@ -343,18 +363,36 @@ describe('Insurance care events (#489)', () => {
     expect(two.querySelector('.callout--warn')!.textContent).toContain('Ages 65 and 70 each appear more than once')
   })
 
-  it('once the schedule reaches the schema ceiling the add control disables instead of wrapping to low ages', async () => {
-    const atCap = await mount(schedulePlan([{ age: 65, value: 0 }, { age: 120, value: 0 }]), <InsuranceSection />)
-    const add = [...atCap.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Schedule row')!
-    expect(add.disabled).toBe(true)
-    expect(add.title).toContain('already reaches age 120')
+  it('with a ceiling row present, a new row fills the gap above the earliest row; with no gap the control disables', async () => {
+    const gap = await mount(schedulePlan([{ age: 65, value: 0 }, { age: 120, value: 0 }]), <InsuranceSection />)
+    const add = [...gap.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Schedule row')!
+    expect(add.disabled).toBe(false)
     await act(async () => add.click())
-    const ages = [...atCap.querySelectorAll<HTMLLabelElement>('label.field-label')].filter((l) => l.textContent === 'Age')
-    expect(ages).toHaveLength(2)
+    const ages = [...gap.querySelectorAll<HTMLLabelElement>('label.field-label')]
+      .filter((l) => l.textContent === 'Age')
+      .map((l) => gap.querySelector<HTMLInputElement>(`[id="${l.htmlFor}"]`)!.value)
+    expect(ages).toEqual(['65', '120', '66'])
+    expect(gap.querySelectorAll('.callout--warn')).toHaveLength(0)
+    await act(async () => root!.unmount())
+    root = null
+    container?.remove()
+    const noGap = await mount(schedulePlan([{ age: 120, value: 0 }]), <InsuranceSection />)
+    const addNoGap = [...noGap.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Schedule row')!
+    expect(addNoGap.disabled).toBe(true)
+    expect(addNoGap.title).toContain('Every age up to 120')
+    await act(async () => addNoGap.click())
+    expect([...noGap.querySelectorAll<HTMLLabelElement>('label.field-label')].filter((l) => l.textContent === 'Age')).toHaveLength(1)
   })
 })
 
 describe('Insurance LTC stress (#517)', () => {
+  it('renders nothing when the only care events belong to people who left the household', async () => {
+    const plan = createSamplePlan()
+    plan.careEvents = [{ ...plan.careEvents[0]!, personId: 'no-such-person' }]
+    const host = await mount(plan, <InsuranceSection />, ['careEvents.0.personId: unknown person id "no-such-person"'])
+    expect(host.textContent).not.toContain('LTC stress test')
+  })
+
   it('pauses while a care event or policy entry is invalid, instead of showing the last table', async () => {
     const plan = validPlan()
     const live = await mount(plan, <InsuranceSection />)
@@ -365,7 +403,7 @@ describe('Insurance LTC stress (#517)', () => {
     const paused = await mount(plan, <InsuranceSection />, ['careEvents.0.durationYears: Invalid input'])
     expect(paused.querySelector('table.compare-table')).toBeNull()
     expect(paused.textContent).toContain('LTC stress test')
-    expect(paused.textContent).toContain('Paused: the plan has an entry to fix')
+    expect(paused.textContent).toContain('Paused while the plan has an issue to fix')
     expect(paused.textContent).not.toContain('Unprotected, the care episode')
   })
 
@@ -375,7 +413,7 @@ describe('Insurance LTC stress (#517)', () => {
       'accounts.0.balance: Invalid input',
     ])
     expect(host.querySelector('table.compare-table')).toBeNull()
-    expect(host.textContent).toContain('Paused: the plan has 2 entries to fix')
+    expect(host.textContent).toContain('Paused while the plan has 2 issues to fix')
     expect(host.textContent).toContain('The issue lists on Accounts and Spending name the fields.')
   })
 })
@@ -439,13 +477,13 @@ describe('Income floor (#512)', () => {
     const host = await mount(ladderPlan(), <IncomeFloorSection />, [
       'incomeFloor.ladders.0.endYear: a ladder must end in or after its first payout year',
     ])
-    expect(host.textContent).toContain('Quote paused')
+    expect(host.textContent).toContain('Quote paused: an entry on this ladder is invalid')
     // Issues render once, at the end of the section, after every ladder and
     // the add control: the copy says so instead of "below".
     expect(host.textContent).toContain('The issue list at the end of this section names the field')
     expect(host.textContent).not.toContain('Quoted cost')
     expect(host.textContent).not.toContain('Set an amount and a payout window')
-    expect(host.textContent).toContain('Paused: the plan has an entry to fix')
+    expect(host.textContent).toContain('Paused while the plan has an issue to fix')
     expect(host.querySelector('.stat-grid')).toBeNull()
     // The card and its explanation stay; the readout and the footer that
     // reads the same projection pause together.
@@ -460,7 +498,9 @@ describe('Income floor (#512)', () => {
 
   it('an issue on the ladder list itself pauses every ladder quote', async () => {
     const host = await mount(ladderPlan(), <IncomeFloorSection />, ['incomeFloor.ladders: at most one ladder per purpose'])
-    expect(host.textContent).toContain('Quote paused')
+    // Named as a list-level issue, not blamed on this ladder's entries.
+    expect(host.textContent).toContain('Quote paused: the ladder list itself has an issue to fix')
+    expect(host.textContent).not.toContain('an entry on this ladder is invalid')
     expect(host.textContent).not.toContain('Quoted cost')
   })
 
@@ -471,7 +511,7 @@ describe('Income floor (#512)', () => {
     try {
       const guarded = await mount(ladderPlan(), <IncomeFloorSection />, ['accounts.0.balance: Invalid input'])
       expect(guarded.textContent).toContain('Funded ratio')
-      expect(guarded.textContent).toContain('Paused: the plan has an entry to fix')
+      expect(guarded.textContent).toContain('Paused while the plan has an issue to fix')
       expect(guarded.querySelector('.stat-grid')).toBeNull()
     } finally {
       projectionThrows.on = false
@@ -486,7 +526,7 @@ describe('Income floor (#512)', () => {
     expect(host.textContent).toContain('Quoted cost')
     expect(host.textContent).not.toContain('Quote paused')
     expect(host.querySelector('.stat-grid')).toBeNull()
-    expect(host.textContent).toContain('Paused: the plan has 2 entries to fix')
+    expect(host.textContent).toContain('Paused while the plan has 2 issues to fix')
     expect(host.textContent).toContain('The issue lists on Accounts and Spending name the fields.')
     const hrefs = [...host.querySelectorAll('a')].map((a) => a.getAttribute('href'))
     expect(hrefs).toContain('/accounts')

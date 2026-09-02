@@ -15,25 +15,51 @@ import { ANNUITY_MIN_START_AGE } from '../../accountStartAgeBounds'
 export const newId = () => crypto.randomUUID()
 
 /**
- * The highest age an illustration-schedule row may carry, read off the
- * engine schema so the editor can never offer an age the plan would refuse.
+ * What the editor falls back to if the schema cannot be introspected; the
+ * schema-oracle test in sectionHelpers.insurance.test.ts fails if this and
+ * the engine ever disagree, so the fallback can never silently drift.
  */
-export const MAX_SCHEDULE_AGE: number = (() => {
-  const max = permanentLifePolicySchema.shape.cashValueSchedule.unwrap().element.shape.age.maxValue
-  if (max === null) throw new Error('cashValueSchedule age schema carries no maximum')
-  return max
-})()
+const SCHEDULE_AGE_CEILING_FALLBACK = 120
+let scheduleAgeCeiling: number | null = null
 
 /**
- * The age a new illustration row opens at: 65 for an empty schedule,
- * otherwise one past the latest row; null once the schedule already reaches
- * the schema's ceiling, which is when the add control disables instead of
- * appending a row that repeats one or reaches past the range (#489).
+ * The highest age an illustration-schedule row may carry, read off the
+ * engine schema (lazily, so an introspection failure surfaces where the
+ * value is used instead of while importing this module) so the editor never
+ * offers an age the plan would refuse.
+ */
+/** The schema's own ceiling, or null when the schema shape cannot be read. */
+function readScheduleAgeCeiling(): number | null {
+  try {
+    return permanentLifePolicySchema.shape.cashValueSchedule.unwrap().element.shape.age.maxValue
+  } catch {
+    return null
+  }
+}
+
+export function maxScheduleAge(): number {
+  if (scheduleAgeCeiling !== null) return scheduleAgeCeiling
+  scheduleAgeCeiling = readScheduleAgeCeiling() ?? SCHEDULE_AGE_CEILING_FALLBACK
+  return scheduleAgeCeiling
+}
+
+/**
+ * The age a new illustration row opens at: 65 for an empty schedule; one past
+ * the latest row while that fits the schema's ceiling; once the latest row is
+ * the ceiling, the lowest age between the earliest and latest rows that no
+ * row holds (never an age below the earliest row, so a schedule that starts
+ * at 65 never grows an age-0 row); null when every age in that span is
+ * taken, which is when the add control disables instead of appending a row
+ * that repeats one (#489).
  */
 export function nextScheduleAge(schedule: ReadonlyArray<{ age: number }>): number | null {
   if (schedule.length === 0) return 65
-  const past = Math.max(...schedule.map((row) => row.age)) + 1
-  return past <= MAX_SCHEDULE_AGE ? past : null
+  const ages = schedule.map((row) => row.age)
+  const latest = Math.max(...ages)
+  if (latest + 1 <= maxScheduleAge()) return latest + 1
+  const taken = new Set(ages)
+  for (let age = Math.min(...ages) + 1; age < latest; age++) if (!taken.has(age)) return age
+  return null
 }
 
 /** Ages that more than one schedule row carries, ascending, each once. */
@@ -47,22 +73,33 @@ export function duplicateScheduleAges(schedule: ReadonlyArray<{ age: number }>):
   return [...dupes].sort((a, b) => a - b)
 }
 
-/** "65", "65 and 70", "65, 70, and 75". */
+/**
+ * "65", "65 and 70", "65, 70, and 75". An empty list yields an empty string:
+ * the sentence around it is rendered only when there is at least one age.
+ */
 export function formatAgeList(values: readonly number[]): string {
   if (values.length <= 1) return values.join('')
   if (values.length === 2) return `${values[0]} and ${values[1]}`
   return `${values.slice(0, -1).join(', ')}, and ${values[values.length - 1]}`
 }
 
+/** The schema's ceiling on a care event's start age. */
+const CARE_EVENT_MAX_START_AGE = 110
+
 /**
  * A new care event starts on the first person who has none yet (a couple's
  * second event then lands on the partner instead of duplicating the first),
- * falling back to the first person once everyone has one (#489).
+ * falling back to the first person once everyone has one. It opens at 85
+ * unless that person already has an event at 85, in which case it opens one
+ * past their latest event, so a click never repeats an existing person + age
+ * pair, in a one-person household included (#489).
  */
 export function makeCareEvent(plan: Plan): CareEvent {
   const covered = new Set(plan.careEvents.map((c) => c.personId))
   const personId = plan.household.people.find((p) => !covered.has(p.id))?.id ?? plan.household.people[0]!.id
-  return { id: newId(), personId, startAge: 85, durationYears: 3, annualCost: 90_000 }
+  const theirs = plan.careEvents.filter((c) => c.personId === personId).map((c) => c.startAge)
+  const startAge = theirs.includes(85) ? Math.min(CARE_EVENT_MAX_START_AGE, Math.max(...theirs) + 1) : 85
+  return { id: newId(), personId, startAge, durationYears: 3, annualCost: 90_000 }
 }
 
 export interface RepeatedCareEvents {

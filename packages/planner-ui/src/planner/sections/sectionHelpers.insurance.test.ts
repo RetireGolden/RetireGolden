@@ -8,16 +8,20 @@ import { describe, expect, it } from 'vitest'
 
 import { permanentLifePolicySchema } from '@retiregolden/engine/model/plan'
 
+import { createEmptyPlan } from '@retiregolden/engine/model/plan'
+
 import { createSamplePlan } from '../../testSupport/samplePlan'
 import { hasIssueAt, hasIssueUnder, parseIssue, sectionsWithIssues } from '../validationIssues'
 import {
-  MAX_SCHEDULE_AGE,
   duplicateCareEvents,
   duplicateScheduleAges,
   formatAgeList,
   makeCareEvent,
+  maxScheduleAge,
   nextScheduleAge,
 } from './sectionHelpers'
+
+const MAX_SCHEDULE_AGE = maxScheduleAge()
 
 describe('illustration schedule rows (#489)', () => {
   it('opens a new row one age past the latest row, from 65 on an empty schedule', () => {
@@ -26,10 +30,16 @@ describe('illustration schedule rows (#489)', () => {
     expect(nextScheduleAge([{ age: 70 }, { age: 65 }])).toBe(71)
   })
 
-  it('has nothing to open once the schedule reaches the schema ceiling', () => {
-    expect(nextScheduleAge([{ age: MAX_SCHEDULE_AGE }])).toBeNull()
-    expect(nextScheduleAge([{ age: 65 }, { age: MAX_SCHEDULE_AGE }])).toBeNull()
+  it('once the latest row is the ceiling, fills the gaps between the rows and never goes below the earliest', () => {
     expect(nextScheduleAge([{ age: MAX_SCHEDULE_AGE - 1 }])).toBe(MAX_SCHEDULE_AGE)
+    expect(nextScheduleAge([{ age: 65 }, { age: MAX_SCHEDULE_AGE }])).toBe(66)
+    expect(nextScheduleAge([{ age: 65 }, { age: 66 }, { age: MAX_SCHEDULE_AGE }])).toBe(67)
+    expect(nextScheduleAge([{ age: 65 }, { age: 67 }, { age: MAX_SCHEDULE_AGE }])).toBe(66)
+    // No gap left: nothing to open (and no wrap to an age below 65).
+    expect(nextScheduleAge([{ age: MAX_SCHEDULE_AGE }])).toBeNull()
+    expect(nextScheduleAge([{ age: MAX_SCHEDULE_AGE - 1 }, { age: MAX_SCHEDULE_AGE }])).toBeNull()
+    const full = Array.from({ length: MAX_SCHEDULE_AGE - 65 + 1 }, (_, i) => ({ age: 65 + i }))
+    expect(nextScheduleAge(full)).toBeNull()
   })
 
   it('reads the ceiling off the engine schema, which admits it and refuses the next age', () => {
@@ -46,7 +56,8 @@ describe('illustration schedule rows (#489)', () => {
     expect(duplicateScheduleAges([{ age: 70 }, { age: 65 }, { age: 70 }, { age: 65 }, { age: 70 }])).toEqual([65, 70])
   })
 
-  it('lists ages in prose', () => {
+  it('lists ages in prose; an empty list is an empty string by contract', () => {
+    expect(formatAgeList([])).toBe('')
     expect(formatAgeList([65])).toBe('65')
     expect(formatAgeList([65, 70])).toBe('65 and 70')
     expect(formatAgeList([65, 70, 75])).toBe('65, 70, and 75')
@@ -60,8 +71,27 @@ describe('care events (#489)', () => {
     expect(plan.careEvents.map((c) => c.personId)).toEqual([primary!.id])
     const second = makeCareEvent(plan)
     expect(second.personId).toBe(partner!.id)
+    expect(second.startAge).toBe(85)
     plan.careEvents.push(second)
-    expect(makeCareEvent(plan).personId).toBe(primary!.id)
+    // The primary's existing event is at 88, so 85 is free for them.
+    const third = makeCareEvent(plan)
+    expect(third.personId).toBe(primary!.id)
+    expect(third.startAge).toBe(85)
+    plan.careEvents.push(third)
+    // Now 85 is taken: one past their latest (88).
+    const fourth = makeCareEvent(plan)
+    expect(fourth.personId).toBe(primary!.id)
+    expect(fourth.startAge).toBe(89)
+    plan.careEvents.push(fourth)
+    expect(duplicateCareEvents(plan)).toEqual([])
+  })
+
+  it('in a one-person household repeated adds never repeat a person + age pair', () => {
+    const plan = createEmptyPlan({ newId: () => crypto.randomUUID() })
+    expect(plan.household.people).toHaveLength(1)
+    for (let i = 0; i < 4; i++) plan.careEvents.push(makeCareEvent(plan))
+    expect(plan.careEvents.map((c) => c.startAge)).toEqual([85, 86, 87, 88])
+    expect(duplicateCareEvents(plan)).toEqual([])
   })
 
   it('reports a repeated person + start age once, by person id, with how many events share it', () => {

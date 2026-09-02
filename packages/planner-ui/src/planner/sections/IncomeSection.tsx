@@ -83,21 +83,24 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
       const claim = `${stream.claimAge.years}y${stream.claimAge.months ? ` ${stream.claimAge.months}m` : ''}`
       return (
         <>
+          {/* The Social Security step renders one card per household member,
+              so an orphaned stream cannot be reached there: this row is the
+              only place it can be removed, and the usual pointer would send
+              the reader to a surface that does not show it. The warning sits
+              first, right under the row head that carries Remove. */}
+          {orphan ? (
+            <div className="callout callout--warn" role="status">
+              This benefit belongs to a person who is no longer in the household, so the plan cannot be stored until it
+              is removed here (Remove, above) or the person is added back on the{' '}
+              <Link to="../household">Household</Link> page.
+            </div>
+          ) : null}
           <div className="form-grid">
             <ReadonlyField label="Person" value={ssPerson?.name ?? '—'} />
             <ReadonlyField label="PIA (monthly at FRA)" value={pia != null ? `${fmtMoney(pia)} (${sourceLabel})` : 'Not set'} />
             <ReadonlyField label="Claim age" value={claim} />
           </div>
-          {/* The Social Security step renders one card per household member,
-              so an orphaned stream cannot be reached there: this row is the
-              only place it can be removed, and the usual pointer would send
-              the reader to a surface that does not show it. */}
-          {orphan ? (
-            <div className="callout callout--warn" role="status">
-              This benefit belongs to a person who is no longer in the household, so the plan cannot be stored until it
-              is removed here or the person is added back on the <Link to="../household">Household</Link> page.
-            </div>
-          ) : (
+          {orphan ? null : (
             <p className="field-hint">
               Social Security is managed on the <Link to="../social-security">Social Security</Link> step so the
               earnings-derived benefit stays in one place. Edit the benefit and claim age there; the{' '}
