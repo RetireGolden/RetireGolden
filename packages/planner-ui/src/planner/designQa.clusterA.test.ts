@@ -139,7 +139,9 @@ describe('Design-QA cluster A: stylesheet pins', () => {
   })
 
   it('optional money fields show their blank meaning in the muted token, without a unit chip (#518)', () => {
-    const body = rule('.input-affix > input::placeholder', clusterA)
+    const body = rule('.input-affix--optional > input::placeholder', clusterA)
+    // Scoped to the opt-in modifier, never to every affixed input.
+    expect(clusterA).not.toMatch(/^\.input-affix > input::placeholder/m)
     expect(body).toMatch(/color:\s*var\(--muted\)/)
     expect(body).toMatch(/opacity:\s*1\b/)
     // The chip keeps its width (visibility, not display) so the box does not jump on focus.
@@ -198,6 +200,12 @@ describe('Design-QA cluster A: source pins', () => {
     expect(mc).not.toContain('publishedMcSummary(plan)')
     expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation)')
     expect(mc).toContain('if (runToken.current === scheduledAt) run(DEFAULT_PATH_COUNT)')
+    // A superseded headline run still publishes: the publish sits before the token check.
+    expect(mc.indexOf('if (headlineRun) publishMcHeadline(plan, s)')).toBeLessThan(mc.indexOf('if (token === runToken.current) {\n            setSummary(s)'))
+    // The in-flight result carries its path count, and the store snapshot serves both renders.
+    expect(hook).toContain('.then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))')
+    expect(hook).toContain('return useSyncExternalStore(subscribe, snapshot, snapshot)')
+    expect(results).not.toContain('keeps verdict copy in sync')
     expect(hook).not.toMatch(/export function useMcSuccessRate\(/)
     expect(hook).toContain('export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined')
     expect(mc).toMatch(/isHeadlineMcConfig\(plan, \{ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock \}\)/)
@@ -238,7 +246,9 @@ describe('Design-QA cluster A: source pins', () => {
     const gate = analysis.slice(analysis.indexOf('export function isDegenerateTiming'), analysis.indexOf('export interface SurvivorAnalysis {'))
     expect(gate.length).toBeGreaterThan(0)
     expect(gate).toContain('nearZero(row.baseLifetimeTax)')
-    expect(gate).not.toContain('survivorShortfallYears')
+    // Shortfall is symmetric across the transition: survivor shortfall counts
+    // only when the last joint year had none (the death introduced it).
+    expect(gate).toContain('(nearZero(row.survivorShortfallYears) || row.lastJointYear.shortfall > 0.5)')
     expect(read('./survivorAnalysis.ts')).toContain('export function isDegenerateTiming(row: SurvivorScenarioRow): boolean')
     expect(survivor).toContain('live: rows.filter((r) => !isDegenerateTiming(r))')
     // The gate is the row's own content, never the base plan's depletion year:
@@ -269,7 +279,8 @@ describe('Design-QA cluster A: source pins', () => {
     expect(editor).toContain('if (!mounts) return null')
     const fields = read('./fields.tsx')
     expect(fields).toContain('placeholder={placeholder}')
-    expect(fields).toContain("placeholder !== undefined && value === null && !focused ? 'input-affix-unit--blank' : undefined")
+    expect(fields).toContain("placeholder !== undefined && text.replace(/^\\$/, '') === '' ? 'input-affix-unit--blank' : undefined")
+    expect(fields).toContain("className={placeholder !== undefined ? 'input-affix input-affix--optional' : 'input-affix'}")
   })
 
   it('wide tables carry a caption and scoped header cells (#504, #522)', () => {
@@ -322,11 +333,13 @@ describe('Design-QA cluster A: source pins', () => {
     expect(card).toContain('aria-busy={loadingExact || loadingMc || undefined}')
     // The wait has visible text, not only an aria-label.
     expect(card).toContain('<p className="small muted">Re-simulating this plan…</p>')
+    expect(rule('.insight-preview-wait', clusterA)).toMatch(/display:\s*grid/)
+    expect(card).toContain('const anyDeltaDefined = definedDollarDeltas.length > 0 || card.impact.successRateDeltaPct !== undefined')
     // The flat note states two facts and claims no cause; it needs at least
     // one defined dollar delta and a settled Monte Carlo line if the card has one.
     expect(card).toContain('Every delta shown is zero. The base plan runs out of money in {baseDepletionYear}.')
     expect(card).toContain('const mcSettledFlat = card.impact.successRateDeltaPct === undefined ? true : !loadingMc && mcFlat')
-    expect(card).toContain('definedDollarDeltas.length > 0 && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat')
+    expect(card).toContain('anyDeltaDefined && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat')
     // The button is released once the exact dollar deltas land, before the
     // slower Monte Carlo pair starts.
     const release = card.indexOf('setLoadingExact(false)')

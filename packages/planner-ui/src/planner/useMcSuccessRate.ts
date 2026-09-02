@@ -56,7 +56,13 @@ export function isHeadlineMcConfig(plan: Plan, config: McHeadlineConfig): boolea
   )
 }
 
-const inflight = new WeakMap<Plan, Promise<number>>()
+/** What an in-flight run resolves to: the rate and the path count it came from. */
+interface McRunResult {
+  rate: number
+  pathCount: number
+}
+
+const inflight = new WeakMap<Plan, Promise<McRunResult>>()
 // The latest completed headline-configuration run per plan object, keyed
 // like the in-flight map: an edit produces a new plan object, so a published
 // run can never outlive its plan.
@@ -88,11 +94,11 @@ export function publishedMcSummary(plan: Plan): MonteCarloSummary | undefined {
  */
 export function registerMcHeadlineRun(plan: Plan, run: Promise<MonteCarloSummary>): void {
   if (inflight.get(plan) !== undefined) return
-  const rate = run.then((s) => s.successRate)
-  rate.catch(() => {
+  const result = run.then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))
+  result.catch(() => {
     inflight.delete(plan)
   })
-  inflight.set(plan, rate)
+  inflight.set(plan, result)
 }
 
 function subscribe(listener: () => void): () => void {
@@ -109,10 +115,13 @@ function subscribe(listener: () => void): () => void {
  * re-renders on its own.
  */
 export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined {
-  return useSyncExternalStore(subscribe, () => published.get(plan), () => undefined)
+  // The same snapshot serves a server render: the store is an in-memory map
+  // that is empty there, so client and server agree on what it holds.
+  const snapshot = () => published.get(plan)
+  return useSyncExternalStore(subscribe, snapshot, snapshot)
 }
 
-function successRateOf(plan: Plan): Promise<number> {
+function successRateOf(plan: Plan): Promise<McRunResult> {
   const existing = inflight.get(plan)
   if (existing !== undefined) return existing
   const model = buildModel(
@@ -127,7 +136,7 @@ function successRateOf(plan: Plan): Promise<number> {
     pathCount: DEFAULT_PATH_COUNT,
     seed: seedFromPlanId(plan.id),
     model,
-  }).then((s) => s.successRate)
+  }).then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))
   // Successful runs stay cached (later subscribers reuse the result), but a
   // rejection is evicted so the next subscriber retries instead of replaying
   // a transient worker failure forever for this plan object.
@@ -158,7 +167,7 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   // previous plan's rate through the debounce + recompute, and a silently
   // failed re-run can never leave a stale rate up (edits produce a new plan
   // object via structuredClone, so reference identity is the right key).
-  const [snapshot, setSnapshot] = useState<{ plan: Plan; rate: number | null; failed: boolean } | null>(null)
+  const [snapshot, setSnapshot] = useState<{ plan: Plan; rate: number | null; pathCount: number; failed: boolean } | null>(null)
   const runToken = useRef(0)
   // A run the Monte Carlo page published for this exact plan object wins over
   // the hook's own default run.
@@ -172,13 +181,15 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
     const token = ++runToken.current
     const attach = () => {
       successRateOf(plan)
-        .then((rate) => {
-          if (token === runToken.current) setSnapshot({ plan, rate, failed: false })
+        .then((result) => {
+          // The count rides with the rate: an attached 10,000-path page run is
+          // reported as 10,000, not as the default.
+          if (token === runToken.current) setSnapshot({ plan, rate: result.rate, pathCount: result.pathCount, failed: false })
         })
         .catch(() => {
           // The Monte Carlo page carries the error detail and retry; here the
           // KPI only needs to stop claiming a simulation is in progress.
-          if (token === runToken.current) setSnapshot({ plan, rate: null, failed: true })
+          if (token === runToken.current) setSnapshot({ plan, rate: null, pathCount: DEFAULT_PATH_COUNT, failed: true })
         })
     }
     // A run for this plan already exists (typically started by the KPI bar):
@@ -196,5 +207,5 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   if (enabled && headline !== undefined) return { rate: headline.successRate, status: 'done', pathCount: headline.pathCount }
   const current = enabled && snapshot !== null && snapshot.plan === plan ? snapshot : null
   const status: McSuccessRateStatus = !enabled ? 'idle' : current === null ? 'running' : current.failed ? 'failed' : 'done'
-  return { rate: current?.rate ?? null, status, pathCount: DEFAULT_PATH_COUNT }
+  return { rate: current?.rate ?? null, status, pathCount: current?.pathCount ?? DEFAULT_PATH_COUNT }
 }

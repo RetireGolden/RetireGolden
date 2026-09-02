@@ -39,6 +39,8 @@ export interface SurvivorYearFacts {
   year: number
   magi: number
   tax: number
+  /** Required-spending shortfall that year (nominal); non-zero means the plan was already short. */
+  shortfall: number
   filingStatus: ProjectedFilingStatus
 }
 
@@ -101,9 +103,11 @@ const nearZero = (v: number) => Math.abs(v) < 0.5
  * ("$0 → $0", "no surcharge to relieve") beside a red shortfall count (#513).
  * A plan that runs short of money but still has guaranteed income is NOT
  * degenerate: its filing-status, Social Security, tax, and IRMAA columns are
- * exactly what the survivor page exists to show, so those rows stay. The
- * survivor shortfall count is deliberately not a criterion: a red shortfall
- * count standing alone on an otherwise empty row is the #513 finding itself.
+ * exactly what the survivor page exists to show, so those rows stay.
+ * Shortfall is checked symmetrically across the transition: survivor-year
+ * shortfall counts as a transition signal only when the last joint year had
+ * none, i.e. the death introduced it. A plan already short before the death
+ * (#513's row: shortfall on both sides, everything else $0) stays degenerate.
  * Near-zero is symmetric (|v| < 0.5) so a rounding remainder of either sign
  * is still nothing; a real negative figure is a real figure and keeps the row.
  */
@@ -118,7 +122,8 @@ export function isDegenerateTiming(row: SurvivorScenarioRow): boolean {
     nearZero(row.minSurvivorInvestable) &&
     nearZero(row.ssa44PremiumSavings) &&
     nearZero(row.baseEndingAfterTaxEstate) &&
-    nearZero(row.baseLifetimeTax)
+    nearZero(row.baseLifetimeTax) &&
+    (nearZero(row.survivorShortfallYears) || row.lastJointYear.shortfall > 0.5)
   )
 }
 
@@ -259,11 +264,18 @@ function buildTimingRow(
     deathAge,
     deathYear,
     filingTimeline: filingTimeline(base),
-    lastJointYear: { year: lastJoint.year, magi: lastJoint.magi, tax: lastJoint.tax, filingStatus: lastJoint.filingStatus },
+    lastJointYear: {
+      year: lastJoint.year,
+      magi: lastJoint.magi,
+      tax: lastJoint.tax,
+      shortfall: lastJoint.shortfall,
+      filingStatus: lastJoint.filingStatus,
+    },
     firstSurvivorYear: {
       year: firstSurvivor.year,
       magi: firstSurvivor.magi,
       tax: firstSurvivor.tax,
+      shortfall: firstSurvivor.shortfall,
       filingStatus: firstSurvivor.filingStatus,
     },
     ssBeforeDeath: lastJoint.incomes.socialSecurity,

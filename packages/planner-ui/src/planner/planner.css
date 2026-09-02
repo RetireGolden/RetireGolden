@@ -3353,8 +3353,9 @@ html:has(.kpi-bar) {
 }
 
 /* Optional money fields (#518): the blank box says what blank means, in the
-   muted token in both themes. */
-.input-affix > input::placeholder {
+   muted token in both themes. Scoped to fields that opt in with a placeholder
+   (MoneyField adds the modifier), not to every affixed input. */
+.input-affix--optional > input::placeholder {
   color: var(--muted);
   opacity: 1;
 }
@@ -3362,9 +3363,12 @@ html:has(.kpi-bar) {
 /* Print (#504): the theme tokens are set on :root[data-theme='dark'] and, for
    a system-dark preference, :root:not([data-theme='light']) (both 0,2,0), so
    the plain :root print override above never won and a dark-theme report
-   printed as a black page. These selectors are one step more specific and
-   restate the whole light palette from index.css, so paper is light and its
-   verdict and chart colors are the light-theme ones whatever the app theme. */
+   printed as a black page. The two theme-conditioned selectors here are
+   (0,2,1), one step more specific than either dark mechanism; the bare
+   html:root (0,1,1) only outranks the light theme's plain :root and must
+   never be the only selector left. Together they restate the whole light
+   palette from index.css, so paper is light and its verdict and chart colors
+   are the light-theme ones whatever the app theme. */
 @media print {
   html:root,
   html:root[data-theme='dark'],
@@ -3403,4 +3407,15 @@ html:has(.kpi-bar) {
    rather than "$ No floor"; it keeps its width and returns on focus. */
 .input-affix > span.input-affix-unit--blank {
   visibility: hidden;
+}
+
+/* Insights preview wait (#527 review): the shimmer and its caption stack.
+   Lives in this block with the rest of the cluster. */
+.insight-preview-wait {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.insight-preview-wait p {
+  margin: 0;
 }

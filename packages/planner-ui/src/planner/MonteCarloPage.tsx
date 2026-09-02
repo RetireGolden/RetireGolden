@@ -158,14 +158,16 @@ export function MonteCarloPage() {
       if (headlineRun) registerMcHeadlineRun(plan, simulation)
       void simulation
         .then((s) => {
+          // A headline-configuration run is the headline number too, even when
+          // a re-roll or model change superseded it on this page meanwhile:
+          // the store is per plan object and configuration-invariant, so the
+          // KPI bar and Results still gain the finer result (#497).
+          if (headlineRun) publishMcHeadline(plan, s)
           if (token === runToken.current) {
             setSummary(s)
             setStatusMessage(
               `Simulation complete. ${Math.round(s.successRate * 100)} percent of markets sustain the plan.`,
             )
-            // A headline-configuration run is the headline number too: the KPI
-            // bar and Results quote this run and its count (#497).
-            if (headlineRun) publishMcHeadline(plan, s)
           }
         })
         .catch((e: unknown) => {

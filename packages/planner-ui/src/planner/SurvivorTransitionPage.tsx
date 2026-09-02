@@ -93,7 +93,7 @@ function ScenarioTable({
     return (
       <div className="empty-state" data-survivor-empty="degenerate">
         <p>
-          Every death timing here for {personName} (dies at {rows.map((r) => r.deathAge).join(', ')}) shows no
+          Every death timing here for {personName} (dies at {[...new Set(rows.map((r) => r.deathAge))].join(', ')}) shows no
           income, tax, or balance on either side of the transition: Social Security $0 → $0, no tax, no surviving
           balance, no estate. This plan has nothing for a survivor transition to model at those timings
           {depletionYear !== null ? <>; its steady-market projection runs out of money in {depletionYear}</> : null}.{' '}
@@ -202,7 +202,7 @@ function ScenarioTable({
     {degenerate.length > 0 ? (
       <p className="small" data-survivor-omitted={degenerate.length}>
         {degenerate.length} timing{degenerate.length === 1 ? '' : 's'} (dies at{' '}
-        {degenerate.map((r) => r.deathAge).join(', ')}) not shown: no income, tax, or balance on either side of that
+        {[...new Set(degenerate.map((r) => r.deathAge))].join(', ')}) not shown: no income, tax, or balance on either side of that
         transition.
       </p>
     ) : null}

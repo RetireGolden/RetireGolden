@@ -284,10 +284,11 @@ export function MoneyField({
   }, [focused, text])
   return (
     <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
-      <div className="input-affix">
+      <div className={placeholder !== undefined ? 'input-affix input-affix--optional' : 'input-affix'}>
         {/* A blank optional field is a non-amount state, so the unit chip steps
-            back while the placeholder is showing; it returns on focus (#518). */}
-        <span aria-hidden className={placeholder !== undefined && value === null && !focused ? 'input-affix-unit--blank' : undefined}>
+            back for as long as the placeholder is showing, focused or not; it
+            returns with the first typed character (#518). */}
+        <span aria-hidden className={placeholder !== undefined && text.replace(/^\$/, '') === '' ? 'input-affix-unit--blank' : undefined}>
           $
         </span>
         <input

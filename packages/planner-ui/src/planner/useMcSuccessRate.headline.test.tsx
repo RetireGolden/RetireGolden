@@ -95,8 +95,10 @@ describe('Monte Carlo headline (#497)', () => {
     await act(async () => root.render(<Probe plan={plan} />))
     expect(container.textContent).toBe('running|null|1000')
     // The page's run is in flight, so the hook attaches at once (no debounce) and starts nothing.
+    // The count rides with the rate: the attached run was 10,000 paths, and
+    // the KPI says so even though nothing has been published yet.
     await act(async () => settle(summaryOf(0.37, 10_000)))
-    expect(container.textContent).toBe('done|0.37|1000')
+    expect(container.textContent).toBe('done|0.37|10000')
     expect(mockedRunMc).not.toHaveBeenCalled()
   })
 

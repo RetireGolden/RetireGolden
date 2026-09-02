@@ -199,7 +199,10 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
     ? []
     : [exactImpact.endingAfterTaxEstateDelta, exactImpact.lifetimeTaxDelta].filter((v): v is number => v !== undefined)
   const mcSettledFlat = card.impact.successRateDeltaPct === undefined ? true : !loadingMc && mcFlat
-  const allFlat = definedDollarDeltas.length > 0 && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat
+  // At least one delta of any kind must be defined: a card with only a Monte
+  // Carlo line still gets the note when that line is settled and flat.
+  const anyDeltaDefined = definedDollarDeltas.length > 0 || card.impact.successRateDeltaPct !== undefined
+  const allFlat = anyDeltaDefined && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat
 
   const confidenceChips = {
     high: { className: 'type-chip type-chip--good', label: 'High Confidence' },

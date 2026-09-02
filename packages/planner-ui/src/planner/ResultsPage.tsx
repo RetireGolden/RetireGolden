@@ -390,7 +390,6 @@ const tooltipProps = {
 // by nulling zeros in the data, see NonZeroTooltipContent.
 const stackTooltipProps = { ...tooltipProps, content: NonZeroTooltipContent } as const
 
-/** "1,000", keeps verdict copy in sync if the default path count changes. */
 
 /**
  * The FIRE metrics + FI-target chart. Rendered as the leading card only for

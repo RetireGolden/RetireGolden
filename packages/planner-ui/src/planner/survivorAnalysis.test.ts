@@ -92,7 +92,7 @@ describe('buildSurvivorAnalysis', () => {
     expect(row.baseLifetimeTax).toBe(manualSummary.lifetimeTaxesAndPenalties)
     const lastJoint = manualBase.years.find((y) => y.year === 2033)!
     const firstSurvivor = manualBase.years.find((y) => y.year === 2034)!
-    expect(row.lastJointYear).toEqual({ year: 2033, magi: lastJoint.magi, tax: lastJoint.tax, filingStatus: lastJoint.filingStatus })
+    expect(row.lastJointYear).toEqual({ year: 2033, magi: lastJoint.magi, tax: lastJoint.tax, shortfall: lastJoint.shortfall, filingStatus: lastJoint.filingStatus })
     expect(row.firstSurvivorYear.tax).toBe(firstSurvivor.tax)
     expect(row.ssBeforeDeath).toBe(lastJoint.incomes.socialSecurity)
     expect(row.ssAfterDeath).toBe(firstSurvivor.incomes.socialSecurity)
