@@ -126,6 +126,9 @@ export function App({
     plannerNotFoundRoute,
   ])
   const isLanding = location.pathname === '/' || location.pathname === '/examples'
+  // Reading routes render a 48rem column; the shell narrows to match it so the
+  // header's brand sits on the same left edge as the page's H1 (#443).
+  const isReading = location.pathname === '/learn' || location.pathname.startsWith('/learn/') || location.pathname === '/disclaimer'
   // How-tested is reached from Disclaimer and has no nav item of its own, so
   // Disclaimer stays the active place while it is open (#419). NavLink only
   // sets aria-current for its own route match, hence a plain Link below.
@@ -204,7 +207,7 @@ export function App({
     <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
       <PlanStoreProvider store={store} readOnly={readOnly}>
         <ReportBrandingContext.Provider value={reportBranding ?? null}>
-          <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}`}>
+          <div className={`app-shell planner-shell${isLanding ? ' app-shell--landing' : ''}${isReading ? ' app-shell--reading' : ''}`}>
             <a className="skip-link" href="#main-content">
               Skip to content
             </a>

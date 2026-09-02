@@ -14,9 +14,9 @@
    :not() outranks .app-shell regardless of order, keeps the tighter
    .app-shell--landing column (index.css) in charge of the landing routes,
    and @media screen leaves the print reset (max-width: none, below)
-   uncontested. */
+   uncontested. The reading routes (#443) are excluded the same way. */
 @media screen {
-  .app-shell.planner-shell:not(.app-shell--landing) {
+  .app-shell.planner-shell:not(.app-shell--landing):not(.app-shell--reading) {
     max-width: 80rem;
   }
 }
@@ -2777,6 +2777,9 @@ html:has(.kpi-bar) {
 
 .household-map-page {
   display: grid;
+  /* A bounded column: the zoomed stage scrolls inside its box instead of
+     widening the page (#457). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-content: start;
 }
@@ -2822,6 +2825,8 @@ html:has(.kpi-bar) {
 
 .household-map-scroll {
   overflow: auto;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);

@@ -9,7 +9,7 @@ import { usePlannerEdition } from './editionContext'
 export function DisclaimerPage() {
   const { disclaimerDataSection, disclaimerLicenseSection } = usePlannerEdition()
   return (
-    <article className="page" style={{ maxWidth: '46rem', margin: '0 auto', textAlign: 'left' }}>
+    <article className="page" style={{ maxWidth: '48rem', margin: '0 auto', textAlign: 'left' }}>
       <h1>Disclaimer</h1>
       <p className="lede">Please read this before relying on anything RetireGolden shows you.</p>
 

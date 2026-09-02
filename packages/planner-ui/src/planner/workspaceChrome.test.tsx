@@ -75,6 +75,22 @@ describe('Workspace chrome', () => {
     await unmount()
   })
 
+  it('narrows the shell to the reading column on Learn and Disclaimer, not on the home route (#443)', async () => {
+    const plan = createSamplePlan()
+    for (const [path, reading] of [
+      ['/learn', true],
+      ['/learn/glossary', true],
+      ['/disclaimer', true],
+      ['/', false],
+      ['/examples', false],
+    ] as const) {
+      const { container, unmount } = await mountAt(path, storeFor(plan))
+      const shell = container.querySelector('.app-shell')!
+      expect(shell.classList.contains('app-shell--reading'), `${path} reading shell`).toBe(reading)
+      await unmount()
+    }
+  })
+
   it('renders not-found chrome for an unmatched site URL instead of a blank main (#442)', async () => {
     const plan = createSamplePlan()
     const { container, unmount } = await mountAt('/zzz-not-a-route', storeFor(plan))

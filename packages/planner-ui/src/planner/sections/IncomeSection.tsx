@@ -102,6 +102,9 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
           />
           <NumberField label="Start year" value={stream.startYear} allowNull min={1900} max={2200} onCommit={(v) => set('startYear', v === null ? null : Math.round(v))} />
           <NumberField label="End year" value={stream.endYear} allowNull min={1900} max={2200} onCommit={(v) => set('endYear', v === null ? null : Math.round(v))} />
+          {/* Same control on both row types, same order (#481): Ordinary income
+              first, Not taxed last. The engine allows Capital gain only for a
+              one-time event, so it appears only there. */}
           <SelectField
             label="Tax treatment"
             value={stream.taxTreatment}
@@ -111,7 +114,12 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
             ]}
             onCommit={(v) => set('taxTreatment', v)}
           />
-          <CheckboxField label="Inflation-adjusted" value={stream.inflationAdjusted} onCommit={(v) => set('inflationAdjusted', v)} />
+          <CheckboxField
+            label="Inflation-adjusted"
+            help="On: the annual amount is in today's dollars and the plan grows it each year with inflation. Off: the amount stays fixed in the dollars of each year."
+            value={stream.inflationAdjusted}
+            onCommit={(v) => set('inflationAdjusted', v)}
+          />
         </div>
       )
     case 'oneTime':
@@ -128,9 +136,9 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
             label="Tax treatment"
             value={stream.taxTreatment}
             options={[
-              { value: 'none', label: 'Not taxed' },
               { value: 'ordinary', label: 'Ordinary income' },
               { value: 'capitalGain', label: 'Capital gain' },
+              { value: 'none', label: 'Not taxed' },
             ]}
             onCommit={(v) => set('taxTreatment', v)}
           />
