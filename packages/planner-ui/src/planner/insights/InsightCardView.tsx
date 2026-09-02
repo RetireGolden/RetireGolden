@@ -190,16 +190,16 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
   // change": its sign must not paint it in a verdict color (#527).
   const mcLabel = mcDelta === null ? null : formatMcDelta(mcDelta)
   const mcFlat = mcLabel !== null && mcLabel.flat
-  // Every exact delta is zero and the base plan already runs out of money:
-  // say why the numbers are flat instead of leaving "no change" to look like
-  // a finding about a plan that works.
+  // Every delta this card defines is zero (dollar deltas exact; the Monte
+  // Carlo line, if the card has one, settled and flat). The base plan running
+  // out of money is stated beside that as a fact, not as the cause: the
+  // evaluator reports no depletion delta, so the cause is not verified here.
   const baseDepletionYear = projectionView.summary.depletionYear
-  const allFlat =
-    exactImpact !== null &&
-    !loadingMc &&
-    (exactImpact.endingAfterTaxEstateDelta === undefined || exactImpact.endingAfterTaxEstateDelta === 0) &&
-    (exactImpact.lifetimeTaxDelta === undefined || exactImpact.lifetimeTaxDelta === 0) &&
-    (mcDelta === null || mcFlat)
+  const definedDollarDeltas = exactImpact === null
+    ? []
+    : [exactImpact.endingAfterTaxEstateDelta, exactImpact.lifetimeTaxDelta].filter((v): v is number => v !== undefined)
+  const mcSettledFlat = card.impact.successRateDeltaPct === undefined ? true : !loadingMc && mcFlat
+  const allFlat = definedDollarDeltas.length > 0 && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat
 
   const confidenceChips = {
     high: { className: 'type-chip type-chip--good', label: 'High Confidence' },
@@ -290,7 +290,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
             </div>
             {allFlat && baseDepletionYear !== null ? (
               <p className="small muted insight-flat-note">
-                The plan runs out of money in {baseDepletionYear} with or without this change, so every delta is zero.
+                Every delta shown is zero. The base plan runs out of money in {baseDepletionYear}.
               </p>
             ) : null}
             <div className="insight-impact-note">
@@ -342,7 +342,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 className="btn btn-secondary btn-small"
                 onClick={handleToggleExpand}
                 disabled={loadingExact}
-                aria-busy={loadingExact || undefined}
+                aria-busy={loadingExact || loadingMc || undefined}
               >
                 {loadingExact ? 'Previewing…' : expanded ? 'Hide preview' : 'Preview impact'}
               </button>

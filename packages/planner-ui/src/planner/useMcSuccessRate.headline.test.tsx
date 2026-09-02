@@ -1,12 +1,13 @@
 /** @vitest-environment jsdom */
 /**
  * Headline Monte Carlo count (#497): the run the Monte Carlo page publishes is
- * what every headline surface reports, with its own path count; the latest
- * publish wins (the page shows its latest run, so the headline must too); a
- * new plan object starts over. The publish predicate accepts only the
- * headline configuration.
+ * what every headline surface reports, with its own path count; a coarser
+ * later publish never replaces a finer one (the Monte Carlo page shows the
+ * published run, so the two agree); once a run is published the hook starts
+ * no default run of its own; a new plan object starts over. The publish
+ * predicate accepts only the headline configuration.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 
@@ -15,6 +16,14 @@ import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { seedFromPlanId } from './useProjection'
 import { isHeadlineMcConfig, publishMcHeadline, publishedMcSummary, useMcSuccessRateState } from './useMcSuccessRate'
+
+vi.mock('../mc/pool', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../mc/pool')>()
+  return { ...original, runMonteCarlo: vi.fn(original.runMonteCarlo) }
+})
+
+import * as pool from '../mc/pool'
+const mockedRunMc = vi.mocked(pool.runMonteCarlo)
 
 function Probe({ plan }: { plan: Plan }) {
   const s = useMcSuccessRateState(plan, true)
@@ -30,6 +39,7 @@ let container: HTMLDivElement
 let root: Root
 
 beforeEach(() => {
+  vi.clearAllMocks()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -42,7 +52,7 @@ afterEach(async () => {
 })
 
 describe('Monte Carlo headline (#497)', () => {
-  it('adopts a published 10,000-path run and its count, then the latest run whatever its count', async () => {
+  it('adopts a published 10,000-path run and its count, and keeps it over a later coarser run', async () => {
     const plan = createSamplePlan()
     await act(async () => root.render(<Probe plan={plan} />))
     expect(container.textContent).toBe('running|null|1000')
@@ -52,16 +62,30 @@ describe('Monte Carlo headline (#497)', () => {
     expect(container.textContent).toBe('done|0.42|10000')
     expect(publishedMcSummary(plan)).toBe(tenK)
 
-    // The Monte Carlo page would now be showing this 1,000-path run, so the
-    // headline follows it: one run, one count, everywhere it is quoted.
+    // A later coarser run never trades the precision away; an equal or finer
+    // one replaces it.
     await act(async () => publishMcHeadline(plan, summaryOf(0.41, 1_000)))
-    expect(container.textContent).toBe('done|0.41|1000')
+    expect(container.textContent).toBe('done|0.42|10000')
+    await act(async () => publishMcHeadline(plan, summaryOf(0.43, 10_000)))
+    expect(container.textContent).toBe('done|0.43|10000')
 
     // An edit is a new plan object: the published run belongs to the old one.
     const edited = structuredClone(plan)
     expect(publishedMcSummary(edited)).toBeUndefined()
     await act(async () => root.render(<Probe plan={edited} />))
     expect(container.textContent).toBe('running|null|1000')
+  })
+
+  it('starts no default run of its own once a run is published for the plan', async () => {
+    const plan = createSamplePlan()
+    publishMcHeadline(plan, summaryOf(0.5, 10_000))
+    await act(async () => root.render(<Probe plan={plan} />))
+    expect(container.textContent).toBe('done|0.5|10000')
+    // Past the 1,200 ms debounce: nothing was scheduled, so nothing runs.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 1400))
+    })
+    expect(mockedRunMc).not.toHaveBeenCalled()
   })
 
   it('only the headline configuration may publish: same model, vol, weight, seed, no shocks', () => {

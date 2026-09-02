@@ -24,6 +24,7 @@ import { LearnLink } from '../learn/LearnLink'
 import { fmtMoney } from './format'
 import { LEARN } from './learnLinks'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
+import { ScrollRegion } from './ScrollRegion'
 
 function makeScenarioId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -413,13 +414,13 @@ export function SpendingSolverPage() {
         {shapesError ? <p style={{ color: 'var(--bad)' }}>Per-shape solve error: {shapesError}</p> : null}
         {shapeRows !== null && !shapesRunning ? (
           <>
-            <div className="table-scroll">
+            <ScrollRegion label="Spending shape comparison">
               <table>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left' }}>Spending shape</th>
-                    <th style={{ textAlign: 'right' }}>Max sustainable initial spend</th>
-                    <th style={{ textAlign: 'right' }}>vs constant-real</th>
+                    <th scope="col" style={{ textAlign: 'left' }}>Spending shape</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>Max sustainable initial spend</th>
+                    <th scope="col" style={{ textAlign: 'right' }}>vs constant-real</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -440,7 +441,7 @@ export function SpendingSolverPage() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
             <p className="field-hint" style={{ marginTop: '0.5rem' }}>
               Each row re-solves your full plan with that shape&apos;s phase rows (initial spend in today&apos;s
               dollars; later years follow the shape). No shape is &quot;the answer&quot;. They are framings of how
@@ -460,18 +461,18 @@ export function SpendingSolverPage() {
           starting portfolio; your solver answer prices your actual phases, taxes, and horizon, which is why they
           differ.
         </p>
-        <div className="table-scroll">
+        <ScrollRegion label="Published withdrawal rules on this plan">
           <table>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left' }}>Rule</th>
-                <th style={{ textAlign: 'right' }}>Rate</th>
-                <th style={{ textAlign: 'right' }}>Spending/yr</th>
+                <th scope="col" style={{ textAlign: 'left' }}>Rule</th>
+                <th scope="col" style={{ textAlign: 'right' }}>Rate</th>
+                <th scope="col" style={{ textAlign: 'right' }}>Spending/yr</th>
                 {/* Each row is the plan spending only this rule's dollars, so the
                     header says so: it is not the plan's own path, which the KPI
                     bar's "Money lasts" already reports (#510). */}
-                <th style={{ textAlign: 'left' }}>If your plan spent only this</th>
-                <th style={{ textAlign: 'right' }}>Ending estate (today&apos;s $)</th>
+                <th scope="col" style={{ textAlign: 'left' }}>If your plan spent only this</th>
+                <th scope="col" style={{ textAlign: 'right' }}>Ending estate (today&apos;s $)</th>
               </tr>
             </thead>
             <tbody>
@@ -511,7 +512,7 @@ export function SpendingSolverPage() {
               ) : null}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
         <p className="field-hint" style={{ marginTop: '0.5rem' }}>
           Each rule runs with your accounts, taxes, healthcare, goals, and horizon unchanged, only recurring
           lifestyle spending is set to the rule&apos;s level (constant-real, as the rules define it). A rule

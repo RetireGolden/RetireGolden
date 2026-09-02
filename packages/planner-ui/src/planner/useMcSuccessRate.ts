@@ -63,10 +63,15 @@ const inflight = new WeakMap<Plan, Promise<number>>()
 const published = new WeakMap<Plan, MonteCarloSummary>()
 const listeners = new Set<() => void>()
 
-/** Adopt a completed headline-configuration run for every subscriber of this plan object. */
+/**
+ * Adopt a completed headline-configuration run for every subscriber of this
+ * plan object. Precision is never traded away: a coarser later run does not
+ * replace a finer one. The Monte Carlo page shows the published run whenever
+ * one exists under this configuration, so the store and the page agree.
+ */
 export function publishMcHeadline(plan: Plan, summary: MonteCarloSummary): void {
-  // Latest wins, whatever its path count: the Monte Carlo page shows its
-  // latest run, and the headline must show the same one.
+  const current = published.get(plan)
+  if (current !== undefined && current.pathCount > summary.pathCount) return
   published.set(plan, summary)
   for (const listener of listeners) listener()
 }
@@ -137,6 +142,10 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
   const headline = useSyncExternalStore(subscribe, () => published.get(plan), () => undefined)
   useEffect(() => {
     if (!enabled) return undefined
+    // A published run already answers for this plan object: starting the
+    // default simulation would only burn the pool for a result the headline
+    // branch below discards.
+    if (headline !== undefined) return undefined
     const token = ++runToken.current
     const attach = () => {
       successRateOf(plan)
@@ -160,7 +169,7 @@ export function useMcSuccessRateState(plan: Plan, enabled: boolean): McSuccessRa
     return () => {
       window.clearTimeout(t)
     }
-  }, [plan, enabled])
+  }, [plan, enabled, headline])
   if (enabled && headline !== undefined) return { rate: headline.successRate, status: 'done', pathCount: headline.pathCount }
   const current = enabled && snapshot !== null && snapshot.plan === plan ? snapshot : null
   const status: McSuccessRateStatus = !enabled ? 'idle' : current === null ? 'running' : current.failed ? 'failed' : 'done'

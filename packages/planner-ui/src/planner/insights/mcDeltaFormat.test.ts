@@ -18,7 +18,8 @@ describe('formatMcDelta (#527)', () => {
   it('keeps a small real delta, signed and colored', () => {
     expect(formatMcDelta(0.3)).toEqual({ flat: false, good: true, text: '+0.3 pts' })
     expect(formatMcDelta(0.4)).toEqual({ flat: false, good: true, text: '+0.4 pts' })
-    expect(formatMcDelta(-0.3)).toEqual({ flat: false, good: false, text: '-0.3 pts' })
+    expect(formatMcDelta(-0.3)).toEqual({ flat: false, good: false, text: '−0.3 pts' })
+    expect(formatMcDelta(-12)).toEqual({ flat: false, good: false, text: '−12.0 pts' })
     expect(formatMcDelta(3.25)).toEqual({ flat: false, good: true, text: '+3.3 pts' })
   })
 })

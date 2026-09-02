@@ -154,10 +154,10 @@ function LadderRow({ ladder, index, startYear }: { ladder: TipsLadder; index: nu
               <table>
                 <thead>
                   <tr>
-                    <th>Matures</th>
-                    <th>Face (today's $)</th>
-                    <th>Coupon</th>
-                    <th>Est. cost</th>
+                    <th scope="col">Matures</th>
+                    <th scope="col">Face (today's $)</th>
+                    <th scope="col">Coupon</th>
+                    <th scope="col">Est. cost</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -298,15 +298,15 @@ export function LivePricesCard() {
               {loading ? 'Fetching…' : 'Fetch the latest prices from Treasury FedInvest'}
             </button>
           ) : null}
-          <div className="table-scroll">
+          <ScrollRegion label="Nearest real TIPS per rung">
             <table>
               <thead>
                 <tr>
-                  <th>Rung year</th>
-                  <th>Nearest real TIPS (CUSIP)</th>
-                  <th>Coupon</th>
-                  <th>Matures</th>
-                  <th>End-of-day price</th>
+                  <th scope="col">Rung year</th>
+                  <th scope="col">Nearest real TIPS (CUSIP)</th>
+                  <th scope="col">Coupon</th>
+                  <th scope="col">Matures</th>
+                  <th scope="col">End-of-day price</th>
                 </tr>
               </thead>
               <tbody>
@@ -324,7 +324,7 @@ export function LivePricesCard() {
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         </>
       )}
       {error ? (

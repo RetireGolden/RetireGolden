@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
 import { fileURLToPath } from 'node:url'
 
@@ -139,6 +139,18 @@ describe('Design-QA cluster A: stylesheet pins', () => {
     const blank = rule('.input-affix > span.input-affix-unit--blank', clusterA)
     expect(blank).toMatch(/visibility:\s*hidden/)
     expect(blank).not.toMatch(/display/)
+    // Every token either dark mechanism overrides is restated on paper, so a
+    // dark-only value (the chevron included) can never leak into print.
+    const printBody = rule(
+      "html:root,\n  html:root[data-theme='dark'],\n  html:root:not([data-theme='light'])",
+      clusterA.slice(clusterA.indexOf('{', clusterA.indexOf('@media print')) + 1),
+    )
+    const darkBlock = indexCss.slice(indexCss.indexOf(":root[data-theme='dark'] {"), indexCss.indexOf('@media (prefers-color-scheme: dark)'))
+    const darkTokens = [...darkBlock.matchAll(/^ {2}(--[a-z0-9-]+):/gm)].map((m) => m[1]!)
+    expect(darkTokens.length).toBeGreaterThan(15)
+    for (const token of darkTokens) expect(printBody.includes(`${token}:`), `${token} restated on paper`).toBe(true)
+    // The chevron on paper carries the light muted stroke, not the dark one.
+    expect(printBody).toMatch(/--select-chevron:\s*url\("data:image\/svg\+xml[^"]*stroke='%235b6470'/)
     // Screen rules in the block use tokens only; the print palette is the one
     // place a hex literal belongs (comments stripped: they cite issue numbers).
     const screen = clusterA
@@ -162,6 +174,11 @@ describe('Design-QA cluster A: source pins', () => {
     expect(results).not.toContain('PATH_COUNT_LABEL')
     const mc = read('./MonteCarloPage.tsx')
     expect(mc).toContain('publishMcHeadline(plan, s)')
+    // The store keeps the finest run and the hook never starts a default run
+    // once a published one answers for the plan (review round 2).
+    const hook = read('./useMcSuccessRate.ts')
+    expect(hook).toContain('if (current !== undefined && current.pathCount > summary.pathCount) return')
+    expect(hook).toContain('if (headline !== undefined) return undefined')
     expect(mc).toMatch(/isHeadlineMcConfig\(plan, \{ modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock \}\)/)
     // The page's controls start on the one constant that defines the headline
     // configuration: no second copy of lognormal / 12 / 60 to drift.
@@ -194,6 +211,13 @@ describe('Design-QA cluster A: source pins', () => {
   it('survivor timings with nothing on either side are not shown as results (#513)', () => {
     const survivor = read('./SurvivorTransitionPage.tsx')
     expect(survivor).toContain('data-survivor-empty="degenerate"')
+    // The criterion covers lifetime tax; the shortfall count is deliberately
+    // not a criterion (a lone red shortfall count is the finding itself).
+    const analysis = read('./survivorAnalysis.ts')
+    const gate = analysis.slice(analysis.indexOf('export function isDegenerateTiming'), analysis.indexOf('export interface SurvivorAnalysis {'))
+    expect(gate.length).toBeGreaterThan(0)
+    expect(gate).toContain('nearZero(row.baseLifetimeTax)')
+    expect(gate).not.toContain('survivorShortfallYears')
     expect(read('./survivorAnalysis.ts')).toContain('export function isDegenerateTiming(row: SurvivorScenarioRow): boolean')
     expect(survivor).toContain('live: rows.filter((r) => !isDegenerateTiming(r))')
     // The gate is the row's own content, never the base plan's depletion year:
@@ -231,9 +255,22 @@ describe('Design-QA cluster A: source pins', () => {
       './RelocationComparePage.tsx',
       './ComparePlansPage.tsx',
       './SurvivorTransitionPage.tsx',
+      './SpendingSolverPage.tsx',
+      './sections/IncomeFloorSection.tsx',
     ]) {
       expect(unscopedHeaderCells(read(file)), file).toEqual([])
     }
+    // No `table-scroll` wrapper is left anywhere in planner-ui: the class has
+    // no stylesheet rule, so it never scrolled; every wide table is a named
+    // ScrollRegion (#514, review round 2).
+    const srcDir = fileURLToPath(new URL('..', import.meta.url))
+    const bare = (readdirSync(srcDir, { recursive: true }) as string[])
+      .filter((f: string) => /\.(tsx?|css)$/.test(f) && !/\.test\.tsx?$/.test(f))
+      .filter((f: string) => readFileSync(`${srcDir}/${f}`, 'utf8').includes('table-scroll'))
+    expect(bare).toEqual([])
+    const solver = read('./SpendingSolverPage.tsx')
+    expect(solver).toContain('<ScrollRegion label="Spending shape comparison">')
+    expect(solver).toContain('<ScrollRegion label="Published withdrawal rules on this plan">')
     const report = read('./ReportPage.tsx')
     expect(report.match(/<caption className="sr-only">/g)?.length).toBeGreaterThanOrEqual(8)
     expect(report).toContain('<caption className="sr-only">Year-by-year appendix, nominal dollars</caption>')
@@ -250,10 +287,15 @@ describe('Design-QA cluster A: source pins', () => {
     expect(card).toMatch(/mcLabel\.flat \? \(\s*'no change'\s*\) : \(\s*<span className=\{mcLabel\.good \? 'delta-pos' : 'delta-neg'\}>\{mcLabel\.text\}<\/span>/)
     expect(card).toContain('<span className="muted" role="status" aria-busy="true">')
     expect(card).toContain("{loadingExact ? 'Previewing…' : expanded ? 'Hide preview' : 'Preview impact'}")
-    expect(card).toContain('aria-busy={loadingExact || undefined}')
+    // Enabled (Hide works) but busy for as long as either phase runs.
+    expect(card).toContain('aria-busy={loadingExact || loadingMc || undefined}')
     // The wait has visible text, not only an aria-label.
     expect(card).toContain('<p className="small muted">Re-simulating this plan…</p>')
-    expect(card).toContain('with or without this change, so every delta is zero')
+    // The flat note states two facts and claims no cause; it needs at least
+    // one defined dollar delta and a settled Monte Carlo line if the card has one.
+    expect(card).toContain('Every delta shown is zero. The base plan runs out of money in {baseDepletionYear}.')
+    expect(card).toContain('const mcSettledFlat = card.impact.successRateDeltaPct === undefined ? true : !loadingMc && mcFlat')
+    expect(card).toContain('definedDollarDeltas.length > 0 && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat')
     // The button is released once the exact dollar deltas land, before the
     // slower Monte Carlo pair starts.
     const release = card.indexOf('setLoadingExact(false)')
