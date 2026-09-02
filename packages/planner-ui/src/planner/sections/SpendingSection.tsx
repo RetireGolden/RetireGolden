@@ -107,6 +107,7 @@ export function SpendingSection() {
             help="Everyday living costs in today's dollars: food, utilities, transportation, clothing, entertainment, routine travel, auto insurance, and out-of-pocket medical (copays, deductibles, dental, vision). The costs with no separate input. Leave OUT anything modeled elsewhere: mortgage/loan payments (debt accounts); property tax & homeowner's insurance (enter those on the home/property account, where they correctly continue after the mortgage is paid off); health-insurance premiums (Healthcare below); and long-term-care or life-insurance premiums (Insurance). The Results page breaks all of these out in a Spending-by-category chart."
             learn={LEARN.spendingBudget}
             hint="Living costs incl. auto insurance & out-of-pocket medical; exclude mortgage, property tax, premiums."
+            path="expenses.baseAnnual"
             value={e.baseAnnual}
             onCommit={(v) =>
               update((d) => {
@@ -122,6 +123,7 @@ export function SpendingSection() {
             help="The must-fund slice of baseline spending. The least you could live on in a bad market, before any discretionary lifestyle. Only matters when Spending guardrails (below) are on: the guardrail rations the gap between baseline and this floor but never cuts below it. Leave 0 (or equal to baseline) to treat all spending as required, which is today's behavior."
             learn={LEARN.spendingBudget}
             hint="Guardrails never cut below this. 0 = all spending is required."
+            path="expenses.requiredAnnual"
             value={e.requiredAnnual ?? 0}
             onCommit={(v) =>
               update((d) => {
@@ -544,6 +546,7 @@ export function SpendingSection() {
                 label="From age"
                 help="The first age when this phase applies, using the primary person's age as the clock."
                 learn={LEARN.spendingProfiles}
+                path={`expenses.phases.${i}.fromAge`}
                 value={p.fromAge}
                 min={40}
                 max={110}
@@ -557,6 +560,7 @@ export function SpendingSection() {
                 // Presets write two-decimal multipliers (smirk 0.78, custom −1.5%/yr 0.64).
                 // A 0.05 step marks those values HTML5-invalid even though they are editable plan rows.
                 step={0.01}
+                path={`expenses.phases.${i}.multiplier`}
                 value={p.multiplier}
                 min={0}
                 max={3}
@@ -698,6 +702,7 @@ export function SpendingSection() {
                 label="Label"
                 help="Name the goal so it is recognizable in Results, such as travel, car replacement, wedding gift, or home project."
                 learn={LEARN.spendingBudget}
+                path={`expenses.oneTimeGoals.${i}.label`}
                 value={g.label}
                 onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.label = v || 'Goal'))}
               />
@@ -705,6 +710,7 @@ export function SpendingSection() {
                 label="Year"
                 help="The calendar year the goal is funded. The amount is inflated from today's dollars to that year."
                 learn={LEARN.spendingBudget}
+                path={`expenses.oneTimeGoals.${i}.year`}
                 value={g.year}
                 min={1900}
                 max={2200}
@@ -721,6 +727,7 @@ export function SpendingSection() {
                 label="Amount (today's $)"
                 help="The one-time cost in today's dollars. Keep recurring lifestyle costs in baseline spending instead."
                 learn={LEARN.spendingBudget}
+                path={`expenses.oneTimeGoals.${i}.amount`}
                 value={g.amount}
                 onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.amount = v ?? 0))}
               />
@@ -777,6 +784,7 @@ export function SpendingSection() {
                     label="Earliest year"
                     help="The earliest year a strong guardrail path may pull this goal forward. Leave equal to the target year to prevent acceleration."
                     learn={LEARN.spendingBudget}
+                    path={`expenses.oneTimeGoals.${i}.earliestYear`}
                     value={g.earliestYear ?? g.year}
                     min={1900}
                     max={2200}
@@ -788,6 +796,7 @@ export function SpendingSection() {
                     label="Latest year"
                     help="The latest year this goal may be delayed to. If it cannot be funded by then, the unfunded amount is reported as a layer shortfall."
                     learn={LEARN.spendingBudget}
+                    path={`expenses.oneTimeGoals.${i}.latestYear`}
                     value={g.latestYear ?? g.year}
                     min={1900}
                     max={2200}
@@ -858,6 +867,7 @@ export function SpendingSection() {
             help="Enter the full unsubsidized monthly premium before any ACA credit. As a rough 2026 check, KFF's national benchmark Silver premium for a 40-year-old is $625/month, but older retirees and local quotes can differ a lot."
             learn={LEARN.healthcareBefore65}
             hint="Full (unsubsidized) marketplace premium."
+            path="expenses.healthcare.pre65MonthlyPremiumPerPerson"
             value={e.healthcare.pre65MonthlyPremiumPerPerson}
             onCommit={(v) =>
               update((d) => {
@@ -871,6 +881,7 @@ export function SpendingSection() {
             help="Enter recurring post-65 coverage costs beyond standard Part B: Part D, Medigap, Medicare Advantage, dental, vision, or similar premiums. RetireGolden adds the 2026 Part B base premium ($202.90/month) and IRMAA separately."
             learn={LEARN.healthcareAfter65}
             hint="Part D, Medigap/Advantage; Part B + IRMAA added automatically."
+            path="expenses.healthcare.medicareExtrasMonthlyPerPerson"
             value={e.healthcare.medicareExtrasMonthlyPerPerson}
             onCommit={(v) => update((d) => void (d.expenses.healthcare.medicareExtrasMonthlyPerPerson = v ?? 0))}
           />

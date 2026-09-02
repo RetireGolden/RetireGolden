@@ -53,11 +53,12 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
       return (
         <div className="form-grid">
           <SelectField label="Person" value={stream.personId} options={personOpts} onCommit={(v) => set('personId', v)} />
-          <MoneyField label="Annual gross" value={stream.annualGross} onCommit={(v) => set('annualGross', v ?? 0)} />
+          <MoneyField label="Annual gross" path={`incomes.${index}.annualGross`} value={stream.annualGross} onCommit={(v) => set('annualGross', v ?? 0)} />
           <PercentField
             label="Real raise rate"
             help="Annual wage growth rate on top of inflation (e.g. raises or promotions). A 1% rate means wages grow 1% faster than inflation each year."
             learn={LEARN.accumulation}
+            path={`incomes.${index}.realGrowthPct`}
             value={stream.realGrowthPct ?? 0}
             onCommit={(v) => set('realGrowthPct', v ?? 0)}
           />
@@ -65,6 +66,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
             label="Stop age"
             help="Only set this to end wages at a different age than the retirement age from the Household form, e.g. part-time work that winds down earlier."
             hint={retireAge !== null ? `Blank = retirement age (${retireAge}).` : 'Blank = retirement age.'}
+            path={`incomes.${index}.endAge`}
             value={stream.endAge}
             allowNull
             min={30}
@@ -115,14 +117,15 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
     case 'recurring':
       return (
         <div className="form-grid">
-          <TextField label="Label" value={stream.label} onCommit={(v) => set('label', v || 'Income')} />
+          <TextField label="Label" path={`incomes.${index}.label`} value={stream.label} onCommit={(v) => set('label', v || 'Income')} />
           <MoneyField
             label={stream.inflationAdjusted ? "Annual amount (today's $)" : 'Annual amount (fixed $)'}
+            path={`incomes.${index}.annualAmount`}
             value={stream.annualAmount}
             onCommit={(v) => set('annualAmount', v ?? 0)}
           />
-          <NumberField label="Start year" value={stream.startYear} allowNull min={1900} max={2200} onCommit={(v) => set('startYear', v === null ? null : Math.round(v))} />
-          <NumberField label="End year" value={stream.endYear} allowNull min={1900} max={2200} onCommit={(v) => set('endYear', v === null ? null : Math.round(v))} />
+          <NumberField label="Start year" path={`incomes.${index}.startYear`} value={stream.startYear} allowNull min={1900} max={2200} onCommit={(v) => set('startYear', v === null ? null : Math.round(v))} />
+          <NumberField label="End year" path={`incomes.${index}.endYear`} value={stream.endYear} allowNull min={1900} max={2200} onCommit={(v) => set('endYear', v === null ? null : Math.round(v))} />
           {/* Same control on both row types, same order (#481): Ordinary income
               first, Not taxed last. The engine allows Capital gain only for a
               one-time event, so it appears only there. */}
@@ -146,10 +149,11 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
     case 'oneTime':
       return (
         <div className="form-grid">
-          <TextField label="Label" value={stream.label} onCommit={(v) => set('label', v || 'Event')} />
-          <NumberField label="Year" value={stream.year} min={1900} max={2200} onCommit={(v) => set('year', Math.round(v ?? new Date().getFullYear()))} />
+          <TextField label="Label" path={`incomes.${index}.label`} value={stream.label} onCommit={(v) => set('label', v || 'Event')} />
+          <NumberField label="Year" path={`incomes.${index}.year`} value={stream.year} min={1900} max={2200} onCommit={(v) => set('year', Math.round(v ?? new Date().getFullYear()))} />
           <MoneyField
             label={stream.inflationAdjusted ? "Amount (today's $)" : `Amount (${stream.year} $)`}
+            path={`incomes.${index}.amount`}
             value={stream.amount}
             onCommit={(v) => set('amount', v ?? 0)}
           />

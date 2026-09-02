@@ -84,6 +84,7 @@ export function AccountEditorShell({
       {'balance' in account ? (
         <MoneyField
           label={account.type === 'debt' ? 'Balance owed' : 'Balance'}
+          path={`accounts.${index}.balance`}
           value={account.balance}
           onCommit={(value) => onCommit('balance', value ?? 0)}
         />

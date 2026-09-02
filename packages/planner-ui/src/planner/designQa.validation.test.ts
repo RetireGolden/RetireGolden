@@ -40,6 +40,73 @@ describe('validation chrome pins', () => {
     expect(strategy.indexOf('<Issues section="strategy" />')).toBeLessThan(strategy.indexOf('<div className="card">'))
   })
 
+  it('the fields the walk cited carry their schema path, so the engine issue lands beside them', () => {
+    const pins: Array<[string, string[]]> = [
+      ['./sections/StrategySection.tsx', [
+        'path="strategies.qcdAnnual"',
+        'path="strategies.taxableSafetyNetFloor"',
+        'path="strategies.itemizedDeductions.stateAndLocalTaxes"',
+        'path="strategies.rothConversion.targetValue"',
+        'path="strategies.rothConversion.startYear"',
+        'path="strategies.rothConversion.endYear"',
+      ]],
+      ['./sections/AssumptionsSection.tsx', [
+        'path="assumptions.localIncomeTaxPct"',
+        'path="assumptions.stateEffectiveTaxPct"',
+        'path="assumptions.inflationPct"',
+        'path="assumptions.healthcareExtraInflationPct"',
+        'path="assumptions.defaultReturnPct"',
+        'path="assumptions.heirTaxRatePct"',
+      ]],
+      ['./sections/HouseholdSection.tsx', [
+        'path={`household.people.${i}.longevity.planningAge`}',
+        'path={`household.people.${i}.retirementAge`}',
+      ]],
+      ['./sections/IncomeFloorSection.tsx', [
+        'path={`incomeFloor.ladders.${index}.startYear`}',
+        'path={`incomeFloor.ladders.${index}.endYear`}',
+      ]],
+      ['./sections/SpendingSection.tsx', [
+        'path="expenses.baseAnnual"',
+        'path={`expenses.phases.${i}.fromAge`}',
+        'path={`expenses.phases.${i}.multiplier`}',
+        'path={`expenses.oneTimeGoals.${i}.label`}',
+        'path={`expenses.oneTimeGoals.${i}.year`}',
+        'path={`expenses.oneTimeGoals.${i}.amount`}',
+      ]],
+      ['./sections/InsuranceSection.tsx', [
+        'path={`insurance.${index}.premiumEndAge`}',
+        'path={`insurance.${index}.cashValueGrowthPct`}',
+        'useFieldIssue(`insurance.${index}.cashValueSchedule`)',
+        'path={`careEvents.${index}.durationYears`}',
+      ]],
+      ['./sections/AccountEditorSharedFields.tsx', ['path={`accounts.${index}.balance`}']],
+      ['./sections/PropertyDebtAccountEditors.tsx', [
+        'path={`accounts.${index}.payoffYear`}',
+        'path={`accounts.${index}.plannedSaleYear`}',
+        'path={`accounts.${index}.interestPct`}',
+      ]],
+      ['./sections/LiquidAccountEditors.tsx', [
+        'path={`accounts.${index}.dividendYieldPct`}',
+        'path={`accounts.${index}.qualifiedRatio`}',
+      ]],
+      ['./sections/IncomeSection.tsx', [
+        'path={`incomes.${index}.annualGross`}',
+        'path={`incomes.${index}.endAge`}',
+        'path={`incomes.${index}.startYear`}',
+        'path={`incomes.${index}.endYear`}',
+      ]],
+      ['./SocialSecuritySection.tsx', [
+        'path={`incomes.${streamIndex}.claimAge.years`}',
+        'path={`incomes.${streamIndex}.claimAge.months`}',
+      ]],
+    ]
+    for (const [file, paths] of pins) {
+      const src = read(file)
+      for (const p of paths) expect(src, `${file} ${p}`).toContain(p)
+    }
+  })
+
   it('scenario field lists never show raw pointer or dotted paths (#459)', () => {
     const scenarios = read('./ScenariosPage.tsx')
     expect(scenarios).not.toContain("preview.operationPaths.join(', ')")

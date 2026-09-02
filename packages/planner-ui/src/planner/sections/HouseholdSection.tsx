@@ -98,11 +98,13 @@ export function HouseholdSection() {
               <TextField
                 label="Name"
                 hint={`Blank = shown as ${fallbackPersonName(i)}.`}
+                path={`household.people.${i}.name`}
                 value={person.name}
                 onCommit={(v) => update((d) => void (d.household.people[i]!.name = v || fallbackPersonName(i)))}
               />
               <DateField
                 label="Date of birth"
+                path={`household.people.${i}.dob`}
                 value={person.dob}
                 onCommit={(v) =>
                   update((d) => {
@@ -125,6 +127,7 @@ export function HouseholdSection() {
               <NumberField
                 label="Retirement age"
                 help="Wages and payroll contributions stop in the year this age is reached. Leave blank if this person never has wages in the plan."
+                path={`household.people.${i}.retirementAge`}
                 value={person.retirementAge}
                 allowNull
                 min={30}
@@ -136,6 +139,7 @@ export function HouseholdSection() {
                   label="Planning age"
                   help="How long the plan runs for this person. The age the money must last to, not a prediction of death. Planning beyond average life expectancy is prudent; 'Calculate' estimates an age from a short health questionnaire, and 'Percentile' anchors it to a survival probability (e.g. the age you have a 25% chance of reaching). Typing a number always overrides."
                   learn={LEARN.longevity}
+                  path={`household.people.${i}.longevity.planningAge`}
                   value={person.longevity.planningAge}
                   min={60}
                   max={120}
@@ -249,6 +253,7 @@ export function HouseholdSection() {
               <NumberField
                 label="Move year"
                 help="The calendar year of residence in the new state. The projection allocates this year by move month."
+                path={`household.stateMoves.${i}.fromYear`}
                 value={move.fromYear}
                 min={1900}
                 max={2200}

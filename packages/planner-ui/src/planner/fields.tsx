@@ -280,6 +280,7 @@ export function MoneyField({
   help,
   learn,
   source,
+  path,
   value,
   onCommit,
   allowNull,
@@ -288,6 +289,7 @@ export function MoneyField({
   placeholder,
 }: MoneyFieldProps) {
   const id = useId()
+  const error = useFieldIssue(path)?.advice ?? null
   const formatted = value === null
     ? ''
     : fractionDigits === undefined
@@ -314,7 +316,7 @@ export function MoneyField({
     inputRef.current?.select()
   }, [focused, text])
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
       <div className={placeholder !== undefined ? 'input-affix input-affix--optional' : 'input-affix'}>
         {/* A blank optional field is a non-amount state, so the unit chip steps
             back for as long as the placeholder is showing, focused or not; it
@@ -331,6 +333,8 @@ export function MoneyField({
           autoCorrect="off"
           spellCheck={false}
           placeholder={placeholder}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(error && `${id}-error`)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.preventDefault()
           }}
@@ -469,13 +473,22 @@ export function TextField({
   help,
   learn,
   source,
+  path,
   value,
   onCommit,
 }: BaseProps & { value: string; onCommit: (v: string) => void }) {
   const id = useId()
+  const error = useFieldIssue(path)?.advice ?? null
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
-      <input id={id} type="text" value={value} onChange={(e) => onCommit(e.target.value)} />
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(error && `${id}-error`)}
+        onChange={(e) => onCommit(e.target.value)}
+      />
     </FieldShell>
   )
 }
@@ -486,18 +499,22 @@ export function DateField({
   help,
   learn,
   source,
+  path,
   value,
   onCommit,
 }: BaseProps & { value: string; onCommit: (v: string) => void }) {
   const id = useId()
+  const error = useFieldIssue(path)?.advice ?? null
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
       <input
         id={id}
         type="date"
         min="1900-01-01"
         max="9999-12-31"
         value={capIsoDateYear(value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(error && `${id}-error`)}
         onChange={(e) => onCommit(capIsoDateYear(e.target.value))}
       />
     </FieldShell>
@@ -510,10 +527,11 @@ export function SelectField<T extends string>({
   help,
   learn,
   source,
+  path,
   value,
   options,
   onCommit,
-  describedBy,
+  describedBy: describedById,
   placeholder,
 }: BaseProps & {
   /** `''` renders the placeholder (when given) as an explicit not-yet-answered state. */
@@ -531,13 +549,15 @@ export function SelectField<T extends string>({
   placeholder?: string
 }) {
   const id = useId()
+  const error = useFieldIssue(path)?.advice ?? null
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
       <select
         id={id}
         value={value}
         required={placeholder !== undefined}
-        aria-describedby={describedBy}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(describedById, error && `${id}-error`)}
         title={options.find((o) => o.value === value)?.label ?? placeholder}
         onChange={(e) => {
           const v = e.target.value
