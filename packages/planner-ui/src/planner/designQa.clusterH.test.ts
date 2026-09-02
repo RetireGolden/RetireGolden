@@ -70,9 +70,11 @@ function rule(selector: string, source = css): string {
 
 describe('row head with a wrapping title (#526)', () => {
   it('aligns the title and its Remove control on the first baseline, not the centre of a wrapped block', () => {
-    const head = rule('.item-row-head')
-    expect(head).toMatch(/align-items: baseline;/)
-    expect(head).not.toMatch(/align-items: center;/)
+    // Only a head that holds a title: the class also heads cards whose h2
+    // sits beside a button or a checkbox (Monte Carlo, Scenarios), and those
+    // keep centring rather than picking up an alignment they never asked for.
+    expect(rule('.item-row-head')).toMatch(/align-items: center;/)
+    expect(rule('.item-row-head:has(> .item-row-title)')).toMatch(/^\s*align-items: baseline;\s*$/)
     // The head's baseline is its first item's, the title's, whose baseline is
     // its chip's: centred, the chip beside a two-line title sat between the
     // lines and took Remove with it, so the title is baseline-aligned too.

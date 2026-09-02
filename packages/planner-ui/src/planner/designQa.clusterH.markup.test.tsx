@@ -1,12 +1,17 @@
 /** @vitest-environment jsdom */
 /**
- * Markup half of Design-QA cluster H (#489, #511, #512, #523, #526, #553):
- * the six walks that each paired a raw engine issue with a layout or copy
- * item. The validation chrome (#539, #543, #547) already places what the
- * engine rejects at its field; these pin that for every value the walks
- * typed, with real `parsePlan` issues rather than hand-written strings, and
- * cover the one field the chrome missed (the capital-loss carryforward, #553).
- * The stylesheet half is designQa.clusterH.test.ts.
+ * Markup half of Design-QA cluster H (#511, #512, #523, #526, #553): the
+ * walks that each paired a raw engine issue with a layout or copy item. The
+ * validation chrome (#539, #543, #547) already places what the engine rejects
+ * at its field; these pin that for every value the walks typed, with real
+ * `parsePlan` issues rather than hand-written strings, and cover the one
+ * field the chrome missed (the capital-loss carryforward, #553). The
+ * stylesheet half is designQa.clusterH.test.ts.
+ *
+ * The cluster's sixth walk, Insurance (#489), is not re-pinned here: the
+ * empty illustration schedule is covered in validationChrome.test.tsx, and
+ * schedule-row and care-event uniqueness plus the plural stress copy in
+ * designQa.clusterC.markup.test.tsx and sectionHelpers.insurance.test.ts.
  */
 import { act, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -245,11 +250,20 @@ describe('Spending (#526)', () => {
     expect(host.querySelector('#plan-issues-spending')!.textContent).not.toContain('Invalid input')
   })
 
-  it('typing 99.5 is flagged while typing and commits nothing', async () => {
-    const host = await mount(validPlan(), <SpendingSection />)
+  it('typing 99.5 is flagged while typing and commits nothing; leaving restores the stored multiplier', async () => {
+    const plan = validPlan()
+    const stored = plan.expenses.phases[0]!.multiplier
+    const host = await mount(plan, <SpendingSection />)
     const multiplier = controlAt(host, 'expenses.phases.0.multiplier')
     await typeInto(multiplier, '99.5')
+    expect(multiplier.getAttribute('aria-invalid')).toBe('true')
     expect(errorOf(multiplier)).toBe('Must be at most 3')
+    // Nothing reached the plan: the field shows the stored value again, and
+    // the row title (which reads the plan) never changed.
+    await leave(multiplier)
+    expect(multiplier.value).toBe(String(stored))
+    expect(multiplier.hasAttribute('aria-invalid')).toBe(false)
+    expect(noteOf(multiplier)).toBe('Not kept: 99.5 is above the highest allowed, 3')
   })
 
   it('a long goal label stays in the row title, with Remove its only sibling in the head', async () => {

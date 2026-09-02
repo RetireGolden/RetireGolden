@@ -1013,16 +1013,22 @@
   margin-bottom: 0.8rem;
 }
 
-/* Title and Remove sit on the first line's baseline. A long title (a goal
-   label, #526) wraps inside its own box rather than pushing the control out
-   of the row or, when the head centred its children, sliding the control
-   to the middle of a two-line block. */
 .item-row-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.6rem;
+}
+
+/* An item row's head: a chip-and-text title beside Remove. The two sit on
+   the first line's baseline, so a long title (a goal label, #526) wraps
+   inside its own box rather than pushing the control out of the row or,
+   centred, sliding it to the middle of a two-line block. Scoped to heads
+   that hold a title: the same class also heads a card with an h2 beside a
+   button or a checkbox (Monte Carlo, Scenarios), which keeps centring. */
+.item-row-head:has(> .item-row-title) {
+  align-items: baseline;
 }
 
 .item-row-head > .btn-ghost {
