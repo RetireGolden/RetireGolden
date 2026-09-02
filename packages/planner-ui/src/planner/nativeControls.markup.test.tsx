@@ -103,7 +103,9 @@ describe('Strategy bracket target (#451)', () => {
     expect(field, 'a field labelled exactly "Bracket"').toBeDefined()
     const select = field!.querySelector('select')
     expect(select, 'the bracket control is a select of the published rates').not.toBeNull()
-    expect([...select!.options].filter((o) => !o.disabled).every((o) => o.textContent?.endsWith('%'))).toBe(true)
+    // Each option leads with its own rate and unit; the top bracket then says
+    // what it does, since there is nothing above it to fill (#508 review r1-2).
+    expect([...select!.options].filter((o) => !o.disabled).map((o) => /^\d+(\.\d+)?%/.test(o.textContent ?? ''))).not.toContain(false)
     expect(el.textContent).not.toContain('Bracket (%)')
   })
 })

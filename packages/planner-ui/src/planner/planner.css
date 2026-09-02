@@ -839,6 +839,31 @@
   .form-grid > .field-with-action > button {
     margin-top: -0.45rem;
   }
+
+  /* A field showing a message has a THIRD child — the engine's error, the
+     not-kept note, or a plausibility warning — so the two-child selectors above
+     skip it and it used to lay out as an ordinary block spanning both tracks.
+     A spanning block's height is distributed across the tracks it spans, so it
+     inflated the label track for its whole row and then sat at the top of it
+     while its neighbours bottom-aligned: measured 578px against 623px for its
+     two row-mates at 1024, with an inflation warning showing (#495 D1).
+     Subgridding the same two tracks lines all three back up; the message takes
+     an implicit row inside them and stays inside the field's box, so nothing
+     below it moves. Scoped to exactly three children, and never to the
+     hand-built full-row schedule block (`[role='group']`, `.field-span-full`),
+     whose own children are rows rather than a label and a control. */
+  .form-grid > .field:not([role='group']):not(.field-span-full):has(> :nth-child(3)):not(:has(> :nth-child(4))) {
+    display: grid;
+    grid-template-rows: subgrid;
+  }
+
+  .form-grid > .field:not([role='group']):not(.field-span-full):has(> :nth-child(3)):not(:has(> :nth-child(4))) > :first-child {
+    align-self: end;
+  }
+
+  .form-grid > .field:not([role='group']):not(.field-span-full):has(> :nth-child(3)):not(:has(> :nth-child(4))) > :nth-child(2) {
+    margin-top: -0.45rem;
+  }
 }
 
 /* A compound field (input + actions) that keeps the grid rhythm: two

@@ -30,15 +30,33 @@ export interface BracketOption {
 }
 
 /**
- * The select's options for `year`. A plan that already holds a rate the pack
- * does not publish (an older plan, or a hand-edited import) keeps its value
- * visible as its own option, marked, so the field shows what is stored and the
- * engine's message beside it says why it is refused — rather than the control
- * appearing blank with no explanation of what it lost.
+ * The select's options for `year`.
+ *
+ * Two options carry a marker instead of a bare percentage, so what the choice
+ * does is visible at the point of choosing:
+ *
+ * - The HIGHEST published rate is open-ended — there is no bracket above it, so
+ *   there is no threshold to fill up to. `ceilingFor` returns no ceiling for it
+ *   (`strategies/rothConversion.ts`: "unknown rate or open-ended top bracket"),
+ *   the projection makes no conversion, and Results carries the modeling note
+ *   "The Roth-conversion target is invalid for this plan (unknown bracket or
+ *   tier); no conversion made." The #495 D6 decision was that a bracket target
+ *   must be one of the published rates, and the top rate is one, so it stays
+ *   selectable and parse-valid — it is labelled rather than removed (review
+ *   r1-2, r1-4).
+ * - A rate the pack does not publish at all can still arrive in a stored plan
+ *   (an older plan, or a hand-edited import). It keeps its value visible as its
+ *   own marked option, so the field shows what is stored with the engine's
+ *   message beside it, rather than appearing blank with no account of what it
+ *   lost.
  */
 export function bracketOptions(year: number, current: number | null): BracketOption[] {
   const rates = publishedBracketRatesPct(year)
-  const options = rates.map((rate) => ({ value: String(rate), label: `${rate}%` }))
+  const top = rates[rates.length - 1]
+  const options = rates.map((rate) => ({
+    value: String(rate),
+    label: rate === top ? `${rate}% (top bracket — nothing above it to fill)` : `${rate}%`,
+  }))
   if (current !== null && !rates.includes(current)) {
     options.push({ value: String(current), label: `${current}% (not a published rate)` })
   }

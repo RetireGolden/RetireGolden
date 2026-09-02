@@ -8,6 +8,8 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { WILDCARD, wiredFieldPaths } from '../testSupport/wiredFieldPaths'
+import { boundsKey } from './schemaBounds'
 import { displayScaleFor } from './validationIssues'
 import { bandForPath, warningFor, warnedPaths, WARNING_THRESHOLDS } from './warnings'
 
@@ -34,6 +36,21 @@ describe('the thresholds are the ones decided on #495', () => {
     expect(bandForPath('expenses.phases.1.multiplier')).toBe('phaseZero')
     expect(bandForPath('expenses.oneTimeGoals.0.year')).toBe('pastYear')
     expect(bandForPath('household.people.0.retirementAge')).toBeUndefined()
+  })
+
+  it('every band entry names a path a field is actually wired to', () => {
+    // A band entry for a control that passes no `path` prop is dead: the field
+    // renders, the value stores, and the note never appears (review r1-3). The
+    // scanner is the same one the bounds drift guard uses, so the two suites
+    // agree on what "wired" means.
+    const wired = wiredFieldPaths().map((path) => boundsKey(path).split('.'))
+    const isWired = (path: string): boolean => {
+      const want = path.split('.')
+      return wired.some(
+        (got) => got.length === want.length && got.every((segment, i) => segment === WILDCARD || segment === want[i]),
+      )
+    }
+    for (const path of warnedPaths()) expect(isWired(path), `${path} has no field wired to it`).toBe(true)
   })
 
   it('no warned path is shown in a different unit from the one the plan stores', () => {

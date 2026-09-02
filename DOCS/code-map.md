@@ -111,10 +111,14 @@ module"),
 `@retiregolden/planner-ui/index.css`), plus the `staticGuards` / `tokenContrast` / `appShell.smoke` /
 `appShell.theme` test files. The Design-QA chrome pins live beside the planner as
 `planner/designQa.*.test.ts` (`chrome`, `clusterA`, `clusterB`, `clusterC`, `clusterE`, `clusterF`,
-`clusterH`, `clusterI`, `validation`): each reads the stylesheet block its cluster appended rather than
-rendering it, since jsdom computes no layout. A cluster's rendered checks sit in a sibling file named for
-what they render: `designQa.clusterC.markup.test.tsx`, `designQa.clusterH.markup.test.tsx` and
-`designQa.clusterI.markup.test.tsx` (markup) and `designQa.clusterE.dom.test.tsx` (DOM). The list is by hand; `ls planner/designQa.*` is the truth.
+`clusterH`, `clusterI`, `clusterJ`, `decisions`, `validation`): each reads the stylesheet block its cluster
+appended rather than rendering it, since jsdom computes no layout. A cluster's rendered checks sit in a
+sibling file named for what they render: `designQa.clusterC.markup.test.tsx`,
+`designQa.clusterH.markup.test.tsx`, `designQa.clusterI.markup.test.tsx` and
+`designQa.decisions.markup.test.tsx` (markup) and `designQa.clusterE.dom.test.tsx` (DOM).
+`designQa.decisions.*` is the odd one out: it pins the product decisions answered on #495 (the field
+warning thresholds in `planner/warnings.ts`, the one fixed form-grid column rhythm, the fill-to-target
+bracket select) rather than one QA walk's stylesheet block. The list is by hand; `ls planner/designQa.*` is the truth.
 
 | Folder (`src/`) | What's here |
 |--------|-------------|

@@ -97,7 +97,7 @@ export function AccountEditorShell({
         onCommit={onCommit}
         onEstimate={() => setEstimating(true)}
       />
-      <ContributionFields account={account} onCommit={onCommit} />
+      <ContributionFields account={account} index={index} onCommit={onCommit} />
       <EstateBeneficiaryFields account={account} index={index} onCommit={onCommit} />
       {estimating ? (
         <ReturnEstimatorModal
@@ -137,6 +137,7 @@ function InvestmentFields({
             label="Expected return"
             help="Average annual nominal growth for this account. Leave blank to use the plan-wide default from Assumptions, or click Calculate to estimate it from how the account is invested."
             hint="Blank = default assumption."
+            path={`accounts.${index}.annualReturnPct`}
             value={account.annualReturnPct}
             allowNull
             onCommit={(value) => onCommit('annualReturnPct', value)}
@@ -176,9 +177,11 @@ function InvestmentFields({
 
 function ContributionFields({
   account,
+  index,
   onCommit,
 }: {
   account: Account
+  index: number
   onCommit: CommitAccountField
 }) {
   if (inheritedContributionsBlocked(account)) {
@@ -272,6 +275,7 @@ function ContributionFields({
         <MoneyField
           label="Annual contribution"
           hint="While the owner has wages; IRS caps applied."
+          path={`accounts.${index}.annualContribution`}
           value={account.annualContribution}
           onCommit={(value) => onCommit('annualContribution', value ?? 0)}
         />

@@ -32,6 +32,7 @@ export function PropertyAccountEditor({
         label="Cost basis"
         help="What you paid for the property plus improvements (not inflation-adjusted). Set this to have the sale taxed exactly: capital-gains tax on the gain above basis, net of selling costs, minus the primary-residence exclusion. Leave blank to fall back to the simple tax-free 'expected net proceeds' estimate below."
         hint="Blank = use expected net proceeds (tax-free)."
+        path={`accounts.${index}.costBasis`}
         value={account.costBasis ?? null}
         allowNull
         onCommit={(v) => onCommit('costBasis', v ?? undefined)}

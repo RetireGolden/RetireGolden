@@ -269,7 +269,7 @@ export function StrategySection() {
                  pack, which is the year the engine validates against. */
               <SelectField
                 label="Bracket"
-                help="Convert just enough each year to fill ordinary income to the top of this bracket. Only the published rates are offered — a rate that is not in the tax tables names no ceiling."
+                help="Convert just enough each year to fill ordinary income to the top of this bracket. The top bracket is open-ended, so there is nothing above it to fill: choosing it converts nothing, and Results says so under Modeling notes."
                 learn={LEARN.marginalVsEffective}
                 path="strategies.rothConversion.targetValue"
                 value={rc.targetValue === null ? '' : String(rc.targetValue)}

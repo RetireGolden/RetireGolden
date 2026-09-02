@@ -9,11 +9,12 @@ import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { parsePlan, type Plan } from '@retiregolden/engine/model/plan'
+import { parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import { packForYear } from '@retiregolden/engine/params'
 
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { PlanCtx } from './planContextCore'
+import { AccountFields } from './sections/AccountFields'
 import { AssumptionsSection } from './sections/AssumptionsSection'
 import { SpendingSection } from './sections/SpendingSection'
 import { StrategySection } from './sections/StrategySection'
@@ -106,7 +107,7 @@ describe('D7 (#545): a spending phase that spends nothing', () => {
 })
 
 describe('D3 (#548, #524, #553): magnitudes', () => {
-  it('notes a balance at or above $100 million and a SALT figure above $1 million', async () => {
+  it('notes a SALT figure above $1 million and leaves its sibling alone', async () => {
     const host = await mount(
       validPlan((plan) => {
         plan.strategies.itemizedDeductions = { stateAndLocalTaxes: 99_999_999, mortgageInterest: 0, charitable: 0 }
@@ -117,6 +118,54 @@ describe('D3 (#548, #524, #553): magnitudes', () => {
       'Above $1 million, which is unusual for a deduction. Kept as entered.',
     )
     expect(warningOf(host, 'strategies.itemizedDeductions.mortgageInterest')).toBeNull()
+  })
+
+  it.each([
+    [999_999_999_999, 'At or above $100 million, which is unusual. Kept as entered.'],
+    [100_000_000, 'At or above $100 million, which is unusual. Kept as entered.'],
+    [99_999_999, null],
+    [90_000, null],
+  ])('a cash balance of %s notes %s (#548)', async (balance, expected) => {
+    const cash: Account = {
+      type: 'cash',
+      id: 'cash',
+      name: 'Savings',
+      ownerPersonId: null,
+      annualReturnPct: null,
+      balance,
+      annualContribution: 0,
+    }
+    const host = await mount(
+      validPlan((plan) => void (plan.accounts = [cash])),
+      <AccountFields account={cash} index={0} />,
+    )
+    expect(warningOf(host, 'accounts.0.balance')?.textContent ?? null).toBe(expected)
+  })
+})
+
+describe('D4 (#545, #524): a calendar year before the plan starts', () => {
+  it('notes a goal year in the past at the field, and says nothing about a future one', async () => {
+    // The band reads the current calendar year, which is what the projection
+    // starts from (`currentStartYear` in projection.ts), so the fixture is
+    // written relative to it rather than to a frozen year.
+    const thisYear = new Date().getFullYear()
+    const host = await mount(
+      validPlan((plan) => {
+        plan.expenses.oneTimeGoals = [
+          { id: 'past', label: 'Kitchen', year: thisYear - 6, amount: 40_000, classification: 'target' },
+          { id: 'ahead', label: 'Roof', year: thisYear + 4, amount: 20_000, classification: 'target' },
+        ]
+      }),
+      <SpendingSection />,
+    )
+    expect(warningOf(host, 'expenses.oneTimeGoals.0.year')?.textContent).toBe(
+      `Before this plan's first year (${thisYear}). Kept as entered.`,
+    )
+    expect(warningOf(host, 'expenses.oneTimeGoals.1.year')).toBeNull()
+    // Still stored, still valid: the note is not a refusal (#495 D4).
+    const input = host.querySelector<HTMLInputElement>('[data-path="expenses.oneTimeGoals.0.year"]')!
+    expect(input.value).toBe(String(thisYear - 6))
+    expect(input.getAttribute('aria-invalid')).toBeNull()
   })
 })
 
@@ -145,13 +194,37 @@ describe('D6 (#508): the fill-to-target bracket is chosen, not typed', () => {
     }
   }
 
-  it('offers exactly the rates the pack publishes for the window year', async () => {
+  it('offers exactly the rates the pack publishes for the window year, marking the open-ended top one', async () => {
     const host = await mount(validPlan(fillToTarget), <StrategySection />)
     const select = host.querySelector<HTMLSelectElement>('select[data-path="strategies.rothConversion.targetValue"]')
     expect(select, 'the bracket control is a select').not.toBeNull()
-    const published = packForYear(2026).pack.federalTax.brackets.single.map((b) => `${b.ratePct}%`)
-    expect([...select!.options].filter((o) => !o.disabled).map((o) => o.textContent)).toEqual(published)
+    const rates = packForYear(2026).pack.federalTax.brackets.single.map((b) => b.ratePct)
+    const top = rates[rates.length - 1]!
+    expect([...select!.options].filter((o) => !o.disabled).map((o) => o.textContent)).toEqual(
+      rates.map((rate) => (rate === top ? `${rate}% (top bracket — nothing above it to fill)` : `${rate}%`)),
+    )
     expect(select!.value).toBe('22')
+  })
+
+  it('every rate the select offers is a rate the engine accepts, so the two lists cannot drift', async () => {
+    // `publishedBracketRatesPct` exists in the engine (inside parsePlan) and
+    // again in bracketOptions.ts, because the engine helper is deliberately not
+    // exported this release. This asserts the two agree end to end rather than
+    // restating either implementation (review r1-9).
+    const host = await mount(validPlan(fillToTarget), <StrategySection />)
+    const select = host.querySelector<HTMLSelectElement>('select[data-path="strategies.rothConversion.targetValue"]')!
+    const offered = [...select.options].filter((o) => !o.disabled).map((o) => Number(o.value))
+    expect(offered.length).toBeGreaterThan(0)
+    for (const rate of offered) {
+      const plan = validPlan(fillToTarget)
+      ;(plan.strategies.rothConversion as { targetValue: number }).targetValue = rate
+      expect(parsePlan(plan).ok, `${rate}% is offered but the engine refuses it`).toBe(true)
+    }
+    // And a rate between two offered ones is refused by both sides.
+    const between = validPlan(fillToTarget)
+    ;(between.strategies.rothConversion as { targetValue: number }).targetValue = offered[0]! + 0.5
+    expect(parsePlan(between).ok).toBe(false)
+    expect(offered).not.toContain(offered[0]! + 0.5)
   })
 
   it('keeps a stored rate the pack does not publish visible, marked, beside the engine message', async () => {
@@ -163,14 +236,14 @@ describe('D6 (#508): the fill-to-target bracket is chosen, not typed', () => {
     const host = await mount(
       stored,
       <StrategySection />,
-      ['strategies.rothConversion.targetValue: a bracket target must be one of the published 2026 rates (10, 12, 22, 24, 32, 35, 37)'],
+      ['strategies.rothConversion.targetValue: a bracket target must be one of the published rates (10, 12, 22, 24, 32, 35, 37)'],
     )
     const select = host.querySelector<HTMLSelectElement>('select[data-path="strategies.rothConversion.targetValue"]')!
     expect(select.value).toBe('37.5')
     expect([...select.options].map((o) => o.textContent)).toContain('37.5% (not a published rate)')
     expect(select.getAttribute('aria-invalid')).toBe('true')
     expect(select.closest('.field')!.querySelector('.field-error')?.textContent).toContain(
-      'a bracket target must be one of the published 2026 rates',
+      'a bracket target must be one of the published rates',
     )
   })
 

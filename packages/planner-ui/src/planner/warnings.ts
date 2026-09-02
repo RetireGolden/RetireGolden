@@ -1,6 +1,7 @@
 /**
- * Plausibility warnings beside a field (#465 decision list D1, D2, D3, D7 and
- * the past-year half of D4, answered on #495 on 2026-09-02).
+ * Plausibility warnings beside a field: decisions D1, D2, D3, D7 and the
+ * past-year half of D4 from the list on #495, answered there on 2026-09-02.
+ * (#465 is D9, the grid rhythm, and is not this module.)
  *
  * The engine decides what is VALID; `validationIssues.ts` reports what it
  * refused. This module is the other half: a value the engine accepts but that
@@ -104,6 +105,7 @@ const BAND_BY_PATH: Readonly<Record<string, Band>> = {
   'assumptions.defaultReturnPct': 'rate30',
   'assumptions.ssCola.annualPct': 'rate30',
   'accounts.N.colaPct': 'rate30',
+  'accounts.N.annualReturnPct': 'rate30',
   'incomes.N.realGrowthPct': 'rate30',
   ...Object.fromEntries(classPaths('returnPct').map((p) => [p, 'rate30' as const])),
 
@@ -122,6 +124,7 @@ const BAND_BY_PATH: Readonly<Record<string, Band>> = {
   'accounts.N.balance': 'amount100m',
   'accounts.N.value': 'amount100m',
   'accounts.N.costBasis': 'amount100m',
+  'accounts.N.annualContribution': 'amount100m',
   'accounts.N.monthlyAmount': 'amount100m',
   'accounts.N.monthlyPayment': 'amount100m',
   'assumptions.recentAnnualMagi': 'amount100m',
@@ -155,6 +158,16 @@ const BAND_BY_PATH: Readonly<Record<string, Band>> = {
   'expenses.phases.N.multiplier': 'phaseZero',
 
   // D4 — a calendar year before the plan's first projected year.
+  //
+  // A known and accepted cost: a rental that began in 2015, or a move that
+  // already happened, is legitimate history, and its field carries this note
+  // for as long as it holds that year (review r1-5). The decision took that
+  // trade knowingly — these are exactly the fields the #495 list enumerated —
+  // because the same entry is far more often a typo (a goal in 1999, a stream
+  // ending in 2020) than a record of the past, and nothing is refused either
+  // way. Narrowing it would need a way to tell "already happened" from
+  // "mistyped", which the plan does not carry; that is a product question,
+  // not something to guess at here.
   'expenses.oneTimeGoals.N.year': 'pastYear',
   'expenses.oneTimeGoals.N.earliestYear': 'pastYear',
   'expenses.oneTimeGoals.N.latestYear': 'pastYear',
@@ -166,9 +179,16 @@ const BAND_BY_PATH: Readonly<Record<string, Band>> = {
 
 export interface WarningContext {
   /**
-   * The plan's first projected year. The projection starts in the current
-   * calendar year (`currentStartYear` in projection.ts); it is a parameter so
-   * a test can pin a year rather than depend on the clock.
+   * The plan's first projected year.
+   *
+   * The fields do not pass one, and that is not an omission: the projection's
+   * first year IS the current calendar year — `currentStartYear` in
+   * `planner-ui/src/projection.ts` is `new Date().getFullYear()`, and
+   * `projectPlan` defaults to it — so the fallback below is the same number,
+   * read the same way, without dragging the projection module (and the engine
+   * simulation it imports) into every field component. The parameter exists so
+   * a test can pin a year instead of depending on the clock, and so this stays
+   * a one-line change if the projection ever starts somewhere else.
    */
   startYear?: number
 }

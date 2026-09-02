@@ -3263,10 +3263,15 @@ export const planSchema = z
       if (rothConversion.target === 'topOfBracket') {
         const rates = publishedBracketRatesPct(taxYear)
         if (targetValue === null || !rates.includes(targetValue)) {
+          // No year is named: beyond the last published pack `packForYear`
+          // stands in with the latest one, so calling these "the 2050 rates"
+          // would assert a publication that has not happened (review r1-8).
+          // The rate ladder itself is not indexed — only the bounds are — so
+          // the set is the same list whichever year stands in.
           ctx.addIssue({
             code: 'custom',
             path: targetPath,
-            message: `a bracket target must be one of the published ${taxYear} rates (${rates.join(', ')})`,
+            message: `a bracket target must be one of the published rates (${rates.join(', ')})`,
           })
         }
       } else if (rothConversion.target === 'irmaaTier') {

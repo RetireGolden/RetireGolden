@@ -20,13 +20,20 @@ Two modes:
 2. **Fill-to-target strategy** — `sizeRothConversion` bisects each year's conversion up to a chosen
    ceiling: top of a tax bracket (12/22/24…), an IRMAA tier edge, the ACA 400% FPL cliff, or a fixed MAGI.
 
-   The window and the target are validated by `planSchema`, because only a value `ceilingFor` can turn
-   into a ceiling does anything at all — anything else converts nothing and says nothing about why.
-   `endYear` may not precede `startYear`; a `topOfBracket` target must be one of the rate percentages the
-   parameter pack publishes for the window's first year (`irc-1-j-2-progressive-ordinary-rate-schedule`);
-   an `irmaaTier` target must be a whole number inside the pack's tier table
-   (`usc-42-1395r-i-irmaa-applicable-percentage`); a `fixedMagi` target may not be negative. The planner
-   offers the published rates as a select rather than a free number box.
+   The window and the target are validated by `planSchema`: `endYear` may not precede `startYear`; a
+   `topOfBracket` target must be one of the rate percentages the parameter pack publishes for the window's
+   first year (`irc-1-j-2-progressive-ordinary-rate-schedule`); an `irmaaTier` target must be a whole number
+   inside the pack's tier table (`usc-42-1395r-i-irmaa-applicable-percentage`); a `fixedMagi` target may not
+   be negative. The planner offers the published rates as a select rather than a free number box.
+
+   Schema validity is **narrower** than what `ceilingFor` can price, and deliberately so — the schema
+   encodes the published tables, not the sizing function's domain. Two accepted values name no ceiling: the
+   highest published rate (the top bracket is open-ended, so there is nothing above it to fill) and a
+   `fixedMagi` of exactly 0. Both make no conversion and both report it — `sizeRothConversion` returns
+   `bad_target`, which the annual pass turns into the projection warning "The Roth-conversion target is
+   invalid for this plan (unknown bracket or tier); no conversion made", shown on Results under Modeling
+   notes. The bracket select labels the top rate accordingly. Whether the schema should refuse those two
+   outright is a product question, not a described behaviour.
 
 Both are **aggregate**: a schedule is a year and a household amount, and nothing else. A named `rothConversion`
 retirement action is the identity-bearing path — it names the owner, the source accounts, and the destination

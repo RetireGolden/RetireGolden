@@ -90,8 +90,12 @@ describe('recurring income window (#524, decision D5)', () => {
   })
 
   it('does not reach a wages or one-time stream, which carry no such pair', () => {
+    // Wages are bounded by an age, not a year pair, and a one-time stream has a
+    // single year, so neither can be inverted and neither may be refused here.
     const plan = basePlan()
+    const personId = plan.household.people[0]!.id
     plan.incomes = [
+      { type: 'wages', id: 'job', personId, annualGross: 120_000, endAge: 65, realGrowthPct: 1 },
       { type: 'oneTime', id: 'sale', label: 'Sale', year: 2030, inflationAdjusted: false, amount: 50_000, taxTreatment: 'capitalGain' },
     ]
     expect(issuesOf(plan)).toEqual([])
@@ -148,7 +152,7 @@ describe('Roth fill-to-target value by target kind (#508, decision D6)', () => {
   ])('refuses %s%%, which the statute does not publish as a bracket rate', (rate) => {
     const issues = issuesOf(withFillToTarget('topOfBracket', rate))
     expect(issues).toContain(
-      `strategies.rothConversion.targetValue: a bracket target must be one of the published ${TAX_YEAR} rates (10, 12, 22, 24, 32, 35, 37)`,
+      'strategies.rothConversion.targetValue: a bracket target must be one of the published rates (10, 12, 22, 24, 32, 35, 37)',
     )
   })
 

@@ -29,7 +29,7 @@ function accountTypeFields(
     case 'taxable':
       return <TaxableAccountEditor account={account} index={index} onCommit={onCommit} />
     case 'equityComp':
-      return <EquityCompAccountEditor account={account} onCommit={onCommit} />
+      return <EquityCompAccountEditor account={account} index={index} onCommit={onCommit} />
     case 'cash':
       return null
     case 'traditional':

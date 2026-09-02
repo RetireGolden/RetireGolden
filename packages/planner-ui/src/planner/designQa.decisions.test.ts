@@ -95,10 +95,29 @@ describe('D1, D2, D3, D7, D4 (#495): the soft warning is a note, never a fault',
     expect(fields).toMatch(/error \? `\$\{id\}-error` : adjustedNote \? `\$\{id\}-note` : warning && `\$\{id\}-warning`/)
   })
 
+  // Measured at 1024 on /plan/:id/assumptions with an inflation warning showing.
+  // Before: the warning's field laid out as a block spanning both tracks, which
+  // inflated the row's label track and left its label at 578px while its two
+  // row-mates sat at 623px, controls 606 vs 644. After: 578/599 on all three,
+  // and the warning stays inside the field's box (bottom 683 on all three).
+  it('a field showing a message subgrids the same two tracks as its neighbours', () => {
+    const supports = css.slice(css.indexOf('@supports (grid-template-rows: subgrid)'))
+    expect(supports.length).toBeGreaterThan(0)
+    const messaged = ".form-grid > .field:not([role='group']):not(.field-span-full):has(> :nth-child(3)):not(:has(> :nth-child(4)))"
+    expect(rule(messaged, supports)).toMatch(/display:\s*grid/)
+    expect(rule(messaged, supports)).toMatch(/grid-template-rows:\s*subgrid/)
+    expect(rule(`${messaged} > :first-child`, supports)).toMatch(/align-self:\s*end/)
+    expect(rule(`${messaged} > :nth-child(2)`, supports)).toMatch(/margin-top:\s*-0\.45rem/)
+    // The hand-built full-row schedule block stacks rows, not a label and a
+    // control, so it must stay out of the subgrid (#489's focusable block).
+    expect(messaged).toContain(":not([role='group'])")
+    expect(messaged).toContain(':not(.field-span-full)')
+  })
+
   it('the thresholds carry the decision they came from, so a later edit has to say why', () => {
     const warnings = sheet('./warnings.ts')
     expect(warnings).toContain('#495')
-    expect(warnings).toContain('decision list D1, D2, D3, D7')
+    expect(warnings).toContain('D1, D2, D3, D7')
     expect(warnings).toContain('ratePct: 30')
     expect(warnings).toContain('growthPctMax: 50')
     expect(warnings).toContain('sharePctMax: 100')
