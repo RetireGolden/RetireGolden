@@ -7,6 +7,7 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -23,7 +24,7 @@ const repoDir = execFileSync('git', ['rev-parse', '--show-toplevel'], {
 }).trim()
 const specRepoPath =
   'packages/engine/scripts/equivalence/specs/simulate-qcd-owner-character-boundary.json'
-const equivalence = resolve(engineDir, 'scripts', 'equivalence.mjs')
+const equivalenceRepoPath = 'packages/engine/scripts/equivalence.mjs'
 
 function gitObject(revision) {
   return execFileSync('git', ['rev-parse', revision], {
@@ -47,7 +48,7 @@ function workingTreeBlob(path) {
   }).trim()
 }
 
-function runEquivalence(args) {
+function runEquivalence(equivalence, args) {
   execFileSync(process.execPath, [equivalence, ...args], {
     cwd: repoDir,
     stdio: 'inherit',
@@ -116,8 +117,9 @@ function authenticateHarnessClosure() {
   if (expectedBlobs === undefined || Array.isArray(expectedBlobs)) {
     throw new Error('QCD owner-character proof has no harnessBlobs map')
   }
-  const pending = ['packages/engine/scripts/equivalence.mjs']
+  const pending = [equivalenceRepoPath]
   const seen = new Set()
+  const authenticatedSources = new Map()
   while (pending.length > 0) {
     const path = pending.pop()
     if (seen.has(path)) continue
@@ -129,6 +131,7 @@ function authenticateHarnessClosure() {
     assertEqual(gitObject(`HEAD:${path}`), expected, `${path} committed input`)
     assertEqual(workingTreeBlob(path), expected, `${path} working-tree input`)
     const source = gitText(path)
+    authenticatedSources.set(path, source)
     for (const specifier of localImportSpecifiers(source)) {
       const dependency = resolveLocalImport(path, specifier)
       if (dependency !== null) pending.push(dependency)
@@ -139,10 +142,13 @@ function authenticateHarnessClosure() {
     JSON.stringify(Object.keys(expectedBlobs).sort()),
     'complete transitive harness closure',
   )
+  return authenticatedSources
 }
 
-// Authenticate the complete local harness closure before executing any of it.
-authenticateHarnessClosure()
+// Capture the complete local harness closure from immutable HEAD blobs before
+// executing any of it. The captured sources are materialized below so no child
+// process can race a later edit to the shared working tree.
+const authenticatedHarnessSources = authenticateHarnessClosure()
 
 assertEqual(
   gitObject(`${proof.base.commit}:packages/engine/src`),
@@ -171,6 +177,9 @@ try {
   const baseSrc = join(scratch, 'base-src')
   const headSrc = join(scratch, 'head-src')
   const mutantSrc = join(scratch, 'mutant-src')
+  const harnessRoot = join(scratch, 'harness')
+  const harnessEngineDir = join(harnessRoot, 'packages', 'engine')
+  const authenticatedEquivalence = join(harnessRoot, ...equivalenceRepoPath.split('/'))
   const baseTar = join(scratch, 'base.tar')
   const headTar = join(scratch, 'head.tar')
   const authenticatedSpec = join(scratch, 'spec.json')
@@ -182,6 +191,15 @@ try {
   mkdirSync(baseSrc)
   mkdirSync(headSrc)
   mkdirSync(mutantSrc)
+  for (const [path, source] of authenticatedHarnessSources) {
+    const destination = join(harnessRoot, ...path.split('/'))
+    mkdirSync(dirname(destination), { recursive: true })
+    writeFileSync(destination, source)
+  }
+  // Bare dependencies intentionally come from this exact installed engine
+  // package for both compared trees; preserve that established resolver input
+  // while keeping every local harness module immutable.
+  symlinkSync(resolve(engineDir, 'node_modules'), join(harnessEngineDir, 'node_modules'), 'junction')
   writeFileSync(authenticatedSpec, specBody)
 
   execFileSync(
@@ -211,35 +229,35 @@ try {
   assertEqual(mutationCount, 1, 'section 219 calibration mutation site count')
   writeFileSync(mutantHelper, helperSource.replace(section219Read, 'const section219 = 0'))
 
-  runEquivalence([
+  runEquivalence(authenticatedEquivalence, [
     'corpus',
     '--name', 'blocks',
     '--out', corpus,
     '--engine-src', headSrc,
   ])
-  runEquivalence([
+  runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', mutantDump,
     '--engine-src', mutantSrc,
     '--engine-label', 'calibration-ignore-qcd-section219',
   ])
-  runEquivalence([
+  runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', baseDump,
     '--engine-src', baseSrc,
     '--engine-label', proof.base.engineSourceTree,
   ])
-  runEquivalence([
+  runEquivalence(authenticatedEquivalence, [
     'capture',
     '--corpus', corpus,
     '--out', headDump,
     '--engine-src', headSrc,
     '--engine-label', proof.head.engineSourceTree,
   ])
-  runEquivalence(['compare', '--base', baseDump, '--head', headDump])
-  runEquivalence([
+  runEquivalence(authenticatedEquivalence, ['compare', '--base', baseDump, '--head', headDump])
+  runEquivalence(authenticatedEquivalence, [
     'reach',
     '--corpus', corpus,
     '--spec', authenticatedSpec,

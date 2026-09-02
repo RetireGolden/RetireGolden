@@ -89,7 +89,33 @@ describe('resolveReachSpecEntries', () => {
     )
   })
 
-  it('prefers a valid recorded location over a duplicate elsewhere', () => {
+  it('uses a shared same-file delta to disambiguate a duplicate anchor set', () => {
+    const contextEntry = {
+      id: 'context',
+      file: 'phase.ts',
+      lines: /** @type {[number, number]} */ ([1, 1]),
+      anchors: [{ line: 1, text: 'header' }],
+    }
+    const source = sourceFromRows([
+      'inserted',
+      'header',
+      'const phase = () => {',
+      'return 1',
+      '}',
+      'const phase = () => {',
+      'return 1',
+      '}',
+    ])
+    const [resolvedContext, resolvedPhase] = resolveReachSpecEntries(
+      [contextEntry, baseEntry],
+      'spec.json',
+      () => source,
+    )
+    expect(resolvedContext.lines).toEqual([2, 2])
+    expect(resolvedPhase.lines).toEqual([3, 5])
+  })
+
+  it('does not trust a recorded location when its anchors are duplicated', () => {
     const source = sourceFromRows([
       'header',
       'const phase = () => {',
@@ -99,8 +125,9 @@ describe('resolveReachSpecEntries', () => {
       'return 1',
       '}',
     ])
-    const [resolved] = resolveReachSpecEntries([baseEntry], 'spec.json', () => source)
-    expect(resolved.lines).toEqual([2, 4])
+    expect(() => resolveReachSpecEntries([baseEntry], 'spec.json', () => source)).toThrow(
+      /spec\.json entry "phase" has 2 ambiguous content-anchor matches/u,
+    )
   })
 
   it('fails closed when relative anchor spacing changed inside the block', () => {

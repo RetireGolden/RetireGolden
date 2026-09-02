@@ -50,7 +50,7 @@
  * the domain rules reference (§19, which accepts a KNOWN understatement of a
  * period-certain annuity's estate value rather than pay past the household) and
  * stated for income streams in DOCS/features/README.md §3. Every other HOUSEHOLD
- * flow obeys it: one-time spending GOALS are skipped (`simulate.test.ts`), TIPS
+ * flow obeys it: one-time spending GOALS are skipped (`simulate.rmd-roth.test.ts`), TIPS
  * ladder cash stops (`incomeFloor.test.ts`), wages stop at each person's own
  * death, and lifestyle spending scales to zero.
  *

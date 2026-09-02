@@ -18,5 +18,9 @@
      conformance/freshness suites and the coverage publisher
      (rules-coverage.mjs, via rule-tooling-shared.mjs) only, so it stays out
      of dist like the tests do. */
-  "exclude": ["src/**/*.test.ts", "src/rules/symbolLines.ts"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test-support.ts",
+    "src/rules/symbolLines.ts"
+  ]
 }

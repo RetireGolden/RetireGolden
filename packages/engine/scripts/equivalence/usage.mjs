@@ -38,7 +38,36 @@ export function assertReachSpecSchema(spec, path) {
  *   by the unique matching delta
  */
 export function resolveReachSpecEntries(entries, path, readSource) {
-  return entries.map((entry) => resolveReachSpecEntry(entry, path, readSource))
+  const candidates = entries.map((entry) =>
+    resolveReachSpecEntryCandidates(entry, path, readSource),
+  )
+  const candidatesByFile = Map.groupBy(candidates, (candidate) => candidate.entry.file)
+
+  return candidates.map((candidate) => {
+    if (candidate.validMatches.length === 1) {
+      return applyReachSpecMatch(candidate.entry, candidate.validMatches[0])
+    }
+
+    const fileCandidates = candidatesByFile.get(candidate.entry.file) ?? []
+    const sharedDeltas = candidate.validMatches
+      .map((match) => match.delta)
+      .filter((delta) => fileCandidates.every((peer) =>
+        peer.validMatches.some((match) => match.delta === delta),
+      ))
+    if (sharedDeltas.length === 1) {
+      const sharedMatch = candidate.validMatches.find(
+        (match) => match.delta === sharedDeltas[0],
+      )
+      return applyReachSpecMatch(candidate.entry, sharedMatch)
+    }
+
+    const deltas = [...new Set(candidate.validMatches.map((match) => match.delta))]
+    throw new UsageError(
+      `${path} entry "${candidate.entry.id}" has ${candidate.validMatches.length} ` +
+      `ambiguous content-anchor matches in ${candidate.entry.file} ` +
+      `(deltas ${deltas.join(', ')})`,
+    )
+  })
 }
 
 /**
@@ -87,7 +116,7 @@ export function assertReachEntryAnchors(entries, path, readSource) {
  * @param {string} path
  * @param {(file: string) => string} readSource
  */
-function resolveReachSpecEntry(entry, path, readSource) {
+function resolveReachSpecEntryCandidates(entry, path, readSource) {
   if (!Array.isArray(entry.anchors) || entry.anchors.length === 0) {
     throw new UsageError(
       `${path} entry "${entry.id}" must anchor its positional source range`,
@@ -163,31 +192,7 @@ function resolveReachSpecEntry(entry, path, readSource) {
     validMatches.push({ delta, lines: shiftedLines, anchors: shiftedAnchors })
   }
 
-  const recordedLocation = validMatches.find((match) => match.delta === 0)
-  if (recordedLocation !== undefined) {
-    return {
-      ...entry,
-      lines: recordedLocation.lines,
-      anchors: recordedLocation.anchors,
-    }
-  }
-
-  if (validMatches.length === 1) {
-    const match = validMatches[0]
-    return {
-      ...entry,
-      lines: match.lines,
-      anchors: match.anchors,
-    }
-  }
-
-  if (validMatches.length > 1) {
-    const deltas = [...new Set(validMatches.map((match) => match.delta))]
-    throw new UsageError(
-      `${path} entry "${entry.id}" has ${validMatches.length} ambiguous content-anchor ` +
-      `matches in ${entry.file} (deltas ${deltas.join(', ')})`,
-    )
-  }
+  if (validMatches.length > 0) return { entry, validMatches }
 
   if (textMatchedDeltas.length > 0) {
     throw new UsageError(
@@ -199,6 +204,15 @@ function resolveReachSpecEntry(entry, path, readSource) {
   throw new UsageError(
     `${path} entry "${entry.id}" has inconsistent relative anchor layout in ${entry.file}`,
   )
+}
+
+/** @param {object} entry @param {{lines: [number, number], anchors: object[]}} match */
+function applyReachSpecMatch(entry, match) {
+  return {
+    ...entry,
+    lines: match.lines,
+    anchors: match.anchors,
+  }
 }
 
 /**
