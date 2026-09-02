@@ -191,7 +191,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
           <details>
             <summary>Buy-list (planning-grade)</summary>
             <ScrollRegion label={`Buy-list: ${ladder.name}`}>
-              <table className="year-table">
+              <table className="year-table year-table--plain">
                 <thead>
                   <tr>
                     <th scope="col">Matures</th>
@@ -373,7 +373,7 @@ export function LivePricesCard() {
             </button>
           ) : null}
           <ScrollRegion label="Nearest real TIPS per rung" grow style={{ border: 'none' }}>
-            <table className="year-table">
+            <table className="year-table year-table--plain">
               <thead>
                 <tr>
                   <th scope="col">Rung year</th>

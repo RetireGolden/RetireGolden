@@ -118,15 +118,18 @@ analyzer does not sort them: an account whose amount cell is blank (`I-bonds,`) 
 Market" a footer. Every such row is *set aside*: the map step counts and lists each by source row and
 text cells next to the data-row count, and the draft lists each as a skipped item led by its row
 number with a conditional remediation (a note needs nothing; an account with a missing amount can be
-entered on the Accounts screen). Row numbers are spreadsheet rows (`parseCsv` reports where each kept
-row began: blank separator lines count, a line break inside a quoted cell does not, as in Excel or
-Sheets), which is what the person sees beside the row. Every list is capped (`MAX_SET_ASIDE_LISTED` on
-the map step and in failure messages, `MAX_SET_ASIDE_ITEMS` per-row checklist entries) with an "and N
-more" tail that adds "(rows a to b)" only when the rest sit together, and each echoed cell is bounded
-(`MAX_CELL_PREVIEW_CHARS`, ellipsis past it), so a sheet of thousands of note lines or a megabyte cell
-is still counted without becoming that much DOM. When nothing maps, the failure message still names
-the set-aside rows; a sheet whose header has no dollar value below it fails with a message that names
-its rows too, calling the row a header only when its labels named columns the analyzer recognises.
+entered on the Accounts screen). Row numbers are spreadsheet rows: `parseCsv` reports where each kept
+row began (`sourceLines`: blank separator lines count, a line break inside a quoted cell does not, as
+in Excel or Sheets), which is what the person sees beside the row, and both the generic and the broker
+importers build their `csvRow` locators from it, so a row number means the same thing whichever mapper
+produced it. Every list is capped (`MAX_SET_ASIDE_LISTED` on the map step and in failure messages,
+`MAX_SET_ASIDE_ITEMS` per-row checklist entries) with an "and N more" tail that adds "(rows a to b)"
+only when the rest sit together, and each row preview is bounded twice (`MAX_CELL_PREVIEW_CHARS` per
+cell, `MAX_CELLS_PREVIEWED` cells per row, an ellipsis past either), so a sheet of thousands of note
+lines, a megabyte cell, or a hundred-column row is still counted without becoming that much DOM. When
+nothing maps, the failure message still names the set-aside rows; a sheet whose header has no dollar
+value below it fails with a message that names every other row, above the header as well as below,
+calling the row a header only when its labels named columns the analyzer recognises.
 
 ### 1040 guided seed — `tenForty.ts`
 

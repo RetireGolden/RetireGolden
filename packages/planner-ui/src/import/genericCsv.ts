@@ -33,9 +33,9 @@ export interface GenericCsvAnalysis {
   /** One guessed role per header column; the wizard lets the user override. */
   guessedRoles: ColumnRole[]
   /**
-   * 1-based source line for each `dataRows` entry: the row number a person
-   * sees in their spreadsheet, counting blank lines and quoted line breaks
-   * (`parseCsv`'s `sourceLines`). Additive/optional so a hand-built analysis
+   * 1-based spreadsheet row for each `dataRows` entry: the number a person
+   * sees beside the row (`parseCsv`'s `sourceLines`: blank lines count, a
+   * line break inside a quoted cell does not). Additive/optional so a hand-built analysis
    * stays valid; when absent, locators fall back to a header-relative estimate.
    */
   dataRowNumbers?: number[]
@@ -43,7 +43,7 @@ export interface GenericCsvAnalysis {
    * Rows below the header that carry text but no money-ish cell anywhere: a
    * balance typed as words, an account whose amount cell is blank, a note or
    * footer line. The analyzer cannot tell those apart, so it sorts none of
-   * them: every one is set aside here, shown on the map step by source row,
+   * them: every one is set aside here, shown on the map step by spreadsheet row,
    * and reported as skipped by `draftPlanFromGenericCsv` — never dropped in
    * silence (#557). Additive so a hand-built analysis stays valid.
    */
@@ -51,7 +51,7 @@ export interface GenericCsvAnalysis {
 }
 
 export interface SkippedCsvRow {
-  /** 1-based source line, like `dataRowNumbers`: what the spreadsheet shows. */
+  /** 1-based spreadsheet row, like `dataRowNumbers`: what the person sees beside it. */
   rowNumber: number
   cells: string[]
 }
@@ -76,14 +76,8 @@ export const MAX_SET_ASIDE_ITEMS = 25
  */
 export const MAX_CELL_PREVIEW_CHARS = 40
 
-/** "Row 5", "Rows 5 and 7", "Rows 5, 7, and 9": the 1-based source rows, for people; "" for none. */
-export function formatCsvRowNumbers(rows: readonly SkippedCsvRow[]): string {
-  const numbers = rows.map((r) => String(r.rowNumber))
-  if (numbers.length === 0) return ''
-  if (numbers.length === 1) return `Row ${numbers[0]}`
-  if (numbers.length === 2) return `Rows ${numbers[0]} and ${numbers[1]}`
-  return `Rows ${numbers.slice(0, -1).join(', ')}, and ${numbers[numbers.length - 1]}`
-}
+/** Cells echoed per row before an ellipsis stands for the rest, so a wide row stays one line of preview. */
+export const MAX_CELLS_PREVIEWED = 6
 
 /**
  * " (rows 12 to 16)" for rows the person could scan as one block, "" when
@@ -110,12 +104,16 @@ export function previewCell(cell: string): string {
   return trimmed.length > MAX_CELL_PREVIEW_CHARS ? `${trimmed.slice(0, MAX_CELL_PREVIEW_CHARS - 1)}…` : trimmed
 }
 
-/** The row's text cells, in order and each bounded, for showing which spreadsheet line is meant. */
+/**
+ * The row's text cells, in order, for showing which spreadsheet line is
+ * meant: each cell bounded, and at most `MAX_CELLS_PREVIEWED` of them, so the
+ * preview is bounded per row as well as per cell.
+ */
 export function describeCsvRowCells(row: SkippedCsvRow): string {
-  return row.cells
-    .map(previewCell)
-    .filter((c) => c !== '')
-    .join(' · ')
+  const text = row.cells.map(previewCell).filter((c) => c !== '')
+  const shown = text.slice(0, MAX_CELLS_PREVIEWED)
+  if (text.length > shown.length) shown.push('…')
+  return shown.join(' · ')
 }
 
 export type GenericCsvAnalysisResult = { ok: true; analysis: GenericCsvAnalysis } | { ok: false; message: string }
@@ -186,9 +184,13 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
       if (skippedRows.length > 0) {
         const recognised = cells.map(guessColumnRole).some((role) => role !== 'ignore')
         // A recognised header wins over an earlier unrecognised candidate
-        // (the title line above it); the first of either kind is kept.
-        if (recognised && (textOnly === null || textOnly.header === null)) textOnly = { header: cells, skippedRows }
-        else textOnly ??= { header: null, skippedRows }
+        // (the title line above it); the first of either kind is kept. The
+        // rows named are every row but the header, those above it included:
+        // a title line or junk above the header is set aside like the rest,
+        // not dropped because the search passed over it.
+        const allButHeader = rows.flatMap((row, k) => (k === r ? [] : [{ rowNumber: lines[k]!, cells: row }]))
+        if (recognised && (textOnly === null || textOnly.header === null)) textOnly = { header: cells, skippedRows: allButHeader }
+        else textOnly ??= { header: null, skippedRows: allButHeader }
       }
       continue
     }
@@ -258,7 +260,7 @@ export function draftPlanFromGenericCsv(
 
   for (let r = 0; r < analysis.dataRows.length; r++) {
     const cells = analysis.dataRows[r]!
-    // True parsed-row number when the analysis carries it; else a header-relative
+    // The spreadsheet row when the analysis carries it (parseCsv sourceLines); else a header-relative
     // estimate (header at row 1, first data row at row 2).
     const rowNumber = analysis.dataRowNumbers?.[r] ?? r + 2
     const name = (nameCol === -1 ? '' : (cells[nameCol] ?? '').trim()) || `Row ${r + 1}`

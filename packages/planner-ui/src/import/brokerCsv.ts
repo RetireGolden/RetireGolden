@@ -187,7 +187,7 @@ function finishAggregates(
 // Schwab: title row per account section, then a header row, then positions.
 // ---------------------------------------------------------------------------
 
-function parseSchwab(rows: string[][]): BrokerCsvResult {
+function parseSchwab(rows: string[][], lines: number[]): BrokerCsvResult {
   const review: ImportReviewItem[] = []
   const byAccount = new Map<string, Aggregate>()
   let current: Aggregate | null = null
@@ -227,22 +227,22 @@ function parseSchwab(rows: string[][]): BrokerCsvResult {
         status: 'skipped',
         source: `${current.label}: ${first}`,
         detail: 'Row had no readable market value.',
-        locator: csvRow(r + 1, 'market value'),
+        locator: csvRow(lines[r]!, 'market value'),
         confidence: 'unmapped',
       })
       continue
     }
     current.total += value
     current.positions++
-    current.rows.push(r + 1)
+    current.rows.push(lines[r]!)
     const basis = basisCol === -1 ? null : parseMoney(cells[basisCol])
     if (basis === null) {
       current.valueRowsWithoutBasis++
-      current.basislessRows.push(r + 1)
+      current.basislessRows.push(lines[r]!)
     } else {
       current.basis += basis
       current.basisRows++
-      current.rowsWithBasis.push(r + 1)
+      current.rowsWithBasis.push(lines[r]!)
     }
   }
 
@@ -260,6 +260,7 @@ const TOTAL_ROW_RE = /^(sub|account |grand )?total\b/i
 function parseAccountColumnFile(
   broker: BrokerId,
   rows: string[][],
+  lines: number[],
   headerIndex: number,
   asOfIso: string | null,
   cols: { account: number; accountName: number; value: number; basis: number; symbol: number; description: number },
@@ -299,7 +300,7 @@ function parseAccountColumnFile(
           value !== null
             ? `$${value.toLocaleString('en-US')} of unsettled activity was not counted. It will appear in a position or cash on your next download.`
             : 'Unsettled activity row was not counted.',
-        locator: csvRow(r + 1, valueLabel || undefined),
+        locator: csvRow(lines[r]!, valueLabel || undefined),
         confidence: 'unmapped',
       })
       continue
@@ -308,9 +309,9 @@ function parseAccountColumnFile(
     if (value === null) {
       review.push({
         status: 'skipped',
-        source: `${label}: ${symbol || 'row ' + String(r + 1)}`,
+        source: `${label}: ${symbol || 'row ' + String(lines[r]!)}`,
         detail: 'Row had no readable value.',
-        locator: csvRow(r + 1, valueLabel || undefined),
+        locator: csvRow(lines[r]!, valueLabel || undefined),
         confidence: 'unmapped',
       })
       continue
@@ -319,15 +320,15 @@ function parseAccountColumnFile(
     byAccount.set(key, agg)
     agg.total += value
     agg.positions++
-    agg.rows.push(r + 1)
+    agg.rows.push(lines[r]!)
     const basis = cols.basis === -1 ? null : parseMoney(cells[cols.basis])
     if (basis === null) {
       agg.valueRowsWithoutBasis++
-      agg.basislessRows.push(r + 1)
+      agg.basislessRows.push(lines[r]!)
     } else {
       agg.basis += basis
       agg.basisRows++
-      agg.rowsWithBasis.push(r + 1)
+      agg.rowsWithBasis.push(lines[r]!)
     }
   }
 
@@ -352,10 +353,11 @@ export function parseBrokerPositionsCsv(text: string): BrokerCsvResult {
   const parsed = parseCsv(text)
   if (!parsed.ok) return { ok: false, message: parsed.message }
   const rows = parsed.rows
+  const lines = parsed.sourceLines
 
   // Schwab: any section-title row wins, headers are per-section.
   if (rows.some((cells) => /^positions for /i.test((cells[0] ?? '').trim()))) {
-    return parseSchwab(rows)
+    return parseSchwab(rows, lines)
   }
 
   // Fidelity / Vanguard: locate the header row among leading junk.
@@ -367,7 +369,7 @@ export function parseBrokerPositionsCsv(text: string): BrokerCsvResult {
 
     const fidelityValue = findColumn(cells, 'current value')
     if (fidelityValue !== -1) {
-      return parseAccountColumnFile('fidelity', rows, r, asOfIso, {
+      return parseAccountColumnFile('fidelity', rows, lines, r, asOfIso, {
         account,
         accountName: findColumn(cells, 'account name'),
         value: fidelityValue,
@@ -379,7 +381,7 @@ export function parseBrokerPositionsCsv(text: string): BrokerCsvResult {
 
     const vanguardValue = findColumn(cells, 'total value')
     if (vanguardValue !== -1 && findColumn(cells, 'investment name') !== -1) {
-      return parseAccountColumnFile('vanguard', rows, r, asOfIso, {
+      return parseAccountColumnFile('vanguard', rows, lines, r, asOfIso, {
         account,
         accountName: -1,
         value: vanguardValue,

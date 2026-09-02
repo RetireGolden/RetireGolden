@@ -18,8 +18,8 @@ import {
   describeCsvRowCells,
   describeSetAsideRows,
   draftPlanFromGenericCsv,
-  formatCsvRowNumbers,
   MAX_CELL_PREVIEW_CHARS,
+  MAX_CELLS_PREVIEWED,
   MAX_SET_ASIDE_ITEMS,
   MAX_SET_ASIDE_LISTED,
   previewCell,
@@ -238,7 +238,8 @@ describe('generic CSV import — rows with no dollar value (#557)', () => {
     expect(titled.ok).toBe(false)
     if (titled.ok) return
     expect(titled.message).toContain('A header row (Account, Type, Balance) was found')
-    expect(titled.message).toContain('1 row with no dollar value in any column was set aside: Row 3: I-bonds.')
+    // The title line above the header is set aside too; the header is not.
+    expect(titled.message).toContain('2 rows with no dollar value in any column were set aside: Row 1: My net worth · as of year end; Row 3: I-bonds.')
     expect(titled.message).not.toContain('Row 2: Account')
     // No row names a column the analyzer knows: say so rather than crown one.
     const junk = analyzeGenericCsv('just,words\nno,numbers\n')
@@ -259,17 +260,36 @@ describe('generic CSV import — rows with no dollar value (#557)', () => {
     expect(d.review.filter((item) => item.status === 'skipped')).toHaveLength(0)
   })
 
-  it('formats row numbers and cells the way the wizard shows them, including nothing for no rows', () => {
+  it('formats rows and cells the way the wizard shows them', () => {
     const row = (rowNumber: number, ...cells: string[]) => ({ rowNumber, cells })
-    expect(formatCsvRowNumbers([])).toBe('')
-    expect(formatCsvRowNumbers([row(5)])).toBe('Row 5')
-    expect(formatCsvRowNumbers([row(5), row(7)])).toBe('Rows 5 and 7')
-    expect(formatCsvRowNumbers([row(5), row(7), row(9)])).toBe('Rows 5, 7, and 9')
-    expect(formatCsvRowNumbers([row(10), row(11)])).toBe('Rows 10 and 11')
     expect(describeCsvRowCells({ rowNumber: 3, cells: [' Mystery ', '', '???', 'abc'] })).toBe('Mystery · ??? · abc')
     expect(describeSetAsideRows([row(3, 'a'), row(4, 'b'), row(12, 'c')], 2)).toBe('Row 3: a; Row 4: b; and 1 more')
     expect(describeSetAsideRows([row(3, 'a'), row(4, 'b'), row(5, 'c'), row(6, 'd')], 2)).toBe('Row 3: a; Row 4: b; and 2 more (rows 5 to 6)')
     expect(describeSetAsideRows([row(3, 'a'), row(4, 'b'), row(5, 'c'), row(9, 'd')], 2)).toBe('Row 3: a; Row 4: b; and 2 more')
     expect(describeSetAsideRows([row(3, 'a')], 2)).toBe('Row 3: a')
+  })
+})
+
+describe('generic CSV import — bounds and completeness of what is echoed back (#557 review)', () => {
+  it('bounds a preview per row as well as per cell: at most MAX_CELLS_PREVIEWED cells, then an ellipsis', () => {
+    const wide = Array.from({ length: MAX_CELLS_PREVIEWED + 5 }, (_, i) => `c${i + 1}`)
+    const shown = describeCsvRowCells({ rowNumber: 3, cells: wide })
+    expect(shown).toBe(`${wide.slice(0, MAX_CELLS_PREVIEWED).join(' · ')} · …`)
+    // Exactly the cap: no ellipsis, nothing dropped.
+    expect(describeCsvRowCells({ rowNumber: 3, cells: wide.slice(0, MAX_CELLS_PREVIEWED) })).toBe(wide.slice(0, MAX_CELLS_PREVIEWED).join(' · '))
+    // A row of the widest allowed shape stays a bounded string.
+    const huge = Array.from({ length: 100 }, () => 'x'.repeat(500))
+    expect(describeCsvRowCells({ rowNumber: 3, cells: huge }).length).toBeLessThan((MAX_CELL_PREVIEW_CHARS + 3) * (MAX_CELLS_PREVIEWED + 1))
+  })
+
+  it('a text-only failure names the rows above the recognised header too, not only those below it', () => {
+    const r = analyzeGenericCsv('Title line,for the sheet\nnote about nothing,x\nAccount,Type,Balance\nI-bonds,,\n')
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.message).toContain('A header row (Account, Type, Balance) was found')
+    expect(r.message).toContain(
+      '3 rows with no dollar value in any column were set aside: Row 1: Title line · for the sheet; Row 2: note about nothing · x; Row 4: I-bonds.',
+    )
+    expect(r.message).not.toContain('Row 3')
   })
 })

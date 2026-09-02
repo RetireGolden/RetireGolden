@@ -56,7 +56,7 @@ function DriverRow({ label, value, note }: { label: string; value: string; note?
     <tr>
       <td>{label}</td>
       <td style={{ textAlign: 'right' }}>{value}</td>
-      <td className="muted year-table-text" style={{ minWidth: '16rem' }}>{note ?? ''}</td>
+      <td className="muted year-table-text year-table-text--wide">{note ?? ''}</td>
     </tr>
   )
 }
@@ -93,12 +93,12 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
   return (
     <>
       <ScrollRegion label={`Drivers for ${f.stateName}`} grow style={{ border: 'none' }}>
-      <table className="year-table">
+      <table className="year-table year-table--plain">
         <thead>
           <tr>
             <th scope="col" style={{ textAlign: 'left' }}>Driver ({f.stateName})</th>
             <th scope="col" style={{ textAlign: 'right' }}>Lifetime state tax it saves</th>
-            <th scope="col" className="year-table-text">Rule</th>
+            <th scope="col" className="year-table-text year-table-text--wide">Rule</th>
           </tr>
         </thead>
         <tbody>
@@ -399,7 +399,7 @@ export function RelocationComparePage() {
               the full-height, boxless rendering the bare div had: only the
               horizontal scroll and its cue are new. */}
           <ScrollRegion label="Ranked relocation results" grow style={{ border: 'none' }}>
-            <table className="year-table">
+            <table className="year-table year-table--plain">
               <thead>
                 <tr>
                   <th scope="col" style={{ textAlign: 'left' }}>Residence</th>

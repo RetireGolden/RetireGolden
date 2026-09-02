@@ -415,7 +415,7 @@ export function SpendingSolverPage() {
         {shapeRows !== null && !shapesRunning ? (
           <>
             <ScrollRegion label="Spending shape comparison" grow style={{ border: 'none' }}>
-              <table className="year-table">
+              <table className="year-table year-table--plain">
                 <thead>
                   <tr>
                     <th scope="col" style={{ textAlign: 'left' }}>Spending shape</th>
@@ -462,7 +462,7 @@ export function SpendingSolverPage() {
           differ.
         </p>
         <ScrollRegion label="Published withdrawal rules on this plan" grow style={{ border: 'none' }}>
-          <table className="year-table">
+          <table className="year-table year-table--plain">
             <thead>
               <tr>
                 <th scope="col" style={{ textAlign: 'left' }}>Rule</th>

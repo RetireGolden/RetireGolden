@@ -74,9 +74,9 @@ describe('Design QA cluster G: Relocation results table (#514)', () => {
     expect(page).toContain('<ScrollRegion label={`Drivers for ${f.stateName}`} grow')
     // Every table on the page carries the app's table chrome; none is bare.
     expect(page).not.toMatch(/<table>/)
-    expect(page.match(/<table className="year-table">/g)?.length).toBe(2)
+    expect(page.match(/<table className="year-table year-table--plain">/g)?.length).toBe(2)
     // The rule column is prose, not a figure; so is a row's error message.
-    expect(page).toContain('<th scope="col" className="year-table-text">Rule</th>')
+    expect(page).toContain('<th scope="col" className="year-table-text year-table-text--wide">Rule</th>')
     expect(page).toMatch(/<td colSpan=\{result\.monteCarlo \? 5 : 4\} className="year-table-text"/)
   })
 
@@ -85,14 +85,14 @@ describe('Design QA cluster G: Relocation results table (#514)', () => {
     expect(solver).toContain('<ScrollRegion label="Spending shape comparison" grow')
     expect(solver).toContain('<ScrollRegion label="Published withdrawal rules on this plan" grow')
     expect(solver).not.toMatch(/<table>/)
-    expect(solver.match(/<table className="year-table">/g)?.length).toBe(2)
+    expect(solver.match(/<table className="year-table year-table--plain">/g)?.length).toBe(2)
     expect(solver).toContain('<th scope="col" className="year-table-text">If your plan spent only this</th>')
 
     const floor = source('./sections/IncomeFloorSection.tsx')
     expect(floor).toContain('<ScrollRegion label="Nearest real TIPS per rung" grow')
     expect(floor).toContain('<ScrollRegion label={`Buy-list: ${ladder.name}`}>')
     expect(floor).not.toMatch(/<table>/)
-    expect(floor.match(/<table className="year-table">/g)?.length).toBe(2)
+    expect(floor.match(/<table className="year-table year-table--plain">/g)?.length).toBe(2)
     expect(floor).toContain('<th scope="col" className="year-table-text">Nearest real TIPS (CUSIP)</th>')
   })
 

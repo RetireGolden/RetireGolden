@@ -3299,6 +3299,27 @@ html:has(.kpi-bar) {
 .year-table td.year-table-text {
   text-align: left;
   white-space: normal;
+  /* A prose column's title is prose too: no small caps or tracking. */
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* A prose column that must not collapse to a sliver beside the figures (the
+   Relocation driver's rule text). */
+.year-table .year-table-text--wide {
+  min-width: 16rem;
+}
+
+/* Tables that took year-table for its cell chrome, not its timeline (the
+   Relocation, Spending-solver, and Income-floor tables, #514): no sticky
+   first column painting over the figures, no sticky header stacking inside
+   the scroll region, and no edge cue keyed to the sticky column. */
+.year-table--plain thead th,
+.year-table--plain th:first-child,
+.year-table--plain td:first-child {
+  position: static;
+  z-index: auto;
+  animation: none;
 }
 
 /* Trailing Flow control. Year remains the sticky first data column. */
