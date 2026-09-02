@@ -49,6 +49,15 @@ const baseInput = (
   evaluate,
 })
 
+const frozenInput = (
+  evaluate: AnnualFundingFixedPointInput<TestEvaluation>['evaluate'],
+  overrides: Partial<AnnualFundingFixedPointInput<TestEvaluation>> = {},
+): AnnualFundingFixedPointInput<TestEvaluation> => Object.freeze({
+  ...baseInput(evaluate),
+  ...overrides,
+  evaluate,
+})
+
 describe('annualFundingFixedPoint', () => {
   it('returns the accepted evaluator object by identity after the bounded solve', () => {
     const evaluations: TestEvaluation[] = []
@@ -61,12 +70,14 @@ describe('annualFundingFixedPoint', () => {
       evaluations.push(result)
       return result
     })
-    const input = Object.freeze(baseInput(evaluate))
+    const input = frozenInput(evaluate)
 
     const result = annualFundingFixedPoint(input)
 
     expect(result.converged).toBe(true)
+    // Independent algebraic oracle: n = 100 + n / 2, so n = 200.
     expect(result.evaluation.requiredNeed).toBeCloseTo(200, 2)
+    expect(result.evaluation.request.need).toBeCloseTo(200, 2)
     expect(evaluations).toContain(result.evaluation)
     expect(result.evaluationCount).toBe(evaluate.mock.calls.length)
     expect(result.maxEvaluationCount)
@@ -76,6 +87,40 @@ describe('annualFundingFixedPoint', () => {
     expect(evaluate.mock.calls.every(([request]) =>
       request.cashInflows === 20 && request.forceGrossAca === false,
     )).toBe(true)
+  })
+
+  it('jumps to the bounded need after a real portfolio shortfall', () => {
+    const requests: AnnualFundingFixedPointEvaluationRequest[] = []
+    const evaluate = (request: AnnualFundingFixedPointEvaluationRequest) => {
+      requests.push({ ...request })
+      const requiredNeed = request.need === 0
+        ? 300
+        : request.need === 100
+          ? 200
+          : request.need === 150
+            ? 150
+            : request.need === 200
+              ? 300
+              : 100
+      return frozenEvaluation(
+        request,
+        requests.length - 1,
+        requiredNeed,
+        { shortfall: request.need === 200 ? 25 : 0 },
+      )
+    }
+    const input = frozenInput(evaluate, { spendingUsesBeforeTax: 320 })
+
+    const result = annualFundingFixedPoint(input)
+
+    expect(result.converged).toBe(true)
+    expect(result.evaluation.request.need).toBe(150)
+    expect(requests.map(({ need }) => need)).toEqual([
+      300, 100, 200, 300, 100, 200, 300, 100,
+      0, 200, 300, 150,
+    ])
+    expect(Object.isFrozen(input)).toBe(true)
+    expect(input.spendingUsesBeforeTax).toBe(320)
   })
 
   it('retains the exact closest endpoint when a discontinuity has no root', () => {
@@ -90,7 +135,7 @@ describe('annualFundingFixedPoint', () => {
       return result
     }
 
-    const result = annualFundingFixedPoint(baseInput(evaluate))
+    const result = annualFundingFixedPoint(frozenInput(evaluate))
 
     expect(result.converged).toBe(false)
     expect(result.closestResidual).toBeGreaterThan(0.005)
@@ -117,17 +162,19 @@ describe('annualFundingFixedPoint', () => {
       return result
     }
 
-    const result = annualFundingFixedPoint({
-      ...baseInput(evaluate),
+    const input = frozenInput(evaluate, {
       acaActive: true,
       acaGrossEnrollmentPremium: 10_000,
     })
+    const result = annualFundingFixedPoint(input)
 
     expect(result.acaFixedPointFailed).toBe(true)
     expect(result.converged).toBe(true)
     expect(result.evaluation.request.forceGrossAca).toBe(true)
     expect(result.evaluation.healthcare).toBe(12_000)
     expect(evaluations).toContain(result.evaluation)
+    expect(Object.isFrozen(input)).toBe(true)
+    expect(input.acaGrossEnrollmentPremium).toBe(10_000)
   })
 
   it('detects a lower subsidized basin without replacing an accepted gross result', () => {
@@ -147,16 +194,18 @@ describe('annualFundingFixedPoint', () => {
       return result
     }
 
-    const result = annualFundingFixedPoint({
-      ...baseInput(evaluate),
+    const input = frozenInput(evaluate, {
       acaActive: true,
       acaGrossEnrollmentPremium: 20,
     })
+    const result = annualFundingFixedPoint(input)
 
     expect(result.acaConflictingCliffBasins).toBe(true)
     expect(result.evaluation.request.need).toBe(100)
     expect(result.evaluation.acaQuote?.overCliff).toBe(true)
     expect(evaluations).toContain(result.evaluation)
+    expect(Object.isFrozen(input)).toBe(true)
+    expect(input.acaGrossEnrollmentPremium).toBe(20)
   })
 
   it('rechecks a forced-gross candidate normally before replacing a subsidized result', () => {
@@ -176,12 +225,12 @@ describe('annualFundingFixedPoint', () => {
       return result
     }
 
-    const result = annualFundingFixedPoint({
-      ...baseInput(evaluate),
+    const input = frozenInput(evaluate, {
       spendingUsesBeforeTax: 100,
       acaActive: true,
       acaGrossEnrollmentPremium: 20,
     })
+    const result = annualFundingFixedPoint(input)
 
     expect(result.acaConflictingCliffBasins).toBe(true)
     expect(result.evaluation.request).toEqual({
@@ -191,6 +240,8 @@ describe('annualFundingFixedPoint', () => {
     })
     expect(result.evaluation.acaQuote?.overCliff).toBe(true)
     expect(evaluations).toContain(result.evaluation)
+    expect(Object.isFrozen(input)).toBe(true)
+    expect(input.spendingUsesBeforeTax).toBe(100)
   })
 
   it('sizes a coordinated HECM draw through probes and resets final diagnostics', () => {
@@ -205,12 +256,12 @@ describe('annualFundingFixedPoint', () => {
       return result
     })
 
-    const result = annualFundingFixedPoint({
-      ...baseInput(evaluate),
+    const input = frozenInput(evaluate, {
       spendingUsesBeforeTax: 150,
       baseCashInflows: 50,
       coordinatedHecmCapacity: 40,
     })
+    const result = annualFundingFixedPoint(input)
 
     expect(result.acceptedCoordinatedHecmDraw).toBe(40)
     expect(result.acceptedCashInflows).toBe(90)
@@ -225,6 +276,8 @@ describe('annualFundingFixedPoint', () => {
     expect(result.evaluationCount).toBe(1)
     expect(evaluate.mock.calls.map(([request]) => request.cashInflows))
       .toEqual([50, 90, 90])
+    expect(Object.isFrozen(input)).toBe(true)
+    expect(input.coordinatedHecmCapacity).toBe(40)
   })
 
   it('accepts no coordinated HECM draw when its funding probe cannot converge', () => {
@@ -235,10 +288,10 @@ describe('annualFundingFixedPoint', () => {
         request.need < 100 ? 200 : 0,
       ))
 
-    const result = annualFundingFixedPoint({
-      ...baseInput(evaluate),
+    const input = frozenInput(evaluate, {
       coordinatedHecmCapacity: 40,
     })
+    const result = annualFundingFixedPoint(input)
 
     expect(result.acceptedCoordinatedHecmDraw).toBe(0)
     expect(result.acceptedCashInflows).toBe(20)
@@ -246,5 +299,7 @@ describe('annualFundingFixedPoint', () => {
     expect(evaluate.mock.calls.every(([request]) =>
       request.cashInflows === 20,
     )).toBe(true)
+    expect(Object.isFrozen(input)).toBe(true)
+    expect(input.coordinatedHecmCapacity).toBe(40)
   })
 })

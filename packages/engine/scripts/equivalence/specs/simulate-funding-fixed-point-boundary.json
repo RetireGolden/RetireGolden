@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-funding-fixed-point-boundary",
-  "why": "Measured reach for the annual tax/withdrawal/ACA funding-control extraction. The full corpus exercises ordinary direct and bounded roots, finite-portfolio exhaustion, coordinated HECM multi-probe sizing, ACA actionable and fail-closed inputs, annual-pass re-entry, and all four equivalence modes.",
+  "why": "Measured reach for the annual tax/withdrawal/ACA funding-control extraction. The full corpus measures ordinary root setup, bounded upper expansion, sign-change bisection, coordinated HECM multi-probe sizing, ACA actionable and fail-closed inputs, annual-pass re-entry, and all four equivalence modes. A direct request-sequence oracle separately pins the finite-portfolio exhaustion jump because equivalent corpus members cannot guarantee every defensive control arm.",
   "entries": [
     {
       "id": "AD.helper.root",
@@ -20,6 +20,46 @@
         {
           "line": 116,
           "text": "if (converged) {"
+        }
+      ]
+    },
+    {
+      "id": "AD.helper.bracket",
+      "label": "finite-portfolio bracket setup and bounded upper expansion",
+      "file": "projection/internal/annualFundingFixedPoint.ts",
+      "lines": [120, 139],
+      "anchors": [
+        {
+          "line": 120,
+          "text": "// A finite portfolio brackets the root: once all spendable balances are"
+        },
+        {
+          "line": 124,
+          "text": "let upperNeed = Math.max(1, need, evaluation.requiredNeed)"
+        },
+        {
+          "line": 135,
+          "text": "upperNeed *= 2"
+        }
+      ]
+    },
+    {
+      "id": "AD.helper.bisection",
+      "label": "sign-change bisection and closest bracket updates",
+      "file": "projection/internal/annualFundingFixedPoint.ts",
+      "lines": [156, 184],
+      "anchors": [
+        {
+          "line": 156,
+          "text": "// Tax rules can contain hard steps. Bisection therefore requires a true"
+        },
+        {
+          "line": 165,
+          "text": "const midpointNeed = (lowerNeed + upperNeed) / 2"
+        },
+        {
+          "line": 184,
+          "text": "if (upperNeed - lowerNeed <= tolerance) break"
         }
       ]
     },
@@ -100,5 +140,5 @@
       ]
     }
   ],
-  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The direct coordinator tests pin bisection/nonconvergence, gross ACA fallback, both conflicting-basin directions, HECM probe reset, input purity, and exact selected-object identity. The hostile delegation test separately injects non-economic accepted values and proves simulatePlan consumes the coordinator result instead of recomputing the root."
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The direct coordinator tests pin the exact bracket/exhaustion-jump/bisection request sequence, discontinuity nonconvergence, gross ACA fallback, both conflicting-basin directions, HECM probe reset, frozen root/ACA/HECM inputs, and exact selected-object identity. The hostile delegation test separately injects non-economic accepted evaluation, cash, HECM, convergence, residual, and ACA-flag values and proves simulatePlan consumes the coordinator result instead of recomputing the root."
 }

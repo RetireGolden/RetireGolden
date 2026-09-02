@@ -10,10 +10,10 @@
  * convergence evidence, the accepted HECM draw/cash inflow, and typed ACA
  * fallback diagnostics. The selected evaluator object is returned by identity.
  *
- * WHAT IT REFUSES: this coordinator does not mutate healthcare, HECM debt,
- * balances, warnings, or any annual ledger. The evaluator may inspect the
- * caller's uncommitted state, but every irreversible write remains after this
- * call in `simulatePlan`.
+ * WHAT IT REFUSES: this coordinator itself does not mutate healthcare, HECM
+ * debt, balances, warnings, or any annual ledger. The caller-supplied evaluator
+ * may retain its pre-existing probe effects; every irreversible ledger commit
+ * remains after this call in `simulatePlan`.
  */
 
 const DEFAULT_DIRECT_ITERATION_LIMIT = 8

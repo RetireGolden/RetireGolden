@@ -6825,7 +6825,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         hsaQualifiedCap: candidateHsaCap,
       }
     }
-
+    // The selected plan, tax, and premium stay paired; never recompute from accepted cash.
     const fundingFixedPoint = annualFundingFixedPoint({
       spendingUsesBeforeTax: expenses.total + contributions,
       baseCashInflows,
