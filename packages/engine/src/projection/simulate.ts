@@ -37,7 +37,6 @@
  * - Contribution limits beyond the latest parameter pack are indexed forward
  *   at the assumed inflation rate (statutory limits are inflation-indexed).
  */
-
 import type { Account, AssetAllocationPolicy, Person, Plan } from '../model/plan.js'
 import type { TraditionalAccount } from '../strategies/accountEligibility.js'
 import {
@@ -51,7 +50,7 @@ import {
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
 import { packForYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
-import { assembleYearCashFlow, type AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
+import type { AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import {
   collidingEncodedCashFlowSegments,
   collectPlanCashFlowProducerIds,
@@ -102,6 +101,7 @@ import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { annualPostSolveAccountGrowth } from './internal/annualPostSolveAccountGrowth.js'
 import { annualRetirementActionSettlementPublication } from './internal/annualRetirementActionSettlementPublication.js'
+import { annualYearResultAssembly } from './internal/annualYearResultAssembly.js'
 import {
   annualDebtServiceRows,
   annualLongTermCarePlan,
@@ -8511,15 +8511,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     })
 
     // --- snapshot ------------------------------------------------------------
-    const {
-      balanceRecord,
-      investableTotal,
-      propertyTotal,
-      debtTotal,
-      hecmLoanTotal,
-      hecmEffectiveDebt,
-      insuranceCashValueTotal,
-    } = annualSnapshot({
+    const snapshot = annualSnapshot({
       balances,
       publishedBalances: annualIdKeyedBalances,
       unassignedCash,
@@ -8653,11 +8645,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // executor evidence, so it remains ordered after every annual movement and
     // before per-entity fact publication and `YearResult` assembly. The
     // coordinator is pure; this caller retains all economic commits.
-    const {
-      qcdActionPrerequisites,
-      conversionLinkedWithdrawalGroupExecution,
-      retirementActionPublication,
-    } = annualRetirementActionSettlementPublication({
+    const settlementPublication = annualRetirementActionSettlementPublication({
       planId: plan.id,
       taxYear: year,
       taxPlanDollars: tax,
@@ -8676,11 +8664,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // --- per-entity published facts (insight one-source-of-truth channel) ---
     // Only assumed-basis consequential verdicts are published on these rows —
     // every remaining member has a production consumer (missingDataBasis).
-    const {
-      ownedRothIraPoolActivity,
-      employerRothAccountActivity,
-      ownedTraditionalIraAggregateActivity,
-    } = publishedEntityFacts({
+    const entityFacts = publishedEntityFacts({
       accounts: plan.accounts,
       primaryPersonId: primary.id,
       ownedRothAssumedBasisConsequentialByOwner,
@@ -8688,106 +8672,97 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       form8606ConsequentialByOwner,
     })
 
-    const yearResult: YearResult = {
-      year,
-      inflationScale: inflFactor,
-      people: peopleStates,
-      filingStatus: filingStatusForYear,
-      incomes,
-      expenses,
-      contributions,
-      ownedNonRothIraContributions,
-      ownedNonRothIraBalancesBeforeGrowth,
-      ownedNonRothIraPhysicalBalancesBeforeGrowth,
-      ownedNonRothIraPhysicalOpeningBalances,
-      ownedRothIraPoolActivity,
-      employerRothAccountActivity,
-      ownedTraditionalIraAggregateActivity,
-      qualifiedAnnuityPayments,
-      socialSecurityStreams,
-      employerMatch,
-      rmd: rmdTotal,
-      rmdShortfallExciseTax,
-      rmdShortfallExciseDetails: rmdShortfallExciseResults,
-      sepp: seppTotal,
-      inheritedDistribution: inheritedTotal,
-      inheritedTraditionalDistribution: inheritedOrdinaryIncome,
-      ...(planHasInheritedAccounts
-        ? { inheritedAccounts: inheritedYearEvidenceDraft }
-        : {}),
-      qcd,
-      rothConversion: totalRothConversion,
-      ...(aggregateRothConversionAllocationBalances === undefined
-        ? {}
-        : { aggregateRothConversionAllocationBalances }),
-      ...(aggregateRothConversionAllocationDesired === undefined
-        ? {}
-        : { aggregateRothConversionAllocationDesired }),
-      retirementRuntimeSource,
-      retirementRuntimeApplicationSource,
-      ownedNonRothIraPostGrowthSource,
-      ...(retirementActionExecution ? { retirementActionExecution } : {}),
-      ...(retirementActionPublication === undefined
-        ? {}
-        : { retirementActionPublication }),
-      ...(conversionLinkedWithdrawalGroupExecution === undefined
-        ? {}
-        : {
-          conversionLinkedWithdrawalGroupExecution:
-            conversionLinkedWithdrawalGroupExecution,
-        }),
-      ...(rothConversionActionExecution ? { rothConversionActionExecution } : {}),
-      ...(qcdActionPrerequisites === undefined
-        ? {}
-        : { qcdActionPrerequisites: qcdActionPrerequisites.evidence }),
-      ...(qcdActionPrerequisites === undefined || qcdActionExecution === undefined
-        ? {}
-        : { qcdActionExecution }),
-      penalties,
-      magi: magiHistory.get(year)!,
-      ...(yearAcaResult ? { aca: yearAcaResult } : {}),
-      medicarePremiums,
-      irmaaSurcharge,
-      irmaaTier,
-      irmaaLookbackMagi: irmaaMagi,
-      irmaaLookbackMagiSource,
-      irmaaLookbackMagiYear,
-      irmaaNextTierThreshold,
-      advisoryFederalTax: { input: advisoryFederalTaxInput, detail: federalDetail },
-      amt: federalDetail.alternativeMinimumTax,
-      ltcgZeroHeadroom,
-      ssEarningsTestWithheld,
-      ssdiPaid,
-      tax,
-      withdrawals: reportedWithdrawals,
-      realizedGains:
-        withdrawalPlan.realizedGains +
-        rebalanceRealizedGains +
-        retirementActionCapitalGainOrLoss,
-      taxableYield: incomes.taxableYield,
-      taxExemptInterest: yearTaxExemptInterest,
-      capitalLossUsedAgainstGains: lossNetting.usedAgainstGains,
-      capitalLossUsedAgainstOrdinary: lossNetting.usedAgainstOrdinary,
-      capitalLossCarryforwardRemaining: lossNetting.remaining,
-      surplusInvested: surplus,
-      shortfall: shortfallAfterHecm,
-      requiredShortfall,
-      targetShortfall,
-      idealShortfall,
-      excessShortfall,
-      guardrailAction,
-      flexibleGoals: goalOutcomeCounts,
-      balances: balanceRecord,
-      investableTotal,
-      insuranceCashValue: insuranceCashValueTotal,
-      ladderValue: ladderValueTotal,
-      deathBenefit: deathBenefitPaid,
-      hecmDraw,
-      hecmLoanBalance: hecmLoanTotal,
-      netWorth: investableTotal + propertyTotal - debtTotal + insuranceCashValueTotal + ladderValueTotal - hecmEffectiveDebt,
+    const yearResult = annualYearResultAssembly({
+      chronology: {
+        year,
+        inflationScale: inflFactor,
+        people: peopleStates,
+        filingStatus: filingStatusForYear,
+      },
+      ledger: {
+        incomes,
+        expenses,
+        contributions,
+        ownedNonRothIraContributions,
+        ownedNonRothIraBalancesBeforeGrowth,
+        ownedNonRothIraPhysicalBalancesBeforeGrowth,
+        ownedNonRothIraPhysicalOpeningBalances,
+        qualifiedAnnuityPayments,
+        socialSecurityStreams,
+        employerMatch,
+      },
+      entityFacts,
+      retirement: {
+        rmd: rmdTotal,
+        rmdShortfallExciseTax,
+        rmdShortfallExciseDetails: rmdShortfallExciseResults,
+        sepp: seppTotal,
+        inheritedDistribution: inheritedTotal,
+        inheritedTraditionalDistribution: inheritedOrdinaryIncome,
+        inheritedAccounts: planHasInheritedAccounts
+          ? inheritedYearEvidenceDraft
+          : undefined,
+        qcd,
+        rothConversion: totalRothConversion,
+        aggregateRothConversionAllocationBalances,
+        aggregateRothConversionAllocationDesired,
+        retirementRuntimeSource,
+        retirementRuntimeApplicationSource,
+        ownedNonRothIraPostGrowthSource,
+        retirementActionExecution,
+        rothConversionActionExecution,
+        qcdActionExecution,
+      },
+      settlement: settlementPublication,
+      tax: {
+        penalties,
+        magi: magiHistory.get(year)!,
+        aca: yearAcaResult,
+        medicarePremiums,
+        irmaaSurcharge,
+        irmaaTier,
+        irmaaLookbackMagi: irmaaMagi,
+        irmaaLookbackMagiSource,
+        irmaaLookbackMagiYear,
+        irmaaNextTierThreshold,
+        advisoryFederalTax: {
+          input: advisoryFederalTaxInput,
+          detail: federalDetail,
+        },
+        ltcgZeroHeadroom,
+        ssEarningsTestWithheld,
+        ssdiPaid,
+        tax,
+      },
+      funding: {
+        withdrawals: reportedWithdrawals,
+        realizedGains: {
+          withdrawal: withdrawalPlan.realizedGains,
+          rebalance: rebalanceRealizedGains,
+          retirementAction: retirementActionCapitalGainOrLoss,
+        },
+        taxExemptInterest: yearTaxExemptInterest,
+        capitalLossUsedAgainstGains: lossNetting.usedAgainstGains,
+        capitalLossUsedAgainstOrdinary: lossNetting.usedAgainstOrdinary,
+        capitalLossCarryforwardRemaining: lossNetting.remaining,
+        surplusInvested: surplus,
+        shortfall: shortfallAfterHecm,
+        requiredShortfall,
+        targetShortfall,
+        idealShortfall,
+        excessShortfall,
+        guardrailAction,
+        flexibleGoals: goalOutcomeCounts,
+      },
+      balanceSheet: {
+        snapshot,
+        ladderValue: ladderValueTotal,
+        deathBenefit: deathBenefitPaid,
+        hecmDraw,
+      },
       ...(publishCashFlow
         ? {
-            cashFlow: assembleYearCashFlow({
+            cashFlowInput: {
               yearSites: yearSites!,
               passLocals: {
                 seppByAccountId: seppByAccountId!,
@@ -8876,10 +8851,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               excessLifestyleFunded,
               healthcare,
               shortfallAfterHecm,
-            }),
+            },
           }
         : {}),
-    }
+    })
     return { yearResult, optimizerProbe }
     }
 

@@ -1,0 +1,140 @@
+{
+  "schema": "retiregolden.equivalence-reach-spec/1",
+  "name": "simulate-year-result-assembly-boundary",
+  "why": "Measured reach for the final annual-publication extraction. The full corpus exercises ordinary and optional retirement channels, ACA publication, aggregate Roth-conversion evidence, inherited-account evidence, QCD and linked-group evidence, cash-flow-disabled and cash-flow-enabled calls, annual-pass re-entry, and all four equivalence modes.",
+  "entries": [
+    {
+      "id": "AC.helper.core",
+      "label": "chronology, ledger, entity-fact, and retirement publication",
+      "file": "projection/internal/annualYearResultAssembly.ts",
+      "lines": [146, 178],
+      "anchors": [
+        {
+          "line": 146,
+          "text": "const { chronology, ledger, entityFacts, retirement, settlement, tax, funding } ="
+        },
+        {
+          "line": 150,
+          "text": "return {"
+        },
+        {
+          "line": 165,
+          "text": "ownedRothIraPoolActivity: entityFacts.ownedRothIraPoolActivity,"
+        }
+      ]
+    },
+    {
+      "id": "AC.helper.optional",
+      "label": "optional inherited, action, QCD, and aggregate-conversion channels",
+      "file": "projection/internal/annualYearResultAssembly.ts",
+      "lines": [179, 231],
+      "anchors": [
+        {
+          "line": 179,
+          "text": "...(retirement.inheritedAccounts === undefined"
+        },
+        {
+          "line": 201,
+          "text": "...(retirement.retirementActionExecution === undefined"
+        },
+        {
+          "line": 222,
+          "text": "...(settlement.qcdActionPrerequisites === undefined"
+        }
+      ]
+    },
+    {
+      "id": "AC.helper.tax",
+      "label": "tax, ACA, IRMAA, and AMT publication",
+      "file": "projection/internal/annualYearResultAssembly.ts",
+      "lines": [232, 247],
+      "anchors": [
+        {
+          "line": 234,
+          "text": "...(tax.aca === undefined ? {} : { aca: tax.aca }),"
+        },
+        {
+          "line": 243,
+          "text": "amt: tax.advisoryFederalTax.detail.alternativeMinimumTax,"
+        }
+      ]
+    },
+    {
+      "id": "AC.helper.funding",
+      "label": "funding publication and exact realized-gain association",
+      "file": "projection/internal/annualYearResultAssembly.ts",
+      "lines": [248, 267],
+      "anchors": [
+        {
+          "line": 249,
+          "text": "realizedGains:"
+        },
+        {
+          "line": 267,
+          "text": "flexibleGoals: funding.flexibleGoals,"
+        }
+      ]
+    },
+    {
+      "id": "AC.helper.balanceSheet",
+      "label": "snapshot, exact net-worth association, and optional cash-flow assembly",
+      "file": "projection/internal/annualYearResultAssembly.ts",
+      "lines": [268, 285],
+      "anchors": [
+        {
+          "line": 268,
+          "text": "balances: snapshot.balanceRecord,"
+        },
+        {
+          "line": 276,
+          "text": "netWorth:"
+        },
+        {
+          "line": 283,
+          "text": "...(input.cashFlowInput === undefined"
+        }
+      ]
+    },
+    {
+      "id": "AC.callsite.inputs",
+      "label": "settled annual inputs grouped at the final-publication callsite",
+      "file": "projection/simulate.ts",
+      "lines": [8675, 8762],
+      "anchors": [
+        {
+          "line": 8675,
+          "text": "const yearResult = annualYearResultAssembly({"
+        },
+        {
+          "line": 8716,
+          "text": "settlement: settlementPublication,"
+        },
+        {
+          "line": 8757,
+          "text": "balanceSheet: {"
+        }
+      ]
+    },
+    {
+      "id": "AC.callsite.cashFlow",
+      "label": "cash-flow publication gate and pass-local evidence handoff",
+      "file": "projection/simulate.ts",
+      "lines": [8763, 8856],
+      "anchors": [
+        {
+          "line": 8763,
+          "text": "...(publishCashFlow"
+        },
+        {
+          "line": 8766,
+          "text": "yearSites: yearSites!,"
+        },
+        {
+          "line": 8853,
+          "text": "shortfallAfterHecm,"
+        }
+      ]
+    }
+  ],
+  "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on a cold executable whole line inside a reached range. The direct coordinator tests pin optional presence and absence, legacy always-present undefined fields, input purity, exact cancellation-sensitive realized-gain and net-worth associations, identity forwarding, and cash-flow delegation. The hostile delegation test separately injects non-economic references and proves simulatePlan commits the exact coordinator-owned YearResult object without caller-side rebuilding."
+}
