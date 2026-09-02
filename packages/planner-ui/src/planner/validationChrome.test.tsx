@@ -12,6 +12,7 @@ import { MemoryRouter } from 'react-router'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { DateField, MoneyField, NumberField, SelectField, TextField } from './fields'
+import { focusIssueTarget } from './issueJump'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { InsuranceSection } from './sections/InsuranceSection'
 import { Issues } from './sections/shared'
@@ -75,21 +76,63 @@ describe('validation chrome', () => {
     await blur(input)
     expect(onCommit).toHaveBeenLastCalledWith(120)
     expect(input.value).toBe('120')
-    expect(container.querySelector('.field-error')?.textContent).toBe('Adjusted to 120, the highest allowed')
+    // The plan now holds a value the engine accepts, so what is left is a note,
+    // not a fault: the control is valid and the chip's jump passes it by (r1-2).
+    expect(container.querySelector('.field-error')).toBeNull()
+    expect(container.querySelector('.field-note')?.textContent).toBe('Adjusted to 120, the highest allowed')
+    expect(input.hasAttribute('aria-invalid')).toBe(false)
+    expect(input.getAttribute('aria-describedby')).toContain(container.querySelector('.field-note')!.id)
+    // Typing again clears the note.
+    await typeInto(input, '100')
+    expect(container.querySelector('.field-note')).toBeNull()
   })
 
-  it('an emptied required number commits nothing and goes back to its value on leaving (#476)', async () => {
+  it('non-numeric text is flagged while it is on screen and goes back to the stored value on leaving (r1-13)', async () => {
     const onCommit = vi.fn()
     await act(async () => {
       root.render(<NumberField label="Claim age (years)" value={67} min={62} max={70} onCommit={onCommit} />)
     })
     const input = container.querySelector<HTMLInputElement>('input')!
-    await typeInto(input, '')
+    // A number input hands back "1e" as an empty value with badInput set (jsdom
+    // sanitises it exactly as a browser does), which is what tells this apart
+    // from a field the person cleared.
+    Object.defineProperty(input, 'validity', { value: { badInput: true }, configurable: true })
+    await typeInto(input, '1e')
     expect(onCommit).not.toHaveBeenCalled()
-    expect(container.querySelector('.field-error')?.textContent).toBe('Enter a value')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(container.querySelector('.field-error')?.textContent).toBe('Enter a number')
     await blur(input)
     expect(onCommit).not.toHaveBeenCalled()
     expect(input.value).toBe('67')
+    expect(container.querySelector('.field-error')).toBeNull()
+  })
+
+  it('an emptied required number commits 0 where 0 is allowed, and holds its value where it is not (r1-11)', async () => {
+    // The state effective tax override: 0 is the documented "off" state.
+    const onCommit = vi.fn()
+    await act(async () => {
+      root.render(<NumberField label="State effective tax (override)" value={5} min={0} max={20} onCommit={onCommit} />)
+    })
+    const rate = container.querySelector<HTMLInputElement>('input')!
+    await typeInto(rate, '')
+    expect(onCommit).toHaveBeenLastCalledWith(0)
+    expect(container.querySelector('.field-error')).toBeNull()
+    await blur(rate)
+    expect(rate.value).toBe('')
+    expect(container.querySelector('.field-error')).toBeNull()
+
+    // A claim age: there is no safe zero, so nothing is committed and it says so.
+    const onAge = vi.fn()
+    await act(async () => {
+      root.render(<NumberField label="Claim age (years)" value={67} min={62} max={70} onCommit={onAge} />)
+    })
+    const age = container.querySelector<HTMLInputElement>('input')!
+    await typeInto(age, '')
+    expect(onAge).not.toHaveBeenCalled()
+    expect(container.querySelector('.field-error')?.textContent).toBe('Enter a value')
+    await blur(age)
+    expect(onAge).not.toHaveBeenCalled()
+    expect(age.value).toBe('67')
     expect(container.querySelector('.field-error')).toBeNull()
   })
 
@@ -221,6 +264,14 @@ describe('validation chrome', () => {
     expect(container.textContent).not.toContain('cashValueMode')
     const add = [...container.querySelectorAll('button')].find((b) => b.textContent === '+ Schedule row')!
     expect(add.getAttribute('aria-describedby')).toBe(error.id)
+    // The block is the invalid control the chip's jump looks for, so the jump
+    // lands on the schedule rather than on the card's list (r1-5).
+    expect(block[0]!.getAttribute('aria-invalid')).toBe('true')
+    expect(block[0]!.getAttribute('aria-describedby')).toBe(error.id)
+    expect(block[0]!.tabIndex).toBe(-1)
+    expect(container.querySelector('[aria-invalid="true"]')).toBe(block[0])
+    focusIssueTarget(container, 'insurance')
+    expect(document.activeElement).toBe(block[0])
   })
 
   it('a section lists only its own issues, in words, with the raw path kept as a title (#452)', async () => {

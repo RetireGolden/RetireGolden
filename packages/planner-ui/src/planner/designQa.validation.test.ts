@@ -22,10 +22,26 @@ describe('validation chrome pins', () => {
     expect(css).toMatch(/\.save-state--button \{[^}]*border: 0;[^}]*background: none;/)
     expect(css).toMatch(/\.field--invalid > \.field-label-row > \.field-label \{\s*color: var\(--bad\)/)
     expect(css).toMatch(/\.issue-list:focus \{\s*outline: 2px solid var\(--accent\)/)
+    // The chip is a button, so keyboard focus is visible on it too (r1-8).
+    expect(css).toMatch(/\.save-state--button:focus-visible \{\s*outline: 2px solid var\(--accent\)/)
+    // A whole block the engine rejected (the cash-value schedule) takes focus.
+    expect(css).toMatch(/\.field--invalid\[tabindex\]:focus \{\s*outline: 2px solid var\(--bad\)/)
+    // An accepted-and-adjusted value reads as a note, not a fault (r1-2).
+    expect(css).toMatch(/\.field-note \{[^}]*color: var\(--muted\)/)
+    // A diff chip wraps inside its cell instead of stretching the table (r1-9).
+    expect(css).toMatch(/\.diff-chip \{[^}]*overflow-wrap: anywhere/)
+    expect(css).not.toMatch(/\.diff-chip \{[^}]*white-space: nowrap/)
     const workspace = read('./PlanWorkspace.tsx')
     expect(workspace).toContain('focusIssueTarget(document, section)')
     expect(workspace).toContain('navigate(`/plan/${plan.id}/${route}`)')
     expect(workspace).toContain('className="save-state save-state--error save-state--button"')
+    // The chip goes somewhere even when nothing is placeable (r1-4), the retry
+    // loop is cancellable (r1-6), and hovering it describes the jump, not
+    // where the plan is stored (r1-15).
+    expect(workspace).toContain('const route = routeForIssues(issues)')
+    expect(workspace).toContain('if (mine !== jumpGeneration.current) return')
+    expect(workspace).toContain('cancelAnimationFrame(jumpFrame.current)')
+    expect(workspace).toContain('title="Go to the first thing to fix. The plan is stored once it is valid."')
   })
 
   it('every plan section, Social Security included, scopes its issue list, and Strategy lists above its cards', () => {

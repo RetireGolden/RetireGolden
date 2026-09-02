@@ -4,7 +4,7 @@
  * deterministic projection live as the plan changes.
  */
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
@@ -24,7 +24,7 @@ import { successBand } from './successBand'
 import { useMcSuccessRateState } from './useMcSuccessRate'
 import { useProjection } from './useProjection'
 import { SECTION_TITLES } from './sectionTitles'
-import { SECTION_ROUTE, firstIssueSection, focusIssueTarget } from './issueJump'
+import { firstIssueSection, focusIssueTarget, routeForIssues } from './issueJump'
 
 const railClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'rail-link rail-link--active' : 'rail-link')
 
@@ -40,6 +40,18 @@ function SaveIndicator() {
   const readOnly = useWorkspaceReadOnly()
   const { homeLabel, storageTooltip } = usePlannerEdition()
   const isExample = plan.origin === 'example'
+  // The retry loop that waits for the destination page to render: one
+  // generation token so a superseded jump stops, and the pending frame so
+  // unmounting cancels it.
+  const jumpGeneration = useRef(0)
+  const jumpFrame = useRef<number | undefined>(undefined)
+  useEffect(
+    () => () => {
+      jumpGeneration.current++
+      if (jumpFrame.current !== undefined) cancelAnimationFrame(jumpFrame.current)
+    },
+    [],
+  )
   // Read-only wins over any save state: nothing is being stored, so the
   // "Stored on this device" / "Storing…" copy would be misleading. Keep the
   // label generic — planner-ui doesn't know the reason (the host explains it).
@@ -69,20 +81,26 @@ function SaveIndicator() {
     // The chip names the count (the live region announces it); the button
     // takes you to the first invalid control on this page, else to the issue
     // list of the section that owns the first issue, navigating there when
-    // that is another section (#494).
+    // that is another section. With nothing placeable, it still goes to an
+    // entry page, where every list shows the unplaceable issues (#494).
     const jump = () => {
       const section = firstIssueSection(issues)
       if (focusIssueTarget(document, section)) return
-      const route = section ? SECTION_ROUTE[section] : null
+      const route = routeForIssues(issues)
       if (!route) return
       navigate(`/plan/${plan.id}/${route}`)
       // The target renders after navigation; look for it over the next frames.
+      // Only the newest jump may act: an earlier loop still running when the
+      // person clicks again or navigates away would otherwise focus whatever
+      // it finds by then.
+      const mine = ++jumpGeneration.current
       let tries = 0
       const look = () => {
+        if (mine !== jumpGeneration.current) return
         if (focusIssueTarget(document, section) || tries++ > 30) return
-        requestAnimationFrame(look)
+        jumpFrame.current = requestAnimationFrame(look)
       }
-      requestAnimationFrame(look)
+      jumpFrame.current = requestAnimationFrame(look)
     }
     return (
       <>
@@ -93,7 +111,7 @@ function SaveIndicator() {
           type="button"
           className="save-state save-state--error save-state--button"
           aria-label={`${text}. Show what to fix`}
-          title={title}
+          title="Go to the first thing to fix. The plan is stored once it is valid."
           onClick={jump}
         >
           {text}

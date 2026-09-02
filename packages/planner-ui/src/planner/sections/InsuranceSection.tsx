@@ -144,7 +144,17 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
               onCommit={(v) => set('cashValueGrowthPct', v ?? 0)}
             />
           ) : (
-            <div className={scheduleIssue ? 'field field-span-full field--invalid' : 'field field-span-full'}>
+            // The block is the control for the schedule as a whole: when the
+            // engine rejects it, it carries aria-invalid and takes focus, so
+            // the save chip's jump lands here rather than on a list (#489).
+            <div
+              className={scheduleIssue ? 'field field-span-full field--invalid' : 'field field-span-full'}
+              role="group"
+              aria-labelledby={`${scheduleId}-label`}
+              aria-invalid={scheduleIssue ? true : undefined}
+              aria-describedby={scheduleIssue ? `${scheduleId}-error` : undefined}
+              tabIndex={scheduleIssue ? -1 : undefined}
+            >
               <span className="field-label" id={`${scheduleId}-label`}>Cash-value schedule (age → value)</span>
               {(policy.cashValueSchedule ?? []).map((row, ri) => (
                 <div className="add-row" key={ri} style={{ alignItems: 'flex-end' }}>

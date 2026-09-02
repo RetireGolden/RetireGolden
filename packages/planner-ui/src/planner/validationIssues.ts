@@ -20,7 +20,7 @@ export interface ParsedIssue {
   message: string
   /** Where the field lives, for scoping card-level lists. */
   section: IssueSection
-  /** "Income 1: End age" — the section item and the field, for people. */
+  /** "Income 1: Stop age" — the section item and the field, as the card labels it. */
   label: string
   /** "Must be at least 60" — the message, for people. */
   advice: string
@@ -66,8 +66,20 @@ const SECTION_BY_ROOT: Record<string, IssueSection> = {
   incomeFloor: 'income-floor',
 }
 
-/** Income-stream leaves that are edited on the Social Security page, not the Income page. */
-const SOCIAL_SECURITY_LEAVES = new Set(['claimAge', 'piaMonthly', 'earnings', 'deceasedClaimAge', 'remarriedAtAge', 'survivorRecords', 'disability'])
+/**
+ * Income-stream leaves that are edited on the Social Security page, not the
+ * Income page: the keys of `socialSecurityIncomeSchema` that the Income page
+ * only summarises (packages/engine/src/model/plan.ts).
+ */
+const SOCIAL_SECURITY_LEAVES = new Set([
+  'claimAge',
+  'piaMonthly',
+  'earnings',
+  'earningsProjection',
+  'coveredQuarters',
+  'formerSpouses',
+  'disability',
+])
 
 export function sectionOfPath(path: string): IssueSection {
   const segments = path.split('.')
@@ -91,77 +103,114 @@ const ITEM_NAMES: Record<string, string> = {
   stateMoves: 'Move',
   scenarios: 'Scenario',
   earnings: 'Earnings year',
-  cashValueSchedule: 'Schedule year',
+  cashValueSchedule: 'Schedule row',
+  formerSpouses: 'Former spouse',
+  retirementActions: 'Retirement action',
+  contributionSchedule: 'Contribution phase',
+  stages: 'Glidepath stage',
 }
 
-/** Leaves whose camelCase does not read well split, or that carry an acronym or unit. */
+/**
+ * Leaves as the cards label them, so a person can find the field the issue
+ * names. Units ride in the card's affix ("%", "$"), not in the label, so they
+ * are not repeated here either.
+ */
 const LEAF_LABELS: Record<string, string> = {
-  // These read exactly as the card labels do, so a person can find the field.
+  // Strategy
   qcdAnnual: "QCD per year (today's $)",
   taxableSafetyNetFloor: 'Taxable safety-net floor',
+  survivorReserveTarget: "Survivor reserve target (today's $)",
   stateAndLocalTaxes: 'State & local taxes (SALT)',
-  localIncomeTaxPct: 'Local income tax',
-  // The schema key is `stateEffectiveTaxPct`; the Assumptions label calls it an override.
-  stateEffectiveTaxPct: 'State effective tax % (override)',
-  stateEffectiveTaxPctOverride: 'State effective tax % (override)',
-  inflationPct: 'Inflation %',
-  healthcareExtraInflationPct: 'Healthcare extra inflation %',
-  healthcareInflationPct: 'Healthcare extra inflation %',
-  defaultReturnPct: 'Default return %',
-  safeWithdrawalRatePct: 'Safe withdrawal rate %',
-  heirTaxRatePct: 'Heir tax rate %',
-  recentAnnualMagi: 'Recent annual MAGI',
-  returnPct: 'Expected return %',
-  volatilityPct: 'Volatility %',
-  interestYieldPct: 'Interest yield %',
-  qualifiedRatioPct: 'Qualified share %',
-  qualifiedRatio: 'Qualified dividends (share, 0–1)',
-  interestPct: 'Interest rate %',
+  mortgageInterest: 'Mortgage interest',
+  charitable: 'Charitable gifts',
+  bracketPct: 'Target bracket',
   targetValue: 'Target',
-  annualPremium: 'Annual premium',
-  deathBenefit: 'Death benefit',
-  cashValue: 'Cash value',
-  annualCost: 'Annual cost',
-  annualAmount: 'Annual amount',
-  annualRealAmount: 'Annual real income',
-  requiredAnnual: 'Required floor',
+  // Assumptions
+  localIncomeTaxPct: 'Local income tax',
+  stateEffectiveTaxPct: 'State effective tax (override)',
+  inflationPct: 'Inflation',
+  healthcareExtraInflationPct: 'Healthcare extra inflation',
+  defaultReturnPct: 'Default return',
+  safeWithdrawalRatePct: 'Safe withdrawal rate (SWR)',
+  heirTaxRatePct: 'Heir tax rate',
+  recentAnnualMagi: 'Recent annual MAGI',
+  returnPct: 'Expected return',
+  volatilityPct: 'Volatility',
+  interestYieldPct: 'Interest yield',
+  dividendYieldPct: 'Dividend yield',
+  qualifiedRatioPct: 'Qualified share',
+  ssHaircut: 'Social Security haircut',
   fromYear: 'From year',
-  cutPct: 'Cut %',
-  annualPct: 'COLA rate %',
-  bracketPct: 'Target bracket %',
-  pre65MonthlyPremiumPerPerson: 'Pre-65 premium / person / month',
-  medicareExtrasMonthlyPerPerson: 'Medicare extras / person / month',
-  cashValueSchedule: 'Cash value schedule',
-  cashValueGrowthPct: 'Cash value growth',
-  premiumEndAge: 'Premium end age',
-  planningAge: 'Planning age',
+  cutPct: 'Cut',
+  annualPct: 'COLA rate',
+  // Household
+  filingStatus: 'Filing status',
+  state: 'State (starting residence)',
+  name: 'Name',
+  dob: 'Date of birth',
+  sex: 'Sex',
   retirementAge: 'Retirement age',
+  planningAge: 'Planning age',
+  // Accounts
+  balance: 'Balance',
+  value: 'Value',
+  costBasis: 'Cost basis',
+  qualifiedRatio: 'Qualified dividends',
+  interestPct: 'Interest rate',
+  monthlyPayment: 'Monthly payment',
+  payoffYear: 'Lump-sum payoff year',
+  plannedSaleYear: 'Planned sale year',
+  // Income
   annualGross: 'Annual gross',
-  realRaisePct: 'Real raise rate',
+  realGrowthPct: 'Real raise rate',
   endAge: 'Stop age',
-  startAge: 'Start age',
+  label: 'Label',
+  annualAmount: 'Annual amount',
   startYear: 'Start year',
   endYear: 'End year',
-  fromAge: 'From age',
-  toAge: 'To age',
-  durationYears: 'Duration (years)',
-  multiplier: 'Multiplier',
-  baseAnnual: 'Baseline annual spending',
-  payoffYear: 'Payoff year',
-  plannedSaleYear: 'Planned sale year',
-  interestRatePct: 'Interest rate %',
-  dividendYieldPct: 'Dividend yield %',
-  qualifiedDividendPct: 'Qualified dividend %',
-  piaMonthly: 'PIA (monthly)',
+  year: 'Year',
+  amount: 'Amount',
+  piaMonthly: 'PIA (monthly benefit at FRA)',
   claimAge: 'Claim age',
+  coveredQuarters: 'Covered-work credits',
   years: 'Years',
   months: 'Months',
-  dob: 'Date of birth',
-  ssHaircut: 'Social Security haircut',
-  magiTarget: 'MAGI target',
-  balance: 'Balance',
-  amount: 'Amount',
-  year: 'Year',
+  // Spending
+  baseAnnual: 'Baseline annual spending',
+  requiredAnnual: "Required floor (today's $)",
+  fromAge: 'From age',
+  toAge: 'To age',
+  multiplier: 'Multiplier',
+  earliestYear: 'Earliest year',
+  latestYear: 'Latest year',
+  pre65MonthlyPremiumPerPerson: 'Pre-65 premium / person / month',
+  medicareExtrasMonthlyPerPerson: 'Medicare extras / person / month',
+  // Insurance and care
+  annualPremium: 'Annual premium',
+  premiumEndAge: 'Premiums end at age',
+  deathBenefit: 'Death benefit',
+  cashValue: 'Cash value (today)',
+  cashValueGrowthPct: 'Cash value growth',
+  cashValueSchedule: 'Cash-value schedule',
+  startAge: 'Start age',
+  durationYears: 'Duration (years)',
+  annualCost: "Annual cost (today's $)",
+  // Income floor
+  annualRealAmount: "Annual real income (today's $)",
+}
+
+/** Leaves whose card label depends on the list the item sits in. */
+const CONTAINER_LEAF_LABELS: Record<string, Record<string, string>> = {
+  ladders: { startYear: 'First payout year', endYear: 'Last payout year' },
+  careEvents: { startAge: 'Starts at age' },
+  stateMoves: { fromYear: 'Move year', state: 'New state' },
+  oneTimeGoals: { amount: "Amount (today's $)" },
+  formerSpouses: {
+    piaMonthly: 'Their PIA (monthly at FRA)',
+    dob: 'Their date of birth',
+    marriageYears: 'Years married',
+    remarriedAtAge: 'Age you remarried',
+  },
 }
 
 /** Roots and mid-path objects that name a card rather than a list. */
@@ -192,10 +241,15 @@ const NESTED_LEAF_LABELS: Record<string, string> = {
   'deceasedClaimAge.years': 'When they claimed (age)',
   'deceasedClaimAge.months': 'When they claimed (+ months)',
   'purchase.year': 'Purchase year',
+  'heirTaxByClass.traditional': 'Traditional heir tax',
+  'heirTaxByClass.hsa': 'HSA heir tax',
+  'earningsProjection.assumedAnnualEarnings': 'Assumed annual earnings',
+  'earningsProjection.throughAge': 'Work through age',
+  'disability.onsetAge': 'Disability onset age',
 }
 
 /** Acronyms a fallback label keeps in capitals. */
-const ACRONYMS = new Set(['hsa', 'ira', 'rmd', 'qcd', 'magi', 'agi', 'pia', 'fra', 'ss', 'aca', 'irmaa', 'ltc', 'tips', 'salt', 'cola', 'niit', 'ptc', 'sepp', 'amt'])
+const ACRONYMS = new Set(['us', 'hsa', 'ira', 'rmd', 'rmds', 'qcd', 'magi', 'agi', 'pia', 'fra', 'ss', 'aca', 'irmaa', 'ltc', 'tips', 'salt', 'cola', 'niit', 'ptc', 'sepp', 'amt', 'edb', 'qlac', 'hecm'])
 
 function words(camel: string): string {
   const tokens = camel
@@ -208,30 +262,60 @@ function words(camel: string): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
+/** "formerSpouses" → "Former spouse", for a list the tables do not name. */
+function singular(container: string): string {
+  return words(container.endsWith('s') ? container.slice(0, -1) : container)
+}
+
 /**
- * `incomes.0.endAge` → "Income 1: End age"; `household.people.1.longevity.planningAge`
+ * A numeric segment is a list index unless it reads as a year (a four-digit
+ * key such as `historicalAnnualMagiByYear.2024`); indexes are shown 1-based.
+ */
+function isIndex(segment: string): boolean {
+  return /^\d+$/.test(segment) && !(segment.length === 4 && Number(segment) >= 1900)
+}
+
+/**
+ * `incomes.0.endAge` → "Income 1: Stop age"; `household.people.1.longevity.planningAge`
  * → "Person 2: Planning age"; `strategies.itemizedDeductions.stateAndLocalTaxes`
- * → "Itemized deductions: State and local taxes". The last numbered item wins as
- * the prefix; a bare root ("Assumptions") is the prefix when there is none.
+ * → "Itemized deductions: State & local taxes (SALT)". The last numbered item
+ * wins as the prefix; a bare root ("Assumptions") is the prefix when there is none.
  */
 export function labelOfPath(path: string): string {
   if (path === '(root)' || path === '$' || path === '') return 'Plan'
-  const segments = path.split('.')
+  return labelOfSegments(path.split('.'))
+}
+
+/**
+ * The same, from path segments that are already split, so a segment holding a
+ * dot or slash (a JSON-pointer key decoded from `~1`) stays one segment.
+ */
+export function labelOfSegments(segments: readonly string[]): string {
+  if (segments.length === 0) return 'Plan'
   // A numbered item ("Person 2") is the card the field sits on and wins; with
   // no item, the last named group ("Itemized deductions") is the card. Any
-  // object segments between the card and the leaf are kept ("Claim age ›
-  // Years"), so a nested field is not mistaken for a top-level one.
+  // object segments between the card and the leaf are kept ("Social Security
+  // haircut › Cut") unless the nested leaf has a label of its own ("Claim
+  // age (years)"), so a nested field is never mistaken for a top-level one.
   let item: string | null = null
+  let container: string | null = null
   let group: string | null = null
   const trail: string[] = []
   const leaf = segments[segments.length - 1] ?? ''
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i]!
     const next = segments[i + 1]!
+    if (isIndex(next)) {
+      item = `${ITEM_NAMES[seg] ?? singular(seg)} ${Number(next) + 1}`
+      container = seg
+      trail.length = 0
+      i++
+      continue
+    }
     if (/^\d+$/.test(next)) {
-      // A numeric segment is an index only inside a known list; elsewhere it is
-      // a key (a year, an age) and is shown as itself.
-      item = ITEM_NAMES[seg] ? `${ITEM_NAMES[seg]} ${Number(next) + 1}` : `${words(seg)} ${next}`
+      // A year-like key (a map keyed by year) is shown as itself.
+      item = `${words(seg)} ${next}`
+      container = seg
       trail.length = 0
       i++
       continue
@@ -246,20 +330,22 @@ export function labelOfPath(path: string): string {
   const prefix = item ?? group
   if (/^\d+$/.test(leaf)) {
     // A whole numbered item is wrong ("insurance.0"): name the item itself.
-    const container = segments[segments.length - 2] ?? ''
-    return ITEM_NAMES[container] ? `${ITEM_NAMES[container]} ${Number(leaf) + 1}` : `${words(container)} ${leaf}`
+    const list = segments[segments.length - 2] ?? ''
+    return isIndex(leaf) ? `${ITEM_NAMES[list] ?? singular(list)} ${Number(leaf) + 1}` : `${words(list)} ${leaf}`
   }
   const parent = segments[segments.length - 2] ?? ''
-  const nested = NESTED_LEAF_LABELS[`${parent}.${leaf}`]
-  const field = nested ?? [...trail, LEAF_LABELS[leaf] ?? words(leaf)].join(' › ')
+  const own =
+    (container !== null && isIndex(parent) ? CONTAINER_LEAF_LABELS[container]?.[leaf] : undefined) ??
+    NESTED_LEAF_LABELS[`${parent}.${leaf}`]
+  const field = own ?? [...trail, LEAF_LABELS[leaf] ?? words(leaf)].join(' › ')
   return prefix && prefix !== field ? `${prefix}: ${field}` : field
 }
 
 /**
  * The engine's cross-field messages that name schema keys rather than fields
  * (packages/engine/src/model/plan.ts superRefine). Matched exactly, so a
- * reworded engine message falls through to the pass-through below rather than
- * being mistranslated.
+ * reworded engine message falls through to the key-by-key translation below
+ * rather than being mistranslated.
  */
 const CUSTOM_ADVICE: Record<string, string> = {
   "cashValueSchedule is required when cashValueMode is 'schedule'": 'Add at least one schedule row, or grow cash value by a flat rate',
@@ -267,10 +353,41 @@ const CUSTOM_ADVICE: Record<string, string> = {
 }
 
 /**
- * Zod's wording, translated. Custom engine messages (anything not in Zod's
- * "Too small" / "Too big" / "Invalid input" family) pass through unchanged,
- * since those were written for people already; the few that name schema keys
- * are translated exactly.
+ * Schema keys the engine's remaining custom messages name, as the cards label
+ * them. Keys not listed here fall back to the field tables, then to their
+ * words ("treatAsOwnElectionYear" → "Treat as own election year").
+ */
+const KEY_LABELS: Record<string, string> = {
+  beneficiaryClass: 'Beneficiary class',
+  edbCategory: 'Eligible designated beneficiary category',
+  beneficiaryBirthYear: 'Beneficiary birth year',
+  soleBeneficiary: 'Sole beneficiary',
+  ownerBirthYear: 'Original owner birth year',
+  ownerBirthMonth: 'Original owner birth month',
+  ownerBirthDay: 'Original owner birth day',
+  ownerDeathYear: 'Original owner death year',
+  decedentHadStartedRmds: 'Original owner had started RMDs',
+  premiumMode: 'Premium',
+  cashValueMode: 'Cash value grows by',
+  employerPlanType: 'Employer plan type',
+  marriedFilingJointly: 'Married filing jointly',
+}
+
+/**
+ * A custom engine message with its schema keys replaced by the field labels a
+ * person sees: `earliestYear cannot be after latestYear` → “Earliest year”
+ * cannot be after “Latest year”. Only camelCase identifiers are touched;
+ * quoted option values, citations, and ordinary words pass through.
+ */
+export function humanizeSchemaKeys(message: string): string {
+  return message.replace(/\b[a-z]+(?:[A-Z][A-Za-z0-9]*)+\b/g, (key) => `“${KEY_LABELS[key] ?? LEAF_LABELS[key] ?? words(key)}”`)
+}
+
+/**
+ * Zod's wording, translated. The engine's own messages (anything not in
+ * Zod's "Too small" / "Too big" / "Invalid input" family) keep their sense,
+ * with any schema key they name shown as the field's label; the two that a
+ * person cannot act on as worded are translated exactly.
  */
 export function adviceOf(message: string): string {
   const custom = CUSTOM_ADVICE[message]
@@ -288,7 +405,8 @@ export function adviceOf(message: string): string {
   if (/^Invalid option/.test(message)) return 'Choose one of the listed options'
   if (/^Invalid input$/.test(message)) return 'Enter a valid value'
   if (/^Invalid date/.test(message)) return 'Enter a valid date'
-  return message
+  if (/^Invalid string: must match pattern/.test(message)) return 'Enter a valid value'
+  return humanizeSchemaKeys(message)
 }
 
 /** The issues that belong to one section's card, plus any the router cannot place. */

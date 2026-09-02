@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 
-import { adviceOf, issuesForSection, labelOfPath, parseIssue, parseIssues, sectionOfPath } from './validationIssues'
+import { adviceOf, issuesForSection, labelOfPath, labelOfSegments, parseIssue, parseIssues, sectionOfPath } from './validationIssues'
 
 describe('real engine output', () => {
   it('translates what parsePlan actually reports for a planning age of 9, a QCD of -5, and inflation of -999', () => {
@@ -62,20 +62,20 @@ describe('labelOfPath', () => {
     ['strategies.taxableSafetyNetFloor', 'Strategy: Taxable safety-net floor'],
     ['strategies.itemizedDeductions.stateAndLocalTaxes', 'Itemized deductions: State & local taxes (SALT)'],
     ['assumptions.localIncomeTaxPct', 'Assumptions: Local income tax'],
-    ['assumptions.inflationPct', 'Assumptions: Inflation %'],
+    ['assumptions.inflationPct', 'Assumptions: Inflation'],
     ['incomes.0.annualGross', 'Income 1: Annual gross'],
     ['incomes.0.endAge', 'Income 1: Stop age'],
     ['accounts.2.balance', 'Account 3: Balance'],
     ['accounts.4.plannedSaleYear', 'Account 5: Planned sale year'],
-    ['insurance.0.cashValueSchedule', 'Insurance policy 1: Cash value schedule'],
-    ['insurance.0.premiumEndAge', 'Insurance policy 1: Premium end age'],
+    ['insurance.0.cashValueSchedule', 'Insurance policy 1: Cash-value schedule'],
+    ['insurance.0.premiumEndAge', 'Insurance policy 1: Premiums end at age'],
     ['insurance.0.cashValueGrowthPct', 'Insurance policy 1: Cash value growth'],
     ['careEvents.0.durationYears', 'Care event 1: Duration (years)'],
-    ['incomeFloor.ladders.0.endYear', 'TIPS ladder 1: End year'],
+    ['incomeFloor.ladders.0.endYear', 'TIPS ladder 1: Last payout year'],
     ['expenses.phases.0.multiplier', 'Phase 1: Multiplier'],
     ['expenses.baseAnnual', 'Spending: Baseline annual spending'],
     ['household.people.1.retirementAge', 'Person 2: Retirement age'],
-    ['household.stateMoves.0.fromYear', 'Move 1: From year'],
+    ['household.stateMoves.0.fromYear', 'Move 1: Move year'],
     ['incomes.1.claimAge.years', 'Income 2: Claim age (years)'],
     ['incomes.1.claimAge.months', 'Income 2: Claim age (+ months)'],
     ['incomes.0.startYear', 'Income 1: Start year'],
@@ -84,20 +84,20 @@ describe('labelOfPath', () => {
     ['strategies.rothConversion.startYear', 'Roth conversion: Start year'],
     ['strategies.rothConversion.endYear', 'Roth conversion: End year'],
     ['strategies.rothConversion.conversions.0.year', 'Conversion 1: Year'],
-    ['strategies.withdrawalOrder.bracketPct', 'Withdrawal strategy: Target bracket %'],
-    ['assumptions.stateEffectiveTaxPct', 'Assumptions: State effective tax % (override)'],
-    ['assumptions.healthcareExtraInflationPct', 'Assumptions: Healthcare extra inflation %'],
-    ['assumptions.assetClassParams.usStocks.returnPct', 'Asset classes: US stocks › Expected return %'],
-    ['assumptions.ssHaircut.cutPct', 'Social Security haircut: Cut %'],
+    ['strategies.withdrawalOrder.bracketPct', 'Withdrawal strategy: Target bracket'],
+    ['assumptions.stateEffectiveTaxPct', 'Assumptions: State effective tax (override)'],
+    ['assumptions.healthcareExtraInflationPct', 'Assumptions: Healthcare extra inflation'],
+    ['assumptions.assetClassParams.usStocks.returnPct', 'Asset classes: US stocks › Expected return'],
+    ['assumptions.ssHaircut.cutPct', 'Social Security haircut: Cut'],
     ['expenses.oneTimeGoals.0.year', 'Goal 1: Year'],
-    ['expenses.oneTimeGoals.2.amount', 'Goal 3: Amount'],
+    ['expenses.oneTimeGoals.2.amount', "Goal 3: Amount (today's $)"],
     ['expenses.healthcare.pre65MonthlyPremiumPerPerson', 'Healthcare: Pre-65 premium / person / month'],
-    ['accounts.3.interestPct', 'Account 4: Interest rate %'],
-    ['accounts.3.payoffYear', 'Account 4: Payoff year'],
-    ['accounts.1.dividendYieldPct', 'Account 2: Dividend yield %'],
-    ['accounts.1.qualifiedRatio', 'Account 2: Qualified dividends (share, 0–1)'],
+    ['accounts.3.interestPct', 'Account 4: Interest rate'],
+    ['accounts.3.payoffYear', 'Account 4: Lump-sum payoff year'],
+    ['accounts.1.dividendYieldPct', 'Account 2: Dividend yield'],
+    ['accounts.1.qualifiedRatio', 'Account 2: Qualified dividends'],
     ['incomeFloor.ladders.0.purchase.year', 'TIPS ladder 1: Purchase year'],
-    ['insurance.0.cashValueSchedule.1.age', 'Schedule year 2: Age'],
+    ['insurance.0.cashValueSchedule.1.age', 'Schedule row 2: Age'],
     ['insurance.0', 'Insurance policy 1'],
     ['assumptions.someNewFieldPct', 'Assumptions: Some new field pct'],
     ['accounts.0.hsaContributionAnnual', 'Account 1: HSA contribution annual'],
@@ -118,6 +118,15 @@ describe('sectionOfPath', () => {
     ['incomes.0.annualGross', 'income'],
     ['incomes.1.claimAge.years', 'social-security'],
     ['incomes.1.piaMonthly', 'social-security'],
+    // Every stream leaf whose only editor is on the Social Security page (r1-1).
+    ['incomes.1.earnings.3.amount', 'social-security'],
+    ['incomes.1.earningsProjection.throughAge', 'social-security'],
+    ['incomes.1.coveredQuarters', 'social-security'],
+    ['incomes.1.formerSpouses.0.piaMonthly', 'social-security'],
+    ['incomes.1.disability.onsetAge', 'social-security'],
+    // …while the wage and recurring leaves stay on Income.
+    ['incomes.0.realGrowthPct', 'income'],
+    ['incomes.0.annualAmount', 'income'],
     ['insurance.0.premiumEndAge', 'insurance'],
     ['careEvents.0.durationYears', 'insurance'],
     ['incomeFloor.ladders.0.endYear', 'income-floor'],
@@ -144,6 +153,34 @@ describe('adviceOf', () => {
     ['a ladder must end in or after its first payout year', 'a ladder must end in or after its first payout year'],
   ])('%s → %s', (message, advice) => {
     expect(adviceOf(message)).toBe(advice)
+  })
+
+  it('names the field, not the schema key, in the engine messages that carry one (r1-7)', () => {
+    expect(adviceOf("beneficiaryBirthYear is required when beneficiaryClass is 'designated-individual'; provide the beneficiary's birth year for the life-expectancy regime and consistency checks")).toBe(
+      "“Beneficiary birth year” is required when “Beneficiary class” is 'designated-individual'; provide the beneficiary's birth year for the life-expectancy regime and consistency checks",
+    )
+    expect(adviceOf("soleBeneficiary is required when beneficiaryClass is 'designated-individual'; set it to true or false")).toBe(
+      "“Sole beneficiary” is required when “Beneficiary class” is 'designated-individual'; set it to true or false",
+    )
+    expect(adviceOf('ownerBirthMonth is required when ownerBirthDay is provided; supply the birth month or remove the birth day')).toBe(
+      '“Original owner birth month” is required when “Original owner birth day” is provided; supply the birth month or remove the birth day',
+    )
+    expect(adviceOf('earliestYear cannot be after latestYear')).toBe('“Earliest year” cannot be after “Latest year”')
+    // A message with no schema key in it is left exactly as the engine wrote it.
+    expect(adviceOf('a ladder must be purchased before its first payout year')).toBe('a ladder must be purchased before its first payout year')
+    expect(adviceOf('required annual spending cannot exceed baseline (target) annual spending')).toBe(
+      'required annual spending cannot exceed baseline (target) annual spending',
+    )
+  })
+})
+
+describe('labelOfSegments', () => {
+  it('keeps a segment that holds a slash or a dot whole, so a decoded pointer key is not read as a path (r1-14)', () => {
+    expect(labelOfSegments(['assumptions', 'historicalAnnualMagiByYear', '2024'])).toBe('Historical annual MAGI by year 2024')
+    // `/assumptions/a~1b` decodes to the single key "a/b", not two segments.
+    expect(labelOfSegments(['assumptions', 'a/b'])).toBe('Assumptions: A/b')
+    expect(labelOfSegments(['expenses', 'oneTimeGoals', '0', 'amount'])).toBe("Goal 1: Amount (today's $)")
+    expect(labelOfSegments([])).toBe('Plan')
   })
 })
 

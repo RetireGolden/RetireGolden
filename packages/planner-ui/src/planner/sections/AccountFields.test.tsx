@@ -343,8 +343,17 @@ describe('AccountFields inherited beneficiary details', () => {
     if (parsed.ok) throw new Error('expected a contradictory beneficiary fact')
 
     renderIssues(plan, parsed.issues)
-    expect(container?.textContent).toContain("edbCategory 'minor-child' is contradicted by beneficiaryBirthYear")
-    expect(container?.textContent).toContain('correct beneficiaryBirthYear, ownerDeathYear, or edbCategory')
+    // The engine's reasoning and its citation survive intact; the schema keys
+    // it names are shown as the fields the card labels (r1-7).
+    expect(container?.textContent).toContain(
+      "“Eligible designated beneficiary category” 'minor-child' is contradicted by “Beneficiary birth year”",
+    )
+    expect(container?.textContent).toContain('§1.401(a)(9)-4(e)(3)')
+    expect(container?.textContent).toContain(
+      'correct “Beneficiary birth year”, “Original owner death year”, or “Eligible designated beneficiary category”',
+    )
+    expect(container?.textContent).not.toContain('edbCategory')
+    expect(container?.textContent).not.toContain('beneficiaryBirthYear')
   })
 
   it('clears treatAsOwnElectionYear when the election leaves treat-as-own (parse-valid)', () => {

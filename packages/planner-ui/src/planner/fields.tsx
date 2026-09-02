@@ -215,8 +215,9 @@ function FieldShell({
   source,
   id,
   error,
+  note,
   children,
-}: BaseProps & { id: string; error?: string | null; children: ReactNode }) {
+}: BaseProps & { id: string; error?: string | null; note?: string | null; children: ReactNode }) {
   return (
     <div className={error ? 'field field--invalid' : 'field'}>
       {/* .field--invalid tints the caption; the control itself carries aria-invalid. */}
@@ -232,6 +233,15 @@ function FieldShell({
       {error ? (
         <p className="field-error" id={`${id}-error`}>
           {error}
+        </p>
+      ) : null}
+      {/* What the field did to a value it accepted ("Adjusted to 120, the
+          highest allowed"). It is described, not an error: the value the plan
+          now holds is valid, so the control does not stay aria-invalid and the
+          save chip's jump does not land on it (#476, #494). */}
+      {!error && note ? (
+        <p className="field-note" id={`${id}-note`}>
+          {note}
         </p>
       ) : null}
     </div>
@@ -381,17 +391,23 @@ export function NumberField({
 }: NumericProps & { suffix?: string; step?: number; min?: number; max?: number }) {
   const id = useId()
   const { text, setText, setFocused } = useLocalText(value === null ? '' : String(value))
-  // While typing, a value outside the field's own min/max (or an emptied
-  // required field) is flagged beside the field and commits nothing, so an
+  // While typing, a value outside the field's own min/max (or text that is not
+  // a number at all) is flagged beside the field and commits nothing, so an
   // intermediate keystroke never stores a bound the person did not choose and
   // the engine is never handed an age or rate it cannot model (#476, #494).
-  // On leaving the field the nearest allowed value is committed and the note
-  // says what was adjusted; an emptied required field goes back to its value.
+  // On leaving the field the nearest allowed value is committed and a note
+  // says what was adjusted; non-numeric text goes back to the stored value.
   const [rangeError, setRangeError] = useState<string | null>(null)
+  const [adjustedNote, setAdjustedNote] = useState<string | null>(null)
   const issue = useFieldIssue(path)
   const error = rangeError ?? issue?.advice ?? null
   const outOfRange = (n: number): 'low' | 'high' | null =>
     min !== undefined && n < min ? 'low' : max !== undefined && n > max ? 'high' : null
+  // Clearing a required field commits 0 when 0 is a value this field allows,
+  // which is the documented "off" state for the rate overrides and every other
+  // min=0 field. Where 0 is out of range (a claim age, a planning age) there is
+  // nothing safe to commit, so the field says so and keeps what the plan holds.
+  const emptyCommitsZero = !allowNull && outOfRange(0) === null
   // The suffix names the unit ("%"); it is the input's description, not
   // decoration, so a screen reader announces "22, percent" and not just "22".
   const suffixId = suffix ? `${id}-unit` : undefined
@@ -405,14 +421,22 @@ export function NumberField({
       min={min}
       max={max}
       aria-invalid={error ? true : undefined}
-      aria-describedby={describedBy(suffixId, error && `${id}-error`)}
+      aria-describedby={describedBy(suffixId, error ? `${id}-error` : adjustedNote && `${id}-note`)}
       onFocus={() => setFocused(true)}
-      onBlur={() => {
+      onBlur={(e) => {
         setFocused(false)
         const trimmed = text.trim()
         const n = Number(trimmed)
-        if (trimmed === '' && !allowNull) {
-          // Nothing was committed for the empty text; show the value the plan kept.
+        const badInput = e.target.validity?.badInput === true
+        if (trimmed === '' && badInput) {
+          // Text the field could not parse: the plan kept its value, so show it.
+          setText(value === null ? '' : String(value))
+          setRangeError(null)
+          return
+        }
+        if (trimmed === '' ? !allowNull && !emptyCommitsZero : !Number.isFinite(n)) {
+          // Nothing was committed for non-numeric text ("1e", "-"), or for an
+          // emptied field with no safe zero: show the value the plan kept.
           setText(value === null ? '' : String(value))
           setRangeError(null)
           return
@@ -425,19 +449,30 @@ export function NumberField({
         const bound = side === 'low' ? min! : max!
         onCommit(bound)
         setText(String(bound))
-        setRangeError(`Adjusted to ${bound}, the ${side === 'low' ? 'lowest' : 'highest'} allowed`)
+        setRangeError(null)
+        setAdjustedNote(`Adjusted to ${bound}, the ${side === 'low' ? 'lowest' : 'highest'} allowed`)
       }}
       onChange={(e) => {
         setText(e.target.value)
-        const n = Number(e.target.value)
-        if (e.target.value.trim() === '') {
-          if (allowNull) {
-            setRangeError(null)
-            onCommit(null)
-          } else {
-            setRangeError('Enter a value')
-          }
-        } else if (Number.isFinite(n)) {
+        setAdjustedNote(null)
+        const trimmed = e.target.value.trim()
+        const n = Number(trimmed)
+        // A number input reports text it cannot parse ("1e", "-", "1.2.3") as
+        // an empty value with badInput set, so the two empty cases are told
+        // apart by the browser's own flag rather than guessed at.
+        const badInput = e.target.validity?.badInput === true
+        if (trimmed === '' && badInput) {
+          // Say so while the text is on screen, rather than letting it sit
+          // there with no feedback until blur silently reverts it.
+          setRangeError('Enter a number')
+        } else if (trimmed === '') {
+          setRangeError(null)
+          if (allowNull) onCommit(null)
+          else if (emptyCommitsZero) onCommit(0)
+          else setRangeError('Enter a value')
+        } else if (!Number.isFinite(n)) {
+          setRangeError('Enter a number')
+        } else {
           const side = outOfRange(n)
           if (side === 'low') setRangeError(`Must be at least ${min}`)
           else if (side === 'high') setRangeError(`Must be at most ${max}`)
@@ -450,7 +485,7 @@ export function NumberField({
     />
   )
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} note={adjustedNote}>
       {suffix ? (
         <div className="input-affix">
           {input}

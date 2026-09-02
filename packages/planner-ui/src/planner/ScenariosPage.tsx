@@ -50,7 +50,7 @@ import {
 } from './scenarioComparisonView'
 import { currentStartYear, seedFromPlanId, taxCalculatorFor } from './useProjection'
 import { US_STATES } from './usStates'
-import { labelOfPath } from './validationIssues'
+import { labelOfSegments } from './validationIssues'
 
 /**
  * A JSON-pointer or dotted plan path as a person reads it:
@@ -58,13 +58,14 @@ import { labelOfPath } from './validationIssues'
  * escapes are decoded (~1 is /, ~0 is ~) and a trailing `/-` (append) names the list.
  */
 function fieldName(path: string): string {
-  const dotted = path
-    .replace(/\/-$/, '')
-    .replace(/^\//, '')
-    .split('/')
-    .map((seg) => seg.replace(/~1/g, '/').replace(/~0/g, '~'))
-    .join('.')
-  return labelOfPath(dotted)
+  const trimmed = path.replace(/\/-$/, '')
+  // A pointer's segments are decoded after the split, so a key holding a
+  // slash ("~1") or a dot stays one segment and is never read as a step down
+  // into another object.
+  const segments = trimmed.startsWith('/')
+    ? trimmed.slice(1).split('/').map((seg) => seg.replace(/~1/g, '/').replace(/~0/g, '~'))
+    : trimmed.split('.')
+  return labelOfSegments(segments)
 }
 
 const newId = () => crypto.randomUUID()
