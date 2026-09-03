@@ -41,8 +41,9 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | engine simulation core (`useProjection`) | 640 KiB | 572 KiB | The deterministic ledger the analysis pages share |
 | Learning Center registry | 150 KiB | 124 KiB | Article *metadata* — bodies load per article |
 | chart vendor (`CartesianChart`) | 380 KiB | 326 KiB | Recharts and its d3 slices |
+| plan route group (`PlanRoutes`), and **exactly one of them** | 300 KiB | 267 KiB | The lazy plan-route boundary staying route-sized |
 | app entry (the script `index.html` loads) | 300 KiB | 248 KiB | The chunk a cold visit blocks on first |
-| every other JS chunk | 260 KiB | 206 KiB (`PlanRoutes`) | Route and page chunks staying route-sized |
+| every other JS chunk | 260 KiB | 96 KiB (`ResultsPage`) | Route and page chunks staying route-sized |
 | all JS together | 4400 KiB | 4049 KiB | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
 | landing critical path | 700 KiB | 596 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
@@ -56,12 +57,16 @@ uneven — read the table, not an average:
   they get the least slack. Expect to justify growth here, not absorb it. The landing row's slack is
   sized so the entry and the registry could each grow into their own limits and still fit.
 - The **per-class chunk** rows sit near 11–21% (worker 903 → 1000, `useProjection` 572 → 640,
-  `learningRegistry` 124 → 150, Recharts 326 → 380): enough for a feature landing in a known chunk.
+  `learningRegistry` 124 → 150, Recharts 326 → 380, `PlanRoutes` 267 → 300): enough for a feature
+  landing in a known chunk.
   `learningRegistry` now holds only metadata, about 0.9 KiB per article, so its 26 KiB of slack is
   roughly 25 more articles.
-- The **loosest** rows are the ones with the most natural variation: the per-chunk default (206 → 260,
-  ~29%) has to fit whatever the next route chunk turns out to weigh, and CSS (45 → 64, ~42%) is small
-  enough that percentages there mean little in absolute terms.
+- The **loosest** rows are the ones with the most natural variation: the per-chunk default (260 KiB)
+  has to fit whatever the next route chunk turns out to weigh, and CSS (45 → 64, ~42%) is small enough
+  that percentages there mean little in absolute terms. The default now sits well above the largest
+  chunk it actually governs (`ResultsPage`, 96 KiB), because `PlanRoutes` — which used to set that
+  mark at 206 KiB — has its own row. Read that as room for the next route chunk, not as slack to
+  spend: a chunk approaching 260 KiB is one worth naming here.
 
 The **exactly one worker** rule is the load-bearing one. A bundler builds every worker *entry* in its own
 pass, so two entries cannot share a chunk — a second worker entry means a second copy of the ~740 KiB
@@ -89,6 +94,15 @@ A chunk rolldown names differently after a refactor stops matching its row and f
 inherit a large allowance. The app entry is the exception — it is identified by the script `index.html`
 actually loads, not by an `index-<hash>.js` name pattern, which would also match a dependency that
 happens to have an `index.js` internal entry.
+
+`PlanRoutes` earned its own row that way. Under vite 8.2.2 / rolldown 1.2.6 it measured 267.1 KiB,
+up from 220.0 KiB under rolldown 1.2.4, and tripped the 260 KiB default. The growth was
+redistribution rather than payload: the same build consolidated 206 chunks into 189, while all JS
+fell from 4323.4 to 4318.3 KiB and the landing critical path stayed flat (620.5 → 619.8 KiB). Naming
+the chunk keeps it measured on its own terms; raising `DEFAULT_CHUNK_KIB` instead would have
+loosened the gate for every unclassified chunk to absorb one bundler change. Its **exactly one**
+rule mirrors the worker’s: the route group is a single lazy boundary, so a second `PlanRoutes`
+chunk would mean it was split or duplicated.
 
 ## What is *not* precached
 

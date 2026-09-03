@@ -56,6 +56,22 @@ export const CHUNK_BUDGETS = [
     match: /^CartesianChart-[^/]*\.js$/,
     maxKiB: 380,
   },
+  {
+    label: 'plan route group (PlanRoutes)',
+    match: /^PlanRoutes-[^/]*\.js$/,
+    // Measured 267.1 KiB under vite 8.2.2 / rolldown 1.2.6, up from 220.0 KiB
+    // under rolldown 1.2.4. That growth is redistribution, not payload: the same
+    // build consolidated 206 chunks into 189, while all JS fell from 4323.4 to
+    // 4318.3 KiB and the landing critical path stayed flat (620.5 -> 619.8 KiB).
+    // The chunk had been falling through to DEFAULT_CHUNK_KIB; naming it here
+    // keeps it measured on its own terms rather than loosening that default for
+    // every unclassified chunk. Headroom is deliberately thin — this is a route
+    // group, and it should stay route-sized.
+    maxKiB: 300,
+    // One chunk, like the worker: the route group is a single lazy boundary, so
+    // a second PlanRoutes chunk would mean it was split or duplicated.
+    exactCount: 1,
+  },
 ]
 
 /**

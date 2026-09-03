@@ -30,3 +30,15 @@ trustPolicy: no-downgrade
 trustPolicyExclude:
   - '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1'
   - 'semver@6.3.1'
+
+# Root package.json `pnpm.overrides` (react, react-dom, react-is, recharts,
+# highs, es-toolkit, immer, sharp, ejs>jake) are deliberate exact pins: the
+# repo only ever tests the pinned versions, and the published manifests keep
+# main's caret ranges so consumers are not advertised a minimum this repo did
+# not test. Dependabot does not read `pnpm.overrides`; when it bumps an
+# overridden package it rewrites the lockfile's `overrides:` block to the new
+# version while package.json keeps the pin, and every CI job then fails with
+# ERR_PNPM_LOCKFILE_CONFIG_MISMATCH under --frozen-lockfile (PR #593). The fix
+# is a non-frozen `pnpm install`, which re-resolves under the pins, then a
+# frozen install to prove the lockfile is settled. Bumping a pin itself is a
+# deliberate change: update the override, re-resolve, and run the full suite.
