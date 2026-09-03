@@ -11,7 +11,7 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
 
 ## Runtime contract
 
-- **ESM, Node >=24.15.0** (also bundles cleanly for browsers). No CommonJS build.
+- **ESM, Node >=24** (also bundles cleanly for browsers). No CommonJS build.
 - **No browser globals, no ambient network, no persistence.** The engine never
   touches `fetch`, `localStorage`, `indexedDB`, or the DOM — enforced by lint.
   IO always crosses an injection seam owned by the consumer:
