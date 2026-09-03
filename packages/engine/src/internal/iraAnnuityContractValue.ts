@@ -120,7 +120,7 @@ export function ownedIraFundedAnnuityContracts(
 }
 
 /** The contract's annual payment in `year`, before any payout-form fraction. */
-export function annuityContractAnnualPaymentPlanDollars(
+function annuityContractAnnualPaymentPlanDollars(
   contract: Readonly<AnnuityAccount>,
   startCalendarYear: number,
   year: number,

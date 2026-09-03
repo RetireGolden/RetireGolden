@@ -17,10 +17,24 @@
   /* symbolLines.ts imports the typescript devDependency; it serves the
      conformance/freshness suites and the coverage publisher
      (rules-coverage.mjs, via rule-tooling-shared.mjs) only, so it stays out
-     of dist like the tests do. */
+     of dist like the tests do.
+
+     The three rules/ modules after it are excluded for the same reason, and
+     none is reachable through the exports map: `./rules` publishes only the
+     taxRuleRegistry barrel, and there is no `./rules/*` wildcard.
+     - describeRule.ts imports `vitest`, so a consumer who did reach it would
+       fault on a bare framework import in a package the README promises is
+       framework-free. Every importer is a `*.test.ts`.
+     - coverageAttestations.ts (~116 KB) and coverageReport.ts are the
+       coverage publisher's inputs, read from source by the tests and by
+       rules-coverage.mjs, never from dist.
+     Together they were ~146 KB of test-harness code in every install. */
   "exclude": [
     "src/**/*.test.ts",
     "src/**/*.test-support.ts",
-    "src/rules/symbolLines.ts"
+    "src/rules/symbolLines.ts",
+    "src/rules/describeRule.ts",
+    "src/rules/coverageAttestations.ts",
+    "src/rules/coverageReport.ts"
   ]
 }

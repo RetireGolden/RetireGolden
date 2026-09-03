@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 326,
+    "totalFiles": 327,
     "byStatus": {
       "partial": 55,
       "registered": 102,
-      "rule-free": 169,
+      "rule-free": 170,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -397,11 +397,11 @@
     },
     {
       "directory": "insights",
-      "files": 22,
+      "files": 23,
       "byStatus": {
         "partial": 2,
         "registered": 3,
-        "rule-free": 17
+        "rule-free": 18
       }
     },
     {

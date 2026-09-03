@@ -193,7 +193,7 @@ const STATE_PREFIX = 'state:'
  * Directory holding the per-record-module shards, relative to the index file
  * (`DOCS/operations/rule-coverage.json` → `DOCS/operations/rule-coverage/`).
  */
-export const COVERAGE_SHARD_DIRECTORY = 'rule-coverage'
+const COVERAGE_SHARD_DIRECTORY = 'rule-coverage'
 
 /** Shard file name for a record module, so writers and readers cannot disagree. */
 export function coverageShardPath(moduleName: string): string {
