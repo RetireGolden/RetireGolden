@@ -279,7 +279,7 @@ export const healthSavingsAccountRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The plan model has one HSA contribution stream and does not carry a separate employer-salary-reduction fact under section 106(d); the contribution allocator therefore applies the section 223(a) above-the-line treatment to the modeled HSA deposit. The contribution cap and the catch-up are registered separately. After this subtraction, simulate.ts writes the realized MAGI history that supplies the IRMAA lookback and passes the same reduced federal AGI into ACA MAGI assembly; the independent MAGI add-back composition is registered at irc-36B-d-2-B-aca-household-magi-composition and usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest.',
+      'The plan model has one HSA contribution stream and does not carry a separate employer-salary-reduction fact under section 106(d); the contribution allocator therefore applies the section 223(a) above-the-line treatment to the modeled HSA deposit. The contribution cap and the catch-up are registered separately. After this subtraction, annualFundingApplicationAndClosePhase commits the accepted realized MAGI entry that supplies the IRMAA lookback and passes the same reduced federal AGI into ACA MAGI assembly; simulatePlan owns and threads the longitudinal history. The independent MAGI add-back composition is registered at irc-36B-d-2-B-aca-household-magi-composition and usc-42-1395r-i-4-a-magi-agi-plus-tax-exempt-interest.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -301,10 +301,12 @@ export const healthSavingsAccountRecords = {
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
     ],
   },
 

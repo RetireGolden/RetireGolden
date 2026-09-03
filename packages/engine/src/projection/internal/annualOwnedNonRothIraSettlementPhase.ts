@@ -15,7 +15,6 @@ import type { AnnualLiabilityRunTaxInput } from '../../actions/annualLiabilityRu
 import type { ConversionTaxFundingTaxUnitEvidence } from '../../actions/conversionTaxFundingEvidence.js'
 import type { SimulatorAnnualPassStateBindings } from '../annualPassTransaction.js'
 import type { OptimizerYearProbe, YearResult } from '../types.js'
-import type { SimulateAnnualCounterfactualRequest } from '../simulate.js'
 
 import {
   isAggregatedIra,
@@ -37,7 +36,10 @@ import {
 import {
   committedOwnedNonRothIraAnnualReplayPublication,
 } from '../../internal/ownedNonRothIraAnnualReplayPublication.js'
-import { runCounterfactualAnnualLiability } from '../../internal/counterfactualAnnualLiability.js'
+import {
+  runCounterfactualAnnualLiability,
+  type SimulateAnnualCounterfactualRequest,
+} from '../../internal/counterfactualAnnualLiability.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
 
 type TreatAsOwnAccount = Parameters<typeof isTreatAsOwnEffective>[0]

@@ -334,8 +334,12 @@ export const medicareAndHealthCoverageRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -343,7 +347,7 @@ export const medicareAndHealthCoverageRecords = {
   'usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback': {
     title: 'IRMAA MAGI without-regard addback is omitted from the lookback feed',
     statement:
-      'Clause (A)(i) requires IRMAA modified adjusted gross income to be determined without regard to sections 135, 911, 931, and 933, so amounts excluded under those sections are added back for the IRMAA income figure. Not modelled in the IRMAA feed: simulate.ts writes magiHistory from the AGI-path income plus tax-exempt interest only, while the same year’s foreign-exclusion addback that raises ACA household MAGI and section 86 provisional income never enters that history. Omitting the addback understates IRMAA MAGI and therefore understates the Medicare premium surcharge relative to the statute.',
+      'Clause (A)(i) requires IRMAA modified adjusted gross income to be determined without regard to sections 135, 911, 931, and 933, so amounts excluded under those sections are added back for the IRMAA income figure. Not modelled in the IRMAA feed: annualFundingApplicationAndClosePhase commits the accepted year’s magiHistory entry from the AGI-path income plus tax-exempt interest only, while the same year’s foreign-exclusion addback that raises ACA household MAGI and section 86 provisional income never enters that history. simulatePlan owns and threads that longitudinal history into later IRMAA lookbacks. Omitting the addback understates IRMAA MAGI and therefore understates the Medicare premium surcharge relative to the statute.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -361,8 +365,12 @@ export const medicareAndHealthCoverageRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

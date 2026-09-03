@@ -17,15 +17,25 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts",
+          "functions": [
+            {
+              "name": "annualFundingApplicationAndClosePhase",
+              "line": 395
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -102,7 +112,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -184,7 +194,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -259,7 +269,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -331,7 +341,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -549,7 +559,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -639,7 +649,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -737,7 +747,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -839,7 +849,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -911,7 +921,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -986,7 +996,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -1059,7 +1069,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -1211,7 +1221,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -1464,7 +1474,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -1565,7 +1575,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -1847,7 +1857,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -1969,7 +1979,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -2056,7 +2066,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -2146,7 +2156,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -2223,7 +2233,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -2357,7 +2367,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -2451,7 +2461,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -2657,7 +2667,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -2886,7 +2896,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         }
@@ -3166,7 +3176,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -3273,7 +3283,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -3340,7 +3350,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -3401,7 +3411,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
@@ -3462,7 +3472,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 611
+              "line": 590
             }
           ]
         },
