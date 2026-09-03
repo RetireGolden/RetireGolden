@@ -21,16 +21,42 @@ const DB_NAME = 'retiregolden.v2'
 const DB_VERSION = 1
 const PLANS_STORE = 'plans'
 
+/**
+ * What every store operation rejects with when the host exposes no IndexedDB
+ * at all (a server-side render, a browser-free test host, a browser policy
+ * that removes the API). Named so callers can tell "this host has no storage"
+ * apart from "this record is corrupt" instead of catching a bare
+ * `ReferenceError` thrown from inside `idb`.
+ */
+export const PLAN_STORAGE_UNAVAILABLE = 'IndexedDB is not available in this host.'
+
 let dbPromise: Promise<IDBPDatabase> | null = null
 
+/**
+ * The single connection to the plans database, opened once per tab.
+ *
+ * A REJECTED open is deliberately not retained. `dbPromise ??= openDB(...)`
+ * on its own memoises the rejection, so one transient failure (a private
+ * window's storage policy, an upgrade blocked by another tab) would keep
+ * every later read and write failing for the lifetime of the tab, with a
+ * reload the only recovery. Dropping the memo lets the next call try again.
+ * `import/refreshHistory.ts` holds the same two rules for its own database.
+ */
 function db(): Promise<IDBPDatabase> {
-  dbPromise ??= openDB(DB_NAME, DB_VERSION, {
-    upgrade(database) {
-      if (!database.objectStoreNames.contains(PLANS_STORE)) {
-        database.createObjectStore(PLANS_STORE, { keyPath: 'id' })
-      }
-    },
-  })
+  if (typeof indexedDB === 'undefined') return Promise.reject(new Error(PLAN_STORAGE_UNAVAILABLE))
+  if (dbPromise === null) {
+    const opening: Promise<IDBPDatabase> = openDB(DB_NAME, DB_VERSION, {
+      upgrade(database) {
+        if (!database.objectStoreNames.contains(PLANS_STORE)) {
+          database.createObjectStore(PLANS_STORE, { keyPath: 'id' })
+        }
+      },
+    }).catch((reason: unknown) => {
+      if (dbPromise === opening) dbPromise = null
+      throw reason
+    })
+    dbPromise = opening
+  }
   return dbPromise
 }
 

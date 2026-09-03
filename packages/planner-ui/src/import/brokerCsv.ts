@@ -269,6 +269,7 @@ function parseAccountColumnFile(
   const byAccount = new Map<string, Aggregate>()
   const valueLabel = (rows[headerIndex]?.[cols.value] ?? '').trim().toLowerCase()
   const basisLabel = cols.basis === -1 ? '' : (rows[headerIndex]?.[cols.basis] ?? '').trim().toLowerCase()
+  const accountLabel = (rows[headerIndex]?.[cols.account] ?? '').trim().toLowerCase()
 
   for (let r = headerIndex + 1; r < rows.length; r++) {
     const cells = rows[r]!
@@ -277,7 +278,24 @@ function parseAccountColumnFile(
     if (broker === 'vanguard' && findColumn(cells, 'trade date') !== -1) break
 
     const accountRaw = (cells[cols.account] ?? '').trim()
-    if (accountRaw === '') continue
+    if (accountRaw === '') {
+      // A blank account cell has nothing to add the row's value to, and a
+      // silent `continue` here understated the imported balance whenever an
+      // export used blank cells for continuation rows. Every other skip in
+      // this parser is disclosed; this one is too.
+      const orphaned = parseMoney(cells[cols.value])
+      review.push({
+        status: 'skipped',
+        source: `Row ${String(lines[r]!)}`,
+        detail:
+          orphaned !== null
+            ? `$${orphaned.toLocaleString('en-US')} was not counted. The row has no account number, so there is no account to add it to.`
+            : 'Row had no account number, so it was not counted.',
+        locator: csvRow(lines[r]!, accountLabel || undefined),
+        confidence: 'unmapped',
+      })
+      continue
+    }
     const name = cols.accountName === -1 ? '' : (cells[cols.accountName] ?? '').trim()
     const label = name !== '' ? `${name} (${accountRaw})` : accountRaw
     const key = accountRaw

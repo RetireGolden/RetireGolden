@@ -3,6 +3,17 @@
  * outside the engine Plan: snapshots and remembered row assignments describe a
  * refresh operation, not simulation inputs, so they never travel in a plan
  * file. The adapter is inert outside a browser (or fake IndexedDB test host).
+ *
+ * Failure policy, one rule for the whole module: **no write helper here
+ * rejects.** What it stores is operational history, so losing a record costs
+ * a re-derivation and never a number in a projection, and a quota or
+ * private-window refusal must not turn the refresh (or the plan delete) that
+ * triggered the write into a failure. Callers already treat these as
+ * best-effort — `planner/sections/UpdateBalancesPanel.tsx` calls several of
+ * them as bare `void`, where a rejection would only surface as an unhandled
+ * promise. `saveRefreshSnapshot` is the one exception in shape, not in
+ * policy: it swallows the failure too, and reports it as a boolean because
+ * its caller has to tell the user the undo record is missing.
  */
 
 import { openDB, type IDBPDatabase } from 'idb'
@@ -25,16 +36,25 @@ function db(): Promise<IDBPDatabase> | null {
   // guard means the planner package remains importable by browser-free hosts.
   if (typeof indexedDB === 'undefined') return null
   if (clearingAll) return null
-  dbPromise ??= openDB(DB_NAME, DB_VERSION, {
-    upgrade(database) {
-      if (!database.objectStoreNames.contains(SNAPSHOTS_STORE)) {
-        database.createObjectStore(SNAPSHOTS_STORE, { keyPath: 'id' })
-      }
-      if (!database.objectStoreNames.contains(MAPPINGS_STORE)) {
-        database.createObjectStore(MAPPINGS_STORE, { keyPath: ['planId', 'normalizedBrokerLabel'] })
-      }
-    },
-  })
+  if (dbPromise === null) {
+    // A rejected open is not retained: memoising it would turn one transient
+    // failure into a dead history store for the lifetime of the tab, so the
+    // next refresh could never re-establish its undo records.
+    const opening: Promise<IDBPDatabase> = openDB(DB_NAME, DB_VERSION, {
+      upgrade(database) {
+        if (!database.objectStoreNames.contains(SNAPSHOTS_STORE)) {
+          database.createObjectStore(SNAPSHOTS_STORE, { keyPath: 'id' })
+        }
+        if (!database.objectStoreNames.contains(MAPPINGS_STORE)) {
+          database.createObjectStore(MAPPINGS_STORE, { keyPath: ['planId', 'normalizedBrokerLabel'] })
+        }
+      },
+    }).catch((reason: unknown) => {
+      if (dbPromise === opening) dbPromise = null
+      throw reason
+    })
+    dbPromise = opening
+  }
   return dbPromise
 }
 
@@ -50,7 +70,6 @@ async function openHistoryDb(): Promise<IDBPDatabase | null> {
   }
 }
 
-/** Test hook: let fake-indexeddb replacement take effect between tests. */
 /**
  * Whether a durable history store exists in this host. Callers that must
  * order a durable write before a plan mutation await only when this is true,
@@ -80,9 +99,14 @@ export async function pruneRefreshSnapshots(planId: string): Promise<void> {
 
 /** Remove one snapshot (an apply that aborted after its durable write). */
 export async function deleteRefreshSnapshot(id: string): Promise<void> {
-  const database = await openHistoryDb()
-  if (!database) return
-  await database.delete(SNAPSHOTS_STORE, id)
+  try {
+    const database = await openHistoryDb()
+    if (!database) return
+    await database.delete(SNAPSHOTS_STORE, id)
+  } catch {
+    // Module failure policy: a stranded snapshot is stale history, not a
+    // wrong number, and retention prunes it away.
+  }
 }
 
 /** Erase the entire refresh-history database ("Clear all data" support). */
@@ -126,6 +150,7 @@ export async function clearAllRefreshHistory(): Promise<void> {
 }
 
 
+/** Test hook: let fake-indexeddb replacement take effect between tests. */
 export function _resetRefreshHistoryForTests(): void {
   dbPromise = null
 }
@@ -231,14 +256,24 @@ export async function listRefreshManualMappings(planId: string): Promise<Refresh
 
 /** Upsert the one remembered destination for a normalized broker label in a plan. */
 export async function saveRefreshManualMapping(mapping: RefreshManualMapping): Promise<void> {
-  const database = await openHistoryDb()
-  if (database === null) return
-  await database.put(MAPPINGS_STORE, mapping)
+  try {
+    const database = await openHistoryDb()
+    if (database === null) return
+    await database.put(MAPPINGS_STORE, mapping)
+  } catch {
+    // Module failure policy: the assignment still applied to this refresh;
+    // only the memory of it is lost, and the next file re-derives it.
+  }
 }
 
 /** Remove an obsolete remembered assignment without surfacing an error to the user. */
 export async function deleteRefreshManualMapping(planId: string, normalizedBrokerLabel: string): Promise<void> {
-  const database = await openHistoryDb()
-  if (database === null) return
-  await database.delete(MAPPINGS_STORE, [planId, normalizedBrokerLabel])
+  try {
+    const database = await openHistoryDb()
+    if (database === null) return
+    await database.delete(MAPPINGS_STORE, [planId, normalizedBrokerLabel])
+  } catch {
+    // Module failure policy: a surviving mapping can only re-propose a row
+    // assignment, which the review step still shows before anything applies.
+  }
 }

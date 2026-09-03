@@ -41,6 +41,17 @@ Z12345678,Individual,,Account Total,,,,$25050.00,,,$15000.00,,
 "Date downloaded 07/07/2026 9:12 PM ET"
 `
 
+/**
+ * An account-column layout whose account number is NOT the first column, with
+ * a continuation row that leaves the account cell blank. The column order is
+ * what makes the row reach the blank-account branch at all: with the account
+ * first, an empty leading cell is already treated as footer noise.
+ */
+const BLANK_ACCOUNT_FIXTURE = `Symbol,Account Number,Account Name,Description,Quantity,Last Price,Current Value,Cost Basis Total
+AAPL,Z12345678,Individual,APPLE INC,100,$190.50,$19050.00,$15000.00
+MSFT,,,MICROSOFT CORP,10,$400.00,$4000.00,$3000.00
+`
+
 const VANGUARD_FIXTURE = `Account Number,Investment Name,Symbol,Shares,Share Price,Total Value
 12345678,Vanguard Total Stock Market Index Fund,VTSAX,100.0,120.00,12000.00
 12345678,Vanguard Federal Money Market Fund,VMFXX,3000.0,1.00,3000.00
@@ -108,6 +119,23 @@ describe('parseBrokerPositionsCsv — Fidelity', () => {
     // The $25,050 total row re-states the two positions — counting it would double the account.
     expect(r.accounts.find((a) => a.accountLabel === 'Individual (Z12345678)')!.totalValue).toBe(25050)
     expect(r.review.some((i) => i.status === 'skipped' && i.source.includes('Pending Activity') && i.detail.includes('250'))).toBe(true)
+  })
+
+  it('discloses a row whose account cell is blank rather than quietly understating the balance', () => {
+    const r = parseBrokerPositionsCsv(BLANK_ACCOUNT_FIXTURE)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+
+    // The $4,000 continuation row carries no account number, so it cannot join
+    // an account. What matters is that the checklist says so: an unreported
+    // skip here reads as a complete import of a balance that is $4,000 low.
+    expect(r.accounts).toHaveLength(1)
+    expect(r.accounts[0]!.totalValue).toBe(19_050)
+    const orphan = r.review.find((i) => i.status === 'skipped' && i.source === 'Row 3')
+    expect(orphan).toBeDefined()
+    expect(orphan!.detail).toContain('$4,000')
+    expect(orphan!.detail).toContain('no account number')
+    expect(orphan!.locator).toEqual({ kind: 'csvRow', row: 3, column: 'account number' })
   })
 })
 

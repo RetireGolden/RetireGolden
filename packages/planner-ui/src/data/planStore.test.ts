@@ -16,8 +16,12 @@ import {
   duplicatePlan,
   listPlanSummaries,
   loadPlan,
+  PLAN_STORAGE_UNAVAILABLE,
   savePlan,
 } from './planStore'
+
+/** `DB_NAME` is module-private; the connection-failure cases need the real name. */
+const DB_NAME_UNDER_TEST = 'retiregolden.v2'
 
 let counter = 0
 const testIds = () => `store-${++counter}`
@@ -172,5 +176,43 @@ describe('planStore', () => {
 
     await clearAllPlans()
     expect(await listPlanSummaries()).toHaveLength(0)
+  })
+})
+
+describe('planStore connection failures', () => {
+  it('names the reason on a host with no IndexedDB instead of throwing a ReferenceError', async () => {
+    const real = globalThis.indexedDB
+    // @ts-expect-error modelling a host that exposes no IndexedDB at all
+    delete globalThis.indexedDB
+    try {
+      await expect(listPlanSummaries()).rejects.toThrow(PLAN_STORAGE_UNAVAILABLE)
+    } finally {
+      globalThis.indexedDB = real
+    }
+  })
+
+  it('does not cache a rejected open, so a later read can still succeed', async () => {
+    // A newer deploy in another tab left the database at a higher version, so
+    // opening at DB_VERSION fails with a VersionError. This is the real shape
+    // of the transient failure: recoverable, and previously fatal for the tab
+    // because the rejected promise stayed in the memo.
+    const ahead = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = globalThis.indexedDB.open(DB_NAME_UNDER_TEST, 2)
+      request.onupgradeneeded = () => undefined
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error ?? new Error('open failed'))
+    })
+    await expect(listPlanSummaries()).rejects.toThrow()
+
+    ahead.close()
+    await new Promise<void>((resolve) => {
+      const request = globalThis.indexedDB.deleteDatabase(DB_NAME_UNDER_TEST)
+      request.onsuccess = () => resolve()
+      request.onerror = () => resolve()
+    })
+
+    // The retry is the whole point: with the rejection memoised this still
+    // rejects, and every read and write stays dead for the tab's lifetime.
+    await expect(listPlanSummaries()).resolves.toEqual([])
   })
 })

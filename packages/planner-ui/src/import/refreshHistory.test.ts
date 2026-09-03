@@ -7,11 +7,13 @@ import {
   _resetRefreshHistoryForTests,
   clearRefreshHistoryForPlan,
   deleteRefreshManualMapping,
+  deleteRefreshSnapshot,
   listRefreshManualMappings,
   listRefreshSnapshots,
   saveRefreshManualMapping,
   pruneRefreshSnapshots,
   saveRefreshSnapshot,
+  type RefreshManualMapping,
 } from './refreshHistory'
 
 function snapshot(id: string, planId: string, appliedAtIso: string): RefreshSnapshot {
@@ -103,5 +105,51 @@ describe('refreshHistory', () => {
     expect(await listRefreshManualMappings('plan-1')).toEqual([])
     expect(await listRefreshSnapshots('plan-2')).toEqual([snapshot('p2', 'plan-2', '2026-07-15T12:00:00.000Z')])
     expect(await listRefreshManualMappings('plan-2')).toHaveLength(1)
+  })
+})
+
+describe('refreshHistory failure policy', () => {
+  /** `DB_NAME` is module-private; the connection cases need the real name. */
+  const DB_NAME_UNDER_TEST = 'retiregolden-refresh-history'
+
+  it('does not cache a rejected open, so a later refresh can retain history again', async () => {
+    // Another tab left the database at a higher version, so opening at
+    // DB_VERSION fails. Memoising that rejection used to leave the tab
+    // without an undo record for every refresh that followed.
+    const ahead = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = globalThis.indexedDB.open(DB_NAME_UNDER_TEST, 2)
+      request.onupgradeneeded = () => undefined
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error ?? new Error('open failed'))
+    })
+    expect(await saveRefreshSnapshot(snapshot('s1', 'plan-1', '2026-07-15T12:00:00.000Z'))).toBe(false)
+
+    ahead.close()
+    await new Promise<void>((resolve) => {
+      const request = globalThis.indexedDB.deleteDatabase(DB_NAME_UNDER_TEST)
+      request.onsuccess = () => resolve()
+      request.onerror = () => resolve()
+    })
+
+    expect(await saveRefreshSnapshot(snapshot('s1', 'plan-1', '2026-07-15T12:00:00.000Z'))).toBe(true)
+  })
+
+  it('never rejects out of a write helper, whatever the store does', async () => {
+    // A value IndexedDB refuses to key makes the put/delete itself reject,
+    // which is the shape a quota or browser-policy refusal takes after the
+    // connection is already open. The module's policy is that operational
+    // history never turns a refresh or a plan delete into a failure.
+    const unkeyable = {
+      planId: undefined,
+      normalizedBrokerLabel: 'schwab:brokerage 789',
+      accountId: 'acct-1',
+      assignedAtIso: '2026-07-15T12:00:00.000Z',
+    } as unknown as RefreshManualMapping
+
+    await expect(saveRefreshManualMapping(unkeyable)).resolves.toBeUndefined()
+    await expect(
+      deleteRefreshManualMapping(undefined as unknown as string, 'schwab:brokerage 789'),
+    ).resolves.toBeUndefined()
+    await expect(deleteRefreshSnapshot(undefined as unknown as string)).resolves.toBeUndefined()
   })
 })
