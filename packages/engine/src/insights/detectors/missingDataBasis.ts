@@ -49,7 +49,6 @@ const MIN_VISIBLE_CENT = 0.005
  */
 function projectedSaleYearPropertyValue(
   openingValue: number,
-  _startYear: number,
   saleYear: number,
   years: readonly { year: number; inflationScale?: number }[],
 ): number | null {
@@ -377,7 +376,6 @@ export const missingDataBasis: Detector = {
             ctx.params.federalTax?.section121Exclusion?.[filingStatus] ?? 0
           const salePrice = projectedSaleYearPropertyValue(
             account.value,
-            ctx.projection.startYear,
             account.plannedSaleYear,
             ctx.projection.result.years,
           )

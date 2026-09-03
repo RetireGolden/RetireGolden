@@ -22,6 +22,12 @@ import { createStateTaxCalculator } from '../../tax/stateTax.js'
 /** Screen only when the excess estate could fund a meaningful lifestyle bump. */
 const MIN_EXCESS_ESTATE_TODAY_DOLLARS = 250_000
 const MIN_ROUGH_HEADROOM_PER_YEAR = 2_000
+/**
+ * Evaluate gate: the solver's own slack must clear this before the card claims
+ * headroom. Looser than the screen's rough estimate because by this point the
+ * exact ledger has already priced taxes, healthcare cliffs, and sequencing.
+ */
+const MIN_SOLVED_SLACK_PER_YEAR = 1_000
 
 export const spendingHeadroom: Detector = {
   id: 'spending-headroom',
@@ -97,7 +103,7 @@ export const spendingHeadroom: Detector = {
     })
     const maxBaseAnnual = solved.maxBaseAnnual
     const slack = solved.spendingSlackDollars ?? 0
-    if (maxBaseAnnual === null || slack < 1_000) {
+    if (maxBaseAnnual === null || slack < MIN_SOLVED_SLACK_PER_YEAR) {
       throw new Error(
         'The spending solver found no meaningful headroom once taxes, healthcare cliffs, and sequencing were priced in.',
       )

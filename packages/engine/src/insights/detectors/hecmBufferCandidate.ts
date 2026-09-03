@@ -13,6 +13,12 @@ import { hecmPrincipalLimitFactorPct } from '../../params/index.js'
  * line as a scenario; deterministic runs price only the last-resort backstop,
  * so the Monte Carlo comparison is where the coordinated policy shows up.
  */
+
+/** A residence worth less than this cannot support a useful credit line. */
+const MIN_HOME_VALUE_DOLLARS = 100_000
+/** "House-rich, portfolio-thin": home value as a share of investable assets. */
+const MIN_HOME_TO_INVESTABLE_RATIO = 0.75
+
 export const hecmBufferCandidate: Detector = {
   id: 'hecm-buffer-candidate',
   category: 'longevity-insurance-geography',
@@ -26,7 +32,8 @@ export const hecmBufferCandidate: Detector = {
 
     const home = plan.accounts.find(
       (a): a is Extract<Account, { type: 'property' }> =>
-        a.type === 'property' && a.primaryResidence === true && a.hecm === undefined && a.value > 100_000 &&
+        a.type === 'property' && a.primaryResidence === true && a.hecm === undefined &&
+        a.value > MIN_HOME_VALUE_DOLLARS &&
         // A planned sale makes the buffer moot (the line closes at sale).
         (a.plannedSaleYear === null || a.plannedSaleYear === undefined),
     )
@@ -42,7 +49,7 @@ export const hecmBufferCandidate: Detector = {
       }
     }
     // House-rich / portfolio-thin: the home is a major share of net worth.
-    if (investable <= 0 || home.value < investable * 0.75) return null
+    if (investable <= 0 || home.value < investable * MIN_HOME_TO_INVESTABLE_RATIO) return null
 
     const pack = ctx.params
     const plfPct = hecmPrincipalLimitFactorPct(pack, youngestAge)

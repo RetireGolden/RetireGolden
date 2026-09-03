@@ -1,9 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import type { Detector, DetectorContext, InsightCard } from './types.js'
-import { computeCardScore, registry, sortCards } from './registry.js'
+import {
+  CONFIDENCE_RANKING_WEIGHTS,
+  computeCardScore,
+  registry,
+  sortCards,
+  SUCCESS_RATE_POINT_DOLLAR_EQUIVALENT,
+} from './registry.js'
 import { runScreen } from './runInsights.js'
 
 describe('detector framework scoring and ranking', () => {
+  /**
+   * These two are unsourced ranking heuristics, so nothing outside this test
+   * pins them. Pinning them here makes a change to card ordering a deliberate
+   * edit with a visible diff rather than a silent nudge.
+   */
+  it('pins the card-ranking heuristic constants', () => {
+    expect(SUCCESS_RATE_POINT_DOLLAR_EQUIVALENT).toBe(10000)
+    expect(CONFIDENCE_RANKING_WEIGHTS).toEqual({ high: 1.0, medium: 0.7, low: 0.4 })
+  })
+
+
   it('correctly scores cards based on impact magnitude and confidence weight', () => {
     const cardA: InsightCard = {
       id: 'card-a',

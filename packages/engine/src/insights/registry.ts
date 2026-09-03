@@ -39,6 +39,23 @@ export const registry: Detector[] = [
   widowsPenalty,
 ]
 
+/**
+ * Dollars a card is credited for each percentage point of Monte Carlo success
+ * rate, so a success-rate impact can be ranked on the same axis as an estate
+ * or lifetime-tax delta. Heuristic, unsourced: it is a presentation
+ * tie-breaker with no derivation in the repository's history or in DOCS, and
+ * it never enters a projection. Changing it reorders every user's cards.
+ */
+export const SUCCESS_RATE_POINT_DOLLAR_EQUIVALENT = 10000
+
+/**
+ * Ranking discount applied to a card's metric by how much the detector trusts
+ * its own estimate. Heuristic, unsourced, and presentation-only: no
+ * calibration record exists, and these weights never enter a projection.
+ */
+export const CONFIDENCE_RANKING_WEIGHTS: Readonly<Record<InsightCard['confidence'], number>> =
+  Object.freeze({ high: 1.0, medium: 0.7, low: 0.4 })
+
 export function computeCardScore(card: InsightCard): number {
   const hasQuantified =
     card.impact.endingAfterTaxEstateDelta !== undefined ||
@@ -53,13 +70,13 @@ export function computeCardScore(card: InsightCard): number {
   if (card.impact.endingAfterTaxEstateDelta !== undefined) {
     metricValue = Math.abs(card.impact.endingAfterTaxEstateDelta)
   } else if (card.impact.successRateDeltaPct !== undefined) {
-    // Heuristic: scale 1% Monte Carlo success rate to $10,000
-    metricValue = Math.abs(card.impact.successRateDeltaPct) * 10000
+    metricValue =
+      Math.abs(card.impact.successRateDeltaPct) * SUCCESS_RATE_POINT_DOLLAR_EQUIVALENT
   } else if (card.impact.lifetimeTaxDelta !== undefined) {
     metricValue = Math.abs(card.impact.lifetimeTaxDelta)
   }
 
-  const confidenceWeight = { high: 1.0, medium: 0.7, low: 0.4 }[card.confidence]
+  const confidenceWeight = CONFIDENCE_RANKING_WEIGHTS[card.confidence]
   return metricValue * confidenceWeight
 }
 

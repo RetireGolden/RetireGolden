@@ -12,6 +12,14 @@ import { spiaPayoutRate } from '../../decisions/spiaQuotes.js'
  * ledger — not the card — prices the liquidity/estate tradeoff; the Monte
  * Carlo annuitization sweep is the full solver view.
  */
+
+/** Below this, the largest liquid account cannot fund a meaningful SPIA. */
+const MIN_LIQUID_BALANCE_DOLLARS = 100_000
+/** Illustrative premium: this share of the funding account... */
+const ILLUSTRATIVE_PREMIUM_FRACTION_OF_LIQUID = 0.25
+/** ...capped here, so a very large account does not illustrate an outsized SPIA. */
+const ILLUSTRATIVE_PREMIUM_CAP_DOLLARS = 250_000
+
 export const annuitizationHeadroom: Detector = {
   id: 'annuitization-headroom',
   category: 'longevity-insurance-geography',
@@ -31,12 +39,15 @@ export const annuitizationHeadroom: Detector = {
     const liquid = plan.accounts
       .filter((a) => a.type === 'cash' || a.type === 'taxable')
       .sort((a, b) => ('balance' in b ? b.balance : 0) - ('balance' in a ? a.balance : 0))[0]
-    if (!liquid || !('balance' in liquid) || liquid.balance < 100_000) return null
+    if (!liquid || !('balance' in liquid) || liquid.balance < MIN_LIQUID_BALANCE_DOLLARS) return null
 
     const currentAge = startYear - Number(primary.dob.slice(0, 4))
     const startAge = Math.min(95, Math.max(currentAge, 65))
     const paymentStartYear = startYear + Math.max(0, startAge - currentAge)
-    const premium = Math.min(liquid.balance * 0.25, 250_000)
+    const premium = Math.min(
+      liquid.balance * ILLUSTRATIVE_PREMIUM_FRACTION_OF_LIQUID,
+      ILLUSTRATIVE_PREMIUM_CAP_DOLLARS,
+    )
     const monthly = (premium * spiaPayoutRate(startAge)) / 12
     const spia: Account = {
       id: `annuitization-headroom-preview-${startYear}-${liquid.id}`,

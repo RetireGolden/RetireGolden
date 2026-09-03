@@ -26,6 +26,13 @@ function guardrailPatchFromGenerator(plan: Plan) {
   return { requiredAnnual, patch: patch as Record<string, unknown> }
 }
 
+/**
+ * Screen threshold: below this first-year investable balance a guardrail
+ * policy has too little portfolio to steer, so the card only fires on a plan
+ * that already depletes.
+ */
+const MIN_INVESTABLE_FOR_GUARDRAILS_DOLLARS = 100_000
+
 export const spendingGuardrails: Detector = {
   id: 'spending-guardrails',
   category: 'sequence-risk',
@@ -39,7 +46,7 @@ export const spendingGuardrails: Detector = {
     if (mode !== undefined && mode !== 'fixedTarget') return null
 
     const hasDepletion = ctx.projection.summary.depletionYear !== null
-    const hasAssets = firstYear.investableTotal > 100_000
+    const hasAssets = firstYear.investableTotal > MIN_INVESTABLE_FOR_GUARDRAILS_DOLLARS
     if (!hasDepletion && !hasAssets) return null
 
     const generated = guardrailPatchFromGenerator(ctx.plan)
