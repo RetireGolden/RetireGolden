@@ -3,8 +3,9 @@
  *
  * Constructed only when `SimulateOptions.captureAnnualCashFlow` is on.
  * `record*` is legal only in the year loop before `runPostContributionAnnualPass`
- * is entered. In-pass identities go to pass-local maps, never here: this object
- * is live during T0 / staging / settlement re-entries and is not rolled back.
+ * is entered, and `seal()` enforces that rather than asking a reader to. In-pass
+ * identities go to pass-local maps, never here: this object is live during T0 /
+ * staging / settlement re-entries and is not rolled back.
  *
  * Recorders skip `amount <= 0` except where noted. They do not synthesize ids.
  *
@@ -166,11 +167,60 @@ export interface AnnualCashFlowYearSites {
   readonly rebalancingGains: readonly RecordedRebalancingGain[]
 }
 
+/**
+ * The buffer plus the one operation the year loop, and nobody else, may call.
+ *
+ * `seal` is deliberately absent from `AnnualCashFlowYearSites`: the phases that
+ * receive the buffer get the recording view, and cannot close the window on one
+ * another. Only `simulatePlan`, which owns the year, holds this type.
+ */
+export interface SealableAnnualCashFlowYearSites extends AnnualCashFlowYearSites {
+  /**
+   * Close the recording window for the year; every later `record*` throws.
+   *
+   * Called once, immediately before the post-contribution annual pass. The
+   * buffer stays live and readable through T0, staging and settlement
+   * re-entries and is not rolled back with them, so a `record*` moved inside
+   * the pass by a future extraction would append once per re-entry and the
+   * reconciliation identity would fail far from the cause. Until now that was
+   * a comment in this file's header and nothing else.
+   */
+  seal(): void
+}
+
+/** Thrown when a `record*` call arrives after the year's pass has begun. */
+export class AnnualCashFlowYearSitesSealedError extends Error {
+  constructor(site: string) {
+    super(
+      `Annual cash-flow year sites are sealed for this year: ${site} must be ` +
+      'called before the post-contribution annual pass.',
+    )
+    this.name = 'AnnualCashFlowYearSitesSealedError'
+  }
+}
+
 function skipNonPositive(amount: number): boolean {
   return amount <= 0
 }
 
-class AnnualCashFlowYearSitesBuffer implements AnnualCashFlowYearSites {
+class AnnualCashFlowYearSitesBuffer implements SealableAnnualCashFlowYearSites {
+  private _sealed = false
+
+  seal(): void {
+    this._sealed = true
+  }
+
+  /**
+   * The guard every recorder runs first.
+   *
+   * Deliberately ahead of the non-positive skip: a zero-amount `record*` from
+   * inside the pass is the same misplacement as a funded one, and letting it
+   * pass silently would leave the invariant true only by luck of the amount.
+   */
+  private assertRecordable(site: string): void {
+    if (this._sealed) throw new AnnualCashFlowYearSitesSealedError(site)
+  }
+
   private readonly _wages: RecordedWage[] = []
   private readonly _recurring: RecordedStreamIncome[] = []
   private readonly _oneTime: RecordedStreamIncome[] = []
@@ -192,26 +242,32 @@ class AnnualCashFlowYearSitesBuffer implements AnnualCashFlowYearSites {
   private readonly _rebalancingGains: RecordedRebalancingGain[] = []
 
   recordWages(row: RecordedWage): void {
+    this.assertRecordable('recordWages')
     if (skipNonPositive(row.amount)) return
     this._wages.push(row)
   }
   recordRecurringIncome(row: RecordedStreamIncome): void {
+    this.assertRecordable('recordRecurringIncome')
     if (skipNonPositive(row.amount)) return
     this._recurring.push(row)
   }
   recordOneTimeIncome(row: RecordedStreamIncome): void {
+    this.assertRecordable('recordOneTimeIncome')
     if (skipNonPositive(row.amount)) return
     this._oneTime.push(row)
   }
   recordPension(row: RecordedPension): void {
+    this.assertRecordable('recordPension')
     if (skipNonPositive(row.amount)) return
     this._pensions.push(row)
   }
   recordAnnuityPayment(row: RecordedAnnuityPayment): void {
+    this.assertRecordable('recordAnnuityPayment')
     if (skipNonPositive(row.paid)) return
     this._annuityPayments.push(row)
   }
   recordTipsLadderCash(row: RecordedTipsLadderCash): void {
+    this.assertRecordable('recordTipsLadderCash')
     // Keep accretion-only rows so a later stage can emit phantom-OID metadata
     // without a second walk of the ladder. Source emission still omits cash <= 0.
     if (
@@ -223,10 +279,12 @@ class AnnualCashFlowYearSitesBuffer implements AnnualCashFlowYearSites {
     this._tipsLadderCash.push(row)
   }
   recordDistributedYield(row: RecordedDistributedYield): void {
+    this.assertRecordable('recordDistributedYield')
     if (skipNonPositive(row.taxableGross) && skipNonPositive(row.exempt)) return
     this._distributedYield.push(row)
   }
   recordPropertySaleProceeds(row: RecordedPropertySale): void {
+    this.assertRecordable('recordPropertySaleProceeds')
     // A HECM payoff can consume every cash dollar while gain character is
     // still nonzero. Keep the row so assemble can emit standalone metadata
     // when the zero-net source itself is omitted.
@@ -238,47 +296,58 @@ class AnnualCashFlowYearSitesBuffer implements AnnualCashFlowYearSites {
     this._propertySales.push(row)
   }
   recordGoalOutcome(row: RecordedGoalOutcome): void {
+    this.assertRecordable('recordGoalOutcome')
     if (skipNonPositive(row.requested) && skipNonPositive(row.fundedNominal)) return
     this._goals.push(row)
   }
   recordDebtService(row: RecordedAccountAmount): void {
+    this.assertRecordable('recordDebtService')
     if (skipNonPositive(row.amount)) return
     this._debtService.push(row)
   }
   recordPropertyCosts(row: RecordedAccountAmount): void {
+    this.assertRecordable('recordPropertyCosts')
     if (skipNonPositive(row.amount)) return
     this._propertyCosts.push(row)
   }
   recordInsurancePremium(row: RecordedPolicyPremium): void {
+    this.assertRecordable('recordInsurancePremium')
     if (skipNonPositive(row.amount)) return
     this._insurancePremiums.push(row)
   }
   recordLongTermCare(row: RecordedLongTermCare): void {
+    this.assertRecordable('recordLongTermCare')
     if (skipNonPositive(row.net) && skipNonPositive(row.gross)) return
     this._longTermCare.push(row)
   }
   recordContribution(row: RecordedContribution): void {
+    this.assertRecordable('recordContribution')
     // Post-routing requested > 0 with credited 0 is a real unfunded use.
     if (skipNonPositive(row.requested) && skipNonPositive(row.credited)) return
     this._contributions.push(row)
   }
   recordEmployerMatch(row: RecordedEmployerMatch): void {
+    this.assertRecordable('recordEmployerMatch')
     if (skipNonPositive(row.amount)) return
     this._employerMatch.push(row)
   }
   recordAnnuityPurchase(row: RecordedAnnuityPurchase): void {
+    this.assertRecordable('recordAnnuityPurchase')
     if (skipNonPositive(row.funded) && row.capitalGainOrLoss === 0) return
     this._annuityPurchases.push(row)
   }
   recordTipsLadderPurchase(row: RecordedTipsPurchase): void {
+    this.assertRecordable('recordTipsLadderPurchase')
     if (skipNonPositive(row.funded) && row.capitalGainOrLoss === 0) return
     this._tipsPurchases.push(row)
   }
   recordPensionRollover(row: RecordedPensionRollover): void {
+    this.assertRecordable('recordPensionRollover')
     if (skipNonPositive(row.amount)) return
     this._pensionRollovers.push(row)
   }
   recordRebalancingGain(row: RecordedRebalancingGain): void {
+    this.assertRecordable('recordRebalancingGain')
     // Realized losses are negative; only a true zero is omitted.
     if (row.realizedCapitalGainOrLoss === 0) return
     this._rebalancingGains.push(row)
@@ -305,6 +374,6 @@ class AnnualCashFlowYearSitesBuffer implements AnnualCashFlowYearSites {
   get rebalancingGains(): readonly RecordedRebalancingGain[] { return this._rebalancingGains }
 }
 
-export function createAnnualCashFlowYearSites(): AnnualCashFlowYearSites {
+export function createAnnualCashFlowYearSites(): SealableAnnualCashFlowYearSites {
   return new AnnualCashFlowYearSitesBuffer()
 }

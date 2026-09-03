@@ -54,7 +54,10 @@ import {
   collidingEncodedCashFlowSegments,
   collectPlanCashFlowProducerIds,
 } from './annualCashFlowIds.js'
-import { createAnnualCashFlowYearSites, type AnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
+import {
+  createAnnualCashFlowYearSites,
+  type SealableAnnualCashFlowYearSites,
+} from './annualCashFlowYearSites.js'
 import { buildLadder } from '../ladder/ladderMath.js'
 import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
@@ -1545,7 +1548,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      */
     const startOfYearAnnuityContractValue = new Map(annuityContractValue)
 
-    const yearSites: AnnualCashFlowYearSites | null = captureAnnualCashFlow
+    const yearSites: SealableAnnualCashFlowYearSites | null = captureAnnualCashFlow
       ? createAnnualCashFlowYearSites()
       : null
 
@@ -3580,6 +3583,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ...annualPassScalarBindings,
       expenses,
     }
+
+    // Every pre-pass cash-flow site for this year has now run, and the only
+    // entry into the annual pass is the settlement phase below. Sealing here
+    // turns "record only before the pass" from a header comment into a throw:
+    // the buffer survives T0, staging and settlement re-entries without being
+    // rolled back, so a `record*` that drifted inside the pass would append
+    // once per re-entry.
+    yearSites?.seal()
 
     const settlementLedger: AnnualOwnedNonRothIraSettlementPhaseLedger = {
       iraBasisByOwner,
