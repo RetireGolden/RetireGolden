@@ -33,6 +33,7 @@ import type {
   BeneficiaryTraditionalIraInheritanceEvidence, CompleteBeneficiaryTraditionalIraBasisPoolEvidence,
   CompleteBeneficiaryTraditionalIraRmdPoolEvidence,
 } from './beneficiaryTraditionalIraWithdrawalCharacter.js'
+import { deepFreeze } from './freeze.js'
 import type { AccountId, ActionId, AllocationId, PersonId } from './identity.js'
 import {
   asUsdCents,
@@ -143,15 +144,8 @@ const BASIS_KEYS = [
   'yearEndApplicablePoolBalanceAmount', 'form8606Line7DistributionAmount',
   'form8606Line8NetConversionAmount', 'evidenceId',
 ] as const
-function freeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) freeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 function unsupported(): Readonly<UnsupportedBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResult> {
-  return freeze({
+  return deepFreeze({
     status: 'unsupported', movement: 'notCommitted', committed: false,
     actionability: 'notEstablished',
     reasons: [createActionReason('withdrawal-inherited-facts-missing')],
@@ -338,7 +332,7 @@ function prepare(
   )
   if (identity.status === 'unsupported') return unsupported()
   if (identity.status === 'noResidualRmdActionIdentity') {
-    return freeze({
+    return deepFreeze({
       status: 'noResidualRmdAnnualRefinalization', movement: 'notCommitted',
       committed: false, actionability: 'notEstablished', reasons: [],
       identityEvidence: identity, predecessorRuntimeEvidence: null,
@@ -601,7 +595,7 @@ function prepare(
   if (!claim(reserved, generated, refinalizationEvidenceId, 'refinalization')) {
     return unsupported()
   }
-  return freeze({
+  return deepFreeze({
     status: 'residualRmdAnnualEvidenceRefinalized', movement: 'notCommitted',
     committed: false, actionability: 'notEstablished', reasons: [],
     identityEvidence: identity, predecessorRuntimeEvidence: predecessorRuntime,

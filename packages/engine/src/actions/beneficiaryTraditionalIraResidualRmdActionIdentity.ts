@@ -13,6 +13,7 @@ import { createActionReason, type ActionReason } from './reasons.js'
 import {
   allocateRetirementActionCandidateIdentity,
 } from './retirementActionCandidateIdentityAllocator.js'
+import { deepFreeze } from './freeze.js'
 import { deriveActionStructuralId } from './structuralId.js'
 import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
@@ -84,14 +85,6 @@ const INPUT_KEYS = [
   'plan', 'planSnapshotEvidenceId', 'physicalTransactionInput',
 ] as const
 
-function freeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) freeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
 function identifiers(value: unknown, key = '', result = new Set<string>()): Set<string> {
   if (typeof value === 'string') {
     if (key === 'id' || key.endsWith('Id')) result.add(value)
@@ -108,7 +101,7 @@ function identifiers(value: unknown, key = '', result = new Set<string>()): Set<
 }
 
 function unsupported(): Readonly<UnsupportedBeneficiaryTraditionalIraResidualRmdActionIdentityResult> {
-  return freeze({
+  return deepFreeze({
     status: 'unsupported', movement: 'notCommitted', committed: false,
     actionability: 'notEstablished',
     reasons: [createActionReason('withdrawal-inherited-facts-missing')],
@@ -148,7 +141,7 @@ function prepare(
   )
   if (transaction.status === 'unsupported') return unsupported()
   if (transaction.status === 'noResidualRmdPhysicalTransaction') {
-    return freeze({
+    return deepFreeze({
       status: 'noResidualRmdActionIdentity',
       noIdentityReason: transaction.noTransactionReason,
       movement: 'notCommitted', committed: false,
@@ -231,7 +224,7 @@ function prepare(
     ]],
   )
   if (!nonblank(identityEvidenceId) || reserved.has(identityEvidenceId)) return unsupported()
-  return freeze({
+  return deepFreeze({
     status: 'residualRmdActionIdentityPrepared', movement: 'notCommitted',
     committed: false, actionability: 'notEstablished', reasons: [],
     request: allocated.request, physicalTransaction: transaction,
