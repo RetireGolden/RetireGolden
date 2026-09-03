@@ -6,7 +6,7 @@ why) and [standards.md](standards.md) (the conventions).
 ## Repository top level
 
 The repo is a pnpm workspace (`app` and `packages/*`): `corepack enable` then `pnpm install` at the root
-installs everything. It requires Node.js >=24. The web host consumes the engine as
+installs everything. It requires Node.js >=24.15.0. The web host consumes the engine as
 `@retiregolden/engine` and the planner UI as `@retiregolden/planner-ui` through workspace dependencies;
 both packages are published to npm from `packages/`.
 
@@ -33,7 +33,7 @@ in `app/public/`) attribute every bundled MIT/ISC/0BSD package; regenerate with 
 
 ```
 app/
-├── package.json          deps + scripts; engines: node >=24
+├── package.json          deps + scripts; engines: node >=24.15.0
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
 ├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, `check-css-clamp.mjs` + `cssClamp.mjs` (post-build: the plan-card name clamp survived CSS minification, #533), sitemap generator + `sitemapRoutes.mjs`, license notices; the three Vite-SSR scripts share `viteSsr.mjs`)

@@ -30,7 +30,7 @@ e2e  ─┘
 | `dast` | PR only; needs `deploy` | OWASP ZAP baseline scan of the freshly deployed PR preview URL — see [security-scanning.md](security-scanning.md). On unlabeled PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
 | `close_pull_request` | PR close | tears down the SWA preview environment |
 
-CI uses **Node 24** (`actions/setup-node`); the workspaces require **Node ≥ 24**. Dependencies install
+CI uses **Node 24** (`actions/setup-node`); the workspaces require **Node ≥ 24.15.0**. Dependencies install
 once at the repo root (`pnpm install --frozen-lockfile` against the root `pnpm-lock.yaml` — the repo is a pnpm workspace).
 Semgrep SAST runs as a separate workflow on every push/PR — deliberately **not** label-gated, because the
 scan is cheap and it is a Main Guard required check (also in [security-scanning.md](security-scanning.md)).

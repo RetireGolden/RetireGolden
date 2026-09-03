@@ -35,10 +35,33 @@ const workflowFiles = Object.keys(import.meta.glob('../../.github/workflows/*.ym
   (path) => path.split('/').pop()!,
 )
 const nodeFloor = (JSON.parse(repoPackageJson) as { engines: { node: string } }).engines.node
-const packageNodeFloors = [appPackageJson, enginePackageJson, plannerUiPackageJson].map(
-  (manifest) => (JSON.parse(manifest) as { engines: { node: string } }).engines.node,
-)
+const appNodeFloor = (JSON.parse(appPackageJson) as { engines: { node: string } }).engines.node
+// packages/engine and packages/planner-ui are published to npm and ship no jsdom (it's a
+// devDependency), so their own runtime floor is not required to track the workspace's
+// dev-tooling floor above.
+const enginePackageNodeFloor = (JSON.parse(enginePackageJson) as { engines: { node: string } }).engines.node
+const plannerUiPackageNodeFloor = (JSON.parse(plannerUiPackageJson) as { engines: { node: string } })
+  .engines.node
+const publishedPackageNodeFloors = [enginePackageNodeFloor, plannerUiPackageNodeFloor]
 const ciNodeVersion = swaWorkflow.match(/node-version: '(\d+)'/)?.[1]
+
+// Parses a '>=X[.Y[.Z]]' engines.node floor into numeric [major, minor, patch], defaulting
+// an omitted minor/patch to 0.
+function parseNodeFloor(floor: string): [number, number, number] {
+  const match = floor.match(/^>=(\d+)(?:\.(\d+))?(?:\.(\d+))?$/)
+  expect(match, `expected a '>=X[.Y[.Z]]' floor, got "${floor}"`).not.toBeNull()
+  const [, major, minor, patch] = match!
+  return [Number(major), Number(minor ?? 0), Number(patch ?? 0)]
+}
+
+// True when floor 'a' is not stricter than floor 'b' (a <= b in semver-floor terms).
+function floorAtMost(a: [number, number, number], b: [number, number, number]): boolean {
+  for (let i = 0; i < 3; i += 1) {
+    if (a[i] !== b[i]) return a[i] < b[i]
+  }
+  return true
+}
+
 const nodePinnedWorkflows = [
   swaWorkflow,
   owlParityWorkflow,
@@ -75,15 +98,35 @@ describe('docs consistency', () => {
 
   it('documentation states the repository Node.js floor and CI version', () => {
     expect(ciNodeVersion).toBeDefined()
-    expect(nodeFloor).toBe(`>=${ciNodeVersion}`)
+    // The workspace floor may name a minor/patch inside the CI major: a dependency can
+    // require one (jsdom 30 declares `^24.15.0`). The major still has to be the one CI
+    // installs, because `node-version: '24'` resolves to the latest 24.x and nothing older.
+    expect(nodeFloor).toMatch(/^>=\d+(?:\.\d+){0,2}$/)
+    expect(nodeFloor.slice('>='.length).split('.')[0]).toBe(ciNodeVersion)
     for (const workflow of nodePinnedWorkflows) {
       expect([...workflow.matchAll(/node-version: '(\d+)'/g)].map((match) => match[1])).toContain(ciNodeVersion)
     }
     expect(codeMap).toContain(`Node.js ${nodeFloor}`)
     expect(codeMap).toContain(`engines: node ${nodeFloor}`)
     expect(readme).toContain(`Node **${ciNodeVersion}** in CI`)
-    expect(engineReadme).toContain(`Node ${nodeFloor}`)
-    expect(packageNodeFloors).toEqual([nodeFloor, nodeFloor, nodeFloor])
+    // The app is unpublished workspace tooling, same floor as root.
+    expect(appNodeFloor).toBe(nodeFloor)
+
+    // packages/engine and packages/planner-ui are published to npm: their own README pins
+    // whichever floor *they* describe, not the workspace's dev-tooling floor, and their
+    // engines.node must never exceed the workspace floor (a published floor stricter than
+    // the workspace itself needs would break older-Node consumers with no release deciding
+    // it — see the 2026-07-24 @retiregolden/planner-ui 0.5.0 precedent, where an
+    // engines.node move alone decided a MINOR release).
+    expect(engineReadme).toContain(`Node ${enginePackageNodeFloor}`)
+    const workspaceFloorParts = parseNodeFloor(nodeFloor)
+    for (const floor of publishedPackageNodeFloors) {
+      expect(floor).toMatch(/^>=\d+(?:\.\d+){0,2}$/)
+      const parts = parseNodeFloor(floor)
+      expect(parts[0]).toBe(workspaceFloorParts[0])
+      expect(floorAtMost(parts, workspaceFloorParts)).toBe(true)
+    }
+
     for (const doc of [codeMap, readme, engineReadme]) {
       expect(doc).not.toMatch(/\bNode\s*(?:≥|>=)\s*(?:20|22)\b/)
     }
