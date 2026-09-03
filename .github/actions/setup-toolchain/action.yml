@@ -1,0 +1,39 @@
+# Shared runner toolchain: pnpm (from the packageManager pin) and Node, with
+# the pnpm store cache keyed on the lockfile. Every CI job that runs Node uses
+# this instead of restating the two SHA-pinned setup steps, so a Node-major or
+# action bump is one edit and one Dependabot hunk (.github/dependabot.yml
+# lists this directory so the pins here stay under Dependabot). Jobs keep
+# their own actions/checkout (a repo-local composite is only available after
+# checkout) and their own install line, because the install variant differs
+# (frozen, lockfile-only, none).
+#
+# app/src/docsConsistency.test.ts reads `node-version` from this file and
+# requires every workflow that runs Node to use this action rather than a
+# raw actions/setup-node step.
+name: Set up pnpm and Node
+description: pnpm via packageManager pin, Node 24 with the pnpm store cache; optional npm registry for publish jobs.
+inputs:
+  registry-url:
+    description: npm registry URL to configure in npmrc (publish jobs only). Leave empty otherwise.
+    required: false
+    default: ''
+  pnpm:
+    description: Install pnpm. Set to 'false' for jobs that only need Node (the deploy job).
+    required: false
+    default: 'true'
+  cache:
+    description: Restore the pnpm store cache keyed on the committed lockfile. Set to 'false' for jobs that resolve without it (the fresh-resolve gate) or do not run pnpm.
+    required: false
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - if: inputs.pnpm == 'true'
+      uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: '24'
+        # An empty `cache` means no caching in actions/setup-node.
+        cache: ${{ inputs.pnpm == 'true' && inputs.cache == 'true' && 'pnpm' || '' }}
+        cache-dependency-path: pnpm-lock.yaml
+        registry-url: ${{ inputs.registry-url }}
