@@ -17,7 +17,7 @@ import { warningFor } from './warnings'
 
 import { LearnLink, type LearnHook } from '../learn/LearnLink'
 import { capIsoDateYear, editingMoneyText, nextMoneyFieldText } from './fieldInput'
-import { fmtMoney, parseAmount } from './format'
+import { fmtMoney, fmtMoneyCents, parseAmount } from './format'
 
 /** External citation shown inside a ⓘ help bubble (cite-the-authority pattern). */
 export interface SourceLink {
@@ -359,16 +359,7 @@ export function MoneyField({
   // is about what was stored rather than a keystroke on the way there. A
   // cross-field caution from the card fills in where this path has none.
   const warning = warningFor(path, value) ?? crossFieldWarning ?? null
-  const formatted = value === null
-    ? ''
-    : fractionDigits === undefined
-      ? fmtMoney(value)
-      : value.toLocaleString('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: fractionDigits,
-          maximumFractionDigits: fractionDigits,
-        })
+  const formatted = value === null ? '' : fractionDigits === 2 ? fmtMoneyCents(value) : fmtMoney(value)
   const { text, setText, focused, setFocused } = useLocalText(formatted)
   const inputRef = useRef<HTMLInputElement>(null)
   const selectOnFocus = useRef(false)

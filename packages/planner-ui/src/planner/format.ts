@@ -1,10 +1,52 @@
 /** Number formatting for the planner. All engine amounts are nominal dollars. */
 
 const money0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+const money2 = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+const grouped = new Intl.NumberFormat('en-US')
 
 export function fmtMoney(v: number): string {
   if (!Number.isFinite(v)) return '—'
   return money0.format(v)
+}
+
+/**
+ * Exact-cent money, for the two places whole dollars would lie: a
+ * reconciliation remainder (rounding a real 1-cent gap to $0 says the ledger
+ * balanced when it did not) and a money field the household types cents into.
+ */
+export function fmtMoneyCents(v: number): string {
+  if (!Number.isFinite(v)) return '—'
+  return money2.format(v)
+}
+
+/**
+ * Exact-cent money from an integer minor-unit amount, formatted through
+ * BigInt so a cent count past `Number.MAX_SAFE_INTEGER` still renders its own
+ * digits rather than a float's nearest neighbour. The minus is the U+2212 the
+ * compact formatter writes, so a copied figure parses back (`parseAmount`).
+ */
+export function fmtMoneyFromCents(cents: number | bigint): string {
+  const minorUnits = BigInt(cents)
+  const negative = minorUnits < 0n
+  const absolute = negative ? -minorUnits : minorUnits
+  return `${negative ? '−' : ''}$${(absolute / 100n).toLocaleString('en-US')}.${(absolute % 100n).toString().padStart(2, '0')}`
+}
+
+/**
+ * A grouped number with no currency symbol, pinned to `en-US`.
+ *
+ * The locale is the point: a bare `toLocaleString()` lets the host's ICU
+ * default decide, so `96,000` becomes `96.000` on a German runtime and the
+ * scenario name a plan stores depends on which machine created it.
+ */
+export function fmtNumber(v: number): string {
+  if (!Number.isFinite(v)) return '—'
+  return grouped.format(v)
 }
 
 /** Magnitude suffixes past a million, smallest first so a mantissa that rounds to 1000 moves up a tier. */

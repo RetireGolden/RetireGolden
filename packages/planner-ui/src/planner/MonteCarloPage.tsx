@@ -802,10 +802,10 @@ export function MonteCarloPage() {
                       <table className="compare-table">
                         <thead>
                           <tr>
-                            <th>Annuitized</th>
-                            <th>Premium</th>
-                            <th>Income/yr</th>
-                            <th>Median estate</th>
+                            <th scope="col">Annuitized</th>
+                            <th scope="col">Premium</th>
+                            <th scope="col">Income/yr</th>
+                            <th scope="col">Median estate</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -864,10 +864,10 @@ export function MonteCarloPage() {
                       <table className="compare-table">
                         <thead>
                           <tr>
-                            <th>Window</th>
-                            <th>Estate</th>
-                            <th>Depletes</th>
-                            <th>Shortfall</th>
+                            <th scope="col">Window</th>
+                            <th scope="col">Estate</th>
+                            <th scope="col">Depletes</th>
+                            <th scope="col">Shortfall</th>
                           </tr>
                         </thead>
                         <tbody>

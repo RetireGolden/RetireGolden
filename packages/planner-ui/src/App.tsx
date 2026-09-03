@@ -41,6 +41,28 @@ function getResolvedTheme(mode: ThemeMode) {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
+/**
+ * The `--bg` the stylesheet is actually painting, for the browser-chrome
+ * `theme-color` meta.
+ *
+ * These two hexes are `--bg` in `index.css`, and restating them here left the
+ * phone's address bar on the old color after a palette change. Reading the
+ * computed value takes the sheet's word for it instead; the literals stay as
+ * the fallback for an environment that cannot compute one at all (jsdom with
+ * no stylesheet loaded, and the tick before the CSS arrives), so the meta is
+ * never blanked.
+ */
+const THEME_COLOR_FALLBACK = { dark: '#0e1116', light: '#f4f6f8' } as const
+
+function resolvedBackground(root: HTMLElement, resolved: 'dark' | 'light'): string {
+  if (typeof window === 'undefined' || typeof window.getComputedStyle !== 'function') {
+    return THEME_COLOR_FALLBACK[resolved]
+  }
+  // Read AFTER the theme attribute is set, so this is the palette now in force.
+  const painted = window.getComputedStyle(root).getPropertyValue('--bg').trim()
+  return painted === '' ? THEME_COLOR_FALLBACK[resolved] : painted
+}
+
 export interface PlannerAppProps {
   /**
    * Identity applied to downloaded HTML reports (name, logo, accent color,
@@ -184,7 +206,7 @@ export function App({
       // a lagging tab, overwrite a newer choice and yank every tab to the old
       // value, which is the "theme changed by itself" this guards against (#434).
       root.dataset.theme = themeMode
-      themeColor?.setAttribute('content', nextResolvedTheme === 'dark' ? '#0e1116' : '#f4f6f8')
+      themeColor?.setAttribute('content', resolvedBackground(root, nextResolvedTheme))
     }
 
     applyTheme()

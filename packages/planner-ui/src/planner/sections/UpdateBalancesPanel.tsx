@@ -89,13 +89,8 @@ import {
   useRefreshProtectionPending,
   type RefreshProtectionEntry,
 } from '../refreshProtectionContext'
-import { fmtMoney } from '../format'
+import { fmtMoney, fmtMoneyCents } from '../format'
 import { ScrollRegion } from '../ScrollRegion'
-
-// The reconciliation identity is exact to the cent; rounding its display to
-// whole dollars would show 0 for a real 1-cent remainder.
-const fmtCents = (value: number): string =>
-  value.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
 const EMPTY_REMEMBERED: ReadonlyMap<string, string> = new Map()
@@ -1041,10 +1036,10 @@ function UpdateBalancesPanelBody({
           </ScrollRegion>
           {delta.reconciliation ? (
             <div className="callout callout--info" role="status">
-              Reconciliation: file total {fmtCents(delta.reconciliation.fileTotal)}; matched total{' '}
-              {fmtCents(delta.reconciliation.matchedTotal)}; unmatched remainder{' '}
-              {fmtCents(delta.reconciliation.unmatchedRemainder)}; plan balances {fmtCents(delta.reconciliation.planTotalBefore)}{' '}
-              → {fmtCents(delta.reconciliation.planTotalAfter)}.
+              Reconciliation: file total {fmtMoneyCents(delta.reconciliation.fileTotal)}; matched total{' '}
+              {fmtMoneyCents(delta.reconciliation.matchedTotal)}; unmatched remainder{' '}
+              {fmtMoneyCents(delta.reconciliation.unmatchedRemainder)}; plan balances {fmtMoneyCents(delta.reconciliation.planTotalBefore)}{' '}
+              → {fmtMoneyCents(delta.reconciliation.planTotalAfter)}.
             </div>
           ) : null}
           {staleNames.length > 0 ? (

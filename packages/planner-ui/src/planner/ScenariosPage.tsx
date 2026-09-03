@@ -1042,7 +1042,7 @@ function ComparableScenariosPage() {
                   <th scope="col">Lifetime tax plus penalties</th>
                   <th scope="col">Depletes</th>
                   <th scope="col">Changed</th>
-                  <th aria-label="actions" />
+                  <th scope="col" aria-label="actions" />
                 </tr>
               </thead>
               <tbody>

@@ -377,6 +377,60 @@ describe('Design-QA cluster A: source pins', () => {
   })
 })
 
+describe('the browser-chrome color is the palette, not a copy of it', () => {
+  it('reads --bg off the root after the theme attribute is set', () => {
+    const app = sheet('../App.tsx')
+    expect(app).toContain("window.getComputedStyle(root).getPropertyValue('--bg')")
+    expect(app).toContain("themeColor?.setAttribute('content', resolvedBackground(root, nextResolvedTheme))")
+    // The two hexes survive only as the no-stylesheet fallback, never as the
+    // value a themed browser actually gets.
+    expect(app).toContain("const THEME_COLOR_FALLBACK = { dark: '#0e1116', light: '#f4f6f8' } as const")
+    expect(app).not.toContain("nextResolvedTheme === 'dark' ? '#0e1116'")
+    // And they are still what index.css paints, so the fallback is not stale.
+    expect(indexCss).toContain('--bg: #f4f6f8;')
+    expect(indexCss).toContain('--bg: #0e1116;')
+  })
+})
+
+describe('the two dark mechanisms declare one palette', () => {
+  /**
+   * DESIGN.md requires every token to be mirrored into BOTH dark mechanisms,
+   * and nothing checked it. The print sweep above reads only the
+   * `[data-theme='dark']` block, so a token added there and forgotten in the
+   * `prefers-color-scheme` block passed CI and broke for exactly the people
+   * who never touched the theme toggle: system-dark users.
+   *
+   * Values, not just names: two blocks that declare the same token at two
+   * different hexes is the same defect wearing a disguise.
+   */
+  const declarations = (block: string): Array<[string, string]> =>
+    [...block.matchAll(/^\s*(--[a-z0-9-]+):\s*([^;]+);/gm)].map(([, token, value]) => [token!, value!.trim()])
+
+  const toggled = indexCss.slice(
+    indexCss.indexOf(":root[data-theme='dark'] {"),
+    indexCss.indexOf('@media (prefers-color-scheme: dark)'),
+  )
+  const systemStart = indexCss.indexOf(":root:not([data-theme='light']) {")
+  const system = indexCss.slice(systemStart, indexCss.indexOf('\n}', indexCss.indexOf('\n  }', systemStart)))
+
+  it('declares the same tokens at the same values in both', () => {
+    const a = declarations(toggled)
+    const b = declarations(system)
+    // Guard the slices themselves: a reformat that emptied either one would
+    // otherwise make this pin vacuous.
+    expect(a.length).toBeGreaterThan(20)
+    expect(Object.fromEntries(b)).toEqual(Object.fromEntries(a))
+    expect(b.map(([token]) => token).sort()).toEqual(a.map(([token]) => token).sort())
+  })
+
+  it('reads the system block, not a slice that stops at the toggle block', () => {
+    // The bug this pin exists for: `system` must actually contain the media
+    // block's declarations rather than trailing content past it.
+    expect(system).toContain("--select-chevron:")
+    expect(system).not.toContain("[data-theme='dark']")
+  })
+})
+
 describe('Design-QA cluster A: pin hygiene', () => {
   it('reads every file through a CRLF-normalising helper, so the pins hold on a Windows checkout', () => {
     for (const file of ['./designQa.clusterA.test.ts', './designQa.chrome.test.ts']) {

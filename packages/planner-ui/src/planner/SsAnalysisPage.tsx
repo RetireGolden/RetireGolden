@@ -316,10 +316,10 @@ function BridgePanel() {
         <table>
           <thead>
             <tr>
-              <th>Person</th>
-              <th>Bridge pays</th>
-              <th>Years</th>
-              <th>TIPS ladder cost (today's $)</th>
+              <th scope="col">Person</th>
+              <th scope="col">Bridge pays</th>
+              <th scope="col">Years</th>
+              <th scope="col">TIPS ladder cost (today's $)</th>
             </tr>
           </thead>
           <tbody>
@@ -376,10 +376,10 @@ function BridgePanel() {
           <table>
             <thead>
               <tr>
-                <th>Strategy</th>
-                <th>Market success</th>
-                <th>Money lasts</th>
-                <th>Ending after-tax estate</th>
+                <th scope="col">Strategy</th>
+                <th scope="col">Market success</th>
+                <th scope="col">Money lasts</th>
+                <th scope="col">Ending after-tax estate</th>
               </tr>
             </thead>
             <tbody>
@@ -609,9 +609,9 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         <table className="claim-table" style={{ marginTop: '0.75rem' }}>
           <thead>
             <tr>
-              <th>Strategy (claim ages)</th>
-              <th>After-tax estate</th>
-              <th>Success %</th>
+              <th scope="col">Strategy (claim ages)</th>
+              <th scope="col">After-tax estate</th>
+              <th scope="col">Success %</th>
             </tr>
           </thead>
           <tbody>
@@ -707,11 +707,11 @@ function SingleSweepTable({
       <table className="claim-table">
         <thead>
           <tr>
-            <th>Claim at</th>
-            <th>After-tax estate</th>
-            <th>Lifetime tax</th>
-            <th>Depletes</th>
-            <th aria-label="apply" />
+            <th scope="col">Claim at</th>
+            <th scope="col">After-tax estate</th>
+            <th scope="col">Lifetime tax</th>
+            <th scope="col">Depletes</th>
+            <th scope="col" aria-label="apply" />
           </tr>
         </thead>
         <tbody>
@@ -778,16 +778,16 @@ function CoupleHeatmap({
         <table className="claim-table heatmap">
           <thead>
             <tr>
-              <th>{personName(rowId!)} ↓ / {personName(colId!)} →</th>
+              <th scope="col">{personName(rowId!)} ↓ / {personName(colId!)} →</th>
               {colAges.map((ca) => (
-                <th key={ca}>{ca}</th>
+                <th scope="col" key={ca}>{ca}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rowAges.map((ra) => (
               <tr key={ra}>
-                <th>{ra}</th>
+                <th scope="row">{ra}</th>
                 {colAges.map((ca) => {
                   const v = estate(ra, ca)
                   const isBest = `${ra}-${ca}` === bestKey
@@ -995,9 +995,9 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         <table className="claim-table">
           <thead>
             <tr>
-              <th>Claim age{personIds.length === 2 ? 's' : ''}</th>
-              <th>Expected PV</th>
-              <th aria-label="apply" />
+              <th scope="col">Claim age{personIds.length === 2 ? 's' : ''}</th>
+              <th scope="col">Expected PV</th>
+              <th scope="col" aria-label="apply" />
             </tr>
           </thead>
           <tbody>
@@ -1186,8 +1186,8 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
         <table className="claim-table">
           <thead>
             <tr>
-              <th>Strategy</th>
-              <th>Expected PV</th>
+              <th scope="col">Strategy</th>
+              <th scope="col">Expected PV</th>
             </tr>
           </thead>
           <tbody>

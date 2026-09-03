@@ -13,6 +13,7 @@ import {
   type Plan,
 } from '@retiregolden/engine/model/plan'
 import { targetWeightsAt } from '@retiregolden/engine/allocation/assetClasses'
+import { fmtNumber } from './planner/format'
 import { packForYear } from '@retiregolden/engine/params'
 import { modeledStateCodes } from '@retiregolden/engine/params/state'
 import {
@@ -1049,7 +1050,7 @@ export function buildScenarioLever(
       if (plan.expenses.requiredAnnual !== undefined && proposed < plan.expenses.requiredAnnual) {
         return unavailable(
           definition,
-          [`The proposed spending is below required spending (${plan.expenses.requiredAnnual.toLocaleString()}).`],
+          [`The proposed spending is below required spending (${fmtNumber(plan.expenses.requiredAnnual)}).`],
         )
       }
       edited.expenses.baseAnnual = proposed
@@ -1057,7 +1058,11 @@ export function buildScenarioLever(
         plan,
         edited,
         definition,
-        `Household base spending: ${proposed.toLocaleString('en-US')} per year`,
+        // The four lever names below keep their bare-number shape: each is
+        // stored in `plan.scenarios[].name` and in its patch title, so adding a
+        // currency symbol would read differently from every name a saved plan
+        // already holds. What moves is only where the grouping comes from.
+        `Household base spending: ${fmtNumber(proposed)} per year`,
         warnings,
         context,
       )
@@ -1287,7 +1292,7 @@ export function buildScenarioLever(
             ? `IRMAA tier ${request.targetValue}`
             : request.target === 'acaCliff'
               ? 'ACA credit cliff'
-              : `fixed MAGI ${request.targetValue?.toLocaleString('en-US')}`
+              : `fixed MAGI ${request.targetValue === null ? '' : fmtNumber(request.targetValue)}`
       return finish(
         plan,
         edited,
@@ -1352,7 +1357,7 @@ export function buildScenarioLever(
         plan,
         edited,
         definition,
-        `${request.annualAmount.toLocaleString('en-US')} Roth conversion, ${request.startYear}–${request.endYear}`,
+        `${fmtNumber(request.annualAmount)} Roth conversion, ${request.startYear}–${request.endYear}`,
         warnings,
         context,
       )
@@ -1732,7 +1737,7 @@ export function buildScenarioLever(
         plan,
         edited,
         definition,
-        `${person.name}: ${request.durationYears} years of care at age ${request.startAge}, ${request.annualCost.toLocaleString('en-US')} per year`,
+        `${person.name}: ${request.durationYears} years of care at age ${request.startAge}, ${fmtNumber(request.annualCost)} per year`,
         warnings,
         context,
       )
