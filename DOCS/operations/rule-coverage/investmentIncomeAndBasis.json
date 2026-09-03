@@ -493,7 +493,7 @@
           "functions": [
             {
               "name": "distributedTaxableYieldRows",
-              "line": 80
+              "line": 81
             }
           ]
         },
@@ -639,7 +639,7 @@
           "functions": [
             {
               "name": "missingDataBasis",
-              "line": 135
+              "line": 120
             }
           ]
         },
@@ -1498,7 +1498,7 @@
           "functions": [
             {
               "name": "distributedTaxableYieldRows",
-              "line": 80
+              "line": 81
             }
           ]
         },
@@ -1601,7 +1601,7 @@
           "functions": [
             {
               "name": "annualAnnuityPurchaseFunding",
-              "line": 71
+              "line": 72
             }
           ]
         }

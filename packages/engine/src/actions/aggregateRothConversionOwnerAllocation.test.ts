@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Account } from '../model/plan.js'
+import { AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS } from '../projection/moneyTolerance.js'
 import type { RothConversionSourceContext } from '../strategies/accountEligibility.js'
 import {
   allocateAggregateRothConversionByOwner,
@@ -452,12 +453,15 @@ describe('draws', () => {
   })
 
   it('never lets the ledger reach either guard', () => {
-    // `simulate.ts` sizes `desired` itself and calls only inside
-    // `desired > 0.01`, which is false for NaN and for every nonpositive
-    // figure. The guards exist for the promotion chooser and whatever consumes
-    // this next, and this is the arithmetic that says so.
-    for (const desired of [Number.NaN, 0, -1, 0.005]) {
-      expect(desired > 0.01).toBe(false)
+    // The ledger sizes `desired` itself and calls only inside
+    // `desired > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS`, which is
+    // false for NaN and for every nonpositive figure. The guards exist for the
+    // promotion chooser and whatever consumes this next, and this is the
+    // arithmetic that says so. The epsilon is read from its module rather than
+    // retyped, so a change to the floor cannot leave this claim behind.
+    const epsilon = AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS
+    for (const desired of [Number.NaN, 0, -1, epsilon / 2]) {
+      expect(desired > epsilon).toBe(false)
     }
   })
 

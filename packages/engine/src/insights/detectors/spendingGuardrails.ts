@@ -1,3 +1,4 @@
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import { probabilityBandSpendingGuardrailGenerator } from '../../decisions/generators.js'
 import type { DecisionContext } from '../../decisions/types.js'
 import type { Plan } from '../../model/plan.js'
@@ -25,6 +26,13 @@ function guardrailPatchFromGenerator(plan: Plan) {
   return { requiredAnnual, patch: patch as Record<string, unknown> }
 }
 
+/**
+ * Screen threshold: below this first-year investable balance a guardrail
+ * policy has too little portfolio to steer, so the card only fires on a plan
+ * that already depletes.
+ */
+const MIN_INVESTABLE_FOR_GUARDRAILS_DOLLARS = 100_000
+
 export const spendingGuardrails: Detector = {
   id: 'spending-guardrails',
   category: 'sequence-risk',
@@ -38,7 +46,7 @@ export const spendingGuardrails: Detector = {
     if (mode !== undefined && mode !== 'fixedTarget') return null
 
     const hasDepletion = ctx.projection.summary.depletionYear !== null
-    const hasAssets = firstYear.investableTotal > 100_000
+    const hasAssets = firstYear.investableTotal > MIN_INVESTABLE_FOR_GUARDRAILS_DOLLARS
     if (!hasDepletion && !hasAssets) return null
 
     const generated = guardrailPatchFromGenerator(ctx.plan)
@@ -51,10 +59,10 @@ export const spendingGuardrails: Detector = {
         label: floorIsUserProvided
           ? 'Required spending floor'
           : 'Illustrative spending floor (80% of base spending, scenario-generated)',
-        value: `$${Math.round(requiredAnnual).toLocaleString()}`,
+        value: formatWholeUsd(requiredAnnual),
         year: firstYear.year,
       },
-      { label: 'Investable assets', value: `$${Math.round(firstYear.investableTotal).toLocaleString()}`, year: firstYear.year },
+      { label: 'Investable assets', value: formatWholeUsd(firstYear.investableTotal), year: firstYear.year },
     ]
     if (typeof ctx.projection.summary.depletionYear === 'number') {
       evidence.push({
@@ -67,7 +75,7 @@ export const spendingGuardrails: Detector = {
       id: 'spending-guardrails',
       category: 'sequence-risk',
       title: 'Preview dynamic spending guardrails',
-      rationale: `Your plan currently assumes fixed inflation-adjusted spending. Preview a rules-based guardrail scenario with a $${Math.round(requiredAnnual).toLocaleString()} required floor and 10% spending adjustments when the withdrawal-rate band is crossed.`,
+      rationale: `Your plan currently assumes fixed inflation-adjusted spending. Preview a rules-based guardrail scenario with a ${formatWholeUsd(requiredAnnual)} required floor and 10% spending adjustments when the withdrawal-rate band is crossed.`,
       impact: {
         qualitative: 'Preview to compare the projected and Monte Carlo impact of flexible spending rules.',
         successRateDeltaPct: 12,

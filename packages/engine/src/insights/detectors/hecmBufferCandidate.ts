@@ -1,3 +1,4 @@
+import { formatEvidencePercent, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { Account } from '../../model/plan.js'
 import { hecmPrincipalLimitFactorPct } from '../../params/index.js'
@@ -12,6 +13,12 @@ import { hecmPrincipalLimitFactorPct } from '../../params/index.js'
  * line as a scenario; deterministic runs price only the last-resort backstop,
  * so the Monte Carlo comparison is where the coordinated policy shows up.
  */
+
+/** A residence worth less than this cannot support a useful credit line. */
+const MIN_HOME_VALUE_DOLLARS = 100_000
+/** "House-rich, portfolio-thin": home value as a share of investable assets. */
+const MIN_HOME_TO_INVESTABLE_RATIO = 0.75
+
 export const hecmBufferCandidate: Detector = {
   id: 'hecm-buffer-candidate',
   category: 'longevity-insurance-geography',
@@ -25,7 +32,8 @@ export const hecmBufferCandidate: Detector = {
 
     const home = plan.accounts.find(
       (a): a is Extract<Account, { type: 'property' }> =>
-        a.type === 'property' && a.primaryResidence === true && a.hecm === undefined && a.value > 100_000 &&
+        a.type === 'property' && a.primaryResidence === true && a.hecm === undefined &&
+        a.value > MIN_HOME_VALUE_DOLLARS &&
         // A planned sale makes the buffer moot (the line closes at sale).
         (a.plannedSaleYear === null || a.plannedSaleYear === undefined),
     )
@@ -41,7 +49,7 @@ export const hecmBufferCandidate: Detector = {
       }
     }
     // House-rich / portfolio-thin: the home is a major share of net worth.
-    if (investable <= 0 || home.value < investable * 0.75) return null
+    if (investable <= 0 || home.value < investable * MIN_HOME_TO_INVESTABLE_RATIO) return null
 
     const pack = ctx.params
     const plfPct = hecmPrincipalLimitFactorPct(pack, youngestAge)
@@ -60,8 +68,8 @@ export const hecmBufferCandidate: Detector = {
       category: 'longevity-insurance-geography',
       title: 'Your home equity could backstop market downturns',
       rationale:
-        `${home.name} (~$${Math.round(home.value).toLocaleString()}) rivals your $${Math.round(investable).toLocaleString()} portfolio. ` +
-        `A HECM line of credit opened now would start near $${Math.round(lineSize).toLocaleString()} (${plfPct.toFixed(1)}% of value at age ${youngestAge}, published factor tables) ` +
+        `${home.name} (~${formatWholeUsd(home.value)}) rivals your ${formatWholeUsd(investable)} portfolio. ` +
+        `A HECM line of credit opened now would start near ${formatWholeUsd(lineSize)} (${formatEvidencePercent(plfPct)} of value at age ${youngestAge}, published factor tables) ` +
         `and grow ~${pack.hecm.defaultGrowthRatePct}%/yr regardless of home value. Drawing tax-free after down years, instead of selling depressed assets, is the coordinated buffer strategy; ` +
         'costs are real (financed fees, a growing loan) and the loan is repaid from the home, non-recourse.',
       impact: {
@@ -72,10 +80,10 @@ export const hecmBufferCandidate: Detector = {
       confidence: 'medium',
       severity: 'info',
       evidence: [
-        { label: 'Home value', value: `$${Math.round(home.value).toLocaleString()}`, year: startYear },
-        { label: 'Investable portfolio', value: `$${Math.round(investable).toLocaleString()}`, year: startYear },
+        { label: 'Home value', value: formatWholeUsd(home.value), year: startYear },
+        { label: 'Investable portfolio', value: formatWholeUsd(investable), year: startYear },
         { label: 'Youngest borrower age', value: `${youngestAge}`, year: startYear },
-        { label: 'Illustrative credit line', value: `$${Math.round(lineSize).toLocaleString()}`, year: startYear },
+        { label: 'Illustrative credit line', value: formatWholeUsd(lineSize), year: startYear },
       ],
       plannerRoute: 'accounts',
       action: {

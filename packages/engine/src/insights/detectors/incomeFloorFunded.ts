@@ -1,3 +1,4 @@
+import { formatEvidencePercent, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { EMBEDDED_REAL_YIELD_CURVE } from '../../params/index.js'
 import { computeFundedRatio } from '../../ladder/fundedRatio.js'
@@ -39,9 +40,9 @@ export const incomeFloorFunded: Detector = {
       title: `Your essential-spending floor is ${pct}% funded`,
       rationale:
         `Discounted on today's TIPS curve, your essential retirement spending is worth ` +
-        `$${Math.round(fr.essentialSpendingPv).toLocaleString()} in today's dollars, and guaranteed income ` +
-        `(Social Security, pensions, annuities, TIPS ladders) covers $${Math.round(fr.guaranteedIncomePv).toLocaleString()} of it (${pct}%). ` +
-        `The $${Math.round(fr.unfundedPv).toLocaleString()} gap rides on the portfolio; a TIPS ladder can lock some of it in at ~` +
+        `${formatWholeUsd(fr.essentialSpendingPv)} in today's dollars, and guaranteed income ` +
+        `(Social Security, pensions, annuities, TIPS ladders) covers ${formatWholeUsd(fr.guaranteedIncomePv)} of it (${pct}%). ` +
+        `The ${formatWholeUsd(fr.unfundedPv)} gap rides on the portfolio; a TIPS ladder can lock some of it in at ~` +
         `${EMBEDDED_REAL_YIELD_CURVE.points[EMBEDDED_REAL_YIELD_CURVE.points.length - 1]!.realYieldPct}% real.`,
       impact: {
         qualitative:
@@ -51,10 +52,10 @@ export const incomeFloorFunded: Detector = {
       confidence: 'medium',
       severity: 'attention',
       evidence: [
-        { label: 'Funded ratio', value: `${fr.fundedRatioPct.toFixed(1)}%` },
-        { label: 'Essential spending present value (today\'s $)', value: `$${Math.round(fr.essentialSpendingPv).toLocaleString()}`, year: ctx.projection.startYear },
-        { label: 'Guaranteed income present value (today\'s $)', value: `$${Math.round(fr.guaranteedIncomePv).toLocaleString()}`, year: ctx.projection.startYear },
-        { label: 'Unfunded present value (today\'s $)', value: `$${Math.round(fr.unfundedPv).toLocaleString()}`, year: ctx.projection.startYear },
+        { label: 'Funded ratio', value: formatEvidencePercent(fr.fundedRatioPct) },
+        { label: 'Essential spending present value (today\'s $)', value: formatWholeUsd(fr.essentialSpendingPv), year: ctx.projection.startYear },
+        { label: 'Guaranteed income present value (today\'s $)', value: formatWholeUsd(fr.guaranteedIncomePv), year: ctx.projection.startYear },
+        { label: 'Unfunded present value (today\'s $)', value: formatWholeUsd(fr.unfundedPv), year: ctx.projection.startYear },
       ],
       learnSlug: 'funded-ratio',
       plannerRoute: 'income-floor',

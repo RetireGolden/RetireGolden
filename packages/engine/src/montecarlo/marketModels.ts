@@ -265,9 +265,94 @@ export function createMarketModel(config: MarketModelConfig): MarketModel {
       return createGaussianModel(config)
     case 'ar1':
       return createAR1Model(config)
-    default:
-      // exhaustive guard for future
-      return createLognormalModel(config as LognormalModelConfig)
+    default: {
+      // MarketModelConfig is a discriminated union, so this branch is
+      // unreachable and the `never` binding turns a forgotten case into a
+      // compile error. The cast-to-lognormal it replaces defeated exactly
+      // that: a new model type would have compiled, then silently run as
+      // lognormal and reported the wrong distribution.
+      const exhaustive: never = config
+      throw new Error(
+        'Unknown market model type: ' + String((exhaustive as { type?: unknown }).type),
+      )
+    }
+  }
+}
+
+/**
+ * A model's centering convention, applied to one class's correlated draw.
+ *
+ * `x` is the standard-normal draw for the class after the Cholesky mix, `sigma`
+ * its annual volatility as a decimal, and `id` the class — read only by
+ * `user-shock`, which treats cash and equities differently in its shock year.
+ * The return is a percentage-point shock, the same units as
+ * `MarketSeries.returnShockPct`.
+ */
+type ClassShockTransform = (x: number, sigma: number, id: AssetClassId) => number
+
+/**
+ * Mean-preserving: E[exp(σx − σ²/2)] = 1, so the class shock averages out to
+ * the class's expected return. Used by lognormal, cape-conditioned (before its
+ * CAPE adjustment), inflation-regime, and user-shock's non-shock years.
+ */
+const meanPreservingLognormalShockPct: ClassShockTransform = (x, sigma) =>
+  (Math.exp(sigma * x - (sigma * sigma) / 2) - 1) * 100
+
+/**
+ * Additive: the shock is the scaled draw itself, centered on zero rather than
+ * on a gross multiplier of one. Used by student-t, garch, gaussian, and ar1,
+ * whose single-factor return shocks are additive for the same reason.
+ */
+const additiveShockPct: ClassShockTransform = (x, sigma) => sigma * x * 100
+
+interface ClassShockSampler {
+  /**
+   * Write one year's per-class shocks into `series[id][yearIndex]`.
+   *
+   * `firstFactor` is the model's own return innovation, reused as the first
+   * Gaussian so class shocks co-move with the single-factor path (and with
+   * inflation through it), which is what keeps allocated and unallocated
+   * accounts seeing the same market in the same year. The remaining
+   * `ASSET_CLASS_IDS.length - 1` draws are taken here, in order, immediately
+   * after the caller's own draws for the year — so a model configured without
+   * class shocks consumes exactly the draws it always did.
+   */
+  sampleYear(
+    rng: Rng,
+    firstFactor: number,
+    series: Record<AssetClassId, number[]>,
+    yearIndex: number,
+    transform: ClassShockTransform,
+  ): void
+}
+
+/**
+ * The per-class shock scaffolding every Cholesky-based model shares: decompose
+ * the correlation matrix once, resolve the per-class volatilities once, and
+ * mix a correlated draw vector sized from ASSET_CLASS_IDS rather than from a
+ * hardcoded 4 — a fifth asset class used to silently truncate the mix in each
+ * of the nine copies of this code.
+ *
+ * Returns null when the model was configured without class shocks, so callers
+ * keep the same single guard they had before.
+ */
+function makeClassShockSampler(classCfg: ClassShockConfig | undefined): ClassShockSampler | null {
+  if (!classCfg) return null
+  const chol = choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r]))
+  const sigmas = ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100)
+  // Reused across years: every element is overwritten before it is read.
+  const g = new Array<number>(ASSET_CLASS_IDS.length)
+  return {
+    sampleYear(rng, firstFactor, series, yearIndex, transform) {
+      g[0] = firstFactor
+      for (let k = 1; k < g.length; k++) g[k] = rng.nextNormal()
+      for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
+        let x = 0
+        for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
+        const id = ASSET_CLASS_IDS[c]!
+        series[id]![yearIndex] = transform(x, sigmas[c]!, id)
+      }
+    },
   }
 }
 
@@ -287,8 +372,7 @@ export function createLognormalModel(config: LognormalModelConfig): MarketModel 
   // single-factor shock (and with inflation through it) and allocated vs
   // unallocated accounts see the same market in the same year.
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
       const returnShockPct: number[] = new Array(yearCount)
@@ -302,16 +386,10 @@ export function createLognormalModel(config: LognormalModelConfig): MarketModel 
         // E[exp(σz − σ²/2)] = 1: shocks average out to the expected return.
         returnShockPct[i] = (Math.exp(sigma * z1 - (sigma * sigma) / 2) - 1) * 100
         inflationPct[i] = inflMean + inflVol * (rho * z1 + Math.sqrt(1 - rho * rho) * z2)
-        if (classSeries && chol && classSigmas) {
+        if (classSeries && classShocks) {
           // Extra draws only in class mode, after z1/z2 — the single-factor
           // and inflation paths above are bit-identical with classShocks off.
-          const g = [z1, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            classSeries[ASSET_CLASS_IDS[c]!]![i] = (Math.exp(s * x - (s * s) / 2) - 1) * 100
-          }
+          classShocks.sampleYear(rng, z1, classSeries, i, meanPreservingLognormalShockPct)
         }
       }
       return classSeries
@@ -391,8 +469,7 @@ export function createStudentTModel(config: StudentTModelConfig): MarketModel {
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = Math.max(-1, Math.min(1, config.correlation ?? -0.2))
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   // Use normal scaled + occasional large deviation for fat tails; always E~0
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
@@ -408,14 +485,8 @@ export function createStudentTModel(config: StudentTModelConfig): MarketModel {
         returnShockPct[i] = sigma * z * 100
         const z2 = rng.nextNormal()
         inflationPct[i] = inflMean + inflVol * (rho * z + Math.sqrt(1 - rho * rho) * z2)
-        if (classSeries && chol && classSigmas) {
-          const g = [z, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            classSeries[ASSET_CLASS_IDS[c]!]![i] = s * x * 100
-          }
+        if (classSeries && classShocks) {
+          classShocks.sampleYear(rng, z, classSeries, i, additiveShockPct)
         }
       }
       return classSeries
@@ -440,8 +511,7 @@ export function createRegimeSwitchModel(config: RegimeSwitchModelConfig): Market
   const inflMean = config.inflationMeanPct
   const inflVol = config.inflationVolPct ?? 1.5
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
       const returnShockPct: number[] = new Array(yearCount)
@@ -460,14 +530,8 @@ export function createRegimeSwitchModel(config: RegimeSwitchModelConfig): Market
         const z2 = rng.nextNormal()
         // Always center inflation on provided mean; correlate via the return innovation z
         inflationPct[i] = inflMean + inflVol * (0.3 * z + Math.sqrt(1 - 0.3*0.3) * z2)
-        if (classSeries && chol && classSigmas) {
-          const g = [z, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            classSeries[ASSET_CLASS_IDS[c]!]![i] = (mu + s * x) * 100
-          }
+        if (classSeries && classShocks) {
+          classShocks.sampleYear(rng, z, classSeries, i, (x, s) => (mu + s * x) * 100)
         }
       }
       return classSeries
@@ -490,8 +554,7 @@ export function createCapeConditionedModel(config: CapeConditionedModelConfig): 
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = Math.max(-1, Math.min(1, config.correlation ?? -0.2))
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
       const returnShockPct: number[] = new Array(yearCount)
@@ -506,14 +569,8 @@ export function createCapeConditionedModel(config: CapeConditionedModelConfig): 
         const adj = baseMuAdj
         returnShockPct[i] = (Math.exp(sigma * z1 - (sigma * sigma) / 2) - 1) * 100 + adj
         inflationPct[i] = inflMean + inflVol * (rho * z1 + Math.sqrt(1 - rho * rho) * z2)
-        if (classSeries && chol && classSigmas) {
-          const g = [z1, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            classSeries[ASSET_CLASS_IDS[c]!]![i] = (Math.exp(s * x - (s * s) / 2) - 1) * 100 + adj
-          }
+        if (classSeries && classShocks) {
+          classShocks.sampleYear(rng, z1, classSeries, i, (x, s, id) => meanPreservingLognormalShockPct(x, s, id) + adj)
         }
       }
       return classSeries
@@ -615,8 +672,7 @@ export function createGarchModel(config: GarchModelConfig): MarketModel {
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = Math.max(-1, Math.min(1, config.correlation ?? -0.2))
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
       const returnShockPct: number[] = new Array(yearCount)
@@ -635,14 +691,8 @@ export function createGarchModel(config: GarchModelConfig): MarketModel {
         const z2 = rng.nextNormal()
         inflationPct[i] = inflMean + inflVol * (rho * z1 + Math.sqrt(1 - rho * rho) * z2)
         lastEps = shock
-        if (classSeries && chol && classSigmas) {
-          const g = [z1, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            classSeries[ASSET_CLASS_IDS[c]!]![i] = s * x * 100
-          }
+        if (classSeries && classShocks) {
+          classShocks.sampleYear(rng, z1, classSeries, i, additiveShockPct)
         }
       }
       return classSeries
@@ -660,8 +710,7 @@ export function createInflationRegimeModel(config: InflationRegimeModelConfig): 
   const baseInfl = config.baseInflationMeanPct
   const rho = Math.max(-1, Math.min(1, config.correlation ?? -0.2))
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
       const returnShockPct: number[] = new Array(yearCount)
@@ -677,14 +726,8 @@ export function createInflationRegimeModel(config: InflationRegimeModelConfig): 
         const baseI = high ? highMu : baseInfl
         const z2 = rng.nextNormal()
         inflationPct[i] = baseI + 1.5 * (rho * z1 + Math.sqrt(1 - rho * rho) * z2)
-        if (classSeries && chol && classSigmas) {
-          const g = [z1, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            classSeries[ASSET_CLASS_IDS[c]!]![i] = (Math.exp(s * x - (s * s) / 2) - 1) * 100
-          }
+        if (classSeries && classShocks) {
+          classShocks.sampleYear(rng, z1, classSeries, i, meanPreservingLognormalShockPct)
         }
       }
       return classSeries
@@ -739,8 +782,7 @@ export function createUserShockModel(config: UserShockModelConfig): MarketModel 
   const sigma = (config.baseReturnVolPct ?? 12) / 100
   const inflMean = config.inflationMeanPct
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
       const returnShockPct: number[] = new Array(yearCount)
@@ -759,19 +801,14 @@ export function createUserShockModel(config: UserShockModelConfig): MarketModel 
           returnShockPct[i] = (Math.exp(sigma * z1 - (sigma * sigma) / 2) - 1) * 100
           inflationPct[i] = inflMean + 1.5 * ( -0.2 * z1 + Math.sqrt(0.96) * z2)
         }
-        if (classSeries && chol && classSigmas) {
-          const g = [z1, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            const id = ASSET_CLASS_IDS[c]!
-            if (yearIdx === shockYear) {
-              classSeries[id]![i] = (id === 'cash') ? 0 : shock * (id === 'usStocks' || id === 'intlStocks' ? 1 : 0.6)
-            } else {
-              classSeries[id]![i] = (Math.exp(s * x - (s * s) / 2) - 1) * 100
-            }
-          }
+        if (classSeries && classShocks) {
+          // The only per-class transform that reads the class id: in the shock
+          // year cash is held flat, equities take the full shock, everything
+          // else 60% of it. Other years centre like the lognormal model.
+          classShocks.sampleYear(rng, z1, classSeries, i, (x, s, id) =>
+            yearIdx === shockYear
+              ? (id === 'cash') ? 0 : shock * (id === 'usStocks' || id === 'intlStocks' ? 1 : 0.6)
+              : meanPreservingLognormalShockPct(x, s, id))
         }
       }
       return classSeries
@@ -792,8 +829,7 @@ export function createGaussianModel(config: GaussianModelConfig): MarketModel {
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = Math.max(-1, Math.min(1, config.correlation ?? -0.2))
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
       const returnShockPct: number[] = new Array(yearCount)
@@ -806,14 +842,8 @@ export function createGaussianModel(config: GaussianModelConfig): MarketModel {
         const z2 = rng.nextNormal()
         returnShockPct[i] = sigma * z1 * 100   // additive normal, centered
         inflationPct[i] = inflMean + inflVol * (rho * z1 + Math.sqrt(1 - rho * rho) * z2)
-        if (classSeries && chol && classSigmas) {
-          const g = [z1, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            classSeries[ASSET_CLASS_IDS[c]!]![i] = s * x * 100
-          }
+        if (classSeries && classShocks) {
+          classShocks.sampleYear(rng, z1, classSeries, i, additiveShockPct)
         }
       }
       return classSeries
@@ -834,8 +864,7 @@ export function createAR1Model(config: AR1ModelConfig): MarketModel {
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = Math.max(-1, Math.min(1, config.correlation ?? -0.2))
   const classCfg = config.classShocks
-  const chol = classCfg ? choleskyDecompose(classCfg.correlations ?? DEFAULT_CLASS_CORRELATIONS.map((r) => [...r])) : null
-  const classSigmas = classCfg ? ASSET_CLASS_IDS.map((id) => Math.max(0, classCfg.volatilityPctByClass[id] ?? 0) / 100) : null
+  const classShocks = makeClassShockSampler(classCfg)
   return {
     generatePath(rng: Rng, yearCount: number): MarketSeries {
       const returnShockPct: number[] = new Array(yearCount)
@@ -851,14 +880,8 @@ export function createAR1Model(config: AR1ModelConfig): MarketModel {
         const z2 = rng.nextNormal()
         inflationPct[i] = inflMean + inflVol * (rho * eps + Math.sqrt(1 - rho * rho) * z2)  // innovation driven
         prevShock = shock
-        if (classSeries && chol && classSigmas) {
-          const g = [eps, rng.nextNormal(), rng.nextNormal(), rng.nextNormal()]
-          for (let c = 0; c < ASSET_CLASS_IDS.length; c++) {
-            let x = 0
-            for (let k = 0; k <= c && k < g.length; k++) x += chol[c]![k]! * g[k]!
-            const s = classSigmas[c]!
-            classSeries[ASSET_CLASS_IDS[c]!]![i] = s * x * 100
-          }
+        if (classSeries && classShocks) {
+          classShocks.sampleYear(rng, eps, classSeries, i, additiveShockPct)
         }
       }
       return classSeries

@@ -11,6 +11,7 @@
  * ranking with candidate-id tie-breaks, and a fixed evaluation bound.
  */
 
+import { formatGroupedNumber } from '../internal/evidenceFormat.js'
 import { evaluateCandidate, type EvaluateCandidateOptions } from './evaluateCandidate.js'
 import { maximizeAfterTaxEstate, type ObjectivePolicy } from './objectives.js'
 import type { CandidateGenerator, DecisionCandidate, DecisionContext, ExactDecisionEvaluation } from './types.js'
@@ -141,7 +142,7 @@ export function rankEvaluations(
     if (!row.eligible) {
       row.lossReason = `violates ${policy.label.toLowerCase()} constraints: ${row.constraintViolations.join('; ')}`
     } else if (winner) {
-      row.lossReason = `${policy.primaryMetricLabel} trails the winner by ${Math.round(winner.primaryValue - row.primaryValue).toLocaleString()}`
+      row.lossReason = `${policy.primaryMetricLabel} trails the winner by ${formatGroupedNumber(Math.round(winner.primaryValue - row.primaryValue))}`
     } else {
       row.lossReason = `${policy.primaryMetricLabel} does not improve on the current plan`
     }

@@ -109,7 +109,8 @@ interface QuoteFidelitySummary {
   readonly counts: Readonly<Record<string, number>>
 }
 
-// Mirrors verify-quotes.mjs's non-zero-exit set; keep the two lists in step.
+// Mirrors verify-quotes.mjs's non-zero-exit set (its exported `SERIOUS`).
+// quoteVerdicts.test.ts asserts the two are equal, so they cannot drift.
 export const QUOTE_FIDELITY_SERIOUS_VERDICTS = ['ABSENT', 'TRUNCATED', 'ELISION-BROKEN', 'UNFETCHABLE'] as const
 const QUOTE_FIDELITY_ADVISORY_VERDICTS = ['PUNCTUATION', 'ELISION-PUNCTUATION', 'PDF-NOT-VERIFIABLE'] as const
 
@@ -192,7 +193,7 @@ const STATE_PREFIX = 'state:'
  * Directory holding the per-record-module shards, relative to the index file
  * (`DOCS/operations/rule-coverage.json` → `DOCS/operations/rule-coverage/`).
  */
-export const COVERAGE_SHARD_DIRECTORY = 'rule-coverage'
+const COVERAGE_SHARD_DIRECTORY = 'rule-coverage'
 
 /** Shard file name for a record module, so writers and readers cannot disagree. */
 export function coverageShardPath(moduleName: string): string {

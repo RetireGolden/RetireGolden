@@ -10,6 +10,7 @@
  * — never re-derived in candidate logic.
  */
 
+import { formatWholeUsd } from '../internal/evidenceFormat.js'
 import type { Plan } from '../model/plan.js'
 import {
   decodeScenarioPointer,
@@ -782,8 +783,8 @@ export function evaluateCandidate(
   if (conversionExecution && conversionExecution.firstMateriallyUnexecutedYear !== null) {
     diagnostics.push(
       `Your plan could not execute the requested conversion in ${conversionExecution.firstMateriallyUnexecutedYear}: ` +
-        `requested $${Math.round(conversionExecution.requestedTotal).toLocaleString()} in total, ` +
-        `executed $${Math.round(conversionExecution.executedTotal).toLocaleString()}.`,
+        `requested ${formatWholeUsd(conversionExecution.requestedTotal)} in total, ` +
+        `executed ${formatWholeUsd(conversionExecution.executedTotal)}.`,
     )
   }
   if (deltas.moneyLastsYears < 0) {

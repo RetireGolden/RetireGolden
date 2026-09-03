@@ -142,6 +142,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'insights/types.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'internal/annualPassAttemptDriver.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'internal/counterfactualAnnualLiability.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'internal/evidenceFormat.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-03', note: null }),
   'internal/iraAnnuityContractValue.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'internal/ownedNonRothIraAnnualAttemptSettlement.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-29', note: 'Its one statutory claim - the retired 408(d)(3)(A)(i) same-owner re-check - is enforced upstream in the runtime source series, where the record now pins it; this module itself enforces no rule and so is not named by any record' }),
   'internal/ownedNonRothIraAnnualReplayPublication.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

@@ -1,3 +1,4 @@
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { Account } from '../../model/plan.js'
 import { spiaPayoutRate } from '../../decisions/spiaQuotes.js'
@@ -11,6 +12,14 @@ import { spiaPayoutRate } from '../../decisions/spiaQuotes.js'
  * ledger — not the card — prices the liquidity/estate tradeoff; the Monte
  * Carlo annuitization sweep is the full solver view.
  */
+
+/** Below this, the largest liquid account cannot fund a meaningful SPIA. */
+const MIN_LIQUID_BALANCE_DOLLARS = 100_000
+/** Illustrative premium: this share of the funding account... */
+const ILLUSTRATIVE_PREMIUM_FRACTION_OF_LIQUID = 0.25
+/** ...capped here, so a very large account does not illustrate an outsized SPIA. */
+const ILLUSTRATIVE_PREMIUM_CAP_DOLLARS = 250_000
+
 export const annuitizationHeadroom: Detector = {
   id: 'annuitization-headroom',
   category: 'longevity-insurance-geography',
@@ -30,12 +39,15 @@ export const annuitizationHeadroom: Detector = {
     const liquid = plan.accounts
       .filter((a) => a.type === 'cash' || a.type === 'taxable')
       .sort((a, b) => ('balance' in b ? b.balance : 0) - ('balance' in a ? a.balance : 0))[0]
-    if (!liquid || !('balance' in liquid) || liquid.balance < 100_000) return null
+    if (!liquid || !('balance' in liquid) || liquid.balance < MIN_LIQUID_BALANCE_DOLLARS) return null
 
     const currentAge = startYear - Number(primary.dob.slice(0, 4))
     const startAge = Math.min(95, Math.max(currentAge, 65))
     const paymentStartYear = startYear + Math.max(0, startAge - currentAge)
-    const premium = Math.min(liquid.balance * 0.25, 250_000)
+    const premium = Math.min(
+      liquid.balance * ILLUSTRATIVE_PREMIUM_FRACTION_OF_LIQUID,
+      ILLUSTRATIVE_PREMIUM_CAP_DOLLARS,
+    )
     const monthly = (premium * spiaPayoutRate(startAge)) / 12
     const spia: Account = {
       id: `annuitization-headroom-preview-${startYear}-${liquid.id}`,
@@ -56,7 +68,7 @@ export const annuitizationHeadroom: Detector = {
       title: 'Planning to 95+ with no lifetime income beyond Social Security',
       rationale:
         `Your plan runs to ${maxPlanningAge} with no pension or annuity income. ` +
-        `Trading $${Math.round(premium).toLocaleString()} of liquid savings for a life annuity (~$${Math.round(monthly).toLocaleString()}/mo) ` +
+        `Trading ${formatWholeUsd(premium)} of liquid savings for a life annuity (~${formatWholeUsd(monthly)}/mo) ` +
         'insures the years past life expectancy, the exact risk a long planning age worries about, at the cost of liquidity and estate. ' +
         'The Monte Carlo page\'s annuitization sweep shows the full success-vs-legacy frontier.',
       impact: {
@@ -68,9 +80,9 @@ export const annuitizationHeadroom: Detector = {
       severity: 'info',
       evidence: [
         { label: 'Planning age', value: `${maxPlanningAge}` },
-        { label: 'Largest liquid account balance (SPIA funding source)', value: `$${Math.round(liquid.balance).toLocaleString()}`, year: startYear },
-        { label: 'Illustrative SPIA premium', value: `$${Math.round(premium).toLocaleString()}`, year: startYear },
-        { label: `Illustrative monthly income (from age ${startAge})`, value: `$${Math.round(monthly).toLocaleString()}/mo`, year: paymentStartYear },
+        { label: 'Largest liquid account balance (SPIA funding source)', value: formatWholeUsd(liquid.balance), year: startYear },
+        { label: 'Illustrative SPIA premium', value: formatWholeUsd(premium), year: startYear },
+        { label: `Illustrative monthly income (from age ${startAge})`, value: `${formatWholeUsd(monthly)}/mo`, year: paymentStartYear },
       ],
       learnSlug: 'pensions-and-annuities',
       plannerRoute: 'monte-carlo',

@@ -10,7 +10,7 @@
  * Allocation is opt-in per account: an account without an `allocation` keeps
  * the single expected-return model unchanged (feature-off is byte-identical).
  *
- * @see DOCS/domain/domain-rules-reference.md §14 (class defaults + sources)
+ * @see DOCS/domain/domain-rules-reference.md §15 (class defaults + sources)
  */
 
 import type {
@@ -46,7 +46,7 @@ export interface AssetClassParams {
  * dataset — the same source as the embedded Monte Carlo history — with
  * international equity proxied by MSCI EAFE history. Yields are current-era
  * index-fund figures. Sources + review cadence:
- * DOCS/domain/domain-rules-reference.md §14.
+ * DOCS/domain/domain-rules-reference.md §15.
  */
 export const DEFAULT_ASSET_CLASS_PARAMS: Record<AssetClassId, AssetClassParams> = {
   usStocks: { label: 'US stocks', returnPct: 7.0, volatilityPct: 19.6, interestYieldPct: 0, dividendYieldPct: 1.5, qualifiedRatioPct: 95 },
@@ -56,9 +56,21 @@ export const DEFAULT_ASSET_CLASS_PARAMS: Record<AssetClassId, AssetClassParams> 
 }
 
 /**
+ * Qualified share of dividends for a taxable account that names no allocation
+ * and no explicit `qualifiedRatio`, so no per-class blend is available. The
+ * per-class shares above are the sourced numbers (domain rules §15); this is
+ * the fallback for the unallocated case, sitting between the US-index 95% and
+ * the international 70% for a plausible broad-market mix. Used by the yield
+ * distribution rows and by `blendedYield` when the blend has no dividends to
+ * weight. Fallback, not a sourced class parameter — do not tune it here to
+ * change a class's tax character.
+ */
+export const DEFAULT_QUALIFIED_DIVIDEND_RATIO = 0.85
+
+/**
  * Default long-horizon correlation matrix over ASSET_CLASS_IDS order
  * (usStocks, intlStocks, bonds, cash). Documented + sourced in domain rules
- * §14; editable defaults can ship later without changing this seam.
+ * §15; editable defaults can ship later without changing this seam.
  */
 export const DEFAULT_CLASS_CORRELATIONS: readonly (readonly number[])[] = [
   [1.0, 0.75, 0.1, 0.0],
@@ -153,7 +165,10 @@ export function blendedReturnPct(weights: number[], params: Record<AssetClassId,
 export interface BlendedTaxableYield {
   interestYieldPct: number
   dividendYieldPct: number
-  /** Dividend-weighted qualified share, 0–1 (0.85 fallback when no dividends). */
+  /**
+   * Dividend-weighted qualified share, 0–1. Falls back to
+   * `DEFAULT_QUALIFIED_DIVIDEND_RATIO` when the blend produces no dividends.
+   */
   qualifiedRatio: number
 }
 
@@ -174,7 +189,7 @@ export function blendedTaxableYield(
   return {
     interestYieldPct: interest,
     dividendYieldPct: dividends,
-    qualifiedRatio: dividends > 0 ? qualified / dividends : 0.85,
+    qualifiedRatio: dividends > 0 ? qualified / dividends : DEFAULT_QUALIFIED_DIVIDEND_RATIO,
   }
 }
 

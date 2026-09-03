@@ -19,7 +19,10 @@ import {
 } from '../../strategies/accountEligibility.js'
 import { applyCapitalLossCarryforward } from '../../tax/federalTax.js'
 import { stateParamsFor } from '../../params/state/index.js'
-import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
+import {
+  AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
+  ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
+} from '../moneyTolerance.js'
 import { type RothBasisState } from '../../strategies/rothBasis.js'
 import {
   annualAggregateRothConversionPlan,
@@ -540,7 +543,7 @@ export function annualAggregateRothConversionPhase(
     warnings.add(warning)
   }
   const desired = aggregateRothConversionTarget.desiredPlanDollars
-  if (desired > 0.01) {
+  if (desired > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS) {
     // A conversion is a rollover inside one individual's own accounts:
     // IRC 408(d)(3)(A)(i) admits it only where the amount is paid out of
     // the account maintained for an individual and paid into an account
@@ -748,7 +751,7 @@ export function annualAggregateRothConversionPhase(
         // basis rolled in was never included in income (IRS Pub 590-B).
         // The layer is pushed per owner because the clock runs on the
         // person whose Roth holds it.
-        if (credit.convertedPlanDollars > 0.01) {
+        if (credit.convertedPlanDollars > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS) {
           const rb = rothBasis.get(rothPoolKey(destinationAccount))
           if (rb) {
             rb.conversionLayers.push({
@@ -767,9 +770,9 @@ export function annualAggregateRothConversionPhase(
       // exact-cent ledger and the takes are drawn from it -- so the only
       // sub-cent gaps left are float noise and a source balance that ran
       // out within a cent of its slice, neither of which is worth telling
-      // anyone about. Above it, the enclosing `desired > 0.01` guarantees
-      // the no-balance case clears the threshold and speaks.
-      if (rothConversion < allocation.convertibleTargetPlanDollars - 0.01) {
+      // anyone about. Above it, the enclosing `desired >` check on the same
+      // epsilon guarantees the no-balance case clears the threshold and speaks.
+      if (rothConversion < allocation.convertibleTargetPlanDollars - AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS) {
         const gatedEmployerOwners = new Set<string>()
         for (const state of rmdBalances) {
           const account = state.account

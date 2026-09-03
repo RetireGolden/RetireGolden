@@ -705,7 +705,7 @@ function rolledBack(
  * name is not evidence about any one owner, so it must stay household-wide
  * fail-closed.
  */
-export function ownedNonRothIraAnnualSettlementRollbackOwner(
+function ownedNonRothIraAnnualSettlementRollbackOwner(
   result: Readonly<OwnedNonRothIraAnnualSettlementResult>,
   knownOwnerPersonIds: ReadonlySet<string>,
 ): string | null {

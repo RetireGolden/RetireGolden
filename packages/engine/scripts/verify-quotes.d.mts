@@ -22,3 +22,9 @@ export declare function verdictFor(
 ): { readonly verdict: string; readonly detail: string }
 export declare function htmlVariants(html: string): string[]
 export declare function fallbackEligible(host: string, status: number): boolean
+/**
+ * Verdicts the verifier exits non-zero on. Declared as plain strings rather
+ * than a literal union so the equality test compares runtime values, not
+ * types: a type-level mirror would be satisfied by an unchanged declaration.
+ */
+export declare const SERIOUS: readonly string[]

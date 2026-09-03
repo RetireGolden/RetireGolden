@@ -1,3 +1,4 @@
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { EMBEDDED_REAL_YIELD_CURVE } from '../../params/index.js'
 import { BRIDGE_FUNDING_MIN_FRACTION, sizeBridge } from '../../ladder/bridge.js'
@@ -68,8 +69,8 @@ export const ssBridgeGap: Detector = {
       title: 'Compare a TIPS bridge ladder for your Social Security gap years',
       rationale:
         `You delay Social Security but retire earlier, leaving ${firstYear}–${lastYear} without your benefit. ` +
-        `A TIPS bridge ladder (≈$${Math.round(totalCost).toLocaleString()} today) pays you the forgone age-62 benefit ` +
-        `(~$${Math.round(annualTotal).toLocaleString()}/yr, inflation-protected) until your claim starts, giving you the delayed claim's longevity insurance without the lifestyle gap.`,
+        `A TIPS bridge ladder (≈${formatWholeUsd(totalCost)} today) pays you the forgone age-62 benefit ` +
+        `(~${formatWholeUsd(annualTotal)}/yr, inflation-protected) until your claim starts, giving you the delayed claim's longevity insurance without the lifestyle gap.`,
       impact: {
         qualitative:
           'Preview the bridge against your full plan: guaranteed gap-year income and steadier withdrawals, at the cost of locking up liquid savings.',
@@ -80,8 +81,8 @@ export const ssBridgeGap: Detector = {
       evidence: [
         { label: 'First Social Security gap year', value: `${firstYear}`, year: firstYear },
         { label: 'Last Social Security gap year', value: `${lastYear}`, year: lastYear },
-        { label: 'TIPS bridge cost', value: `$${Math.round(totalCost).toLocaleString()}`, year: startYear },
-        { label: 'Approximate annual bridge income (all ladders combined)', value: `~$${Math.round(annualTotal).toLocaleString()}/yr` },
+        { label: 'TIPS bridge cost', value: formatWholeUsd(totalCost), year: startYear },
+        { label: 'Approximate annual bridge income (all ladders combined)', value: `~${formatWholeUsd(annualTotal)}/yr` },
       ],
       learnSlug: 'social-security-bridge',
       plannerRoute: 'income-floor',

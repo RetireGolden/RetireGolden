@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { fallbackEligible, htmlVariants, verdictFor, type QuoteVerdictSource } from '../../scripts/verify-quotes.mjs'
+import {
+  fallbackEligible,
+  htmlVariants,
+  SERIOUS,
+  verdictFor,
+  type QuoteVerdictSource,
+} from '../../scripts/verify-quotes.mjs'
+import { QUOTE_FIDELITY_SERIOUS_VERDICTS } from './coverageReport.js'
 
 /**
  * Pins the suspect-stub verdict contract introduced with the drift sweep: a
@@ -60,6 +67,19 @@ describe('suspect-stub verdict contract', () => {
     }
     const { verdict } = verdictFor({ quotedText: 'This passage exists in no shell page anywhere.' }, source)
     expect(verdict).toBe('ABSENT')
+  })
+})
+
+describe('serious-verdict set across the TS/.mjs boundary', () => {
+  /**
+   * The verifier decides its exit code from `SERIOUS`; the published
+   * rule-coverage ledger decides what the transparency page calls a broken
+   * citation from `QUOTE_FIDELITY_SERIOUS_VERDICTS`. Nothing but a comment
+   * held them together, so a verdict added on one side would have been
+   * classified advisory on the other with no failure anywhere.
+   */
+  it('classifies exactly the same verdicts on both sides', () => {
+    expect([...SERIOUS].sort()).toEqual([...QUOTE_FIDELITY_SERIOUS_VERDICTS].sort())
   })
 })
 

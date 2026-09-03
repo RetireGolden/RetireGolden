@@ -6,6 +6,7 @@
  * prices every bounded swap on the exact ledger and previews the winner.
  */
 
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import { planUsesAssetAllocation } from '../../allocation/assetClasses.js'
 import { createDecisionContext, evaluateCandidate } from '../../decisions/evaluateCandidate.js'
 import { assetLocationGenerator } from '../../decisions/generators.js'
@@ -66,14 +67,14 @@ export const assetLocation: Detector = {
       impact: {
         qualitative:
           swapped > 0
-            ? `Up to $${Math.round(swapped).toLocaleString()} of class exposure could be relocated; expand to preview the exact after-tax estate impact.`
+            ? `Up to ${formatWholeUsd(swapped)} of class exposure could be relocated; expand to preview the exact after-tax estate impact.`
             : 'Preview bounded location swaps priced on your full projection.',
       },
       exact: false,
       confidence: 'medium',
       severity: 'info',
       evidence: [
-        { label: 'Swappable class exposure', value: `$${Math.round(swapped).toLocaleString()}`, year: ctx.projection.startYear },
+        { label: 'Swappable class exposure', value: formatWholeUsd(swapped), year: ctx.projection.startYear },
       ],
       learnSlug: 'assumption-investment-returns',
       plannerRoute: 'accounts',
@@ -104,7 +105,7 @@ export const assetLocation: Detector = {
         patch: best.candidate.planPatch as Record<string, unknown>,
       },
       impact: {
-        qualitative: `On the full year-by-year projection, "${best.candidate.label}" improves after-tax estate by about $${Math.round(best.delta).toLocaleString()} (today's dollars).`,
+        qualitative: `On the full year-by-year projection, "${best.candidate.label}" improves after-tax estate by about ${formatWholeUsd(best.delta)} (today's dollars).`,
         endingAfterTaxEstateDelta: best.delta,
       },
     }

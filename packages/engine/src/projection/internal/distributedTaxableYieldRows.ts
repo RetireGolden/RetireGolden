@@ -17,6 +17,7 @@
  */
 import {
   blendedTaxableYield,
+  DEFAULT_QUALIFIED_DIVIDEND_RATIO,
   type AssetClassParams,
 } from '../../allocation/assetClasses.js'
 import type { Account, AssetClassId } from '../../model/plan.js'
@@ -116,7 +117,7 @@ export function distributedTaxableYieldRows(
     const interest = startBalance * (interestYieldPct / 100)
     const dividends = startBalance * (dividendYieldPct / 100)
     const exempt = startBalance * (taxExemptYieldPct / 100)
-    const qualified = dividends * Math.min(1, Math.max(0, account.qualifiedRatio ?? blendedYield?.qualifiedRatio ?? 0.85))
+    const qualified = dividends * Math.min(1, Math.max(0, account.qualifiedRatio ?? blendedYield?.qualifiedRatio ?? DEFAULT_QUALIFIED_DIVIDEND_RATIO))
     const ordinaryDividends = dividends - qualified
     const taxableGross = interest + dividends
     const gross = taxableGross + exempt

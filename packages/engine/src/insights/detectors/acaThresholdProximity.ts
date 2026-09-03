@@ -1,20 +1,6 @@
+import { formatEvidenceUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { packForYear } from '../../params/index.js'
-
-/**
- * Format a published dollar amount for evidence. Integral amounts stay whole
- * dollars; any non-integral amount keeps exact cents (e.g. $1.49, not $1).
- */
-function usd(amount: number): string {
-  const cents = Math.round(amount * 100)
-  if (cents % 100 === 0) {
-    return `$${(cents / 100).toLocaleString('en-US')}`
-  }
-  return `$${(cents / 100).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
-}
 
 /**
  * Format a positive FPL overage so it never rounds to zero and never uses
@@ -108,13 +94,13 @@ export const acaThresholdProximity: Detector = {
         confidence: 'medium',
         severity: justOverBoundary ? 'info' : 'attention',
         evidence: [
-          { label: `Household MAGI in ${year.year}`, value: usd(aca.householdMagi), year: year.year },
-          { label: `Federal poverty line in ${year.year}`, value: usd(aca.federalPovertyLine), year: year.year },
+          { label: `Household MAGI in ${year.year}`, value: formatEvidenceUsd(aca.householdMagi), year: year.year },
+          { label: `Federal poverty line in ${year.year}`, value: formatEvidenceUsd(aca.federalPovertyLine), year: year.year },
           { label: `FPL percentage in ${year.year}`, value: fplPctEvidence, year: year.year },
           { label: 'ACA credit boundary', value: boundaryEvidence, year: year.year },
           ...overageEvidence,
           ...(atCliff
-            ? [{ label: 'Modeled premium tax credit at stake', value: usd(aca.modeledAllowablePtc ?? 0), year: year.year }]
+            ? [{ label: 'Modeled premium tax credit at stake', value: formatEvidenceUsd(aca.modeledAllowablePtc ?? 0), year: year.year }]
             : []),
         ],
         plannerRoute: 'optimize',

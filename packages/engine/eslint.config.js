@@ -38,6 +38,19 @@ export default defineConfig([
           ],
         },
       ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          // Determinism (DOCS/standards.md invariant 4): with no locale
+          // argument the host ICU default decides, so `$1,234` renders as
+          // `$1.234` or `1 234` off an en-US runtime. Engine-published
+          // strings (insight evidence, decision explanations, projection
+          // warnings) are part of the contract, not a rendering choice.
+          selector: "CallExpression[callee.property.name='toLocaleString'][arguments.length=0]",
+          message:
+            'Zero-argument toLocaleString() takes the host locale. Use the pinned formatters in src/internal/evidenceFormat.ts, or pass an explicit locale.',
+        },
+      ],
       'no-restricted-globals': [
         'error',
         { name: 'localStorage', message: 'Persistence belongs in the consuming app, not the engine.' },
@@ -45,6 +58,30 @@ export default defineConfig([
         { name: 'document', message: 'No DOM access in the engine.' },
         { name: 'window', message: 'No DOM access in the engine.' },
         { name: 'fetch', message: 'No ambient network access in the engine — take IO through an injected seam.' },
+      ],
+    },
+  },
+  {
+    // The pinned formatters are the one module three layers share: the annual
+    // ledger (projection/internal/annualAnnuityPurchaseFunding.ts), decisions,
+    // and the detectors. Those layers already depend on each other in one
+    // direction, so an import from here back into any of them — insights/
+    // types.ts is the tempting one — closes a module cycle. It is a leaf by
+    // construction today; this makes that enforced rather than only written
+    // down in the module's own doc comment.
+    files: ['src/internal/evidenceFormat.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['*', './*', '../*', '**/*'],
+              message:
+                'src/internal/evidenceFormat.ts must stay an import-free leaf so every layer can use it without a cycle.',
+            },
+          ],
+        },
       ],
     },
   },

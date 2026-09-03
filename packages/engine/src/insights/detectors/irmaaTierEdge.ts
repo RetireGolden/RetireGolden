@@ -1,3 +1,4 @@
+import { formatGroupedNumber, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, DetectorContext } from '../types.js'
 import { irmaaTierForMagi, irmaaTierThreshold } from '../../params/index.js'
 import { medicareAnnualPremiumPerPerson } from '../../tax/medicare.js'
@@ -56,8 +57,8 @@ export const irmaaTierEdge: Detector = {
         const threshold = irmaaTierThreshold(ctx.params, tier - 1, filingStatus, thresholdYear)
         const diff = y.magi - threshold
         if (diff > 0 && diff <= 5000) {
-          const magiStr = '$' + Math.round(y.magi).toLocaleString()
-          const threshStr = '$' + Math.round(threshold).toLocaleString()
+          const magiStr = formatWholeUsd(y.magi)
+          const threshStr = formatWholeUsd(threshold)
           const premiumYear = ctx.projection.result.years.find((candidate) => candidate.year === premiumYearNumber)
           if (!premiumYear) continue
           const medicarePeople = premiumYear.people.filter((p) => p.alive && p.ageAttained >= 65).length
@@ -98,7 +99,7 @@ export const irmaaTierEdge: Detector = {
               endingAfterTaxEstateDelta: annualPremiumCliff > 0 ? annualPremiumCliff : undefined,
               qualitative:
                 annualPremiumCliff > 0
-                  ? `Avoiding this tier could save roughly $${Math.round(annualPremiumCliff).toLocaleString()} of Medicare premiums in ${premiumYearNumber}.`
+                  ? `Avoiding this tier could save roughly ${formatWholeUsd(annualPremiumCliff)} of Medicare premiums in ${premiumYearNumber}.`
                   : 'Limit conversion-driven nominal MAGI to stay just under the IRMAA threshold.',
             },
             exact: false,
@@ -107,8 +108,8 @@ export const irmaaTierEdge: Detector = {
             evidence: [
               { label: `Nominal MAGI in ${y.year}`, value: magiStr, year: y.year },
               { label: `IRMAA tier threshold (${premiumYearNumber} premiums)`, value: threshStr, year: premiumYearNumber },
-              { label: 'Amount over threshold', value: `$${Math.ceil(diff).toLocaleString()}`, year: y.year },
-              { label: `Medicare premium cliff in ${premiumYearNumber}`, value: `$${Math.round(annualPremiumCliff).toLocaleString()}`, year: premiumYearNumber },
+              { label: 'Amount over threshold', value: `$${formatGroupedNumber(Math.ceil(diff))}`, year: y.year },
+              { label: `Medicare premium cliff in ${premiumYearNumber}`, value: formatWholeUsd(annualPremiumCliff), year: premiumYearNumber },
             ],
             learnSlug: 'irmaa-two-year-lookback',
             plannerRoute: 'optimize',

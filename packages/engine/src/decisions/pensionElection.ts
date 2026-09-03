@@ -14,6 +14,7 @@
  *    are priced by the engine rather than a side model.
  */
 
+import { formatWholeUsd } from '../internal/evidenceFormat.js'
 import type { Account, Plan } from '../model/plan.js'
 import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import type { CandidateGenerator, DecisionCandidate, DecisionContext } from './types.js'
@@ -227,7 +228,7 @@ export const pensionLumpSumGenerator: CandidateGenerator = {
         source: 'heuristic',
         category: 'guaranteed-income',
         label: `Take the ${pension.name} lump sum`,
-        explanation: `Rolls the $${Math.round(offer.amount).toLocaleString()} offer into a traditional IRA in ${offer.electionYear} (tax-free direct rollover) instead of the lifetime annuity, and reprices the whole plan on the exact ledger.`,
+        explanation: `Rolls the ${formatWholeUsd(offer.amount)} offer into a traditional IRA in ${offer.electionYear} (tax-free direct rollover) instead of the lifetime annuity, and reprices the whole plan on the exact ledger.`,
         planPatch: patch,
         metadata: { pensionId: pension.id, lumpSum: Math.round(offer.amount), electionYear: offer.electionYear },
       })

@@ -13,7 +13,10 @@ import {
   sizeRothConversion,
   type ConversionSizingInput,
 } from '../../strategies/rothConversion.js'
-import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
+import {
+  AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
+  ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
+} from '../moneyTolerance.js'
 
 const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 
@@ -203,14 +206,14 @@ function trimForSafetyNet(
     trimmed = conversionTax > 0
       ? Math.max(0, trimmed * (headroom / conversionTax))
       : 0
-    if (trimmed <= 0.01) {
+    if (trimmed <= AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS) {
       trimmed = 0
       break
     }
   }
   return {
     desiredPlanDollars: trimmed,
-    warnings: trimmed < desiredPlanDollars - 0.01
+    warnings: trimmed < desiredPlanDollars - AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS
       ? ['Roth conversions were trimmed so their tax bill stays payable without breaching the taxable safety-net floor.']
       : [],
   }
@@ -294,7 +297,7 @@ export function annualAggregateRothConversionTargetPlan(
   const sources = input.readSources()
   const desiredPlanDollars = grossAmountForTaxable(sources, sized.amount)
   if (
-    desiredPlanDollars <= 0.01 ||
+    desiredPlanDollars <= AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS ||
     input.safetyNet.floorTodayPlanDollars <= 0
   ) {
     return result({ desiredPlanDollars, warnings: [] })

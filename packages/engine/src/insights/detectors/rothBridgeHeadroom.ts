@@ -1,3 +1,4 @@
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import { rmdStartAgeForBirthYear } from '../../params/index.js'
 import type { Detector } from '../types.js'
 import { selectedLogicalBalanceAccounts } from '../../model/plan.js'
@@ -64,7 +65,7 @@ export const rothBridgeHeadroom: Detector = {
       confidence: 'medium',
       severity: 'attention',
       evidence: [
-        { label: 'Owner-convertible traditional balance', value: `$${Math.round(tradBalance).toLocaleString()}`, year: ctx.projection.startYear },
+        { label: 'Owner-convertible traditional balance', value: formatWholeUsd(tradBalance), year: ctx.projection.startYear },
         { label: 'First low-income bridge year', value: `${firstYear}`, year: firstYear },
         { label: 'Last low-income bridge year', value: `${lastYear}`, year: lastYear },
       ],

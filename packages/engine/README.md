@@ -31,58 +31,6 @@ Source of truth: [github.com/RetireGolden/RetireGolden](https://github.com/Retir
   expose a general object hasher. JavaScript cannot reliably detect `Proxy`
   wrappers, so the internal hasher's contract is limited to freshly rebuilt,
   trusted plain data trees and is not a hostile-object validation boundary.
-- The owned-IRA penalty prerequisite can accept raw annual SEPP schedule routes,
-  rebuild each route's complete inventory from canonical annual character, and
-  issue final `iraSeppQualified` zero-penalty decisions only after complete
-  reconciliation and exact payment rejoin. Non-success routes remain pending
-  and supply no negative-SEPP authority. The pure annual finalizer and
-  movement-candidate coordinator now forward these raw routes, accept the
-  final qualified outcome, preserve detailed route diagnostics when blocked,
-  and bind compact canonical route results into annual evidence. Their public
-  staged-date ID builder reproduces planning evidence only; exact coordinator
-  rejoin remains the authority, and neither boundary commits movement or
-  establishes actionability.
-- `coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate` adds
-  Plan-identity-authoritative, runtime-snapshot-bound planning evidence around
-  that coordinator. It derives the complete Plan owner/year ordinary-withdrawal
-  batch and owned non-Roth IRA pool, then requires complete, consistently dated
-  opening, year-end, annual basis/line-7, line-8, and exact alive evidence. It
-  remains pure and noncommitting: every result keeps movement uncommitted and
-  actionability unestablished.
-- `buildAnnualRetirementPhysicalEventInventory` is the pure chronology boundary
-  in front of future simulator integration. It derives traditional-account Plan
-  action allocations internally and exact-rejoins a complete Plan/year/ledger-run
-  runtime inventory covering RMD, automatic SEPP, legacy withdrawal/conversion,
-  in-year IRA/employer-plan account-balance contribution inflows and employer
-  match. Aggregate legacy QCD reclassification, annuity funding, rollover
-  inflows, and other traditional transfers stay unresolved until their producer
-  and physical endpoints have a typed binding contract. Following-year IRA
-  contributions designated for the prior tax year
-  remain separate annual-basis facts, not events in this calendar-year chronology.
-  A resolved contribution record is the upstream ledger's post-owner-wide-limit
-  occurrence, not a contribution candidate; fully suppressed contributions are
-  intentionally absent under the complete runtime attestation. The inventory
-  checks Plan-local source prerequisites without duplicating shared-limit or
-  section 415(c) math. A shared movement authority may cover multiple source
-  members only when their owner, kind, origin, date, and sequence agree; upstream
-  evidence remains unique per member. It never invents a missing owner, source,
-  date, or order: incomplete records and cross-authority chronology conflicts
-  fail closed. Successful output
-  is a globally ordered immutable stream with owned-IRA pool views and provisional
-  Form 8606/QCD categories; it still mutates no balance or basis, calculates no tax
-  or penalty, and establishes neither movement nor actionability.
-- `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` is the next
-  pure evidence boundary for the standalone-compatible Plan-owned IRA batch. It
-  exact-rejoins the canonical candidate, complete December 31 owner pool, basis,
-  and contribution-window evidence into a frozen classifier input without
-  classifying, executing, or integrating with projection.
-- `preparePlanOwnedNonRothIraAnnualCandidateTransaction` is the pure provisional
-  producer for that batch. It rebuilds the annual physical-event inventory,
-  derives the exact Plan-owned action/source batch, and stages it against
-  caller-supplied exact-cent balances. Its frozen applications and source
-  transitions apply only to a detached snapshot: movement and actionability
-  remain unestablished, and it publishes no December 31, tax, penalty, basis,
-  or finalization claim.
 - Parameters (tax brackets, limits, SSA tables, Medicare/FPL) are versioned
   data packs under `params/`, with provenance.
 
@@ -102,6 +50,19 @@ const result = simulatePlan(plan, { startYear: 2026 })
 import { runMonteCarlo } from '@retiregolden/engine/montecarlo/run'
 import { packForYear } from '@retiregolden/engine/params'
 ```
+
+`@retiregolden/engine/rules` answers "why is it calculated this way" from the
+same records the engine's own tests assert against, so an explanation cannot
+drift from the behaviour it explains:
+
+```ts
+import { TAX_RULE_REGISTRY } from '@retiregolden/engine/rules'
+
+const { statement, authority, verifiedOn } = TAX_RULE_REGISTRY['irc-408-d-2-annual-pro-rata-basis']
+```
+
+The same subpath exports `taxRule(id)`, the sorted `taxRuleIds` array, and
+`taxRulesDueForVerification(asOfIsoDate)`.
 
 A versioned JSON Schema for the `Plan` document is derived from `planSchema` and
 shipped both as a constant and as a static file, so a non-TypeScript consumer can
@@ -173,6 +134,8 @@ supported runtime API.
 | `montecarlo/` | Seedable RNG, market models (lognormal, historical bootstrap), path runner + aggregation, mortality/survival |
 | `scenarios/` | Scenario patch apply/diff + side-by-side comparison |
 | `decisions/`, `insights/` | Candidate evaluation, recommendation detectors |
+| `rules/` | `TAX_RULE_REGISTRY` — every statutory rule the engine implements, as data: the authority it rests on, the reading taken, the contrary reading where one exists, and the date it was last verified against primary sources. Its own subpath, not the root export, because the records carry quoted statutory text |
+| `actions/` | Typed retirement-action boundaries — QCD, Roth conversion, HSA, SEPP, owned and inherited IRA execution — plus their exact-cent money and structural-identity primitives. Also published per module (`actions/execution`, `actions/money`, …) |
 | `ladder/` | TIPS ladder math, Social Security bridge, FedInvest CSV parsing |
 | `allocation/`, `spending/` | Asset classes, spending shape presets |
 | `testing/` | Plan fixtures, money matchers, and deterministic tax doubles for consumer test suites |

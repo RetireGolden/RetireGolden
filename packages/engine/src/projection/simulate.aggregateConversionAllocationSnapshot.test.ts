@@ -5,6 +5,7 @@ import { parseRetirementActionRequest } from '../actions/contract.js'
 import { couplePlan, validatePlan } from '../testing/planFixtures.js'
 import type { Account, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
+import { AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS } from './moneyTolerance.js'
 import { simulatePlan } from './simulate.js'
 import type { YearResult } from './types.js'
 
@@ -416,10 +417,14 @@ describe('presence means the policy was asked, and absence names its cause', () 
 
   it('is absent for an amount too small to move a cent', () => {
     const plan = household(ACCOUNTS())
-    const years = runManual(plan, [{ year: TAX_YEAR, amount: 0.004 }])
+    // Derived from the epsilon rather than written as a literal, so moving the
+    // floor moves the fixture with it instead of leaving a test that passes
+    // against a number the ledger no longer uses. Halving is exact in binary64.
+    const belowEpsilon = AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS / 2
+    const years = runManual(plan, [{ year: TAX_YEAR, amount: belowEpsilon }])
 
-    // The ledger's own `desired > 0.01` gate: the policy is never called, so
-    // there is no snapshot and nothing converted.
+    // The ledger's own `desired > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS`
+    // gate: the policy is never called, so no snapshot and nothing converted.
     expect(years[0]!.aggregateRothConversionAllocationBalances).toBeUndefined()
     expect(years[0]!.rothConversion).toBe(0)
   })

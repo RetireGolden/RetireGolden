@@ -7,6 +7,7 @@
  * exact-ledger evaluation does.
  */
 
+import { formatWholeUsd } from '../internal/evidenceFormat.js'
 import type { Account, AllocationWeights, IncomeStream, Plan, TipsLadder } from '../model/plan.js'
 import { packForYear, rmdStartAgeForBirthYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import { BRIDGE_FUNDING_MIN_FRACTION, sizeBridge } from '../ladder/bridge.js'
@@ -597,7 +598,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
         source: 'heuristic',
         category: 'guaranteed-income',
         label: 'Cover-the-floor SPIA purchase',
-        explanation: `Trades $${Math.round(premium).toLocaleString()} of liquid savings for an immediate life annuity (~$${Math.round(monthly).toLocaleString()}/mo), taxed by exclusion ratio and priced on the exact ledger.`,
+        explanation: `Trades ${formatWholeUsd(premium)} of liquid savings for an immediate life annuity (~${formatWholeUsd(monthly)}/mo), taxed by exclusion ratio and priced on the exact ledger.`,
         planPatch: { accounts: [...plan.accounts, annuity] },
         metadata: { premium: Math.round(premium), monthly: Math.round(monthly) },
       })
@@ -633,7 +634,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
         source: 'heuristic',
         category: 'guaranteed-income',
         label: 'SPIA laddered over three purchases',
-        explanation: `Splits the same $${Math.round(premium).toLocaleString()} into three SPIA purchases (now, +3y, +6y) at each age's payout rate, keeping deferred dollars invested meanwhile; priced on the exact ledger.`,
+        explanation: `Splits the same ${formatWholeUsd(premium)} into three SPIA purchases (now, +3y, +6y) at each age's payout rate, keeping deferred dollars invested meanwhile; priced on the exact ledger.`,
         planPatch: { accounts: [...plan.accounts, ...ladderAccounts] },
         metadata: { premium: Math.round(premium), tranches: trancheYears.length },
       })
@@ -680,7 +681,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
         source: 'heuristic',
         category: 'guaranteed-income',
         label: 'QLAC purchase at the cap',
-        explanation: `Moves $${Math.round(premium).toLocaleString()} of traditional savings into a deferred longevity annuity starting at ${startAge} (fully taxable payouts, premium out of the RMD base), priced on the exact ledger.`,
+        explanation: `Moves ${formatWholeUsd(premium)} of traditional savings into a deferred longevity annuity starting at ${startAge} (fully taxable payouts, premium out of the RMD base), priced on the exact ledger.`,
         planPatch: { accounts: [...plan.accounts, annuity] },
         metadata: { premium: Math.round(premium), monthly: Math.round(monthly), startAge },
       })
@@ -770,7 +771,7 @@ export const bridgeLadderGenerator: CandidateGenerator = {
       source: 'heuristic',
       category: 'guaranteed-income',
       label: 'TIPS bridge ladder covering the Social Security gap years',
-      explanation: `Buys ~$${Math.round(totalCost).toLocaleString()} of TIPS maturing across the years before the chosen claim age, paying the forgone age-62 benefit so delaying Social Security never cuts lifestyle; priced on the exact ledger.`,
+      explanation: `Buys ~${formatWholeUsd(totalCost)} of TIPS maturing across the years before the chosen claim age, paying the forgone age-62 benefit so delaying Social Security never cuts lifestyle; priced on the exact ledger.`,
       planPatch: { incomeFloor: { ladders: [...(plan.incomeFloor?.ladders ?? []), ...newLadders] } },
       metadata: { totalCost: Math.round(totalCost), ladders: newLadders.length },
     })

@@ -269,9 +269,10 @@ export function participatesInAggregateRothConversionAllocation(
  * mention of where it came from.
  *
  * The ledger cannot reach either guard: it sizes `desired` itself and calls
- * only inside `desired > 0.01`, which is false for `NaN` and for every
- * nonpositive figure. The guards are for the promotion chooser and for whatever
- * consumes this next.
+ * only inside `desired > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS`
+ * (`projection/moneyTolerance.ts`), which is false for `NaN` and for every
+ * nonpositive figure whatever that epsilon is set to. The guards are for the
+ * promotion chooser and for whatever consumes this next.
  */
 export function allocateAggregateRothConversionByOwner<
   TBalance extends AggregateRothConversionBalance,
