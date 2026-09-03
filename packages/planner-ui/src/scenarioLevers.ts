@@ -41,6 +41,14 @@ import {
   traditionalWithdrawalPenaltyRate,
 } from '@retiregolden/engine/strategies/accountEligibility'
 import { taxCalculatorFor as standardTaxCalculatorForPlan } from './planTaxCalculator'
+import { boundsForPath } from './planner/schemaBounds'
+
+// Read from the engine's schema rather than restated as literals (the schema
+// is the single source of truth for what a value is allowed to be — see
+// `planner/schemaBounds.ts`). Module-level: the schema doesn't change within
+// a session, so this is computed once, not per lever invocation.
+const RETIREMENT_AGE_BOUNDS = boundsForPath('household.people.N.retirementAge')
+const SS_CLAIM_AGE_YEARS_BOUNDS = boundsForPath('incomes.N.claimAge.years')
 
 export type ScenarioLeverId =
   | 'retirementAge'
@@ -999,7 +1007,10 @@ export function buildScenarioLever(
       let overlapsProjection = false
       for (const person of editablePeople) {
         const nextAge = person.retirementAge! + request.yearsDelta
-        const ageIssue = validateNumber(nextAge, `${person.name} retirement age`, { min: 30, max: 80 })
+        const ageIssue = validateNumber(nextAge, `${person.name} retirement age`, {
+          min: RETIREMENT_AGE_BOUNDS?.min,
+          max: RETIREMENT_AGE_BOUNDS?.max,
+        })
         if (ageIssue) return unavailable(definition, [ageIssue], warnings)
         if (
           retirementAgeChangeCanAffectProjection(
@@ -1070,8 +1081,8 @@ export function buildScenarioLever(
 
     case 'socialSecurityClaim': {
       const inputIssue = validateNumber(request.claimAge, 'Social Security claim age', {
-        min: 62,
-        max: 70,
+        min: SS_CLAIM_AGE_YEARS_BOUNDS?.min,
+        max: SS_CLAIM_AGE_YEARS_BOUNDS?.max,
         integer: true,
       })
       if (inputIssue) return unavailable(definition, [inputIssue])
