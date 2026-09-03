@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import type { BuildEnvironmentOptions } from 'vite'
 import { defineConfig } from 'vitest/config'
 
 // Workspace package sources, as posix paths for Vite's resolver.
@@ -35,6 +36,19 @@ const annualProjectionCoordinatorChunk = (id: string): string | null => {
   return null
 }
 
+// Compile this shared app/worker value against Vite's installed Rolldown
+// contract so an option rename or group-shape change fails before bundling.
+type ViteRolldownOutput = Exclude<
+  NonNullable<
+    NonNullable<BuildEnvironmentOptions['rolldownOptions']>['output']
+  >,
+  readonly unknown[]
+>
+type ViteCodeSplitting = Exclude<
+  NonNullable<ViteRolldownOutput['codeSplitting']>,
+  boolean
+>
+
 const annualProjectionCodeSplitting = {
   groups: [
     {
@@ -54,7 +68,7 @@ const annualProjectionCodeSplitting = {
       includeDependenciesRecursively: true,
     },
   ],
-}
+} satisfies ViteCodeSplitting
 
 // https://vite.dev/config/
 export default defineConfig({
