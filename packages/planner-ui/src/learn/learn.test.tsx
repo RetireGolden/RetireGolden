@@ -638,7 +638,7 @@ describe('Learning Center routes', () => {
       const navigate = useNavigate()
       return (
         <>
-          <button type="button" onClick={() => navigate('/learn/rule-of-55-and-72t')}>
+          <button type="button" onClick={() => void navigate('/learn/rule-of-55-and-72t')}>
             Next article
           </button>
           <Routes>

@@ -27,10 +27,10 @@ describe('bucketLens', () => {
       const rows = bucketLens(result, preset.spans)
       expect(rows).toHaveLength(result.years.length)
       for (let i = 0; i < rows.length; i++) {
-        const sum = rows[i]!.buckets.reduce((a, b) => a + b, 0)
-        expect(sum).toBeCloseTo(result.years[i]!.investableTotal, 6)
-        expect(rows[i]!.buckets).toHaveLength(preset.spans.length + 1)
-        for (const b of rows[i]!.buckets) expect(b).toBeGreaterThanOrEqual(0)
+        const sum = rows[i].buckets.reduce((a, b) => a + b, 0)
+        expect(sum).toBeCloseTo(result.years[i].investableTotal, 6)
+        expect(rows[i].buckets).toHaveLength(preset.spans.length + 1)
+        for (const b of rows[i].buckets) expect(b).toBeGreaterThanOrEqual(0)
       }
     }
   })
@@ -40,7 +40,7 @@ describe('bucketLens', () => {
     const rows = bucketLens(result, [2, 8])
     // Zero inflation, zero tax fixture: need is flat $40k/yr, so bucket 1 = $80k
     // and bucket 2 = $320k until the horizon comes within reach.
-    const first = rows[0]!
+    const first = rows[0]
     expect(first.need).toBeCloseTo(40_000, 6)
     expect(first.buckets[0]).toBeCloseTo(80_000, 6)
     expect(first.buckets[1]).toBeCloseTo(320_000, 6)
@@ -68,9 +68,9 @@ describe('bucketLens', () => {
     // (one remaining year of lifestyle + Medicare need, not a full 2-year span).
     const bare = runPlan(retireePlan(), noTax)
     const bareRows = bucketLens(bare, [2, 8])
-    const last = bareRows[bareRows.length - 1]!
+    const last = bareRows[bareRows.length - 1]
     expect(last.buckets[0]).toBeLessThanOrEqual(last.need + 1e-6)
-    expect(netPortfolioNeed(bare.years[bare.years.length - 1]!)).toBeCloseTo(last.need, 6)
+    expect(netPortfolioNeed(bare.years[bare.years.length - 1])).toBeCloseTo(last.need, 6)
   })
 
   it('caps buckets by what is actually left when the portfolio is small', () => {
@@ -78,7 +78,7 @@ describe('bucketLens', () => {
     plan.accounts = [cashAccount('cash', 50_000)]
     const result = runPlan(plan, noTax)
     const rows = bucketLens(result, [2, 8])
-    const first = rows[0]!
+    const first = rows[0]
     // $50k cannot fill 2 years of $40k need: bucket 1 gets it all.
     expect(first.buckets[0]).toBeCloseTo(Math.min(80_000, first.investableTotal), 6)
     expect(first.buckets[2]).toBe(0)

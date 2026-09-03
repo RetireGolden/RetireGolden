@@ -98,7 +98,7 @@ describe('runSpendingSolve', () => {
   })
 
   it('passes cancellation through the published facade and terminates its worker', async () => {
-    vi.stubGlobal('Worker', SpendingWorkerStub as unknown as typeof Worker)
+    vi.stubGlobal('Worker', SpendingWorkerStub)
     const controller = new AbortController()
     const promise = runSpendingSolve(
       { plan: noTraditionalPlan(), startYear: 2026, maxSimulations: 2 },

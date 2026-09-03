@@ -73,7 +73,7 @@ export function runWorkerRequest<TReq, TMsg, TResult>(options: {
     try {
       worker = createWorker()
     } catch (error) {
-      reject(error)
+      reject(error instanceof Error ? error : new Error(String(error)))
       return
     }
     worker.onmessage = (event: MessageEvent<TMsg>) => {

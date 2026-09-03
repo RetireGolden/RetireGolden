@@ -50,12 +50,12 @@ export function PlanPickerPage() {
   const gettingStartedBlock = (
     <>
       <WelcomeHero
-        onTryExample={() => navigate('/examples')}
+        onTryExample={() => void navigate('/examples')}
         onDismiss={dismissWelcome}
         showDismiss={mode === 'returning'}
         headingLevel={mode === 'returning' ? 'h2' : 'h1'}
       />
-      <GettingStartedPaths onCreatePlan={createAndOpen} />
+      <GettingStartedPaths onCreatePlan={(plan) => void createAndOpen(plan)} />
       <StartHereLinks />
     </>
   )
@@ -122,9 +122,9 @@ export function PlanPickerPage() {
                 </Link>
               </>
             }
-            onOpenPlan={openPlan}
-            onDuplicate={handleDuplicate}
-            onDelete={handleDelete}
+            onOpenPlan={(id) => void openPlan(id)}
+            onDuplicate={(s) => void handleDuplicate(s)}
+            onDelete={(s) => void handleDelete(s)}
           />
         </>
       )}
@@ -133,9 +133,9 @@ export function PlanPickerPage() {
         plans={plans}
         listUnavailable={listUnavailable}
         fileInput={fileInput}
-        onExportAll={handleExportAll}
-        onImportFile={handleImportFile}
-        onClearAll={handleClearAll}
+        onExportAll={() => void handleExportAll()}
+        onImportFile={(file) => void handleImportFile(file)}
+        onClearAll={() => void handleClearAll()}
       />
       {dialogs}
     </section>

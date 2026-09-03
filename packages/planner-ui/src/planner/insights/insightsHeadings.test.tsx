@@ -56,7 +56,7 @@ describe('Insights heading order', () => {
     expect(levels.filter((l) => l === 1)).toHaveLength(1)
     // No card heading is deeper than h3, and no step is skipped top-to-bottom.
     for (let i = 1; i < levels.length; i++) {
-      expect(levels[i]! - levels[i - 1]!, `heading skip at index ${i}: ${levels.join(',')}`).toBeLessThanOrEqual(1)
+      expect(levels[i] - levels[i - 1], `heading skip at index ${i}: ${levels.join(',')}`).toBeLessThanOrEqual(1)
     }
     // The category header is a real heading containing the toggle button.
     const categoryHeading = container.querySelector('h2.insight-category-heading button')

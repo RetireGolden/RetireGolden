@@ -61,16 +61,16 @@ describe('public import adversarial boundary', () => {
     vi.stubGlobal('eval', forbidden)
 
     const csv = parseCsv('name,balance\n=1+1,100\n@SUM(A1),200')
-    expect(csv.ok && csv.rows[1]![0]).toBe('=1+1')
+    expect(csv.ok && csv.rows[1][0]).toBe('=1+1')
 
     const broker = parseBrokerPositionsCsv(BROKER_FORMULA_CSV)
-    expect(broker.ok && broker.accounts[0]!.accountLabel).toBe('=1+1')
+    expect(broker.ok && broker.accounts[0].accountLabel).toBe('=1+1')
 
     const generic = analyzeGenericCsv('Account,Balance\n<script>alert(1)</script>,100')
     expect(generic.ok).toBe(true)
     if (generic.ok) {
       const draft = draftPlanFromGenericCsv(generic.analysis, ['name', 'balance'], ids('generic'))
-      expect(draft.ok && draft.plan.accounts[0]!.name).toBe('<script>alert(1)</script>')
+      expect(draft.ok && draft.plan.accounts[0].name).toBe('<script>alert(1)</script>')
     }
 
     const projection = mapProjectionLabExport(
@@ -79,17 +79,17 @@ describe('public import adversarial boundary', () => {
       }),
       ids('projection'),
     )
-    expect(projection.ok && projection.plan.accounts[0]!.name).toBe('=CMD()')
+    expect(projection.ok && projection.plan.accounts[0].name).toBe('=CMD()')
 
     const migration = identifyMigrationExport(`Prepared by eMoney report \u202E ${String.fromCharCode(7)}`)
     expect(migration?.outcome).toBe('identified')
     if (migration?.outcome === 'identified') {
-      expect(migration.evidence[0]!.matched).toContain('<U+202E>')
-      expect(migration.evidence[0]!.matched).toContain('<U+0007>')
+      expect(migration.evidence[0].matched).toContain('<U+202E>')
+      expect(migration.evidence[0].matched).toContain('<U+0007>')
     }
 
     const document = await extractDocumentText(new TextEncoder().encode('%PDF-1.7'), { pdfjs: localPdfjs })
-    expect(document.ok && document.pages[0]!.text).toContain('=HYPERLINK')
+    expect(document.ok && document.pages[0].text).toContain('=HYPERLINK')
     expect(forbidden).not.toHaveBeenCalled()
   })
 

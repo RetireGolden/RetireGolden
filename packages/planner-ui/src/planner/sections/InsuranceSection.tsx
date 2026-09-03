@@ -97,7 +97,7 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
         options={PREMIUM_MODE_OPTIONS}
         onCommit={(v) =>
           update((d) => {
-            const p = d.insurance[index]!
+            const p = d.insurance[index]
             p.premiumMode = v
             // The schema requires premiumEndAge while premiums run until an
             // age and still bounds one otherwise, so either side of this switch
@@ -191,8 +191,8 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
               </span>
               {(policy.cashValueSchedule ?? []).map((row, ri) => (
                 <div className="add-row" key={ri} style={{ alignItems: 'flex-end' }}>
-                  <NumberField label="Age" path={`insurance.${index}.cashValueSchedule.${ri}.age`} value={row.age} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.age = Math.round(v ?? row.age) })} />
-                  <MoneyField label="Value" path={`insurance.${index}.cashValueSchedule.${ri}.value`} value={row.value} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri]!.value = v ?? 0 })} />
+                  <NumberField label="Age" path={`insurance.${index}.cashValueSchedule.${ri}.age`} value={row.age} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri].age = Math.round(v ?? row.age) })} />
+                  <MoneyField label="Value" path={`insurance.${index}.cashValueSchedule.${ri}.value`} value={row.value} onCommit={(v) => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule[ri].value = v ?? 0 })} />
                   <button type="button" className="btn-ghost btn-ghost-danger" onClick={() => update((d) => { const p = d.insurance[index]; if (p.kind === 'permanentLife' && p.cashValueSchedule) p.cashValueSchedule.splice(ri, 1) })}>Remove</button>
                 </div>
               ))}
@@ -435,7 +435,7 @@ function LtcStressPanel() {
 
 export function InsuranceSection() {
   const { plan, update } = usePlan()
-  const firstPerson = plan.household.people[0]!.id
+  const firstPerson = plan.household.people[0].id
   // Policies are shown grouped by kind, in the add-button order, whatever
   // order they were added in (#550). The plan array is untouched: each card
   // keeps its stored index for edits and removal; the stored index is also

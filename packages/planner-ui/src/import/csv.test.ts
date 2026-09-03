@@ -46,7 +46,7 @@ describe('parseCsv', () => {
   it('treats spreadsheet formulas as inert text, not code', () => {
     const r = parseCsv('=HYPERLINK("http://evil.test"),=1+2\n@SUM(A1),+cmd')
     expect(r.ok).toBe(true)
-    if (r.ok) expect(r.rows[0]![0]).toBe('=HYPERLINK("http://evil.test")')
+    if (r.ok) expect(r.rows[0][0]).toBe('=HYPERLINK("http://evil.test")')
   })
 })
 

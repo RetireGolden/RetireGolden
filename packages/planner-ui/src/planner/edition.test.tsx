@@ -70,7 +70,7 @@ describe('PlannerEdition defaults (no provider)', () => {
 
   it('DisclaimerPage shows the browser-storage and AGPL sections', async () => {
     await render(<DisclaimerPage />)
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('Your data stays with you')
     expect(text).toContain('no server-side storage and no accounts')
     expect(text).toContain('Software license & third-party notices')
@@ -122,7 +122,7 @@ describe('PlannerEditionProvider overrides', () => {
         <DisclaimerPage />
       </PlannerEditionProvider>,
     )
-    const text = container.textContent!
+    const text = container.textContent
     // Overrides replace the whole default block, heading included.
     expect(container.querySelector('[data-testid="edition-data"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="edition-license"]')).not.toBeNull()

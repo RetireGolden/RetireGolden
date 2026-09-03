@@ -5,7 +5,15 @@ type ImportFailure = Extract<ReturnType<typeof parseV2Backup>, { ok: false }>['r
 /**
  * Human import-failure copy with a next step (UI/UX round 2, Step 6) — never the
  * raw enum reason with underscores, which leaked schema jargon at the user.
+ *
+ * Deliberately takes `| string`, not just `ImportFailure`: an unrecognized
+ * reason (a future value this build's engine doesn't know, or a caller
+ * outside the type system) must still fall through to the generic default
+ * copy rather than a type error, so the union is documented here even though
+ * `string` structurally subsumes it (errorRecovery.test.tsx exercises this
+ * with a reason no `ImportFailure` variant names).
  */
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 export function importErrorMessage(reason: ImportFailure | string): string {
   switch (reason) {
     case 'too_large':

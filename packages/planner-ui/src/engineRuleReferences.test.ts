@@ -16,7 +16,7 @@ const packageSources = import.meta.glob('./**/*.{ts,tsx,mts,cts}', { query: '?ra
 
 const SELF = 'engineRuleReferences.test.ts'
 const registeredRuleIds = new Set<string>(taxRuleIds)
-const registryPrefixes = new Set(taxRuleIds.map((ruleId) => ruleId.split('-')[0]!))
+const registryPrefixes = new Set(taxRuleIds.map((ruleId) => ruleId.split('-')[0]))
 
 /** Authority-anchored ids only — full registered rule ids, not bare statute prefixes. */
 const authorityShaped = /`([A-Za-z0-9]+(?:-[A-Za-z0-9]+){3,})`/gu
@@ -146,13 +146,13 @@ function isAllowedEngineExportSpecifier(specifier: string): boolean {
 function moduleSpecifiers(source: string): string[] {
   const specifiers: string[] = []
   for (const match of source.matchAll(/^\s*import\s+['"]([^'"]+)['"]/gmu)) {
-    specifiers.push(match[1]!)
+    specifiers.push(match[1])
   }
   for (const match of source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[\w*{}\s,$]+\s+from\s+)?['"]([^'"]+)['"]/gu)) {
-    specifiers.push(match[1]!)
+    specifiers.push(match[1])
   }
   for (const match of source.matchAll(/import\s*\(\s*['"]([^'"]+)['"]\s*\)/gu)) {
-    specifiers.push(match[1]!)
+    specifiers.push(match[1])
   }
   return specifiers
 }
@@ -160,12 +160,12 @@ function moduleSpecifiers(source: string): string[] {
 function citedRuleIdsInSource(source: string): string[] {
   const cited: string[] = []
   for (const match of source.matchAll(authorityShaped)) {
-    const token = match[1]!
-    if (!registryPrefixes.has(token.split('-')[0]!)) continue
+    const token = match[1]
+    if (!registryPrefixes.has(token.split('-')[0])) continue
     cited.push(token)
   }
   for (const match of source.matchAll(citedAsRegistered)) {
-    cited.push(match[1]!)
+    cited.push(match[1])
   }
   return cited
 }
@@ -175,7 +175,7 @@ describe('engine consumer boundaries', () => {
     const unknown: string[] = []
     for (const [path, source] of Object.entries(packageSources)) {
       if (path.endsWith(SELF)) continue
-      for (const token of citedRuleIdsInSource(source as string)) {
+      for (const token of citedRuleIdsInSource(source)) {
         if (!registeredRuleIds.has(token)) unknown.push(`${path}: ${token}`)
       }
     }
@@ -186,7 +186,7 @@ describe('engine consumer boundaries', () => {
     const offenders: string[] = []
     for (const [path, source] of Object.entries(packageSources)) {
       if (path.endsWith(SELF)) continue
-      for (const specifier of moduleSpecifiers(source as string)) {
+      for (const specifier of moduleSpecifiers(source)) {
         for (const { pattern, label } of DEEP_IMPORT_PATTERNS) {
           if (pattern.test(specifier)) offenders.push(`${path}: ${specifier} (${label})`)
         }

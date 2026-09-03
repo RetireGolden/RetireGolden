@@ -158,7 +158,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
         patch: action.patch,
       })
     })
-    navigate(`/plan/${plan.id}/scenarios`)
+    void navigate(`/plan/${plan.id}/scenarios`)
   }
 
   const handleApplyToggle = () => {
@@ -353,7 +353,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
               <button
                 type="button"
                 className="btn btn-secondary btn-small"
-                onClick={handleToggleExpand}
+                onClick={() => void handleToggleExpand()}
                 disabled={loadingExact}
                 aria-busy={loadingExact || loadingMc || undefined}
               >

@@ -58,7 +58,7 @@ describe('CSS custom properties resolve', () => {
     const defined = new Set<string>()
     for (const file of sourceFiles.filter((f) => f.endsWith('.css'))) {
       const text: string = readFileSync(file, 'utf8')
-      for (const match of text.matchAll(/--([\w-]+)\s*:/g)) defined.add(match[1]!)
+      for (const match of text.matchAll(/--([\w-]+)\s*:/g)) defined.add(match[1])
     }
     expect(defined.size).toBeGreaterThan(0)
 
@@ -66,8 +66,8 @@ describe('CSS custom properties resolve', () => {
     for (const file of appFiles) {
       const text: string = readFileSync(file, 'utf8')
       for (const match of text.matchAll(/var\(\s*--([\w-]+)/g)) {
-        if (!defined.has(match[1]!)) {
-          missing.push(`${rel(file)}: --${match[1]!}`)
+        if (!defined.has(match[1])) {
+          missing.push(`${rel(file)}: --${match[1]}`)
         }
       }
     }

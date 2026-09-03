@@ -103,7 +103,7 @@ describe('HouseholdMapPage', () => {
     const cardText = (label: string) =>
       nodeLinks(el)
         .find((a) => a.querySelector('.map-node-label')?.textContent === label)!
-        .textContent!
+        .textContent
     expect(cardText('Joint brokerage')).toContain('•••')
     // A person never had an amount — no placeholder, no "hidden" cell.
     expect(cardText('Alex')).not.toContain('•••')
@@ -159,7 +159,7 @@ describe('HouseholdMapPage', () => {
     )!
     expect(brokerageRow.textContent).toContain('Owned by Alex (joint)')
     expect(brokerageRow.textContent).toContain('Owned by Sam (joint)')
-    const style = el.querySelector('style')!.textContent!
+    const style = el.querySelector('style')!.textContent
     expect(style).toContain('letter landscape')
     expect(style).toContain('@media print')
   })
@@ -176,7 +176,7 @@ describe('HouseholdMapPage', () => {
     const width = Number.parseFloat(canvas.style.width)
     const height = Number.parseFloat(canvas.style.height)
     const expected = Math.min(1, (10 * 96) / width, (6 * 96) / height)
-    const style = el.querySelector('style')!.textContent!
+    const style = el.querySelector('style')!.textContent
     const zoom = Number(style.match(/zoom: ([\d.]+)/)?.[1])
     expect(zoom).toBeCloseTo(expected, 5)
     expect(zoom).toBeLessThanOrEqual(1)
@@ -204,7 +204,7 @@ describe('HouseholdMapPage', () => {
     const width = Number.parseFloat(canvas.style.width)
     const height = Number.parseFloat(canvas.style.height)
     expect(height).toBeGreaterThan(6 * 96)
-    const zoom = Number(el.querySelector('style')!.textContent!.match(/zoom: ([\d.]+)/)?.[1])
+    const zoom = Number(el.querySelector('style')!.textContent.match(/zoom: ([\d.]+)/)?.[1])
     // Scaled dimensions fit the printable area on both axes.
     expect(zoom * height).toBeLessThanOrEqual(6 * 96 + 0.5)
     expect(zoom * width).toBeLessThanOrEqual(10 * 96 + 0.5)
@@ -291,7 +291,7 @@ describe('HouseholdMapPage inside the real workspace chrome', () => {
     expect(container.querySelector('.workspace-rail')).not.toBeNull()
     // …and the page's print stylesheet removes it (and the rail) from print,
     // so a hidden-amounts printout is the map alone.
-    const style = container.querySelector('.household-map-page style')!.textContent!
+    const style = container.querySelector('.household-map-page style')!.textContent
     const printBlock = style.slice(style.indexOf('@media print'))
     const hiddenRule = printBlock.match(/([^{}]+)\{[^}]*display: none !important;/)?.[1] ?? ''
     expect(hiddenRule).toContain('.kpi-bar')

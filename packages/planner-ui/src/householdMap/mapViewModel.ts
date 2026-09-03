@@ -293,7 +293,7 @@ export function buildMapViewModel(graph: HouseholdGraph, options: MapViewOptions
   }
 
   const nodeVMs: MapNodeVM[] = nodes.map((node) => {
-    const pos = layout.positions[node.id]!
+    const pos = layout.positions[node.id]
     const { x, y } = nodeXY(pos)
     const amount = hideAmounts ? null : amountText(node)
     const flags =

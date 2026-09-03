@@ -62,13 +62,13 @@ function ExampleCard({
     try {
       if (chosen === 'open-existing') {
         const r = await openExampleExisting(example.id)
-        if (r.ok) navigate(`/plan/${r.planId}/results`)
+        if (r.ok) void navigate(`/plan/${r.planId}/results`)
         else onNotice(r.reason)
         return
       }
       if (chosen === 'load-fresh') {
         const r = await openExampleFresh(example.id)
-        if (r.ok) navigate(`/plan/${r.planId}/results`)
+        if (r.ok) void navigate(`/plan/${r.planId}/results`)
         else onNotice(r.reason)
         return
       }
@@ -90,7 +90,7 @@ function ExampleCard({
         if (picked !== null) await openDemo(picked)
         return
       }
-      navigate(`/plan/${prepared.planId}/results`)
+      void navigate(`/plan/${prepared.planId}/results`)
     } finally {
       setBusy(false)
     }
@@ -121,7 +121,7 @@ function ExampleCard({
       const converted = await saveExampleToMyPlans(loaded.plan, { store })
       if (converted.ok) {
         onNotice(`"${example.title}" saved to ${homeLabel}.`)
-        navigate(`/plan/${converted.plan.id}/results`)
+        void navigate(`/plan/${converted.plan.id}/results`)
       } else {
         onNotice(converted.issues.join('; '))
       }

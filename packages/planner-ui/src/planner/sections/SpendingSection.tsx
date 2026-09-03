@@ -584,7 +584,7 @@ export function SpendingSection() {
                 learn={LEARN.spendingProfiles}
                 path={`expenses.phases.${i}.fromAge`}
                 value={p.fromAge}
-                onCommit={(v) => update((d) => void (d.expenses.phases[i]!.fromAge = Math.round(v ?? 65)))}
+                onCommit={(v) => update((d) => void (d.expenses.phases[i].fromAge = Math.round(v ?? 65)))}
               />
               <NumberField
                 label="Multiplier"
@@ -596,7 +596,7 @@ export function SpendingSection() {
                 step={0.01}
                 path={`expenses.phases.${i}.multiplier`}
                 value={p.multiplier}
-                onCommit={(v) => update((d) => void (d.expenses.phases[i]!.multiplier = v ?? 1))}
+                onCommit={(v) => update((d) => void (d.expenses.phases[i].multiplier = v ?? 1))}
               />
             </div>
           </div>
@@ -736,7 +736,7 @@ export function SpendingSection() {
                 learn={LEARN.spendingBudget}
                 path={`expenses.oneTimeGoals.${i}.label`}
                 value={g.label}
-                onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.label = v || 'Goal'))}
+                onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i].label = v || 'Goal'))}
               />
               <NumberField
                 label="Year"
@@ -749,7 +749,7 @@ export function SpendingSection() {
                 // after the goal year", "latestYear cannot be before the goal
                 // year"), so a year moved outside the window shows the refusal on
                 // the window field rather than quietly moving it (D5).
-                onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.year = Math.round(v ?? g.year)))}
+                onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i].year = Math.round(v ?? g.year)))}
               />
               <MoneyField
                 label="Amount (today's $)"
@@ -757,7 +757,7 @@ export function SpendingSection() {
                 learn={LEARN.spendingBudget}
                 path={`expenses.oneTimeGoals.${i}.amount`}
                 value={g.amount}
-                onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.amount = v ?? 0))}
+                onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i].amount = v ?? 0))}
               />
               <SelectField<SpendingClassification>
                 label="Layer"
@@ -772,7 +772,7 @@ export function SpendingSection() {
                 ]}
                 onCommit={(classification) =>
                   update((d) => {
-                    const goal = d.expenses.oneTimeGoals[i]!
+                    const goal = d.expenses.oneTimeGoals[i]
                     if (classification === 'target') delete goal.classification
                     else goal.classification = classification
                   })
@@ -793,7 +793,7 @@ export function SpendingSection() {
                 ]}
                 onCommit={(flex: GoalFlexibility) =>
                   update((d) => {
-                    const goal = d.expenses.oneTimeGoals[i]!
+                    const goal = d.expenses.oneTimeGoals[i]
                     if (flex === 'fixed') {
                       delete goal.flexibility
                       delete goal.earliestYear
@@ -818,7 +818,7 @@ export function SpendingSection() {
                     path={`expenses.oneTimeGoals.${i}.earliestYear`}
                     value={g.earliestYear ?? g.year}
                     onCommit={(v) =>
-                      update((d) => void (d.expenses.oneTimeGoals[i]!.earliestYear = Math.round(v ?? g.year)))
+                      update((d) => void (d.expenses.oneTimeGoals[i].earliestYear = Math.round(v ?? g.year)))
                     }
                   />
                   <NumberField
@@ -828,7 +828,7 @@ export function SpendingSection() {
                     path={`expenses.oneTimeGoals.${i}.latestYear`}
                     value={g.latestYear ?? g.year}
                     onCommit={(v) =>
-                      update((d) => void (d.expenses.oneTimeGoals[i]!.latestYear = Math.round(v ?? g.year)))
+                      update((d) => void (d.expenses.oneTimeGoals[i].latestYear = Math.round(v ?? g.year)))
                     }
                   />
                   <NumberField
@@ -838,7 +838,7 @@ export function SpendingSection() {
                     value={g.priority ?? i}
                     min={0}
                     max={999}
-                    onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.priority = Math.round(v ?? i)))}
+                    onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i].priority = Math.round(v ?? i)))}
                   />
                   <CheckboxField
                     label="Allow partial funding"
@@ -847,7 +847,7 @@ export function SpendingSection() {
                     value={g.allowPartialFunding ?? false}
                     onCommit={(v) =>
                       update((d) => {
-                        const goal = d.expenses.oneTimeGoals[i]!
+                        const goal = d.expenses.oneTimeGoals[i]
                         if (!v) {
                           delete goal.allowPartialFunding
                           delete goal.minFundingPct
@@ -868,7 +868,7 @@ export function SpendingSection() {
                       max={95}
                       value={g.minFundingPct ?? 50}
                       onCommit={(v) =>
-                        update((d) => void (d.expenses.oneTimeGoals[i]!.minFundingPct = Math.min(95, Math.max(0, v ?? 50))))
+                        update((d) => void (d.expenses.oneTimeGoals[i].minFundingPct = Math.min(95, Math.max(0, v ?? 50))))
                       }
                     />
                   ) : null}

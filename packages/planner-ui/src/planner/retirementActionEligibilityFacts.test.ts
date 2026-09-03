@@ -35,7 +35,7 @@ const THRESHOLD_YEAR = 2020
 
 function factsPlan(): Plan {
   const plan = createSamplePlan()
-  const donor = plan.household.people[0]!
+  const donor = plan.household.people[0]
   donor.dob = DONOR_DOB
   plan.accounts = [
     {
@@ -68,7 +68,7 @@ function namedQcd(plan: Plan): QualifiedCharitableDistributionRequest {
     executionSequence: 1,
     requestedAmount: 20_000_00,
     provenance: { source: 'manual' },
-    donorPersonId: plan.household.people[0]!.id,
+    donorPersonId: plan.household.people[0].id,
     allocation: {
       allocationId: 'qcd-allocation',
       sourceAccountId: 'source-ira',
@@ -164,7 +164,7 @@ describe('eligibility evidence ID minting', () => {
         sourceAccountId: 'source-ira',
       }),
       name: 'Collision',
-      ownerPersonId: plan.household.people[0]!.id,
+      ownerPersonId: plan.household.people[0].id,
       annualReturnPct: null,
       balance: 1,
       annualContribution: 0,
@@ -182,7 +182,7 @@ describe('eligibility evidence ID minting', () => {
 
   it('names every bulk contribution year whose minted ID is already claimed', () => {
     const plan = factsPlan()
-    const donor = plan.household.people[0]!
+    const donor = plan.household.people[0]
     const years = deductibleContributionYears(DONOR_DOB, ACTION_YEAR)
     expect(conflictingContributionYears(plan, donor.id, years)).toEqual([])
 
@@ -253,7 +253,7 @@ describe('eligibility evidence ID minting', () => {
     recordSepSimpleActivity(plan, 'second-ira', ACTION_YEAR, `${ACTION_YEAR}-12-31`, false)
     recordDeductibleContributionZeros(
       plan,
-      plan.household.people[0]!.id,
+      plan.household.people[0].id,
       deductibleContributionYears(DONOR_DOB, ACTION_YEAR),
     )
     const parsed = parsePlan(plan)
@@ -347,7 +347,7 @@ describe('eligibility fact writers', () => {
 
   it('writes one record per named year for a bulk zero statement', () => {
     const plan = factsPlan()
-    const donor = plan.household.people[0]!
+    const donor = plan.household.people[0]
     const years = deductibleContributionYears(DONOR_DOB, ACTION_YEAR)
     expect(years).toEqual([2020, 2021, 2022, 2023, 2024, 2025, 2026])
 
@@ -363,7 +363,7 @@ describe('eligibility fact writers', () => {
 
   it('overwrites a single year without disturbing the others', () => {
     const plan = factsPlan()
-    const donor = plan.household.people[0]!
+    const donor = plan.household.people[0]
     recordDeductibleContributionZeros(
       plan,
       donor.id,
@@ -399,7 +399,7 @@ describe('eligibility fact writers', () => {
 
   it('offers only owned, non-inherited traditional IRAs for classification', () => {
     const plan = factsPlan()
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     plan.accounts.push(
       {
         type: 'traditional', id: 'employer-plan', name: '401(k)', ownerPersonId: owner.id,
@@ -423,8 +423,8 @@ describe('eligibility fact writers', () => {
 
   it('asks only donors who own a classifiable IRA or already have records', () => {
     const plan = factsPlan()
-    const donor = plan.household.people[0]!
-    const other = plan.household.people[1]!
+    const donor = plan.household.people[0]
+    const other = plan.household.people[1]
     other.dob = DONOR_DOB
 
     expect(contributionDonors(plan, ACTION_YEAR).map((entry) => entry.person.id))
@@ -434,14 +434,14 @@ describe('eligibility fact writers', () => {
     expect(contributionDonors(plan, ACTION_YEAR).map((entry) => entry.person.id))
       .toEqual([donor.id, other.id])
 
-    plan.household.people[0]!.dob = '1990-01-01'
+    plan.household.people[0].dob = '1990-01-01'
     expect(contributionDonors(plan, ACTION_YEAR).map((entry) => entry.person.id))
       .toEqual([other.id])
   })
 
   it('keeps the threshold year the Plan itself enforces', () => {
     const plan = factsPlan()
-    const donor = plan.household.people[0]!
+    const donor = plan.household.people[0]
     recordDeductibleContribution(plan, donor.id, THRESHOLD_YEAR, asUsdCents(0))
     expect(parsePlan(plan).ok).toBe(true)
 

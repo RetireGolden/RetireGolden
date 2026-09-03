@@ -83,7 +83,7 @@ async function mount(initialPlan: Plan, content: ReactNode = <IncomeSection />) 
 function buttonByText(host: HTMLElement, text: string): HTMLButtonElement {
   const found = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)
   if (found === undefined) throw new Error(`no button labelled "${text}"`)
-  return found as HTMLButtonElement
+  return found
 }
 
 const labels = (host: HTMLElement): string[] =>

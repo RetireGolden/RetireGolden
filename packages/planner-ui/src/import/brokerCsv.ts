@@ -91,7 +91,7 @@ function parseAsOfIso(raw: string): string | null {
     : numeric
       ? { year: Number(numeric[3]), month: Number(numeric[1]), day: Number(numeric[2]) }
       : named
-        ? { year: Number(named[3]), month: months[named[1]!.toLowerCase().replace('.', '')]!, day: Number(named[2]) }
+        ? { year: Number(named[3]), month: months[named[1].toLowerCase().replace('.', '')], day: Number(named[2]) }
         : null
   if (!parts || !Number.isInteger(parts.year) || parts.year < 1000 || parts.year > 9999) return null
   if (!Number.isInteger(parts.month) || parts.month < 1 || parts.month > 12 || !Number.isInteger(parts.day) || parts.day < 1) return null
@@ -211,13 +211,13 @@ function parseSchwab(rows: string[][], lines: number[]): BrokerCsvResult {
   let basisCol = -1
 
   for (let r = 0; r < rows.length; r++) {
-    const cells = rows[r]!
+    const cells = rows[r]
     const first = (cells[0] ?? '').trim()
 
     const section = /^positions for (?:account )?(.+?)\s+as of\s+(.+)$/i.exec(first)
     if (section) {
-      const label = section[1]!.trim()
-      const asOfIso = parseAsOfIso(section[2]!)
+      const label = section[1].trim()
+      const asOfIso = parseAsOfIso(section[2])
       current = byAccount.get(label) ?? newAggregate(label, asOfIso)
       if (current.asOfIso === null) current.asOfIso = asOfIso
       byAccount.set(label, current)
@@ -243,22 +243,22 @@ function parseSchwab(rows: string[][], lines: number[]): BrokerCsvResult {
         status: 'skipped',
         source: `${current.label}: ${first}`,
         detail: 'Row had no readable market value.',
-        locator: csvRow(lines[r]!, 'market value'),
+        locator: csvRow(lines[r], 'market value'),
         confidence: 'unmapped',
       })
       continue
     }
     current.total += value
     current.positions++
-    current.rows.push(lines[r]!)
+    current.rows.push(lines[r])
     const basis = basisCol === -1 ? null : parseMoney(cells[basisCol])
     if (basis === null) {
       current.valueRowsWithoutBasis++
-      current.basislessRows.push(lines[r]!)
+      current.basislessRows.push(lines[r])
     } else {
       current.basis += basis
       current.basisRows++
-      current.rowsWithBasis.push(lines[r]!)
+      current.rowsWithBasis.push(lines[r])
     }
   }
 
@@ -288,7 +288,7 @@ function parseAccountColumnFile(
   const accountLabel = (rows[headerIndex]?.[cols.account] ?? '').trim().toLowerCase()
 
   for (let r = headerIndex + 1; r < rows.length; r++) {
-    const cells = rows[r]!
+    const cells = rows[r]
     // Deliberately NOT `isFooterOrNoise`: these layouts put Account Number in
     // column 0, so its blank-first-cell rule would swallow exactly the rows
     // the disclosure below exists to report, and it would do so on the real
@@ -306,12 +306,12 @@ function parseAccountColumnFile(
       const orphaned = parseMoney(cells[cols.value])
       review.push({
         status: 'skipped',
-        source: `Row ${String(lines[r]!)}`,
+        source: `Row ${String(lines[r])}`,
         detail:
           orphaned !== null
             ? `$${orphaned.toLocaleString('en-US')} was not counted. The row has no account number, so there is no account to add it to.`
             : 'Row had no account number, so it was not counted.',
-        locator: csvRow(lines[r]!, accountLabel || undefined),
+        locator: csvRow(lines[r], accountLabel || undefined),
         confidence: 'unmapped',
       })
       continue
@@ -338,7 +338,7 @@ function parseAccountColumnFile(
           value !== null
             ? `$${value.toLocaleString('en-US')} of unsettled activity was not counted. It will appear in a position or cash on your next download.`
             : 'Unsettled activity row was not counted.',
-        locator: csvRow(lines[r]!, valueLabel || undefined),
+        locator: csvRow(lines[r], valueLabel || undefined),
         confidence: 'unmapped',
       })
       continue
@@ -347,9 +347,9 @@ function parseAccountColumnFile(
     if (value === null) {
       review.push({
         status: 'skipped',
-        source: `${label}: ${symbol || 'row ' + String(lines[r]!)}`,
+        source: `${label}: ${symbol || 'row ' + String(lines[r])}`,
         detail: 'Row had no readable value.',
-        locator: csvRow(lines[r]!, valueLabel || undefined),
+        locator: csvRow(lines[r], valueLabel || undefined),
         confidence: 'unmapped',
       })
       continue
@@ -358,15 +358,15 @@ function parseAccountColumnFile(
     byAccount.set(key, agg)
     agg.total += value
     agg.positions++
-    agg.rows.push(lines[r]!)
+    agg.rows.push(lines[r])
     const basis = cols.basis === -1 ? null : parseMoney(cells[cols.basis])
     if (basis === null) {
       agg.valueRowsWithoutBasis++
-      agg.basislessRows.push(lines[r]!)
+      agg.basislessRows.push(lines[r])
     } else {
       agg.basis += basis
       agg.basisRows++
-      agg.rowsWithBasis.push(lines[r]!)
+      agg.rowsWithBasis.push(lines[r])
     }
   }
 
@@ -401,7 +401,7 @@ export function parseBrokerPositionsCsv(text: string): BrokerCsvResult {
   // Fidelity / Vanguard: locate the header row among leading junk.
   const asOfIso = downloadedAsOfIso(rows)
   for (let r = 0; r < Math.min(rows.length, 20); r++) {
-    const cells = rows[r]!
+    const cells = rows[r]
     const account = findColumn(cells, 'account number')
     if (account === -1) continue
 
@@ -486,7 +486,7 @@ export function draftPlanFromBrokerAccounts(
 ): BrokerDraftResult {
   const review: ImportReviewItem[] = []
   const plan = createEmptyPlan({ newId, name: `Imported from ${BROKER_LABEL[broker]}` })
-  const ownerId = plan.household.people[0]!.id
+  const ownerId = plan.household.people[0].id
 
   for (const acc of accounts) {
     const type = guessAccountTypeFromLabel(acc.accountLabel)

@@ -75,7 +75,7 @@ function latestWageBase(table: Readonly<Record<number, number>>): number {
   let latest = 0
   for (const y of Object.keys(table)) {
     const year = Number(y)
-    if (Number.isFinite(year) && table[year]! > latest) latest = table[year]!
+    if (Number.isFinite(year) && table[year] > latest) latest = table[year]!
   }
   return latest
 }

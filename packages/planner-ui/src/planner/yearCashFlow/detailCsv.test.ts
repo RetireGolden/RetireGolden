@@ -107,7 +107,7 @@ function csvCashFlow(): YearCashFlow {
 
 describe('serializeYearCashFlowDetailCsv', () => {
   it('emits the documented columns, a reconciliation summary row, then one row per line', () => {
-    const model = buildYearCashFlowSankey(csvPlan(), { year: 2031, cashFlow: csvCashFlow() } as YearResult)
+    const model = buildYearCashFlowSankey(csvPlan(), { year: 2031, cashFlow: csvCashFlow() })
     const csv = serializeYearCashFlowDetailCsv(model)
     const lines = csv.trimEnd().split('\n')
     expect(lines[0]).toBe(YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS.join(','))
@@ -142,7 +142,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
         },
       ],
     }
-    const model = buildYearCashFlowSankey(validatePlan(plan), { year: 2031, cashFlow } as YearResult)
+    const model = buildYearCashFlowSankey(validatePlan(plan), { year: 2031, cashFlow })
     const csv = serializeYearCashFlowDetailCsv(model)
     const labelCell = csv
       .trimEnd()
@@ -168,7 +168,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
         },
       ],
     }
-    const model = buildYearCashFlowSankey(validatePlan(plan), { year: 2031, cashFlow } as YearResult)
+    const model = buildYearCashFlowSankey(validatePlan(plan), { year: 2031, cashFlow })
     const csv = serializeYearCashFlowDetailCsv(model)
     const labelCell = csv
       .trimEnd()
@@ -193,7 +193,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
         },
       ],
     }
-    const model = buildYearCashFlowSankey(plan, { year: 2031, cashFlow } as YearResult)
+    const model = buildYearCashFlowSankey(plan, { year: 2031, cashFlow })
     const csv = serializeYearCashFlowDetailCsv(model)
     expect(csv).toContain('"Pat - Rollover ""IRA"", primary (IRA)"')
     expect(csv).not.toMatch(/,Pat - Rollover "IRA", primary/)
@@ -212,7 +212,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
         },
       ],
     }
-    const model = buildYearCashFlowSankey(plan, { year: 2031, cashFlow } as YearResult)
+    const model = buildYearCashFlowSankey(plan, { year: 2031, cashFlow })
     const csv = serializeYearCashFlowDetailCsv(model)
     const row = csv
       .trimEnd()
@@ -225,7 +225,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
 
   it('emits header plus reconciliation summary only for an unavailable year', () => {
     const missing = serializeYearCashFlowDetailCsv(
-      buildYearCashFlowSankey(csvPlan(), { year: 2031 } as unknown as YearResult),
+      buildYearCashFlowSankey(csvPlan(), { year: 2031 }),
     )
     expect(missing.trimEnd().split('\n')).toEqual([
       YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS.join(','),

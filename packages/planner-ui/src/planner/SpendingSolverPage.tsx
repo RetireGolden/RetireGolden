@@ -179,7 +179,7 @@ export function SpendingSolverPage() {
       d.expenses.baseAnnual = solved
     })
     // Land on Spending so the applied baseline is visible where it's edited.
-    navigate(`/plan/${plan.id}/spending`)
+    void navigate(`/plan/${plan.id}/spending`)
   }
 
   const addScenario = () => {
@@ -193,7 +193,7 @@ export function SpendingSolverPage() {
     update((d) => {
       d.scenarios.push({ id: makeScenarioId(), name, patch: { expenses: { baseAnnual: solved } } })
     })
-    navigate(`/plan/${plan.id}/scenarios`)
+    void navigate(`/plan/${plan.id}/scenarios`)
   }
 
   // Slack measured against the rounded display value so the two tiles agree.

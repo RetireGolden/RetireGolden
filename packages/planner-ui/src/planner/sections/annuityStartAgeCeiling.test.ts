@@ -230,7 +230,7 @@ describe('clampedAnnuityStartAge', () => {
   function twoOwnerPlan(): Plan {
     const plan = planWithOwner('1940-01-01')
     plan.household.people = [
-      plan.household.people[0]!,
+      plan.household.people[0],
       {
         id: 'p2',
         name: 'Sam',
@@ -275,7 +275,7 @@ describe('clampedAnnuityStartAge', () => {
     // The other direction has to be silent: an edit that widens what is allowed
     // must not move a value the household chose.
     const plan = twoOwnerPlan()
-    const moved = annuity({ startAge: 76, ownerPersonId: plan.household.people[0]!.id })
+    const moved = annuity({ startAge: 76, ownerPersonId: plan.household.people[0].id })
     expect(clampedAnnuityStartAge(plan, moved)).toBeNull()
   })
 

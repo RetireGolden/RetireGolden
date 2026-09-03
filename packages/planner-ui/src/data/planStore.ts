@@ -80,13 +80,20 @@ export interface PlanSummary {
   origin: 'user' | 'example'
 }
 
+// Coerces whatever shape ended up in a stored row (legacy or hand-edited
+// IndexedDB records included) the same way `String(v ?? fallback)` always
+// did; no-base-to-string doesn't know this loose coercion of untrusted
+// storage data is deliberate rather than an accidental object-to-string.
+// eslint-disable-next-line @typescript-eslint/no-base-to-string
+const rawString = (v: unknown, fallback: string): string => (v === undefined || v === null ? fallback : String(v))
+
 function toSummary(raw: Record<string, unknown>): PlanSummary | null {
-  const id = String(raw['id'] ?? '')
+  const id = rawString(raw['id'], '')
   if (id === '') return null
   return {
     id,
-    name: String(raw['name'] ?? '(unnamed)'),
-    updatedAtIso: String(raw['updatedAtIso'] ?? ''),
+    name: rawString(raw['name'], '(unnamed)'),
+    updatedAtIso: rawString(raw['updatedAtIso'], ''),
     origin: planOriginFromRaw(raw),
   }
 }

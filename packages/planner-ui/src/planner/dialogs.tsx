@@ -72,7 +72,7 @@ export function useDialogs() {
       new Promise<T | null>((resolve) => {
         const opened = open({
           kind: 'choice',
-          opts: opts as ChoiceOptions<string>,
+          opts: opts,
           resolve: resolve as (value: string | null) => void,
         })
         if (!opened) resolve(null)

@@ -788,8 +788,8 @@ function proposedStaticAllocation(
   let usShare = 0.75
   if (account.allocation !== undefined) {
     const currentWeights = targetWeightsAt(account.allocation, startYear)
-    const currentStockWeight = currentWeights[0]! + currentWeights[1]!
-    if (currentStockWeight > 0) usShare = currentWeights[0]! / currentStockWeight
+    const currentStockWeight = currentWeights[0] + currentWeights[1]
+    if (currentStockWeight > 0) usShare = currentWeights[0] / currentStockWeight
   }
   const usStocks = stockPct * usShare
   return {
@@ -1707,8 +1707,8 @@ export function buildScenarioLever(
       }
       const [firstPerson, secondPerson] = edited.household.people
       if (
-        Number(firstPerson!.dob.slice(0, 4)) + firstPerson!.longevity.planningAge ===
-        Number(secondPerson!.dob.slice(0, 4)) + secondPerson!.longevity.planningAge
+        Number(firstPerson.dob.slice(0, 4)) + firstPerson.longevity.planningAge ===
+        Number(secondPerson.dob.slice(0, 4)) + secondPerson.longevity.planningAge
       ) {
         return unavailable(definition, [
           'The household has no modeled survivor-only year.',

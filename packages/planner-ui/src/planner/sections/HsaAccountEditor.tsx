@@ -24,7 +24,7 @@ export function HsaAccountEditor({
           { value: 'capByMedicalExpenses', label: 'Cap at modeled medical costs' },
         ]}
         onCommit={(value) => {
-          const next = value === 'legacy' ? undefined : (value as 'assumeAllQualified' | 'capByMedicalExpenses')
+          const next = value === 'legacy' ? undefined : (value)
           onCommit('withdrawalTreatment', next)
           if (next !== 'capByMedicalExpenses' && account.reimburseLater) onCommit('reimburseLater', undefined)
         }}

@@ -8,7 +8,7 @@ import { candidateClaimAges } from './ssAnalysis'
  * calculation-test-plan.md). The grid runs 62-70 but never offers a claim age the
  * person has already passed; someone already past 70 is left with 70.
  */
-const personBorn = (dob: string) => singlePersonPlan({ dob }).household.people[0]!
+const personBorn = (dob: string) => singlePersonPlan({ dob }).household.people[0]
 
 describe('candidate claim ages golden worksheets (startYear 2026)', () => {
   it('offers the full 62-70 grid for someone not yet 62', () => {

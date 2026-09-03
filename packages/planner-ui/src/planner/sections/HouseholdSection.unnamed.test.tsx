@@ -81,10 +81,10 @@ describe('Household unnamed people (#523)', () => {
     const { el, applied } = mount(plan)
     const [primary, partner] = nameInputs(el)
     expect(partner).toBeDefined()
-    typeInto(partner!, '')
-    expect(applied.at(-1)!.household.people[1]!.name).toBe('Unnamed partner')
-    typeInto(primary!, '')
-    expect(applied.at(-1)!.household.people[0]!.name).toBe('Unnamed primary')
+    typeInto(partner, '')
+    expect(applied.at(-1)!.household.people[1].name).toBe('Unnamed partner')
+    typeInto(primary, '')
+    expect(applied.at(-1)!.household.people[0].name).toBe('Unnamed primary')
     // No draft ever stored the old placeholder.
     for (const p of applied) expect(p.household.people.map((x) => x.name)).not.toContain('Person')
     expect(el.textContent).toContain('Blank = shown as Unnamed partner.')
@@ -93,7 +93,7 @@ describe('Household unnamed people (#523)', () => {
 
   it('the card header always shows the stored name, and drops the role chip only when the name already states the role', () => {
     const plan = createSamplePlan()
-    plan.household.people[1]!.name = 'Unnamed partner'
+    plan.household.people[1].name = 'Unnamed partner'
     const { el } = mount(plan)
     const titles = Array.from(el.querySelectorAll('.item-row-title')).map((t) => t.textContent?.trim())
     // Placeholder: the name is shown, the chip is not, so the role reads once.
@@ -101,7 +101,7 @@ describe('Household unnamed people (#523)', () => {
     expect(titles).not.toContain('PartnerUnnamed partner')
     // A real name keeps its chip — with the separator the badge now carries,
     // so the title reads "Primary Alex" rather than "PrimaryAlex" (#570).
-    expect(titles).toContain(`Primary ${plan.household.people[0]!.name}`)
+    expect(titles).toContain(`Primary ${plan.household.people[0].name}`)
     const chips = Array.from(el.querySelectorAll('.item-row-title .type-chip')).map((c) => c.textContent)
     expect(chips).toEqual(['Primary'])
   })

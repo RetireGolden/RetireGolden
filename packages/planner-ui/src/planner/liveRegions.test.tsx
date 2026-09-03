@@ -109,7 +109,7 @@ describe('Monte Carlo announcements', () => {
   it('latches the status line: a re-render with the same summary does not change the announced text', async () => {
     let resolveRun!: (v: Awaited<ReturnType<typeof actualPool.runMonteCarlo>>) => void
     mockedRunMc.mockImplementation(
-      () => new Promise((res) => { resolveRun = res as typeof resolveRun }),
+      () => new Promise((res) => { resolveRun = res }),
     )
     const plan = createSamplePlan()
     await mountWithPlan(<MonteCarloPage />, plan)

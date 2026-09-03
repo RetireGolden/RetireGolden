@@ -76,19 +76,19 @@ describe('care events (#489)', () => {
   it('a new event goes to the first person without one, then falls back to the first person', () => {
     const plan = createSamplePlan()
     const [primary, partner] = plan.household.people
-    expect(plan.careEvents.map((c) => c.personId)).toEqual([primary!.id])
+    expect(plan.careEvents.map((c) => c.personId)).toEqual([primary.id])
     const second = makeCareEvent(plan)!
-    expect(second.personId).toBe(partner!.id)
+    expect(second.personId).toBe(partner.id)
     expect(second.startAge).toBe(85)
     plan.careEvents.push(second)
     // The primary's existing event is at 88, so 85 is free for them.
     const third = makeCareEvent(plan)!
-    expect(third.personId).toBe(primary!.id)
+    expect(third.personId).toBe(primary.id)
     expect(third.startAge).toBe(85)
     plan.careEvents.push(third)
     // Now 85 is taken: one past their latest (88).
     const fourth = makeCareEvent(plan)!
-    expect(fourth.personId).toBe(primary!.id)
+    expect(fourth.personId).toBe(primary.id)
     expect(fourth.startAge).toBe(89)
     plan.careEvents.push(fourth)
     expect(duplicateCareEvents(plan)).toEqual([])
@@ -117,7 +117,7 @@ describe('care events (#489)', () => {
     expect(nextCareStartAge(full)).toBeNull()
     // A one-person plan at that point gets no event, and never a duplicate.
     const plan = createEmptyPlan({ newId: () => crypto.randomUUID() })
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     for (const startAge of full) plan.careEvents.push({ id: `c${startAge}`, personId: person.id, startAge, durationYears: 3, annualCost: 1 })
     expect(makeCareEvent(plan)).toBeNull()
     expect(duplicateCareEvents(plan)).toEqual([])
@@ -126,12 +126,12 @@ describe('care events (#489)', () => {
   it('reports a repeated person + start age once, by person id, with how many events share it', () => {
     const plan = createSamplePlan()
     expect(duplicateCareEvents(plan)).toEqual([])
-    const first = plan.careEvents[0]!
-    const primary = plan.household.people[0]!
+    const first = plan.careEvents[0]
+    const primary = plan.household.people[0]
     plan.careEvents.push({ ...first, id: 'dupe-1' })
     expect(duplicateCareEvents(plan)).toEqual([{ personId: primary.id, name: primary.name, startAge: first.startAge, count: 2 }])
     plan.careEvents.push({ ...first, id: 'dupe-2' })
-    expect(duplicateCareEvents(plan)[0]!.count).toBe(3)
+    expect(duplicateCareEvents(plan)[0].count).toBe(3)
     // A different start age for the same person is a second episode, not a duplicate.
     plan.careEvents.push({ ...first, id: 'later', startAge: first.startAge + 5 })
     expect(duplicateCareEvents(plan)).toHaveLength(1)
@@ -140,11 +140,11 @@ describe('care events (#489)', () => {
   it('keeps two same-named people apart', () => {
     const plan = createSamplePlan()
     const [primary, partner] = plan.household.people
-    partner!.name = primary!.name
-    const first = plan.careEvents[0]!
-    plan.careEvents.push({ ...first, id: 'p-dupe' }, { ...first, id: 'q-1', personId: partner!.id }, { ...first, id: 'q-2', personId: partner!.id })
+    partner.name = primary.name
+    const first = plan.careEvents[0]
+    plan.careEvents.push({ ...first, id: 'p-dupe' }, { ...first, id: 'q-1', personId: partner.id }, { ...first, id: 'q-2', personId: partner.id })
     const groups = duplicateCareEvents(plan)
-    expect(groups.map((g) => g.personId)).toEqual([primary!.id, partner!.id])
+    expect(groups.map((g) => g.personId)).toEqual([primary.id, partner.id])
     expect(new Set(groups.map((g) => `${g.personId}@${g.startAge}`)).size).toBe(2)
   })
 })
@@ -160,13 +160,13 @@ describe('validation issues (#512, #517)', () => {
   it('parses path segments and the message', () => {
     // `parseIssue` also carries the section, label, and advice the chrome reads
     // (#452); the predicates below work off the segments this exposes.
-    expect(parseIssue(issues[0]!)).toMatchObject({
+    expect(parseIssue(issues[0])).toMatchObject({
       path: 'incomeFloor.ladders.10.endYear',
       message: 'a ladder must end in or after its first payout year',
     })
-    expect(issuePathSegments(issues[0]!)).toEqual(['incomeFloor', 'ladders', '10', 'endYear'])
-    expect(parseIssue(issues[3]!)).toMatchObject({ path: '(root)', message: 'something plan-wide' })
-    expect(issuePathSegments(issues[3]!)).toEqual([])
+    expect(issuePathSegments(issues[0])).toEqual(['incomeFloor', 'ladders', '10', 'endYear'])
+    expect(parseIssue(issues[3])).toMatchObject({ path: '(root)', message: 'something plan-wide' })
+    expect(issuePathSegments(issues[3])).toEqual([])
     expect(parseIssue('no separator here')).toMatchObject({ path: '(root)', message: 'no separator here' })
     expect(issuePathSegments('no separator here')).toEqual([])
   })

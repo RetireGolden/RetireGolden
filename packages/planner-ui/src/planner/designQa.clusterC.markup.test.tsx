@@ -186,7 +186,7 @@ describe('Household MFJ (#467)', () => {
     // Label row + control, nothing else: the shape the form-grid subgrids so
     // the box shares the row's control track with the two selects.
     expect(field.children).toHaveLength(2)
-    expect(field.children[0]!.classList.contains('field-label-row')).toBe(true)
+    expect(field.children[0].classList.contains('field-label-row')).toBe(true)
     expect(field.children[1]).toBeInstanceOf(HTMLInputElement)
     expect((field.children[1] as HTMLInputElement).type).toBe('checkbox')
     const grid = field.parentElement!
@@ -257,14 +257,14 @@ describe('Insurance care events (#489)', () => {
     expect(host.querySelectorAll('.callout--warn')).toHaveLength(0)
     const add = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === '+ Care event')!
     await act(async () => add.click())
-    expect(itemRowTitled(host, 'Care', `${partner!.name} · age 85`)).toBeTruthy()
+    expect(itemRowTitled(host, 'Care', `${partner.name} · age 85`)).toBeTruthy()
     // Everyone has one now, so the next lands on the primary again. Their
     // example event starts at 88, so 85 is free...
     await act(async () => add.click())
-    expect(itemRowTitled(host, 'Care', `${primary!.name} · age 85`)).toBeTruthy()
+    expect(itemRowTitled(host, 'Care', `${primary.name} · age 85`)).toBeTruthy()
     // ...and the one after opens past their latest (88), not at 85 again.
     await act(async () => add.click())
-    expect(itemRowTitled(host, 'Care', `${primary!.name} · age 89`)).toBeTruthy()
+    expect(itemRowTitled(host, 'Care', `${primary.name} · age 89`)).toBeTruthy()
     expect(host.querySelectorAll('.callout--warn')).toHaveLength(0)
   })
 
@@ -292,42 +292,42 @@ describe('Insurance care events (#489)', () => {
   it('names repeated events with their count, without promising a live stress test', async () => {
     const two = await mount(
       validPlan((p) => {
-        const first = p.careEvents[0]!
+        const first = p.careEvents[0]
         p.careEvents.push({ ...first, id: 'dupe-1' })
       }),
       <InsuranceSection />,
     )
-    const primaryName = createSamplePlan().household.people[0]!.name
+    const primaryName = createSamplePlan().household.people[0].name
     const warnings = [...two.querySelectorAll('.callout--warn')]
     expect(warnings).toHaveLength(1)
-    expect(warnings[0]!.textContent).toContain(`${primaryName} has 2 care events starting at age 88`)
-    expect(warnings[0]!.textContent).toContain('All 2 count toward the care cost the stress test prices when it runs')
+    expect(warnings[0].textContent).toContain(`${primaryName} has 2 care events starting at age 88`)
+    expect(warnings[0].textContent).toContain('All 2 count toward the care cost the stress test prices when it runs')
     await act(async () => root!.unmount())
     root = null
     container?.remove()
     const three = await mount(
       validPlan((p) => {
-        const first = p.careEvents[0]!
+        const first = p.careEvents[0]
         p.careEvents.push({ ...first, id: 'dupe-1' }, { ...first, id: 'dupe-2' })
       }),
       <InsuranceSection />,
     )
     const again = [...three.querySelectorAll('.callout--warn')]
     expect(again).toHaveLength(1)
-    expect(again[0]!.textContent).toContain(`${primaryName} has 3 care events starting at age 88`)
-    expect(again[0]!.textContent).toContain('All 3 count toward')
-    expect(again[0]!.textContent).toContain('remove the extras if they were added by mistake')
+    expect(again[0].textContent).toContain(`${primaryName} has 3 care events starting at age 88`)
+    expect(again[0].textContent).toContain('All 3 count toward')
+    expect(again[0].textContent).toContain('remove the extras if they were added by mistake')
   })
 
   it('warns once per person even when two people share a name', async () => {
     const plan = validPlan((p) => {
       const [primary, partner] = p.household.people
-      partner!.name = primary!.name
-      const first = p.careEvents[0]!
+      partner.name = primary.name
+      const first = p.careEvents[0]
       p.careEvents.push(
         { ...first, id: 'p-dupe' },
-        { ...first, id: 'q-1', personId: partner!.id },
-        { ...first, id: 'q-2', personId: partner!.id },
+        { ...first, id: 'q-1', personId: partner.id },
+        { ...first, id: 'q-2', personId: partner.id },
       )
     })
     const host = await mount(plan, <InsuranceSection />)
@@ -343,7 +343,7 @@ describe('Insurance care events (#489)', () => {
     container?.remove()
     const two = await mount(
       validPlan((p) => {
-        p.careEvents.push({ ...p.careEvents[0]!, id: 'second-care', personId: p.household.people[1]!.id })
+        p.careEvents.push({ ...p.careEvents[0], id: 'second-care', personId: p.household.people[1].id })
       }),
       <InsuranceSection />,
     )
@@ -385,7 +385,7 @@ describe('Insurance care events (#489)', () => {
     const one = await mount(schedulePlan([{ age: 65, value: 0 }, { age: 65, value: 0 }]), <InsuranceSection />)
     const warnings = [...one.querySelectorAll('.callout--warn')]
     expect(warnings).toHaveLength(1)
-    expect(warnings[0]!.textContent).toContain('Age 65 appears more than once')
+    expect(warnings[0].textContent).toContain('Age 65 appears more than once')
     await act(async () => root!.unmount())
     root = null
     container?.remove()
@@ -421,7 +421,7 @@ describe('Insurance care events (#489)', () => {
 describe('Insurance LTC stress (#517)', () => {
   it('renders nothing when the only care events belong to people who left the household', async () => {
     const plan = createSamplePlan()
-    plan.careEvents = [{ ...plan.careEvents[0]!, personId: 'no-such-person' }]
+    plan.careEvents = [{ ...plan.careEvents[0], personId: 'no-such-person' }]
     const host = await mount(plan, <InsuranceSection />, ['careEvents.0.personId: unknown person id "no-such-person"'])
     expect(host.textContent).not.toContain('LTC stress test')
   })

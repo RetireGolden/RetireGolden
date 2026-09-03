@@ -67,8 +67,8 @@ function comparePreviewScenario(plan: Plan, card: InsightCard) {
     { startYear: 2026, taxCalculator: taxCalculatorFor(plan) },
     [{ id: `${card.id}-preview`, name: card.action.scenarioName, patch: card.action.patch }],
   )
-  const base = comparison.rows[0]!
-  const scenario = comparison.rows[1]!
+  const base = comparison.rows[0]
+  const scenario = comparison.rows[1]
   expect(scenario.error).toBeNull()
   expect(Number.isFinite(scenario.summary.endingAfterTaxEstate)).toBe(true)
   return { base, scenario }
@@ -121,11 +121,11 @@ describe('starter detectors', () => {
     // Artificially modify projection MAGI in first year to sit $1000 over the
     // indexed IRMAA threshold that will apply to premiums two years later.
     const filingStatus = plan.household.filingStatus
-    const premiumYear = ctx.projection.result.years[0]!.year + 2
+    const premiumYear = ctx.projection.result.years[0].year + 2
     const thresholdScale = Math.pow(1 + plan.assumptions.inflationPct / 100, premiumYear - ctx.params.year)
-    const threshold = ctx.params.medicare.irmaaTiers[0]!.magiOver[filingStatus] * thresholdScale
-    ctx.projection.result.years[0]!.magi = threshold + 1000
-    ctx.projection.result.years[0]!.rothConversion = 5000
+    const threshold = ctx.params.medicare.irmaaTiers[0].magiOver[filingStatus] * thresholdScale
+    ctx.projection.result.years[0].magi = threshold + 1000
+    ctx.projection.result.years[0].rothConversion = 5000
 
     const card = irmaaTierEdge.screen(ctx)
     expect(card).not.toBeNull()
@@ -148,9 +148,9 @@ describe('starter detectors', () => {
     const ctx = makeContext(plan)
     const filingStatus = plan.household.filingStatus
 
-    const year0 = ctx.projection.result.years[0]!
+    const year0 = ctx.projection.result.years[0]
     const thresholdScale = Math.pow(1 + plan.assumptions.inflationPct / 100, year0.year + 2 - ctx.params.year)
-    const unindexedThreshold = ctx.params.medicare.irmaaTiers[0]!.magiOver[filingStatus]
+    const unindexedThreshold = ctx.params.medicare.irmaaTiers[0].magiOver[filingStatus]
     const indexedThreshold = unindexedThreshold * thresholdScale
 
     for (const year of ctx.projection.result.years) {
@@ -182,7 +182,7 @@ describe('starter detectors', () => {
       mortgageInterest: 0,
     }
     // Alex born 1962 (age 64 in 2026), let's make him born 1950 (age 76 in 2026)
-    plan.household.people[0]!.dob = '1950-01-01'
+    plan.household.people[0].dob = '1950-01-01'
 
     const ctx2 = makeContext(plan)
     const card = qcdEfficiency.screen(ctx2)
@@ -207,8 +207,8 @@ describe('starter detectors', () => {
 
     // Disable conversions, ensure one person dies early
     plan.strategies.rothConversion = { mode: 'none' }
-    plan.household.people[0]!.longevity.planningAge = 70
-    plan.household.people[1]!.longevity.planningAge = 90
+    plan.household.people[0].longevity.planningAge = 70
+    plan.household.people[1].longevity.planningAge = 90
 
     const ctx2 = makeContext(plan)
     const card = widowsPenalty.screen(ctx2)
@@ -223,8 +223,8 @@ describe('starter detectors', () => {
   it('S3: widowsPenalty quantifies the survivor bracket jump and points at SSA-44 when relevant', () => {
     const plan = createSamplePlan()
     plan.strategies.rothConversion = { mode: 'none' }
-    plan.household.people[0]!.longevity.planningAge = 68 // born 1962 → last year alive 2030
-    plan.household.people[1]!.longevity.planningAge = 95
+    plan.household.people[0].longevity.planningAge = 68 // born 1962 → last year alive 2030
+    plan.household.people[1].longevity.planningAge = 95
     // A 100%-survivor pension is the classic widow's-penalty shape: household
     // income barely falls while the brackets, deduction, and IRMAA thresholds
     // halve — so the survivor-window premiums land in a surcharge tier and the
@@ -233,7 +233,7 @@ describe('starter detectors', () => {
       type: 'pension',
       id: 'pen-widow-test',
       name: 'Pension',
-      ownerPersonId: plan.household.people[0]!.id,
+      ownerPersonId: plan.household.people[0].id,
       annualReturnPct: null,
       startAge: 65,
       monthlyAmount: 11_000,
@@ -284,13 +284,13 @@ describe('starter detectors', () => {
     // future today; the card must not move.
     const plan = createSamplePlan()
     plan.strategies.rothConversion = { mode: 'none' }
-    plan.household.people[0]!.longevity.planningAge = 68
-    plan.household.people[1]!.longevity.planningAge = 95
+    plan.household.people[0].longevity.planningAge = 68
+    plan.household.people[1].longevity.planningAge = 95
     plan.accounts.push({
       type: 'pension',
       id: 'pen-widow-packyear',
       name: 'Pension',
-      ownerPersonId: plan.household.people[0]!.id,
+      ownerPersonId: plan.household.people[0].id,
       annualReturnPct: null,
       startAge: 65,
       monthlyAmount: 11_000,
@@ -343,9 +343,9 @@ describe('starter detectors', () => {
     // The preview previews the sweep's top zero-income-tax candidate as a
     // split-year move this year, using the shared relocation patch builder.
     const household = exact.action.patch.household as { stateMoves: Array<{ fromYear: number; state: string }> }
-    expect(['FL', 'TX', 'WA']).toContain(household.stateMoves[0]!.state)
-    expect(household.stateMoves[0]!.fromYear).toBe(2026)
-    expect(exact.action.scenarioName).toContain(household.stateMoves[0]!.state)
+    expect(['FL', 'TX', 'WA']).toContain(household.stateMoves[0].state)
+    expect(household.stateMoves[0].fromYear).toBe(2026)
+    expect(exact.action.scenarioName).toContain(household.stateMoves[0].state)
     // KY levies income tax; the quantified state+local drag lands in the
     // qualitative line (the preview grid's numeric deltas come from the
     // shared evaluator on the total-tax basis, so no numerics here).
@@ -399,7 +399,7 @@ describe('starter detectors', () => {
 
     const generated = probabilityBandSpendingGuardrailGenerator().generate({ plan } as DecisionContext)
     expect(generated).toHaveLength(1)
-    expect(card.action.patch).toEqual(generated[0]!.planPatch)
+    expect(card.action.patch).toEqual(generated[0].planPatch)
   })
 })
 
@@ -439,7 +439,7 @@ describe('assetLocation detector (asset-allocation v2, step 5)', () => {
       .filter((row) => row.evaluation.recommendationState === 'beneficial')
       .sort((a, b) => b.evaluation.deltas.endingAfterTaxEstate - a.evaluation.deltas.endingAfterTaxEstate)
     expect(beneficial.length).toBeGreaterThan(0)
-    expect(evaluated.action.patch).toEqual(beneficial[0]!.candidate.planPatch)
+    expect(evaluated.action.patch).toEqual(beneficial[0].candidate.planPatch)
     expect(evaluated.impact).toBeDefined()
     expect(evaluated.impact!.endingAfterTaxEstateDelta).toBeGreaterThan(0)
 
@@ -452,10 +452,10 @@ describe('SS bridge + income floor detectors (social-security-bridge-and-tips-la
   /** Retire before the SS claim with liquid savings: the classic bridge shape. */
   function bridgePlan(): Plan {
     const plan = createSamplePlan()
-    plan.household.people[0]!.dob = '1964-06-15' // 62 in 2026
-    plan.household.people[0]!.retirementAge = 62
+    plan.household.people[0].dob = '1964-06-15' // 62 in 2026
+    plan.household.people[0].retirementAge = 62
     plan.incomes = plan.incomes.map((inc) =>
-      inc.type === 'socialSecurity' && inc.personId === plan.household.people[0]!.id
+      inc.type === 'socialSecurity' && inc.personId === plan.household.people[0].id
         ? { ...inc, piaMonthly: 2_400, earnings: null, claimAge: { years: 70, months: 0 } }
         : inc.type === 'wages'
           ? { ...inc, annualGross: 0 }

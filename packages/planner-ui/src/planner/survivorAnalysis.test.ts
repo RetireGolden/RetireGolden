@@ -70,12 +70,12 @@ describe('buildSurvivorAnalysis', () => {
     // A 72-year-old (born 1954) planning to 90: the 70 rung is in the past,
     // 75–85 qualify, 90 is the plan itself.
     const older = couplePlan()
-    older.household.people[0]!.dob = '1954-06-15'
+    older.household.people[0].dob = '1954-06-15'
     expect(candidateDeathAges(validate(older), 'p1', 2026, [70, 75, 80, 85, 90])).toEqual([75, 80, 85])
     // Someone exactly on a grid age keeps it — dying at the end of this year
     // is a valid earlier-than-planned timing.
     const at70 = couplePlan()
-    at70.household.people[0]!.dob = '1956-06-15' // 70 in 2026
+    at70.household.people[0].dob = '1956-06-15' // 70 in 2026
     expect(candidateDeathAges(validate(at70), 'p1', 2026, [70, 75, 80, 85, 90])).toEqual([70, 75, 80, 85])
   })
 

@@ -45,7 +45,7 @@ function makeHost() {
     posted,
     host: {
       post: (msg: { type: string }, transfer?: Transferable[]) => {
-        posted.push({ msg: msg as Posted['msg'], transfer })
+        posted.push({ msg: msg, transfer })
       },
       wasmUrl: () => '/assets/highs.wasm',
     },

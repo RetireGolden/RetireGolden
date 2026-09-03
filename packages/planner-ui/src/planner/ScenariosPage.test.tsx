@@ -403,11 +403,11 @@ describe('ScenariosPage comparison lifecycle', () => {
       await vi.advanceTimersByTimeAsync(25)
     })
     expect(mockedBuildScenarioLever).toHaveBeenCalledTimes(1)
-    expect(mockedBuildScenarioLever.mock.calls[0]![1]).toEqual({
+    expect(mockedBuildScenarioLever.mock.calls[0][1]).toEqual({
       id: 'spending',
       percentChange: 15,
     })
-    expect(mockedBuildScenarioLever.mock.calls[0]![2].taxCalculatorForPlan).toBe(
+    expect(mockedBuildScenarioLever.mock.calls[0][2].taxCalculatorForPlan).toBe(
       taxCalculatorFor,
     )
     expect(add.disabled).toBe(false)
@@ -416,7 +416,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     await act(async () => add.click())
 
     expect(mockedBuildScenarioLever).toHaveBeenCalledTimes(2)
-    expect(mockedBuildScenarioLever.mock.calls[1]![1]).toEqual({
+    expect(mockedBuildScenarioLever.mock.calls[1][1]).toEqual({
       id: 'spending',
       percentChange: 15,
     })
@@ -513,7 +513,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     expect(container.textContent).toContain('Choose which household member receives care')
 
     await act(async () => {
-      recipient.value = plan.household.people[1]!.id
+      recipient.value = plan.household.people[1].id
       recipient.dispatchEvent(new Event('change', { bubbles: true }))
     })
     await advanceLeverPreview()
@@ -567,11 +567,11 @@ describe('ScenariosPage comparison lifecycle', () => {
     )!
     const recipient = document.getElementById(recipientLabel.htmlFor) as HTMLSelectElement
     await act(async () => {
-      recipient.value = original.household.people[1]!.id
+      recipient.value = original.household.people[1].id
       recipient.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const onePerson = planWithoutPerson(original, original.household.people[1]!.id)
+    const onePerson = planWithoutPerson(original, original.household.people[1].id)
     onePerson.id = 'one-person-route-plan'
     onePerson.household.filingStatus = 'single'
     await rerenderWithPlan(onePerson)
@@ -586,7 +586,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       (button) => button.textContent?.includes('Add scenario'),
     )
     expect(add?.disabled).toBe(false)
-    expect(container.textContent).not.toContain(original.household.people[1]!.id)
+    expect(container.textContent).not.toContain(original.household.people[1].id)
   })
 
   it('clears a retained care recipient when route reuse navigates to a different couple', async () => {
@@ -600,7 +600,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       (label) => label.textContent === 'Care recipient',
     )!
     const recipient = document.getElementById(recipientLabel.htmlFor) as HTMLSelectElement
-    const removedPerson = original.household.people[1]!
+    const removedPerson = original.household.people[1]
     await act(async () => {
       recipient.value = removedPerson.id
       recipient.dispatchEvent(new Event('change', { bubbles: true }))
@@ -641,7 +641,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       (label) => label.textContent === 'Care recipient',
     )!
     const recipient = document.getElementById(recipientLabel.htmlFor) as HTMLSelectElement
-    const removedPerson = original.household.people[1]!
+    const removedPerson = original.household.people[1]
     await act(async () => {
       recipient.value = removedPerson.id
       recipient.dispatchEvent(new Event('change', { bubbles: true }))
@@ -849,8 +849,8 @@ describe('ScenariosPage comparison lifecycle', () => {
     expect(container.textContent).not.toContain('comparison · Current')
     const alerts = container.querySelectorAll('[role="alert"][aria-live="assertive"]')
     expect(alerts).toHaveLength(1)
-    expect(alerts[0]!.classList).toContain('sr-only')
-    expect(alerts[0]!.textContent).toBe('detail comparison failed')
+    expect(alerts[0].classList).toContain('sr-only')
+    expect(alerts[0].textContent).toBe('detail comparison failed')
     const visibleError = Array.from(container.querySelectorAll('p')).find(
       (paragraph) => paragraph.textContent === 'detail comparison failed',
     )
@@ -981,7 +981,7 @@ describe('ScenariosPage comparison lifecycle', () => {
 
     const alerts = container.querySelectorAll('[role="alert"][aria-live="assertive"]')
     expect(alerts).toHaveLength(1)
-    expect(alerts[0]!.textContent).toBe('capacity comparison failed')
+    expect(alerts[0].textContent).toBe('capacity comparison failed')
     const visibleError = Array.from(container.querySelectorAll('p')).find(
       (paragraph) => paragraph.textContent === 'capacity comparison failed',
     )
@@ -1049,8 +1049,8 @@ describe('ScenariosPage comparison lifecycle', () => {
     const plan = await mount()
     await advanceComparison()
 
-    expect(mockedCompareScenarios.mock.calls[0]![1].taxCalculatorForPlan).toBe(taxCalculatorFor)
-    expect(mockedComparePlans.mock.calls[0]![2].taxCalculatorForPlan).toBe(taxCalculatorFor)
+    expect(mockedCompareScenarios.mock.calls[0][1].taxCalculatorForPlan).toBe(taxCalculatorFor)
+    expect(mockedComparePlans.mock.calls[0][2].taxCalculatorForPlan).toBe(taxCalculatorFor)
 
     const calculate = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent === 'Calculate capacity',
@@ -1059,8 +1059,8 @@ describe('ScenariosPage comparison lifecycle', () => {
     await act(async () => calculate!.click())
 
     expect(mockedRunSpendingSolve).toHaveBeenCalledTimes(2)
-    const baselineRequest = mockedRunSpendingSolve.mock.calls[0]![0]
-    const proposalRequest = mockedRunSpendingSolve.mock.calls[1]![0]
+    const baselineRequest = mockedRunSpendingSolve.mock.calls[0][0]
+    const proposalRequest = mockedRunSpendingSolve.mock.calls[1][0]
     expect(baselineRequest.plan).toBe(plan)
     expect(baselineRequest.startYear).toBe(proposalRequest.startYear)
     expect(proposalRequest.plan).not.toBe(plan)

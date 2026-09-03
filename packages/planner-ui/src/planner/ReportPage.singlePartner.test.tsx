@@ -84,7 +84,7 @@ describe('Report: Single filing status with two people (#555)', () => {
     plan.household.filingStatus = 'single'
     // Drop the partner the way the Household screen's Remove does, so the
     // plan is valid as a one-person household.
-    removePartner(plan, plan.household.people[1]!.id)
+    removePartner(plan, plan.household.people[1].id)
     expect(plan.household.people).toHaveLength(1)
     const parsed = parsePlan(plan)
     expect(parsed.ok, parsed.ok ? '' : parsed.issues.join('; ')).toBe(true)

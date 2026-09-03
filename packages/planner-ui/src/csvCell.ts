@@ -29,8 +29,8 @@ function isFormulaLike(value: string): boolean {
   // trigger — this walks past a bare LF/FF/VT/NUL the same way it walks
   // past a space, so a payload hidden behind one of those cannot dodge the
   // guard the way it could when only ASCII spaces were skippable.
-  while (i < value.length && value.charCodeAt(i) <= 0x20 && !FORMULA_TRIGGER.test(value[i]!)) i++
-  return i < value.length && FORMULA_TRIGGER.test(value[i]!)
+  while (i < value.length && value.charCodeAt(i) <= 0x20 && !FORMULA_TRIGGER.test(value[i])) i++
+  return i < value.length && FORMULA_TRIGGER.test(value[i])
 }
 
 /** Quote a CSV cell when it contains commas, quotes, or newlines. No formula neutralization. */

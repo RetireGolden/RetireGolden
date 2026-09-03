@@ -500,7 +500,7 @@ export function MonteCarloPage() {
                 className="chart-frame chart-frame--spaced"
                 style={frameH(220)}
                 role="figure"
-                aria-label={`Depletion probability by year: by ${depletionRows[depletionRows.length - 1]!.year}, ${depletionRows[depletionRows.length - 1]!.cumulativeProbability.toFixed(1)} percent of paths have depleted.`}
+                aria-label={`Depletion probability by year: by ${depletionRows[depletionRows.length - 1].year}, ${depletionRows[depletionRows.length - 1].cumulativeProbability.toFixed(1)} percent of paths have depleted.`}
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={depletionRows} margin={{ left: 12, right: 8, top: 8 }}>
@@ -732,7 +732,7 @@ export function MonteCarloPage() {
                           formatter={(v: unknown, name: unknown) =>
                             name === 'Success rate' ? `${Math.round(Number(v) * 100)}%` : fmtMoneyCompact(Number(v))
                           }
-                          labelFormatter={(v) => `Retirement age ${v}`}
+                          labelFormatter={(v) => `Retirement age ${typeof v === 'number' || typeof v === 'string' ? v : ''}`}
                           contentStyle={chartTooltipStyle}
                         />
                         <Line dataKey="successRate" name="Success rate" stroke="var(--chart-2)" strokeWidth={2.5} />
@@ -780,7 +780,7 @@ export function MonteCarloPage() {
                             formatter={(v: unknown) =>
                               Number.isFinite(Number(v)) ? `${(Number(v) * 100).toFixed(1)}%` : '—'
                             }
-                            labelFormatter={(v) => `${v}% annuitized`}
+                            labelFormatter={(v) => `${typeof v === 'number' || typeof v === 'string' ? v : ''}% annuitized`}
                             contentStyle={chartTooltipStyle}
                           />
                           <Line dataKey="success" name="Success rate (annuitized)" stroke="var(--chart-1)" strokeWidth={2.5} />
@@ -899,7 +899,7 @@ export function MonteCarloPage() {
               role="figure"
               aria-label={
                 fanRows.length > 0
-                  ? `Fan chart of investable assets by year. In ${fanRows[fanRows.length - 1]!.year}, the median is ${fmtMoneyCompact(fanRows[fanRows.length - 1]!.p50)}, with the 10th to 90th percentile range spanning ${fmtMoneyCompact(fanRows[fanRows.length - 1]!.p10)} to ${fmtMoneyCompact(fanRows[fanRows.length - 1]!.p90)}.`
+                  ? `Fan chart of investable assets by year. In ${fanRows[fanRows.length - 1].year}, the median is ${fmtMoneyCompact(fanRows[fanRows.length - 1].p50)}, with the 10th to 90th percentile range spanning ${fmtMoneyCompact(fanRows[fanRows.length - 1].p10)} to ${fmtMoneyCompact(fanRows[fanRows.length - 1].p90)}.`
                   : 'Fan chart of investable assets by year.'
               }
             >

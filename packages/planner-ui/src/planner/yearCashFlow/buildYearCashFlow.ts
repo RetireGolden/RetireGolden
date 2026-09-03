@@ -696,8 +696,8 @@ function appendUnresolvedMarkers(
 ): string {
   const extras: string[] = []
   for (let i = 0; i < identities.length; i++) {
-    if (!resolved[i]!.unresolved) continue
-    const marker = unknownLabel(rawUnknownId(identities[i]!))
+    if (!resolved[i].unresolved) continue
+    const marker = unknownLabel(rawUnknownId(identities[i]))
     if (!label.includes(marker)) extras.push(marker)
   }
   return extras.length === 0 ? label : `${label} · ${extras.join(' · ')}`
@@ -720,14 +720,14 @@ function resolveLineLabel(
   }
   const resolved = identities.map((ref) => resolveEntity(index, ref))
   const unresolved = resolved.some((item) => item.unresolved)
-  const primary = resolved.find((item) => !item.unresolved) ?? resolved[0]!
+  const primary = resolved.find((item) => !item.unresolved) ?? resolved[0]
   const payeeIndex = identities.findIndex((ref) => ref.entityKind === 'person')
-  const payee = payeeIndex >= 0 ? resolved[payeeIndex]! : null
+  const payee = payeeIndex >= 0 ? resolved[payeeIndex] : null
   const instrumentIndex = identities.findIndex(isAccountLike)
   // Pension/annuity (and any account+person pair): the person reference is the
   // living payee the engine emitted, not the account owner.
   const person = payee ?? (resolved.find((item) => item.personKey !== 'household') ?? primary)
-  const rest = instrumentIndex >= 0 ? accountRestLabel(index, identities[instrumentIndex]!) : null
+  const rest = instrumentIndex >= 0 ? accountRestLabel(index, identities[instrumentIndex]) : null
   const knownLabel =
     payee !== null && !payee.unresolved && rest !== null
       ? withPerson(payee.personLabel, rest)

@@ -136,7 +136,7 @@ describe('planWithWinningClaim', () => {
     const patched = planWithWinningClaim(plan, claimAge)
     expect(patched).not.toBe(plan)
     expect(patched.incomes).toBe(claimAge.winningClaimPatch!.incomes)
-    expect(plan.incomes[0]!.type === 'socialSecurity' && plan.incomes[0]!.claimAge.years).toBe(62)
+    expect(plan.incomes[0].type === 'socialSecurity' && plan.incomes[0].claimAge.years).toBe(62)
   })
 
   it('returns the plan unchanged when no claim change won or co-optimization did not run', () => {

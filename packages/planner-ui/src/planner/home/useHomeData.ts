@@ -166,7 +166,7 @@ export function useHomeData() {
       setNotice(`Could not save the new plan. ${STORAGE_UNAVAILABLE}`)
       return
     }
-    if (r.ok) openPlan(r.plan.id)
+    if (r.ok) void openPlan(r.plan.id)
     else setNotice(`Could not save the new plan: ${r.issues.join('; ')}`)
   }
 

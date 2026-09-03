@@ -353,7 +353,7 @@ describe('YearCashFlowDialog', () => {
         },
       ],
     }
-    const model = buildYearCashFlowSankey(plan, { year: 2030, cashFlow } as YearResult)
+    const model = buildYearCashFlowSankey(plan, { year: 2030, cashFlow })
     if (model.kind !== 'ready') throw new Error('expected ready')
     const html = dialogHtml(model)
     expect(html).toContain('Unknown source (ID ghost)')
@@ -398,7 +398,7 @@ describe('YearCashFlowDialog', () => {
 
     expect(createObjectURL).toHaveBeenCalledTimes(1)
     expect(blobs).toHaveLength(1)
-    expect(await blobs[0]!.text()).toBe(serializeYearCashFlowDetailCsv(model))
+    expect(await blobs[0].text()).toBe(serializeYearCashFlowDetailCsv(model))
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:year-cash-flow-test')
     createObjectURL.mockRestore()
     revokeObjectURL.mockRestore()

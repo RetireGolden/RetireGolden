@@ -35,7 +35,7 @@ const UNDER_SAVED_RETIREMENT_AGE = 62
 
 function mountWithPhases(phases: { fromAge: number; multiplier: number }[]) {
   const plan = createSamplePlan()
-  plan.household.people[0]!.retirementAge = UNDER_SAVED_RETIREMENT_AGE
+  plan.household.people[0].retirementAge = UNDER_SAVED_RETIREMENT_AGE
   plan.expenses.phases = phases
   container = document.createElement('div')
   document.body.appendChild(container)

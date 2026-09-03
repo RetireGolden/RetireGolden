@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan, type IncomeStream, type Plan } from '@retiregolden/engine/model/plan'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
 import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
@@ -34,9 +34,9 @@ function plan(): Plan {
   p.expenses.baseAnnual = 40_000
   p.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
   p.accounts = [
-    { type: 'traditional', id: ids(), name: '401k', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 700_000, annualContribution: 0 } as Account,
-    { type: 'roth', id: ids(), name: 'Roth', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 0, annualContribution: 0 } as Account,
-    { type: 'cash', id: ids(), name: 'Cash', ownerPersonId: null, annualReturnPct: null, balance: 120_000, annualContribution: 0 } as Account,
+    { type: 'traditional', id: ids(), name: '401k', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 700_000, annualContribution: 0 },
+    { type: 'roth', id: ids(), name: 'Roth', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 0, annualContribution: 0 },
+    { type: 'cash', id: ids(), name: 'Cash', ownerPersonId: null, annualReturnPct: null, balance: 120_000, annualContribution: 0 },
   ]
   const r = parsePlan(p)
   if (!r.ok) throw new Error(r.issues.join('; '))
@@ -61,9 +61,9 @@ function ssPlan(): Plan {
   p.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
   p.incomes = [socialSecurityIncome('ss', 2_400, 62)]
   p.accounts = [
-    { type: 'traditional', id: ids(), name: 'IRA', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 700_000, annualContribution: 0 } as Account,
-    { type: 'roth', id: ids(), name: 'Roth', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 0, annualContribution: 0 } as Account,
-    { type: 'cash', id: ids(), name: 'Cash', ownerPersonId: null, annualReturnPct: null, balance: 250_000, annualContribution: 0 } as Account,
+    { type: 'traditional', id: ids(), name: 'IRA', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 700_000, annualContribution: 0 },
+    { type: 'roth', id: ids(), name: 'Roth', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 0, annualContribution: 0 },
+    { type: 'cash', id: ids(), name: 'Cash', ownerPersonId: null, annualReturnPct: null, balance: 250_000, annualContribution: 0 },
   ]
   const r = parsePlan(p)
   if (!r.ok) throw new Error(r.issues.join('; '))

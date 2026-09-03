@@ -35,13 +35,13 @@ describe('rankSwitchStrategies', () => {
   it('returns strategies sorted by expected PV (descending)', () => {
     const ranked = rankSwitchStrategies(base, opts)
     for (let i = 1; i < ranked.length; i++) {
-      expect(ranked[i - 1]!.expectedPv).toBeGreaterThanOrEqual(ranked[i]!.expectedPv)
+      expect(ranked[i - 1].expectedPv).toBeGreaterThanOrEqual(ranked[i].expectedPv)
     }
   })
 
   it('never does worse than the best single-benefit-only strategy', () => {
     const ranked = rankSwitchStrategies(base, opts)
-    const top = ranked[0]!.expectedPv
+    const top = ranked[0].expectedPv
     const ownOnly = expectedPvSwitch(base, { survivorClaimAge: null, ownClaimAge: 70 }, opts)
     const survivorOnly = expectedPvSwitch(base, { survivorClaimAge: 67, ownClaimAge: null }, opts)
     expect(top).toBeGreaterThanOrEqual(ownOnly)
@@ -49,14 +49,14 @@ describe('rankSwitchStrategies', () => {
   })
 
   it('uses both benefits when both are positive (bridge with one, switch to the other)', () => {
-    const top = rankSwitchStrategies(base, opts)[0]!
+    const top = rankSwitchStrategies(base, opts)[0]
     expect(top.strategy.survivorClaimAge).not.toBeNull()
     expect(top.strategy.ownClaimAge).not.toBeNull()
   })
 
   it('when the survivor benefit dwarfs own, the survivor benefit drives the answer', () => {
     const dwarf = { ...base, ownPiaMonthly: 800, survivorMonthly: 3_000 }
-    const top = rankSwitchStrategies(dwarf, opts)[0]!
+    const top = rankSwitchStrategies(dwarf, opts)[0]
     expect(top.strategy.survivorClaimAge).not.toBeNull()
     // Own alone is far worse than the top — the survivor benefit drives the answer.
     // (The top may still claim own early to fill the gap before survivor starts,
@@ -67,7 +67,7 @@ describe('rankSwitchStrategies', () => {
 
   it('when own dwarfs the survivor benefit, the top strategy delays own to 70', () => {
     const ranked = rankSwitchStrategies({ ...base, ownPiaMonthly: 3_000, survivorMonthly: 800 }, opts)
-    const top = ranked[0]!
+    const top = ranked[0]
     expect(top.strategy.ownClaimAge).toBe(70)
     expect(top.strategy.survivorClaimAge).not.toBeNull()
   })

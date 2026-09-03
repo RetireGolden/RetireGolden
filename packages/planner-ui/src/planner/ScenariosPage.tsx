@@ -928,7 +928,7 @@ function ComparableScenariosPage() {
     if (!proposal.plan || !proposalHash || !baselineHash || !detailKey) return
     const t = window.setTimeout(() => {
       try {
-        const next = compareScenarioPlans(plan, proposal.plan!, {
+        const next = compareScenarioPlans(plan, proposal.plan, {
           startYear,
           taxCalculatorForPlan: taxCalculatorFor,
           stochastic: withMc

@@ -16,7 +16,7 @@ describe('relocation compare runner', () => {
     const viaRunner = await runRelocationCompare(request)
     expect(viaRunner).toEqual(direct)
     expect(direct.rows).toHaveLength(3)
-    expect(direct.rows[0]!.id).toBe('baseline')
+    expect(direct.rows[0].id).toBe('baseline')
     expect(direct.rows.every((r) => r.error === null)).toBe(true)
     // No Monte Carlo requested: deterministic-only rows.
     expect(direct.rows.every((r) => r.successRate === null)).toBe(true)

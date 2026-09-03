@@ -41,9 +41,9 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
   // rely on that (Semgrep prototype-pollution-loop).
   if (segments.some((segment) => UNSAFE_KEYS.has(segment))) return null
   const resolved: string[] = []
-  let node: Record<string, unknown> = plan as unknown as Record<string, unknown>
+  let node: Record<string, unknown> = plan
   for (let i = 0; i < segments.length - 1; i++) {
-    const seg = segments[i]!
+    const seg = segments[i]
     const rest = segments.slice(i + 1)
     let next = ownValue(node, seg)
     if (Array.isArray(node) && /^\d+$/.test(seg)) {
@@ -54,7 +54,7 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
           if (cursor === null || typeof cursor !== 'object') return false
           cursor = ownValue(cursor, key)
         }
-        return cursor !== null && typeof cursor === 'object' && Object.prototype.hasOwnProperty.call(cursor, rest[rest.length - 1]!)
+        return cursor !== null && typeof cursor === 'object' && Object.prototype.hasOwnProperty.call(cursor, rest[rest.length - 1])
       }
       const index = holds(at[Number(seg)]) ? Number(seg) : at.findIndex(holds)
       if (index < 0) return null
@@ -66,7 +66,7 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
     if (next === undefined || next === null || typeof next !== 'object') return null
     node = next as Record<string, unknown>
   }
-  const leaf = segments[segments.length - 1]!
+  const leaf = segments[segments.length - 1]
   if (!Object.prototype.hasOwnProperty.call(node, leaf)) return null
   Object.defineProperty(node, leaf, { value, writable: true, enumerable: true, configurable: true })
   resolved.push(leaf)
@@ -78,7 +78,7 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
  * example couple, plus the optional blocks the walk's fields edit.
  */
 function fixture(): Plan {
-  const plan = structuredClone(buildExampleCouple()) as Plan
+  const plan = structuredClone(buildExampleCouple())
   const year = new Date().getFullYear()
   plan.household.stateMoves = [{ fromYear: year + 5, fromMonth: 7, state: 'FL' }]
   plan.strategies.itemizedDeductions = { stateAndLocalTaxes: 10_000, mortgageInterest: 8_000, charitable: 2_000 }
@@ -140,7 +140,7 @@ function fixture(): Plan {
   // A pension and the two annuity payout forms: the guaranteed-income editors
   // wire the same leaves from separate JSX, and a payout form is one branch of a
   // union, so each shape a wired path needs is present here (#516).
-  const owner = plan.household.people[0]!.id
+  const owner = plan.household.people[0].id
   const pension: Plan['accounts'][number] = {
     type: 'pension',
     id: 'pension-fixture',

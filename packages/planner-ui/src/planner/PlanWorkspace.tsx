@@ -94,7 +94,7 @@ function SaveIndicator() {
       if (!route) return
       const target = `/plan/${plan.id}/${route}`
       const chip = document.activeElement
-      navigate(target)
+      void navigate(target) // fire-and-forget: focus-follow below reads the DOM after navigation settles, not the promise
       // The target renders after navigation; look for it over the next
       // frames, unless the person has moved on: focus resting anywhere but
       // the chip, the page body, or the outlet itself means they picked a
@@ -335,7 +335,7 @@ function WorkspaceInner() {
     if (name === null) return
     if (plan.origin === 'example') discardPendingSave()
     const r = await duplicatePlanVia(store, plan.id, { name: duplicateNameFor(name, plan.name), source: plan })
-    if (r.ok) navigate(`/plan/${r.plan.id}/results`)
+    if (r.ok) void navigate(`/plan/${r.plan.id}/results`)
     else await alert({ title: 'Duplicate plan', body: `Could not duplicate this plan: ${r.issues.join('; ')}` })
   }
 

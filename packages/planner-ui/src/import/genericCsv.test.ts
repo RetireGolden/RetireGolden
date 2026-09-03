@@ -77,11 +77,11 @@ describe('draftPlanFromGenericCsv — RPM fixture', () => {
     expect(parsePlan(r.plan).ok).toBe(true)
     expect(r.plan.accounts.map((a) => a.type)).toEqual(['taxable', 'traditional', 'roth', 'hsa', 'cash'])
 
-    const taxable = r.plan.accounts[0]!
+    const taxable = r.plan.accounts[0]
     expect(taxable).toMatchObject({ balance: 450000, costBasis: 300000, annualContribution: 10000 })
-    const trad = r.plan.accounts[1]!
+    const trad = r.plan.accounts[1]
     expect(trad).toMatchObject({ balance: 900000, kind: 'employer', annualContribution: 23000 })
-    const hsa = r.plan.accounts[3]!
+    const hsa = r.plan.accounts[3]
     expect(hsa).toMatchObject({ balance: 40000, annualContribution: 0 })
   })
 })
@@ -100,7 +100,7 @@ describe('draftPlanFromGenericCsv — arbitrary sheet via manual column assignme
     expect(parsePlan(r.plan).ok).toBe(true)
     // HELOC's -$40,000 is a liability sign convention → imported as debt, with review items.
     expect(r.plan.accounts.map((a) => a.type)).toEqual(['cash', 'traditional', 'property', 'debt'])
-    const heloc = r.plan.accounts[3]!
+    const heloc = r.plan.accounts[3]
     expect(heloc).toMatchObject({ type: 'debt', balance: 40000 })
     expect(r.review.some((i) => i.source === 'HELOC' && i.status === 'defaulted' && i.detail.includes('liability'))).toBe(true)
     // Unknown-type rows default to taxable *with a visible review item* — none here,
@@ -299,7 +299,7 @@ describe('genericCsv provenance (WS1)', () => {
     const r = draftPlanFromGenericCsv(typed.analysis, typed.analysis.guessedRoles, testIds)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.plan.accounts[0]!.type).toBe('roth')
+    expect(r.plan.accounts[0].type).toBe('roth')
     const roth = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
     expect(roth.confidence).toBe('assumed')
   })

@@ -77,7 +77,7 @@ async function mount(plan: Plan) {
 /** The plan a user lands on after recording one action in the WS5 editor. */
 function actionBearingPlan(): Plan {
   const plan = createSamplePlan()
-  const owner = plan.household.people[0]!
+  const owner = plan.household.people[0]
   const source = plan.accounts.find((a) => a.type === 'traditional' && a.ownerPersonId === owner.id)!
   const parsed = parseRetirementActionRequest({
     actionId: 'guard-withdrawal',
