@@ -15,7 +15,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { exactKeys, plainDataSnapshot } from './plainData.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraResidualRmdAllocationInput {
   readonly rmdTransition:
@@ -114,10 +114,6 @@ const SOURCE_KEYS = [
   'coordinatorEvidenceId',
   'transitionEvidenceId',
 ] as const
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function uniqueNonblank(values: readonly unknown[]): values is readonly string[] {
   return values.every(nonblank) && new Set(values).size === values.length

@@ -14,7 +14,7 @@ import {
   allocateRetirementActionCandidateIdentity,
 } from './retirementActionCandidateIdentityAllocator.js'
 import { deriveActionStructuralId } from './structuralId.js'
-import { exactKeys, plainDataSnapshot } from './plainData.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityInput {
   readonly plan: unknown
@@ -83,10 +83,6 @@ export type PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityResult =
 const INPUT_KEYS = [
   'plan', 'planSnapshotEvidenceId', 'physicalTransactionInput',
 ] as const
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function freeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {

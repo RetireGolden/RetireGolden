@@ -17,7 +17,7 @@ import {
 } from './money.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot, requireNonblankId } from './plainData.js'
 
 export interface OwnedHsaPhysicalSourceEvidence {
   predicate: 'ownedHsaOrdinaryWithdrawalPhysicalSource'
@@ -130,11 +130,6 @@ const INPUT_KEYS = ['taxYear', 'requestInventoryComplete', 'requests', 'sourceEv
 const SOURCE_KEYS = ['predicate', 'sourceAccountId', 'ownerPersonId', 'accountType', 'ownership', 'accountOwnershipEvidenceId', 'hsaClassificationEvidenceId', 'authoritative']
 const OPENING_KEYS = ['predicate', 'boundary', 'sourceAccountId', 'ownerPersonId', 'taxYear', 'openingBalance', 'openingBalanceEvidenceId', 'authoritative']
 
-function nonblank(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) throw new TypeError(`${label} must be a nonblank stable identifier`)
-  return value
-}
-
 function cents(value: bigint, label: string): UsdCents {
   if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) throw new RangeError(`${label} exceeds safe-integer cents`)
   return asUsdCents(Number(value))
@@ -213,8 +208,8 @@ export function stageAnnualHsaPhysicalMovementCandidate(
     if (rawEvidence.predicate !== 'ownedHsaOrdinaryWithdrawalPhysicalSource' || rawEvidence.accountType !== 'hsa' || rawEvidence.ownership !== 'individual' || rawEvidence.authoritative !== true) throw new RangeError('HSA physical source evidence must establish an authoritative individually owned HSA')
     const sourceAccountId = accountIdSchema.parse(rawEvidence.sourceAccountId)
     const ownerPersonId = personIdSchema.parse(rawEvidence.ownerPersonId)
-    const accountOwnershipEvidenceId = nonblank(rawEvidence.accountOwnershipEvidenceId, 'HSA account ownership evidence ID')
-    const hsaClassificationEvidenceId = nonblank(rawEvidence.hsaClassificationEvidenceId, 'HSA classification evidence ID')
+    const accountOwnershipEvidenceId = requireNonblankId(rawEvidence.accountOwnershipEvidenceId, 'HSA account ownership evidence ID')
+    const hsaClassificationEvidenceId = requireNonblankId(rawEvidence.hsaClassificationEvidenceId, 'HSA classification evidence ID')
     claim(idRegistry, sourceAccountId, ['account', sourceAccountId])
     claim(idRegistry, ownerPersonId, ['person', ownerPersonId])
     claim(idRegistry, accountOwnershipEvidenceId, ['ownership', sourceAccountId, ownerPersonId])
@@ -232,7 +227,7 @@ export function stageAnnualHsaPhysicalMovementCandidate(
     const sourceAccountId = accountIdSchema.parse(rawOpening.sourceAccountId)
     const ownerPersonId = personIdSchema.parse(rawOpening.ownerPersonId)
     const openingBalance = usdCentsSchema.parse(rawOpening.openingBalance)
-    const openingBalanceEvidenceId = nonblank(rawOpening.openingBalanceEvidenceId, 'HSA opening balance evidence ID')
+    const openingBalanceEvidenceId = requireNonblankId(rawOpening.openingBalanceEvidenceId, 'HSA opening balance evidence ID')
     claim(idRegistry, sourceAccountId, ['account', sourceAccountId])
     claim(idRegistry, ownerPersonId, ['person', ownerPersonId])
     claim(idRegistry, openingBalanceEvidenceId, ['opening', sourceAccountId, ownerPersonId, input.taxYear, openingBalance])

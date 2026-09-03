@@ -21,6 +21,7 @@ import {
 } from './money.js'
 import { deepFreeze } from './freeze.js'
 import { compareUtf16CodeUnits } from './structuralId.js'
+import { requireNonblankId } from './plainData.js'
 
 export type OwnedNonRothIraSubtype = 'traditional' | 'sep' | 'simple'
 
@@ -133,13 +134,6 @@ export interface ClassifyOwnedNonRothIraAnnualWithdrawalsResult {
   withdrawals: readonly Readonly<OwnedNonRothIraWithdrawalClassification>[]
 }
 
-function nonblankId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a nonblank stable identifier`)
-  }
-  return value
-}
-
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
 }
@@ -178,11 +172,11 @@ function validatePoolMembers(
           'Owned non-Roth IRA pool members must be owned traditional, SEP, or SIMPLE IRAs',
         )
       }
-      const iraClassificationEvidenceId = nonblankId(
+      const iraClassificationEvidenceId = requireNonblankId(
         member.iraClassificationEvidenceId,
         'IRA-classification evidence ID',
       )
-      const accountOwnershipEvidenceId = nonblankId(
+      const accountOwnershipEvidenceId = requireNonblankId(
         member.accountOwnershipEvidenceId,
         'Account-ownership evidence ID',
       )
@@ -237,11 +231,11 @@ export function classifyOwnedNonRothIraAnnualWithdrawals(
   input: Readonly<ClassifyOwnedNonRothIraAnnualWithdrawalsInput>,
 ): Readonly<ClassifyOwnedNonRothIraAnnualWithdrawalsResult> {
   const ownerPersonId = personIdSchema.parse(input.ownerPersonId)
-  const ownerWideNonRothIraPoolId = nonblankId(
+  const ownerWideNonRothIraPoolId = requireNonblankId(
     input.ownerWideNonRothIraPoolId,
     'Owner-wide non-Roth IRA pool ID',
   )
-  const annualBasisRecordEvidenceId = nonblankId(
+  const annualBasisRecordEvidenceId = requireNonblankId(
     input.annualBasisRecordEvidenceId,
     'Annual IRA basis-record evidence ID',
   )
@@ -253,7 +247,7 @@ export function classifyOwnedNonRothIraAnnualWithdrawals(
     throw new RangeError('Owned non-Roth IRA tax year must be a four-digit year')
   }
   const poolMembers = validatePoolMembers(input.poolMembers, ownerPersonId)
-  const completePoolEvidenceId = nonblankId(
+  const completePoolEvidenceId = requireNonblankId(
     input.completePoolEvidence.evidenceId,
     'Complete IRA pool evidence ID',
   )
@@ -262,7 +256,7 @@ export function classifyOwnedNonRothIraAnnualWithdrawals(
       'completeOwnedNonRothIraPoolForOwnerAndTaxYear' ||
     personIdSchema.parse(input.completePoolEvidence.ownerPersonId) !==
       ownerPersonId ||
-    nonblankId(
+    requireNonblankId(
       input.completePoolEvidence.ownerWideNonRothIraPoolId,
       'Complete IRA pool ID',
     ) !== ownerWideNonRothIraPoolId ||

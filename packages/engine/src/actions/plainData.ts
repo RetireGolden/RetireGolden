@@ -124,6 +124,23 @@ export function exactKeys<T>(value: T, expected: readonly string[]): value is T 
     expected.every((key) => Object.hasOwn(value, key))
 }
 
+/** True for a string carrying at least one non-whitespace character. */
+export function nonblank(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+/**
+ * Returns `value` when it is a nonblank string, and throws otherwise. The
+ * throwing counterpart of `nonblank`, for the identifier reads whose callers
+ * treat a blank as a programming error rather than a blocked result.
+ */
+export function requireNonblankId(value: unknown, label: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new TypeError(`${label} must be a nonblank stable identifier`)
+  }
+  return value
+}
+
 /** Narrows to a non-array object, or null. Shape only; says nothing about keys. */
 export function asUnknownRecord(value: unknown): UnknownRecord | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

@@ -42,6 +42,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
+import { nonblank } from './plainData.js'
 
 export interface PlanOwnedNonRothIraCandidateAllocationApplication {
   actionId: ActionId
@@ -281,10 +282,6 @@ function blocked(
     reconciliationEvidence: null,
     issues: issues as [PlanOwnedNonRothIraPostCandidateEvidenceIssue, ...PlanOwnedNonRothIraPostCandidateEvidenceIssue[]],
   })
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
 }
 
 function canonicalRequest(raw: unknown): OrdinaryWithdrawalRequest {

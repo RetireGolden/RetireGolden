@@ -11,7 +11,7 @@ import {
   type BeneficiaryTraditionalIraResidualRmdScheduleEvidence,
 } from './beneficiaryTraditionalIraResidualRmdChronology.js'
 import { deepFreeze } from './freeze.js'
-import { exactKeys, plainDataSnapshot } from './plainData.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export type {
   BeneficiaryTraditionalIraResidualRmdScheduleEvidence,
@@ -96,10 +96,6 @@ export type StageBeneficiaryTraditionalIraResidualRmdMovementResult =
   | UnsupportedBeneficiaryTraditionalIraResidualRmdMovementResult
 
 const INPUT_KEYS = ['allocationInput', 'scheduleEvidence'] as const
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function unsupported(): Readonly<
   UnsupportedBeneficiaryTraditionalIraResidualRmdMovementResult

@@ -27,7 +27,7 @@ import {
   type SimulatorAnnualPassTransaction,
 } from './annualPassTransaction.js'
 import { deepFreeze } from '../actions/freeze.js'
-import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from '../actions/plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, nonblank, plainDataSnapshot } from '../actions/plainData.js'
 
 export interface BeneficiaryTraditionalIraAnnualPassAccountRow {
   readonly accountId: AccountId
@@ -147,10 +147,6 @@ function inputReferences(value: unknown): ApplyBeneficiaryTraditionalIraAnnualPa
   } catch {
     return null
   }
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
 }
 
 interface CurrentBalances {

@@ -23,7 +23,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { exactKeys, plainDataSnapshot } from './plainData.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraSimulatorLedgerIdentity {
   predicate: 'beneficiaryTraditionalIraSimulatorLedgerIdentity'
@@ -168,10 +168,6 @@ const SNAPSHOT_KEYS = [
   'predicate', 'balanceSnapshotEvidenceId', 'accountBalances',
 ] as const
 const BALANCE_KEYS = ['accountId', 'openingBalancePlanDollars'] as const
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function unsupported(): Readonly<
   UnsupportedBeneficiaryTraditionalIraAnnualSimulatorDeltaResult

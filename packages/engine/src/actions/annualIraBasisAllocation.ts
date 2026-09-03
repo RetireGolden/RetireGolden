@@ -16,6 +16,7 @@ import {
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import { deepFreeze } from './freeze.js'
 import { compareUtf16CodeUnits } from './structuralId.js'
+import { requireNonblankId } from './plainData.js'
 
 export type AnnualIraBasisAllocationScope =
   | 'form8606Line7Distributions'
@@ -115,13 +116,6 @@ export type AnnualIraBasisAllocationEvidence =
           ]
         }
     )
-
-function nonblankId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a nonblank stable identifier`)
-  }
-  return value
-}
 
 function centsFromBigInt(value: bigint): UsdCents {
   if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -250,7 +244,7 @@ function compareEntries(left: ValidatedEntry, right: ValidatedEntry): number {
 function allocateAnnualIraBasisInternal(
   input: Readonly<AllocateAnnualIraBasisInput>,
 ): Readonly<AnnualIraBasisAllocationEvidence> {
-  const poolId = nonblankId(input.poolId, 'Annual IRA pool ID')
+  const poolId = requireNonblankId(input.poolId, 'Annual IRA pool ID')
   if (
     !Number.isSafeInteger(input.taxYear) ||
     input.taxYear < 1 ||

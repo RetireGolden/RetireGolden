@@ -20,7 +20,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { exactKeys, plainDataSnapshot } from './plainData.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraAnnualOpeningBalanceEvidence {
   sourceAccountId: AccountId
@@ -116,10 +116,6 @@ const INHERITANCE_KEYS = [
   'deathDate',
   'inheritanceEvidenceId',
 ] as const
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function unsupported(): Readonly<
   UnsupportedPlanBeneficiaryTraditionalIraAnnualApplicationResult

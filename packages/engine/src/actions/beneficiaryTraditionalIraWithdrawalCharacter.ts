@@ -28,6 +28,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
+import { nonblank } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraInheritanceEvidence {
   predicate: 'beneficiaryTraditionalIraInheritance'
@@ -215,10 +216,6 @@ interface BoundIdentity {
   evaluationDate: string
   taxYear: number
   executedAmount: UsdCents
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
 }
 
 function canonicalDate(value: unknown): string | null {

@@ -18,7 +18,7 @@ import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { addUsdCents, asUsdCents, type UsdCents } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot, requireNonblankId } from './plainData.js'
 
 export interface HsaPenaltyOwnerBirthEvidence {
   predicate: 'authoritativeHsaOwnerBirthDate'
@@ -226,11 +226,6 @@ function canonicalDate(value: unknown): string {
   return value
 }
 
-function nonblank(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) throw new TypeError(`${label} must be a nonblank stable identifier`)
-  return value
-}
-
 function collectStrings(value: unknown, output: Set<string>, seen = new WeakSet<object>()): void {
   if (typeof value === 'string') { output.add(value); return }
   if (value === null || typeof value !== 'object' || seen.has(value)) return
@@ -290,7 +285,7 @@ function validateEvidence(
     if (!exactKeys(raw, BIRTH_KEYS)) throw new TypeError('HSA owner birth evidence must have an exact shape')
     const ownerPersonId = personIdSchema.parse(raw.ownerPersonId)
     const birthDate = canonicalDate(raw.birthDate)
-    const evidenceId = nonblank(raw.birthDateEvidenceId, 'HSA birth-date evidence ID')
+    const evidenceId = requireNonblankId(raw.birthDateEvidenceId, 'HSA birth-date evidence ID')
     if (raw.predicate !== 'authoritativeHsaOwnerBirthDate' || raw.authoritative !== true || reserved.has(evidenceId) || evidenceIds.has(evidenceId) || births.has(ownerPersonId)) throw new RangeError('HSA owner birth evidence is foreign, duplicated, or colliding')
     evidenceIds.add(evidenceId)
     births.set(ownerPersonId, { ...raw, ownerPersonId, birthDate, birthDateEvidenceId: evidenceId })
@@ -301,7 +296,7 @@ function validateEvidence(
     const ownerPersonId = personIdSchema.parse(raw.ownerPersonId)
     const evaluationDate = canonicalDate(raw.evaluationDate)
     const qualificationDate = raw.disabilityQualificationDate === null ? null : canonicalDate(raw.disabilityQualificationDate)
-    const evidenceId = nonblank(raw.disabilityEvidenceId, 'HSA disability evidence ID')
+    const evidenceId = requireNonblankId(raw.disabilityEvidenceId, 'HSA disability evidence ID')
     const identity = JSON.stringify([ownerPersonId, evaluationDate])
     if (raw.predicate !== 'authoritativeHsaDisabilityStatusOnDistributionDate' || raw.authoritative !== true || typeof raw.qualifiedOnEvaluationDate !== 'boolean' || (raw.qualifiedOnEvaluationDate ? qualificationDate === null || qualificationDate > evaluationDate : qualificationDate !== null && qualificationDate <= evaluationDate) || reserved.has(evidenceId) || evidenceIds.has(evidenceId) || disabilities.has(identity)) throw new RangeError('HSA disability status evidence is contradictory, duplicated, or colliding')
     evidenceIds.add(evidenceId)

@@ -17,7 +17,7 @@ import {
   usdCentsSchema,
 } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
-import { exactKeys } from './plainData.js'
+import { exactKeys, nonblank } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraResidualRmdScheduleEvidence {
   readonly predicate:
@@ -75,10 +75,6 @@ const APPLICATION_KEYS = [
   'coordinatorEvidenceId',
   'applicationEvidenceId',
 ] as const
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function exactScheduleEvidenceId(
   schedule: BeneficiaryTraditionalIraResidualRmdScheduleEvidence,

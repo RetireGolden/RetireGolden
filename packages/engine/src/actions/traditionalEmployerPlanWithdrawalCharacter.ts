@@ -20,6 +20,7 @@ import {
 } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { deepFreeze } from './freeze.js'
+import { nonblank } from './plainData.js'
 
 export type TraditionalEmployerPlanDistributableEventKind =
   | 'separationFromService'
@@ -172,10 +173,6 @@ const eventKinds = new Set<TraditionalEmployerPlanDistributableEventKind>([
   'planTermination',
   'requiredDistribution',
 ])
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function parsedCanonicalDate(value: unknown): string | null {
   if (typeof value !== 'string') return null

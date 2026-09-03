@@ -16,7 +16,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraAnnualPhysicalTransactionInput {
   runtimeInput: Readonly<CoordinateBeneficiaryTraditionalIraAnnualRuntimeInput>
@@ -116,10 +116,6 @@ export type PrepareBeneficiaryTraditionalIraAnnualPhysicalTransactionResult =
   | UnsupportedBeneficiaryTraditionalIraAnnualPhysicalTransactionResult
 
 const INPUT_KEYS = ['runtimeInput'] as const
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function unsupported(): Readonly<
   UnsupportedBeneficiaryTraditionalIraAnnualPhysicalTransactionResult

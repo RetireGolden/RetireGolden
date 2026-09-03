@@ -66,6 +66,7 @@ import {
 } from './structuralId.js'
 import { addCalendarMonths, parseCivilIsoDate } from './civilDate.js'
 import { deepFreeze } from './freeze.js'
+import { nonblank } from './plainData.js'
 
 export interface PlanOwnedNonRothIraOpeningBalanceEvidence {
   predicate:
@@ -273,10 +274,6 @@ interface CanonicalInventory {
   line8Entries: AnnualIraBasisAllocationEntryInput[]
   ledgerRunId: string
   claimedEvidenceIds: Set<string>
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
 }
 
 function inventoryIssue(

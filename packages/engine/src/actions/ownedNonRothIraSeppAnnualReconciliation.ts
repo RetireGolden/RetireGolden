@@ -38,6 +38,7 @@ import type {
   OwnedNonRothIraSubtype,
 } from './ownedNonRothIraWithdrawalCharacter.js'
 import { deepFreeze } from './freeze.js'
+import { requireNonblankId } from './plainData.js'
 
 export interface OwnedNonRothIraSeppAnnualDistributionInventoryEvidence {
   predicate: 'completeOwnedNonRothIraSeppAnnualDistributionInventory'
@@ -262,13 +263,6 @@ function legacyJsonId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
 }
 
-function nonblankId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a nonblank stable identifier`)
-  }
-  return value
-}
-
 function civilDate(value: string, label: string): string {
   if (parseCivilIsoDate(value) === null) {
     throw new RangeError(`${label} must be a canonical civil ISO date`)
@@ -304,7 +298,7 @@ function canonicalCoverage(
   producerConforming: boolean
 } {
   const characterEvidenceIds = input.characterEvidenceIds.map(
-    (evidenceId) => nonblankId(
+    (evidenceId) => requireNonblankId(
       evidenceId,
       'SEPP annual character-segment evidence ID',
     ),
@@ -335,34 +329,34 @@ function canonicalCoverage(
     ordinaryIncomeExposureAmount: usdCentsSchema.parse(
       input.ordinaryIncomeExposureAmount,
     ),
-    basisEvidenceId: nonblankId(
+    basisEvidenceId: requireNonblankId(
       input.basisEvidenceId,
       'SEPP annual basis evidence ID',
     ),
-    line7AllocationEvidenceId: nonblankId(
+    line7AllocationEvidenceId: requireNonblankId(
       input.line7AllocationEvidenceId,
       'SEPP annual line-7 allocation evidence ID',
     ),
     characterEvidenceIds,
     sourceEvidenceIds: {
-      distributionDateEvidenceId: nonblankId(
+      distributionDateEvidenceId: requireNonblankId(
         input.sourceEvidenceIds.distributionDateEvidenceId,
         'SEPP annual coverage distribution-date evidence ID',
       ),
-      accountOwnershipEvidenceId: nonblankId(
+      accountOwnershipEvidenceId: requireNonblankId(
         input.sourceEvidenceIds.accountOwnershipEvidenceId,
         'SEPP annual coverage ownership evidence ID',
       ),
-      iraClassificationEvidenceId: nonblankId(
+      iraClassificationEvidenceId: requireNonblankId(
         input.sourceEvidenceIds.iraClassificationEvidenceId,
         'SEPP annual coverage classification evidence ID',
       ),
     },
-    ageThresholdEvidenceId: nonblankId(
+    ageThresholdEvidenceId: requireNonblankId(
       input.ageThresholdEvidenceId,
       'SEPP annual coverage age-threshold evidence ID',
     ),
-    evidenceId: nonblankId(
+    evidenceId: requireNonblankId(
       input.evidenceId,
       'SEPP annual character-coverage evidence ID',
     ),
@@ -456,11 +450,11 @@ export function buildOwnedNonRothIraSeppAnnualDistributionInventoryEvidence(
   const inventoryWithoutId:
     OwnedNonRothIraSeppAnnualDistributionInventoryWithoutId = {
       predicate: input.predicate,
-      electionId: nonblankId(
+      electionId: requireNonblankId(
         input.electionId,
         'SEPP annual inventory election ID',
       ),
-      scheduleId: nonblankId(
+      scheduleId: requireNonblankId(
         input.scheduleId,
         'SEPP annual inventory schedule ID',
       ),
@@ -509,7 +503,7 @@ function canonicalPriorElectionHistoryWithoutId(
   input: Readonly<OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId>,
 ): OwnedNonRothIraSeppCompletePriorElectionHistoryWithoutId {
   const usedIds = input.usedDistributionEvidenceIds.map(
-    (evidenceId) => nonblankId(
+    (evidenceId) => requireNonblankId(
       evidenceId,
       'SEPP lifetime used distribution evidence ID',
     ),
@@ -521,15 +515,15 @@ function canonicalPriorElectionHistoryWithoutId(
   }
   return {
     predicate: input.predicate,
-    electionId: nonblankId(input.electionId, 'SEPP prior-history election ID'),
-    scheduleId: nonblankId(input.scheduleId, 'SEPP prior-history schedule ID'),
+    electionId: requireNonblankId(input.electionId, 'SEPP prior-history election ID'),
+    scheduleId: requireNonblankId(input.scheduleId, 'SEPP prior-history schedule ID'),
     participantPersonId: personIdSchema.parse(input.participantPersonId),
     sourceAccountId: accountIdSchema.parse(input.sourceAccountId),
     historyThroughDate: civilDate(
       input.historyThroughDate,
       'SEPP prior-election history through date',
     ),
-    terminalStateEvidenceId: nonblankId(
+    terminalStateEvidenceId: requireNonblankId(
       input.terminalStateEvidenceId,
       'SEPP prior-election terminal-state evidence ID',
     ),
@@ -542,7 +536,7 @@ function normalizedPriorElectionHistory(
 ): OwnedNonRothIraSeppCompletePriorElectionHistoryEvidence {
   return {
     ...canonicalPriorElectionHistoryWithoutId(input),
-    priorElectionHistoryEvidenceId: nonblankId(
+    priorElectionHistoryEvidenceId: requireNonblankId(
       input.priorElectionHistoryEvidenceId,
       'SEPP complete prior-election history evidence ID',
     ),
@@ -576,8 +570,8 @@ function normalizedPayment(
 ): OwnedNonRothIraSeppCurrentPaymentEvidence {
   return {
     predicate: input.predicate,
-    electionId: nonblankId(input.electionId, 'SEPP annual payment election ID'),
-    scheduleId: nonblankId(input.scheduleId, 'SEPP annual payment schedule ID'),
+    electionId: requireNonblankId(input.electionId, 'SEPP annual payment election ID'),
+    scheduleId: requireNonblankId(input.scheduleId, 'SEPP annual payment schedule ID'),
     actionId: actionIdSchema.parse(input.actionId),
     allocationId: allocationIdSchema.parse(input.allocationId),
     sourceAccountId: accountIdSchema.parse(input.sourceAccountId),
@@ -585,7 +579,7 @@ function normalizedPayment(
       input.distributionDate,
       'SEPP annual payment distribution date',
     ),
-    currentDistributionEvidenceId: nonblankId(
+    currentDistributionEvidenceId: requireNonblankId(
       input.currentDistributionEvidenceId,
       'SEPP annual current-distribution evidence ID',
     ),
@@ -593,14 +587,14 @@ function normalizedPayment(
       input.paymentSequence,
       'SEPP annual payment sequence',
     ),
-    previousScheduleStateId: nonblankId(
+    previousScheduleStateId: requireNonblankId(
       input.previousScheduleStateId,
       'SEPP annual previous-state evidence ID',
     ),
     currentScheduledGrossAmount: positiveUsdCentsSchema.parse(
       input.currentScheduledGrossAmount,
     ),
-    paymentScheduleEvidenceId: nonblankId(
+    paymentScheduleEvidenceId: requireNonblankId(
       input.paymentScheduleEvidenceId,
       'SEPP annual payment-schedule evidence ID',
     ),
@@ -811,11 +805,11 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
     .sort(compareCoverage)
   const inventoryWithoutId = {
     predicate: inventoryInput.predicate,
-    electionId: nonblankId(
+    electionId: requireNonblankId(
       inventoryInput.electionId,
       'SEPP annual inventory election ID',
     ),
-    scheduleId: nonblankId(
+    scheduleId: requireNonblankId(
       inventoryInput.scheduleId,
       'SEPP annual inventory schedule ID',
     ),
@@ -829,7 +823,7 @@ export function reconcileOwnedNonRothIraSeppAnnualSchedule(
     ),
     characterCoverages: canonicalInventoryCoverages,
   }
-  const inventoryEvidenceId = nonblankId(
+  const inventoryEvidenceId = requireNonblankId(
     inventoryInput.inventoryEvidenceId,
     'SEPP annual distribution-inventory evidence ID',
   )

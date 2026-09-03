@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { asUnknownRecord, exactKeys, INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
+import {
+  asUnknownRecord,
+  exactKeys,
+  INVALID_SNAPSHOT,
+  nonblank,
+  plainDataSnapshot,
+  requireNonblankId,
+} from './plainData.js'
 
 describe('plainDataSnapshot', () => {
   it('copies acyclic plain data and detaches it from the caller', () => {
@@ -141,6 +148,36 @@ describe('exactKeys', () => {
     expect(exactKeys([], [])).toBe(false)
     expect(exactKeys('a', [])).toBe(false)
     expect(exactKeys(undefined, [])).toBe(false)
+  })
+})
+
+describe('nonblank', () => {
+  it('accepts a string with any non-whitespace character', () => {
+    expect(nonblank('a')).toBe(true)
+    expect(nonblank(' a ')).toBe(true)
+  })
+
+  it('rejects blank strings and non-strings', () => {
+    expect(nonblank('')).toBe(false)
+    expect(nonblank('   ')).toBe(false)
+    expect(nonblank('\t\n')).toBe(false)
+    expect(nonblank(null)).toBe(false)
+    expect(nonblank(undefined)).toBe(false)
+    expect(nonblank(1)).toBe(false)
+    expect(nonblank(['a'])).toBe(false)
+  })
+})
+
+describe('requireNonblankId', () => {
+  it('returns the value unchanged, whitespace and all', () => {
+    expect(requireNonblankId(' a ', 'Action id')).toBe(' a ')
+  })
+
+  it('throws a TypeError naming the label', () => {
+    expect(() => requireNonblankId('  ', 'Action id'))
+      .toThrow(new TypeError('Action id must be a nonblank stable identifier'))
+    expect(() => requireNonblankId(7, 'Action id')).toThrow(TypeError)
+    expect(() => requireNonblankId(undefined, 'Action id')).toThrow(TypeError)
   })
 })
 

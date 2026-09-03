@@ -42,7 +42,7 @@ import {
 } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
-import { exactKeys, plainDataSnapshot } from './plainData.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 export interface BeneficiaryTraditionalIraResidualInheritanceBinding {
   readonly sourceAccountId: AccountId
   readonly beneficiaryPersonId: PersonId
@@ -143,9 +143,6 @@ const BASIS_KEYS = [
   'yearEndApplicablePoolBalanceAmount', 'form8606Line7DistributionAmount',
   'form8606Line8NetConversionAmount', 'evidenceId',
 ] as const
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 function freeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
     for (const child of Object.values(value as Record<string, unknown>)) freeze(child)

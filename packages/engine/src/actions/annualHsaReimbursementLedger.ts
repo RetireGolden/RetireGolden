@@ -22,7 +22,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot, requireNonblankId } from './plainData.js'
 
 export interface HsaReimbursementPriorHistoryEvidence {
   predicate: 'completeHsaReimbursementPriorHistory'
@@ -201,11 +201,6 @@ const EXPENSE_KEYS = ['reimbursementScopeId', 'medicalExpenseId', 'medicalExpens
 const ALLOCATION_KEYS = ['actionId', 'allocationId', 'sourceAccountId', 'distributionOwnerPersonId', 'evaluationDate', 'actionExecutionSequence', 'allocationSequenceWithinAction', 'physicalApplicationEvidenceId', 'executedAmount', 'ownerHsaEstablishedDate', 'ownerHsaEstablishedDateEvidenceId', 'reimbursementClaims']
 const CLAIM_KEYS = ['medicalExpenseId', 'reimbursedByAllocationAmount', 'patientRelationshipToDistributionOwner', 'patientRelationshipEvidenceId']
 
-function nonblank(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) throw new TypeError(`${label} must be a nonblank stable identifier`)
-  return value
-}
-
 function civilDate(value: unknown, taxYear?: number): string {
   if (typeof value !== 'string') throw new TypeError('HSA evidence requires canonical civil dates')
   const parsed = parseCivilIsoDate(value)
@@ -238,7 +233,7 @@ function compareAllocations(left: Allocation, right: Allocation): number {
 }
 
 function claimId(registry: Map<string, string>, id: unknown, role: string, identity: readonly unknown[]): string {
-  const accepted = nonblank(id, `${role} ID`)
+  const accepted = requireNonblankId(id, `${role} ID`)
   const claim = JSON.stringify([role, ...identity])
   const prior = registry.get(accepted)
   if (prior !== undefined && prior !== claim) throw new Error(`Identifier ${accepted} is reused across HSA evidence identities`)
@@ -272,7 +267,7 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
   try {
     const accepted = validatedInput(snapshot)
     taxYear = accepted.taxYear
-    const scopeId = nonblank(accepted.scope.reimbursementScopeId, 'HSA reimbursement scope')
+    const scopeId = requireNonblankId(accepted.scope.reimbursementScopeId, 'HSA reimbursement scope')
     const history = accepted.scope.priorHistory
     if (history.reimbursementScopeId !== scopeId) throw new RangeError('Prior history must bind the reimbursement scope')
     const registry = new Map<string, string>()
@@ -298,11 +293,11 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
     const expenseIds = new Set<string>()
     const expenseIdentity = new Set<string>()
     let state: StateRecord[] = accepted.scope.expenses.map((expense) => {
-      const medicalExpenseId = nonblank(expense.medicalExpenseId, 'Medical expense')
+      const medicalExpenseId = requireNonblankId(expense.medicalExpenseId, 'Medical expense')
       if (expenseIds.has(medicalExpenseId)) throw new RangeError('Medical expense IDs must be unique within a reimbursement scope')
       expenseIds.add(medicalExpenseId)
       claimId(registry, medicalExpenseId, 'medicalExpense', [scopeId, medicalExpenseId])
-      const immutableSourceRecordId = nonblank(expense.immutableExpenseSourceRecordId, 'Immutable medical expense source record')
+      const immutableSourceRecordId = requireNonblankId(expense.immutableExpenseSourceRecordId, 'Immutable medical expense source record')
       const patientPersonId = personIdSchema.parse(expense.patientPersonId)
       const incurred = civilDate(expense.expenseIncurredDate)
       const original = positiveUsdCentsSchema.parse(expense.originalEligibleExpenseAmount)
@@ -319,7 +314,7 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
     })
     state = canonicalState(state)
     const openingExpenseStateId = stateId(scopeId, state)
-    if (nonblank(history.terminalExpenseStateId, 'Prior-history terminal expense state') !== openingExpenseStateId) throw new RangeError('Prior history must bind the exact opening expense state')
+    if (requireNonblankId(history.terminalExpenseStateId, 'Prior-history terminal expense state') !== openingExpenseStateId) throw new RangeError('Prior history must bind the exact opening expense state')
     const expectedHistoryId = deriveActionStructuralId('hsa-reimbursement-prior-history', [scopeId, history.terminalLedgerEvidenceId, openingExpenseStateId])
     if (history.priorHistoryEvidenceId !== expectedHistoryId) throw new RangeError('Prior-history evidence ID must bind its terminal ledger and expense state')
     if (state.some((record) => record.reimbursedBeforeAmount > 0) && history.terminalLedgerEvidenceId === null) throw new RangeError('Opening reimbursements require a prior-history terminal ledger')
@@ -339,7 +334,7 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
       claimId(registry, allocationId, 'allocation', [allocationId])
       claimId(registry, allocation.physicalApplicationEvidenceId, 'physicalApplicationEvidence', [actionId, allocationId])
       claimId(registry, allocation.ownerHsaEstablishedDateEvidenceId, 'ownerHsaEstablishmentEvidence', [owner, established])
-      const reimbursementClaims = allocation.reimbursementClaims.map((claim) => ({ ...claim, medicalExpenseId: nonblank(claim.medicalExpenseId, 'Claimed medical expense') })).sort((left, right) => compareUtf16CodeUnits(left.medicalExpenseId, right.medicalExpenseId))
+      const reimbursementClaims = allocation.reimbursementClaims.map((claim) => ({ ...claim, medicalExpenseId: requireNonblankId(claim.medicalExpenseId, 'Claimed medical expense') })).sort((left, right) => compareUtf16CodeUnits(left.medicalExpenseId, right.medicalExpenseId))
       for (const claim of reimbursementClaims) claimId(registry, claim.patientRelationshipEvidenceId, 'patientRelationshipEvidence', [owner, claim.medicalExpenseId, claim.patientRelationshipToDistributionOwner, evaluationDate])
       return { ...allocation, actionId, allocationId, sourceAccountId, distributionOwnerPersonId: owner, evaluationDate, actionExecutionSequence: actionSequence, allocationSequenceWithinAction: allocationSequence, executedAmount, ownerHsaEstablishedDate: established, reimbursementClaims }
     }).sort(compareAllocations)
@@ -370,7 +365,7 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
       const consumptions: HsaQualifiedExpenseConsumptionEvidence[] = []
       let qualified = usdCentsSchema.parse(0)
       for (const claim of allocation.reimbursementClaims) {
-        const medicalExpenseId = nonblank(claim.medicalExpenseId, 'Claimed medical expense')
+        const medicalExpenseId = requireNonblankId(claim.medicalExpenseId, 'Claimed medical expense')
         if (claims.has(medicalExpenseId)) throw new RangeError('A medical expense may appear only once in an HSA allocation')
         claims.add(medicalExpenseId)
         const index = state.findIndex((record) => record.medicalExpenseId === medicalExpenseId)

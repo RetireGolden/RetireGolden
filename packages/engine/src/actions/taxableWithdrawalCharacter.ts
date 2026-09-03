@@ -20,6 +20,7 @@ import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import { deepFreeze } from './freeze.js'
 import { compareUtf16CodeUnits } from './structuralId.js'
+import { requireNonblankId } from './plainData.js'
 
 export type TaxableWithdrawalFederalFilingStatus =
   | 'single'
@@ -170,13 +171,6 @@ const filingStatuses = new Set<TaxableWithdrawalFederalFilingStatus>([
   'qualifyingSurvivingSpouse',
 ])
 
-function nonblankId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a nonblank stable identifier`)
-  }
-  return value
-}
-
 function centsFromBigInt(value: bigint): UsdCents {
   if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new RangeError('Exact taxable character arithmetic exceeded the safe-integer range')
@@ -237,21 +231,21 @@ function validateInput(input: ClassifyIndividuallyOwnedTaxableWithdrawalInput) {
   ) {
     throw new RangeError('Individual taxable beneficial ownership must be the exact safe-integer rational 1/1')
   }
-  const accountOwnershipEvidenceId = nonblankId(
+  const accountOwnershipEvidenceId = requireNonblankId(
     input.ownership.accountOwnershipEvidenceId,
     'Account-ownership evidence ID',
   )
-  const attributionEvidenceId = nonblankId(
+  const attributionEvidenceId = requireNonblankId(
     input.ownership.attributionEvidenceId,
     'Attribution evidence ID',
   )
 
-  const taxUnitId = nonblankId(input.taxUnit.taxUnitId, 'Tax-unit ID')
-  const taxUnitEvidenceId = nonblankId(
+  const taxUnitId = requireNonblankId(input.taxUnit.taxUnitId, 'Tax-unit ID')
+  const taxUnitEvidenceId = requireNonblankId(
     input.taxUnit.taxUnitEvidenceId,
     'Tax-unit evidence ID',
   )
-  const stateFilingStatusId = nonblankId(
+  const stateFilingStatusId = requireNonblankId(
     input.taxUnit.stateFilingStatusId,
     'State filing-status ID',
   )

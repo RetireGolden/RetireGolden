@@ -17,7 +17,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { exactKeys, plainDataSnapshot } from './plainData.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraResidualRmdPhysicalTransactionInput {
   readonly movementInput:
@@ -156,10 +156,6 @@ export type PrepareBeneficiaryTraditionalIraResidualRmdPhysicalTransactionResult
   | UnsupportedBeneficiaryTraditionalIraResidualRmdPhysicalTransactionResult
 
 const INPUT_KEYS = ['movementInput'] as const
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function unsupported(): Readonly<
   UnsupportedBeneficiaryTraditionalIraResidualRmdPhysicalTransactionResult
