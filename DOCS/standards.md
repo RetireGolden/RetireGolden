@@ -84,9 +84,11 @@ insight preview:
 
 ## Testing
 
-- Vitest, **co-located** as `*.test.ts(x)` beside the code. The test taxonomy (oracle vs
-  characterization, golden/external/adversarial naming) and the expected-value rule are in
-  [testing.md](testing.md) — a correctness test never uses RetireGolden's own output as its expected value.
+- Vitest, **co-located** as `*.test.ts(x)` beside the code, with two documented exceptions (the
+  plan-file-format producer/consumer split and the centralized `rules/approximations/` suite) — see
+  [testing.md](testing.md#test-taxonomy). The test taxonomy (oracle vs characterization,
+  golden/external/adversarial naming) and the expected-value rule are also in testing.md — a
+  correctness test never uses RetireGolden's own output as its expected value.
 - Cover the **edges**: bracket boundaries, IRMAA/ACA cliffs, RMD start cohorts, FRA cohorts, zero/low
   earnings years.
 - Add **property-style** checks where they fit (ledger conservation: sources = uses each year; monotonicity:

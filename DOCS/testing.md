@@ -77,7 +77,7 @@ by the `approximated` registry record (or cluster of related records) it pins, n
 whose behavior it asserts against. A single approximated gap routinely spans more than one file — the
 account-eligibility proxy fixtures assert through both `strategies/accountEligibility.ts` and the
 calendar-date arithmetic in `actions/civilDate.ts`, and the SEPP/HSA cluster spans six records across
-as many modules — so co-locating by module would either duplicate the fixture per file it touches or
+eight distinct modules — so co-locating by module would either duplicate the fixture per file it touches or
 force an arbitrary pick of one. Grouping by rule instead keeps every fixture pinning the same authority
 next to its siblings, which is what lets a reviewer sweep one file to see everything a given statutory
 gap covers. Each fixture still asserts against the real exported engine entry point, never a

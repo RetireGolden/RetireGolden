@@ -8,33 +8,6 @@ export interface CoverageAttestation {
   readonly note: string | null
 }
 
-/**
- * An attestation is a dated, re-falsifiable sweep claim with the same epistemic
- * standing as a registry record's verifiedOn: it records what a reviewer
- * checked, not a permanent conclusion.
- *
- * - registered — every claim found in the file is represented by a rule.
- * - partial — the file was swept, but note names residual unregistered claims.
- * - rule-free — the file was swept and contains no claims requiring a rule.
- * - unswept — the file has not received a coverage sweep (retained for re-sweeps;
- *   the 2026-08-24 baseline sweep closed the grandfather window).
- *
- * BASELINE_UNSWEPT is frozen empty: the baseline sweep is complete and no file
- * may hold status unswept.
- *
- * The attestations themselves live in the per-top-level-directory modules
- * under `./attestations/` (one shard per top-level `src/` directory, plus a
- * `topLevel` shard for files directly under `src/`), which this file spreads
- * into the single frozen `COVERAGE_ATTESTATIONS`. This mirrors how
- * `taxRuleRegistry.ts` composes `./records/*` into `TAX_RULE_REGISTRY` — see
- * that file's header for the rationale. Adding a source file means adding its
- * attestation entry to the shard for its top-level directory; a new top-level
- * directory means adding a new shard module and wiring it in below.
- * `coverageAttestations.conformance.test.ts` fails when a shard's keys stray
- * outside its directory prefix, when two shards overlap, when the shard counts
- * do not sum to the total, or when the attested set drifts from the engine
- * source-file set on disk.
- */
 import { topLevelAttestations } from './attestations/topLevel.js'
 import { actionsAttestations } from './attestations/actions.js'
 import { allocationAttestations } from './attestations/allocation.js'
@@ -108,6 +81,34 @@ const attestations = {
   ...testingAttestations,
 } satisfies Record<string, CoverageAttestation>
 
+/**
+ * An attestation is a dated, re-falsifiable sweep claim with the same epistemic
+ * standing as a registry record's verifiedOn: it records what a reviewer
+ * checked, not a permanent conclusion.
+ *
+ * - registered — every claim found in the file is represented by a rule.
+ * - partial — the file was swept, but note names residual unregistered claims.
+ * - rule-free — the file was swept and contains no claims requiring a rule.
+ * - unswept — the file has not received a coverage sweep (retained for re-sweeps;
+ *   the 2026-08-24 baseline sweep closed the grandfather window).
+ *
+ * BASELINE_UNSWEPT is frozen empty: the baseline sweep is complete and no file
+ * may hold status unswept.
+ *
+ * The attestations themselves live in the per-top-level-directory modules
+ * under `./attestations/` (one shard per top-level `src/` directory, plus a
+ * `topLevel` shard for files directly under `src/`), which this file spreads
+ * into the single frozen `COVERAGE_ATTESTATIONS`. This mirrors how
+ * `taxRuleRegistry.ts` composes `./records/*` into `TAX_RULE_REGISTRY` — see
+ * that file's header for the rationale. Adding a source file means adding its
+ * attestation entry to the shard for its top-level directory; a new top-level
+ * directory means adding a new shard module and wiring it into the import
+ * list, `COVERAGE_ATTESTATION_MODULES`, and the spread above.
+ * `coverageAttestations.conformance.test.ts` fails when a shard's keys stray
+ * outside its directory prefix, when two shards overlap, when the shard counts
+ * do not sum to the total, or when the attested set drifts from the engine
+ * source-file set on disk.
+ */
 export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>> = Object.freeze(attestations)
 
 /** Grandfather window closed with the 2026-08-24 baseline sweep; must stay empty. */
