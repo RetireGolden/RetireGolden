@@ -38,6 +38,28 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
+    # These ignore rules also suppress Dependabot security updates for the
+    # ignored version lines (Dependabot applies `ignore` to both channels).
+    # That is the accepted trade-off: both packages are dev-time tooling
+    # that never ships to users, and a fix available only in an ignored
+    # line would need the coordinated toolchain upgrade described below
+    # regardless. Review this block whenever typescript-eslint widens its
+    # peer range or the Node floor moves.
+    ignore:
+      # TypeScript is pinned `~6.0.2` in every workspace on purpose:
+      # typescript-eslint 8.68 declares `typescript: ">=4.8.4 <6.1.0"`, so
+      # both the 7.x line (PR #594) and any 6.1+ minor sit outside the peer
+      # range and would break the required lint job. Only 6.0.x patches
+      # flow until typescript-eslint widens the range; bump the pin and the
+      # plugin together by hand.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # @types/node tracks the runtime major. The repo runs Node 24
+      # (engines >=24, CI node-version '24'); a newer types major lets code
+      # type-check against APIs Node 24 does not have (PR #595). Bump it by
+      # hand when the runtime floor moves.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-patch:
         update-types: ["minor", "patch"]
