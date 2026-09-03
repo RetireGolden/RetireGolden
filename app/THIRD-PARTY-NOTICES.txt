@@ -5,8 +5,8 @@ distributed under their respective licenses. Generated from the resolved
 production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
-Generated: 2026-08-14
-Source:    pnpm list --prod --depth Infinity (workspace root pnpm-lock.yaml)
+Source:      pnpm list --prod --depth Infinity (workspace root)
+Attributed:  38 packages, sha256 ef7af1c0cbe46b5b4de4b6d8db1e56118e50af262fc12f02564d96d46e1d25dc
 
 ================================================================================
 
@@ -102,7 +102,15 @@ License: MIT
 Author: Luke Edwards <luke.edwards05@gmail.com> (https://lukeed.com)
 Homepage: lukeed/clsx
 ----------
-(No LICENSE file found in the package; see the package metadata above.)
+MIT License
+
+Copyright (c) Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 --------------------------------------------------------------------------------
 
@@ -982,7 +990,6 @@ Excluded (type-only @types/*, first-party @retiregolden/*): 13
 Copyleft/share-alike licenses detected: none (all permissive MIT/ISC/BSD/Apache).
 
 Packages with no LICENSE file found (metadata only above):
-  - clsx@2.1.1
   - victory-vendor@37.3.6
 
 Excluded @types/* packages (TypeScript-only; not in the runtime bundle):

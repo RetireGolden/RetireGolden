@@ -70,6 +70,31 @@ const annualProjectionCodeSplitting = {
   ],
 } satisfies ViteCodeSplitting
 
+// Paths the service worker must fetch instead of answering with the app shell.
+// Mirrors `navigationFallback.exclude` in public/staticwebapp.config.json — the
+// host applies that list to 404s only, but workbox's navigateFallback answers
+// *every* navigation, so without this a click on the disclaimer's
+// /THIRD-PARTY-NOTICES.txt link (or a hand-typed /robots.txt) renders the
+// planner instead of the file. src/staticwebapp.config.test.ts pins the two
+// lists to each other; add an entry in both places or the app suite fails.
+const navigateFallbackDenylist = [
+  /^\/assets\//,
+  /^\/learn\/images\//,
+  /\.css$/,
+  /\.js$/,
+  /\.ico$/,
+  /\.png$/,
+  /\.svg$/,
+  /\.webp$/,
+  /\.woff2$/,
+  /\.webmanifest$/,
+  /^\/sw\.js$/,
+  /^\/robots\.txt$/,
+  /^\/sitemap\.xml$/,
+  /^\/import-feature\.json$/,
+  /^\/THIRD-PARTY-NOTICES\.txt$/,
+]
+
 // https://vite.dev/config/
 export default defineConfig({
   build: {
@@ -142,8 +167,11 @@ export default defineConfig({
         // The incident switch must always come from the network. Keep the
         // exclusion explicit even if a future asset pattern starts matching JSON.
         globIgnores: ['**/import-feature.json'],
-        // SPA: serve index.html for client-routed navigations when offline.
+        // SPA: serve index.html for client-routed navigations when offline —
+        // except for the real files listed above, which must come from the
+        // network (or the precache) as themselves.
         navigateFallback: '/index.html',
+        navigateFallbackDenylist,
         // Heavyweight assets are deliberately runtime-cached instead of
         // precached, so the install stays light and users only pay for what
         // they use:
@@ -168,7 +196,12 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: {
               cacheName: 'learn-images',
-              expiration: { maxEntries: 150, maxAgeSeconds: 180 * 24 * 60 * 60 },
+              // A week, matching the `max-age=604800` the host sends for
+              // /learn/images/* (public/staticwebapp.config.json). These files
+              // carry no content hash, so cache-first for longer would strand
+              // a corrected illustration behind the old one; a week still
+              // covers reading a series of articles offline.
+              expiration: { maxEntries: 150, maxAgeSeconds: 7 * 24 * 60 * 60 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

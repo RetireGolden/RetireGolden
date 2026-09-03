@@ -11,10 +11,16 @@
  * `@types/*` packages are excluded — they ship as types, never reach the
  * runtime bundle, and carry no attribution obligation.
  *
+ * The output is reproducible: same production tree, same bytes. Nothing here
+ * reads the clock, and the provenance digest covers the attributed package set
+ * rather than the lockfile, so a CI drift check sees a diff only when the
+ * shipped third-party set actually changed — not on a devDependency bump.
+ *
  * This is a dev/build-time tool with no runtime dependencies; it shells out to
  * `pnpm list` and reads the filesystem only. @see DOCS/enhancements/gap-analysis-closeout.md WS-E
  */
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync, existsSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -144,9 +150,23 @@ function walkNodeModules(root, out = new Map(), treeRoot = undefined) {
 }
 
 /** Find the LICENSE/NOTICE file for a package at `pkgDir`. */
+// Match directory entries case-insensitively. Some packages ship a lowercase
+// `license` file (clsx does); an exact-path probe finds it on Windows (NTFS is
+// case-insensitive) and misses it on Linux, so the notices generated in CI
+// would drop that package's attribution. Reading the directory once and
+// comparing lowercased names gives the same answer on both.
 function findLicenseFile(pkgDir, treeRoots) {
+  let entries
+  try {
+    entries = readdirSync(pkgDir)
+  } catch {
+    return null
+  }
+  const byLower = new Map(entries.map((entry) => [entry.toLowerCase(), entry]))
   for (const name of LICENSE_FILENAMES) {
-    const candidate = containedInAny(join(pkgDir, name), treeRoots)
+    const entry = byLower.get(name.toLowerCase())
+    if (entry === undefined) continue
+    const candidate = containedInAny(join(pkgDir, entry), treeRoots)
     if (candidate !== null) return candidate
   }
   return null
@@ -271,7 +291,19 @@ function main() {
     blocks.push({ heading: lines.join('\n'), text: text ?? '(No LICENSE file found in the package; see the package metadata above.)' })
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  // Provenance has to be a function of the inputs, not of the clock: this line
+  // used to carry the run date, which made every re-run a diff and left a CI
+  // drift check unable to tell "a dependency changed" from "it is a new day".
+  //
+  // The input hashed is the attributed set itself — every included package at
+  // every resolved version — not the whole lockfile. Hashing the lockfile would
+  // make the notices file change (and the CI drift check go red) on any
+  // devDependency bump, which changes no attribution at all. This digest moves
+  // only when the shipped production set moves, which is exactly when the
+  // notice text below can change. Versions are sorted so the digest does not
+  // depend on the order `pnpm list` happened to walk the tree.
+  const attributedSet = included.map(([name, versions]) => `${name}@${[...versions].sort().join(',')}`).join('\n')
+  const attributedDigest = createHash('sha256').update(attributedSet).digest('hex')
   const out = []
   out.push('THIRD-PARTY NOTICES')
   out.push('')
@@ -280,8 +312,8 @@ function main() {
   out.push('production dependency tree (direct + transitive, excluding TypeScript-only')
   out.push('@types/* packages that never reach the runtime bundle).')
   out.push('')
-  out.push(`Generated: ${today}`)
-  out.push(`Source:    pnpm list --prod --depth Infinity (workspace root pnpm-lock.yaml)`)
+  out.push(`Source:      pnpm list --prod --depth Infinity (workspace root)`)
+  out.push(`Attributed:  ${included.length} packages, sha256 ${attributedDigest}`)
   out.push('')
   out.push('================================================================================')
   out.push('')
@@ -300,7 +332,7 @@ function main() {
   out.push(`Excluded (type-only @types/*, first-party @retiregolden/*): ${excluded.length}`)
   if (copyleftHits.length > 0) {
     out.push('')
-    out.push('COOPYLEFT / SHARE-ALIKE LICENSES DETECTED (review before shipping):')
+    out.push('COPYLEFT / SHARE-ALIKE LICENSES DETECTED (review before shipping):')
     for (const h of copyleftHits) out.push(`  - ${h}`)
   } else {
     out.push('Copyleft/share-alike licenses detected: none (all permissive MIT/ISC/BSD/Apache).')

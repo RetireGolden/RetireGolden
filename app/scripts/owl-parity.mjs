@@ -1,11 +1,9 @@
 #!/usr/bin/env node
-import { createServer } from 'vite'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 
-const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+import { appDir, withSsrModules } from './viteSsr.mjs'
 
 function usage() {
   return `Usage:
@@ -55,23 +53,6 @@ function parseArgs(argv) {
     throw new Error('--tolerance must be a non-negative number')
   }
   return opts
-}
-
-async function loadParityModule() {
-  const server = await createServer({
-    root: appDir,
-    configFile: join(appDir, 'vite.config.ts'),
-    appType: 'custom',
-    logLevel: 'error',
-    server: { middlewareMode: true, hmr: { port: 30_000 + (process.pid % 20_000) } },
-  })
-  try {
-    const parity = await server.ssrLoadModule('/src/cases/owlParity.ts')
-    return { server, parity }
-  } catch (error) {
-    await server.close()
-    throw error
-  }
 }
 
 function run(command, args, options = {}) {
@@ -163,8 +144,7 @@ async function runOwlRunner(parity, opts, paths) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
-  const { server, parity } = await loadParityModule()
-  try {
+  await withSsrModules({ parity: '/src/cases/owlParity.ts' }, async ({ parity }) => {
     const outDir = resolve(appDir, opts.outDir)
     const paths = {
       outDir,
@@ -195,9 +175,7 @@ async function main() {
     console.log(`Manifest: ${join(outDir, 'manifest.json')}`)
     console.log(`Report:   ${join(outDir, 'report.md')}`)
     if (manifest.gate.status === 'failed') process.exitCode = 1
-  } finally {
-    await server.close()
-  }
+  })
 }
 
 main().catch((error) => {

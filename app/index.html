@@ -27,6 +27,25 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      Unstyled on purpose: index.css is imported by the app module, and the CSP
+      (`style-src 'self'`) blocks an inline <style> block or style attribute, so
+      this renders with browser defaults or not at all.
+
+      Self-contained on purpose too: every in-app page, /disclaimer included, is
+      an SPA route that the host rewrites to this same index.html, so a link out
+      of here would land a no-JS visitor back on this block. The disclaimer this
+      visitor is owed is therefore stated inline rather than linked.
+    -->
+    <noscript>
+      <h1>RetireGolden needs JavaScript</h1>
+      <p>
+        The planner runs entirely in your browser. Every projection is calculated on this device and
+        nothing is sent to a server, so with JavaScript turned off there is nothing to run. Turn it
+        on for this site and reload the page.
+      </p>
+      <p>Educational only. Not tax, legal, financial, or medical advice. All data stays on this device.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

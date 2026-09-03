@@ -59,8 +59,11 @@ jobs:
         run: |
           report=report_json.json
           if [ ! -f "$report" ]; then
-            echo "::warning::ZAP report ($report) not found; skipping High-risk gate."
-            exit 0
+            # A scan that produced no report did not pass. With fail_action
+            # false above, this step is the whole enforcement of the required
+            # check, so a missing file must fail closed rather than warn.
+            echo "::error::ZAP report ($report) not found; the High-risk gate cannot run."
+            exit 1
           fi
           high=$(jq '[.site[]?.alerts[]? | select((.riskcode|tostring) == "3")] | length' "$report")
           echo "High-risk alerts found: ${high:-0}"

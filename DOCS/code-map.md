@@ -36,7 +36,7 @@ app/
 ├── package.json          deps + scripts; engines: node >=24
 ├── eslint.config.js       flat config (the engine-purity rule lives in packages/engine/eslint.config.js)
 ├── index.html
-├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, `check-css-clamp.mjs` + `cssClamp.mjs` (post-build: the plan-card name clamp survived CSS minification, #533), sitemap generator, license notices)
+├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, `check-css-clamp.mjs` + `cssClamp.mjs` (post-build: the plan-card name clamp survived CSS minification, #533), sitemap generator + `sitemapRoutes.mjs`, license notices; the three Vite-SSR scripts share `viteSsr.mjs`)
 ├── public/                staticwebapp.config.json (SPA fallback), import-feature.json (no-store file-import incident switch), PWA manifest/icons
 ├── e2e/                   Playwright browser specs
 └── src/                   host source (below)

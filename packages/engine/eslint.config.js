@@ -13,7 +13,7 @@ export default defineConfig([
     // Maintenance scripts: plain Node ESM, never shipped (package.json `files`
     // covers dist/ and schema/ only). Without this block they match no config
     // and are linted with zero rules, so a typo in one goes unseen.
-    files: ['scripts/**/*.mjs'],
+    files: ['scripts/**/*.mjs', 'eslint.config.js'],
     extends: [js.configs.recommended],
     languageOptions: {
       globals: globals.node,

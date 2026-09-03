@@ -18,6 +18,13 @@ concurrency:
   group: swa-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'run-ci') }}
 
+# Least privilege for every job that checks out PR code and runs pnpm install
+# and the build (third-party lifecycle scripts run there). `deploy` widens to
+# `pull-requests: write` for its own preview-URL comment; `dast` and
+# `close_pull_request` need nothing beyond the Azure token.
+permissions:
+  contents: read
+
 jobs:
   # --- Code Quality Jobs ---
   # On PRs the full pipeline is gated behind the `run-ci` label so review-bot
@@ -94,6 +101,14 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Type check + Build (packages, then app)
         run: pnpm build
+      # THIRD-PARTY-NOTICES.txt is the shipped AGPL attribution surface and is
+      # generated from the lockfile by scripts/generate-third-party-notices.mjs.
+      # Nothing else fails when a dependency change lands without regenerating
+      # it, so regenerate here and fail on drift.
+      - name: Third-party notices are current
+        run: |
+          pnpm --filter retiregolden-web run licenses
+          git diff --exit-code -- app/THIRD-PARTY-NOTICES.txt app/public/THIRD-PARTY-NOTICES.txt
       # The dev/test loop aliases the engine package to its TS source, so this
       # is the only per-PR check that the published exports map + dist emit
       # actually resolve for an external consumer.

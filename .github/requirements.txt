@@ -1,0 +1,5 @@
+# Semgrep CLI version used by .github/workflows/semgrep.yml. Pinned like every
+# GitHub Action in this repo; Dependabot (pip ecosystem, directory /.github)
+# proposes bumps. Named requirements.txt because that is the manifest name
+# Dependabot's pip support documents. Keep this the only pin here.
+semgrep==1.176.0

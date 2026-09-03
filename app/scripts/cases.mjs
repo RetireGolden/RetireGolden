@@ -1,10 +1,18 @@
 #!/usr/bin/env node
-import { createServer } from 'vite'
 import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 
-const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+import { withSsrModules } from './viteSsr.mjs'
+
+/**
+ * Everything both commands need. Loaded as one set (rather than per command)
+ * so the SSR graph a `cases diff` warms is the same one `cases run` warms.
+ */
+const CASE_MODULES = {
+  caseRunner: '/src/cases/caseRunner.ts',
+  caseDiff: '/src/cases/caseDiff.ts',
+  reportHtml: '@retiregolden/planner-ui/report/reportHtml',
+}
 
 function usage() {
   return `Usage:
@@ -92,29 +100,9 @@ async function jsonFilesFromInput(input) {
     .map((name) => join(resolved, name))
 }
 
-async function loadViteModules() {
-  const server = await createServer({
-    root: appDir,
-    configFile: join(appDir, 'vite.config.ts'),
-    appType: 'custom',
-    logLevel: 'error',
-    server: { middlewareMode: true, hmr: { port: 30_000 + (process.pid % 20_000) } },
-  })
-  try {
-    const caseRunner = await server.ssrLoadModule('/src/cases/caseRunner.ts')
-    const caseDiff = await server.ssrLoadModule('/src/cases/caseDiff.ts')
-    const reportHtml = await server.ssrLoadModule('@retiregolden/planner-ui/report/reportHtml')
-    return { server, caseRunner, caseDiff, reportHtml }
-  } catch (error) {
-    await server.close()
-    throw error
-  }
-}
-
 async function runCommand(argv) {
   const opts = parseRunArgs(argv)
-  const { server, caseRunner, reportHtml } = await loadViteModules()
-  try {
+  await withSsrModules(CASE_MODULES, async ({ caseRunner, reportHtml }) => {
     let cases = []
     const warnings = []
     if (opts.inputs.length === 0) {
@@ -179,24 +167,19 @@ async function runCommand(argv) {
     }
 
     for (const warning of warnings) console.error(`case warning: ${warning}`)
-  } finally {
-    await server.close()
-  }
+  })
 }
 
 async function diffCommand(argv) {
   const opts = parseDiffArgs(argv)
-  const { server, caseDiff } = await loadViteModules()
-  try {
+  await withSsrModules(CASE_MODULES, async ({ caseDiff }) => {
     const base = JSON.parse(await readFile(resolve(process.cwd(), opts.base), 'utf8'))
     const head = JSON.parse(await readFile(resolve(process.cwd(), opts.head), 'utf8'))
     const allowlist = opts.allowlist ? JSON.parse(await readFile(resolve(process.cwd(), opts.allowlist), 'utf8')) : undefined
     const result = caseDiff.diffCaseManifests(base, head, allowlist)
     console.log(caseDiff.formatCaseDiffSummary(result))
     if (result.unexpected.length > 0) process.exitCode = 1
-  } finally {
-    await server.close()
-  }
+  })
 }
 
 async function main() {
