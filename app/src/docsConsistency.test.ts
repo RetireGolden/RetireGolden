@@ -26,6 +26,7 @@ import publishEngineWorkflow from '../../.github/workflows/publish-engine.yml?ra
 import publishPlannerUiWorkflow from '../../.github/workflows/publish-planner-ui.yml?raw'
 import resolveGateWorkflow from '../../.github/workflows/resolve-gate.yml?raw'
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
+import setupToolchainAction from '../../.github/actions/setup-toolchain/action.yml?raw'
 import { V2_BACKUP_VERSION } from '@retiregolden/planner-ui/data/v2Backup'
 import { COMPLETE_EXPORT_FORMAT_VERSION } from '../../packages/planner-ui/src/data/completeExport'
 import { CURRENT_PLAN_SCHEMA_VERSION } from '@retiregolden/engine/model/plan'
@@ -43,7 +44,9 @@ const enginePackageNodeFloor = (JSON.parse(enginePackageJson) as { engines: { no
 const plannerUiPackageNodeFloor = (JSON.parse(plannerUiPackageJson) as { engines: { node: string } })
   .engines.node
 const publishedPackageNodeFloors = [enginePackageNodeFloor, plannerUiPackageNodeFloor]
-const ciNodeVersion = swaWorkflow.match(/node-version: '(\d+)'/)?.[1]
+// The Node major CI installs lives in one place: the shared composite action every
+// workflow that runs Node uses (.github/actions/setup-toolchain).
+const ciNodeVersion = setupToolchainAction.match(/node-version: '(\d+)'/)?.[1]
 
 // Parses a '>=X[.Y[.Z]]' engines.node floor into numeric [major, minor, patch], defaulting
 // an omitted minor/patch to 0.
@@ -104,7 +107,10 @@ describe('docs consistency', () => {
     expect(nodeFloor).toMatch(/^>=\d+(?:\.\d+){0,2}$/)
     expect(nodeFloor.slice('>='.length).split('.')[0]).toBe(ciNodeVersion)
     for (const workflow of nodePinnedWorkflows) {
-      expect([...workflow.matchAll(/node-version: '(\d+)'/g)].map((match) => match[1])).toContain(ciNodeVersion)
+      // Every Node-running workflow goes through the composite, so the version is pinned
+      // once; a raw setup-node step would reintroduce a second place to bump.
+      expect(workflow).toContain('uses: ./.github/actions/setup-toolchain')
+      expect(workflow).not.toMatch(/uses: actions\/setup-node@/)
     }
     expect(codeMap).toContain(`Node.js ${nodeFloor}`)
     expect(codeMap).toContain(`engines: node ${nodeFloor}`)
