@@ -103,24 +103,24 @@
       "label": "coordinated HECM capacity consumption and ACA/tax accepted scalar coordination",
       "file": "projection/internal/annualFundingFixedPoint.ts",
       "lines": [
-        207,
-        248
+        216,
+        257
       ],
       "anchors": [
         {
-          "line": 208,
+          "line": 217,
           "text": "input.coordinatedHecmCapacity > tolerance &&"
         },
         {
-          "line": 228,
+          "line": 237,
           "text": "input.coordinatedHecmCapacity,"
         },
         {
-          "line": 238,
+          "line": 247,
           "text": "if (!coordinatedDrawConverged) acceptedCoordinatedHecmDraw = 0"
         },
         {
-          "line": 247,
+          "line": 256,
           "text": "evaluationCount = 0"
         }
       ],

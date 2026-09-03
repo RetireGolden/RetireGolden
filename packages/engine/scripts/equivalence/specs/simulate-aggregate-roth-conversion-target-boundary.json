@@ -377,7 +377,7 @@
         },
         {
           "line": 543,
-          "text": "if (desired > 0.01) {"
+          "text": "if (desired > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS) {"
         }
       ]
     },
