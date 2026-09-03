@@ -197,7 +197,7 @@ describe('published evidence contains only characters the file contained', () =>
   it('escapes one in the file NAME too', () => {
     const pages = [docPage(1, 'Generated with RightCapital')]
     const items = buildMigrationReview(identifyMigrationDocument(pages), `${String.fromCharCode(0xdc00)}report.pdf`, { pages })
-    expect(items[0].source).toContain('<U+DC00>')
+    expect(items[0]!.source).toContain('<U+DC00>')
   })
 })
 
@@ -216,9 +216,9 @@ describe('an oversized export', () => {
     const items = buildMigrationReview(found, 'big-export.json')
     expect(items).toHaveLength(1)
     // No vendor is claimed, because none was looked for.
-    for (const vendor of MIGRATION_VENDORS) expect(items[0].detail).not.toContain(MIGRATION_ADAPTERS[vendor].displayName)
-    expect(items[0].detail).toMatch(/nothing about it was examined/)
-    expect(items[0].detail).toContain(NO_FORMAT_MANUAL_PATH)
+    for (const vendor of MIGRATION_VENDORS) expect(items[0]!.detail).not.toContain(MIGRATION_ADAPTERS[vendor].displayName)
+    expect(items[0]!.detail).toMatch(/nothing about it was examined/)
+    expect(items[0]!.detail).toContain(NO_FORMAT_MANUAL_PATH)
     expect(roundTrip(items).ok).toBe(true)
   })
 })
@@ -448,7 +448,7 @@ describe('identifyMigrationDocument', () => {
       // A document can only ever produce the weaker tier — a PDF has no
       // parseable export shape — and the evidence must quote the source.
       expect(found.evidence.every((item) => item.strength === 'name')).toBe(true)
-      expect(found.evidence[0].locator).toEqual({ kind: 'none', note: 'page 1' })
+      expect(found.evidence[0]!.locator).toEqual({ kind: 'none', note: 'page 1' })
     }
   })
 
@@ -479,7 +479,7 @@ describe('identifyMigrationDocument', () => {
   it('quotes the matched text verbatim, bounded, with the surrounding context', () => {
     const found = identifyMigrationDocument([docPage(4, RIGHTCAPITAL_COVER)])
     if (found?.outcome !== 'identified') throw new Error('expected an identification')
-    const matched = found.evidence[0].matched
+    const matched = found.evidence[0]!.matched
     expect(matched).toContain('Generated with RightCapital on March 14, 2026')
     expect(matched.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
   })
@@ -494,7 +494,7 @@ describe('identifyMigrationDocument', () => {
     const noisy = `${'\u0007'.repeat(30)}RightCapital retirement analysis`
     const found = identifyMigrationDocument([docPage(1, noisy)])
     if (found?.outcome !== 'identified') throw new Error('expected an identification')
-    const matched = found.evidence[0].matched
+    const matched = found.evidence[0]!.matched
     expect(matched).toContain('RightCapital')
     expect(matched.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
   })
@@ -507,7 +507,7 @@ describe('identifyMigrationDocument', () => {
     // as a replacement character in evidence described as verbatim.
     const found = identifyMigrationDocument([docPage(1, `xx${'😀'.repeat(40)}RightCapital and more text after it`)])
     if (found?.outcome !== 'identified') throw new Error('expected an identification')
-    const matched = found.evidence[0].matched
+    const matched = found.evidence[0]!.matched
     const loneSurrogate = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/
     expect(loneSurrogate.test(matched)).toBe(false)
     expect(matched).toContain('RightCapital')
@@ -520,7 +520,7 @@ describe('identifyMigrationDocument', () => {
     // trimmed.
     const found = identifyMigrationDocument([docPage(1, 'Report generated with RightCapital on 14 March.')])
     if (found?.outcome !== 'identified') throw new Error('expected an identification')
-    expect(found.evidence[0].matched).toContain('with RightCapital on')
+    expect(found.evidence[0]!.matched).toContain('with RightCapital on')
   })
 
   it('bounds how many excerpts one vendor may contribute', () => {
@@ -620,7 +620,7 @@ describe('identifyMigrationExport', () => {
     const unheardOf = identifyMigrationExport(projectionLabExport({ meta: { exportVersion: '99.0.0-canary' } }))
     expect(unheardOf?.outcome === 'identified' && unheardOf.vendor).toBe('projectionlab')
     if (unheardOf?.outcome !== 'identified') throw new Error('expected an identification')
-    expect(unheardOf.evidence[1].matched).toBe('99.0.0-canary')
+    expect(unheardOf.evidence[1]!.matched).toBe('99.0.0-canary')
   })
 
   it("reports a meta.app naming a DIFFERENT tool as evidence against, not for", () => {
@@ -680,7 +680,7 @@ describe('identifyMigrationExport', () => {
     // the bound with no marker, so a truncated version read as the whole of it.
     const long = identifyMigrationExport(projectionLabExport({ meta: { app: 'Q'.repeat(300) } }))
     if (long?.outcome !== 'identified') throw new Error('expected an identification')
-    const app = long.evidence[1].matched
+    const app = long.evidence[1]!.matched
     expect(app.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
     expect(app.endsWith('…')).toBe(true)
 
@@ -690,14 +690,14 @@ describe('identifyMigrationExport', () => {
     // not contain, so the evidence says where the number came from instead.
     const numeric = identifyMigrationExport(projectionLabExport({ meta: { exportVersion: 2.0 } }))
     if (numeric?.outcome !== 'identified') throw new Error('expected an identification')
-    expect(numeric.evidence[1].matched).toBe('2 (a number in the file, not text)')
+    expect(numeric.evidence[1]!.matched).toBe('2 (a number in the file, not text)')
 
     // Control characters and newlines out of someone else's file must not reach
     // the quoted detail of a review item and fracture what a reviewer reads.
     const nasty = identifyMigrationExport(projectionLabExport({ meta: { app: 'Line1\nLine2\u0007 “quote”' } }))
     if (nasty?.outcome !== 'identified') throw new Error('expected an identification')
-    expect(nasty.evidence[1].matched).toBe('Line1 Line2<U+0007> “quote”')
-    expect(nasty.evidence[1].matched).not.toContain('\n')
+    expect(nasty.evidence[1]!.matched).toBe('Line1 Line2<U+0007> “quote”')
+    expect(nasty.evidence[1]!.matched).not.toContain('\n')
   })
 
   it('a name excerpt keeps its trailing marker exactly when the right edge was clipped', () => {
@@ -711,7 +711,7 @@ describe('identifyMigrationExport', () => {
       const text = `${'a '.repeat(pad)}RightCapital ${'b '.repeat(pad)}`
       const found = identifyMigrationDocument([docPage(1, text)])
       if (found?.outcome !== 'identified') throw new Error(`expected an identification at pad ${pad}`)
-      const matched = found.evidence[0].matched
+      const matched = found.evidence[0]!.matched
       expect(matched.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
       // Both edges are far from the excerpt window at every pad in this sweep,
       // so both markers must be present at every one of them.
@@ -725,7 +725,7 @@ describe('identifyMigrationExport', () => {
     // The file's SHAPE is evidence about the file; a name in its text is
     // evidence about the file's subject.
     const withRival = JSON.parse(projectionLabExport()) as { currentFinances: { accounts: { name: string }[] } }
-    withRival.currentFinances.accounts[0].name = 'Balances copied from our old eMoney plan'
+    withRival.currentFinances.accounts[0]!.name = 'Balances copied from our old eMoney plan'
     const found = identifyMigrationExport(JSON.stringify(withRival))
     expect(found?.outcome === 'identified' && found.vendor).toBe('projectionlab')
   })
@@ -734,8 +734,8 @@ describe('identifyMigrationExport', () => {
     const found = identifyMigrationExport('account,balance\n# exported from RightCapital\nBrokerage,412000\n')
     if (found?.outcome !== 'identified') throw new Error('expected an identification')
     expect(found.vendor).toBe('rightcapital')
-    expect(found.evidence[0].strength).toBe('name')
-    expect(found.evidence[0].locator).toEqual({ kind: 'none', note: 'the export text' })
+    expect(found.evidence[0]!.strength).toBe('name')
+    expect(found.evidence[0]!.locator).toEqual({ kind: 'none', note: 'the export text' })
   })
 
   it('refuses to choose when a file names more than one tool', () => {
@@ -850,8 +850,8 @@ describe('buildMigrationReview', () => {
     const found = identifyMigrationExport(projectionLabExport({ meta: { app: 'eMoney' } }))
     const items = buildMigrationReview(found, 'export.json', { mapped: true })
     expect(items).toHaveLength(1)
-    expect(items[0].detail).toContain('does not name ProjectionLab')
-    expect(items[0].detail).toMatch(/never reads this field/)
+    expect(items[0]!.detail).toContain('does not name ProjectionLab')
+    expect(items[0]!.detail).toMatch(/never reads this field/)
     expect(roundTrip(items).ok).toBe(true)
 
     // A mapped file with NO conflict still says nothing at all.
@@ -1007,7 +1007,7 @@ describe('buildMigrationReview', () => {
     // verbatim quotation of the file.
     const long = identifyMigrationExport(projectionLabExport({ meta: { app: '😀'.repeat(200) } }))
     if (long?.outcome !== 'identified') throw new Error('expected an identification')
-    const matched = long.evidence[1].matched
+    const matched = long.evidence[1]!.matched
     expect(matched.length).toBeLessThanOrEqual(MAX_MIGRATION_EVIDENCE_CHARS)
     // A LONE surrogate, not any surrogate — every emoji here is a well-formed
     // pair of them, so testing for surrogates at all would fail on correct output.
@@ -1033,7 +1033,7 @@ describe('buildMigrationReview', () => {
     ]) as MigrationIdentification
     expect(ambiguous.outcome).toBe('ambiguous')
     const items = buildMigrationReview(ambiguous, 'comparison.pdf')
-    expect(items[0].detail).toContain('names more than one planning tool (RightCapital, eMoney)')
+    expect(items[0]!.detail).toContain('names more than one planning tool (RightCapital, eMoney)')
     // Both candidates' evidence survives into the report, with its own page.
     expect(items.map((item) => item.locator)).toContainEqual({ kind: 'none', note: 'page 2' })
     expect(items.map((item) => item.locator)).toContainEqual({ kind: 'none', note: 'page 3' })

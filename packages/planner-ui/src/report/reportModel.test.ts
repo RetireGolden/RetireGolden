@@ -87,10 +87,10 @@ describe('buildReportModel', () => {
     expect(model.blocks['year-ledger'].rows).toHaveLength(result.years.length)
     const firstYear = result.years[0]
     expect(model.blocks['year-ledger'].rows[0]).toMatchObject({
-      year: firstYear.year,
-      income: Math.round(firstYear.incomes.total),
-      taxAndPenalties: Math.round(firstYear.tax + firstYear.penalties),
-      netWorth: Math.round(firstYear.netWorth),
+      year: firstYear!.year,
+      income: Math.round(firstYear!.incomes.total),
+      taxAndPenalties: Math.round(firstYear!.tax + firstYear!.penalties),
+      netWorth: Math.round(firstYear!.netWorth),
     })
   })
 
@@ -155,7 +155,7 @@ describe('buildReportModel', () => {
       startYear: START_YEAR,
       generatedAtIso: GENERATED_AT,
     })
-    const exact = result.years[0].aca!
+    const exact = result.years[0]!.aca!
     const row = model.blocks['aca-ledger'].rows[0]
 
     expect(exact.readiness).toBe('actionable')
@@ -173,9 +173,9 @@ describe('buildReportModel', () => {
 
     const html = renderStandaloneReportHtml(model)
     expect(html).toContain('ACA current-year ledger')
-    expect(html).toContain(fmtMoney(row.grossEnrollmentPremium))
-    expect(html).toContain(fmtMoney(row.modeledAllowablePtc!))
-    expect(html).toContain(fmtMoney(row.economicNetPremium))
+    expect(html).toContain(fmtMoney(row!.grossEnrollmentPremium))
+    expect(html).toContain(fmtMoney(row!.modeledAllowablePtc!))
+    expect(html).toContain(fmtMoney(row!.economicNetPremium))
     expect(html).toContain('Actionable')
   })
 
@@ -212,10 +212,10 @@ describe('buildReportModel', () => {
     }
     const model = modelFor(fixturePlan(), { modeledFindings: findings })
     findings.winnerLabel = 'mutated'
-    findings.candidates[0].label = 'mutated'
+    findings.candidates[0]!.label = 'mutated'
     const block = model.blocks['modeled-findings']!
     expect(block.winnerLabel).toBe('Fill the 12% bracket')
-    expect(block.candidates[0].label).toBe('Fill the 10% bracket')
+    expect(block.candidates[0]!.label).toBe('Fill the 10% bracket')
   })
 
   it('copies advisor-authored content verbatim when the host supplies it', () => {
@@ -349,13 +349,13 @@ describe('table export helpers', () => {
     const lines = yearLedgerCsv(model.blocks['year-ledger']).split('\n')
     expect(lines).toHaveLength(model.blocks['year-ledger'].rows.length + 1)
     const firstRow = model.blocks['year-ledger'].rows[0]
-    expect(lines[1].startsWith(`${firstRow.year},${firstRow.income},`)).toBe(true)
+    expect(lines[1]!.startsWith(`${firstRow!.year},${firstRow!.income},`)).toBe(true)
   })
 
   it('accounts CSV quotes cells that contain commas, quotes, or line breaks', () => {
     const model = modelFor(
       fixturePlan((plan) => {
-        plan.accounts[plan.accounts.length - 1].name = 'Brokerage, "joint"\rextra'
+        plan.accounts[plan.accounts.length - 1]!.name = 'Brokerage, "joint"\rextra'
       }),
     )
     expect(accountsCsv(model.blocks['accounts'])).toContain('"Brokerage, ""joint""\rextra"')
@@ -364,7 +364,7 @@ describe('table export helpers', () => {
   it('accounts CSV neutralizes spreadsheet formula injection in text cells', () => {
     const model = modelFor(
       fixturePlan((plan) => {
-        plan.accounts[plan.accounts.length - 1].name = '=HYPERLINK("https://attacker.example","Open")'
+        plan.accounts[plan.accounts.length - 1]!.name = '=HYPERLINK("https://attacker.example","Open")'
       }),
     )
     const csv = accountsCsv(model.blocks['accounts'])
@@ -406,8 +406,8 @@ describe('buildInheritedSchedules', () => {
 
   it('builds a classified S1 schedule with facts, kinds, and no professional flag when settled/clean', () => {
     const plan = fixturePlan((p) => {
-      p.household.people[0].dob = '1965-06-15'
-      p.household.people[0].longevity = { planningAge: 95, source: 'manual' }
+      p.household.people[0]!.dob = '1965-06-15'
+      p.household.people[0]!.longevity = { planningAge: 95, source: 'manual' }
       p.accounts.push({
         type: 'traditional',
         id: 'spouse-ira',
@@ -449,15 +449,15 @@ describe('buildInheritedSchedules', () => {
     const block = buildInheritedSchedules(plan, [year(2026, [evidence])])
     expect(block.accounts).toHaveLength(1)
     const account = block.accounts[0]
-    expect(account.regimeLabel).toContain('Spouse life-expectancy schedule')
-    expect(account.regimeLabel).not.toContain('matrix')
-    expect(account.regimeLabel).not.toContain('S1')
-    expect(account.matrixRow).toBe('S1')
-    expect(account.isLegacyApproximation).toBe(false)
-    expect(account.isRefusal).toBe(false)
-    expect(account.needsProfessionalConfirmation).toBe(false)
-    expect(account.facts.some((f) => f.includes('surviving-spouse'))).toBe(true)
-    expect(account.years[0]).toMatchObject({
+    expect(account!.regimeLabel).toContain('Spouse life-expectancy schedule')
+    expect(account!.regimeLabel).not.toContain('matrix')
+    expect(account!.regimeLabel).not.toContain('S1')
+    expect(account!.matrixRow).toBe('S1')
+    expect(account!.isLegacyApproximation).toBe(false)
+    expect(account!.isRefusal).toBe(false)
+    expect(account!.needsProfessionalConfirmation).toBe(false)
+    expect(account!.facts.some((f) => f.includes('surviving-spouse'))).toBe(true)
+    expect(account!.years[0]).toMatchObject({
       year: 2026,
       kindLabel: 'Annual RMD',
       requiredAmount: 25_210,
@@ -493,10 +493,10 @@ describe('buildInheritedSchedules', () => {
       citations: ['SECURE Act §401(b)(1)'],
     }
     const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]
-    expect(account.isLegacyApproximation).toBe(true)
-    expect(account.regimeLabel).toContain('Planning estimate')
-    expect(account.facts.some((f) => f.includes('not provided'))).toBe(true)
-    expect(account.needsProfessionalConfirmation).toBe(true)
+    expect(account!.isLegacyApproximation).toBe(true)
+    expect(account!.regimeLabel).toContain('Planning estimate')
+    expect(account!.facts.some((f) => f.includes('not provided'))).toBe(true)
+    expect(account!.needsProfessionalConfirmation).toBe(true)
   })
 
   it('flags an estate refusal for professional confirmation and the refusal note path', () => {
@@ -534,9 +534,9 @@ describe('buildInheritedSchedules', () => {
       citations: ['Treas. Reg. §1.401(a)(9)-4(f)'],
     }
     const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]
-    expect(account.isRefusal).toBe(true)
-    expect(account.refusalReason).toContain('estate')
-    expect(account.needsProfessionalConfirmation).toBe(true)
+    expect(account!.isRefusal).toBe(true)
+    expect(account!.refusalReason).toContain('estate')
+    expect(account!.needsProfessionalConfirmation).toBe(true)
   })
 
   it('returns an empty block when the plan has no inherited accounts', () => {
@@ -583,7 +583,7 @@ describe('buildInheritedSchedules', () => {
       generatedAtIso: GENERATED_AT,
     })
     expect(model.blocks['inherited-schedules'].accounts).toHaveLength(1)
-    expect(model.blocks['inherited-schedules'].accounts[0].accountId).toBe('legacy-ira')
+    expect(model.blocks['inherited-schedules'].accounts[0]!.accountId).toBe('legacy-ira')
   })
 
   it('labels spouse deferral none years without successor copy', () => {
@@ -635,9 +635,9 @@ describe('buildInheritedSchedules', () => {
       year(2026, [deferral]),
       year(2035, [annual]),
     ]).accounts[0]
-    expect(account.isSuccessorScope).toBe(false)
-    expect(account.isRefusal).toBe(false)
-    expect(account.years[0].kindLabel).toBe('No amount required until 2035')
+    expect(account!.isSuccessorScope).toBe(false)
+    expect(account!.isRefusal).toBe(false)
+    expect(account!.years[0]!.kindLabel).toBe('No amount required until 2035')
   })
 
   it('treats successor-scope rows as out of scope, not refusals', () => {
@@ -682,10 +682,10 @@ describe('buildInheritedSchedules', () => {
       citations: ['IRC §401(a)(9)(H)(iii)'],
     }
     const account = buildInheritedSchedules(plan, [year(2028, [evidence])]).accounts[0]
-    expect(account.isSuccessorScope).toBe(true)
-    expect(account.isRefusal).toBe(false)
-    expect(account.needsProfessionalConfirmation).toBe(true)
-    expect(account.years[0].kindLabel).toBe(
+    expect(account!.isSuccessorScope).toBe(true)
+    expect(account!.isRefusal).toBe(false)
+    expect(account!.needsProfessionalConfirmation).toBe(true)
+    expect(account!.years[0]!.kindLabel).toBe(
       'Successor 10-year clock after the beneficiary dies is out of scope.',
     )
   })
@@ -733,7 +733,7 @@ describe('buildInheritedSchedules', () => {
       citations: [],
     }
     const account = buildInheritedSchedules(plan, [year(2026, [sameYearFlip])]).accounts[0]
-    expect(account.years[0].kindLabel).toBe('Owner RMD rules apply from next year')
+    expect(account!.years[0]!.kindLabel).toBe('Owner RMD rules apply from next year')
   })
 
   it('labels post-flip treat-as-own none years with owner RMD copy', () => {
@@ -779,7 +779,7 @@ describe('buildInheritedSchedules', () => {
       citations: [],
     }
     const account = buildInheritedSchedules(plan, [year(2028, [postFlip])]).accounts[0]
-    expect(account.years[0].kindLabel).toBe('Owner RMD rules apply from the election year.')
+    expect(account!.years[0]!.kindLabel).toBe('Owner RMD rules apply from the election year.')
   })
 
   it('maps roth-taxability-needs-review to the K3 five-year unknown copy', () => {
@@ -820,7 +820,7 @@ describe('buildInheritedSchedules', () => {
       citations: [],
     }
     const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]
-    expect(account.notes).toContain(
+    expect(account!.notes).toContain(
       "The owner's five-year start is unknown, so some earnings could be taxable when withdrawn; this model does not compute that tax.",
     )
   })
@@ -871,11 +871,11 @@ describe('buildInheritedSchedules', () => {
       citations: [],
     }
     const account = buildInheritedSchedules(plan, [year(2026, [preElection])]).accounts[0]
-    expect(account.regime).toBe('spouse-treat-as-own-transition')
-    expect(account.regimeLabel).toBe('Spouse treats account as own (from 2027)')
-    expect(account.regimeLabel).not.toContain('matrix')
-    expect(account.years[0].kindLabel).toBe('Annual RMD')
-    expect(account.facts).toEqual(
+    expect(account!.regime).toBe('spouse-treat-as-own-transition')
+    expect(account!.regimeLabel).toBe('Spouse treats account as own (from 2027)')
+    expect(account!.regimeLabel).not.toContain('matrix')
+    expect(account!.years[0]!.kindLabel).toBe('Annual RMD')
+    expect(account!.facts).toEqual(
       expect.arrayContaining([
         'Treat-as-own election year: 2027',
         'Spouse unlimited withdrawal right: yes',
@@ -927,19 +927,19 @@ describe('buildInheritedSchedules', () => {
       citations: ['Treas. Reg. §1.408-8(c)'],
     }
     const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]
-    expect(account.isRefusal).toBe(true)
-    expect(account.isLegacyApproximation).toBe(true)
-    expect(inheritedDeadlineExplanation(account)).toBe(
+    expect(account!.isRefusal).toBe(true)
+    expect(account!.isLegacyApproximation).toBe(true)
+    expect(inheritedDeadlineExplanation(account!)).toBe(
       "The simpler planning estimate empties the account by the 10th year after the owner's death.",
     )
-    expect(inheritedDeadlineExplanation(account)).not.toContain('transition')
-    expect(inheritedDeadlineExplanation(account)).not.toContain('own RMD')
+    expect(inheritedDeadlineExplanation(account!)).not.toContain('transition')
+    expect(inheritedDeadlineExplanation(account!)).not.toContain('own RMD')
   })
 
   it('aggregates classification across years: unsettled in an early year wins over later settled', () => {
     const plan = fixturePlan((p) => {
-      p.household.people[0].dob = '1965-06-15'
-      p.household.people[0].longevity = { planningAge: 95, source: 'manual' }
+      p.household.people[0]!.dob = '1965-06-15'
+      p.household.people[0]!.longevity = { planningAge: 95, source: 'manual' }
       p.accounts.push({
         type: 'traditional',
         id: 'spouse-ira',
@@ -988,8 +988,8 @@ describe('buildInheritedSchedules', () => {
       year(2026, [unsettledYear]),
       year(2027, [settledYear]),
     ]).accounts[0]
-    expect(account.classification).toBe('unsettled')
-    expect(account.needsProfessionalConfirmation).toBe(true)
+    expect(account!.classification).toBe('unsettled')
+    expect(account!.needsProfessionalConfirmation).toBe(true)
   })
 
   it('labels notice-waived amounts as shown for reference, not taken', () => {
@@ -1033,10 +1033,10 @@ describe('buildInheritedSchedules', () => {
       citations: ['Notices 2022-53/2023-54/2024-35'],
     }
     const account = buildInheritedSchedules(plan, [year(2024, [evidence])]).accounts[0]
-    expect(account.notes).toContain(
+    expect(account!.notes).toContain(
       'Waived by IRS notice for this year; shown for reference, not taken.',
     )
-    expect(account.notes.join(' ')).not.toContain('still executed')
+    expect(account!.notes.join(' ')).not.toContain('still executed')
   })
 
   it('maps joint-life-gap-unresolved-at-year-precision to plain language in notes', () => {
@@ -1081,11 +1081,11 @@ describe('buildInheritedSchedules', () => {
       citations: ['Treas. Reg. §1.401(a)(9)-5(c)(2)(i)'],
     }
     const account = buildInheritedSchedules(plan, [year(2024, [evidence])]).accounts[0]
-    expect(account.notes).toContain(
+    expect(account!.notes).toContain(
       'The birth years alone cannot settle whether the spouse is more than 10 years younger, which affects the death-year required amount; shown using the standard table.',
     )
-    expect(account.notes.join(' ')).not.toContain('joint-life-gap-unresolved-at-year-precision')
-    expect(account.needsProfessionalConfirmation).toBe(true)
+    expect(account!.notes.join(' ')).not.toContain('joint-life-gap-unresolved-at-year-precision')
+    expect(account!.needsProfessionalConfirmation).toBe(true)
   })
 
   it('sets professional confirmation when the recent Roth five-year warning is added', () => {
@@ -1127,8 +1127,8 @@ describe('buildInheritedSchedules', () => {
       citations: [],
     }
     const account = buildInheritedSchedules(plan, [year(2026, [evidence])]).accounts[0]
-    expect(account.notes.some((note) => note.includes('five-year period may not be complete'))).toBe(true)
-    expect(account.needsProfessionalConfirmation).toBe(true)
+    expect(account!.notes.some((note) => note.includes('five-year period may not be complete'))).toBe(true)
+    expect(account!.needsProfessionalConfirmation).toBe(true)
   })
 })
 

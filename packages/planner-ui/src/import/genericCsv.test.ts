@@ -299,7 +299,7 @@ describe('genericCsv provenance (WS1)', () => {
     const r = draftPlanFromGenericCsv(typed.analysis, typed.analysis.guessedRoles, testIds)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.plan.accounts[0].type).toBe('roth')
+    expect(r.plan.accounts[0]!.type).toBe('roth')
     const roth = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth'))!
     expect(roth.confidence).toBe('assumed')
   })

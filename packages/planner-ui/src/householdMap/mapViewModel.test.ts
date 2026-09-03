@@ -61,7 +61,7 @@ describe('buildMapViewModel', () => {
 
   it('person focus keeps only the person and their connected items', () => {
     const graph = buildHouseholdGraph(buildExampleCouple())
-    const personId = buildExampleCouple().household.people[0].id
+    const personId = buildExampleCouple().household.people[0]!.id
     const vm = buildMapViewModel(graph, { focusPersonId: personId })
     expect(vm.nodes.some((n) => n.id === `person:${personId}`)).toBe(true)
     expect(vm.nodes.length).toBeLessThan(graph.nodes.length)
@@ -75,7 +75,7 @@ describe('buildMapViewModel', () => {
 
   it('person focus never pulls in the other member’s own items through joint nodes', () => {
     const plan = buildExampleCouple()
-    const alexId = plan.household.people[0].id
+    const alexId = plan.household.people[0]!.id
     const vm = buildMapViewModel(buildHouseholdGraph(plan), { focusPersonId: alexId })
     const labels = vm.nodes.map((n) => n.label)
     // Jointly held items stay visible…
@@ -147,7 +147,7 @@ describe('buildMapViewModel', () => {
   it('aria labels carry the full name (long names are truncated only visually)', () => {
     const plan = buildExampleCouple()
     const longName = 'Extremely Long Brokerage Account Name That Will Not Fit On A Card'
-    plan.accounts[0].name = longName
+    plan.accounts[0]!.name = longName
     const vm = buildMapViewModel(buildHouseholdGraph(plan))
     const node = vm.nodes.find((n) => n.label === longName)!
     expect(node.ariaLabel).toContain(longName)

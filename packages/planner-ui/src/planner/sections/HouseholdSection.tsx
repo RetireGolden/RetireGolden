@@ -88,7 +88,7 @@ export function HouseholdSection() {
             <div className="callout callout--warn" data-testid="single-with-partner-notice">
               <p className="card-hint" style={{ margin: 0 }}>
                 <strong>Two people on a Single-filing plan.</strong> {SINGLE_WITH_PARTNER_NOTE} Change the filing
-                status if you are married, or remove {plan.household.people[1].name} if the plan is for one person.
+                status if you are married, or remove {plan.household.people[1]!.name} if the plan is for one person.
               </p>
             </div>
           ) : null}
@@ -121,7 +121,7 @@ export function HouseholdSection() {
                 hint={`Blank = shown as ${fallbackPersonName(i)}.`}
                 path={`household.people.${i}.name`}
                 value={person.name}
-                onCommit={(v) => update((d) => void (d.household.people[i].name = v || fallbackPersonName(i)))}
+                onCommit={(v) => update((d) => void (d.household.people[i]!.name = v || fallbackPersonName(i)))}
               />
               <DateField
                 label="Date of birth"
@@ -143,7 +143,7 @@ export function HouseholdSection() {
                   { value: 'male', label: 'Male' },
                   { value: 'average', label: 'Average' },
                 ]}
-                onCommit={(v) => update((d) => void (d.household.people[i].sex = v))}
+                onCommit={(v) => update((d) => void (d.household.people[i]!.sex = v))}
               />
               <NumberField
                 label="Retirement age"
@@ -151,7 +151,7 @@ export function HouseholdSection() {
                 path={`household.people.${i}.retirementAge`}
                 value={person.retirementAge}
                 allowNull
-                onCommit={(v) => update((d) => void (d.household.people[i].retirementAge = v))}
+                onCommit={(v) => update((d) => void (d.household.people[i]!.retirementAge = v))}
               />
               <div className="field-with-action field-with-action--wide">
                 <NumberField
@@ -274,7 +274,7 @@ export function HouseholdSection() {
                 value={move.fromYear}
                 onCommit={(v) =>
                   update((d) => {
-                    d.household.stateMoves[i].fromYear = Math.round(v ?? move.fromYear)
+                    d.household.stateMoves[i]!.fromYear = Math.round(v ?? move.fromYear)
                     invalidateAcaEvidence(d)
                   })
                 }
@@ -285,7 +285,7 @@ export function HouseholdSection() {
                 options={MONTH_OPTIONS}
                 onCommit={(v) =>
                   update((d) => {
-                    d.household.stateMoves[i].fromMonth = Number(v)
+                    d.household.stateMoves[i]!.fromMonth = Number(v)
                     invalidateAcaEvidence(d)
                   })
                 }
@@ -296,7 +296,7 @@ export function HouseholdSection() {
                 options={US_STATES}
                 onCommit={(v) =>
                   update((d) => {
-                    d.household.stateMoves[i].state = v
+                    d.household.stateMoves[i]!.state = v
                     invalidateAcaEvidence(d)
                   })
                 }

@@ -131,7 +131,7 @@ describe('standalone report HTML goldens', () => {
   }
 
   it('matches the committed report HTML for example-couple with host branding', async () => {
-    const { plan, result, summary } = projectGoldenCase(GOLDEN_CASES[0])
+    const { plan, result, summary } = projectGoldenCase(GOLDEN_CASES[0]!)
     const html = buildStandaloneReportHtml({
       plan,
       result,

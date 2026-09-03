@@ -398,7 +398,7 @@ describe('YearCashFlowDialog', () => {
 
     expect(createObjectURL).toHaveBeenCalledTimes(1)
     expect(blobs).toHaveLength(1)
-    expect(await blobs[0].text()).toBe(serializeYearCashFlowDetailCsv(model))
+    expect(await blobs[0]!.text()).toBe(serializeYearCashFlowDetailCsv(model))
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:year-cash-flow-test')
     createObjectURL.mockRestore()
     revokeObjectURL.mockRestore()

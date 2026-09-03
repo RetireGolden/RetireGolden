@@ -59,8 +59,8 @@ function rothIra(id: string, balance: number, ownerPersonId: string): Account {
 /** Alex holds a traditional IRA and the household's only Roth IRA; Sam holds neither. */
 function plan(classifiedSources: readonly string[] = ['alex-ira']): Plan {
   const built = couplePlan({ p1PlanningAge: 70, p2PlanningAge: 70 })
-  built.household.people[0].name = 'Alex'
-  built.household.people[1].name = 'Sam'
+  built.household.people[0]!.name = 'Alex'
+  built.household.people[1]!.name = 'Sam'
   built.accounts = [
     { ...cashAccount('household-cash', 50_000), ownerPersonId: ALEX },
     traditionalIra('alex-ira', 500_000, ALEX),

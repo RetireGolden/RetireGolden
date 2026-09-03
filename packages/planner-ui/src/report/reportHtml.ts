@@ -107,7 +107,7 @@ function isCssColor(value: string): boolean {
   if (HEX_COLOR.test(value)) return true
   const colorFunction = /^(?:rgb|rgba|hsl|hsla)\((.*)\)$/i.exec(value)
   if (colorFunction) {
-    const args = colorFunction[1].trim().split(/\s*[,/]\s*|\s+/)
+    const args = colorFunction[1]!.trim().split(/\s*[,/]\s*|\s+/)
     return args.length >= 3 && args.length <= 4 && args.every((arg) => COLOR_FUNCTION_ARG.test(arg))
   }
   return NAMED_COLORS.has(value.toLowerCase())

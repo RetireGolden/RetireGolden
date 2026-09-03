@@ -609,7 +609,7 @@ function resolve(found: Map<MigrationVendor, MigrationEvidence[]>): MigrationIde
   }
   if (candidates.length === 0) return null
   if (candidates.length === 1) {
-    const only = candidates[0]
+    const only = candidates[0]!
     return { outcome: 'identified', vendor: only.vendor, adapter: only.adapter, evidence: only.evidence }
   }
   return { outcome: 'ambiguous', candidates }

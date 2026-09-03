@@ -146,13 +146,13 @@ function isAllowedEngineExportSpecifier(specifier: string): boolean {
 function moduleSpecifiers(source: string): string[] {
   const specifiers: string[] = []
   for (const match of source.matchAll(/^\s*import\s+['"]([^'"]+)['"]/gmu)) {
-    specifiers.push(match[1])
+    specifiers.push(match[1]!)
   }
   for (const match of source.matchAll(/(?:import|export)\s+(?:type\s+)?(?:[\w*{}\s,$]+\s+from\s+)?['"]([^'"]+)['"]/gu)) {
-    specifiers.push(match[1])
+    specifiers.push(match[1]!)
   }
   for (const match of source.matchAll(/import\s*\(\s*['"]([^'"]+)['"]\s*\)/gu)) {
-    specifiers.push(match[1])
+    specifiers.push(match[1]!)
   }
   return specifiers
 }
@@ -161,11 +161,11 @@ function citedRuleIdsInSource(source: string): string[] {
   const cited: string[] = []
   for (const match of source.matchAll(authorityShaped)) {
     const token = match[1]
-    if (!registryPrefixes.has(token.split('-')[0])) continue
-    cited.push(token)
+    if (!registryPrefixes.has(token!.split('-')[0])) continue
+    cited.push(token!)
   }
   for (const match of source.matchAll(citedAsRegistered)) {
-    cited.push(match[1])
+    cited.push(match[1]!)
   }
   return cited
 }

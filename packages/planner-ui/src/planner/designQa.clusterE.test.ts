@@ -65,7 +65,7 @@ function rule(selector: string, source = css): string {
     if (at < 0) break
     from = at + selector.length
     let after = from
-    while (after < source.length && /\s/.test(source[after])) after++
+    while (after < source.length && /\s/.test(source[after]!)) after++
     if (source[after] !== '{') continue
     if (!atRuleBoundary(source, at)) continue
     return ruleBodyAt(source, at, selector)
@@ -81,7 +81,7 @@ function rule(selector: string, source = css): string {
  */
 function atRuleBoundary(source: string, at: number): boolean {
   let before = at - 1
-  while (before >= 0 && /\s/.test(source[before])) before--
+  while (before >= 0 && /\s/.test(source[before]!)) before--
   if (before < 0 || source[before] === '}') return true
   return before >= 1 && source[before - 1] === '*' && source[before] === '/'
 }
@@ -95,7 +95,7 @@ function lastRule(selector: string, source = css): string {
     if (at < 0) break
     from = at + selector.length
     let after = from
-    while (after < source.length && /\s/.test(source[after])) after++
+    while (after < source.length && /\s/.test(source[after]!)) after++
     if (source[after] !== '{') continue
     if (atRuleBoundary(source, at)) last = at
   }

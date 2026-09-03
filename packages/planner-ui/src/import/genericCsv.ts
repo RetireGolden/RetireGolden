@@ -86,8 +86,8 @@ export const MAX_CELLS_PREVIEWED = 6
  */
 export function setAsideRange(rows: readonly SkippedCsvRow[]): string {
   if (rows.length < 2) return ''
-  const contiguous = rows.every((row, i) => i === 0 || row.rowNumber === rows[i - 1].rowNumber + 1)
-  return contiguous ? ` (rows ${rows[0].rowNumber} to ${rows[rows.length - 1].rowNumber})` : ''
+  const contiguous = rows.every((row, i) => i === 0 || row.rowNumber === rows[i - 1]!.rowNumber + 1)
+  return contiguous ? ` (rows ${rows[0]!.rowNumber} to ${rows[rows.length - 1]!.rowNumber})` : ''
 }
 
 /** "Row 3: I-bonds; Row 4: Prepared by Chase; and 12 more (rows 5 to 16)": the first `limit` rows spelled out. */
@@ -157,21 +157,21 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
   const searchLimit = Math.min(rows.length, 30)
   /** Two or more text cells and no figure: the shape of a header (or of a title line). */
   const headerShaped = (r: number): boolean => {
-    const nonEmpty = rows[r].filter((c) => c.trim() !== '')
+    const nonEmpty = rows[r]!.filter((c) => c.trim() !== '')
     return nonEmpty.length >= 2 && !nonEmpty.some(isMoneyish)
   }
   /** Whether any label on the row names a column the analyzer knows. */
-  const recognisedHeader = (r: number): boolean => rows[r].map(guessColumnRole).some((role) => role !== 'ignore')
+  const recognisedHeader = (r: number): boolean => rows[r]!.map(guessColumnRole).some((role) => role !== 'ignore')
   /** Rows below `r` sorted into data rows (a money-ish cell) and set-aside rows, numbered by spreadsheet row. */
   const collect = (r: number) => {
     const dataRows: string[][] = []
     const dataRowNumbers: number[] = []
     const skippedRows: SkippedCsvRow[] = []
     for (let k = r + 1; k < rows.length; k++) {
-      const row = rows[k]
+      const row = rows[k]!
       // Numbered by spreadsheet row, so "Row 7" is row 7 in the sheet even
       // past a blank separator line the parser dropped.
-      const rowNumber = lines[k]
+      const rowNumber = lines[k]!
       if (row.some(isMoneyish)) {
         dataRows.push(row)
         dataRowNumbers.push(rowNumber)
@@ -192,15 +192,15 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
     // no header to map under, so they are set aside like the text-only rows
     // below it and named by spreadsheet row, ahead of them, rather than
     // passed over in silence because the header search stepped past them.
-    const above = rows.slice(0, r).map((row, k) => ({ rowNumber: lines[k], cells: row }))
+    const above = rows.slice(0, r).map((row, k) => ({ rowNumber: lines[k]!, cells: row }))
     // A usable table needs at least a name-ish and a money-ish column somewhere;
     // the user can still fix the guesses by hand.
     return {
       ok: true,
       analysis: {
-        header: rows[r],
+        header: rows[r]!,
         dataRows: found.dataRows,
-        guessedRoles: rows[r].map(guessColumnRole),
+        guessedRoles: rows[r]!.map(guessColumnRole),
         dataRowNumbers: found.dataRowNumbers,
         skippedRows: [...above, ...found.skippedRows],
       },
@@ -217,8 +217,8 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
         // rows named are every row but the header, those above it included:
         // a title line or junk above the header is set aside like the rest,
         // not dropped because the search passed over it.
-        const allButHeader = rows.flatMap((row, k) => (k === r ? [] : [{ rowNumber: lines[k], cells: row }]))
-        if (recognisedHeader(r) && (textOnly === null || textOnly.header === null)) textOnly = { header: rows[r], skippedRows: allButHeader }
+        const allButHeader = rows.flatMap((row, k) => (k === r ? [] : [{ rowNumber: lines[k]!, cells: row }]))
+        if (recognisedHeader(r) && (textOnly === null || textOnly.header === null)) textOnly = { header: rows[r]!, skippedRows: allButHeader }
         else textOnly ??= { header: null, skippedRows: allButHeader }
       }
       continue
@@ -230,7 +230,7 @@ export function analyzeGenericCsv(text: string): GenericCsvAnalysisResult {
     // sheet with no recognised header at all keeps its first header-shaped
     // row, and the person assigns the columns by hand.
     if (!recognisedHeader(r)) {
-      for (let r2 = r + 1; r2 < searchLimit && !rows[r2].some(isMoneyish); r2++) {
+      for (let r2 = r + 1; r2 < searchLimit && !rows[r2]!.some(isMoneyish); r2++) {
         if (headerShaped(r2) && recognisedHeader(r2)) {
           const below = collect(r2)
           if (below.dataRows.length > 0) return success(r2, below)
@@ -333,13 +333,13 @@ export function draftPlanFromGenericCsv(
 
   const review: ImportReviewItem[] = []
   const plan = createEmptyPlan({ newId, name: 'Imported from spreadsheet' })
-  const ownerId = plan.household.people[0].id
+  const ownerId = plan.household.people[0]!.id
 
   const totalRowRe = TOTAL_ROW_RE
   const loanLikeRe = /\bloan\b|debt|mortgage|heloc|liabilit|credit/i
 
   for (let r = 0; r < analysis.dataRows.length; r++) {
-    const cells = analysis.dataRows[r]
+    const cells = analysis.dataRows[r]!
     // The spreadsheet row when the analysis carries it (parseCsv sourceLines); else a header-relative
     // estimate (header at row 1, first data row at row 2).
     const rowNumber = analysis.dataRowNumbers?.[r] ?? r + 2

@@ -787,9 +787,12 @@ function proposedStaticAllocation(
 ) {
   let usShare = 0.75
   if (account.allocation !== undefined) {
+    // targetWeightsAt always returns one entry per ASSET_CLASS_IDS (currently
+    // led by us-stocks, intl-stocks), so indices 0 and 1 are always present —
+    // the engine's own weightsToVector/lerpVectors rely on the same guarantee.
     const currentWeights = targetWeightsAt(account.allocation, startYear)
-    const currentStockWeight = currentWeights[0] + currentWeights[1]
-    if (currentStockWeight > 0) usShare = currentWeights[0] / currentStockWeight
+    const currentStockWeight = currentWeights[0]! + currentWeights[1]!
+    if (currentStockWeight > 0) usShare = currentWeights[0]! / currentStockWeight
   }
   const usStocks = stockPct * usShare
   return {
@@ -1705,10 +1708,11 @@ export function buildScenarioLever(
           'No annual lifestyle spending is modeled for survivor scaling.',
         ])
       }
+      // Safe: the `length < 2` guard above already proved two people exist.
       const [firstPerson, secondPerson] = edited.household.people
       if (
-        Number(firstPerson.dob.slice(0, 4)) + firstPerson.longevity.planningAge ===
-        Number(secondPerson.dob.slice(0, 4)) + secondPerson.longevity.planningAge
+        Number(firstPerson!.dob.slice(0, 4)) + firstPerson!.longevity.planningAge ===
+        Number(secondPerson!.dob.slice(0, 4)) + secondPerson!.longevity.planningAge
       ) {
         return unavailable(definition, [
           'The household has no modeled survivor-only year.',

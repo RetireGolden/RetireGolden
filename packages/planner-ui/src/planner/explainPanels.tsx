@@ -43,7 +43,7 @@ export function WhySuccessPanel({
   const pct = Math.round(summary.successRate * 100)
   const failing = summary.downsideRisk.failingPathCount
   const depletions = summary.depletionYearCounts
-  const earliestDepletion = depletions.length > 0 ? depletions[0].year : null
+  const earliestDepletion = depletions.length > 0 ? depletions[0]!.year : null
   const medianDepletion = (() => {
     if (failing === 0) return null
     let seen = 0
@@ -77,7 +77,7 @@ export function WhySuccessPanel({
       {failing > 0 ? (
         <p>
           <strong>Which years drive it.</strong> Failing paths first run out between {earliestDepletion} and{' '}
-          {depletions[depletions.length - 1].year}
+          {depletions[depletions.length - 1]!.year}
           {medianDepletion !== null ? ` (median ${medianDepletion})` : ''}. See the depletion chart below for the full
           curve. Early depletions usually trace to weak markets in the first retirement decade: by {decade?.year}, the
           worst 10% of paths hold {fmtMoneyCompact(decade?.p10 ?? 0)} versus a median of{' '}

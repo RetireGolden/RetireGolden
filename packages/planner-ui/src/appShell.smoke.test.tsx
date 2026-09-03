@@ -156,8 +156,8 @@ describe('App shell smoke', () => {
     expect(links.filter((a) => a.getAttribute('aria-current') === 'page')).toEqual([])
     const active = links.filter((a) => a.getAttribute('aria-current') === 'location')
     expect(active.map((a) => a.textContent)).toEqual(['Disclaimer'])
-    expect(active[0].className).toContain('nav-link--active')
-    expect(active[0].getAttribute('href')).toBe('/disclaimer')
+    expect(active[0]!.className).toContain('nav-link--active')
+    expect(active[0]!.getAttribute('href')).toBe('/disclaimer')
     await act(async () => root.unmount())
   })
 

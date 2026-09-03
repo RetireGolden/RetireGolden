@@ -106,7 +106,7 @@ describe('validation cluster F', () => {
     const update = vi.fn()
     await render(
       <PlanCtx.Provider value={contextFor(plan, issues, update)}>
-        <AccountFields account={plan.accounts[0]} index={0} />
+        <AccountFields account={plan.accounts[0]!} index={0} />
       </PlanCtx.Provider>,
     )
     const share = labelledControl('Charity share')
@@ -128,8 +128,8 @@ describe('validation cluster F', () => {
     await typeInto(share, '60')
     expect(update).toHaveBeenCalledTimes(1)
     const draft = structuredClone(plan)
-    update.mock.calls[0][0](draft)
-    expect(draft.accounts[0].estateBeneficiary).toEqual({ destination: 'charity', charityPct: 60 })
+    update.mock.calls[0]![0](draft)
+    expect(draft.accounts[0]!.estateBeneficiary).toEqual({ destination: 'charity', charityPct: 60 })
   })
 
   it('an Annuity taxable share the engine rejects shows at the field with the engine bound (#516)', async () => {
@@ -150,7 +150,7 @@ describe('validation cluster F', () => {
     expect(issues).toContain('accounts.0.taxablePct: Too big: expected number to be <=100')
     await render(
       <PlanCtx.Provider value={contextFor(plan, issues)}>
-        <AccountFields account={plan.accounts[0]} index={0} />
+        <AccountFields account={plan.accounts[0]!} index={0} />
       </PlanCtx.Provider>,
     )
     const share = labelledControl('Taxable share')
@@ -176,7 +176,7 @@ describe('validation cluster F', () => {
     const update = vi.fn()
     await render(
       <PlanCtx.Provider value={contextFor(plan, [], update)}>
-        <AccountFields account={plan.accounts[0]} index={0} />
+        <AccountFields account={plan.accounts[0]!} index={0} />
       </PlanCtx.Provider>,
     )
     const qualified = labelledControl('Qualified dividends')
@@ -188,7 +188,7 @@ describe('validation cluster F', () => {
     await typeInto(qualified, '60')
     expect(update).toHaveBeenCalledTimes(1)
     const draft = structuredClone(plan)
-    update.mock.calls[0][0](draft)
+    update.mock.calls[0]![0](draft)
     expect((draft.accounts[0] as Extract<Account, { type: 'taxable' }>).qualifiedRatio).toBeCloseTo(0.6)
     expect(qualified.hasAttribute('aria-invalid')).toBe(false)
   })
@@ -201,7 +201,7 @@ describe('validation cluster F', () => {
         kind: 'ltc',
         id: 'ltc-1',
         name: 'LTC policy',
-        owner: plan.household.people[0].id,
+        owner: plan.household.people[0]!.id,
         annualPremium: 3000,
         premiumMode: 'untilAge',
         premiumEndAge: 5,
@@ -225,13 +225,13 @@ describe('validation cluster F', () => {
     await choose(labelledControl<HTMLSelectElement>('Premium'), 'lifetime')
     expect(update).toHaveBeenCalledTimes(1)
     const cleared = structuredClone(plan)
-    update.mock.calls[0][0](cleared)
-    expect(cleared.insurance[0].premiumMode).toBe('lifetime')
+    update.mock.calls[0]![0](cleared)
+    expect(cleared.insurance[0]!.premiumMode).toBe('lifetime')
     expect(cleared.insurance[0]).not.toHaveProperty('premiumEndAge')
     expect(parsePlan(cleared).ok).toBe(true)
     // Coming back stores the age the field already shows, so the schema's
     // "required when untilAge" never fires on a field that displays 65.
-    cleared.insurance[0].premiumMode = 'paidUp'
+    cleared.insurance[0]!.premiumMode = 'paidUp'
     await act(async () => {
       root.render(
         <MemoryRouter>
@@ -243,7 +243,7 @@ describe('validation cluster F', () => {
     })
     await choose(labelledControl<HTMLSelectElement>('Premium'), 'untilAge')
     const seeded = structuredClone(cleared)
-    update.mock.calls[1][0](seeded)
+    update.mock.calls[1]![0](seeded)
     expect(seeded.insurance[0]).toMatchObject({ premiumMode: 'untilAge', premiumEndAge: 65 })
     expect(parsePlan(seeded).ok).toBe(true)
   })
@@ -260,7 +260,7 @@ describe('validation cluster F', () => {
         kind: 'permanentLife',
         id: 'life-stale',
         name: 'Whole life',
-        insured: plan.household.people[0].id,
+        insured: plan.household.people[0]!.id,
         beneficiary: 'estate',
         annualPremium: 1200,
         premiumMode: 'paidUp',
@@ -284,7 +284,7 @@ describe('validation cluster F', () => {
     await choose(labelledControl<HTMLSelectElement>('Premium'), 'untilAge')
     expect(update).toHaveBeenCalledTimes(1)
     const opened = structuredClone(plan)
-    update.mock.calls[0][0](opened)
+    update.mock.calls[0]![0](opened)
     expect(opened.insurance[0]).toMatchObject({ premiumMode: 'untilAge', premiumEndAge: 65 })
     expect(parsePlan(opened).ok).toBe(true)
   })
@@ -297,7 +297,7 @@ describe('validation cluster F', () => {
         kind: 'permanentLife',
         id: 'life-1',
         name: 'Whole life',
-        insured: plan.household.people[0].id,
+        insured: plan.household.people[0]!.id,
         beneficiary: 'estate',
         annualPremium: 1200,
         premiumMode: 'untilAge',
@@ -317,7 +317,7 @@ describe('validation cluster F', () => {
     )
     await choose(labelledControl<HTMLSelectElement>('Premium'), 'paidUp')
     const kept = structuredClone(plan)
-    update.mock.calls[0][0](kept)
+    update.mock.calls[0]![0](kept)
     expect(kept.insurance[0]).toMatchObject({ premiumMode: 'paidUp', premiumEndAge: 72 })
     expect(parsePlan(kept).ok).toBe(true)
     await act(async () => {
@@ -331,7 +331,7 @@ describe('validation cluster F', () => {
     })
     await choose(labelledControl<HTMLSelectElement>('Premium'), 'untilAge')
     const back = structuredClone(kept)
-    update.mock.calls[1][0](back)
+    update.mock.calls[1]![0](back)
     expect(back.insurance[0]).toMatchObject({ premiumMode: 'untilAge', premiumEndAge: 72 })
   })
 
@@ -366,7 +366,7 @@ describe('validation cluster F', () => {
 
   it('Income: a rejected recurring amount, wages gross, and stop age show at their fields (#500, #524)', async () => {
     const plan = createSamplePlan()
-    const person = plan.household.people[0].id
+    const person = plan.household.people[0]!.id
     plan.incomes = [
       { type: 'wages', id: 'w', personId: person, annualGross: -500, endAge: 200, realGrowthPct: 0 },
       { type: 'recurring', id: 'r', label: 'Rental', annualAmount: -1, startYear: 2050, endYear: 2020, inflationAdjusted: true, taxTreatment: 'ordinary' },

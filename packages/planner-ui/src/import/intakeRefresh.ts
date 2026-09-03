@@ -136,7 +136,7 @@ function parseIncomeLeafPath(
 ): { index: number; field: IncomeAmountField } | null {
   const match = INCOME_LEAF_PATH.exec(path)
   if (!match) return null
-  const index = safeIndex(match[1])
+  const index = safeIndex(match[1]!)
   if (index === null) return null
   return { index, field: match[2] as IncomeAmountField }
 }
@@ -200,7 +200,7 @@ function reviewForPath(
   const matches = review.filter((item) => landed(item) && (item.target === recordPath || item.target === leafPath))
   if (matches.length === 0) return { item: null, reason: 'missing_provenance' }
   if (matches.length > 1) return { item: null, reason: 'ambiguous_provenance' }
-  const item = matches[0]
+  const item = matches[0]!
   return {
     item,
     reason: provenanceCanAutoMatch(item) ? null : 'unreviewed_assumption',
@@ -214,10 +214,10 @@ function personDobProvenance(
 ): { dob: string; incomingPersonIndex: number } | null {
   const incomingPersonIndex = incoming.household.people.findIndex((person) => person.id === personId)
   if (incomingPersonIndex < 0) return null
-  const person = incoming.household.people[incomingPersonIndex]
+  const person = incoming.household.people[incomingPersonIndex]!
   const target = `household.people[${incomingPersonIndex}].dob`
   const matches = review.filter((item) => landed(item) && item.target === target)
-  if (matches.length !== 1 || !provenanceCanAutoMatch(matches[0])) return null
+  if (matches.length !== 1 || !provenanceCanAutoMatch(matches[0]!)) return null
   // A DOB must identify one incoming person too. Two people sharing the same
   // DOB are real, but the intake has not proven which wage belongs to which.
   if (incoming.household.people.filter((candidate) => candidate.dob === person.dob).length !== 1) return null
@@ -228,7 +228,7 @@ function matchingCurrentPersonIndex(current: Plan, dob: string): number | null {
   const matches = current.household.people
     .map((person, index) => ({ person, index }))
     .filter(({ person }) => person.dob === dob)
-  return matches.length === 1 ? matches[0].index : null
+  return matches.length === 1 ? matches[0]!.index : null
 }
 
 function sourceOf(
@@ -259,7 +259,7 @@ function candidate(
         : unique
           ? 'exact'
           : 'unmatched'
-  const targetPath = unique ? targetPaths[0] : null
+  const targetPath = unique ? targetPaths[0]! : null
   return {
     source,
     targetPath,
@@ -307,7 +307,7 @@ function wageCandidates(
       candidates.push(candidate(source, [], targetBindings, 'no_target', protectedTargets))
       return
     }
-    const currentPersonId = current.household.people[currentPersonIndex].id
+    const currentPersonId = current.household.people[currentPersonIndex]!.id
     const sourceCount = incomingWages.filter((other) => other.personId === income.personId).length
     const targetPaths = currentWages
       .filter((other) => other.personId === currentPersonId)

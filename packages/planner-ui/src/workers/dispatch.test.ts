@@ -94,7 +94,7 @@ describe('channel routing', () => {
     await dispatchPlannerWorkerRequest(envelope('optimize', { plan: 'p' }), host)
 
     expect(runOptimizeRequest).toHaveBeenCalledTimes(1)
-    const [request, wasmUrl] = vi.mocked(runOptimizeRequest).mock.calls[0]
+    const [request, wasmUrl] = vi.mocked(runOptimizeRequest).mock.calls[0]!
     expect(request).toEqual({ plan: 'p' })
     expect((wasmUrl as () => string)()).toBe('/assets/highs.wasm')
     expect(posted).toEqual([{ msg: { type: 'done', result: 'optimize-result' }, transfer: undefined }])
@@ -133,8 +133,8 @@ describe('the monteCarlo channel routes its four request kinds apart', () => {
     await dispatchPlannerWorkerRequest(envelope('monteCarlo', { kind: 'monteCarlo', progressEvery: 10 }), host)
 
     expect(posted).toHaveLength(1)
-    expect(posted[0].msg.type).toBe('done')
-    expect(posted[0].transfer).toEqual(paths.map((p) => p.investableByYear.buffer))
+    expect(posted[0]!.msg.type).toBe('done')
+    expect(posted[0]!.transfer).toEqual(paths.map((p) => p.investableByYear.buffer))
   })
 
   it('streams progress only on the requested interval', async () => {

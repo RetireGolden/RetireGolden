@@ -195,7 +195,7 @@ describe('ImportPage', () => {
     await waitForUi(() => el.querySelector('[data-testid="plan-route"]') !== null, 'the saved plan route')
     const after = await listUserPlanSummaries()
     expect(after).toHaveLength(1)
-    expect(after[0].name).toBe('Seeded from your 1040')
+    expect(after[0]!.name).toBe('Seeded from your 1040')
     expect(el.querySelector('[data-testid="plan-route"]')).not.toBeNull()
   })
 
@@ -226,9 +226,9 @@ describe('ImportPage', () => {
     const state = findSelect(el, 'State of residence')
     expect(state.value).toBe('')
     expect(state.required).toBe(true)
-    expect(state.options[0].value).toBe('')
-    expect(state.options[0].disabled).toBe(true)
-    expect(state.options[0].textContent).toContain('Select your state')
+    expect(state.options[0]!.value).toBe('')
+    expect(state.options[0]!.disabled).toBe(true)
+    expect(state.options[0]!.textContent).toContain('Select your state')
 
     act(() => findButton(el, 'Build my draft plan')!.click())
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('Select your state of residence')
@@ -267,7 +267,7 @@ describe('ImportPage', () => {
     await waitForUi(() => el.querySelector('[data-testid="plan-route"]') !== null, 'the saved plan route')
     const plans = await listUserPlanSummaries()
     expect(plans).toHaveLength(1)
-    expect(plans[0].name).toBe('Imported from Schwab')
+    expect(plans[0]!.name).toBe('Imported from Schwab')
   })
 
   it('offers a download-report action for a drafted import whose envelope round-trips', async () => {
@@ -314,10 +314,10 @@ describe('ImportPage', () => {
     // Exactly one source, correctly identified — file name, mapper, a real
     // 64-hex SHA-256, and the independently-computed UTF-8 byte length.
     expect(prov.sources).toHaveLength(1)
-    expect(prov.sources[0].file).toBe('positions.csv')
-    expect(prov.sources[0].mapper).toBe('brokerCsv')
-    expect(prov.sources[0].sha256).toMatch(/^[0-9a-f]{64}$/)
-    expect(prov.sources[0].bytes).toBe(new TextEncoder().encode(csv).length)
+    expect(prov.sources[0]!.file).toBe('positions.csv')
+    expect(prov.sources[0]!.mapper).toBe('brokerCsv')
+    expect(prov.sources[0]!.sha256).toMatch(/^[0-9a-f]{64}$/)
+    expect(prov.sources[0]!.bytes).toBe(new TextEncoder().encode(csv).length)
 
     // The report NEVER embeds the raw document.
     expect(json).not.toContain('VANGUARD TOTAL STOCK MARKET ETF')
@@ -415,13 +415,13 @@ describe('ImportPage', () => {
     const parsed = parseImportProvenance(await captured!.text())
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) throw new Error('report did not parse')
-    expect(parsed.provenance.sources[0].file).toBe('guided-1040-entry')
-    expect(parsed.provenance.sources[0].mapper).toBe('tenForty')
+    expect(parsed.provenance.sources[0]!.file).toBe('guided-1040-entry')
+    expect(parsed.provenance.sources[0]!.mapper).toBe('tenForty')
     // Deliberately NO hash: the typed inputs are low-entropy personal data, so
     // a deterministic fingerprint in a handoff report would be dictionary-
     // attackable (a DOB has ~36,500 plausible values).
-    expect(parsed.provenance.sources[0].sha256).toBe('')
-    expect(parsed.provenance.sources[0].bytes).toBe(0)
+    expect(parsed.provenance.sources[0]!.sha256).toBe('')
+    expect(parsed.provenance.sources[0]!.bytes).toBe(0)
   })
 
   it('surfaces a helpful error for unrecognized files instead of importing junk', async () => {

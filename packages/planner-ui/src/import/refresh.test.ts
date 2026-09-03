@@ -33,7 +33,7 @@ function planWith(...accounts: Account[]): Plan {
 }
 
 function ownerId(plan: Plan): string {
-  return plan.household.people[0].id
+  return plan.household.people[0]!.id
 }
 
 /** Wrap loose candidates in a classification (with an optional protected snapshot) for buildRefreshDelta. */
@@ -84,13 +84,13 @@ function traditional(id: string, name: string, owner: string): Account {
 function readPath(plan: Plan, path: string): number {
   const m = /^accounts\[(\d+)\]\.(balance|costBasis)$/.exec(path)!
   const account = plan.accounts[Number(m[1])] as Account & Record<string, number>
-  return account[m[2]]
+  return account[m[2]!]!
 }
 
 describe('classifyRefresh — matching', () => {
   it('matches a single whole-name hit as exact', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
-    const { candidates: [c] } = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)])
+    const c = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)]).candidates[0]!
     expect(c.match).toBe('exact')
     expect(c.targetAccountId).toBe('acct-brokerage')
     expect(c.targetPath).toBe('accounts[0]')
@@ -101,7 +101,7 @@ describe('classifyRefresh — matching', () => {
     // Alone in the plan, the joint account is an exact label-equals-name match
     // once the mask (and only the mask) is stripped.
     const solo = planWith(loadedTaxable('acct-joint', 'Brokerage (Joint)'))
-    const { candidates: [exact] } = classifyRefresh(solo, [src('Brokerage (Joint) (Z12345678)', 55_000, 40_000)])
+    const exact = classifyRefresh(solo, [src('Brokerage (Joint) (Z12345678)', 55_000, 40_000)]).candidates[0]!
     expect(exact.match).toBe('exact')
     expect(exact.targetAccountId).toBe('acct-joint')
 
@@ -110,7 +110,7 @@ describe('classifyRefresh — matching', () => {
     // suggestion. Pre-fix, "(joint)" was stripped as if it were a mask and the
     // WRONG account (plain Brokerage) won the equality match.
     const both = planWith(loadedTaxable('acct-joint', 'Brokerage (Joint)'), loadedTaxable('acct-solo', 'Brokerage'))
-    const { candidates: [c] } = classifyRefresh(both, [src('Brokerage (Joint) (Z12345678)', 55_000, 40_000)])
+    const c = classifyRefresh(both, [src('Brokerage (Joint) (Z12345678)', 55_000, 40_000)]).candidates[0]!
     expect(c.match).toBe('ambiguous')
     expect(c.targetAccountId).toBe('acct-joint')
     expect(c.alternativeAccountIds).toContain('acct-solo')
@@ -136,14 +136,14 @@ describe('classifyRefresh — matching', () => {
 
   it('matches a single shared-word hit as likely', () => {
     const plan = planWith(loadedTaxable('acct-ind', 'Individual Brokerage'))
-    const { candidates: [c] } = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)])
+    const c = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)]).candidates[0]!
     expect(c.match).toBe('likely')
     expect(c.targetAccountId).toBe('acct-ind')
   })
 
   it('uses whole-word distinctive matching, not a substring inside a longer word', () => {
     const plan = planWith(loadedTaxable('acct-tax', 'Tax Account'))
-    const { candidates: [c] } = classifyRefresh(plan, [src('Taxable Brokerage ...789', 55_000, 40_000)])
+    const c = classifyRefresh(plan, [src('Taxable Brokerage ...789', 55_000, 40_000)]).candidates[0]!
     expect(c.match).toBe('unmatched')
     expect(c.targetAccountId).toBeNull()
   })
@@ -157,8 +157,8 @@ describe('classifyRefresh — matching', () => {
     const classification = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
       rememberedMappings: new Map([[normalizeBrokerAccountLabel(label), 'acct-individual']]),
     })
-    expect(classification.candidates[0].match).toBe('remembered')
-    expect(classification.candidates[0].targetAccountId).toBe('acct-individual')
+    expect(classification.candidates[0]!.match).toBe('remembered')
+    expect(classification.candidates[0]!.targetAccountId).toBe('acct-individual')
 
     const selection = new Map([[0, 'acct-other']])
     const delta = buildRefreshDelta(plan, classification, selection)
@@ -174,9 +174,9 @@ describe('classifyRefresh — matching', () => {
       loadedTaxable('acct-remembered', 'Old Brokerage'),
     )
     const label = 'Vanguard Brokerage ...789'
-    const { candidates: [c] } = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
+    const c = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
       rememberedMappings: new Map([[normalizeBrokerAccountLabel(label), 'acct-remembered']]),
-    })
+    }).candidates[0]!
     expect(c.match).toBe('ambiguous')
     expect([c.targetAccountId, ...c.alternativeAccountIds]).toEqual(
       expect.arrayContaining(['acct-exact', 'acct-remembered']),
@@ -188,9 +188,9 @@ describe('classifyRefresh — matching', () => {
     const label = '87654321'
     const key = normalizeBrokerAccountLabel(label)
     expect(key).not.toBe('')
-    const { candidates: [c] } = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
+    const c = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
       rememberedMappings: new Map([[key, 'acct-vg']]),
-    })
+    }).candidates[0]!
     expect(c.match).toBe('remembered')
     expect(c.targetAccountId).toBe('acct-vg')
   })
@@ -198,9 +198,9 @@ describe('classifyRefresh — matching', () => {
   it('ignores a remembered mapping whose account no longer exists', () => {
     const plan = planWith(loadedTaxable('acct-individual', 'Individual Brokerage'))
     const label = 'Individual ...789'
-    const { candidates: [c] } = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
+    const c = classifyRefresh(plan, [src(label, 55_000, 40_000)], {
       rememberedMappings: new Map([[normalizeBrokerAccountLabel(label), 'deleted-account']]),
-    })
+    }).candidates[0]!
     expect(c.match).toBe('likely')
     expect(c.targetAccountId).toBe('acct-individual')
   })
@@ -210,11 +210,11 @@ describe('classifyRefresh — matching', () => {
     // "brokerage" and silently pre-select overwriting the 401k from an
     // unrelated Brokerage row. Digits are name content and must survive.
     const plan = planWith(loadedTaxable('acct-401k', '401k'))
-    const { candidates: [c] } = classifyRefresh(plan, [src('Brokerage ...789', 40_000, null)])
+    const c = classifyRefresh(plan, [src('Brokerage ...789', 40_000, null)]).candidates[0]!
     expect(c.match).toBe('unmatched')
     expect(c.targetAccountId).toBeNull()
     // …while a file row that actually names the 401k still matches it.
-    const { candidates: [hit] } = classifyRefresh(plan, [src('My 401k ...123', 40_000, null)])
+    const hit = classifyRefresh(plan, [src('My 401k ...123', 40_000, null)]).candidates[0]!
     expect(hit.match).toBe('exact')
     expect(hit.targetAccountId).toBe('acct-401k')
   })
@@ -229,9 +229,9 @@ describe('classifyRefresh — matching', () => {
       normalizeBrokerAccountLabel('Brokerage 12345678'),
     )
     const plan = planWith(loadedTaxable('acct-401k', '401k'))
-    const { candidates: [c] } = classifyRefresh(plan, [
+    const c = classifyRefresh(plan, [
       src('Brokerage １２３４５６７８', 40_000, null),
-    ])
+    ]).candidates[0]!
     expect(c.match).toBe('unmatched')
     expect(c.targetAccountId).toBeNull()
   })
@@ -250,7 +250,7 @@ describe('classifyRefresh — matching', () => {
     const plan = createEmptyPlan({ newId: nextId })
     const owner = ownerId(plan)
     plan.accounts.push(traditional('acct-ira', 'IRA', owner))
-    const { candidates: [c] } = classifyRefresh(plan, [src('Roth IRA ...321', 14_000, null)])
+    const c = classifyRefresh(plan, [src('Roth IRA ...321', 14_000, null)]).candidates[0]!
     expect(c.match).toBe('ambiguous')
     expect(c.targetAccountId).toBe('acct-ira') // suggested, not pre-selected
   })
@@ -260,7 +260,7 @@ describe('classifyRefresh — matching', () => {
     const owner = ownerId(plan)
     plan.accounts.push(roth('acct-roth', 'Roth IRA', owner), traditional('acct-rollover', 'Rollover IRA', owner))
 
-    const { candidates: [c] } = classifyRefresh(plan, [src('Roth IRA ...321', 14_000)])
+    const c = classifyRefresh(plan, [src('Roth IRA ...321', 14_000)]).candidates[0]!
     expect(c.match).toBe('ambiguous')
     // The whole-name hit is the sensible primary IF the user turns the row on…
     expect(c.targetAccountId).toBe('acct-roth')
@@ -282,7 +282,7 @@ describe('classifyRefresh — matching', () => {
     const owner = ownerId(plan)
     plan.accounts.push(traditional('acct-rollover', 'Rollover IRA', owner))
 
-    const { candidates: [c] } = classifyRefresh(plan, [src('Roth IRA ...321', 14_000)])
+    const c = classifyRefresh(plan, [src('Roth IRA ...321', 14_000)]).candidates[0]!
     expect(c.match).toBe('ambiguous')
     // The best guess is still offered for one-click confirmation…
     expect(c.targetAccountId).toBe('acct-rollover')
@@ -301,7 +301,7 @@ describe('classifyRefresh — matching', () => {
     const owner = ownerId(plan)
     plan.accounts.push(traditional('acct-sep', 'SEP IRA', owner))
 
-    const { candidates: [c] } = classifyRefresh(plan, [src('Traditional IRA ...9', 30_000)])
+    const c = classifyRefresh(plan, [src('Traditional IRA ...9', 30_000)]).candidates[0]!
     expect(c.match).toBe('ambiguous')
     expect(c.targetAccountId).toBe('acct-sep')
     expect(c.alternativeAccountIds).toEqual([])
@@ -311,7 +311,7 @@ describe('classifyRefresh — matching', () => {
     // Guard the demotion is narrow: "Individual" is distinctive, not a category
     // word, so a lone shared-"Individual" hit stays 'likely' (default ON).
     const plan = planWith(loadedTaxable('acct-ind', 'Individual Brokerage'))
-    const { candidates: [c] } = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)])
+    const c = classifyRefresh(plan, [src('Individual ...789', 25_000, 15_000)]).candidates[0]!
     expect(c.match).toBe('likely')
     expect(c.targetAccountId).toBe('acct-ind')
   })
@@ -528,7 +528,7 @@ describe('applyRefresh — the structural acceptance', () => {
     // The file's basis is ignored on a Roth; only the balance lands, and no
     // costBasis field is invented on an account type that has none.
     expect(plan.accounts[0]).toEqual({ ...before, balance: 14_000 })
-    expect('costBasis' in plan.accounts[0]).toBe(false)
+    expect('costBasis' in plan.accounts[0]!).toBe(false)
     expect(delta.changes.some((c) => c.field === 'costBasis')).toBe(false)
     expect(delta.review.some((item) => item.status === 'unmapped' && item.detail.includes('basis refresh applies only'))).toBe(true)
   })
@@ -590,7 +590,7 @@ describe('protectedTargets', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'), loadedTaxable('acct-other', 'Other'))
     const protectedTargets = new Set(['accounts[0]'])
     const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets })
-    expect(classification.candidates[0].isProtected).toBe(true)
+    expect(classification.candidates[0]!.isProtected).toBe(true)
     expect(classification.protectedPaths).toEqual(['accounts[0]'])
 
     const selection = new Map([[0, 'acct-brokerage']])
@@ -611,7 +611,7 @@ describe('protectedTargets', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
     const protectedTargets = new Set(['accounts[0]'])
     const classification = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets })
-    expect(classification.candidates[0].isProtected).toBe(true)
+    expect(classification.candidates[0]!.isProtected).toBe(true)
     const selection = new Map([[0, 'acct-brokerage']])
     const delta = buildRefreshDelta(plan, classification, selection) // set omitted
     const applied = applyRefresh(plan, delta, selection) // set omitted
@@ -629,7 +629,7 @@ describe('protectedTargets', () => {
     const plan = planWith(loadedTaxable('acct-open', 'Brokerage'), loadedTaxable('acct-secret', 'Vault'))
     const protectedTargets = new Set(['accounts[1]']) // acct-secret is off-limits
     const classification = classifyRefresh(plan, [src('Unmatched Holdings ...1', 88_000, 40_000)], { protectedTargets })
-    const [candidate] = classification.candidates
+    const candidate = classification.candidates[0]!
     expect(candidate.match).toBe('unmatched') // nothing auto-matched it
     expect(candidate.isProtected).toBe(false) // so no per-candidate carry-forward
     expect(classification.protectedPaths).toEqual(['accounts[1]'])
@@ -654,7 +654,7 @@ describe('protectedTargets', () => {
   it('protects a single field path (accounts[i].balance), and applies normally without the set', () => {
     const plan = planWith(loadedTaxable('acct-brokerage', 'Brokerage'))
     const fieldProtected = new Set(['accounts[0].balance'])
-    const { candidates: [protectedCandidate] } = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets: fieldProtected })
+    const protectedCandidate = classifyRefresh(plan, [src('Brokerage ...789', 55_000, 40_000)], { protectedTargets: fieldProtected }).candidates[0]!
     expect(protectedCandidate.isProtected).toBe(true)
 
     // Control: the identical refresh with no protected set does apply.

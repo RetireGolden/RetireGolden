@@ -288,7 +288,7 @@ describe('the floor today (characterization — measurements, not guarantees)', 
     // The one miss is the abutted name on the TYPED page — a selection defect
     // over text that extracted perfectly, which no OCR engine would touch.
     expect(mixed.misses.map((miss) => miss.field)).toEqual(['name'])
-    expect(mixed.misses[0].textPresent).toBe(true)
+    expect(mixed.misses[0]!.textPresent).toBe(true)
   })
 
   it('has exactly two misses in the whole corpus, and both are selection defects', async () => {

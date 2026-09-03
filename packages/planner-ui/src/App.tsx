@@ -292,7 +292,7 @@ export function App({
                           setThemeMode(mode)
                         }}
                       >
-                        {mode[0].toUpperCase() + mode.slice(1)}
+                        {mode[0]!.toUpperCase() + mode.slice(1)}
                       </button>
                     ))}
                   </div>

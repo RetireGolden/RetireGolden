@@ -72,8 +72,8 @@ function traditionalIra(id: string, name: string, ownerPersonId: string): Accoun
 function testPlan(classified: boolean): Plan {
   const built = couplePlan({ p1PlanningAge: 70, p2PlanningAge: 70 })
   built.id = 'plan-under-test'
-  built.household.people[0].name = 'Alex'
-  built.household.people[1].name = 'Sam'
+  built.household.people[0]!.name = 'Alex'
+  built.household.people[1]!.name = 'Sam'
   built.accounts = [
     { ...cashAccount('household-cash', 50_000), ownerPersonId: ALEX },
     traditionalIra('alex-ira', 'Alex rollover IRA', ALEX),

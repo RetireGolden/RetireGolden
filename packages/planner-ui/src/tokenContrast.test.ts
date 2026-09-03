@@ -32,7 +32,7 @@ function extractBlock(selectorStart: string): string {
 function tokensOf(block: string): Record<string, string> {
   const out: Record<string, string> = {}
   for (const match of block.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)) {
-    out[match[1]] = match[2].toLowerCase()
+    out[match[1]!] = match[2]!.toLowerCase()
   }
   return out
 }
@@ -67,19 +67,19 @@ describe('theme mechanisms agree', () => {
 
 describe('light theme contrast (WCAG AA 4.5:1)', () => {
   it('accent-fg on accent (primary buttons) meets AA', () => {
-    expect(contrast(light['accent'], light['accent-fg'])).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(light['accent']!, light['accent-fg']!)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('accent text on surfaces and background meets AA', () => {
-    expect(contrast(light['accent'], light['surface-1'])).toBeGreaterThanOrEqual(4.5)
-    expect(contrast(light['accent'], light['surface-2'])).toBeGreaterThanOrEqual(4.5)
-    expect(contrast(light['accent'], light['bg'])).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(light['accent']!, light['surface-1']!)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(light['accent']!, light['surface-2']!)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(light['accent']!, light['bg']!)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('body, muted, and status text on surfaces meets AA', () => {
     for (const fg of ['fg', 'muted', 'good', 'warn', 'bad'] as const) {
       for (const bg of ['bg', 'surface-1', 'surface-2'] as const) {
-        expect(contrast(light[fg], light[bg]), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
+        expect(contrast(light[fg]!, light[bg]!), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
       }
     }
   })
@@ -87,19 +87,19 @@ describe('light theme contrast (WCAG AA 4.5:1)', () => {
 
 describe('dark theme contrast (WCAG AA 4.5:1)', () => {
   it('accent-fg on accent (primary buttons) meets AA', () => {
-    expect(contrast(toggledDark['accent'], toggledDark['accent-fg'])).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(toggledDark['accent']!, toggledDark['accent-fg']!)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('accent text on surfaces and background meets AA', () => {
-    expect(contrast(toggledDark['accent'], toggledDark['surface-1'])).toBeGreaterThanOrEqual(4.5)
-    expect(contrast(toggledDark['accent'], toggledDark['surface-2'])).toBeGreaterThanOrEqual(4.5)
-    expect(contrast(toggledDark['accent'], toggledDark['bg'])).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(toggledDark['accent']!, toggledDark['surface-1']!)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(toggledDark['accent']!, toggledDark['surface-2']!)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(toggledDark['accent']!, toggledDark['bg']!)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('body, muted, and status text on surfaces meets AA', () => {
     for (const fg of ['fg', 'muted', 'good', 'warn', 'bad'] as const) {
       for (const bg of ['bg', 'surface-1', 'surface-2'] as const) {
-        expect(contrast(toggledDark[fg], toggledDark[bg]), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
+        expect(contrast(toggledDark[fg]!, toggledDark[bg]!), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
       }
     }
   })

@@ -31,7 +31,7 @@ function table(sex: Sex): readonly number[] {
 /** Remaining life expectancy e(x) at integer age, optionally scaled by a longevity multiplier. */
 function remainingYears(age: number, sex: Sex, multiplier: number): number {
   const i = Math.max(0, Math.min(Math.round(age), MALE.length - 1))
-  const raw = sex === 'average' ? (MALE[i] + FEMALE[i]) / 2 : table(sex)[i]
+  const raw = sex === 'average' ? (MALE[i]! + FEMALE[i]!) / 2 : table(sex)[i]!
   return raw * multiplier
 }
 
@@ -53,15 +53,15 @@ export function survivalCurve(sex: Sex, longevityMultiplier = 1): SurvivalCurve 
   // Precompute cumulative survival from age 0 so survival(a,b) = S(b)/S(a).
   const cum: number[] = [1]
   for (let age = 0; age < MALE.length; age++) {
-    cum.push(cum[age] * oneYearSurvival(age, sex, m))
+    cum.push(cum[age]! * oneYearSurvival(age, sex, m))
   }
   return {
     survival(fromAge: number, toAge: number): number {
       if (toAge <= fromAge) return 1
       const a = Math.max(0, Math.min(Math.round(fromAge), cum.length - 1))
       const b = Math.max(0, Math.min(Math.round(toAge), cum.length - 1))
-      if (cum[a] <= 0) return 0
-      return cum[b] / cum[a]
+      if (cum[a]! <= 0) return 0
+      return cum[b]! / cum[a]!
     },
   }
 }

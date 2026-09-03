@@ -149,7 +149,7 @@ export function mapProjectionLabExport(
 
   const review: ImportReviewItem[] = []
   const plan = createEmptyPlan({ newId, name: 'Imported from ProjectionLab' })
-  const person = plan.household.people[0]
+  const person = plan.household.people[0]!
 
   // --- Household ------------------------------------------------------------
   const userRec = asRecord(root['user'])

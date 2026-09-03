@@ -410,8 +410,8 @@ function classifyOne(
   // plausible, so refuse to guess between them. Either way the primary is the
   // top-ranked account, still filled so the user can confirm with one click; the
   // runners-up are the false-positive audit trail.
-  const primary = plausible[0].ref
-  const primaryTier = plausible[0].tier
+  const primary = plausible[0]!.ref
+  const primaryTier = plausible[0]!.tier
   // A remembered manual assignment is intentionally decisive over lower
   // word-only guesses: the user already chose this destination on a prior
   // applied refresh. A whole-name hit still ranks above it and keeps the
@@ -509,7 +509,7 @@ function computeWrites(
     if (blockedIds.has(chosenId)) return // duplicate collision — never auto-merge
     const accountIndex = accounts.findIndex((a) => a.id === chosenId)
     if (accountIndex === -1) return
-    if (!isBalanceUpdatable(accounts[accountIndex])) return
+    if (!isBalanceUpdatable(accounts[accountIndex]!)) return
     if (isProtectedPath(`accounts[${accountIndex}]`, effective)) return
     writes.push({ accountIndex, source: candidate.source })
   })
@@ -526,7 +526,7 @@ function computeWrites(
  */
 function applyWrites(accounts: Account[], writes: RefreshWrite[]): number {
   for (const { accountIndex, source } of writes) {
-    const account = accounts[accountIndex]
+    const account = accounts[accountIndex]!
     const next = applyBrokerBalance(account, source)
     // `applyBrokerBalance` returns a fresh {...account, balance, costBasis?};
     // copy back only the two fields it is allowed to name, in place.
@@ -705,7 +705,7 @@ export function buildRefreshDelta(
   // Capture before-values from the untouched clone, then apply on it.
   const before = new Map<number, { balance: number; costBasis?: number }>()
   for (const { accountIndex } of writes) {
-    const a = clone[accountIndex]
+    const a = clone[accountIndex]!
     before.set(accountIndex, { balance: 'balance' in a ? a.balance : 0, costBasis: 'costBasis' in a ? a.costBasis : undefined })
   }
   applyWrites(clone, writes)
@@ -715,7 +715,7 @@ export function buildRefreshDelta(
   const dateFlags = sourceDateFlags(candidates, now())
   for (const { accountIndex, source } of writes) {
     const b = before.get(accountIndex)!
-    const after = clone[accountIndex]
+    const after = clone[accountIndex]!
     const path = `accounts[${accountIndex}]`
     const afterBalance = 'balance' in after ? after.balance : 0
     changes.push({
@@ -819,7 +819,7 @@ export function buildRefreshDelta(
     if (c.targetAccountId) matched.add(c.targetAccountId)
     for (const alt of c.alternativeAccountIds) matched.add(alt)
   }
-  const written = new Set(writes.map((w) => clone[w.accountIndex].id))
+  const written = new Set(writes.map((w) => clone[w.accountIndex]!.id))
   const staleAccountIds = plan.accounts
     .filter(isBalanceUpdatable)
     .filter((a) => !matched.has(a.id) && !written.has(a.id))
@@ -827,7 +827,7 @@ export function buildRefreshDelta(
 
   const reconciliation = reconciliationFor(plan.accounts, clone, candidates, writes)
   review.push(reconciliationReview(candidates, reconciliation))
-  for (const flag of dateFlags) review.push(dateFlagReview(candidates[flag.sourceIndex], flag))
+  for (const flag of dateFlags) review.push(dateFlagReview(candidates[flag.sourceIndex]!, flag))
 
   return {
     candidates,

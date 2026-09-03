@@ -18,7 +18,7 @@ describe('computeBreakEven', () => {
     expect(r.factors[62]).toBeLessThan(1)
     expect(r.factors[67]).toBeCloseTo(1, 5)
     expect(r.factors[70]).toBeGreaterThan(1)
-    expect(r.factors[62]).toBeLessThan(r.factors[70])
+    expect(r.factors[62]).toBeLessThan(r.factors[70]!)
   })
 
   it('straight (no-growth) break-even of 62 vs 70 lands in the late 70s/early 80s', () => {
@@ -41,7 +41,7 @@ describe('computeBreakEven', () => {
   it('the delayed claim eventually accumulates more (no growth)', () => {
     const r = computeBreakEven(base)
     const last = r.series.at(-1)!
-    expect(last.cumulative[70]).toBeGreaterThan(last.cumulative[62])
+    expect(last.cumulative[70]).toBeGreaterThan(last.cumulative[62]!)
   })
 
   it('investment growth pushes break-even later (or off the table)', () => {
@@ -64,7 +64,7 @@ describe('computeBreakEven', () => {
 
   it('charts every age from 62 through throughAge', () => {
     const r = computeBreakEven(base)
-    expect(r.series[0].age).toBe(62)
+    expect(r.series[0]!.age).toBe(62)
     expect(r.series.at(-1)!.age).toBe(95)
     expect(r.series).toHaveLength(95 - 62 + 1)
   })

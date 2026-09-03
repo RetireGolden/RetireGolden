@@ -101,7 +101,7 @@ describe('ComparePlansPage delta column (#499)', () => {
 
     const deltaCells = [...container.querySelectorAll('.compare-table tbody tr')].map((tr) => tr.querySelectorAll('td')[2])
     const lastsCell = deltaCells[0]
-    expect(lastsCell.className).toBe('delta-neg')
+    expect(lastsCell!.className).toBe('delta-neg')
 
     const legend = container.querySelector('.compare-delta-legend')!
     expect(legend.textContent).toContain('green')

@@ -83,17 +83,17 @@ export function wiredFieldPaths(dirUrl: string | URL = new URL('../planner/', im
   const found = new Set<string>()
   for (const file of sourceFiles(fileURLToPath(dirUrl))) {
     const src = readFileSync(file, 'utf8')
-    for (const [, quoted] of src.matchAll(/\bpath="([^"]+)"/g)) if (quoted.includes('.')) found.add(quoted)
+    for (const [, quoted] of src.matchAll(/\bpath="([^"]+)"/g)) if (quoted!.includes('.')) found.add(quoted!)
     for (const [, tpl] of src.matchAll(/\bpath=\{`([^`]+)`\}/g)) {
-      const resolved = resolveTemplate(tpl)
+      const resolved = resolveTemplate(tpl!)
       if (!resolved.includes('${')) found.add(resolved)
     }
     // A helper of the form `const NAME = (leaf: string) => (… ? `TEMPLATE` : undefined)`
     // paired with `path={NAME('leaf')}` call sites.
     for (const [, helper, tpl] of src.matchAll(/const (\w+) = \(leaf: string\) =>[^`]*`([^`]+)`/g)) {
-      const template = resolveTemplate(tpl)
+      const template = resolveTemplate(tpl!)
       for (const [, leaf] of src.matchAll(new RegExp(`\\bpath=\\{${helper}\\('([^']+)'\\)\\}`, 'g'))) {
-        const resolved = template.replace('${leaf}', leaf)
+        const resolved = template.replace('${leaf}', leaf!)
         if (!resolved.includes('${')) found.add(resolved)
       }
     }

@@ -124,7 +124,7 @@ describe('seam operations over a fake store', () => {
 describe('demo records stay browser-local', () => {
   it('routes example ids to the browser store even when a host store is provided', async () => {
     const { store, calls } = makeFakeStore()
-    const seeded = await saveFreshDemo(EXAMPLE_PLANS[0])
+    const seeded = await saveFreshDemo(EXAMPLE_PLANS[0]!)
     expect(seeded.ok).toBe(true)
     if (!seeded.ok) return
 
@@ -140,7 +140,7 @@ describe('demo records stay browser-local', () => {
 
   it('"Save to my plans" crosses the seam: converted plan in the host store, demo record dropped from the browser', async () => {
     const { store, docs } = makeFakeStore()
-    const seeded = await saveFreshDemo(EXAMPLE_PLANS[0])
+    const seeded = await saveFreshDemo(EXAMPLE_PLANS[0]!)
     expect(seeded.ok).toBe(true)
     if (!seeded.ok) return
 
@@ -156,7 +156,7 @@ describe('demo records stay browser-local', () => {
     store.savePlan = async () => {
       throw new Error('disk full')
     }
-    const seeded = await saveFreshDemo(EXAMPLE_PLANS[0])
+    const seeded = await saveFreshDemo(EXAMPLE_PLANS[0]!)
     expect(seeded.ok).toBe(true)
     if (!seeded.ok) return
 

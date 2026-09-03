@@ -45,8 +45,8 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
   for (let i = 0; i < segments.length - 1; i++) {
     const seg = segments[i]
     const rest = segments.slice(i + 1)
-    let next = ownValue(node, seg)
-    if (Array.isArray(node) && /^\d+$/.test(seg)) {
+    let next = ownValue(node, seg!)
+    if (Array.isArray(node) && /^\d+$/.test(seg!)) {
       const at = node as unknown as unknown[]
       const holds = (item: unknown) => {
         let cursor = item
@@ -54,22 +54,22 @@ function setAt(plan: Plan, path: string, value: unknown): string | null {
           if (cursor === null || typeof cursor !== 'object') return false
           cursor = ownValue(cursor, key)
         }
-        return cursor !== null && typeof cursor === 'object' && Object.prototype.hasOwnProperty.call(cursor, rest[rest.length - 1])
+        return cursor !== null && typeof cursor === 'object' && Object.prototype.hasOwnProperty.call(cursor, rest[rest.length - 1]!)
       }
       const index = holds(at[Number(seg)]) ? Number(seg) : at.findIndex(holds)
       if (index < 0) return null
       next = at[index]
       resolved.push(String(index))
     } else {
-      resolved.push(seg)
+      resolved.push(seg!)
     }
     if (next === undefined || next === null || typeof next !== 'object') return null
     node = next as Record<string, unknown>
   }
   const leaf = segments[segments.length - 1]
-  if (!Object.prototype.hasOwnProperty.call(node, leaf)) return null
-  Object.defineProperty(node, leaf, { value, writable: true, enumerable: true, configurable: true })
-  resolved.push(leaf)
+  if (!Object.prototype.hasOwnProperty.call(node, leaf!)) return null
+  Object.defineProperty(node, leaf!, { value, writable: true, enumerable: true, configurable: true })
+  resolved.push(leaf!)
   return resolved.join('.')
 }
 
@@ -140,7 +140,7 @@ function fixture(): Plan {
   // A pension and the two annuity payout forms: the guaranteed-income editors
   // wire the same leaves from separate JSX, and a payout form is one branch of a
   // union, so each shape a wired path needs is present here (#516).
-  const owner = plan.household.people[0].id
+  const owner = plan.household.people[0]!.id
   const pension: Plan['accounts'][number] = {
     type: 'pension',
     id: 'pension-fixture',

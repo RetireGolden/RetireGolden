@@ -277,18 +277,18 @@ export function retirementActionManualExecutionIssue(
   if (replacements.length !== 1) {
     return 'The reviewed replacement could not be identified for exact-cent execution preview.'
   }
-  if (replacements[0].kind === 'rothConversion') {
+  if (replacements[0]!.kind === 'rothConversion') {
     return reviewedConversionExecutionIssue(
       plan,
-      replacements[0],
+      replacements[0]!,
       projectionStartYear,
       taxCalculator,
     )
   }
-  if (replacements[0].kind !== 'ordinaryWithdrawal') {
+  if (replacements[0]!.kind !== 'ordinaryWithdrawal') {
     return 'The reviewed replacement could not be identified for exact-cent execution preview.'
   }
-  const replacement = replacements[0]
+  const replacement = replacements[0]!
   const requests = plan.strategies.retirementActions.filter(
     (action) => action.year === replacement.year,
   )
@@ -485,7 +485,7 @@ export function retirementActionManualSourceSupportIssue(
   if (owners.length !== 1) {
     return 'The selected source account must have exactly one household owner.'
   }
-  const ownerIssue = retirementActionManualPersonSupportIssue(owners[0], actionYear)
+  const ownerIssue = retirementActionManualPersonSupportIssue(owners[0]!, actionYear)
   if (ownerIssue !== null) return ownerIssue
 
   if (kind === 'legacyAggregateWithdrawal') {
@@ -550,7 +550,7 @@ export function retirementActionManualSourceSupportIssue(
   if (classifications.length !== 1) {
     return 'This IRA needs exactly one explicit subtype classification before it can be reviewed as a conversion source.'
   }
-  const classification = classifications[0]
+  const classification = classifications[0]!
   if (classification.subtype !== 'simple') return null
   const periodEnd = classification.simpleParticipationStartDate === undefined
     ? null
@@ -678,7 +678,7 @@ export function buildRetirementActionManualIntent(
   if (selectedSourceMatches.length === 1) {
     const sourceIssue = retirementActionManualSourceSupportIssue(
       target.kind,
-      selectedSourceMatches[0],
+      selectedSourceMatches[0]!,
       draft.executionDate,
       target.year,
       target.requestedAmount,
@@ -705,7 +705,7 @@ export function buildRetirementActionManualIntent(
       issues.push('The selected Roth destination account ID is duplicated in this Plan. Choose a unique destination account.')
     } else {
       const destinationIssue = retirementActionManualDestinationSupportIssue(
-        selectedDestinationMatches[0],
+        selectedDestinationMatches[0]!,
         draft.personId,
       )
       if (destinationIssue !== null) issues.push(destinationIssue)

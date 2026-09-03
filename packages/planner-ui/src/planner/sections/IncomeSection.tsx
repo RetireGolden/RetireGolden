@@ -179,7 +179,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
 
 export function IncomeSection() {
   const { plan, update } = usePlan()
-  const firstPerson = plan.household.people[0].id
+  const firstPerson = plan.household.people[0]!.id
   return (
     <section>
       <div className="card">

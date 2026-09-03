@@ -127,7 +127,7 @@ describe('income-coverage fixture suite', () => {
       const comparison = compareScenarios(plan, { startYear: 2026, taxCalculator: taxCalculatorFor(plan) }, [
         { id: `${card!.id}-coverage`, name: card!.title, patch: card!.action.patch },
       ])
-      const row = comparison.rows[1]
+      const row = comparison.rows[1]!
       expect(row.error, card!.id).toBeNull()
       const applied = applyScenarioPatch(plan, card!.action.patch)
       expect(applied.ok, card!.id).toBe(true)

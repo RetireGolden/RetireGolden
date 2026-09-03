@@ -46,7 +46,7 @@ describe('resolvePia / claimingPeople', () => {
   it('reads a quick PIA directly', () => {
     const plan = singlePlan()
     const stream = ssStreamFor(plan, 'p1')!
-    expect(resolvePia(plan.household.people[0], stream).piaMonthly).toBe(2_500)
+    expect(resolvePia(plan.household.people[0]!, stream).piaMonthly).toBe(2_500)
     expect(claimingPeople(plan)).toHaveLength(1)
   })
 
@@ -55,7 +55,7 @@ describe('resolvePia / claimingPeople', () => {
     const earnings = Array.from({ length: 35 }, (_, i) => ({ year: 1990 + i, amount: 60_000 }))
     plan.incomes = [{ type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: null, earnings, claimAge: { years: 67, months: 0 } }]
     const stream = ssStreamFor(plan, 'p1')!
-    const r = resolvePia(plan.household.people[0], stream)
+    const r = resolvePia(plan.household.people[0]!, stream)
     expect(r.piaMonthly).not.toBeNull()
     expect(r.piaMonthly!).toBeGreaterThan(1_000)
   })
@@ -78,10 +78,10 @@ describe('sweepClaimingStrategies', () => {
     const plan = singlePlan() // born 1964 -> age 62 in 2026, full 62–70 grid
     const result = sweepClaimingStrategies(plan, 2026)
     expect(result.personIds).toEqual(['p1'])
-    expect(result.rows).toHaveLength(candidateClaimAges(plan.household.people[0], 2026).length)
+    expect(result.rows).toHaveLength(candidateClaimAges(plan.household.people[0]!, 2026).length)
     for (let i = 1; i < result.ranked.length; i++) {
-      expect(result.ranked[i - 1].summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(
-        result.ranked[i].summary.endingAfterTaxEstate,
+      expect(result.ranked[i - 1]!.summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(
+        result.ranked[i]!.summary.endingAfterTaxEstate,
       )
     }
   })
@@ -91,10 +91,10 @@ describe('sweepClaimingStrategies', () => {
     const result = sweepClaimingStrategies(plan, 2026)
     expect(result.personIds).toHaveLength(2)
     const expected =
-      candidateClaimAges(plan.household.people[0], 2026).length *
-      candidateClaimAges(plan.household.people[1], 2026).length
+      candidateClaimAges(plan.household.people[0]!, 2026).length *
+      candidateClaimAges(plan.household.people[1]!, 2026).length
     expect(result.rows).toHaveLength(expected)
-    expect(result.ranked[0].summary.endingAfterTaxEstate).toBeGreaterThan(0)
+    expect(result.ranked[0]!.summary.endingAfterTaxEstate).toBeGreaterThan(0)
   })
 
   it('ranks whole-plan claim candidates through the selected objective policy', () => {
@@ -106,7 +106,7 @@ describe('sweepClaimingStrategies', () => {
 
   it('only offers claim ages at or beyond the current age', () => {
     const older = singlePlan()
-    older.household.people[0] = { ...older.household.people[0], dob: '1958-06-15' } // 68 in 2026
+    older.household.people[0] = { ...older.household.people[0]!, dob: '1958-06-15' } // 68 in 2026
     expect(candidateClaimAges(older.household.people[0], 2026)).toEqual([68, 69, 70])
   })
 
@@ -123,22 +123,22 @@ describe('refineClaimingMonthly', () => {
     const plan = singlePlan()
     const sweep = sweepClaimingStrategies(plan, 2026)
     const bestYear = sweep.ranked[0]
-    const refined = refineClaimingMonthly(plan, bestYear.claimByPersonId, 2026)
+    const refined = refineClaimingMonthly(plan, bestYear!.claimByPersonId, 2026)
 
-    expect(refined.summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(bestYear.summary.endingAfterTaxEstate)
+    expect(refined.summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(bestYear!.summary.endingAfterTaxEstate)
     const claim = refined.claimByPersonId['p1']
-    expect(Math.abs(claim.years - bestYear.claimByPersonId['p1'])).toBeLessThanOrEqual(1)
-    expect(claim.months).toBeGreaterThanOrEqual(0)
-    expect(claim.months).toBeLessThanOrEqual(11)
-    if (claim.years === 70) expect(claim.months).toBe(0) // engine caps at 70y0m
+    expect(Math.abs(claim!.years - bestYear!.claimByPersonId['p1']!)).toBeLessThanOrEqual(1)
+    expect(claim!.months).toBeGreaterThanOrEqual(0)
+    expect(claim!.months).toBeLessThanOrEqual(11)
+    if (claim!.years === 70) expect(claim!.months).toBe(0) // engine caps at 70y0m
   })
 
   it('refines both spouses for a couple', () => {
     const plan = couplePlan()
     const sweep = sweepClaimingStrategies(plan, 2026)
-    const refined = refineClaimingMonthly(plan, sweep.ranked[0].claimByPersonId, 2026)
+    const refined = refineClaimingMonthly(plan, sweep.ranked[0]!.claimByPersonId, 2026)
     expect(Object.keys(refined.claimByPersonId).sort()).toEqual(['p1', 'p2'])
-    expect(refined.summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(sweep.ranked[0].summary.endingAfterTaxEstate)
+    expect(refined.summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(sweep.ranked[0]!.summary.endingAfterTaxEstate)
   })
 })
 
@@ -146,8 +146,8 @@ describe('benefitsOnlyRanking', () => {
   it('prefers delay at a low discount rate and early at a high one (single)', () => {
     const low = benefitsOnlyRanking(singlePlan(), 0, 2026)
     const high = benefitsOnlyRanking(singlePlan(), 0.1, 2026)
-    expect(low.ranked[0].claimByPersonId['p1']).toBe(70)
-    expect(high.ranked[0].claimByPersonId['p1']).toBe(62)
+    expect(low.ranked[0]!.claimByPersonId['p1']).toBe(70)
+    expect(high.ranked[0]!.claimByPersonId['p1']).toBe(62)
   })
 
   it('lifts a single low earner with a divorced-spousal benefit on an ex record', () => {
@@ -192,21 +192,21 @@ describe('benefitsOnlyRanking', () => {
     const noEx = couplePlan()
     const baseline = benefitsOnlyRanking(noEx, 0.02, 2026)
     // p2 is remarried (couple) → the divorced ex record is ignored, PV unchanged.
-    expect(withEx.ranked[0].expectedPv).toBeCloseTo(baseline.ranked[0].expectedPv, 6)
+    expect(withEx.ranked[0]!.expectedPv).toBeCloseTo(baseline.ranked[0]!.expectedPv, 6)
   })
 
   it('covers the full couple grid and ranks by expected PV', () => {
     const plan = couplePlan()
     const r = benefitsOnlyRanking(plan, 0.02, 2026)
     const expected =
-      candidateClaimAges(plan.household.people[0], 2026).length *
-      candidateClaimAges(plan.household.people[1], 2026).length
+      candidateClaimAges(plan.household.people[0]!, 2026).length *
+      candidateClaimAges(plan.household.people[1]!, 2026).length
     expect(r.rows).toHaveLength(expected)
     for (let i = 1; i < r.ranked.length; i++) {
-      expect(r.ranked[i - 1].expectedPv).toBeGreaterThanOrEqual(r.ranked[i].expectedPv)
+      expect(r.ranked[i - 1]!.expectedPv).toBeGreaterThanOrEqual(r.ranked[i]!.expectedPv)
     }
     // The higher earner (p1) should claim no earlier than the lower earner in the optimum.
-    expect(r.ranked[0].claimByPersonId['p1']).toBeGreaterThanOrEqual(r.ranked[0].claimByPersonId['p2'])
+    expect(r.ranked[0]!.claimByPersonId['p1']).toBeGreaterThanOrEqual(r.ranked[0]!.claimByPersonId['p2']!)
   })
 })
 describe('sweep verdict (#454)', () => {

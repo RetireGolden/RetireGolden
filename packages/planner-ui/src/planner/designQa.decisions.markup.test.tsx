@@ -222,9 +222,9 @@ describe('D6 (#508): the fill-to-target bracket is chosen, not typed', () => {
     }
     // And a rate between two offered ones is refused by both sides.
     const between = validPlan(fillToTarget)
-    ;(between.strategies.rothConversion as { targetValue: number }).targetValue = offered[0] + 0.5
+    ;(between.strategies.rothConversion as { targetValue: number }).targetValue = offered[0]! + 0.5
     expect(parsePlan(between).ok).toBe(false)
-    expect(offered).not.toContain(offered[0] + 0.5)
+    expect(offered).not.toContain(offered[0]! + 0.5)
   })
 
   it.each([

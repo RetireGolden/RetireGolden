@@ -36,18 +36,18 @@ const THRESHOLD_YEAR = 2020
 function factsPlan(): Plan {
   const plan = createSamplePlan()
   const donor = plan.household.people[0]
-  donor.dob = DONOR_DOB
+  donor!.dob = DONOR_DOB
   plan.accounts = [
     {
-      type: 'cash', id: 'source-cash', name: 'Cash', ownerPersonId: donor.id,
+      type: 'cash', id: 'source-cash', name: 'Cash', ownerPersonId: donor!.id,
       annualReturnPct: null, balance: 200_000, annualContribution: 0,
     },
     {
-      type: 'traditional', id: 'source-ira', name: 'Traditional IRA', ownerPersonId: donor.id,
+      type: 'traditional', id: 'source-ira', name: 'Traditional IRA', ownerPersonId: donor!.id,
       annualReturnPct: null, kind: 'ira', balance: 500_000, annualContribution: 0,
     },
     {
-      type: 'traditional', id: 'second-ira', name: 'Second IRA', ownerPersonId: donor.id,
+      type: 'traditional', id: 'second-ira', name: 'Second IRA', ownerPersonId: donor!.id,
       annualReturnPct: null, kind: 'ira', balance: 100_000, annualContribution: 0,
     },
   ]
@@ -68,7 +68,7 @@ function namedQcd(plan: Plan): QualifiedCharitableDistributionRequest {
     executionSequence: 1,
     requestedAmount: 20_000_00,
     provenance: { source: 'manual' },
-    donorPersonId: plan.household.people[0].id,
+    donorPersonId: plan.household.people[0]!.id,
     allocation: {
       allocationId: 'qcd-allocation',
       sourceAccountId: 'source-ira',
@@ -164,7 +164,7 @@ describe('eligibility evidence ID minting', () => {
         sourceAccountId: 'source-ira',
       }),
       name: 'Collision',
-      ownerPersonId: plan.household.people[0].id,
+      ownerPersonId: plan.household.people[0]!.id,
       annualReturnPct: null,
       balance: 1,
       annualContribution: 0,
@@ -184,28 +184,28 @@ describe('eligibility evidence ID minting', () => {
     const plan = factsPlan()
     const donor = plan.household.people[0]
     const years = deductibleContributionYears(DONOR_DOB, ACTION_YEAR)
-    expect(conflictingContributionYears(plan, donor.id, years)).toEqual([])
+    expect(conflictingContributionYears(plan, donor!.id, years)).toEqual([])
 
     plan.accounts.push(
       {
         type: 'cash',
         id: mintEligibilityEvidenceId({
-          role: 'deductibleContribution', donorPersonId: donor.id, taxYear: 2022,
+          role: 'deductibleContribution', donorPersonId: donor!.id, taxYear: 2022,
         }),
-        name: 'Collision one', ownerPersonId: donor.id, annualReturnPct: null,
+        name: 'Collision one', ownerPersonId: donor!.id, annualReturnPct: null,
         balance: 1, annualContribution: 0,
       },
       {
         type: 'cash',
         id: mintEligibilityEvidenceId({
-          role: 'deductibleContribution', donorPersonId: donor.id, taxYear: 2025,
+          role: 'deductibleContribution', donorPersonId: donor!.id, taxYear: 2025,
         }),
-        name: 'Collision two', ownerPersonId: donor.id, annualReturnPct: null,
+        name: 'Collision two', ownerPersonId: donor!.id, annualReturnPct: null,
         balance: 1, annualContribution: 0,
       },
     )
 
-    expect(conflictingContributionYears(plan, donor.id, years)).toEqual([2022, 2025])
+    expect(conflictingContributionYears(plan, donor!.id, years)).toEqual([2022, 2025])
     expect(bulkContributionConflictMessage([2022, 2025])).toContain('2022 and 2025')
     expect(bulkContributionConflictMessage([2022])).toContain('files 2022 under')
     expect(bulkContributionConflictMessage([2022, 2024, 2025]))
@@ -253,7 +253,7 @@ describe('eligibility evidence ID minting', () => {
     recordSepSimpleActivity(plan, 'second-ira', ACTION_YEAR, `${ACTION_YEAR}-12-31`, false)
     recordDeductibleContributionZeros(
       plan,
-      plan.household.people[0].id,
+      plan.household.people[0]!.id,
       deductibleContributionYears(DONOR_DOB, ACTION_YEAR),
     )
     const parsed = parsePlan(plan)
@@ -351,7 +351,7 @@ describe('eligibility fact writers', () => {
     const years = deductibleContributionYears(DONOR_DOB, ACTION_YEAR)
     expect(years).toEqual([2020, 2021, 2022, 2023, 2024, 2025, 2026])
 
-    recordDeductibleContributionZeros(plan, donor.id, years)
+    recordDeductibleContributionZeros(plan, donor!.id, years)
 
     const records = plan.retirementActionEligibilityFacts!.deductibleIraContributions
     expect(records).toHaveLength(years.length)
@@ -366,11 +366,11 @@ describe('eligibility fact writers', () => {
     const donor = plan.household.people[0]
     recordDeductibleContributionZeros(
       plan,
-      donor.id,
+      donor!.id,
       deductibleContributionYears(DONOR_DOB, ACTION_YEAR),
     )
 
-    recordDeductibleContribution(plan, donor.id, 2023, asUsdCents(6_500_00))
+    recordDeductibleContribution(plan, donor!.id, 2023, asUsdCents(6_500_00))
 
     const records = plan.retirementActionEligibilityFacts!.deductibleIraContributions
     expect(records).toHaveLength(7)
@@ -402,17 +402,17 @@ describe('eligibility fact writers', () => {
     const owner = plan.household.people[0]
     plan.accounts.push(
       {
-        type: 'traditional', id: 'employer-plan', name: '401(k)', ownerPersonId: owner.id,
+        type: 'traditional', id: 'employer-plan', name: '401(k)', ownerPersonId: owner!.id,
         annualReturnPct: null, kind: 'employer', balance: 10_000, annualContribution: 0,
       },
       {
         type: 'traditional', id: 'inherited-ira', name: 'Inherited IRA',
-        ownerPersonId: owner.id, annualReturnPct: null, kind: 'ira', balance: 10_000,
+        ownerPersonId: owner!.id, annualReturnPct: null, kind: 'ira', balance: 10_000,
         annualContribution: 0,
         inherited: { ownerDeathYear: 2020, decedentHadStartedRmds: false },
       },
       {
-        type: 'roth', id: 'roth-ira', name: 'Roth IRA', ownerPersonId: owner.id,
+        type: 'roth', id: 'roth-ira', name: 'Roth IRA', ownerPersonId: owner!.id,
         annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0,
       },
     )
@@ -425,27 +425,27 @@ describe('eligibility fact writers', () => {
     const plan = factsPlan()
     const donor = plan.household.people[0]
     const other = plan.household.people[1]
-    other.dob = DONOR_DOB
+    other!.dob = DONOR_DOB
 
     expect(contributionDonors(plan, ACTION_YEAR).map((entry) => entry.person.id))
-      .toEqual([donor.id])
+      .toEqual([donor!.id])
 
-    recordDeductibleContribution(plan, other.id, ACTION_YEAR, asUsdCents(0))
+    recordDeductibleContribution(plan, other!.id, ACTION_YEAR, asUsdCents(0))
     expect(contributionDonors(plan, ACTION_YEAR).map((entry) => entry.person.id))
-      .toEqual([donor.id, other.id])
+      .toEqual([donor!.id, other!.id])
 
-    plan.household.people[0].dob = '1990-01-01'
+    plan.household.people[0]!.dob = '1990-01-01'
     expect(contributionDonors(plan, ACTION_YEAR).map((entry) => entry.person.id))
-      .toEqual([other.id])
+      .toEqual([other!.id])
   })
 
   it('keeps the threshold year the Plan itself enforces', () => {
     const plan = factsPlan()
     const donor = plan.household.people[0]
-    recordDeductibleContribution(plan, donor.id, THRESHOLD_YEAR, asUsdCents(0))
+    recordDeductibleContribution(plan, donor!.id, THRESHOLD_YEAR, asUsdCents(0))
     expect(parsePlan(plan).ok).toBe(true)
 
-    recordDeductibleContribution(plan, donor.id, THRESHOLD_YEAR - 1, asUsdCents(0))
+    recordDeductibleContribution(plan, donor!.id, THRESHOLD_YEAR - 1, asUsdCents(0))
     expect(parsePlan(plan).ok).toBe(false)
   })
 })

@@ -73,18 +73,18 @@ describe('generic CSV import — rows with no dollar value (#557)', () => {
     if (!d.ok) return
     // The good row still imports on its own.
     expect(d.plan.accounts).toHaveLength(1)
-    expect(d.plan.accounts[0].name).toBe('Brokerage')
+    expect(d.plan.accounts[0]!.name).toBe('Brokerage')
     const skipped = d.review.filter((item) => item.status === 'skipped')
     expect(skipped).toHaveLength(1)
-    expect(skipped[0].source).toBe('Row 3: Mystery')
-    expect(skipped[0].detail).toContain('No cell in this row read as a dollar value')
+    expect(skipped[0]!.source).toBe('Row 3: Mystery')
+    expect(skipped[0]!.detail).toContain('No cell in this row read as a dollar value')
     // Conditional remediation: neither "it is a note" nor "it is an account".
-    expect(skipped[0].detail).toContain('A note or footer needs nothing')
-    expect(skipped[0].detail).toContain('an account whose amount is missing can be entered on the Accounts screen')
+    expect(skipped[0]!.detail).toContain('A note or footer needs nothing')
+    expect(skipped[0]!.detail).toContain('an account whose amount is missing can be entered on the Accounts screen')
     // The row, not a column: no cell in it read as a figure, and the balance
     // column may have been re-assigned by hand.
-    expect(skipped[0].locator).toEqual({ kind: 'csvRow', row: 3 })
-    expect(skipped[0].confidence).toBe('unmapped')
+    expect(skipped[0]!.locator).toEqual({ kind: 'csvRow', row: 3 })
+    expect(skipped[0]!.confidence).toBe('unmapped')
   })
 
   it('sets aside every text-only row alike, account-shaped or footer-shaped, each by its own row number', () => {
@@ -128,7 +128,7 @@ describe('generic CSV import — rows with no dollar value (#557)', () => {
     if (!d.ok) return
     const skipped = d.review.filter((item) => item.status === 'skipped')
     expect(skipped.map((item) => item.source)).toEqual(['Row 6: I-bonds'])
-    expect(skipped[0].locator).toEqual({ kind: 'csvRow', row: 6 })
+    expect(skipped[0]!.locator).toEqual({ kind: 'csvRow', row: 6 })
   })
 
   it('a sheet with no dollar value below its header fails, and the failure still names the rows', () => {
@@ -160,12 +160,12 @@ describe('generic CSV import — rows with no dollar value (#557)', () => {
     if (!d.ok) return
     const skipped = d.review.filter((item) => item.status === 'skipped')
     expect(skipped).toHaveLength(MAX_SET_ASIDE_ITEMS + 1)
-    expect(skipped[0].source).toBe('Row 3: Note 1')
-    expect(skipped[MAX_SET_ASIDE_ITEMS - 1].source).toBe(`Row ${MAX_SET_ASIDE_ITEMS + 2}: Note ${MAX_SET_ASIDE_ITEMS}`)
+    expect(skipped[0]!.source).toBe('Row 3: Note 1')
+    expect(skipped[MAX_SET_ASIDE_ITEMS - 1]!.source).toBe(`Row ${MAX_SET_ASIDE_ITEMS + 2}: Note ${MAX_SET_ASIDE_ITEMS}`)
     const rest = skipped[MAX_SET_ASIDE_ITEMS]
-    expect(rest.source).toBe(`7 more rows (rows ${MAX_SET_ASIDE_ITEMS + 3} to ${count + 2})`)
-    expect(rest.detail).toContain('Accounts screen')
-    expect(rest.locator).toEqual({ kind: 'none', note: `7 further rows with no dollar value (rows ${MAX_SET_ASIDE_ITEMS + 3} to ${count + 2})` })
+    expect(rest!.source).toBe(`7 more rows (rows ${MAX_SET_ASIDE_ITEMS + 3} to ${count + 2})`)
+    expect(rest!.detail).toContain('Accounts screen')
+    expect(rest!.locator).toEqual({ kind: 'none', note: `7 further rows with no dollar value (rows ${MAX_SET_ASIDE_ITEMS + 3} to ${count + 2})` })
   })
 
   it('keeps the set-aside disclosure when no row maps to an account', () => {
@@ -208,8 +208,8 @@ describe('generic CSV import — rows with no dollar value (#557)', () => {
     expect(d.ok).toBe(true)
     if (!d.ok) return
     const rest = d.review.filter((item) => item.status === 'skipped')[MAX_SET_ASIDE_ITEMS]
-    expect(rest.source).toBe('4 more rows')
-    expect(rest.locator).toEqual({ kind: 'none', note: '4 further rows with no dollar value' })
+    expect(rest!.source).toBe('4 more rows')
+    expect(rest!.locator).toEqual({ kind: 'none', note: '4 further rows with no dollar value' })
     const scattered = r.analysis.skippedRows!.slice(MAX_SET_ASIDE_LISTED)
     expect(describeSetAsideRows(r.analysis.skippedRows!)).toMatch(new RegExp(`; and ${scattered.length} more$`))
   })
@@ -219,7 +219,7 @@ describe('generic CSV import — rows with no dollar value (#557)', () => {
     const r = analyzeGenericCsv(`Account,Balance\nCash,100\n${long},words\n`)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    const shown = describeCsvRowCells(r.analysis.skippedRows![0])
+    const shown = describeCsvRowCells(r.analysis.skippedRows![0]!)
     expect(shown).toBe(`${'x'.repeat(MAX_CELL_PREVIEW_CHARS - 1)}… · words`)
     expect(shown.length).toBeLessThan(MAX_CELL_PREVIEW_CHARS + 10)
     const d = draftPlanFromGenericCsv(r.analysis, r.analysis.guessedRoles, testIds)

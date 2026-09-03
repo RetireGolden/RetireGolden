@@ -61,12 +61,12 @@ describe('every insight detector route has a screen title', () => {
     const routes = new Set<string>()
     for (const file of files) {
       const text: string = readFileSync(detectorsDir + file, 'utf8')
-      for (const match of text.matchAll(/plannerRoute:\s*'([^']+)'/g)) routes.add(match[1])
+      for (const match of text.matchAll(/plannerRoute:\s*'([^']+)'/g)) routes.add(match[1]!)
     }
     expect(routes.size).toBeGreaterThan(3)
     for (const route of routes) {
       expect(sectionTitleOf(route), `detector plannerRoute "${route}" has no SECTION_TITLES entry`).not.toBeNull()
-      expect(SECTION_TITLES[route.split('/')[0]]).toBeTruthy()
+      expect(SECTION_TITLES[route.split('/')[0]!]).toBeTruthy()
     }
   })
 })
