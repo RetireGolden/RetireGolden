@@ -2,6 +2,72 @@
 
 This is a high-level, time-ordered summary of changes to the system, synthesized from git commit history and the project documentation. Focus is on material additions, refactors, and shifts in scope or architecture. See git history for full detail and code diffs. Enhancements plans (historical intent) are preserved in `DOCS/enhancements/`.
 
+## Unreleased
+
+**`@retiregolden/engine` boundary notes, relocated from the package README**
+
+These describe the shape of five `actions/` and `projection/` boundaries as
+they were built out. They had accumulated under "Runtime contract" on
+[packages/engine/README.md](packages/engine/README.md) — the npm landing page —
+where roughly sixty lines of implementation narrative sat above Usage and
+buried the actual contract (ESM/Node, purity and the injection seams,
+determinism, the optional cash-flow capture, versioned parameter packs). They
+are history, not a promise to a consumer; none of the functions named is
+reachable through the exports map. Recorded verbatim so nothing is lost.
+
+- The owned-IRA penalty prerequisite can accept raw annual SEPP schedule routes,
+  rebuild each route's complete inventory from canonical annual character, and
+  issue final `iraSeppQualified` zero-penalty decisions only after complete
+  reconciliation and exact payment rejoin. Non-success routes remain pending
+  and supply no negative-SEPP authority. The pure annual finalizer and
+  movement-candidate coordinator now forward these raw routes, accept the
+  final qualified outcome, preserve detailed route diagnostics when blocked,
+  and bind compact canonical route results into annual evidence. Their public
+  staged-date ID builder reproduces planning evidence only; exact coordinator
+  rejoin remains the authority, and neither boundary commits movement or
+  establishes actionability.
+- `coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate` adds
+  Plan-identity-authoritative, runtime-snapshot-bound planning evidence around
+  that coordinator. It derives the complete Plan owner/year ordinary-withdrawal
+  batch and owned non-Roth IRA pool, then requires complete, consistently dated
+  opening, year-end, annual basis/line-7, line-8, and exact alive evidence. It
+  remains pure and noncommitting: every result keeps movement uncommitted and
+  actionability unestablished.
+- `buildAnnualRetirementPhysicalEventInventory` is the pure chronology boundary
+  in front of future simulator integration. It derives traditional-account Plan
+  action allocations internally and exact-rejoins a complete Plan/year/ledger-run
+  runtime inventory covering RMD, automatic SEPP, legacy withdrawal/conversion,
+  in-year IRA/employer-plan account-balance contribution inflows and employer
+  match. Aggregate legacy QCD reclassification, annuity funding, rollover
+  inflows, and other traditional transfers stay unresolved until their producer
+  and physical endpoints have a typed binding contract. Following-year IRA
+  contributions designated for the prior tax year
+  remain separate annual-basis facts, not events in this calendar-year chronology.
+  A resolved contribution record is the upstream ledger's post-owner-wide-limit
+  occurrence, not a contribution candidate; fully suppressed contributions are
+  intentionally absent under the complete runtime attestation. The inventory
+  checks Plan-local source prerequisites without duplicating shared-limit or
+  section 415(c) math. A shared movement authority may cover multiple source
+  members only when their owner, kind, origin, date, and sequence agree; upstream
+  evidence remains unique per member. It never invents a missing owner, source,
+  date, or order: incomplete records and cross-authority chronology conflicts
+  fail closed. Successful output
+  is a globally ordered immutable stream with owned-IRA pool views and provisional
+  Form 8606/QCD categories; it still mutates no balance or basis, calculates no tax
+  or penalty, and establishes neither movement nor actionability.
+- `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` is the next
+  pure evidence boundary for the standalone-compatible Plan-owned IRA batch. It
+  exact-rejoins the canonical candidate, complete December 31 owner pool, basis,
+  and contribution-window evidence into a frozen classifier input without
+  classifying, executing, or integrating with projection.
+- `preparePlanOwnedNonRothIraAnnualCandidateTransaction` is the pure provisional
+  producer for that batch. It rebuilds the annual physical-event inventory,
+  derives the exact Plan-owned action/source batch, and stages it against
+  caller-supplied exact-cent balances. Its frozen applications and source
+  transitions apply only to a detached snapshot: movement and actionability
+  remain unestablished, and it publishes no December 31, tax, penalty, basis,
+  or finalization claim.
+
 ## 2026-08
 
 **2026-08-31**
