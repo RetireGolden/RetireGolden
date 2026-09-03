@@ -130,7 +130,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
     weights: { usStocks: 60, intlStocks: 20, bonds: 15, cash: 5 },
   }
   return {
-    schemaVersion: 5,
+    schemaVersion: CURRENT_PLAN_SCHEMA_VERSION,
     id: 'plan-kitchen',
     name: 'Kitchen sink',
     origin: 'user',
@@ -485,7 +485,7 @@ function kitchenSinkPlanRaw(): Record<string, unknown> {
  */
 function sparseAuthoringPlanRaw(): Record<string, unknown> {
   return {
-    schemaVersion: 5,
+    schemaVersion: CURRENT_PLAN_SCHEMA_VERSION,
     id: 'sparse',
     name: 'Sparse authoring plan',
     createdAtIso: '2026-01-01T00:00:00.000Z',
@@ -559,6 +559,10 @@ function acceptedFixtures(): Array<[string, Plan]> {
 
 describe('planJsonSchema — version', () => {
   it('carries the plan schema version at the document root', () => {
+    // The one deliberate literal in this file: everything else derives the
+    // version from CURRENT_PLAN_SCHEMA_VERSION, so without this line a bump
+    // would go through with nothing asserting what the number actually is.
+    // Named in the bump checklist in scripts/generate-schema.mjs.
     expect(PLAN_SCHEMA_VERSION).toBe(5)
     expect(planJsonSchema.properties.schemaVersion).toMatchObject({ const: PLAN_SCHEMA_VERSION })
     expect(planJsonSchema.$id).toBe(PLAN_SCHEMA_ID)
@@ -761,7 +765,7 @@ describe('planJsonSchema — sync with planSchema', () => {
     expect(planJsonSchema).toEqual(generatePlanJsonSchema())
   })
 
-  it('the shipped schema/plan.v5.json equals the checked-in constant', () => {
+  it(`the shipped schema/plan.v${CURRENT_PLAN_SCHEMA_VERSION}.json equals the checked-in constant`, () => {
     expect(shippedPlanJsonSchema).toEqual(planJsonSchema)
   })
 })

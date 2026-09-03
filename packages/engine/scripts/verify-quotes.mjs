@@ -891,8 +891,16 @@ function divergence(variants, needle, norm = (s) => ladderTo(s, DIAGNOSIS_RUNG))
 }
 
 // ─── Verdicts ────────────────────────────────────────────────────────────────
-/** Verdicts that mean the registry is wrong, or cannot be shown to be right. */
-const SERIOUS = Object.freeze(['ABSENT', 'TRUNCATED', 'ELISION-BROKEN', 'UNFETCHABLE'])
+/**
+ * Verdicts that mean the registry is wrong, or cannot be shown to be right.
+ *
+ * Exported because the published rule-coverage ledger classifies the same
+ * verdicts in `src/rules/coverageReport.ts`; `src/rules/quoteVerdicts.test.ts`
+ * asserts the two sets are equal, so a failing verdict added here without a
+ * matching ledger edit fails the suite instead of silently under-reporting
+ * broken citations on the transparency page.
+ */
+export const SERIOUS = Object.freeze(['ABSENT', 'TRUNCATED', 'ELISION-BROKEN', 'UNFETCHABLE'])
 /** Verdicts that mean the quote is faithful but not literally character-exact. */
 const ADVISORY = Object.freeze(['PUNCTUATION', 'ELISION-PUNCTUATION'])
 

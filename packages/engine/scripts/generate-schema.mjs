@@ -35,7 +35,13 @@ const pkgDir = resolve(scriptDir, '..')
 //     version's named alias, and keep `planJsonSchema` pointed at `current.ts`
 //   - src/schema/planSchemaMeta.ts (`PLAN_SCHEMA_VERSION`)
 //   - scripts/pack-smoke.mjs: per-version runtime/type imports and assertions,
-//     historical-module pattern/count, current version, and JSON artifact read
+//     historical-module pattern/count, current version, and JSON artifact read.
+//     The bare version literals are `schema/v<N>` at :407, `CURRENT_PLAN_SCHEMA_VERSION`
+//     at :495, `PLAN_SCHEMA_VERSION` and the `schemaVersion.const` at :497-498, and the
+//     type-level `schema/v<N>` import at :1536
+//   - src/schema/planJsonSchema.test.ts: one deliberate literal remains, the
+//     `expect(PLAN_SCHEMA_VERSION).toBe(<N>)` in "carries the plan schema version
+//     at the document root" (its fixtures and titles derive the version instead)
 //   - README.md usage examples / subpath table; DOCS/code-map.md; schema pointers
 //     in src/index.ts and schema/generate.ts; app/planner-ui export-key mirrors
 // This guard fails generation loudly if the model's version moves ahead of those
