@@ -61,14 +61,14 @@
   },
   "dependencies": {
     "@retiregolden/engine": "^0.2.0",
-    "highs": "^1.14.2",
+    "highs": "^1.15.2",
     "idb": "^8.0.3",
-    "recharts": "^3.8.1"
+    "recharts": "^3.10.1"
   },
   "peerDependencies": {
     "pdfjs-dist": "^6.2.108",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-router": "^8.3.0"
   },
   "peerDependenciesMeta": {
@@ -91,8 +91,8 @@
     "globals": "^17.6.0",
     "jsdom": "^30.0.1",
     "pdfjs-dist": "^6.2.108",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-router": "^8.3.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.68.0",
