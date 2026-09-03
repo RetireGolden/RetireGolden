@@ -34,7 +34,7 @@ UI in [`packages/planner-ui/`](packages/planner-ui/) — published as
 [`@retiregolden/planner-ui`](https://www.npmjs.com/package/@retiregolden/planner-ui). The app
 consumes both as workspace dependencies.
 
-**Requirements:** Node.js 24+ (Corepack will use the `packageManager` pin)
+**Requirements:** Node.js 24.15+ (Corepack will use the `packageManager` pin)
 
 ```bash
 corepack enable
@@ -70,7 +70,7 @@ Ten GitHub Actions workflows: the SWA pipeline and both security scans run on pu
 
 **Triggers:** push to `main` deploys production; open/sync/reopen PRs get a preview URL; closing a PR removes the preview.
 
-**Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **24** in CI (the workspaces require Node >=24). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
+**Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **24** in CI (the workspaces require Node >=24.15.0). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
 
 **Live site:** [https://retiregolden.app/](https://retiregolden.app/)
 

@@ -674,7 +674,7 @@ A host that *does* want PDF text extraction installs it alongside the package:
 npm install @retiregolden/planner-ui pdfjs-dist
 ```
 
-`pdfjs-dist@6` declares `node >=22.13.0`, which this package's own `node >=24`
+`pdfjs-dist@6` declares `node >=22.13.0`, which this package's own `node >=24.15.0`
 already satisfies, so there is no version split to reason about. A host on an
 older Node that installs `pdfjs-dist` anyway sees npm's `EBADENGINE` warning, and
 `extractDocumentText` reports `pdfjs_unavailable` or `pdfjs_incompatible` rather
