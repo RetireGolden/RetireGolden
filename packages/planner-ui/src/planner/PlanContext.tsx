@@ -34,6 +34,14 @@ const AUTOSAVE_MS = 600
  * what react-hooks/set-state-in-effect forbids. `plan`, `saveState`, `issues`,
  * and any pending autosave do still carry across; see the load effect.
  */
+/**
+ * The `loadError.reason` for a store that never answered, as opposed to a
+ * record that answered badly. Every other reason here comes from the
+ * migration; this one is the read itself failing, and it is a different thing
+ * to tell the household: nothing is wrong with their plan.
+ */
+export const PLAN_LOAD_STORAGE_UNAVAILABLE = 'storage_unavailable'
+
 export function PlanProvider({ planId, children }: { planId: string; children: ReactNode }) {
   const store = usePlanStore()
   const readOnly = useWorkspaceReadOnly()
@@ -94,7 +102,18 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
       setSaveState('saved')
     }
     void (async () => {
-      const r = await loadPlanVia(store, planId)
+      // A REJECTED read is not a reason code the migration produced: the store
+      // never answered. Left uncaught it holds the workspace on its loading
+      // skeleton forever, with no `loadError` to render and an unhandled
+      // rejection as the only trace.
+      let r
+      try {
+        r = await loadPlanVia(store, planId)
+      } catch {
+        if (cancelled) return
+        setLoadError({ planId, reason: PLAN_LOAD_STORAGE_UNAVAILABLE })
+        return
+      }
       if (cancelled) return
       if (r.ok) {
         adopt(r.plan, r.repairs)
@@ -110,8 +129,15 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
       if (isExamplePlanId(planId) && r.reason === 'not_object') {
         const example = getExampleById(planId.slice(EXAMPLE_PLAN_ID_PREFIX.length))
         if (example) {
-          const seeded = await saveFreshDemo(example)
+          // The seed is a WRITE, and it can be refused for the same reasons
+          // the read can. Treat that as the storage failure it is rather than
+          // reporting the record as merely missing.
+          const seeded = await saveFreshDemo(example).catch(() => null)
           if (cancelled) return
+          if (seeded === null) {
+            setLoadError({ planId, reason: PLAN_LOAD_STORAGE_UNAVAILABLE })
+            return
+          }
           if (seeded.ok) {
             // A seed is built from the registry, not read from storage, so
             // nothing was repaired. Said explicitly rather than left to the
@@ -255,12 +281,21 @@ export function PlanProvider({ planId, children }: { planId: string; children: R
     // bookmark). Everything else = a stored plan that exists but failed to
     // open (version/migration mismatch) — telling that user "not stored here"
     // would be wrong and alarming.
+    // A third case: the store never answered, so nothing is known to be wrong
+    // with the plan itself. Saying "could not be opened" there would blame the
+    // household's data for a browser that refused to talk.
+    const unavailable = loadError.reason === PLAN_LOAD_STORAGE_UNAVAILABLE
     const missing = loadError.reason === 'not_object'
     return (
       <div className="card empty-state">
-        <h2>{missing ? 'Plan not found' : 'This plan could not be opened'}</h2>
+        <h2>{unavailable ? 'Your plans could not be read' : missing ? 'Plan not found' : 'This plan could not be opened'}</h2>
         <p className="muted">
-          {missing ? (
+          {unavailable ? (
+            <>
+              Storage is unavailable in this browser right now, so this plan could not be read. Your data has not
+              been changed. Reloading the page tries again.
+            </>
+          ) : missing ? (
             <>
               This plan isn&apos;t stored in this browser. Plans live only on the device where they were created, so
               a link from another device or an old bookmark won&apos;t open here. You can restore one from a backup

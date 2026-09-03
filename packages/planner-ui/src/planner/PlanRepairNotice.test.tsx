@@ -495,6 +495,25 @@ describe('the workspace load failure', () => {
     expect(planName()).toBe('Clean plan')
   })
 
+  it('says storage refused rather than holding the loading skeleton', async () => {
+    // A REJECTED read is not a reason code the migration produced. Before this
+    // was caught, the workspace sat on its skeleton for the life of the tab,
+    // with an unhandled rejection as the only trace.
+    const refusing: PlanStore = {
+      ...storeHolding({}).store,
+      loadPlan: () => Promise.reject(new Error('storage refused')),
+    }
+    await act(async () => root.render(tree(refusing, 'p1')))
+    await settle()
+
+    expect(skeleton()).toBeNull()
+    // Not "This plan could not be opened": nothing is known to be wrong with
+    // the plan, and blaming their data for a browser that refused is worse
+    // than saying nothing.
+    expect(errorHeading()).toBe('Your plans could not be read')
+    expect(container.textContent).toContain('Your data has not been changed')
+  })
+
   it('keeps the failure card across a re-render of the same failed plan', async () => {
     const { store } = storeHolding({ p1: unreadableDoc() })
     await act(async () => root.render(tree(store, 'p1')))
