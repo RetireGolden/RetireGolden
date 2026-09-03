@@ -25,6 +25,12 @@ import {
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import type { YearResult } from '@retiregolden/engine/projection/types'
+import {
+  ACCOUNT_CATEGORIES,
+  ACCOUNT_CATEGORY_COLOR,
+  ACCOUNT_CATEGORY_LABEL,
+  categoryBalances,
+} from './accountCategories'
 import { serializeSinglePlan } from '../data/planFormat'
 import { CopyButton } from './CopyButton'
 import { usePlan } from './planContextCore'
@@ -97,23 +103,6 @@ function stripFlowParams(params: URLSearchParams): URLSearchParams {
   return next
 }
 
-const CATEGORIES = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
-const CAT_LABEL: Record<(typeof CATEGORIES)[number], string> = {
-  cash: 'Cash',
-  taxable: 'Taxable',
-  equityComp: 'Equity comp',
-  traditional: 'Traditional',
-  roth: 'Roth',
-  hsa: 'HSA',
-}
-const CAT_COLOR: Record<(typeof CATEGORIES)[number], string> = {
-  cash: 'var(--chart-5)',
-  taxable: 'var(--chart-2)',
-  equityComp: 'var(--chart-6)',
-  traditional: 'var(--chart-3)',
-  roth: 'var(--chart-1)',
-  hsa: 'var(--chart-4)',
-}
 
 /** Income streams, stacked bottom-to-top in the income breakdown. */
 const INCOME_SOURCES = [
@@ -140,15 +129,6 @@ const EXPENSE_CATEGORIES = [
   { key: 'taxes', label: 'Tax + penalties', color: 'var(--muted)' },
 ] as const
 
-function categoryBalances(plan: Plan, y: YearResult): Record<(typeof CATEGORIES)[number], number> {
-  const out = { cash: 0, taxable: 0, equityComp: 0, traditional: 0, roth: 0, hsa: 0 }
-  for (const a of plan.accounts) {
-    if ((CATEGORIES as readonly string[]).includes(a.type)) {
-      out[a.type as (typeof CATEGORIES)[number]] += y.balances[a.id] ?? 0
-    }
-  }
-  return out
-}
 
 function moneyTick(v: number): string {
   return fmtMoneyCompact(v)
@@ -718,10 +698,13 @@ export function ResultsPage() {
     () =>
       view.result.years.map((y) => {
         const cats = categoryBalances(plan, y)
-        const nominalFiTarget = view.summary.fiNumber * Math.pow(1 + plan.assumptions.inflationPct / 100, y.year - view.startYear)
+        // The engine publishes `fiNumber` in today's dollars; the line is
+        // plotted against nominal balances, so it rides the view's own
+        // inflation helper rather than a second compounding written here.
+        const nominalFiTarget = view.inflate(y.year, view.summary.fiNumber)
         return {
           year: y.year,
-          ...Object.fromEntries(CATEGORIES.map((c) => [c, adj(y.year, cats[c])])),
+          ...Object.fromEntries(ACCOUNT_CATEGORIES.map((c) => [c, adj(y.year, cats[c])])),
           income: adj(y.year, y.incomes.total),
           spending: adj(y.year, y.expenses.total + y.tax + y.penalties),
           tax: adj(y.year, y.tax),
@@ -1048,8 +1031,8 @@ export function ResultsPage() {
               <XAxis dataKey="year" interval="equidistantPreserveStart" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
               <YAxis tickFormatter={moneyTick} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
               <Legend />
-              {CATEGORIES.map((c) => (
-                <Area key={c} dataKey={c} stackId="bal" name={CAT_LABEL[c]} stroke={CAT_COLOR[c]} fill={CAT_COLOR[c]} fillOpacity={0.55} />
+              {ACCOUNT_CATEGORIES.map((c) => (
+                <Area key={c} dataKey={c} stackId="bal" name={ACCOUNT_CATEGORY_LABEL[c]} stroke={ACCOUNT_CATEGORY_COLOR[c]} fill={ACCOUNT_CATEGORY_COLOR[c]} fillOpacity={0.55} />
               ))}
               {view.summary.depletionYear !== null ? (
                 <ReferenceLine x={view.summary.depletionYear} stroke="var(--bad)" strokeDasharray="4 4" label={{ value: 'depleted', fill: 'var(--bad)', fontSize: 12 }} />

@@ -30,6 +30,7 @@ import { buildModel } from './marketModelPicker'
 import { ScrollRegion } from './ScrollRegion'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
+import { inflationView } from '../projection'
 import { currentStartYear, seedFromPlanId } from './useProjection'
 import { US_STATES } from './usStates'
 
@@ -257,8 +258,8 @@ export function RelocationComparePage() {
     return [...rows].sort((a, b) => key(a) - key(b) || a.destinationState.localeCompare(b.destinationState))
   }, [result, effectiveRankBy])
 
-  const deflateEnd = (row: RelocationCandidateRow, amount: number) =>
-    amount / Math.pow(1 + plan.assumptions.inflationPct / 100, row.endYear - startYear)
+  const money = inflationView(plan.assumptions.inflationPct, startYear)
+  const deflateEnd = (row: RelocationCandidateRow, amount: number) => money.deflate(row.endYear, amount)
 
   return (
     <section>

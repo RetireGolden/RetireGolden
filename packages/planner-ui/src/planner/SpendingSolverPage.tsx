@@ -23,6 +23,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { fmtMoney } from './format'
 import { LEARN } from './learnLinks'
+import { inflationView } from '../projection'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
 
@@ -199,10 +200,12 @@ export function SpendingSolverPage() {
   const slack = result && solvedRounded !== null ? solvedRounded - result.currentBaseAnnual : null
   // Deflate nominal end-of-plan evidence back to today's dollars so it reads
   // on the same scale as the today's-dollars spending answer.
-  const deflator =
-    result?.evidence != null
-      ? Math.pow(1 + plan.assumptions.inflationPct / 100, -(result.evidence.endYear - startYear))
-      : 1
+  // One inflation seam for the page: the end-of-plan evidence and the SWR
+  // table both read today's dollars off the same base year. Built below the
+  // memos above, which take startYear as a dependency the React Compiler must
+  // be able to see is never handed to anything that could change it.
+  const money = inflationView(plan.assumptions.inflationPct, startYear)
+  const deflator = result?.evidence != null ? money.deflate(result.evidence.endYear, 1) : 1
 
   return (
     <section>
@@ -477,7 +480,7 @@ export function SpendingSolverPage() {
             </thead>
             <tbody>
               {swrRows.map((row) => {
-                const deflate = Math.pow(1 + plan.assumptions.inflationPct / 100, -(row.endYear - startYear))
+                const deflate = money.deflate(row.endYear, 1)
                 return (
                   <tr key={row.id}>
                     <td>
