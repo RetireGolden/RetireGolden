@@ -25,5 +25,17 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Build/maintenance tooling: plain Node ESM, never shipped. Without this
+    // block these files match no config and are linted with zero rules, so a
+    // typo in one goes unseen. Mirrors packages/engine/eslint.config.js.
+    files: ['scripts/**/*.mjs', 'eslint.config.js'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: globals.node,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
+  },
   // Engine purity rules moved with the engine: see packages/engine/eslint.config.js.
 ])

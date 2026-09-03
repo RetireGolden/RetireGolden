@@ -11,10 +11,15 @@
  * `@types/*` packages are excluded — they ship as types, never reach the
  * runtime bundle, and carry no attribution obligation.
  *
+ * The output is reproducible: same lockfile and same node_modules, same bytes.
+ * Nothing here reads the clock, so a CI drift check can diff the committed file
+ * against a fresh run and only see real dependency changes.
+ *
  * This is a dev/build-time tool with no runtime dependencies; it shells out to
  * `pnpm list` and reads the filesystem only. @see DOCS/enhancements/gap-analysis-closeout.md WS-E
  */
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync, existsSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -271,7 +276,14 @@ function main() {
     blocks.push({ heading: lines.join('\n'), text: text ?? '(No LICENSE file found in the package; see the package metadata above.)' })
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  // Provenance has to be a function of the inputs, not of the clock: this line
+  // used to carry the run date, which made every re-run a diff and left a CI
+  // drift check unable to tell "a dependency changed" from "it is a new day".
+  // The lockfile digest changes only when the dependency set does. Newlines are
+  // normalised first so a CRLF Windows checkout and an LF CI checkout of the
+  // same lockfile hash the same.
+  const lockfileText = readFileSync(join(appDir, '..', 'pnpm-lock.yaml'), 'utf8').replace(/\r\n/g, '\n')
+  const lockfileDigest = createHash('sha256').update(lockfileText).digest('hex')
   const out = []
   out.push('THIRD-PARTY NOTICES')
   out.push('')
@@ -280,8 +292,8 @@ function main() {
   out.push('production dependency tree (direct + transitive, excluding TypeScript-only')
   out.push('@types/* packages that never reach the runtime bundle).')
   out.push('')
-  out.push(`Generated: ${today}`)
-  out.push(`Source:    pnpm list --prod --depth Infinity (workspace root pnpm-lock.yaml)`)
+  out.push(`Source:    pnpm list --prod --depth Infinity (workspace root)`)
+  out.push(`Lockfile:  pnpm-lock.yaml sha256 ${lockfileDigest}`)
   out.push('')
   out.push('================================================================================')
   out.push('')
@@ -300,7 +312,7 @@ function main() {
   out.push(`Excluded (type-only @types/*, first-party @retiregolden/*): ${excluded.length}`)
   if (copyleftHits.length > 0) {
     out.push('')
-    out.push('COOPYLEFT / SHARE-ALIKE LICENSES DETECTED (review before shipping):')
+    out.push('COPYLEFT / SHARE-ALIKE LICENSES DETECTED (review before shipping):')
     for (const h of copyleftHits) out.push(`  - ${h}`)
   } else {
     out.push('Copyleft/share-alike licenses detected: none (all permissive MIT/ISC/BSD/Apache).')

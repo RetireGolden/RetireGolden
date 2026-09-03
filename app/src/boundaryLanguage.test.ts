@@ -40,6 +40,12 @@ const sourceGroups: Record<string, { minFiles: number; files: Record<string, str
     minFiles: 3,
     files: import.meta.glob('../../packages/planner-ui/src/report/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>,
   },
+  // The shell's <noscript> block is the one piece of user-facing copy that
+  // never passes through a component, so nothing else here would scan it.
+  'app shell': {
+    minFiles: 1,
+    files: import.meta.glob('../index.html', { query: '?raw', import: 'default', eager: true }) as Record<string, string>,
+  },
 }
 
 const sources: Record<string, string> = Object.assign({}, ...Object.values(sourceGroups).map((group) => group.files))

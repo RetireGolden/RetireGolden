@@ -45,9 +45,9 @@ pnpm dev
 | Command (repo root) | Purpose |
 |---------|---------|
 | `pnpm dev` | Local dev server |
-| `pnpm build` | Engine package build, then production app build → `app/dist/` |
-| `pnpm test` | Vitest unit tests (engine package + app) |
-| `pnpm lint` | ESLint (engine package + app) |
+| `pnpm build` | Engine package build, planner-ui type-check, then production app build → `app/dist/` |
+| `pnpm test` | Vitest unit tests (engine, planner-ui, and app) |
+| `pnpm lint` | ESLint (engine, planner-ui, and app) |
 | `pnpm verify:quotes` | Checks every tax rule's quoted authority against the source it cites — manual, needs network, [not a CI gate](DOCS/operations/quote-fidelity.md) |
 
 ## CI/CD

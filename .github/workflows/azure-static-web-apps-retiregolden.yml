@@ -107,7 +107,7 @@ jobs:
       # it, so regenerate here and fail on drift.
       - name: Third-party notices are current
         run: |
-          pnpm --filter retiregolden-web licenses
+          pnpm --filter retiregolden-web run licenses
           git diff --exit-code -- app/THIRD-PARTY-NOTICES.txt app/public/THIRD-PARTY-NOTICES.txt
       # The dev/test loop aliases the engine package to its TS source, so this
       # is the only per-PR check that the published exports map + dist emit

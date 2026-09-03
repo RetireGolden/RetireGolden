@@ -9,25 +9,25 @@
     {
       "route": "/learn/images/*",
       "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
+        "Cache-Control": "public, max-age=604800"
       }
     },
     {
       "route": "/brand/*",
       "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
+        "Cache-Control": "public, max-age=604800"
       }
     },
     {
       "route": "/favicon.svg",
       "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
+        "Cache-Control": "public, max-age=604800"
       }
     },
     {
       "route": "/apple-touch-icon-180x180.png",
       "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
+        "Cache-Control": "public, max-age=604800"
       }
     },
     {
@@ -89,7 +89,8 @@
       "/sw.js",
       "/robots.txt",
       "/sitemap.xml",
-      "/import-feature.json"
+      "/import-feature.json",
+      "/THIRD-PARTY-NOTICES.txt"
     ]
   },
   "globalHeaders": {
