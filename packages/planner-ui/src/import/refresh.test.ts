@@ -219,6 +219,14 @@ describe('classifyRefresh — matching', () => {
     expect(hit!.targetAccountId).toBe('acct-401k')
   })
 
+  it('keeps non-ASCII letters as name content instead of stripping them to punctuation', () => {
+    // Pre-fix, collapseText's ASCII-only filter treated "É" as punctuation
+    // and dropped it, so "Épargne" normalized to "pargne" — losing the
+    // leading letter rather than folding the accent. Unicode letters must
+    // survive normalization the same way ASCII ones do.
+    expect(normalizeBrokerAccountLabel('Épargne')).toBe('épargne')
+  })
+
   it('never defaults ON a plan account whose whole name is a lone generic word', () => {
     // An account literally named "IRA": a Roth IRA file row proves only the
     // family, so the whole-name substring hit must stay default-off.

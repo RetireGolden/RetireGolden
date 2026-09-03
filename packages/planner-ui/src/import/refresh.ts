@@ -54,6 +54,7 @@
 
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
 import { applyBrokerBalance, isBalanceUpdatable, type BrokerAccountBalance } from './brokerCsv'
+import { normalizeUnicodeText } from './labelNormalize'
 import { isProtectedPath } from './refreshCore'
 import type { ImportReviewItem } from './reviewChecklist'
 import type { SourceLocator } from './provenance'
@@ -228,12 +229,15 @@ export interface RevertRefreshSnapshotResult {
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
 
 /**
- * The shared tail of both normalizers: drop everything that is not a lowercase
- * letter, digit, or space, then squeeze runs of whitespace to a single space and
- * trim. Digits survive — they are name content ("401k", "529"). Callers lowercase
- * (and, for labels, strip account-number masks) before handing text in.
+ * The shared tail of both normalizers: the Unicode-aware collapse in
+ * `labelNormalize.ts` (letters and digits survive, everything else folds to
+ * a space, runs squeeze to one and trim). Digits survive — they are name
+ * content ("401k", "529") — and so do non-ASCII letters ("Épargne" stays
+ * "épargne", not the ASCII-only filter's "pargne"). Callers lowercase (and,
+ * for labels, strip account-number masks) before handing text in;
+ * `normalizeUnicodeText` also lowercases, so that is redundant but harmless.
  */
-const collapseText = (s: string): string => s.replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
+const collapseText = (s: string): string => normalizeUnicodeText(s)
 
 /**
  * Lowercase a broker file label and strip the broker's own account-number mask

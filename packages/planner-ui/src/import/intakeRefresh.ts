@@ -21,6 +21,7 @@
  */
 
 import type { IncomeStream, Plan } from '@retiregolden/engine/model/plan'
+import { normalizeUnicodeText } from './labelNormalize'
 import { isProtectedPath } from './refreshCore'
 import type { ImportReviewItem } from './reviewChecklist'
 
@@ -140,22 +141,7 @@ function parseIncomeLeafPath(
   return { index, field: match[2] as IncomeAmountField }
 }
 
-function normalizeLabel(label: string): string {
-  let normalized = ''
-  let hasRetainedBase = false
-  for (const character of label.normalize('NFKC').toLowerCase()) {
-    if (/[\p{L}\p{N}]/u.test(character)) {
-      normalized += character
-      hasRetainedBase = true
-    } else if (/\p{M}/u.test(character)) {
-      if (hasRetainedBase) normalized += character
-    } else {
-      normalized += ' '
-      hasRetainedBase = false
-    }
-  }
-  return normalized.replace(/\s+/g, ' ').trim()
-}
+const normalizeLabel = normalizeUnicodeText
 
 function incomeSemanticKey(current: Plan, income: Wages | Recurring | OneTime): string {
   if (income.type === 'wages') {
