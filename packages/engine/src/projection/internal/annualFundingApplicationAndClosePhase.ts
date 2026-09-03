@@ -732,6 +732,30 @@ export function annualFundingApplicationAndClosePhase(
         grossAmount: number
         assumed: { basisReturn: number; ordinaryIncome: number } | null
       }>>()
+      // A PREDICTION about a counter this phase does not own, stated plainly
+      // because it is load-bearing and nothing in the type system holds it up.
+      //
+      // The character has to be known before the draw is applied, because the
+      // character sizes the draw -- so the replay allocation identity has to be
+      // derived from the mutation ordinal the application WILL receive. The
+      // assumption is that the next applications recorded are exactly these
+      // draws, one per aggregated IRA, in `rmdBalances` order, starting here.
+      //
+      // If it drifts, `resolveAssumedCharacter` finds no matching assumed effect
+      // and returns null, and the draw prices on the pre-distribution pro-rata
+      // state instead. That is the registered legacy fallback of
+      // `irc-408-d-2-C-projection-pro-rata-measurement-instant`, not a wrong
+      // answer -- and the attempt driver above this re-runs the annual pass
+      // until the characters it assumed are the ones the run produced. What the
+      // fallback does not do is announce itself, so the prediction is pinned by
+      // `simulate.assumedCharacterOrdinalPrediction.test.ts` rather than left to
+      // be discovered as a repriced year.
+      //
+      // Reserving the ordinals here instead of predicting them is not available:
+      // this helper runs twice per pass (a probe while sizing, then again once
+      // the draw settles) and a reservation taken during a discarded probe would
+      // burn ordinals that other applications recorded in between would then be
+      // numbered around, moving the journal for every plan.
       let predictedOrdinal = readNextRetirementRuntimeMutationOrdinal()
       for (const state of rmdBalances) {
         if (!isAggregatedIraThisYear(state.account)) continue
