@@ -77,7 +77,11 @@ The worker is emitted as an ES-module graph because its one spawn site already u
 `{ type: 'module' }`. That lets selected, high-contract annual phase coordinators remain small static
 chunks in both the app and worker graphs instead of forcing their explicit contracts back into either
 already-tight entry. Publication coordinators and the pure annual calculation kernels have distinct chunk
-names so their measured ownership remains visible. Those chunks stay precached; the split changes
+names so their measured ownership remains visible. The final funding/year-close and owned-IRA settlement
+coordinators also have their own explicit-only chunks: they are effectful orchestration boundaries rather
+than pure kernels, and excluding their dependency graphs prevents extraction-only file moves from
+inflating the shared `useProjection` chunk.
+Those chunks stay precached; the split changes
 parsing and chunk ownership, not the offline guarantee or the one-worker-entry invariant.
 
 A chunk rolldown names differently after a refactor stops matching its row and falls through to the

@@ -858,8 +858,12 @@ export const requiredMinimumDistributionRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
-    implementedBy: ['packages/engine/src/projection/simulate.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
@@ -1017,7 +1021,7 @@ export const requiredMinimumDistributionRecords = {
     implementedBy: [
       // Where forced distributions and aggregate conversion sweeps size draws
       // and decide the discharge.
-      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts',
       // Where need-based withdrawals size candidate account drains and decide
       // the same discharge before the caller commits accepted movements.
       'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts',
@@ -1034,7 +1038,7 @@ export const requiredMinimumDistributionRecords = {
       'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan',
       'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
       'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts#annualWithdrawalPlan',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts#annualForcedDistributionQcdAndRetirementActions',
     ],
   },
 

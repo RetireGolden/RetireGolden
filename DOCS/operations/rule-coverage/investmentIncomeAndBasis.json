@@ -134,7 +134,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         },
@@ -435,7 +435,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 665
+              "line": 588
             }
           ]
         }
@@ -502,7 +502,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         },
@@ -648,7 +648,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         },
@@ -904,7 +904,7 @@
       "title": "Individual capital-loss carryforwards continue into succeeding tax years",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "The plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation (treas-reg-1-1012-1-c-lot-basis-and-holding-period). The section 1212(b)(2) adjusted-taxable-income limit on how much of a section 1211(b) allowance burns the carryforward pool in a zero-income year is registered separately. The describeRule fixture drives the pool through simulatePlan so the year-to-year threading in simulate.ts is inside the rule's coverage.",
+      "conventionRationale": "The plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation (treas-reg-1-1012-1-c-lot-basis-and-holding-period). The section 1212(b)(2) adjusted-taxable-income limit on how much of a section 1211(b) allowance burns the carryforward pool in a zero-income year is registered separately. The describeRule fixture drives the pool through simulatePlan: annualFundingApplicationAndClosePhase applies the current-year producer and simulatePlan threads its returned pool into the next year.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -913,16 +913,26 @@
       "verifiedOn": "2026-08-27",
       "dueOn": "2027-08-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts",
+          "functions": [
+            {
+              "name": "annualFundingApplicationAndClosePhase",
+              "line": 395
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         },
@@ -1425,7 +1435,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         }
@@ -1497,7 +1507,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         }
@@ -1686,7 +1696,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         }
@@ -1782,7 +1792,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         }
@@ -1863,7 +1873,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         }
@@ -1920,7 +1930,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 590
             }
           ]
         }

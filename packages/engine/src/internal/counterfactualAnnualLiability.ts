@@ -159,6 +159,28 @@ export type CounterfactualAnnualLiabilityResult =
   | CounterfactualAnnualLiabilityRead
   | CounterfactualAnnualLiabilityRefused
 
+/**
+ * One year-by-year request for a counterfactual annual pass, plus the sink its
+ * readings go to.
+ *
+ * `taxUnitId` and `nonGroupTaxInputs` are supplied rather than derived because
+ * the filing unit's identity and its non-group tax inputs are what bind a
+ * baseline run to the candidate it will be subtracted from, and nothing in the
+ * engine produces either yet — the tax-unit snapshot the ordinary executor
+ * receives is built inside the pass, below the point a pre-pass has to run.
+ * Deriving them is the consumer slice's work.
+ */
+export interface SimulateAnnualCounterfactualRequest {
+  /** Retirement-action IDs every year's counterfactual run omits. */
+  readonly omitActionIds: readonly ActionId[]
+  readonly taxUnitId: string
+  readonly nonGroupTaxInputs: readonly Readonly<AnnualLiabilityRunTaxInput>[]
+  /** Receives one result per projected year, in year order. */
+  readonly capture: (
+    result: Readonly<CounterfactualAnnualLiabilityResult>,
+  ) => void
+}
+
 /** The input ID under which a counterfactual run states what it removed. */
 export const COUNTERFACTUAL_OMISSION_TAX_INPUT_ID =
   'counterfactualOmittedRetirementActionIds'

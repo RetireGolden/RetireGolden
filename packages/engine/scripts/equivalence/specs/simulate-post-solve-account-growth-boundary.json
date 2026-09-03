@@ -94,26 +94,26 @@
     {
       "id": "AA.callsite",
       "label": "annual invocation and ordered caller-owned two-pass commits",
-      "file": "projection/simulate.ts",
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        4660,
-        4697
+        1841,
+        1878
       ],
       "anchors": [
         {
-          "line": 4660,
+          "line": 1841,
           "text": "const accountGrowth = annualPostSolveAccountGrowth({"
         },
         {
-          "line": 4681,
+          "line": 1862,
           "text": "state.balance = row.marketClosingBalance"
         },
         {
-          "line": 4686,
+          "line": 1867,
           "text": "priorYearPortfolioReturnPct = accountGrowth.priorYearPortfolioReturnPct"
         },
         {
-          "line": 4696,
+          "line": 1877,
           "text": "if (state.account.type === 'taxable') state.costBasis += row.reinvestedYield"
         }
       ]
