@@ -1,3 +1,4 @@
+import { formatEvidencePercent, formatWholeUsd } from '../evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { analyzePensionElections, pensionTakeLumpSumPatch } from '../../decisions/pensionElection.js'
 
@@ -32,10 +33,10 @@ export const pensionElectionPending: Detector = {
     const ratio = pv / analysis.lumpSum
     const direction =
       ratio > 1.05
-        ? `the annuity's discounted value (~$${Math.round(pv).toLocaleString()}) is above the offer`
+        ? `the annuity's discounted value (~${formatWholeUsd(pv)}) is above the offer`
         : ratio < 0.95
-          ? `the offer is above the annuity's discounted value (~$${Math.round(pv).toLocaleString()})`
-          : `the offer and the annuity's discounted value (~$${Math.round(pv).toLocaleString()}) are close`
+          ? `the offer is above the annuity's discounted value (~${formatWholeUsd(pv)})`
+          : `the offer and the annuity's discounted value (~${formatWholeUsd(pv)}) are close`
 
     // The concrete take-the-lump-sum patch comes from the shared builder so
     // the insight and the decision engine can never disagree about mechanics.
@@ -44,10 +45,10 @@ export const pensionElectionPending: Detector = {
     return {
       id: 'pension-election-pending',
       category: 'longevity-insurance-geography',
-      title: `Pension election pending: $${Math.round(analysis.lumpSum).toLocaleString()} lump sum vs lifetime annuity`,
+      title: `Pension election pending: ${formatWholeUsd(analysis.lumpSum)} lump sum vs lifetime annuity`,
       rationale:
-        `${pending.name} offers a $${Math.round(analysis.lumpSum).toLocaleString()} lump sum in ${analysis.electionYear}. ` +
-        `At the ${analysis.curveRatePct.toFixed(1)}% curve-anchored discount rate to your planning age, ${direction}. ` +
+        `${pending.name} offers a ${formatWholeUsd(analysis.lumpSum)} lump sum in ${analysis.electionYear}. ` +
+        `At the ${formatEvidencePercent(analysis.curveRatePct)} curve-anchored discount rate to your planning age, ${direction}. ` +
         'The Accounts section shows the full sensitivity table (discount rate × longevity, survivor option value); ' +
         'the decision hinges on longevity, survivor needs, and what you would earn on the rollover. Those are tradeoffs, not a verdict.',
       impact: {
@@ -58,10 +59,10 @@ export const pensionElectionPending: Detector = {
       confidence: 'high',
       severity: 'attention',
       evidence: [
-        { label: 'Lump-sum offer', value: `$${Math.round(analysis.lumpSum).toLocaleString()}`, year: analysis.electionYear },
+        { label: 'Lump-sum offer', value: formatWholeUsd(analysis.lumpSum), year: analysis.electionYear },
         { label: 'Election year', value: `${analysis.electionYear}`, year: analysis.electionYear },
-        { label: 'Annuity present value (today\'s $)', value: `$${Math.round(pv).toLocaleString()}`, year: startYear },
-        { label: 'Curve-anchored discount rate', value: `${analysis.curveRatePct.toFixed(1)}%` },
+        { label: 'Annuity present value (today\'s $)', value: formatWholeUsd(pv), year: startYear },
+        { label: 'Curve-anchored discount rate', value: formatEvidencePercent(analysis.curveRatePct) },
       ],
       learnSlug: 'pensions-and-annuities',
       plannerRoute: 'accounts',

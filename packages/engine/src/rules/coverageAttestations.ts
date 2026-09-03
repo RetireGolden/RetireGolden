@@ -136,6 +136,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'insights/detectors/stalePlanData.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/stateRelocation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/widowsPenalty.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'insights/evidenceFormat.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-02', note: null }),
   'insights/parsePlanUpdatedAtIso.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/registry.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/runInsights.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

@@ -1,3 +1,4 @@
+import { formatWholeUsd } from '../evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { Account } from '../../model/plan.js'
 import { spiaPayoutRate } from '../../decisions/spiaQuotes.js'
@@ -56,7 +57,7 @@ export const annuitizationHeadroom: Detector = {
       title: 'Planning to 95+ with no lifetime income beyond Social Security',
       rationale:
         `Your plan runs to ${maxPlanningAge} with no pension or annuity income. ` +
-        `Trading $${Math.round(premium).toLocaleString()} of liquid savings for a life annuity (~$${Math.round(monthly).toLocaleString()}/mo) ` +
+        `Trading ${formatWholeUsd(premium)} of liquid savings for a life annuity (~${formatWholeUsd(monthly)}/mo) ` +
         'insures the years past life expectancy, the exact risk a long planning age worries about, at the cost of liquidity and estate. ' +
         'The Monte Carlo page\'s annuitization sweep shows the full success-vs-legacy frontier.',
       impact: {
@@ -68,9 +69,9 @@ export const annuitizationHeadroom: Detector = {
       severity: 'info',
       evidence: [
         { label: 'Planning age', value: `${maxPlanningAge}` },
-        { label: 'Largest liquid account balance (SPIA funding source)', value: `$${Math.round(liquid.balance).toLocaleString()}`, year: startYear },
-        { label: 'Illustrative SPIA premium', value: `$${Math.round(premium).toLocaleString()}`, year: startYear },
-        { label: `Illustrative monthly income (from age ${startAge})`, value: `$${Math.round(monthly).toLocaleString()}/mo`, year: paymentStartYear },
+        { label: 'Largest liquid account balance (SPIA funding source)', value: formatWholeUsd(liquid.balance), year: startYear },
+        { label: 'Illustrative SPIA premium', value: formatWholeUsd(premium), year: startYear },
+        { label: `Illustrative monthly income (from age ${startAge})`, value: `${formatWholeUsd(monthly)}/mo`, year: paymentStartYear },
       ],
       learnSlug: 'pensions-and-annuities',
       plannerRoute: 'monte-carlo',

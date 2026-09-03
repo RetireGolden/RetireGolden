@@ -38,6 +38,19 @@ export default defineConfig([
           ],
         },
       ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          // Determinism (DOCS/standards.md invariant 4): with no locale
+          // argument the host ICU default decides, so `$1,234` renders as
+          // `$1.234` or `1 234` off an en-US runtime. Engine-published
+          // strings (insight evidence, decision explanations, projection
+          // warnings) are part of the contract, not a rendering choice.
+          selector: "CallExpression[callee.property.name='toLocaleString'][arguments.length=0]",
+          message:
+            'Zero-argument toLocaleString() takes the host locale. Use the pinned formatters in src/insights/evidenceFormat.ts, or pass an explicit locale.',
+        },
+      ],
       'no-restricted-globals': [
         'error',
         { name: 'localStorage', message: 'Persistence belongs in the consuming app, not the engine.' },

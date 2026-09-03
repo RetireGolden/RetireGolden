@@ -9,6 +9,7 @@
  * so the card and that surface report the same solved level.
  */
 
+import { formatWholeUsd } from '../evidenceFormat.js'
 import type { Detector } from '../types.js'
 import {
   createDecisionContext,
@@ -52,17 +53,17 @@ export const spendingHeadroom: Detector = {
       id: 'spending-headroom',
       category: 'sequence-risk',
       title: 'Your plan may support more spending',
-      rationale: `Your plan is projected to end with roughly $${Math.round(endingEstateToday).toLocaleString()} of after-tax estate in today's dollars${bequestTarget > 0 ? `, well above your $${Math.round(bequestTarget).toLocaleString()} bequest target` : ' with no bequest target set'}. Previewing the max-sustainable spending level shows how much lifestyle that margin could fund.`,
+      rationale: `Your plan is projected to end with roughly ${formatWholeUsd(endingEstateToday)} of after-tax estate in today's dollars${bequestTarget > 0 ? `, well above your ${formatWholeUsd(bequestTarget)} bequest target` : ' with no bequest target set'}. Previewing the max-sustainable spending level shows how much lifestyle that margin could fund.`,
       impact: {
-        qualitative: `≈ $${Math.round(roughHeadroomPerYear).toLocaleString()}/yr of rough headroom before taxes; preview for the precise answer.`,
+        qualitative: `≈ ${formatWholeUsd(roughHeadroomPerYear)}/yr of rough headroom before taxes; preview for the precise answer.`,
       },
       exact: false,
       confidence: 'medium',
       severity: 'info',
       evidence: [
-        { label: 'Ending after-tax estate (today\'s $)', value: `$${Math.round(endingEstateToday).toLocaleString()}`, year: endYear },
-        { label: 'Bequest target', value: `$${Math.round(bequestTarget).toLocaleString()}` },
-        { label: 'Rough annual spending headroom (today\'s $)', value: `$${Math.round(roughHeadroomPerYear).toLocaleString()}/yr` },
+        { label: 'Ending after-tax estate (today\'s $)', value: formatWholeUsd(endingEstateToday), year: endYear },
+        { label: 'Bequest target', value: formatWholeUsd(bequestTarget) },
+        { label: 'Rough annual spending headroom (today\'s $)', value: `${formatWholeUsd(roughHeadroomPerYear)}/yr` },
       ],
       learnSlug: 'building-a-retirement-spending-budget',
       plannerRoute: 'spending-solver',
@@ -104,11 +105,11 @@ export const spendingHeadroom: Detector = {
     return {
       action: {
         kind: 'preview-scenario',
-        scenarioName: `Spend $${Math.round(maxBaseAnnual).toLocaleString()}/yr (max sustainable)`,
+        scenarioName: `Spend ${formatWholeUsd(maxBaseAnnual)}/yr (max sustainable)`,
         patch: { expenses: { baseAnnual: maxBaseAnnual } },
       },
       impact: {
-        qualitative: `The full year-by-year projection sustains about $${Math.round(maxBaseAnnual).toLocaleString()}/yr of baseline spending, which is $${Math.round(slack).toLocaleString()}/yr above your current level (today's dollars).`,
+        qualitative: `The full year-by-year projection sustains about ${formatWholeUsd(maxBaseAnnual)}/yr of baseline spending, which is ${formatWholeUsd(slack)}/yr above your current level (today's dollars).`,
       },
     }
   },

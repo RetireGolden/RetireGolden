@@ -6,6 +6,7 @@
  * caller retains every live mutation, runtime occurrence/application write,
  * mutation ordinal, contract-value credit, and cross-year investment write.
  */
+import { formatWholeUsd } from '../../insights/evidenceFormat.js'
 import type { Account, Person } from '../../model/plan.js'
 import {
   latestNonQlacQualifiedAnnuityStartAge,
@@ -137,7 +138,7 @@ export function annualAnnuityPurchaseFunding(
     if (account.purchase.qlac && premium > qlacCap) {
       premium = qlacCap
       warnings.push(
-        `A QLAC premium above the $${Math.round(qlacCap).toLocaleString()} cap was reduced to the cap (the excess is not QLAC-eligible).`,
+        `A QLAC premium above the ${formatWholeUsd(qlacCap)} cap was reduced to the cap (the excess is not QLAC-eligible).`,
       )
     }
 

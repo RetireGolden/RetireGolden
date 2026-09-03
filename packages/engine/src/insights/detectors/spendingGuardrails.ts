@@ -1,3 +1,4 @@
+import { formatWholeUsd } from '../evidenceFormat.js'
 import { probabilityBandSpendingGuardrailGenerator } from '../../decisions/generators.js'
 import type { DecisionContext } from '../../decisions/types.js'
 import type { Plan } from '../../model/plan.js'
@@ -51,10 +52,10 @@ export const spendingGuardrails: Detector = {
         label: floorIsUserProvided
           ? 'Required spending floor'
           : 'Illustrative spending floor (80% of base spending, scenario-generated)',
-        value: `$${Math.round(requiredAnnual).toLocaleString()}`,
+        value: formatWholeUsd(requiredAnnual),
         year: firstYear.year,
       },
-      { label: 'Investable assets', value: `$${Math.round(firstYear.investableTotal).toLocaleString()}`, year: firstYear.year },
+      { label: 'Investable assets', value: formatWholeUsd(firstYear.investableTotal), year: firstYear.year },
     ]
     if (typeof ctx.projection.summary.depletionYear === 'number') {
       evidence.push({
@@ -67,7 +68,7 @@ export const spendingGuardrails: Detector = {
       id: 'spending-guardrails',
       category: 'sequence-risk',
       title: 'Preview dynamic spending guardrails',
-      rationale: `Your plan currently assumes fixed inflation-adjusted spending. Preview a rules-based guardrail scenario with a $${Math.round(requiredAnnual).toLocaleString()} required floor and 10% spending adjustments when the withdrawal-rate band is crossed.`,
+      rationale: `Your plan currently assumes fixed inflation-adjusted spending. Preview a rules-based guardrail scenario with a ${formatWholeUsd(requiredAnnual)} required floor and 10% spending adjustments when the withdrawal-rate band is crossed.`,
       impact: {
         qualitative: 'Preview to compare the projected and Monte Carlo impact of flexible spending rules.',
         successRateDeltaPct: 12,

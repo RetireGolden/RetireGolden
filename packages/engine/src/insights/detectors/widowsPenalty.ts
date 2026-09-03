@@ -1,3 +1,4 @@
+import { formatWholeUsd } from '../evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { computeFederalTax } from '../../tax/federalTax.js'
 import { LATEST_PACK_YEAR } from '../../params/index.js'
@@ -139,7 +140,7 @@ export const widowsPenalty: Detector = {
     const rationale =
       `When one spouse passes away (projected in ${lastJointYear}), ${filingStory}. ` +
       (bracketJumpToday > 100
-        ? `On the survivor's projected income in ${singleFiledYearObj!.year}, single brackets and the smaller deduction cost about $${bracketJumpToday.toLocaleString('en-US')} more (today's $) than the same income filed jointly. `
+        ? `On the survivor's projected income in ${singleFiledYearObj!.year}, single brackets and the smaller deduction cost about ${formatWholeUsd(bracketJumpToday)} more (today's $) than the same income filed jointly. `
         : `Single filing cuts tax bracket ceilings in half, raising their tax rate. `) +
       `Converting traditional assets to Roth before ${firstSingleYear} would use joint brackets. Preview that window as a scenario.` +
       ssa44Note
@@ -159,11 +160,11 @@ export const widowsPenalty: Detector = {
       confidence: 'high',
       severity: 'attention',
       evidence: [
-        { label: 'Traditional account balance', value: `$${Math.round(tradBalance).toLocaleString()}`, year: ctx.projection.startYear },
+        { label: 'Traditional account balance', value: formatWholeUsd(tradBalance), year: ctx.projection.startYear },
         { label: 'Last joint-filing year', value: `${lastJointYear}`, year: lastJointYear },
         { label: 'First survivor year', value: `${firstSingleYear}`, year: firstSingleYear },
         ...(bracketJumpToday > 100
-          ? [{ label: 'Estimated survivor bracket jump', value: `$${bracketJumpToday.toLocaleString('en-US')}`, year: singleFiledYearObj!.year }]
+          ? [{ label: 'Estimated survivor bracket jump', value: formatWholeUsd(bracketJumpToday), year: singleFiledYearObj!.year }]
           : []),
       ],
       learnSlug: 'widows-penalty-and-survivor-brackets',

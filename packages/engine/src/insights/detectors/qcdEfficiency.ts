@@ -1,3 +1,4 @@
+import { formatWholeUsd } from '../evidenceFormat.js'
 import { planDollarsToLedgerCents } from '../../actions/planBalanceAdapter.js'
 import {
   compareUtf16CodeUnits,
@@ -11,7 +12,7 @@ export const QCD_EFFICIENCY_EXPLORATORY_REASON =
   'This calculation-only QCD preview does not identify a donor, eligible owned IRA, execution date, charity designation, or complete eligibility evidence.'
 
 export function qcdEfficiencyRationale(charitable: number): string {
-  const charitableStr = '$' + Math.round(charitable).toLocaleString('en-US')
+  const charitableStr = formatWholeUsd(charitable)
   return `You are donating ${charitableStr} per year outside a QCD. The model can price an exploratory QCD comparison, but it cannot call the transfer implementation-ready until a donor, eligible owned IRA, exact execution date, charity designation, and complete eligibility evidence are supplied.`
 }
 
@@ -137,8 +138,8 @@ export const qcdEfficiency: Detector = {
       confidence: 'medium',
       severity: 'info',
       evidence: [
-        { label: 'Annual charitable giving', value: `$${Math.round(charitable).toLocaleString()}` },
-        { label: 'Current annual QCD', value: `$${Math.round(ctx.plan.strategies.qcdAnnual).toLocaleString()}` },
+        { label: 'Annual charitable giving', value: formatWholeUsd(charitable) },
+        { label: 'Current annual QCD', value: formatWholeUsd(ctx.plan.strategies.qcdAnnual) },
       ],
       learnSlug: 'qcds-qualified-charitable-distributions',
       plannerRoute: 'strategy',

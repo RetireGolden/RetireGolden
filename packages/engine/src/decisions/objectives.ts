@@ -8,6 +8,7 @@
  * can pick an objective that bypasses exact evaluation.
  */
 
+import { formatWholeUsd } from '../insights/evidenceFormat.js'
 import type { Plan } from '../model/plan.js'
 import { rmdStartAgeForBirthYear } from '../params/index.js'
 import type { ProjectionResult } from '../projection/types.js'
@@ -136,7 +137,7 @@ export function makeMinimizeLifetimeTaxWithEstateFloor(bequestTargetTodayDollars
     label: 'Minimize lifetime tax (estate floor)',
     description:
       bequestTargetTodayDollars > 0
-        ? `Lowest lifetime taxes and penalties among candidates that keep the after-tax estate at or above the $${Math.round(bequestTargetTodayDollars).toLocaleString()} bequest target (today's dollars).`
+        ? `Lowest lifetime taxes and penalties among candidates that keep the after-tax estate at or above the ${formatWholeUsd(bequestTargetTodayDollars)} bequest target (today's dollars).`
         : 'Lowest lifetime taxes and penalties among candidates that do not reduce the after-tax estate.',
     primaryMetricLabel: 'Lifetime tax savings',
     primaryMetric: (evaluation) => -evaluation.deltas.lifetimeTax,
@@ -151,12 +152,12 @@ export function makeMinimizeLifetimeTaxWithEstateFloor(bequestTargetTodayDollars
         const nominalFloor = nominalDollarsAtPlanEnd(bequestTargetTodayDollars, candidatePlan, evaluation.candidateResult)
         if (evaluation.candidateSummary.endingAfterTaxEstate < nominalFloor) {
           violations.push(
-            `ending after-tax estate falls below the $${Math.round(bequestTargetTodayDollars).toLocaleString()} bequest target (today's dollars)`,
+            `ending after-tax estate falls below the ${formatWholeUsd(bequestTargetTodayDollars)} bequest target (today's dollars)`,
           )
         }
       } else if (evaluation.deltas.endingAfterTaxEstate < -1) {
         violations.push(
-          `reduces the after-tax estate by $${Math.round(-evaluation.deltas.endingAfterTaxEstate).toLocaleString()}`,
+          `reduces the after-tax estate by ${formatWholeUsd(-evaluation.deltas.endingAfterTaxEstate)}`,
         )
       }
       return violations
@@ -194,7 +195,7 @@ export function makeProtectSurvivorLiquidity(reserveTargetTodayDollars = 0): Obj
     label: 'Protect survivor liquidity',
     description:
       reserveTargetTodayDollars > 0
-        ? `Raise the worst-case survivor-year investable balance while keeping it at or above the $${Math.round(reserveTargetTodayDollars).toLocaleString()} reserve target (today's dollars); never shorten money-lasts.`
+        ? `Raise the worst-case survivor-year investable balance while keeping it at or above the ${formatWholeUsd(reserveTargetTodayDollars)} reserve target (today's dollars); never shorten money-lasts.`
         : 'Raise the worst-case investable balance during survivor years; never shorten money-lasts.',
     primaryMetricLabel: 'Minimum survivor-year investable delta',
     primaryMetric: (evaluation, ctx) => {
@@ -212,7 +213,7 @@ export function makeProtectSurvivorLiquidity(reserveTargetTodayDollars = 0): Obj
         const worst = minDeflatedSurvivorInvestable(evaluation.candidateResult, candidatePlan)
         if (worst !== null && worst < reserveTargetTodayDollars - 1) {
           violations.push(
-            `survivor-year investable balance falls to $${Math.round(worst).toLocaleString()} (today's dollars), below the $${Math.round(reserveTargetTodayDollars).toLocaleString()} reserve target`,
+            `survivor-year investable balance falls to ${formatWholeUsd(worst)} (today's dollars), below the ${formatWholeUsd(reserveTargetTodayDollars)} reserve target`,
           )
         }
       }
@@ -307,7 +308,7 @@ export function makeMaximizeSustainableSpending(estateFloorTodayDollars = 0): Ob
       }
       if (evaluation.candidateSummary.endingAfterTaxEstate < nominalFloor) {
         violations.push(
-          `ending after-tax estate falls below the $${Math.round(estateFloorTodayDollars).toLocaleString()} floor (today's dollars)`,
+          `ending after-tax estate falls below the ${formatWholeUsd(estateFloorTodayDollars)} floor (today's dollars)`,
         )
       }
       return violations

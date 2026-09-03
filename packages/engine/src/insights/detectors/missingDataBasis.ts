@@ -1,3 +1,4 @@
+import { formatEvidenceUsd } from '../evidenceFormat.js'
 import type { Detector, InsightCard, InsightEvidence } from '../types.js'
 import type {
   EmployerRothAccountActivity,
@@ -72,21 +73,6 @@ function projectedSaleYearPropertyValue(
   }
   // Some scales published but sale-year rate still unknown — undetermined.
   return null
-}
-
-/**
- * Format a decisive dollar amount for evidence. Integral amounts stay whole
- * dollars; any non-integral amount keeps exact cents (e.g. $0.60, not $1).
- */
-function usd(amount: number): string {
-  const cents = Math.round(amount * 100)
-  if (cents % 100 === 0) {
-    return `$${(cents / 100).toLocaleString('en-US')}`
-  }
-  return `$${(cents / 100).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
 }
 
 /** Evidence parenthetical: tax-consequential property path. */
@@ -195,7 +181,7 @@ export const missingDataBasis: Detector = {
             kind: 'basis',
             evidence: {
               label: `${nameList} taxable character from assumed-zero basis (distributions)`,
-              value: usd(verdict.distributions),
+              value: formatEvidenceUsd(verdict.distributions),
               year: year.year,
             },
           })
@@ -204,7 +190,7 @@ export const missingDataBasis: Detector = {
             kind: 'basis',
             evidence: {
               label: `${nameList} taxable character from assumed-zero basis (conversions)`,
-              value: usd(verdict.conversions),
+              value: formatEvidenceUsd(verdict.conversions),
               year: year.year,
             },
           })
@@ -214,7 +200,7 @@ export const missingDataBasis: Detector = {
             evidence: {
               label:
                 `${nameList} taxable character from assumed-zero basis (IRA-funded annuity payments)`,
-              value: usd(verdict.annuityPayments),
+              value: formatEvidenceUsd(verdict.annuityPayments),
               year: year.year,
             },
           })
@@ -229,7 +215,7 @@ export const missingDataBasis: Detector = {
           evidence: {
             // Plan opening balances, not the trigger year's live figure.
             label: `${nameList} opening balance (assumed zero after-tax basis)`,
-            value: usd(aggregateBalance),
+            value: formatEvidenceUsd(aggregateBalance),
             year: ctx.projection.startYear,
           },
         })
@@ -278,7 +264,7 @@ export const missingDataBasis: Detector = {
             // and free conversion cover — not the pool's total withdrawal.
             label:
               `${nameList} owner-pool basis-sensitive spill past known contributions and free conversion cover`,
-            value: usd(verdict.withdrawal),
+            value: formatEvidenceUsd(verdict.withdrawal),
             year: year.year,
           },
         })
@@ -288,7 +274,7 @@ export const missingDataBasis: Detector = {
           evidence: {
             // Plan opening balances, not the trigger year's live figure.
             label: `${nameList} opening balance (assumed contribution basis)`,
-            value: usd(aggregateBalance),
+            value: formatEvidenceUsd(aggregateBalance),
             year: ctx.projection.startYear,
           },
         })
@@ -322,7 +308,7 @@ export const missingDataBasis: Detector = {
               // and free conversion cover — not the account's total withdrawal.
               label:
                 `${account.name} basis-sensitive spill past known contributions and free conversion cover`,
-              value: usd(verdict.withdrawal),
+              value: formatEvidenceUsd(verdict.withdrawal),
               year: year.year,
             },
           })
@@ -334,7 +320,7 @@ export const missingDataBasis: Detector = {
               // Plan opening balance, not the trigger year's live figure.
               label:
                 `${account.name} opening balance (modeled as contribution basis under the engine's simplified ordering)`,
-              value: usd(account.balance),
+              value: formatEvidenceUsd(account.balance),
               year: ctx.projection.startYear,
             },
           })
@@ -406,7 +392,7 @@ export const missingDataBasis: Detector = {
             kind: propertyGapKind,
             evidence: {
               label: `${account.name} expected net proceeds (${pathLabel})`,
-              value: usd(expectedNetProceeds),
+              value: formatEvidenceUsd(expectedNetProceeds),
               year: account.plannedSaleYear,
             },
           })
@@ -420,7 +406,7 @@ export const missingDataBasis: Detector = {
               kind: propertyGapKind,
               evidence: {
                 label: `${account.name} opening property value (${pathLabel})`,
-                value: usd(account.value),
+                value: formatEvidenceUsd(account.value),
                 year: ctx.projection.startYear,
               },
             })
@@ -436,7 +422,7 @@ export const missingDataBasis: Detector = {
             kind: propertyGapKind,
             evidence: {
               label: `${account.name} opening property value (${pathLabel})`,
-              value: usd(account.value),
+              value: formatEvidenceUsd(account.value),
               year: ctx.projection.startYear,
             },
           })
@@ -487,7 +473,7 @@ export const missingDataBasis: Detector = {
           kind: 'dates',
           evidence: {
             label: `${person.name} continuing open-ended wages (no retirement age; assumed for life)`,
-            value: usd(continuingWages),
+            value: formatEvidenceUsd(continuingWages),
             year: firstProjectionYear.year,
           },
         })

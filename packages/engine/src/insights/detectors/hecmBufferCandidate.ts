@@ -1,3 +1,4 @@
+import { formatEvidencePercent, formatWholeUsd } from '../evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { Account } from '../../model/plan.js'
 import { hecmPrincipalLimitFactorPct } from '../../params/index.js'
@@ -60,8 +61,8 @@ export const hecmBufferCandidate: Detector = {
       category: 'longevity-insurance-geography',
       title: 'Your home equity could backstop market downturns',
       rationale:
-        `${home.name} (~$${Math.round(home.value).toLocaleString()}) rivals your $${Math.round(investable).toLocaleString()} portfolio. ` +
-        `A HECM line of credit opened now would start near $${Math.round(lineSize).toLocaleString()} (${plfPct.toFixed(1)}% of value at age ${youngestAge}, published factor tables) ` +
+        `${home.name} (~${formatWholeUsd(home.value)}) rivals your ${formatWholeUsd(investable)} portfolio. ` +
+        `A HECM line of credit opened now would start near ${formatWholeUsd(lineSize)} (${formatEvidencePercent(plfPct)} of value at age ${youngestAge}, published factor tables) ` +
         `and grow ~${pack.hecm.defaultGrowthRatePct}%/yr regardless of home value. Drawing tax-free after down years, instead of selling depressed assets, is the coordinated buffer strategy; ` +
         'costs are real (financed fees, a growing loan) and the loan is repaid from the home, non-recourse.',
       impact: {
@@ -72,10 +73,10 @@ export const hecmBufferCandidate: Detector = {
       confidence: 'medium',
       severity: 'info',
       evidence: [
-        { label: 'Home value', value: `$${Math.round(home.value).toLocaleString()}`, year: startYear },
-        { label: 'Investable portfolio', value: `$${Math.round(investable).toLocaleString()}`, year: startYear },
+        { label: 'Home value', value: formatWholeUsd(home.value), year: startYear },
+        { label: 'Investable portfolio', value: formatWholeUsd(investable), year: startYear },
         { label: 'Youngest borrower age', value: `${youngestAge}`, year: startYear },
-        { label: 'Illustrative credit line', value: `$${Math.round(lineSize).toLocaleString()}`, year: startYear },
+        { label: 'Illustrative credit line', value: formatWholeUsd(lineSize), year: startYear },
       ],
       plannerRoute: 'accounts',
       action: {

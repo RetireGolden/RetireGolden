@@ -12,6 +12,7 @@
  * fixed probe sequence, integer-dollar midpoints, no randomness.
  */
 
+import { formatGroupedNumber, formatWholeUsd } from '../insights/evidenceFormat.js'
 import { evaluateCandidate, planForCandidate, type EvaluateCandidateOptions } from './evaluateCandidate.js'
 import { nominalDollarsAtPlanEnd } from './objectives.js'
 import type { DecisionCandidate, DecisionContext, ExactDecisionEvaluation } from './types.js'
@@ -83,7 +84,7 @@ function spendingCandidate(
     id: `sustainable-spending-${baseAnnual}`,
     source: 'search',
     category: 'spending',
-    label: `Base spending $${Math.round(baseAnnual).toLocaleString()}/yr`,
+    label: `Base spending ${formatWholeUsd(baseAnnual)}/yr`,
     explanation:
       'Sustainable-spending probe: the exact ledger runs the whole plan at this base spending level.',
     planPatch: {
@@ -170,7 +171,7 @@ export function solveMaxSustainableSpending(
     const converged = lower !== null && upper !== null && upper - lower <= resolutionDollars
     if (!converged && lower !== null) {
       diagnostics.push(
-        `Stopped before converging to $${resolutionDollars.toLocaleString()}; the result is a feasible lower bound.`,
+        `Stopped before converging to $${formatGroupedNumber(resolutionDollars)}; the result is a feasible lower bound.`,
       )
     }
     return {

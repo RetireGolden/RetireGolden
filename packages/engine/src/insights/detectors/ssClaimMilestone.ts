@@ -1,3 +1,4 @@
+import { formatEvidenceAge, formatEvidenceUsd } from '../evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { FormerSpouse, Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
@@ -18,7 +19,7 @@ type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecu
 type HouseholdPerson = Plan['household']['people'][number]
 
 /**
- * Half a cent in plan dollars. `formatBenefitUsd` rounds with
+ * Half a cent in plan dollars. `formatEvidenceUsd` rounds with
  * `Math.round(amount * 100)`, so amounts in (0, 0.005) render as `$0` and must
  * not be treated as a modeled positive benefit — same visible-cent floor as
  * missingDataBasis / flexibleGoals.
@@ -404,29 +405,6 @@ function isSsdiPathStream(
     streamIncome?.disability?.onsetAge !== undefined &&
     streamIncome.disability.onsetAge < personFraYears
   )
-}
-
-function formatAge(totalMonths: number): string {
-  const years = Math.floor(totalMonths / 12)
-  const months = totalMonths % 12
-  const yearLabel = years === 1 ? '1 year' : `${years} years`
-  const monthLabel = months === 1 ? '1 month' : `${months} months`
-  return `${yearLabel} ${monthLabel}`
-}
-
-/**
- * Format a modeled benefit for evidence. Integral amounts stay whole dollars;
- * any non-integral amount keeps exact cents (e.g. $0.60, $1,234.56).
- */
-function formatBenefitUsd(amount: number): string {
-  const cents = Math.round(amount * 100)
-  if (cents % 100 === 0) {
-    return `$${(cents / 100).toLocaleString('en-US')}`
-  }
-  return `$${(cents / 100).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
 }
 
 function formatSource(source: SocialSecurityStreamActivity['source']): string {
@@ -978,7 +956,7 @@ export const ssClaimMilestone: Detector = {
               label:
                 `${person.name}'s pre-withholding modeled benefit in first claim year ` +
                 `(${sourceLabel})`,
-              value: formatBenefitUsd(preWithholding),
+              value: formatEvidenceUsd(preWithholding),
               year: firstClaimYear,
             },
             {
@@ -993,7 +971,7 @@ export const ssClaimMilestone: Detector = {
           ? [
               {
                 label: `${person.name}'s modeled benefit in first claim year (${sourceLabel})`,
-                value: formatBenefitUsd(paidAmount),
+                value: formatEvidenceUsd(paidAmount),
                 year: firstClaimYear,
               },
             ]
@@ -1008,7 +986,7 @@ export const ssClaimMilestone: Detector = {
               },
             ]
 
-      const claimAgeLabel = formatAge(claimMonths)
+      const claimAgeLabel = formatEvidenceAge(claimMonths)
       // Annual ledger ages are whole years; configured months are evidence-only.
       // Use the dual-age rationale when the first payable year is not the claim-age year.
       const agesAlign = ageAtFirstPayableYear === income.claimAge.years

@@ -9,6 +9,7 @@
  * is one relocation factor, so the card says "worth a look", never "move".
  */
 
+import { formatEvidencePercent, formatWholeUsd } from '../evidenceFormat.js'
 import type { Detector, InsightEvidence } from '../types.js'
 import { stateParamsFor } from '../../params/state/index.js'
 import {
@@ -55,14 +56,14 @@ export const stateRelocation: Detector = {
     const currentStateValue =
       overridePct > 0
         ? `${currentState} (${formatPct(overridePct)}% modeled override)`
-        : `${currentState} (up to ${stateMarginalRatePct!.toFixed(1)}% top statutory income-tax rate)`
+        : `${currentState} (up to ${formatEvidencePercent(stateMarginalRatePct!)} top statutory income-tax rate)`
     const evidence: [InsightEvidence, ...InsightEvidence[]] = [
       { label: 'Current state', value: currentStateValue, year: startYear },
     ]
     if (overridePct > 0) {
       evidence.push({ label: 'Modeled state income-tax override', value: `${formatPct(overridePct)}%`, year: startYear })
     } else {
-      evidence.push({ label: `${currentState} top statutory income-tax rate`, value: `up to ${stateMarginalRatePct!.toFixed(1)}%`, year: startYear })
+      evidence.push({ label: `${currentState} top statutory income-tax rate`, value: `up to ${formatEvidencePercent(stateMarginalRatePct!)}`, year: startYear })
     }
 
     return {
@@ -127,7 +128,7 @@ export const stateRelocation: Detector = {
           patch: relocationScenarioPatch(ctx.plan, { state: best.destinationState, moveYear: startYear }, startYear),
         },
         impact: {
-          qualitative: `On the full year-by-year projection, staying in ${ctx.plan.household.state} costs about $${Math.round(savings).toLocaleString()} of lifetime state+local income tax (today's dollars) vs ${best.destinationState}, the best of ${ZERO_TAX_SHORTLIST.join('/')} on your plan. Income tax is one relocation factor. Compare your own shortlist on the Relocation Compare page.`,
+          qualitative: `On the full year-by-year projection, staying in ${ctx.plan.household.state} costs about ${formatWholeUsd(savings)} of lifetime state+local income tax (today's dollars) vs ${best.destinationState}, the best of ${ZERO_TAX_SHORTLIST.join('/')} on your plan. Income tax is one relocation factor. Compare your own shortlist on the Relocation Compare page.`,
         },
       }
     } catch {
