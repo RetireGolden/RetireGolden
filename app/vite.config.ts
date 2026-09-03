@@ -8,7 +8,12 @@ import { defineConfig } from 'vitest/config'
 const engineSrc = fileURLToPath(new URL('../packages/engine/src', import.meta.url)).replaceAll('\\', '/')
 const plannerUiSrc = fileURLToPath(new URL('../packages/planner-ui/src', import.meta.url)).replaceAll('\\', '/')
 
-const annualProjectionCoordinatorChunk = (id: string): string | undefined => {
+const annualProjectionSettlementModule =
+  '/packages/engine/src/projection/internal/annualOwnedNonRothIraSettlementPhase.ts'
+const annualProjectionFundingCloseModule =
+  '/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts'
+
+const annualProjectionCoordinatorChunk = (id: string): string | null => {
   if (id.endsWith('/packages/engine/src/projection/internal/annualAcaResultPublication.ts')) {
     return 'annualProjectionPublications'
   }
@@ -27,7 +32,28 @@ const annualProjectionCoordinatorChunk = (id: string): string | undefined => {
   ) {
     return 'annualProjectionKernels'
   }
-  return undefined
+  return null
+}
+
+const annualProjectionCodeSplitting = {
+  groups: [
+    {
+      name: 'annualProjectionFundingClose',
+      test: (id: string) => id.endsWith(annualProjectionFundingCloseModule),
+      priority: 1,
+      includeDependenciesRecursively: false,
+    },
+    {
+      name: 'annualProjectionSettlement',
+      test: (id: string) => id.endsWith(annualProjectionSettlementModule),
+      priority: 1,
+      includeDependenciesRecursively: false,
+    },
+    {
+      name: annualProjectionCoordinatorChunk,
+      includeDependenciesRecursively: true,
+    },
+  ],
 }
 
 // https://vite.dev/config/
@@ -35,7 +61,7 @@ export default defineConfig({
   build: {
     rolldownOptions: {
       output: {
-        manualChunks: annualProjectionCoordinatorChunk,
+        codeSplitting: annualProjectionCodeSplitting,
       },
     },
   },
@@ -45,7 +71,7 @@ export default defineConfig({
     format: 'es',
     rolldownOptions: {
       output: {
-        manualChunks: annualProjectionCoordinatorChunk,
+        codeSplitting: annualProjectionCodeSplitting,
       },
     },
   },
