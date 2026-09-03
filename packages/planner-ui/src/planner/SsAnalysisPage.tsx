@@ -450,20 +450,28 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
     plan: typeof plan
     objectiveId: ObjectivePolicyId
     sweep: SweepResult | null
+    /**
+     * `sweep === null` has exactly one cause: the catch below. There is no
+     * "no eligible candidate" null here (that is an empty `rows`/`ranked` on
+     * a real `SweepResult`, handled by `sweepVerdict`), so the card used to
+     * call every one of these a plan-validation problem — which is only
+     * sometimes true; the other case is a bug in the sweep itself. This
+     * carries the caught error's own message so the card can say what
+     * actually happened instead of guessing.
+     */
+    sweepError: string | null
   } | null>(null)
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        setSnapshot({ plan, objectiveId, sweep: sweepClaimingStrategies(plan, startYear, objectiveId) })
+        setSnapshot({ plan, objectiveId, sweep: sweepClaimingStrategies(plan, startYear, objectiveId), sweepError: null })
       } catch (err) {
-        // A plan that fails validation is the common case the card names, but
-        // this also catches a genuine bug in the sweep itself — the same
-        // ambiguity SurvivorTransitionPage's identical backstop carries. Log
-        // it the way the error boundaries above this tab do (ShellErrorBoundary,
-        // RouteErrorBoundary), so the second case is not silent to the console
-        // even though the card's wording still names the first.
+        // Logged the way the error boundaries above this tab do
+        // (ShellErrorBoundary, RouteErrorBoundary), so this is never silent
+        // to the console even though the card's wording stays neutral about
+        // the cause.
         console.error('Claim-age sweep failed:', err)
-        setSnapshot({ plan, objectiveId, sweep: null })
+        setSnapshot({ plan, objectiveId, sweep: null, sweepError: err instanceof Error ? err.message : String(err) })
       }
     }, SWEEP_DEBOUNCE_MS)
     // Cancellation: a plan or ranking change before the timer fires drops the
@@ -551,9 +559,19 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         {settled === null ? (
           <div className="skeleton" style={{ height: '12rem' }} aria-label="Comparing claim ages" />
         ) : (
+          // sweep === null here is always the catch above, never "no eligible
+          // candidate" (that is a real SweepResult with empty rows). The copy
+          // stays neutral about the cause — it can be a plan combination the
+          // sweep does not handle, or a bug — rather than telling the household
+          // this is a validation problem they should go find on the Enter
+          // screens (#598).
           <div className="callout callout--warn" role="alert">
-            The claim-age comparison could not run on this plan. The rest of the planner is unaffected. If this
-            persists, check the plan for validation issues on the Enter screens.
+            <p>
+              The claim-age comparison hit an error and could not run. The rest of the planner is unaffected.
+              Reloading usually clears a one-off error; if it keeps happening on this plan, that points to a bug
+              rather than something you entered.
+            </p>
+            {settled.sweepError ? <p className="muted small">Comparison error: {settled.sweepError}</p> : null}
           </div>
         )}
       </div>

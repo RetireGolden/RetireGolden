@@ -77,3 +77,28 @@ describe('the return estimator reads the plan’s asset-class returns', () => {
     expect(document.querySelector('.btn-primary')!.textContent).toBe('Use 3.9%')
   })
 })
+
+describe('the return estimator discloses what it does not price (#598 round 2)', () => {
+  it('says nothing extra when International stocks matches US stocks (the shared default)', () => {
+    renderEstimator()
+    const hints = [...document.querySelectorAll('.card-hint')].map((p) => p.textContent)
+    expect(hints.some((t) => t?.includes('are not part of this estimate'))).toBe(false)
+  })
+
+  it('discloses the excluded International rate once a household sets it apart from US stocks', () => {
+    // estimatorWeights has only ever priced US stocks (intl weight fixed at
+    // 0); this pins that the estimate says so once the two rates actually
+    // differ, rather than letting "stocks" read as the whole equity picture.
+    const overrides: AssetClassParamOverrides = { intlStocks: { returnPct: 3 } }
+    renderEstimator(overrides)
+    const hints = [...document.querySelectorAll('.card-hint')].map((p) => p.textContent ?? '')
+    const caveat = hints.find((t) => t.includes('are not part of this estimate'))
+    expect(caveat).toContain('International stocks are assumed at 3%')
+    // The blend itself is unaffected by the override that produced the
+    // caveat: the estimator still prices 100% of its "stocks" share at the US
+    // rate, exactly as the caveat says.
+    const expected = blendedReturnPct(OPENING_WEIGHTS, resolveAssetClassParams(overrides))
+    expect(expected).toBeCloseTo(blendedReturnPct(OPENING_WEIGHTS, resolveAssetClassParams(undefined)), 10)
+    expect(document.querySelector('.alloc-result strong')!.textContent).toBe(`${expected.toFixed(1)}%`)
+  })
+})

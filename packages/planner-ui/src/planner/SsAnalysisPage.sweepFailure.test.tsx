@@ -1,12 +1,12 @@
 /** @vitest-environment jsdom */
 /**
  * The claim-age sweep's debounce backstop (SsAnalysisPage.tsx) absorbs any
- * throw from `sweepClaimingStrategies` into the same "could not run" card a
- * plan the engine refuses produces. Before this, the catch swallowed the
- * exception entirely — nothing reached the console, unlike every error
- * boundary in this app (ShellErrorBoundary, RouteErrorBoundary). This pins
- * that a genuine exception is still logged even though the card's wording
- * stays the validation-shaped one.
+ * throw from `sweepClaimingStrategies` into an error card. `sweep === null`
+ * has exactly one cause — this catch — so the card no longer calls it a
+ * plan-validation problem (that was only sometimes true; see #598 round 2).
+ * This pins that a genuine exception is (a) logged to the console, the way
+ * every other error boundary in this app already does, and (b) shown to the
+ * household with its own message, not a guess about validation.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -23,7 +23,7 @@ vi.mock('./ssAnalysis', async (importOriginal) => {
   return {
     ...actual,
     sweepClaimingStrategies: () => {
-      throw new Error('boom: not a validation problem')
+      throw new Error('boom: unexpected candidate shape')
     },
   }
 })
@@ -66,7 +66,13 @@ describe('SsAnalysisPage claim-age sweep failure', () => {
       describe: () => container.textContent ?? '',
     })
 
-    expect(container.querySelector('.callout--warn')?.textContent).toContain('The claim-age comparison could not run')
+    const card = container.querySelector('.callout--warn')?.textContent ?? ''
+    expect(card).toContain('The claim-age comparison hit an error and could not run')
+    // Neutral about the cause: never tells the household to go check the
+    // plan for validation issues when the only path here is an exception.
+    expect(card).not.toContain('check the plan for validation issues')
+    // The caught error's own message reaches the household, not just the console.
+    expect(card).toContain('boom: unexpected candidate shape')
     expect(console.error).toHaveBeenCalledWith('Claim-age sweep failed:', expect.any(Error))
   })
 })

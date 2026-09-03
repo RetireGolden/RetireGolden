@@ -47,8 +47,16 @@ const estimatorWeights = (stocks: number, bonds: number, cash: number): number[]
 export function ReturnEstimatorModal({ plan, initialPct, onApply, onClose }: { plan: Plan; initialPct: number | null; onApply: (pct: number) => void; onClose: () => void }) {
   const params = resolveAssetClassParams(plan.assumptions.assetClassParams)
   const stocksPct = params.usStocks.returnPct
+  const intlStocksPct = params.intlStocks.returnPct
   const bondsPct = params.bonds.returnPct
   const cashPct = params.cash.returnPct
+  // The Stocks slider has only ever priced US stocks (estimatorWeights fixes
+  // intl weight at 0) — that was true before this PR too, restated with a
+  // hardcoded literal instead of the plan's own rate. What changed here: when
+  // a household has actually set a different International-stocks rate in
+  // Assumptions, the estimate now says so instead of letting "stocks" read as
+  // the whole equity picture (#598 round 2).
+  const intlDiffersFromUs = Math.abs(intlStocksPct - stocksPct) > 1e-9
   // Invert the all-stocks/all-cash line to place the opening slider on the
   // rate the account already carries. With the two rates equal there is no
   // line to invert, so the estimator opens on its usual 60 % default.
@@ -64,10 +72,16 @@ export function ReturnEstimatorModal({ plan, initialPct, onApply, onClose }: { p
   return (
     <Modal title="Estimate expected return" onClose={onClose}>
       <p className="card-hint">
-        Describe roughly how this account is invested; we blend your long-run nominal return assumptions (stocks {stocksPct}%,
-        bonds {bondsPct}%, cash {cashPct}%; illustrative, before fees, not a forecast). More stocks
+        Describe roughly how this account is invested; we blend your long-run nominal return assumptions (US stocks{' '}
+        {stocksPct}%, bonds {bondsPct}%, cash {cashPct}%; illustrative, before fees, not a forecast). More stocks
         means higher expected growth and bigger swings; Monte Carlo is where that risk shows up.
       </p>
+      {intlDiffersFromUs ? (
+        <p className="card-hint muted small">
+          International stocks are assumed at {intlStocksPct}% and are not part of this estimate. Use the allocation
+          panel below to price US and international stocks separately.
+        </p>
+      ) : null}
       <div className="alloc-row">
         <span>Stocks</span>
         <input
