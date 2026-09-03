@@ -166,20 +166,20 @@
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        1777,
-        1787
+        1756,
+        1766
       ],
       "anchors": [
         {
-          "line": 1777,
+          "line": 1756,
           "text": "if (row.runtime.creditsAggregatedIra) {"
         },
         {
-          "line": 1778,
+          "line": 1757,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1787,
+          "line": 1766,
           "text": "})"
         }
       ],
