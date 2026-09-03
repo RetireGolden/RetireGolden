@@ -16,9 +16,9 @@ const plannerUiSrc = fileURLToPath(new URL('../packages/planner-ui/src', import.
 // (annualProjectionCodeSplitting). A rename or move does not fail the build
 // on its own — the module just silently falls out of its chunk
 // (DOCS/operations/bundle-budget.md). assertProjectionInternalChunkModulesExist,
-// right below, turns that into a loud config-load failure; src/viteChunkModules.test.ts
+// right below, turns that into a loud config-load failure; app/scripts/viteChunkModules.test.mjs
 // re-checks the same bare filenames against disk from source text, so a
-// rename fails `pnpm test` too, without needing a build.
+// rename also fails `pnpm test`, without needing a build.
 const ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME = 'annualOwnedNonRothIraSettlementPhase.ts'
 const ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME = 'annualFundingApplicationAndClosePhase.ts'
 const ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME = 'annualAcaResultPublication.ts'

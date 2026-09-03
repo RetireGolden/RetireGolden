@@ -1,21 +1,17 @@
 import { expect, test } from '@playwright/test'
 
+import { openExamplePlan } from './helpers'
+
 /**
  * Browser coverage for the printable report route (packages/planner-ui/src
  * /routes/PlanRoutes.tsx, ":planId/report"), which sits outside the
  * workspace shell and has its own bundling boundary. Unit tests render the
- * component in jsdom; only a real browser proves the route resolves, the
- * projection model renders, and the print/export controls are wired.
+ * component in jsdom; only a real browser proves the route resolves and the
+ * projection model renders.
  */
 test.describe('Report', () => {
-  test('renders the report headline sections with a working print/export affordance', async ({ page }) => {
-    await page.goto('/examples')
-    await expect(page.getByRole('heading', { name: 'Example library' })).toBeVisible()
-    // Non-featured examples live behind the first-run "Show all" funnel.
-    await page.getByRole('button', { name: /Show all \d+ examples/ }).click()
-    const card = page.locator('.example-card').filter({ hasText: 'Aggressive saver to early retirement' })
-    await card.getByRole('button', { name: 'Open' }).click()
-    await expect(page).toHaveURL(/\/plan\/[^/]+\/results$/)
+  test('renders the report headline sections and downloads the HTML report', async ({ page }) => {
+    await openExamplePlan(page, 'Aggressive saver to early retirement')
 
     await page.getByRole('link', { name: 'View printable report' }).click()
     await expect(page).toHaveURL(/\/plan\/[^/]+\/report$/)
@@ -26,12 +22,21 @@ test.describe('Report', () => {
     await expect(page.getByRole('heading', { name: 'Year-by-year appendix (nominal $)' })).toBeVisible()
     await expect(page.locator('.report-kpis .kpi-value').first()).toContainText('$')
 
-    // Print/export affordances are present and enabled.
+    // Download HTML report is exercised for real (ReportPage.tsx calls
+    // downloadStandaloneReport, which clicks a Blob-backed <a download>) —
+    // mirrors smoke.spec.ts's backup-export assertion, so a regression in
+    // that wiring fails this test instead of a visible-and-enabled button
+    // that happens to have a no-op handler.
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Download HTML report' }).click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toMatch(/\.html$/)
+
+    // Print opens the browser's native print dialog, which Playwright
+    // cannot drive headlessly — window.print() is not invoked here. This
+    // only proves the button is present and not disabled.
     const printButton = page.getByRole('button', { name: 'Print / Save as PDF' })
-    const downloadButton = page.getByRole('button', { name: 'Download HTML report' })
     await expect(printButton).toBeVisible()
     await expect(printButton).toBeEnabled()
-    await expect(downloadButton).toBeVisible()
-    await expect(downloadButton).toBeEnabled()
   })
 })
