@@ -1,3 +1,13 @@
+/**
+ * Drive the owned non-Roth IRA settlement attempts around one annual pass.
+ *
+ * The coordinator receives the transaction bindings, basis/rollback ledger,
+ * immutable attempt facts, and a callback that executes one post-contribution
+ * pass. It owns attempt ordering, rollback authorization, retry/fallback, and
+ * optional replay attachment, then returns the settled YearResult and probe.
+ * It does not execute earlier annual domains or publish either result channel;
+ * simulatePlan retains those outer orchestration responsibilities.
+ */
 import type { Account, Person, Plan } from '../../model/plan.js'
 import type { TraditionalAccount } from '../../strategies/accountEligibility.js'
 import type { ActionId } from '../../actions/index.js'
@@ -114,7 +124,8 @@ export function annualOwnedNonRothIraSettlementPhase(
      * One funding decision per settlement attempt. The callback closes over the
      * attempt's Form-8606 assumption vector, so T0, provisional staging, and the
      * committed run all evaluate the same annual inputs. The coordinator owns
-     * rollback and fail-closed authorization; this caller retains pass ordering.
+     * rollback, fail-closed authorization, and attempt ordering; the callback
+     * retains the economic commits inside one annual pass.
      */
     const linkedGroupFundingForAttempt = (
       assumedEffects:
@@ -144,12 +155,9 @@ export function annualOwnedNonRothIraSettlementPhase(
     // inside the helper is what makes discarding it safe, and it is
     // unconditional.
     //
-    // The assumption vector here is empty — the same vector the two fallback
-    // call sites below use. That is the honest choice for a pre-pass that sits
-    // outside the attempt driver, and it is also why this is not yet the
-    // wiring: the consumer slice moves this call inside `runAttempt`, where the
-    // counterfactual and the committed run share one vector and the
-    // counterfactual is a counterfactual of *this* attempt.
+    // The assumption vector here is empty — the same vector the fallback call
+    // sites below use. This caller-supplied observation is deliberately outside
+    // the settlement attempt driver, preserving the pre-extraction pre-pass.
     if (annualCounterfactual !== undefined) {
       const counterfactual = annualCounterfactual
       counterfactual.capture(runCounterfactualAnnualLiability({

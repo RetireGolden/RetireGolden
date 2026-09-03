@@ -1,3 +1,16 @@
+/**
+ * Execute the post-action annual funding, application, and close sequence.
+ *
+ * The input separates immutable annual facts, prior phase results, the live
+ * ledger, callbacks, and optional cash-flow capture. This coordinator owns the
+ * existing fixed-point funding loop, accepted ledger applications, post-solve
+ * growth, tax/penalty settlement, and core YearResult assembly in their legacy
+ * order. It returns that core result plus the optional optimizer probe.
+ *
+ * It does not choose or retry the owned non-Roth IRA settlement attempt, append
+ * the year to the projection, or publish the optimizer probe; simulatePlan keeps
+ * those outer orchestration effects.
+ */
 import type { Account, Person, Plan } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import type { IraProRataYear } from '../../strategies/iraBasis.js'
@@ -2110,7 +2123,7 @@ export function annualFundingApplicationAndClosePhase(
 
     // This is the core annual-pass record. The outer owned non-Roth IRA
     // settlement may later clone it solely to attach its committed replay;
-    // final result-array ownership remains below in this caller.
+    // simulatePlan retains final result-array publication after that boundary.
     const yearResult = annualYearResultAssembly({
       chronology: {
         year,
