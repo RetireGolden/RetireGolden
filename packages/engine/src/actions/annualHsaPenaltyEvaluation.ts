@@ -17,6 +17,7 @@ import {
 import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { addUsdCents, asUsdCents, type UsdCents } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface HsaPenaltyOwnerBirthEvidence {
   predicate: 'authoritativeHsaOwnerBirthDate'
@@ -241,14 +242,6 @@ function exactKeys(value: unknown, keys: readonly string[]): value is Record<str
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
   const actual = Object.keys(value)
   return actual.length === keys.length && actual.every((key) => keys.includes(key))
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function blocked(

@@ -21,6 +21,7 @@ import {
 import type { PositiveUsdCents, UsdCents } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface BeneficiaryTraditionalIraDeathBeneficiaryEvidence {
   predicate: 'beneficiaryTraditionalIraDeathBeneficiary'
@@ -235,16 +236,6 @@ function exactKeys(
   }
   const actual = Object.keys(value)
   return actual.length === keys.length && actual.every((key) => keys.includes(key))
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function characterBinding(

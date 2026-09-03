@@ -21,6 +21,7 @@ import {
 } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface BeneficiaryTraditionalIraPhysicalSourceSnapshotEvidence {
   predicate: 'beneficiaryTraditionalIraPhysicalSourceBeforeWithdrawal'
@@ -229,16 +230,6 @@ function exactKeys(
 
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function unsupported(): Readonly<

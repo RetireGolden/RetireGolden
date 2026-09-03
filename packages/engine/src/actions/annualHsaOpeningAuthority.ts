@@ -16,6 +16,7 @@ import type {
   OwnedHsaPhysicalSourceEvidence,
 } from './annualHsaPhysicalMovementCandidate.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface HsaAnnualStartBalanceEvidence {
   predicate: 'authoritativeHsaAnnualStartBalance'
@@ -143,14 +144,6 @@ function exactKeys(value: unknown, expected: readonly string[]): value is Record
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
   const keys = Object.keys(value)
   return keys.length === expected.length && keys.every((key) => expected.includes(key))
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function stableId(value: unknown, label: string): string {

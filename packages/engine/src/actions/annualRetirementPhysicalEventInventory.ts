@@ -42,6 +42,7 @@ import {
 } from './structuralId.js'
 import { parseCivilIsoDate } from './civilDate.js'
 import type { QcdCharityDesignation } from './contract.js'
+import { deepFreeze } from './freeze.js'
 
 export const annualRetirementRuntimeEventKinds = [
   'ownedIraRmd',
@@ -504,16 +505,6 @@ type TraditionalAccount = Extract<
 type RothAccount = Extract<Plan['accounts'][number], { type: 'roth' }>
 /** Traditional or Roth source that can carry an inherited-IRA runtime event. */
 type InheritedCapableAccount = TraditionalAccount | RothAccount
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function issue(
   kind: AnnualRetirementInventoryIssueKind,

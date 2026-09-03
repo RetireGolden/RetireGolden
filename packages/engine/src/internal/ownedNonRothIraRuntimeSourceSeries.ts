@@ -12,6 +12,7 @@ import type {
   SimulatorRetirementRuntimeNamedRothDestinationCredit,
   YearResult,
 } from '../projection/types.js'
+import { deepFreeze } from '../actions/freeze.js'
 
 const MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS = 0.000001
 
@@ -284,14 +285,6 @@ class SourceSeriesFailure extends Error {
     super(issue.detail)
     this.issue = issue
   }
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function fail(

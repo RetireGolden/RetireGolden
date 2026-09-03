@@ -11,6 +11,7 @@ import type { AnnualQcdPostPassApplication } from './annualQcdTaxCharacterPostPa
 import type { AccountId, ActionId, AllocationId, PersonId } from './identity.js'
 import type { UsdCents } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export type QcdFinalDerivedTaxCharacter = {
   readonly sourceClass: 'qcd'
@@ -75,13 +76,6 @@ class CharacterError extends Error {
   constructor(kind: AnnualQcdDerivedTaxCharacterIssue['kind'], detail: string) { super(detail); this.kind = kind }
 }
 function fail(kind: AnnualQcdDerivedTaxCharacterIssue['kind'], detail: string): never { throw new CharacterError(kind, detail) }
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 function blocked(error: unknown): AnnualQcdDerivedTaxCharacterBlocked {
   const issue = error instanceof CharacterError ? { kind: error.kind, detail: error.message }
     : { kind: 'hostileInput' as const, detail: 'QCD tax-character inputs must be detached canonical data.' }

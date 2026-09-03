@@ -6,6 +6,7 @@ import { asUsdCents, positiveUsdCentsSchema, usdCentsSchema, type UsdCents } fro
 import { createActionReason, type ActionReason } from './reasons.js'
 import type { QualifiedDisabilityEventEvidence, RejectedDisabilityStatusEvidence } from './ownedNonRothIraPenaltyPrerequisite.js'
 import type { AcceptedTraditionalEmployerPlanWithdrawalClassification } from './traditionalEmployerPlanWithdrawalCharacter.js'
+import { deepFreeze } from './freeze.js'
 
 type EmployerPenaltyIdentity = {
   actionId: ActionId; allocationId: AllocationId
@@ -232,15 +233,6 @@ function stableId(prefix: string, parts: readonly unknown[]): string { return `$
 function clonePlain<T>(value: T): T { structural(value); return structuredClone(value) }
 
 function requireDistinctEvidenceIds(ids: readonly string[]): void { if (new Set(ids).size !== ids.length) throw new RangeError('Negative employer-penalty facts must use distinct evidence IDs') }
-
-function deepFreeze<T>(value: T, visited = new WeakSet<object>()): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !visited.has(value)) {
-    visited.add(value)
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child, visited)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function sameIdentity(value: EmployerPenaltyIdentity, identity: EmployerPenaltyIdentity): boolean {
   return value.actionId === identity.actionId &&

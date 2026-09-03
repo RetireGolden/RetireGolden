@@ -4,16 +4,7 @@ import type {
   SimulatorCommittedOwnedNonRothIraAnnualReplay,
   YearResult,
 } from '../projection/types.js'
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
+import { deepFreeze } from '../actions/freeze.js'
 
 /**
  * Convert one private committed settlement into the sole public annual value.

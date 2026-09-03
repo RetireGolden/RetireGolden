@@ -19,6 +19,7 @@ import {
 } from '../actions/structuralId.js'
 import { asUsdCents, type UsdCents } from '../actions/money.js'
 import { isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
+import { deepFreeze } from '../actions/freeze.js'
 
 const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER)
 
@@ -204,16 +205,6 @@ export interface SimulatorOwnedNonRothIraAnnualObservationBuiltResult
 export type BuildSimulatorOwnedNonRothIraAnnualObservationResult =
   | SimulatorOwnedNonRothIraAnnualObservationBlockedResult
   | SimulatorOwnedNonRothIraAnnualObservationBuiltResult
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function blocked(
   issues: readonly SimulatorOwnedNonRothIraAnnualObservationIssue[],

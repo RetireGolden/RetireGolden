@@ -14,6 +14,7 @@ import {
   type SimulatorAnnualPassStateBindings,
   type SimulatorAnnualPassTransaction,
 } from '../projection/annualPassTransaction.js'
+import { deepFreeze } from '../actions/freeze.js'
 
 /**
  * The counterfactual annual pass: run one simulated year's post-contribution
@@ -289,16 +290,6 @@ export function probeAnnualPassUnderTransaction<Observation>(
 interface ExactCents {
   readonly numerator: bigint
   readonly denominator: bigint
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function refused(

@@ -474,7 +474,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 248
+              "line": 239
             }
           ]
         },
@@ -483,7 +483,7 @@
           "functions": [
             {
               "name": "executeRothConversions",
-              "line": 928
+              "line": 921
             }
           ]
         }
@@ -553,7 +553,7 @@
           "functions": [
             {
               "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
-              "line": 1455
+              "line": 1446
             }
           ]
         },

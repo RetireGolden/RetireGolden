@@ -25,6 +25,7 @@ import {
 } from './annualHsaPenaltyEvaluation.js'
 import type { ActionId, AllocationId } from './identity.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface HsaAllocationReimbursementClaims {
   actionId: ActionId
@@ -153,14 +154,6 @@ function validContainers(input: Record<string, unknown>): boolean {
   if (!exactKeys(scope, SCOPE_KEYS) || !Array.isArray(scope.eligibleHsaOwnerPersonIds) || !Array.isArray(scope.coveredHsaAccountIds) || !Array.isArray(scope.ownerEstablishments) || !Array.isArray(scope.expenses) || !exactKeys(scope.priorHistory, HISTORY_KEYS)) return false
   if (scope.ownerEstablishments.some((item) => !exactKeys(item, ESTABLISHMENT_KEYS)) || scope.expenses.some((item) => !exactKeys(item, EXPENSE_KEYS))) return false
   return input.reimbursementClaims.every((record) => exactKeys(record, CLAIM_RECORD_KEYS) && Array.isArray(record.reimbursementClaims) && record.reimbursementClaims.every((claim) => exactKeys(claim, CLAIM_KEYS)))
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function blocked(

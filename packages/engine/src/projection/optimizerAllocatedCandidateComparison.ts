@@ -10,6 +10,7 @@ import {
   type OptimizerExactLedgerComparisonEvidence,
 } from './optimizerExactLedgerComparison.js'
 import type { RetirementActionReadinessVeto } from './optimizePlan.js'
+import { deepFreeze } from '../actions/freeze.js'
 
 export interface OptimizerAllocatedCandidateComparisonEvidence {
   readonly winnerSource: 'candidate' | 'milp'
@@ -33,14 +34,6 @@ function record(value: unknown): UnknownRecord | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? value as UnknownRecord
     : null
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function canonicalJson(value: unknown): string {

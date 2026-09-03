@@ -5,6 +5,7 @@ import {
 import { parseCivilIsoDate } from './civilDate.js'
 import type { AnnualLiabilityRunBinding } from './annualLiabilityRunIdentity.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 /**
  * The canonical liability-run binding, under the name this module publishes.
  *
@@ -135,13 +136,6 @@ class Section68InputError extends Error {
     this.kind = kind
     this.path = path
   }
-}
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 function nonblank(value: unknown, path: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) {

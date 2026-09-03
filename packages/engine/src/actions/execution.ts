@@ -46,6 +46,7 @@ import {
   ledgerCentsToPlanDollars,
   signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'
+import { deepFreeze } from './freeze.js'
 
 export interface AccountOpeningBalanceSnapshot {
   accountId: AccountId
@@ -698,16 +699,6 @@ function indexUnique<T>(
     result.set(key, result.has(key) ? null : value)
   }
   return result
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function reasonKey(reason: ActionReason): string {

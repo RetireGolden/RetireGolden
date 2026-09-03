@@ -40,6 +40,7 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface StagedOwnedNonRothIraAnnualEventApplicationInput {
   inventoryEventId: string
@@ -320,16 +321,6 @@ type CanonicalActualApplication = z.infer<typeof actualApplicationSchema>
 type CanonicalSettledContributionApplication = z.infer<
   typeof settledContributionApplicationSchema
 >
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function issue(
   kind: OwnedNonRothIraAnnualPhysicalTransactionIssueKind,

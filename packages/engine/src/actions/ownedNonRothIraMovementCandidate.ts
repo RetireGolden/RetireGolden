@@ -24,6 +24,7 @@ import {
   createActionReason,
   type ActionReason,
 } from './reasons.js'
+import { deepFreeze } from './freeze.js'
 
 export interface OwnedNonRothIraMovementSourceEvidence {
   predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource'
@@ -178,16 +179,6 @@ interface ScheduledRequest {
 
 function compareUtf16CodeUnits(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function stableId(prefix: string, parts: readonly unknown[]): string {

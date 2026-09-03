@@ -94,7 +94,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 74 | 15 | 33 | 26 | 0 |
+| actions | 75 | 15 | 33 | 27 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 2 | 2 | 15 | 0 |
 | insights | 22 | 2 | 3 | 17 | 0 |

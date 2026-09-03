@@ -31,6 +31,7 @@ import {
   retirementActionPlanReservedIdentifiers,
   type Plan,
 } from '../model/plan.js'
+import { deepFreeze } from './freeze.js'
 
 export interface RetirementActionManualReviewInput {
   plan: Readonly<Plan>
@@ -157,14 +158,6 @@ function record(value: unknown): UnknownRecord | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? value as UnknownRecord
     : null
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function normalizeOptionalUndefinedFields(value: unknown): unknown {

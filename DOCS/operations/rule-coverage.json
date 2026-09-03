@@ -372,11 +372,11 @@
     },
     {
       "directory": "actions",
-      "files": 74,
+      "files": 75,
       "byStatus": {
         "partial": 15,
         "registered": 33,
-        "rule-free": 26
+        "rule-free": 27
       }
     },
     {

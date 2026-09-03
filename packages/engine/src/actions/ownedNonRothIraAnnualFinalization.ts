@@ -36,6 +36,7 @@ import {
   createActionReason,
   type ActionReason,
 } from './reasons.js'
+import { deepFreeze } from './freeze.js'
 
 export interface ResolveOwnedNonRothIraAnnualWithdrawalEvidenceInput {
   annualInput: Readonly<
@@ -122,16 +123,6 @@ export interface OwnedNonRothIraPenaltyEvidenceMissingResult {
 export type ResolveOwnedNonRothIraAnnualWithdrawalEvidenceResult =
   | OwnedNonRothIraAnnualEvidenceResolvedResult
   | OwnedNonRothIraPenaltyEvidenceMissingResult
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`

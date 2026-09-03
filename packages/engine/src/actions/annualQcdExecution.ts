@@ -20,6 +20,7 @@ import type { AccountId, ActionId, AllocationId, PersonId } from './identity.js'
 import { asUsdCents, type UsdCents } from './money.js'
 import type { ClassifyOwnedNonRothIraAnnualWithdrawalsInput } from './ownedNonRothIraWithdrawalCharacter.js'
 import type { ActionReason } from './reasons.js'
+import { deepFreeze } from './freeze.js'
 
 export interface ExecuteAnnualQcdsInput {
   readonly physicalInput: Readonly<StageAnnualQcdPhysicalExecutionInput>
@@ -209,14 +210,6 @@ function fail(
   actionId: ActionId | null = null,
 ): never {
   throw new ExecuteError(kind, detail, actionId)
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function cents(value: bigint, label: string): UsdCents {

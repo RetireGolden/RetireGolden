@@ -17,6 +17,7 @@ import type { StageAnnualQcdTaxCharacterPostPassInput } from './annualQcdTaxChar
 import type { PersonId } from './identity.js'
 import { asUsdCents, type UsdCents } from './money.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface CoordinateAnnualQcdDeductionTreatmentInput {
   readonly postPassInput: Readonly<StageAnnualQcdTaxCharacterPostPassInput>
@@ -106,13 +107,6 @@ class CoordinationError extends Error {
   constructor(kind: AnnualQcdDeductionTreatmentIssue['kind'], detail: string) { super(detail); this.kind = kind }
 }
 function fail(kind: AnnualQcdDeductionTreatmentIssue['kind'], detail: string): never { throw new CoordinationError(kind, detail) }
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 function blocked(error: unknown): AnnualQcdDeductionTreatmentBlocked {
   const issue = error instanceof CoordinationError ? { kind: error.kind, detail: error.message }
     : { kind: 'hostileInput' as const, detail: 'QCD deduction inputs must be detached canonical data.' }

@@ -29,6 +29,7 @@ import {
   type ReconcileOwnedNonRothIraSeppAnnualScheduleInput,
   type ReconcileOwnedNonRothIraSeppAnnualScheduleResult,
 } from './ownedNonRothIraSeppAnnualReconciliation.js'
+import { deepFreeze } from './freeze.js'
 
 export interface OwnedNonRothIraPenaltyOwnerEvidence {
   predicate: 'ownerBirthDateForIraPenaltyAgeThreshold'
@@ -408,16 +409,6 @@ function nonblankId(value: unknown, label: string): string {
     throw new TypeError(`${label} must be a nonblank stable identifier`)
   }
   return value
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function stableId(prefix: string, parts: readonly unknown[]): string {

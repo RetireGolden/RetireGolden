@@ -14,6 +14,7 @@ import {
   type UsdCents,
 } from './money.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
+import { deepFreeze } from './freeze.js'
 
 export type AnnualIraBasisAllocationScope =
   | 'form8606Line7Distributions'
@@ -123,16 +124,6 @@ function nonblankId(value: unknown, label: string): string {
 
 function compareUtf16CodeUnits(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function centsFromBigInt(value: bigint): UsdCents {

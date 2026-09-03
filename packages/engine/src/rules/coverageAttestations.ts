@@ -71,6 +71,7 @@ export const COVERAGE_ATTESTATIONS: Readonly<Record<string, CoverageAttestation>
   'actions/conversionTaxFundingEvidence.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/exactCentProRata.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/execution.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'equity-compensation execution character registered as irc-83-a-equity-compensation-execution-character (approximated), which names this file; the 2026-08-25 note predated that record by a day' }),
+  'actions/freeze.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-03', note: null }),
   'actions/identity.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/index.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/money.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

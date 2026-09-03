@@ -3,6 +3,7 @@ import {
   beginSimulatorAnnualPassTransaction,
   type SimulatorAnnualPassStateBindings,
 } from '../projection/annualPassTransaction.js'
+import { deepFreeze } from '../actions/freeze.js'
 
 const MAX_ANNUAL_PASS_ATTEMPTS = 8
 
@@ -110,16 +111,6 @@ export type AnnualPassAttemptDriverResult<
 > =
   | AnnualPassAttemptDriverCommitted<CommitProbeResult, DeferredEffect>
   | AnnualPassAttemptDriverRolledBack
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function same(left: unknown, right: unknown): boolean {
   if (Object.is(left, right)) return true

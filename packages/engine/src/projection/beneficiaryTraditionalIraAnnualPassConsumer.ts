@@ -26,6 +26,7 @@ import {
   type SimulatorAnnualPassStateBindings,
   type SimulatorAnnualPassTransaction,
 } from './annualPassTransaction.js'
+import { deepFreeze } from '../actions/freeze.js'
 
 export interface BeneficiaryTraditionalIraAnnualPassAccountRow {
   readonly accountId: AccountId
@@ -112,16 +113,6 @@ const FACT_KEYS = [
   'transactionInput', 'annualOpeningBalances', 'inheritanceBindings',
 ] as const
 const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function unsupported(): Readonly<UnsupportedBeneficiaryTraditionalIraAnnualPassResult> {
   return deepFreeze({

@@ -9,6 +9,7 @@ import {
   persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema,
   type PlanOwnedNonRothIraAnnualFilingSourceRecord,
 } from '../model/retirementActionAnnualTaxFacts.js'
+import { deepFreeze } from './freeze.js'
 
 export type OwnedNonRothIraAnnualFilingSourceOrigin = 'plan' | 'runtime'
 
@@ -81,16 +82,6 @@ export type PlanOwnedNonRothIraAnnualFilingSourceIdentityReservation =
 interface Candidate extends ResolvedPlanOwnedNonRothIraAnnualFilingSource {
   sourceIndex: number
   sourceKey: string
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function compareText(left: string, right: string): number {

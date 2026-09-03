@@ -46,6 +46,7 @@ import {
   type ActionReason,
 } from './reasons.js'
 import { compareUtf16CodeUnits } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface AnnualQcdExecutionPrerequisiteIssue {
   readonly kind:
@@ -259,16 +260,6 @@ const ANNUAL_STAGE_REASONS = [
   createActionReason('qcd-rmd-evidence-missing'),
   createActionReason('qcd-tax-year-limit-unsupported'),
 ] as const
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function blocked(
   taxYear: number | null,

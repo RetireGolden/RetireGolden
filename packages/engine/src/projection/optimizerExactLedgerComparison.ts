@@ -5,6 +5,7 @@ import {
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import type { Plan } from '../model/plan.js'
 import type { ProjectionResult } from './types.js'
+import { deepFreeze } from '../actions/freeze.js'
 
 export type SafeMinorUnitInteger = number
 
@@ -63,16 +64,6 @@ const endingFields = [
   'endingNetWorth',
   'endingNondeductibleIraBasis',
 ] as const
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function safeTaxYear(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 1

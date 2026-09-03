@@ -29,6 +29,7 @@ import {
   type ConversionLinkedWithdrawalGroupFundingAuthority,
   type RetirementActionGroupRuntimeEvidence,
 } from './conversionLinkedWithdrawalGroup.js'
+import { deepFreeze } from './freeze.js'
 
 export interface RothConversionBalanceSnapshot {
   accountId: string
@@ -256,14 +257,6 @@ export interface ExecuteRothConversionsCommittedResult {
 export type ExecuteRothConversionsResult =
   | ExecuteRothConversionsStagedResult
   | ExecuteRothConversionsCommittedResult
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function immutableResult(
   result: ExecuteRothConversionsResult,
