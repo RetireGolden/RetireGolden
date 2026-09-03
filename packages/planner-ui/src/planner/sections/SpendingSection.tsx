@@ -72,6 +72,38 @@ export function SpendingSection() {
       .catch((err: unknown) => setThresholdSolveError(err instanceof Error ? err.message : String(err)))
       .finally(() => setSolvingThresholds(false))
   }
+  /**
+   * The success band read as a pair, which neither edge's own path can do.
+   *
+   * The engine accepts either percent on its own (1–99 and 1–100), and refuses
+   * the pair: `solveRiskBasedGuardrails` throws "the cut edge must be below the
+   * raise edge" before it probes anything. Both edges therefore keep what was
+   * typed and say what the solve will do with it, which is the `.field-warning`
+   * contract — nothing refused, nothing rewritten, nothing marked invalid.
+   * A one-point gap is what the solve needs, so equal edges warn too.
+   */
+  const bandLower = e.spendingPolicy?.targetSuccessLowerPct ?? 70
+  const bandUpper = e.spendingPolicy?.targetSuccessUpperPct ?? 95
+  const bandWarning =
+    e.spendingPolicy?.mode === 'riskBasedGuardrails' && bandLower >= bandUpper
+      ? 'The cut edge is not below the raise edge, so the balance thresholds cannot be solved. Kept as entered.'
+      : null
+  /**
+   * The withdrawal-rate pair, read the same way: neither edge's own path
+   * carries what the other holds, and `spendingPolicySchema` accepts each
+   * percent on its own with no cross-field refine (engine/model/plan.ts).
+   * With the pair inverted, `nextGuardrailMultiplier` (engine/spending/
+   * guardrails.ts) cuts whenever the rate clears the upper edge and raises
+   * otherwise — there is no rate left that holds — so this is the same
+   * `.field-warning` contract as the success band above: nothing refused,
+   * nothing rewritten, nothing marked invalid, just said.
+   */
+  const guardrailLower = e.spendingPolicy?.lowerGuardrailPct ?? 80
+  const guardrailUpper = e.spendingPolicy?.upperGuardrailPct ?? 120
+  const guardrailWarning =
+    e.spendingPolicy?.mode === 'withdrawalRateGuardrails' && guardrailLower >= guardrailUpper
+      ? 'The lower guardrail is not below the upper guardrail, so every withdrawal rate would cut or raise spending, never hold. Kept as entered.'
+      : null
   const hasEarlyPullFlexibleGoals = e.oneTimeGoals.some((g) => {
     const flexibility = g.flexibility ?? 'fixed'
     const earliestYear = Math.min(g.earliestYear ?? g.year, g.year)
@@ -110,14 +142,12 @@ export function SpendingSection() {
             hint="Living costs incl. auto insurance & out-of-pocket medical; exclude mortgage, property tax, premiums."
             path="expenses.baseAnnual"
             value={e.baseAnnual}
-            onCommit={(v) =>
-              update((d) => {
-                d.expenses.baseAnnual = v ?? 0
-                if (d.expenses.requiredAnnual !== undefined) {
-                  d.expenses.requiredAnnual = Math.min(d.expenses.requiredAnnual, d.expenses.baseAnnual)
-                }
-              })
-            }
+            // The floor is not pulled down with the baseline: the engine states
+            // "required annual spending cannot exceed baseline" itself (plan.ts
+            // superRefine), so a baseline below the floor surfaces as an issue on
+            // the Required floor field rather than as a silent rewrite of a number
+            // nobody touched (D5).
+            onCommit={(v) => update((d) => void (d.expenses.baseAnnual = v ?? 0))}
           />
           <MoneyField
             label="Required floor (today's $)"
@@ -126,10 +156,13 @@ export function SpendingSection() {
             hint="Guardrails never cut below this. 0 = all spending is required."
             path="expenses.requiredAnnual"
             value={e.requiredAnnual ?? 0}
+            // Kept as typed, a floor above the baseline included: the engine
+            // refuses that pair at this path, so the field shows the refusal
+            // instead of storing a number that was never entered (D5).
             onCommit={(v) =>
               update((d) => {
                 if (!v || v <= 0) delete d.expenses.requiredAnnual
-                else d.expenses.requiredAnnual = Math.min(v, d.expenses.baseAnnual)
+                else d.expenses.requiredAnnual = v
               })
             }
           />
@@ -232,8 +265,8 @@ export function SpendingSection() {
                 hint="% of the starting withdrawal rate that triggers a cut."
                 learn={LEARN.spendingBudget}
                 step={5}
-                min={100}
-                max={200}
+                path="expenses.spendingPolicy.upperGuardrailPct"
+                warning={guardrailWarning}
                 value={e.spendingPolicy.upperGuardrailPct ?? 120}
                 onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.upperGuardrailPct = v ?? 120))}
               />
@@ -243,8 +276,8 @@ export function SpendingSection() {
                 hint="% of the starting withdrawal rate that allows a raise."
                 learn={LEARN.spendingBudget}
                 step={5}
-                min={0}
-                max={100}
+                path="expenses.spendingPolicy.lowerGuardrailPct"
+                warning={guardrailWarning}
                 value={e.spendingPolicy.lowerGuardrailPct ?? 80}
                 onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.lowerGuardrailPct = v ?? 80))}
               />
@@ -254,8 +287,7 @@ export function SpendingSection() {
                 hint="Cut/raise step, as a % of the discretionary layer."
                 learn={LEARN.spendingBudget}
                 step={5}
-                min={0}
-                max={100}
+                path="expenses.spendingPolicy.adjustmentPct"
                 value={e.spendingPolicy.adjustmentPct ?? 10}
                 onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.adjustmentPct = v ?? 10))}
               />
@@ -276,16 +308,19 @@ export function SpendingSection() {
                 hint="Lower edge of the target success band."
                 learn={LEARN.riskBasedGuardrails}
                 step={5}
-                min={1}
-                max={99}
+                path="expenses.spendingPolicy.targetSuccessLowerPct"
+                warning={bandWarning}
                 value={e.spendingPolicy.targetSuccessLowerPct ?? 70}
                 onCommit={(v) => {
                   // The solved thresholds (and any displayed suggestions) belonged to the old band.
                   setThresholdSolution(null)
                   update((d) => {
                     const policy = d.expenses.spendingPolicy!
-                    // Keep the band ordered: the cut edge must stay below the raise edge.
-                    policy.targetSuccessLowerPct = Math.min(v ?? 70, (policy.targetSuccessUpperPct ?? 95) - 1)
+                    // The edge is stored as typed. An inverted band is one the
+                    // engine accepts and the threshold solve refuses, so it is
+                    // said in a warning under both edges rather than corrected
+                    // here into a band nobody chose (D5).
+                    policy.targetSuccessLowerPct = v ?? 70
                     delete policy.lowerBalanceThresholdPct
                     delete policy.upperBalanceThresholdPct
                   })
@@ -297,14 +332,14 @@ export function SpendingSection() {
                 hint="Upper edge of the target success band."
                 learn={LEARN.riskBasedGuardrails}
                 step={5}
-                min={1}
-                max={100}
+                path="expenses.spendingPolicy.targetSuccessUpperPct"
+                warning={bandWarning}
                 value={e.spendingPolicy.targetSuccessUpperPct ?? 95}
                 onCommit={(v) => {
                   setThresholdSolution(null)
                   update((d) => {
                     const policy = d.expenses.spendingPolicy!
-                    policy.targetSuccessUpperPct = Math.max(v ?? 95, (policy.targetSuccessLowerPct ?? 70) + 1)
+                    policy.targetSuccessUpperPct = v ?? 95
                     delete policy.lowerBalanceThresholdPct
                     delete policy.upperBalanceThresholdPct
                   })
@@ -316,8 +351,7 @@ export function SpendingSection() {
                 hint="Cut/raise step, as a % of the discretionary layer."
                 learn={LEARN.riskBasedGuardrails}
                 step={5}
-                min={0}
-                max={100}
+                path="expenses.spendingPolicy.adjustmentPct"
                 value={e.spendingPolicy.adjustmentPct ?? 10}
                 onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.adjustmentPct = v ?? 10))}
               />
@@ -709,14 +743,12 @@ export function SpendingSection() {
                 learn={LEARN.spendingBudget}
                 path={`expenses.oneTimeGoals.${i}.year`}
                 value={g.year}
-                onCommit={(v) =>
-                  update((d) => {
-                    const goal = d.expenses.oneTimeGoals[i]!
-                    goal.year = Math.round(v ?? g.year)
-                    if (goal.earliestYear !== undefined) goal.earliestYear = Math.min(goal.earliestYear, goal.year)
-                    if (goal.latestYear !== undefined) goal.latestYear = Math.max(goal.latestYear, goal.year)
-                  })
-                }
+                // The funding window stays where it was put. The engine states
+                // both halves of the ordering itself ("earliestYear cannot be
+                // after the goal year", "latestYear cannot be before the goal
+                // year"), so a year moved outside the window shows the refusal on
+                // the window field rather than quietly moving it (D5).
+                onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.year = Math.round(v ?? g.year)))}
               />
               <MoneyField
                 label="Amount (today's $)"
@@ -785,7 +817,7 @@ export function SpendingSection() {
                     path={`expenses.oneTimeGoals.${i}.earliestYear`}
                     value={g.earliestYear ?? g.year}
                     onCommit={(v) =>
-                      update((d) => void (d.expenses.oneTimeGoals[i]!.earliestYear = Math.min(Math.round(v ?? g.year), g.year)))
+                      update((d) => void (d.expenses.oneTimeGoals[i]!.earliestYear = Math.round(v ?? g.year)))
                     }
                   />
                   <NumberField
@@ -795,7 +827,7 @@ export function SpendingSection() {
                     path={`expenses.oneTimeGoals.${i}.latestYear`}
                     value={g.latestYear ?? g.year}
                     onCommit={(v) =>
-                      update((d) => void (d.expenses.oneTimeGoals[i]!.latestYear = Math.max(Math.round(v ?? g.year), g.year)))
+                      update((d) => void (d.expenses.oneTimeGoals[i]!.latestYear = Math.round(v ?? g.year)))
                     }
                   />
                   <NumberField

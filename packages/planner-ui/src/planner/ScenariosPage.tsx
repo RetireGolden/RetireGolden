@@ -2,6 +2,13 @@
  * Scenarios: curated what-if overrides on top of the base plan, compared
  * side by side (deterministic metrics + Monte Carlo success on a shared
  * seed, so every scenario faces the same markets).
+ *
+ * The numeric fields here carry hand-written min/max and no schema `path`, and
+ * that is deliberate rather than the D1-D9 rollout's tail: a lever control
+ * edits a REQUEST (a percentage change, a candidate claim age), not a value at
+ * a plan path, so `boundsForPath` has nothing to read and `useFieldIssue` has
+ * nothing to match. `buildScenarioLever` validates each request against the
+ * engine and refuses the lever with a message; that is where a bound belongs.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -1042,7 +1049,7 @@ function ComparableScenariosPage() {
                   <th scope="col">Lifetime tax plus penalties</th>
                   <th scope="col">Depletes</th>
                   <th scope="col">Changed</th>
-                  <th aria-label="actions" />
+                  <th scope="col" aria-label="actions" />
                 </tr>
               </thead>
               <tbody>

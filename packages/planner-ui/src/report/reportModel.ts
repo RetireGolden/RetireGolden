@@ -466,12 +466,22 @@ function roundDollar(value: number): number {
   return value >= 0 ? Math.round(value) : -Math.round(-value)
 }
 
-function ownerName(plan: Plan, ownerPersonId: string | null): string {
+/**
+ * The owner of an account or income stream, as the report names them.
+ *
+ * `unowned` is what a dangling owner id reads as, and it is a parameter rather
+ * than one shared character because the two surfaces write it differently: the
+ * model's rows are also read as text and JSON, so they take a plain hyphen and
+ * the five report-model goldens stay byte-identical, while the screen shows an
+ * em dash. A valid plan reaches neither, since every owner id resolves.
+ */
+export function ownerName(plan: Plan, ownerPersonId: string | null, unowned = '-'): string {
   if (ownerPersonId === null) return 'Joint'
-  return plan.household.people.find((p) => p.id === ownerPersonId)?.name ?? '-'
+  return plan.household.people.find((p) => p.id === ownerPersonId)?.name ?? unowned
 }
 
-function accountBalance(a: Account): number {
+/** What an account contributes to a balance total: property carries `value`, not `balance`. */
+export function accountBalance(a: Account): number {
   if ('balance' in a) return a.balance
   if (a.type === 'property') return a.value
   return 0

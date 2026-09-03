@@ -5,6 +5,10 @@
  * delta), runs the real plan once per candidate in a Web Worker — shared
  * market paths for the success rate — and ranks the rows with a per-state
  * driver drill-down. Income tax only; the page names what's out of scope.
+ *
+ * As on Scenarios, the candidate-draft fields carry hand-written min/max and no
+ * schema `path` by design: a draft candidate is not a value at a plan path
+ * until its patch is applied, so there is no path for `boundsForPath` to read.
  */
 
 import { useMemo, useRef, useState } from 'react'
@@ -30,6 +34,7 @@ import { buildModel } from './marketModelPicker'
 import { ScrollRegion } from './ScrollRegion'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
+import { inflationView } from '../projection'
 import { currentStartYear, seedFromPlanId } from './useProjection'
 import { US_STATES } from './usStates'
 
@@ -257,8 +262,8 @@ export function RelocationComparePage() {
     return [...rows].sort((a, b) => key(a) - key(b) || a.destinationState.localeCompare(b.destinationState))
   }, [result, effectiveRankBy])
 
-  const deflateEnd = (row: RelocationCandidateRow, amount: number) =>
-    amount / Math.pow(1 + plan.assumptions.inflationPct / 100, row.endYear - startYear)
+  const money = inflationView(plan.assumptions.inflationPct, startYear)
+  const deflateEnd = (row: RelocationCandidateRow, amount: number) => money.deflate(row.endYear, amount)
 
   return (
     <section>

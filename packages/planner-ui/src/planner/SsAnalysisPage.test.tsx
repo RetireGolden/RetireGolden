@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { createSamplePlan } from '../testSupport/samplePlan'
+import { waitFor } from '../testSupport/settle'
 import { WorkspaceReadOnlyContext } from '../data/workspaceReadOnly'
 import { SsAnalysisPage } from './SsAnalysisPage'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
@@ -26,6 +27,16 @@ afterEach(() => {
 
 function contextFor(plan: Plan, update: PlanContextValue['update']): PlanContextValue {
   return { plan, update, discardPendingSave: () => {}, saveState: 'saved', issues: [] }
+}
+
+/** The claim-age sweep is debounced 200 ms off the render path. */
+function sweepSettled(host: HTMLElement): Promise<void> {
+  return waitFor(() => host.querySelector('.skeleton') === null, {
+    what: 'the claim-age sweep',
+    attempts: 600,
+    intervalMs: 20,
+    describe: () => host.textContent ?? '',
+  })
 }
 
 describe('SsAnalysisPage claim-age heatmap', () => {
@@ -52,6 +63,7 @@ describe('SsAnalysisPage claim-age heatmap', () => {
         </MemoryRouter>,
       )
     })
+    await sweepSettled(container)
 
     const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('.heatmap-cell-button'))
     expect(buttons.length).toBeGreaterThan(0)
@@ -92,6 +104,7 @@ describe('SsAnalysisPage claim-age heatmap', () => {
         </MemoryRouter>,
       )
     })
+    await sweepSettled(container)
 
     const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('.heatmap-cell-button'))
     expect(buttons.length).toBeGreaterThan(0)
@@ -99,6 +112,36 @@ describe('SsAnalysisPage claim-age heatmap', () => {
     expect(buttons.some((button) => button.getAttribute('aria-current') === 'true')).toBe(true)
     expect(buttons[0]!.parentElement?.getAttribute('title')).toMatch(/Alex \d+ \/ Sam \d+: \$/)
     expect(container.textContent).toContain('claim-age choices are read-only in this workspace.')
+  })
+})
+
+describe('the claim-age sweep is not run in the render path', () => {
+  it('shows a skeleton first, then the swept results', async () => {
+    const plan = createSamplePlan()
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(plan, () => {})}>
+            <SsAnalysisPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+
+    // Before the debounce fires there is a labelled skeleton and no sweep
+    // output: 81 full ledger simulations used to run synchronously here.
+    const skeleton = container.querySelector('.skeleton')
+    expect(skeleton).not.toBeNull()
+    expect(skeleton!.getAttribute('aria-label')).toBe('Comparing claim ages')
+    expect(container.querySelectorAll('.heatmap-cell-button')).toHaveLength(0)
+
+    // The ranking control stays usable while the sweep is pending, so the
+    // skeleton never takes the page away.
+    expect(container.textContent).toContain('Rank claim ages by')
+
+    await sweepSettled(container)
+    expect(container.querySelectorAll('.heatmap-cell-button').length).toBeGreaterThan(0)
+    expect(container.querySelector('.skeleton')).toBeNull()
   })
 })
 
@@ -131,6 +174,7 @@ describe('flat objective (#454)', () => {
         </MemoryRouter>,
       )
     })
+    await sweepSettled(container)
     const note = container.querySelector('.callout--note[role="note"]')
     expect(note?.textContent).toMatch(/No best claim age to recommend|No claim age meets this ranking/)
     expect(container.textContent).not.toMatch(/Best by /)

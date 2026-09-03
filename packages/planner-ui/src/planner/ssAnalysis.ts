@@ -141,9 +141,15 @@ export function planWithClaimAges(plan: Plan, claimByPersonId: Record<string, nu
 }
 
 /**
- * Run the full projection for every claim-age combination (62–70 per claiming
- * person) and rank by ending after-tax estate. 9 runs single, 81 couple —
- * each ~a few ms, so this stays well under a frame budget on the main thread.
+ * Run the full projection for every claim-age combination (62-70 per claiming
+ * person) and rank by ending after-tax estate: 9 evaluations for one claimer,
+ * 81 for two.
+ *
+ * That is not a frame's worth of work. A two-person run of this module's own
+ * test plan measured 139 ms, so the caller keeps it off the render path and
+ * shows a loading state, the way the survivor-transition sweep does. The
+ * comment here used to claim the opposite ("well under a frame budget on the
+ * main thread"), which is how the page came to call it inside a `useMemo`.
  */
 export function sweepClaimingStrategies(
   plan: Plan,

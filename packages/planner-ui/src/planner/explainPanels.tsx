@@ -206,11 +206,11 @@ export function WhyRecommendationPanel({
         <table className="compare-table">
           <thead>
             <tr>
-              <th>Alternative considered</th>
-              <th>Conversions executed</th>
-              <th>After-tax estate</th>
-              <th>Lifetime tax</th>
-              <th>Money lasts</th>
+              <th scope="col">Alternative considered</th>
+              <th scope="col">Conversions executed</th>
+              <th scope="col">After-tax estate</th>
+              <th scope="col">Lifetime tax</th>
+              <th scope="col">Money lasts</th>
             </tr>
           </thead>
           <tbody>

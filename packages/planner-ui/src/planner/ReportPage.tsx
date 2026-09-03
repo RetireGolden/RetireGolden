@@ -8,6 +8,12 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router'
 
+import {
+  ACCOUNT_CATEGORIES,
+  ACCOUNT_CATEGORY_COLOR,
+  ACCOUNT_CATEGORY_LABEL,
+  categoryBalances,
+} from './accountCategories'
 import { ScrollRegion } from './ScrollRegion'
 import { planNameForTitle } from './planName'
 import { usePlannerEdition } from './editionContext'
@@ -29,7 +35,7 @@ import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/pla
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
-import { buildInheritedSchedules, incomeDetail } from '../report/reportModel'
+import { accountBalance, buildInheritedSchedules, incomeDetail, ownerName as reportOwnerName } from '../report/reportModel'
 import { acaLedgerSummary, acaReportStatus } from './acaReportStatus'
 import { SINGLE_WITH_PARTNER_NOTE } from './filingStatusNotice'
 import { PlanProvider } from './PlanContext'
@@ -40,42 +46,18 @@ import { US_STATES } from './usStates'
 import { hasCapitalLossCarryforward } from './capitalLossCarryforwardVisibility'
 import { ProfessionalConfirmationMarker } from './ProfessionalConfirmationMarker'
 
-const CATEGORIES = ['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'] as const
-const CAT_LABEL: Record<(typeof CATEGORIES)[number], string> = {
-  cash: 'Cash',
-  taxable: 'Taxable',
-  equityComp: 'Equity comp',
-  traditional: 'Traditional',
-  roth: 'Roth',
-  hsa: 'HSA',
-}
-const CAT_COLOR: Record<(typeof CATEGORIES)[number], string> = {
-  cash: 'var(--chart-5)',
-  taxable: 'var(--chart-2)',
-  equityComp: 'var(--chart-6)',
-  traditional: 'var(--chart-3)',
-  roth: 'var(--chart-1)',
-  hsa: 'var(--chart-4)',
-}
 
 const ACCOUNT_LABEL: Record<Account['type'], string> = {
   cash: 'Cash', taxable: 'Brokerage', equityComp: 'Equity comp', traditional: 'Traditional', roth: 'Roth', hsa: 'HSA',
   pension: 'Pension', annuity: 'Annuity', property: 'Property', debt: 'Debt',
 }
 
-function ownerName(plan: Plan, ownerPersonId: string | null): string {
-  if (ownerPersonId === null) return 'Joint'
-  return plan.household.people.find((p) => p.id === ownerPersonId)?.name ?? '—'
-}
+/** The report model's own naming, with the screen's em-dash stand-in for a dangling id. */
+const ownerName = (plan: Plan, ownerPersonId: string | null): string =>
+  reportOwnerName(plan, ownerPersonId, '—')
 
 function stateName(code: string): string {
   return US_STATES.find((s) => s.value === code)?.label ?? code
-}
-
-function accountBalance(a: Account): number {
-  if ('balance' in a) return a.balance
-  if (a.type === 'property') return a.value
-  return 0
 }
 
 function incomeLabel(plan: Plan, s: IncomeStream): string {
@@ -126,10 +108,7 @@ function ReportBody() {
   const depleted = summary.depletionYear !== null
 
   const chartRows = result.years.map((y) => {
-    const cats = { cash: 0, taxable: 0, equityComp: 0, traditional: 0, roth: 0, hsa: 0 }
-    for (const a of plan.accounts) {
-      if ((CATEGORIES as readonly string[]).includes(a.type)) cats[a.type as (typeof CATEGORIES)[number]] += y.balances[a.id] ?? 0
-    }
+    const cats = categoryBalances(plan, y)
     return {
       year: y.year,
       ...cats,
@@ -224,8 +203,8 @@ function ReportBody() {
             <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 11 }} width={64} />
             <Tooltip formatter={(v: unknown) => fmtMoney(Number(v))} />
             <Legend />
-            {CATEGORIES.map((c) => (
-              <Area key={c} dataKey={c} stackId="bal" name={CAT_LABEL[c]} stroke={CAT_COLOR[c]} fill={CAT_COLOR[c]} fillOpacity={0.55} isAnimationActive={false} />
+            {ACCOUNT_CATEGORIES.map((c) => (
+              <Area key={c} dataKey={c} stackId="bal" name={ACCOUNT_CATEGORY_LABEL[c]} stroke={ACCOUNT_CATEGORY_COLOR[c]} fill={ACCOUNT_CATEGORY_COLOR[c]} fillOpacity={0.55} isAnimationActive={false} />
             ))}
           </AreaChart>
           </div>

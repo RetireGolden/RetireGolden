@@ -6,7 +6,7 @@
  *    benefits alone (the actuarial / insurance lens).
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   CartesianGrid,
@@ -50,11 +50,15 @@ import {
   sweepClaimingStrategies,
   type MonthlyClaim,
   type MonthlyRefinement,
+  type SweepResult,
   type SweepRow,
   sweepVerdict,
 } from './ssAnalysis'
 import { chartTooltipStyle } from './chartStyle'
 import { ScrollRegion } from './ScrollRegion'
+
+/** Off the keystroke path, the same interval the survivor-transition sweep uses. */
+const SWEEP_DEBOUNCE_MS = 200
 
 type Tab = 'plan' | 'benefits' | 'breakeven'
 
@@ -316,10 +320,10 @@ function BridgePanel() {
         <table>
           <thead>
             <tr>
-              <th>Person</th>
-              <th>Bridge pays</th>
-              <th>Years</th>
-              <th>TIPS ladder cost (today's $)</th>
+              <th scope="col">Person</th>
+              <th scope="col">Bridge pays</th>
+              <th scope="col">Years</th>
+              <th scope="col">TIPS ladder cost (today's $)</th>
             </tr>
           </thead>
           <tbody>
@@ -376,10 +380,10 @@ function BridgePanel() {
           <table>
             <thead>
               <tr>
-                <th>Strategy</th>
-                <th>Market success</th>
-                <th>Money lasts</th>
-                <th>Ending after-tax estate</th>
+                <th scope="col">Strategy</th>
+                <th scope="col">Market success</th>
+                <th scope="col">Money lasts</th>
+                <th scope="col">Ending after-tax estate</th>
               </tr>
             </thead>
             <tbody>
@@ -432,7 +436,50 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   const readOnly = useWorkspaceReadOnly()
   const startYear = currentStartYear()
   const [objectiveId, setObjectiveId] = useState<ObjectivePolicyId>('max-after-tax-estate')
-  const sweep = useMemo(() => sweepClaimingStrategies(plan, startYear, objectiveId), [plan, startYear, objectiveId])
+  /**
+   * The sweep, off the render path.
+   *
+   * 81 full ledger simulations for a couple (139 ms measured) ran synchronously
+   * inside a `useMemo`, so every plan edit froze the tab with no loading state
+   * at all. This is the shape `SurvivorTransitionPage` already uses: debounce
+   * into state, hold the result WITH the inputs it was computed for so a stale
+   * sweep can never render against an edited plan, and absorb a throw into an
+   * error card rather than a stuck skeleton.
+   */
+  const [snapshot, setSnapshot] = useState<{
+    plan: typeof plan
+    objectiveId: ObjectivePolicyId
+    sweep: SweepResult | null
+    /**
+     * `sweep === null` has exactly one cause: the catch below. There is no
+     * "no eligible candidate" null here (that is an empty `rows`/`ranked` on
+     * a real `SweepResult`, handled by `sweepVerdict`), so the card used to
+     * call every one of these a plan-validation problem — which is only
+     * sometimes true; the other case is a bug in the sweep itself. This
+     * carries the caught error's own message so the card can say what
+     * actually happened instead of guessing.
+     */
+    sweepError: string | null
+  } | null>(null)
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        setSnapshot({ plan, objectiveId, sweep: sweepClaimingStrategies(plan, startYear, objectiveId), sweepError: null })
+      } catch (err) {
+        // Logged the way the error boundaries above this tab do
+        // (ShellErrorBoundary, RouteErrorBoundary), so this is never silent
+        // to the console even though the card's wording stays neutral about
+        // the cause.
+        console.error('Claim-age sweep failed:', err)
+        setSnapshot({ plan, objectiveId, sweep: null, sweepError: err instanceof Error ? err.message : String(err) })
+      }
+    }, SWEEP_DEBOUNCE_MS)
+    // Cancellation: a plan or ranking change before the timer fires drops the
+    // sweep that was queued for the old inputs.
+    return () => window.clearTimeout(timer)
+  }, [plan, startYear, objectiveId])
+  const settled = snapshot !== null && snapshot.plan === plan && snapshot.objectiveId === objectiveId ? snapshot : null
+  const sweep = settled?.sweep ?? null
   const [mc, setMc] = useState<Record<string, number> | null>(null)
   const [mcRunning, setMcRunning] = useState(false)
   const [mcError, setMcError] = useState<string | null>(null)
@@ -441,10 +488,11 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   // Only the engine's winner is ever crowned (banner, Apply, refine, table and
   // heatmap highlights). A flat objective, a current claim that already leads,
   // or no eligible candidate gets a note instead (#454).
-  const verdict = sweepVerdict(sweep)
-  const best: SweepRow | undefined = verdict === 'winner' ? (sweep.winner ?? undefined) : undefined
+  const verdict = sweep === null ? null : sweepVerdict(sweep)
+  const best: SweepRow | undefined =
+    sweep !== null && verdict === 'winner' ? (sweep.winner ?? undefined) : undefined
   const current = currentClaim(plan, personIds)
-  const currentRow = sweep.rows.find((r) => personIds.every((id) => r.claimByPersonId[id] === current[id]))
+  const currentRow = sweep?.rows.find((r) => personIds.every((id) => r.claimByPersonId[id] === current[id]))
   const keyOf = (r: SweepRow) => personIds.map((id) => r.claimByPersonId[id]).join('-')
 
   const applyMonthly = (claim: Record<string, MonthlyClaim>) =>
@@ -455,6 +503,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
     })
 
   const runRobustness = async () => {
+    if (sweep === null) return
     setMcRunning(true)
     setMcError(null)
     try {
@@ -478,8 +527,10 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
     }
   }
 
-  return (
-    <div>
+  // The header stays on screen in every state, so the ranking can be changed
+  // while the previous one is still being swept.
+  const header = (
+    <>
       <p className="card-hint">
         Each claim-age combination is run through your full plan: taxes, Roth conversions, IRMAA, ACA, and RMDs
         included, and ranked by the objective you choose{' '}
@@ -498,6 +549,38 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         />
         </div>
       </div>
+    </>
+  )
+
+  if (sweep === null) {
+    return (
+      <div>
+        {header}
+        {settled === null ? (
+          <div className="skeleton" style={{ height: '12rem' }} aria-label="Comparing claim ages" />
+        ) : (
+          // sweep === null here is always the catch above, never "no eligible
+          // candidate" (that is a real SweepResult with empty rows). The copy
+          // stays neutral about the cause — it can be a plan combination the
+          // sweep does not handle, or a bug — rather than telling the household
+          // this is a validation problem they should go find on the Enter
+          // screens (#598).
+          <div className="callout callout--warn" role="alert">
+            <p>
+              The claim-age comparison hit an error and could not run. The rest of the planner is unaffected.
+              Reloading usually clears a one-off error; if it keeps happening on this plan, that points to a bug
+              rather than something you entered.
+            </p>
+            {settled.sweepError ? <p className="muted small">Comparison error: {settled.sweepError}</p> : null}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {header}
 
       {verdict === 'flat' || verdict === 'current-best' || verdict === 'ineligible' ? (
         <div className="callout callout--note" role="note">
@@ -609,9 +692,9 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         <table className="claim-table" style={{ marginTop: '0.75rem' }}>
           <thead>
             <tr>
-              <th>Strategy (claim ages)</th>
-              <th>After-tax estate</th>
-              <th>Success %</th>
+              <th scope="col">Strategy (claim ages)</th>
+              <th scope="col">After-tax estate</th>
+              <th scope="col">Success %</th>
             </tr>
           </thead>
           <tbody>
@@ -707,11 +790,11 @@ function SingleSweepTable({
       <table className="claim-table">
         <thead>
           <tr>
-            <th>Claim at</th>
-            <th>After-tax estate</th>
-            <th>Lifetime tax</th>
-            <th>Depletes</th>
-            <th aria-label="apply" />
+            <th scope="col">Claim at</th>
+            <th scope="col">After-tax estate</th>
+            <th scope="col">Lifetime tax</th>
+            <th scope="col">Depletes</th>
+            <th scope="col" aria-label="apply" />
           </tr>
         </thead>
         <tbody>
@@ -778,16 +861,16 @@ function CoupleHeatmap({
         <table className="claim-table heatmap">
           <thead>
             <tr>
-              <th>{personName(rowId!)} ↓ / {personName(colId!)} →</th>
+              <th scope="col">{personName(rowId!)} ↓ / {personName(colId!)} →</th>
               {colAges.map((ca) => (
-                <th key={ca}>{ca}</th>
+                <th scope="col" key={ca}>{ca}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rowAges.map((ra) => (
               <tr key={ra}>
-                <th>{ra}</th>
+                <th scope="row">{ra}</th>
                 {colAges.map((ca) => {
                   const v = estate(ra, ca)
                   const isBest = `${ra}-${ca}` === bestKey
@@ -995,9 +1078,9 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         <table className="claim-table">
           <thead>
             <tr>
-              <th>Claim age{personIds.length === 2 ? 's' : ''}</th>
-              <th>Expected PV</th>
-              <th aria-label="apply" />
+              <th scope="col">Claim age{personIds.length === 2 ? 's' : ''}</th>
+              <th scope="col">Expected PV</th>
+              <th scope="col" aria-label="apply" />
             </tr>
           </thead>
           <tbody>
@@ -1186,8 +1269,8 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
         <table className="claim-table">
           <thead>
             <tr>
-              <th>Strategy</th>
-              <th>Expected PV</th>
+              <th scope="col">Strategy</th>
+              <th scope="col">Expected PV</th>
             </tr>
           </thead>
           <tbody>

@@ -51,11 +51,14 @@ function beneficiaryWithClass(
 
 function BeneficiaryDetails({
   account,
+  index,
   inherited,
   planningYear,
   onCommit,
 }: {
   account: InheritedRetirementAccount
+  /** Position in `plan.accounts`, so each fact field can carry its schema path. */
+  index: number
   inherited: InheritedDetails
   planningYear: number
   onCommit: (inherited: InheritedDetails) => void
@@ -143,10 +146,9 @@ function BeneficiaryDetails({
                 label="Beneficiary birth year"
                 help="The beneficiary's year of birth supports life-expectancy schedules and checks that the asserted beneficiary was alive when the owner died."
                 source={{ label: 'eCFR §1.401(a)(9)-4', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-4' }}
+                path={`accounts.${index}.inherited.beneficiary.beneficiaryBirthYear`}
                 value={beneficiary.beneficiaryBirthYear ?? null}
                 allowNull
-                min={1900}
-                max={2100}
                 onCommit={(value) => commit({ ...beneficiary, beneficiaryBirthYear: value ?? undefined })}
               />
               <SelectField
@@ -211,10 +213,9 @@ function BeneficiaryDetails({
                     label="Treat-as-own election year"
                     help="The calendar year the surviving spouse's election takes effect. Before that year, this remains an inherited account in the model."
                     source={ELECTION_SOURCE}
+                    path={`accounts.${index}.inherited.beneficiary.treatAsOwnElectionYear`}
                     value={beneficiary.treatAsOwnElectionYear ?? null}
                     allowNull
-                    min={inherited.ownerDeathYear}
-                    max={2100}
                     onCommit={(value) => commit({ ...beneficiary, treatAsOwnElectionYear: value ?? undefined })}
                   />
                   <CheckboxField
@@ -234,10 +235,9 @@ function BeneficiaryDetails({
                 label="Original owner birth year"
                 help="The original owner's birth year helps check the required-beginning-date boundary and, in some schedules, the applicable life-expectancy divisor. Year-only information can leave a boundary unsettled."
                 source={{ label: 'eCFR §1.401(a)(9)-5', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5' }}
+                path={`accounts.${index}.inherited.beneficiary.ownerBirthYear`}
                 value={beneficiary.ownerBirthYear ?? null}
                 allowNull
-                min={1900}
-                max={inherited.ownerDeathYear}
                 onCommit={(value) => commit({ ...beneficiary, ownerBirthYear: value ?? undefined })}
               />
               {showBirthPrecision ? (
@@ -246,20 +246,18 @@ function BeneficiaryDetails({
                     label="Original owner birth month"
                     help="Optional month precision for required-beginning-date boundary cases. Supply a real birth date when you add day precision."
                     source={{ label: 'eCFR §1.401(a)(9)-5', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5' }}
+                    path={`accounts.${index}.inherited.beneficiary.ownerBirthMonth`}
                     value={beneficiary.ownerBirthMonth ?? null}
                     allowNull
-                    min={1}
-                    max={12}
                     onCommit={(value) => commit({ ...beneficiary, ownerBirthMonth: value ?? undefined })}
                   />
                   <NumberField
                     label="Original owner birth day"
                     help="Optional day precision for required-beginning-date boundary cases. Month and day must form a real calendar date with the birth year."
                     source={{ label: 'eCFR §1.401(a)(9)-5', url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5' }}
+                    path={`accounts.${index}.inherited.beneficiary.ownerBirthDay`}
                     value={beneficiary.ownerBirthDay ?? null}
                     allowNull
-                    min={1}
-                    max={31}
                     onCommit={(value) => commit({ ...beneficiary, ownerBirthDay: value ?? undefined })}
                   />
                 </>
@@ -297,10 +295,9 @@ function BeneficiaryDetails({
                     label="Roth 5-year start year"
                     help="The original owner's first Roth contribution year starts the five-taxable-year evidence used for inherited-Roth taxability. It is planning evidence, not a filing record."
                     source={{ label: 'eCFR §1.408A-6', url: 'https://www.ecfr.gov/current/title-26/section-1.408A-6' }}
+                    path={`accounts.${index}.inherited.beneficiary.roth5YearStartYear`}
                     value={beneficiary.roth5YearStartYear ?? null}
                     allowNull
-                    min={1900}
-                    max={2100}
                     onCommit={(value) => commit({ ...beneficiary, roth5YearStartYear: value ?? undefined })}
                   />
                   {beneficiary.roth5YearStartYear !== undefined && beneficiary.roth5YearStartYear + 4 >= planningYear ? (
@@ -426,9 +423,8 @@ export function RetirementAccountEditor({
           <NumberField
             label="Original owner's death year"
             hint="Starts the distribution clock. What is due each year depends on the beneficiary facts below."
+            path={`accounts.${index}.inherited.ownerDeathYear`}
             value={account.inherited.ownerDeathYear}
-            min={1990}
-            max={2100}
             onCommit={(v) => set('inherited', { ...account.inherited, ownerDeathYear: Math.round(v ?? new Date().getFullYear() - 1) })}
           />
           {account.type === 'traditional' ? (
@@ -478,6 +474,7 @@ export function RetirementAccountEditor({
               ) : null}
               <BeneficiaryDetails
                 account={account}
+                index={index}
                 inherited={account.inherited!}
                 planningYear={planningYear}
                 onCommit={(inherited) => {

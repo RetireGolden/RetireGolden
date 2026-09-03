@@ -271,6 +271,15 @@ const NESTED_LEAF_LABELS: Record<string, string> = {
   'earningsProjection.assumedAnnualEarnings': 'Assumed annual earnings',
   'earningsProjection.throughAge': 'Work through age',
   'disability.onsetAge': 'Disability onset age',
+  // Inherited-IRA facts. The trail alone would read "Inherited › Beneficiary ›
+  // Beneficiary birth year"; these are what the account card calls them.
+  'inherited.ownerDeathYear': "Original owner's death year",
+  'beneficiary.beneficiaryBirthYear': 'Beneficiary birth year',
+  'beneficiary.treatAsOwnElectionYear': 'Treat-as-own election year',
+  'beneficiary.ownerBirthYear': 'Original owner birth year',
+  'beneficiary.ownerBirthMonth': 'Original owner birth month',
+  'beneficiary.ownerBirthDay': 'Original owner birth day',
+  'beneficiary.roth5YearStartYear': 'Roth 5-year start year',
 }
 
 /** Acronyms a fallback label keeps in capitals. */

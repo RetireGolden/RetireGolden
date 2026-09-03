@@ -98,6 +98,16 @@ function fixture(): Plan {
   plan.assumptions.safeWithdrawalRatePct = 4
   plan.assumptions.assetClassParams = { usStocks: { returnPct: 7, volatilityPct: 16, dividendYieldPct: 1.6, interestYieldPct: 0, qualifiedRatioPct: 90 } }
   plan.expenses.requiredAnnual = 60_000
+  // The dynamic-spending card's five policy percents. They live under one
+  // optional object, so every one of them is absent from a default plan.
+  plan.expenses.spendingPolicy = {
+    mode: 'riskBasedGuardrails',
+    upperGuardrailPct: 120,
+    lowerGuardrailPct: 80,
+    adjustmentPct: 10,
+    targetSuccessLowerPct: 70,
+    targetSuccessUpperPct: 95,
+  }
   plan.incomeFloor = {
     ladders: [
       {
@@ -172,6 +182,41 @@ function fixture(): Plan {
     periodCertain,
     jointSurvivor,
   ]
+  // An inherited IRA carrying every beneficiary fact the editor wires, so the
+  // `accounts.N.inherited.*` paths are fields of this plan. A surviving-spouse
+  // treat-as-own election is the one shape that reaches all of them at once:
+  // the election year exists only under that election, and the owner's
+  // birth-date components only alongside a birth year (plan.ts superRefine).
+  const inherited: Plan['accounts'][number] = {
+    type: 'traditional',
+    id: 'inherited-ira-fixture',
+    name: 'Inherited IRA',
+    ownerPersonId: owner,
+    annualReturnPct: null,
+    kind: 'ira',
+    balance: 180_000,
+    annualContribution: 0,
+    inherited: {
+      ownerDeathYear: 2024,
+      decedentHadStartedRmds: true,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'surviving-spouse',
+        beneficiaryBirthYear: 1958,
+        soleBeneficiary: true,
+        election: 'treat-as-own',
+        treatAsOwnElectionYear: 2025,
+        spouseUnlimitedWithdrawalRight: true,
+        ownerBirthYear: 1950,
+        ownerBirthMonth: 4,
+        ownerBirthDay: 12,
+        ownerYearOfDeathRmdSatisfied: true,
+        roth5YearStartYear: 2010,
+        provenance: { source: 'fixture', asOf: '2026-01-01' },
+      },
+    },
+  }
+  plan.accounts = [...plan.accounts, inherited]
   const life = plan.insurance.find((p) => p.kind === 'permanentLife') as Extract<Plan['insurance'][number], { kind: 'permanentLife' }>
   life.premiumMode = 'untilAge'
   life.premiumEndAge = 75

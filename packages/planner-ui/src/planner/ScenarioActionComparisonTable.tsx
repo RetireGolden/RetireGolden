@@ -1,18 +1,10 @@
 import type { ScenarioPlanComparison } from '@retiregolden/engine/scenarios/comparison'
+import { fmtMoneyFromCents } from './format'
 import { ScrollRegion } from './ScrollRegion'
 
 type ActionComparisonRow = ScenarioPlanComparison['actionRows'][number]
 type ActionSide = NonNullable<ActionComparisonRow['baseline']>
 type ScheduleDiagnostic = ActionComparisonRow['baselineScheduleDiagnostics'][number]
-
-function formatCents(cents: number): string {
-  const minorUnits = BigInt(cents)
-  const negative = minorUnits < 0n
-  const absolute = negative ? -minorUnits : minorUnits
-  const dollars = absolute / 100n
-  const remainder = (absolute % 100n).toString().padStart(2, '0')
-  return `${negative ? '−' : ''}$${dollars.toLocaleString('en-US')}.${remainder}`
-}
 
 function IdentityList({ action }: { action: ActionSide }) {
   return (
@@ -37,9 +29,9 @@ function SourceAllocations({ action }: { action: ActionSide }) {
           {' · allocation '}{allocation.allocationId}
           {' · '}{allocation.resolution}
           <br />
-          Requested {formatCents(allocation.requestedAmountCents)}; executed{' '}
-          {formatCents(allocation.executedAmountCents)}; unexecuted{' '}
-          {formatCents(allocation.unexecutedAmountCents)}
+          Requested {fmtMoneyFromCents(allocation.requestedAmountCents)}; executed{' '}
+          {fmtMoneyFromCents(allocation.executedAmountCents)}; unexecuted{' '}
+          {fmtMoneyFromCents(allocation.unexecutedAmountCents)}
         </li>
       ))}
     </ul>
@@ -109,9 +101,9 @@ function ActionSideCells({
       <td><IdentityList action={action} /></td>
       <td><SourceAllocations action={action} /></td>
       <td>
-        Requested {formatCents(action.requestedAmountCents)}<br />
-        Executed {formatCents(action.executedAmountCents)}<br />
-        Unexecuted {formatCents(action.unexecutedAmountCents)}
+        Requested {fmtMoneyFromCents(action.requestedAmountCents)}<br />
+        Executed {fmtMoneyFromCents(action.executedAmountCents)}<br />
+        Unexecuted {fmtMoneyFromCents(action.unexecutedAmountCents)}
       </td>
       <td>{action.readiness}<br />{action.outcome}</td>
       <td><Reasons action={action} /></td>

@@ -142,11 +142,11 @@ export function PromotedSchedulePanel({
         <table className="compare-table">
           <thead>
             <tr>
-              <th>Year</th>
-              <th>Person</th>
-              <th>From</th>
-              <th>To</th>
-              <th>Amount</th>
+              <th scope="col">Year</th>
+              <th scope="col">Person</th>
+              <th scope="col">From</th>
+              <th scope="col">To</th>
+              <th scope="col">Amount</th>
             </tr>
           </thead>
           <tbody>

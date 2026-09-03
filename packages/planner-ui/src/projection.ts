@@ -14,12 +14,36 @@ export function currentStartYear(): number {
   return new Date().getFullYear()
 }
 
-export interface ProjectionView {
+/**
+ * The one place the app moves an amount between today's dollars and a year's
+ * nominal dollars.
+ *
+ * Not a second model of anything: the engine already ran the ledger in nominal
+ * dollars, and both directions here are the same single compounding of the
+ * plan's own `inflationPct` from one base year. It exists because that
+ * conversion was being re-derived by hand at four call sites, which is four
+ * chances to take the wrong base year and nowhere to test it once.
+ */
+export interface InflationView {
+  /** A nominal amount in `year`, expressed in `startYear` dollars. */
+  deflate: (year: number, amount: number) => number
+  /** A `startYear`-dollar amount, expressed in `year`'s nominal dollars. */
+  inflate: (year: number, amount: number) => number
+}
+
+/** `deflate` and `inflate` for one inflation rate compounded from one base year. */
+export function inflationView(inflationPct: number, startYear: number): InflationView {
+  const r = 1 + inflationPct / 100
+  return {
+    deflate: (year, amount) => amount / Math.pow(r, year - startYear),
+    inflate: (year, amount) => amount * Math.pow(r, year - startYear),
+  }
+}
+
+export interface ProjectionView extends InflationView {
   result: ProjectionResult
   summary: ProjectionSummary
   startYear: number
-  /** Divide a nominal amount in `year` by this to get today's dollars. */
-  deflate: (year: number, amount: number) => number
 }
 
 export interface ProjectPlanOptions {
@@ -54,11 +78,5 @@ export function projectPlan(
     ...(opts.captureAnnualCashFlow === true ? { captureAnnualCashFlow: true } : {}),
   })
   const summary = summarizeProjection(plan, result)
-  const r = 1 + plan.assumptions.inflationPct / 100
-  return {
-    result,
-    summary,
-    startYear,
-    deflate: (year, amount) => amount / Math.pow(r, year - startYear),
-  }
+  return { result, summary, startYear, ...inflationView(plan.assumptions.inflationPct, startYear) }
 }

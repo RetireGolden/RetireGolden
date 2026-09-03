@@ -101,6 +101,7 @@ export function AccountEditorShell({
       <EstateBeneficiaryFields account={account} index={index} onCommit={onCommit} />
       {estimating ? (
         <ReturnEstimatorModal
+          plan={plan}
           initialPct={account.annualReturnPct}
           onApply={(percent) => onCommit('annualReturnPct', percent)}
           onClose={() => setEstimating(false)}
