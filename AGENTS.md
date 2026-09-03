@@ -106,9 +106,11 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
 
 ### Merging
 
-- Squash-merge is the repository admin's call. The admin is named in
-  "Repo-specific" below. An agent session may squash-merge with admin bypass
-  only when all of the following hold: `gh auth status` shows the session is
+- Squash-merge is the repository admin's call, and the admin has granted it
+  as a standing rule (this replaces the earlier "do not merge unless asked"
+  rule). The admin is named in "Repo-specific" below. An agent session may
+  squash-merge, with admin bypass where the repo needs it, only when all of
+  the following hold: `gh auth status` shows the session is
   authenticated as that admin account; the head is review-clean; every check
   the repo expects is green for that head; and every review thread is
   resolved. The bypass exists solely to clear ruleset conditions an
@@ -128,22 +130,29 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   be retracted. Do not derive handles from git author names; use only the
   handles named in "Repo-specific".
 - Never add `cursoragent` or any other shared tool account to a CLA
-  allowlist, and never edit `.github/workflows/cla.yml` to do so.
+  allowlist. Never edit `.github/workflows/cla.yml` for any reason: it is a
+  `pull_request_target` workflow with write permissions and a PAT, and
+  changes to it are the admin's alone.
 - Delegate mechanical loops (review-fix rounds, rebases, check watches) to
-  subagents where the tool supports them. Verify each subagent's report
-  against live GitHub state (head SHA, verdict, unresolved threads, gated
-  jobs) before acting on it.
+  subagents where the tool supports them. Every rule in this file binds a
+  subagent as well: a subagent never merges, dispatches a release or
+  production workflow, or edits CI or CLA workflows on its own. Verify each
+  subagent's report against live GitHub state (head SHA, verdict, unresolved
+  threads, gated jobs) before acting on it.
 
 <!-- rg-shared-agent-rules:end -->
 
 ## Repo-specific
 
 - Repository admin: @FlyOverCoderKY.
+- Ruleset facts below were verified 2026-09-03 with
+  `gh api repos/RetireGolden/RetireGolden/rules/branches/main`; re-run it
+  when in doubt, the live ruleset wins over this text.
 - `run-ci` is required here. The `lint`, `test`, `e2e`, `build`, and ZAP
   (`ZAP DAST / ZAP Baseline`) jobs run only with the label and are required
   checks on `main`; an unlabeled ZAP result is a skip and does not satisfy
-  the check. Semgrep (`Scan (p/default)`), CLA, and the first-pass review
-  gate run without the label. The resolve gate is path-triggered (workspace
+  the check. Semgrep (`Scan (p/default)`), `CLA`, and the first-pass review
+  gate (`review / openrouter-first-pass-gate`) run without the label. The resolve gate is path-triggered (workspace
   manifest, lockfile, or any `package.json`) and is expected only on PRs
   that touch those files.
 - `main` also requires every review thread resolved and a post-push approval
