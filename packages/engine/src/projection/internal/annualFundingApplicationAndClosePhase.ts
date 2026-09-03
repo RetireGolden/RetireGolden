@@ -48,6 +48,8 @@ import {
 import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from '../../tax/federalTax.js'
 import { compareUtf16CodeUnits } from '../../actions/structuralId.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
+import type { PhaseLedgerScalarBindings } from './phaseLedgerScalars.js'
+import { readPhaseLedgerScalars, writePhaseLedgerScalars } from './phaseLedgerScalars.js'
 import {
   annualCoordinatedHecmAllocations,
   annualCoordinatedHecmEligibility,
@@ -260,12 +262,30 @@ export interface AnnualFundingApplicationAndClosePhaseLedger {
   annualRetirementRuntimeOccurrences: SimulatorAnnualRetirementRuntimeOccurrence[]
   annualRetirementRuntimeApplications: SimulatorRetirementRuntimeApplication[]
   annuityContractValue: Map<string, number>
+  expenses: YearResult['expenses']
+  /**
+   * The money-bearing scalars this phase mutates, bound rather than copied.
+   *
+   * Every other field above is a container the phase mutates in place, so the
+   * caller sees the change for free. These are numbers, and used to be copied
+   * out of the ledger by a hand-written block at the call site — a block the
+   * compiler never checked. See `readPhaseLedgerScalars`.
+   */
+  readonly scalars: PhaseLedgerScalarBindings<AnnualFundingApplicationAndClosePhaseScalars>
+}
+
+/**
+ * The scalar simulator locals the funding-and-close phase owns for the year.
+ *
+ * One record, named once: the phase's opening read and its closing write are
+ * both driven from it, so a new scalar cannot reach one end and miss the other.
+ */
+export interface AnnualFundingApplicationAndClosePhaseScalars {
   healthcare: number
   qualifiedMedicalThisYear: number
   hsaQualifiedCap: number
   requiredSpendingBase: number
   targetSpendingBase: number
-  expenses: YearResult['expenses']
   capitalLossPool: number
   hsaReimbursablePool: number
   depletionYear: number | null
@@ -576,16 +596,17 @@ export function annualFundingApplicationAndClosePhase(
     annuityContractValue,
     expenses,
   } = ledger
-  let healthcare = ledger.healthcare
-  let qualifiedMedicalThisYear = ledger.qualifiedMedicalThisYear
-  let hsaQualifiedCap = ledger.hsaQualifiedCap
-  let requiredSpendingBase = ledger.requiredSpendingBase
-  let targetSpendingBase = ledger.targetSpendingBase
-  let capitalLossPool = ledger.capitalLossPool
-  let hsaReimbursablePool = ledger.hsaReimbursablePool
-  let depletionYear = ledger.depletionYear
-  const conversionNontaxable = ledger.conversionNontaxable
-  let priorYearPortfolioReturnPct = ledger.priorYearPortfolioReturnPct
+  const openingScalars = readPhaseLedgerScalars(ledger.scalars)
+  let healthcare = openingScalars.healthcare
+  let qualifiedMedicalThisYear = openingScalars.qualifiedMedicalThisYear
+  let hsaQualifiedCap = openingScalars.hsaQualifiedCap
+  let requiredSpendingBase = openingScalars.requiredSpendingBase
+  let targetSpendingBase = openingScalars.targetSpendingBase
+  let capitalLossPool = openingScalars.capitalLossPool
+  let hsaReimbursablePool = openingScalars.hsaReimbursablePool
+  let depletionYear = openingScalars.depletionYear
+  const conversionNontaxable = openingScalars.conversionNontaxable
+  let priorYearPortfolioReturnPct = openingScalars.priorYearPortfolioReturnPct
   const {
     stateOf,
     isTreatAsOwnEffective,
@@ -2308,16 +2329,18 @@ export function annualFundingApplicationAndClosePhase(
         : {}),
     })
 
-  ledger.healthcare = healthcare
-  ledger.qualifiedMedicalThisYear = qualifiedMedicalThisYear
-  ledger.hsaQualifiedCap = hsaQualifiedCap
-  ledger.requiredSpendingBase = requiredSpendingBase
-  ledger.targetSpendingBase = targetSpendingBase
-  ledger.capitalLossPool = capitalLossPool
-  ledger.hsaReimbursablePool = hsaReimbursablePool
-  ledger.depletionYear = depletionYear
-  ledger.conversionNontaxable = conversionNontaxable
-  ledger.priorYearPortfolioReturnPct = priorYearPortfolioReturnPct
+  writePhaseLedgerScalars(ledger.scalars, {
+    healthcare,
+    qualifiedMedicalThisYear,
+    hsaQualifiedCap,
+    requiredSpendingBase,
+    targetSpendingBase,
+    capitalLossPool,
+    hsaReimbursablePool,
+    depletionYear,
+    conversionNontaxable,
+    priorYearPortfolioReturnPct,
+  })
 
   return { yearResult, optimizerProbe }
 }

@@ -77,10 +77,16 @@ import { annualForcedDistributionQcdAndRetirementActions } from
   './internal/annualForcedDistributionQcdAndRetirementActions.js'
 import { annualAggregateRothConversionPhase } from './internal/annualAggregateRothConversionPhase.js'
 import { annualRothBasisPoolKey } from './internal/annualRothBasisPoolKey.js'
-import { annualFundingApplicationAndClosePhase } from
-  './internal/annualFundingApplicationAndClosePhase.js'
-import { annualOwnedNonRothIraSettlementPhase, type AnnualOwnedNonRothIraSettlementPhaseLedger } from
-  './internal/annualOwnedNonRothIraSettlementPhase.js'
+import {
+  annualFundingApplicationAndClosePhase,
+  type AnnualFundingApplicationAndClosePhaseScalars,
+} from './internal/annualFundingApplicationAndClosePhase.js'
+import {
+  annualOwnedNonRothIraSettlementPhase,
+  type AnnualOwnedNonRothIraSettlementPhaseLedger,
+  type AnnualOwnedNonRothIraSettlementPhaseScalars,
+} from './internal/annualOwnedNonRothIraSettlementPhase.js'
+import type { PhaseLedgerScalarBindings } from './internal/phaseLedgerScalars.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import {
@@ -2859,6 +2865,69 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     )
     let conversionNontaxable = 0
 
+    /**
+     * The money-bearing scalars the grouped phases mutate, bound once over the
+     * simulator's own locals.
+     *
+     * One record shared by the funding-and-close phase's ledger and by
+     * `annualPassState`, so the two seams cannot drift apart and neither one
+     * needs a copy-back block at the call site. A phase's `.write` lands on the
+     * local here directly; adding an eleventh scalar is a compile error at both
+     * ends rather than a silently dropped mutation at one of them.
+     */
+    const annualPassScalarBindings:
+      PhaseLedgerScalarBindings<AnnualFundingApplicationAndClosePhaseScalars> = {
+        healthcare: annualPassValueBinding(
+          () => healthcare,
+          (value) => { healthcare = value },
+        ),
+        qualifiedMedicalThisYear: annualPassValueBinding(
+          () => qualifiedMedicalThisYear,
+          (value) => { qualifiedMedicalThisYear = value },
+        ),
+        hsaQualifiedCap: annualPassValueBinding(
+          () => hsaQualifiedCap,
+          (value) => { hsaQualifiedCap = value },
+        ),
+        requiredSpendingBase: annualPassValueBinding(
+          () => requiredSpendingBase,
+          (value) => { requiredSpendingBase = value },
+        ),
+        targetSpendingBase: annualPassValueBinding(
+          () => targetSpendingBase,
+          (value) => { targetSpendingBase = value },
+        ),
+        capitalLossPool: annualPassValueBinding(
+          () => capitalLossPool,
+          (value) => { capitalLossPool = value },
+        ),
+        hsaReimbursablePool: annualPassValueBinding(
+          () => hsaReimbursablePool,
+          (value) => { hsaReimbursablePool = value },
+        ),
+        depletionYear: annualPassValueBinding(
+          () => depletionYear,
+          (value) => { depletionYear = value },
+        ),
+        conversionNontaxable: annualPassValueBinding(
+          () => conversionNontaxable,
+          (value) => { conversionNontaxable = value },
+        ),
+        priorYearPortfolioReturnPct: annualPassValueBinding(
+          () => priorYearPortfolioReturnPct,
+          (value) => { priorYearPortfolioReturnPct = value },
+        ),
+      }
+
+    /** The one scalar latch the owned-IRA settlement phase sets for the year. */
+    const settlementScalarBindings:
+      PhaseLedgerScalarBindings<AnnualOwnedNonRothIraSettlementPhaseScalars> = {
+        ownedNonRothIraSettlementRolledBackHousehold: annualPassValueBinding(
+          () => ownedNonRothIraSettlementRolledBackHousehold,
+          (value) => { ownedNonRothIraSettlementRolledBackHousehold = value },
+        ),
+      }
+
     const runPostContributionAnnualPass = (
       assumedEffects:
         readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[],
@@ -3322,17 +3391,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       annualRetirementRuntimeOccurrences,
       annualRetirementRuntimeApplications,
       annuityContractValue,
-      healthcare,
-      qualifiedMedicalThisYear,
-      hsaQualifiedCap,
-      requiredSpendingBase,
-      targetSpendingBase,
       expenses,
-      capitalLossPool,
-      hsaReimbursablePool,
-      depletionYear,
-      conversionNontaxable,
-      priorYearPortfolioReturnPct,
+      scalars: annualPassScalarBindings,
       ownedRothAssumedBasisConsequentialByOwner:
         forcedDistributionPhase.ownedRothAssumedBasisConsequentialByOwner,
       employerRothAssumedBasisConsequentialByAccount:
@@ -3481,16 +3541,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           })
         : null,
     }))
-    healthcare = fundingCloseLedger.healthcare
-    qualifiedMedicalThisYear = fundingCloseLedger.qualifiedMedicalThisYear
-    hsaQualifiedCap = fundingCloseLedger.hsaQualifiedCap
-    requiredSpendingBase = fundingCloseLedger.requiredSpendingBase
-    targetSpendingBase = fundingCloseLedger.targetSpendingBase
-    capitalLossPool = fundingCloseLedger.capitalLossPool
-    hsaReimbursablePool = fundingCloseLedger.hsaReimbursablePool
-    depletionYear = fundingCloseLedger.depletionYear
-    conversionNontaxable = fundingCloseLedger.conversionNontaxable
-    priorYearPortfolioReturnPct = fundingCloseLedger.priorYearPortfolioReturnPct
+    // No copy-out block: `fundingCloseLedger.scalars` binds these locals, so
+    // the phase has already written through to them.
     return fundingCloseResult
     }
 
@@ -3521,53 +3573,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         () => unassignedCash,
         (value) => { unassignedCash = value },
       ),
-      priorYearPortfolioReturnPct: annualPassValueBinding(
-        () => priorYearPortfolioReturnPct,
-        (value) => { priorYearPortfolioReturnPct = value },
-      ),
-      capitalLossPool: annualPassValueBinding(
-        () => capitalLossPool,
-        (value) => { capitalLossPool = value },
-      ),
-      hsaReimbursablePool: annualPassValueBinding(
-        () => hsaReimbursablePool,
-        (value) => { hsaReimbursablePool = value },
-      ),
-      depletionYear: annualPassValueBinding(
-        () => depletionYear,
-        (value) => { depletionYear = value },
-      ),
-      conversionNontaxable: annualPassValueBinding(
-        () => conversionNontaxable,
-        (value) => { conversionNontaxable = value },
-      ),
-      healthcare: annualPassValueBinding(
-        () => healthcare,
-        (value) => { healthcare = value },
-      ),
-      qualifiedMedicalThisYear: annualPassValueBinding(
-        () => qualifiedMedicalThisYear,
-        (value) => { qualifiedMedicalThisYear = value },
-      ),
-      hsaQualifiedCap: annualPassValueBinding(
-        () => hsaQualifiedCap,
-        (value) => { hsaQualifiedCap = value },
-      ),
-      requiredSpendingBase: annualPassValueBinding(
-        () => requiredSpendingBase,
-        (value) => { requiredSpendingBase = value },
-      ),
-      targetSpendingBase: annualPassValueBinding(
-        () => targetSpendingBase,
-        (value) => { targetSpendingBase = value },
-      ),
+      // The same ten adapters the funding-and-close phase's ledger carries.
+      // Shared rather than redefined: the two seams bind one set of locals, so
+      // a rollback and a phase write can never disagree about which cell they
+      // are talking about.
+      ...annualPassScalarBindings,
       expenses,
     }
 
     const settlementLedger: AnnualOwnedNonRothIraSettlementPhaseLedger = {
       iraBasisByOwner,
-      ownedNonRothIraSettlementRolledBackHousehold,
       ownedNonRothIraSettlementRolledBackOwners,
+      scalars: settlementScalarBindings,
     }
     const settledAnnualPass = annualOwnedNonRothIraSettlementPhase(Object.freeze({
       facts: Object.freeze({
@@ -3592,8 +3609,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         runPostContributionAnnualPass,
       }),
     }))
-    ownedNonRothIraSettlementRolledBackHousehold =
-      settlementLedger.ownedNonRothIraSettlementRolledBackHousehold
     years.push(settledAnnualPass.yearResult)
     if (settledAnnualPass.optimizerProbe !== null) {
       opts.captureOptimizerInputs?.(settledAnnualPass.optimizerProbe)
