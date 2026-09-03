@@ -11,7 +11,7 @@ overrides:
   react: 19.2.7
   react-dom: 19.2.7
   react-is: 19.2.7
-  recharts: 3.10.1
+  recharts: 3.9.2
   es-toolkit: 1.49.0
   immer: 11.1.11
 
@@ -138,8 +138,8 @@ importers:
         specifier: ^8.0.3
         version: 8.0.3
       recharts:
-        specifier: 3.10.1
-        version: 3.10.1(@types/react@19.2.18)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)
+        specifier: 3.9.2
+        version: 3.9.2(@types/react@19.2.18)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -2671,8 +2671,8 @@ packages:
     resolution: {integrity: sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ==}
     engines: {node: '>=0.10.0'}
 
-  recharts@3.10.1:
-    resolution: {integrity: sha512-QXFrvt6IVcw7eeZCoyXTwkIJAX3Dv1nyVhMicXJ47GsGDDpcN8z6o644DibE9XjpBTThtsomLKnTV6lc+cVFUA==}
+  recharts@3.9.2:
+    resolution: {integrity: sha512-G4fy+Pk46RaXgwWMh+Nzhyo/lbFAVqXo9gtetlyehe6Ehge9CsgDuOTwQDD+i1+llaLktNBiNq4bhnGlDRXFtw==}
     engines: {node: '>=18'}
     peerDependencies:
       react: 19.2.7
@@ -5712,7 +5712,7 @@ snapshots:
 
   react@19.2.7: {}
 
-  recharts@3.10.1(@types/react@19.2.18)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1):
+  recharts@3.9.2(@types/react@19.2.18)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1):
     dependencies:
       '@reduxjs/toolkit': 2.12.0(react-redux@9.3.0(@types/react@19.2.18)(react@19.2.7)(redux@5.0.1))(react@19.2.7)
       clsx: 2.1.1
