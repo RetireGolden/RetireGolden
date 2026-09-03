@@ -99,6 +99,7 @@ describe('evaluateBudget — a healthy build', () => {
     const labels = result.rows.map((r) => r.label)
     expect(labels).toContain('planner Web Worker')
     expect(labels).toContain('app entry')
+    expect(labels).toContain('plan route group (PlanRoutes)')
     expect(labels.some((l) => l.startsWith('landing critical path'))).toBe(true)
     expect(labels.some((l) => l.startsWith('PWA precache'))).toBe(true)
   })
@@ -117,6 +118,18 @@ describe('evaluateBudget — oversize', () => {
     const build = healthyBuild()
     build.assets.push({ name: 'Something-fff.js', bytes: (DEFAULT_CHUNK_KIB + 50) * KIB })
     expect(failureText(evaluateBudget(build))).toContain('Something-fff.js')
+  })
+
+  it('fails the plan route group over its class budget', () => {
+    const build = healthyBuild()
+    build.assets = build.assets.map((a) =>
+      a.name.startsWith('PlanRoutes') ? { ...a, bytes: 320 * KIB } : a,
+    )
+    const text = failureText(evaluateBudget(build))
+    expect(text).toContain('plan route group (PlanRoutes)')
+    // 320 KiB clears the 260 KiB default, so a pass here would mean the row was
+    // never consulted; the named 300 KiB limit is the one doing the work.
+    expect(320).toBeGreaterThan(DEFAULT_CHUNK_KIB)
   })
 
   it('fails the app entry over its budget', () => {
@@ -151,6 +164,21 @@ describe('evaluateBudget — the single-worker invariant', () => {
   it('fails when the worker chunk disappears entirely', () => {
     const build = healthyBuild()
     build.assets = build.assets.filter((a) => !a.name.startsWith('planner.worker'))
+    expect(failureText(evaluateBudget(build))).toContain('expected exactly 1 chunk(s), found 0')
+  })
+})
+
+describe('evaluateBudget — the single plan-route-group invariant', () => {
+  it('fails when the route group is split into a second chunk, even if both are small', () => {
+    const build = healthyBuild()
+    build.assets.push({ name: 'PlanRoutes-eee.js', bytes: 10 * KIB })
+    expect(failureText(evaluateBudget(build))).toContain('expected exactly 1 chunk(s), found 2')
+  })
+
+  it('fails when the route group chunk disappears entirely', () => {
+    const build = healthyBuild()
+    build.assets = build.assets.filter((a) => !a.name.startsWith('PlanRoutes'))
+    build.landing = { entry: 'index-aaa.js', names: ['index-aaa.js'], sizes: { 'index-aaa.js': 200 * KIB } }
     expect(failureText(evaluateBudget(build))).toContain('expected exactly 1 chunk(s), found 0')
   })
 })
