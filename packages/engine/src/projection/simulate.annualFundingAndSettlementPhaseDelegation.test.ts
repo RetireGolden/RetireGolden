@@ -71,7 +71,11 @@ vi.mock(
             ...input,
             callbacks: Object.freeze({
               ...input.callbacks,
-              runPostContributionAnnualPass: (...args) => {
+              runPostContributionAnnualPass: (
+                ...args: Parameters<
+                  AnnualOwnedNonRothIraSettlementPhaseInput['callbacks']['runPostContributionAnnualPass']
+                >
+              ) => {
                 const result = input.callbacks.runPostContributionAnnualPass(...args)
                 callbackResults.push(result)
                 return result

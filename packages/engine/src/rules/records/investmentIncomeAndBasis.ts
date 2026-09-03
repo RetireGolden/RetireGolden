@@ -161,7 +161,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation (treas-reg-1-1012-1-c-lot-basis-and-holding-period). The section 1212(b)(2) adjusted-taxable-income limit on how much of a section 1211(b) allowance burns the carryforward pool in a zero-income year is registered separately. The describeRule fixture drives the pool through simulatePlan so the year-to-year threading in simulate.ts is inside the rule\'s coverage.',
+      'The plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation (treas-reg-1-1012-1-c-lot-basis-and-holding-period). The section 1212(b)(2) adjusted-taxable-income limit on how much of a section 1211(b) allowance burns the carryforward pool in a zero-income year is registered separately. The describeRule fixture drives the pool through simulatePlan: annualFundingApplicationAndClosePhase applies the current-year producer and simulatePlan threads its returned pool into the next year.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -175,10 +175,12 @@ export const investmentIncomeAndBasisRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-27',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
     ],

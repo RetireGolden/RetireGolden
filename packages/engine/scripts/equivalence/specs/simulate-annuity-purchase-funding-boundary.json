@@ -194,16 +194,16 @@
       "label": "annuity-purchase helper invocation",
       "file": "projection/simulate.ts",
       "lines": [
-        1670,
-        1678
+        1614,
+        1622
       ],
       "anchors": [
         {
-          "line": 1670,
+          "line": 1614,
           "text": "const annuityPurchaseRows = annualAnnuityPurchaseFunding({"
         },
         {
-          "line": 1678,
+          "line": 1622,
           "text": "})"
         }
       ],
@@ -214,20 +214,20 @@
       "label": "positional row selection and position check",
       "file": "projection/simulate.ts",
       "lines": [
-        1682,
-        1684
+        1626,
+        1628
       ],
       "anchors": [
         {
-          "line": 1682,
+          "line": 1626,
           "text": "for (let accountIndex = 0; accountIndex < plan.accounts.length; accountIndex++) {"
         },
         {
-          "line": 1683,
+          "line": 1627,
           "text": "const row = annuityPurchaseRows[accountIndex]!"
         },
         {
-          "line": 1684,
+          "line": 1628,
           "text": "if (row.accountIndex !== accountIndex) {"
         }
       ],
@@ -238,24 +238,24 @@
       "label": "none-row skip and funding-account validation",
       "file": "projection/simulate.ts",
       "lines": [
-        1687,
-        1695
+        1631,
+        1639
       ],
       "anchors": [
         {
-          "line": 1687,
+          "line": 1631,
           "text": "if (row.kind === 'none') continue"
         },
         {
-          "line": 1689,
+          "line": 1633,
           "text": "const funding = balances[row.fundingIndex]"
         },
         {
-          "line": 1694,
+          "line": 1638,
           "text": "funding.account.id !== account.purchase.fundingAccountId"
         },
         {
-          "line": 1695,
+          "line": 1639,
           "text": ") {"
         }
       ],
@@ -266,24 +266,24 @@
       "label": "ordered warning/gain/basis/balance/ledger/optimizer effect application",
       "file": "projection/simulate.ts",
       "lines": [
-        1698,
-        1710
+        1642,
+        1654
       ],
       "anchors": [
         {
-          "line": 1698,
+          "line": 1642,
           "text": "for (const warning of row.warnings) warnings.add(warning)"
         },
         {
-          "line": 1700,
+          "line": 1644,
           "text": "if (row.capitalGainOrLossDelta !== null) {"
         },
         {
-          "line": 1705,
+          "line": 1649,
           "text": "yearSites?.recordAnnuityPurchase(row.record)"
         },
         {
-          "line": 1710,
+          "line": 1654,
           "text": "if (row.debit !== null) exogenousStrategyDebits.push(row.debit)"
         }
       ]
@@ -293,32 +293,32 @@
       "label": "qualified runtime occurrence, debit and deferred contract-credit planning",
       "file": "projection/simulate.ts",
       "lines": [
-        1711,
-        1769
+        1655,
+        1713
       ],
       "anchors": [
         {
-          "line": 1711,
+          "line": 1655,
           "text": "if (row.funded > 0 && funding.account.type === 'traditional') {"
         },
         {
-          "line": 1718,
+          "line": 1662,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 1728,
+          "line": 1672,
           "text": "if (isAggregatedIra(funding.account)) {"
         },
         {
-          "line": 1756,
+          "line": 1700,
           "text": "if (annuityContractValue.has(account.id)) {"
         },
         {
-          "line": 1760,
+          "line": 1704,
           "text": "pendingAnnuityContractCredits.push({"
         },
         {
-          "line": 1769,
+          "line": 1713,
           "text": "}"
         }
       ]
@@ -328,16 +328,16 @@
       "label": "funded investment-in-contract carry",
       "file": "projection/simulate.ts",
       "lines": [
-        1771,
-        1774
+        1715,
+        1718
       ],
       "anchors": [
         {
-          "line": 1771,
+          "line": 1715,
           "text": "annuityInvestmentInContract.set("
         },
         {
-          "line": 1774,
+          "line": 1718,
           "text": ")"
         }
       ]
@@ -347,20 +347,20 @@
       "label": "contiguous ordered annuity-contract premium credits",
       "file": "projection/simulate.ts",
       "lines": [
-        1776,
-        1794
+        1720,
+        1738
       ],
       "anchors": [
         {
-          "line": 1776,
+          "line": 1720,
           "text": "for (const credit of pendingAnnuityContractCredits) {"
         },
         {
-          "line": 1777,
+          "line": 1721,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1794,
+          "line": 1738,
           "text": "})"
         }
       ]

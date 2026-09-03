@@ -263,7 +263,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -399,7 +399,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -630,7 +630,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -753,7 +753,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -829,6 +829,8 @@
         "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts",
         "packages/engine/src/internal/ownedNonRothIraContiguousReplay.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
+        "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts",
+        "packages/engine/src/projection/internal/annualOwnedNonRothIraSettlementPhase.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/iraBasis.ts"
       ],
@@ -861,11 +863,29 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts",
+          "functions": [
+            {
+              "name": "annualFundingApplicationAndClosePhase",
+              "line": 395
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnedNonRothIraSettlementPhase.ts",
+          "functions": [
+            {
+              "name": "annualOwnedNonRothIraSettlementPhase",
+              "line": 95
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -1103,7 +1123,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }

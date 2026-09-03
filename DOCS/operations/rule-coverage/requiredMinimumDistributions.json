@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -102,7 +102,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -184,7 +184,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -259,7 +259,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -331,7 +331,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -549,7 +549,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -639,7 +639,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -737,7 +737,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -839,7 +839,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -911,7 +911,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -986,7 +986,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -1059,7 +1059,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -1211,7 +1211,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -1464,7 +1464,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -1565,7 +1565,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -1847,7 +1847,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -1969,7 +1969,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -2056,7 +2056,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -2146,7 +2146,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -2223,7 +2223,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -2357,7 +2357,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -2451,7 +2451,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -2657,7 +2657,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -2886,7 +2886,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         }
@@ -2995,10 +2995,10 @@
       "dueOn": "2027-08-05",
       "implementedBy": [
         "packages/engine/src/actions/planBalanceAdapter.ts",
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
         "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
         "packages/engine/src/projection/internal/annualSeppDistributions.ts",
-        "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
-        "packages/engine/src/projection/simulate.ts"
+        "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts"
       ],
       "implementations": [
         {
@@ -3007,6 +3007,15 @@
             {
               "name": "planDollarsMoveNoLedgerCent",
               "line": 101
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+          "functions": [
+            {
+              "name": "annualForcedDistributionQcdAndRetirementActions",
+              "line": 310
             }
           ]
         },
@@ -3034,15 +3043,6 @@
             {
               "name": "annualWithdrawalPlan",
               "line": 132
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
-            {
-              "name": "simulatePlan",
-              "line": 667
             }
           ]
         }
@@ -3166,7 +3166,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -3273,7 +3273,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -3340,7 +3340,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -3401,7 +3401,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },
@@ -3462,7 +3462,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 667
+              "line": 611
             }
           ]
         },

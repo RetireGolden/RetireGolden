@@ -97,27 +97,27 @@
     {
       "id": "AF.callsite.context",
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot",
-      "file": "projection/simulate.ts",
-      "lines": [3650, 3720],
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [831, 901],
       "anchors": [
-        { "line": 3650, "text": "const fundingCandidateAcaContract = acaContract" },
-        { "line": 3667, "text": "const fundingCandidateEvaluationContext:" },
-        { "line": 3673, "text": "taxInputBase: Object.freeze({" },
-        { "line": 3697, "text": "aca: Object.freeze({" },
-        { "line": 3709, "text": "hsa: Object.freeze({" }
+        { "line": 831, "text": "const fundingCandidateAcaContract = acaContract" },
+        { "line": 848, "text": "const fundingCandidateEvaluationContext:" },
+        { "line": 854, "text": "taxInputBase: Object.freeze({" },
+        { "line": 878, "text": "aca: Object.freeze({" },
+        { "line": 890, "text": "hsa: Object.freeze({" }
       ]
     },
     {
       "id": "AF.callsite.delegate",
       "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
-      "file": "projection/simulate.ts",
-      "lines": [3721, 3745],
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [902, 926],
       "anchors": [
-        { "line": 3724, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
-        { "line": 3731, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 3734, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
-        { "line": 3740, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
-        { "line": 3745, "text": "return evaluation" }
+        { "line": 905, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
+        { "line": 912, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 915, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 921, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
+        { "line": 926, "text": "return evaluation" }
       ]
     }
   ],

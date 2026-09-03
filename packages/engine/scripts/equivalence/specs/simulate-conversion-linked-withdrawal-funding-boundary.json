@@ -105,30 +105,30 @@
     {
       "id": "AG.callsite.attempt",
       "label": "frozen annual contract sharing one settlement-assumption vector",
-      "file": "projection/simulate.ts",
+      "file": "projection/internal/annualOwnedNonRothIraSettlementPhase.ts",
       "lines": [
-        5208,
-        5227
+        130,
+        149
       ],
       "anchors": [
         {
-          "line": 5208,
+          "line": 130,
           "text": "const linkedGroupFundingForAttempt = ("
         },
         {
-          "line": 5211,
+          "line": 133,
           "text": ") => annualConversionLinkedWithdrawalFunding(Object.freeze({"
         },
         {
-          "line": 5216,
+          "line": 138,
           "text": "omitActionIds: annualLinkedGroupOmissionIds,"
         },
         {
-          "line": 5218,
+          "line": 140,
           "text": "runPass: ("
         },
         {
-          "line": 5220,
+          "line": 142,
           "text": ") => runPostContributionAnnualPass("
         }
       ]

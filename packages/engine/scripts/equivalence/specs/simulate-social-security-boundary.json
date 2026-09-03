@@ -216,24 +216,24 @@
       "label": "annual Social Security scalar selection, helper invocation and effect consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2162,
-        2190
+        2106,
+        2134
       ],
       "anchors": [
         {
-          "line": 2162,
+          "line": 2106,
           "text": "const ssColaFactor ="
         },
         {
-          "line": 2170,
+          "line": 2114,
           "text": "const socialSecurity = annualSocialSecurity({"
         },
         {
-          "line": 2184,
+          "line": 2128,
           "text": "incomes.socialSecurity += socialSecurity.socialSecurity"
         },
         {
-          "line": 2189,
+          "line": 2133,
           "text": "const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } ="
         }
       ]

@@ -74,9 +74,9 @@
     }
   },
   "attestations": {
-    "totalFiles": 324,
+    "totalFiles": 326,
     "byStatus": {
-      "partial": 53,
+      "partial": 55,
       "registered": 102,
       "rule-free": 169,
       "unswept": 0
@@ -229,7 +229,7 @@
     {
       "path": "projection/internal/annualAcaResultPublication.ts",
       "sweptOn": "2026-09-02",
-      "note": "the pure annual ACA publication coordinator consumes the accepted fixed-point quote and household-MAGI evidence from projection/internal/annualFundingCandidateEvaluation.ts and composes the registered federal-poverty-line producer in tax/aca.ts. It preserves the established evidence contract: ordered support-code deduplication and informational-code treatment, actionable versus gross-premium-fallback readiness, dependent-MAGI inclusion, contract or fallback covered-member publication, applicable-SLCSP folding, FPL and cliff classification, convergence diagnostics, and ordered warning intents. These are result/evidence composition conventions around the registered ACA arithmetic, not a new filing-grade eligibility or premium-tax-credit implementation. The helper mutates no caller-owned value and returns fresh result and warning containers. simulatePlan retains the active-year gate, recursively detached annual contract/evaluation snapshots, warning-set insertion, downstream optimizer-field consumption, final YearResult publication, and MAGI history"
+      "note": "the pure annual ACA publication coordinator consumes the accepted fixed-point quote and household-MAGI evidence from projection/internal/annualFundingCandidateEvaluation.ts and composes the registered federal-poverty-line producer in tax/aca.ts. It preserves the established evidence contract: ordered support-code deduplication and informational-code treatment, actionable versus gross-premium-fallback readiness, dependent-MAGI inclusion, contract or fallback covered-member publication, applicable-SLCSP folding, FPL and cliff classification, convergence diagnostics, and ordered warning intents. These are result/evidence composition conventions around the registered ACA arithmetic, not a new filing-grade eligibility or premium-tax-credit implementation. The helper mutates no caller-owned value and returns fresh result and warning containers. annualFundingApplicationAndClosePhase retains the active-year gate, recursively detached annual contract/evaluation snapshots, warning-set insertion, downstream optimizer-field consumption, core YearResult publication, and MAGI history"
     },
     {
       "path": "projection/internal/annualAggregateRothConversionPhase.ts",
@@ -247,14 +247,19 @@
       "note": "effectful forced-distribution, QCD, SEPP, inherited-account, and named retirement-action execution phase relocated from simulatePlan. It composes the existing registered RMD/QCD/action planners and executors plus Form 8606 character callbacks, and preserves every balance, basis, obligation, warning, runtime-journal, and optional cash-flow mutation in its original sequence. simulatePlan now supplies explicit grouped facts, live ledgers, callbacks, and capture maps and passes the typed phase result to the following aggregate-conversion phase; no rule calculation or transaction order changed"
     },
     {
+      "path": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "sweptOn": "2026-09-02",
+      "note": "effectful post-action annual funding, application, and close sequence relocated from simulatePlan. It composes the independently attested withdrawal strategy/plan, candidate evaluation, fixed-point, withdrawal character, HECM, ACA and optimizer publication, apply-flow, post-solve growth, retirement-action settlement publication, tax, penalty, and YearResult producers. It preserves their original read/mutation/publication order while owning accepted balance, basis, debt, tax, penalty, warning, runtime-journal, cash-flow, and core YearResult commits; no calculation or chronology changed. The owned-IRA settlement coordinator supplies the attempt-local assumptions and invokes this phase through the explicit callback; simulatePlan supplies the surrounding annual facts and live ledgers, then publishes only the settled result and optional optimizer probe"
+    },
+    {
       "path": "projection/internal/annualFundingCandidateEvaluation.ts",
       "sweptOn": "2026-09-02",
-      "note": "the pure candidate evaluator composes registered federal capital-loss netting, federal/combined tax calculators, ACA household-MAGI and premium-credit pricing, and the separately attested traditional/HSA/Roth withdrawal-character coordinator. Its bounded HSA-cap refresh, informational ACA support-code filtering, gross-premium candidate handling, and exact ordering of those producers preserve reviewed simulator composition conventions rather than introducing new filing-grade rules. Annual withdrawal-order resolution and account-drain planning belong to projection/internal/annualWithdrawalPlanning.ts; simulatePlan retains Form 8606 character, immutable annual-context construction, caller-owned warning insertion, accepted basis mutation, every balance/cash-flow/healthcare commit, and final publication"
+      "note": "the pure candidate evaluator composes registered federal capital-loss netting, federal/combined tax calculators, ACA household-MAGI and premium-credit pricing, and the separately attested traditional/HSA/Roth withdrawal-character coordinator. Its bounded HSA-cap refresh, informational ACA support-code filtering, gross-premium candidate handling, and exact ordering of those producers preserve reviewed simulator composition conventions rather than introducing new filing-grade rules. Annual withdrawal-order resolution and account-drain planning belong to projection/internal/annualWithdrawalPlanning.ts; annualFundingApplicationAndClosePhase retains Form 8606 character, immutable annual-context construction, warning insertion, accepted basis mutation, every balance/cash-flow/healthcare commit, and core-result publication"
     },
     {
       "path": "projection/internal/annualFundingWithdrawalEffects.ts",
       "sweptOn": "2026-09-02",
-      "note": "the annual candidate/final withdrawal-character coordinator composes the traditional and HSA penalty proxies in partially registered strategies/accountEligibility.ts (whose registry entry explicitly retains the S2 election-timing residual) with the registered strategies/rothBasis.ts ordering, conversion-layer recapture and nonqualified-earnings character. It preserves the pre-existing projection-only withdrawalTreatment policy (ordered capByMedicalExpenses allocation, assumeAllQualified, and legacy tax-free-but-penalized treatment), owner-wide Roth-IRA pooling, per-account employer-Roth pooling, inherited-Roth exclusion, and missing-basis silence; those simulator composition/pooling conventions remain residual rather than being presented as filing-grade rules. Candidate tax/ACA reconciliation now belongs to projection/internal/annualFundingCandidateEvaluation.ts. simulatePlan retains Form 8606 character, warning insertion, accepted Roth-basis mutation, every account/ledger commit, and cash-flow publication"
+      "note": "the annual candidate/final withdrawal-character coordinator composes the traditional and HSA penalty proxies in partially registered strategies/accountEligibility.ts (whose registry entry explicitly retains the S2 election-timing residual) with the registered strategies/rothBasis.ts ordering, conversion-layer recapture and nonqualified-earnings character. It preserves the pre-existing projection-only withdrawalTreatment policy (ordered capByMedicalExpenses allocation, assumeAllQualified, and legacy tax-free-but-penalized treatment), owner-wide Roth-IRA pooling, per-account employer-Roth pooling, inherited-Roth exclusion, and missing-basis silence; those simulator composition/pooling conventions remain residual rather than being presented as filing-grade rules. Candidate tax/ACA reconciliation now belongs to projection/internal/annualFundingCandidateEvaluation.ts. annualFundingApplicationAndClosePhase retains Form 8606 character, warning insertion, accepted Roth-basis mutation, every account/ledger commit, and cash-flow publication"
     },
     {
       "path": "projection/internal/annualInheritedIraDistributions.ts",
@@ -264,7 +269,12 @@
     {
       "path": "projection/internal/annualOptimizerProbePublication.ts",
       "sweptOn": "2026-09-02",
-      "note": "the pure annual optimizer-probe publication coordinator composes already-settled traditional/RMD/inherited/QCD, Form 8606, retirement-action, tax, ACA, income and contribution evidence into the optimizer input contract. It preserves the existing S2 post-flip forced-distribution remap, QCD ordinary-income/cash corrections, caller-supplied gross-to-taxable conversion callback, remaining traditional taxable fractions, exact-cent committed-action and strategy-movement aggregation, ACA headroom, and SSA-44/IRMAA publication. These are optimization-input composition and accounting conventions around independently registered rule producers, not new filing-grade calculations. The helper mutates no caller-owned value and returns fresh movement arrays and a fresh probe. simulatePlan retains the capture gate, recursively detached annual snapshots, later settlement replay/fraction adjustment, capture-sink invocation, and final annual publication"
+      "note": "the pure annual optimizer-probe publication coordinator composes already-settled traditional/RMD/inherited/QCD, Form 8606, retirement-action, tax, ACA, income and contribution evidence into the optimizer input contract. It preserves the existing S2 post-flip forced-distribution remap, QCD ordinary-income/cash corrections, caller-supplied gross-to-taxable conversion callback, remaining traditional taxable fractions, exact-cent committed-action and strategy-movement aggregation, ACA headroom, and SSA-44/IRMAA publication. These are optimization-input composition and accounting conventions around independently registered rule producers, not new filing-grade calculations. The helper mutates no caller-owned value and returns fresh movement arrays and a fresh probe. annualFundingApplicationAndClosePhase retains the capture gate, recursively detached annual snapshots, and capture-sink invocation; annualOwnedNonRothIraSettlementPhase retains later replay/fraction adjustment, while simulatePlan publishes the settled probe and annual result"
+    },
+    {
+      "path": "projection/internal/annualOwnedNonRothIraSettlementPhase.ts",
+      "sweptOn": "2026-09-02",
+      "note": "effectful owned non-Roth IRA annual settlement driver relocated from simulatePlan and now named by the Form 8606 pro-rata measurement-instant record. It composes the separately attested settlement-attempt, counterfactual-liability, linked-withdrawal authorization, and committed-replay publication boundaries behind one explicit annual-pass callback. It owns attempt ordering, rollback authorization, household/owner retry and fallback, counterfactual observation, and optional replay attachment while preserving the original transactional sequence; the remaining control-flow is projection-composition rather than an additional statutory calculation. The funding/application/close callback retains every attempt-local economic commit, and simulatePlan retains the earlier annual phases plus final settled YearResult append and optimizer-probe publication"
     },
     {
       "path": "projection/internal/annualQcdExecutionInput.ts",
@@ -304,7 +314,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-09-02",
-      "note": "ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, phase ordering, fixed-point and settlement-driver chronology, capture-sink selection, and final result publication. The remaining effectful funding/application and year-close band is the next stacked extraction; this attestation does not claim that work is complete"
+      "note": "ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, the thin live-state application adapters for earlier pure coordinators, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly. Those retained responsibilities are the orchestration and cross-year state boundary; substantive annual funding and settlement policy no longer lives inline"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -444,9 +454,9 @@
     },
     {
       "directory": "projection",
-      "files": 88,
+      "files": 90,
       "byStatus": {
-        "partial": 18,
+        "partial": 20,
         "registered": 15,
         "rule-free": 55
       }

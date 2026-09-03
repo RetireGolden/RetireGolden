@@ -204,26 +204,26 @@
     {
       "id": "AN.callsite.snapshots",
       "label": "active-year gate plus detached contract and accepted-MAGI snapshots",
-      "file": "projection/simulate.ts",
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        4017,
-        4052
+        1198,
+        1233
       ],
       "anchors": [
         {
-          "line": 4017,
+          "line": 1198,
           "text": "let yearAcaResult: AnnualAcaResultPublicationResult['yearAcaResult']"
         },
         {
-          "line": 4018,
+          "line": 1199,
           "text": "if (acaActive) {"
         },
         {
-          "line": 4019,
+          "line": 1200,
           "text": "const acaContractSnapshot = acaContract"
         },
         {
-          "line": 4043,
+          "line": 1224,
           "text": "const acaMagiProbeSnapshot = evaluation.acaMagiProbe === null"
         }
       ]
@@ -231,30 +231,30 @@
     {
       "id": "AN.callsite.delegate",
       "label": "frozen accepted annual evidence, coordinator invocation, exact result and warning consumption",
-      "file": "projection/simulate.ts",
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        4053,
-        4100
+        1234,
+        1281
       ],
       "anchors": [
         {
-          "line": 4053,
+          "line": 1234,
           "text": "const acaPublication = annualAcaResultPublication(Object.freeze({"
         },
         {
-          "line": 4055,
+          "line": 1236,
           "text": "evaluation: Object.freeze({"
         },
         {
-          "line": 4086,
+          "line": 1267,
           "text": "fplInflationScale: inflFactorFrom(pack.year, year),"
         },
         {
-          "line": 4099,
+          "line": 1280,
           "text": "yearAcaResult = acaPublication.yearAcaResult"
         },
         {
-          "line": 4100,
+          "line": 1281,
           "text": "for (const warning of acaPublication.warnings) warnings.add(warning)"
         }
       ]

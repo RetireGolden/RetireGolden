@@ -102,43 +102,43 @@
     {
       "id": "AL.callsite.strategy",
       "label": "frozen annual strategy contract and lazy sizing callback handoff",
-      "file": "projection/simulate.ts",
-      "lines": [3490, 3493],
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [671, 674],
       "anchors": [
-        { "line": 3490, "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({" },
-        { "line": 3493, "text": "readSizing: () => Object.freeze({" }
+        { "line": 671, "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({" },
+        { "line": 674, "text": "readSizing: () => Object.freeze({" }
       ]
     },
     {
       "id": "AL.callsite.strategyResult",
       "label": "optional warning gate and resolved strategy handoff",
-      "file": "projection/simulate.ts",
-      "lines": [3508, 3509],
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [689, 690],
       "anchors": [
-        { "line": 3508, "text": "}))" },
-        { "line": 3509, "text": "if (withdrawalStrategyResult.warning !== null) {" }
+        { "line": 689, "text": "}))" },
+        { "line": 690, "text": "if (withdrawalStrategyResult.warning !== null) {" }
       ]
     },
     {
       "id": "AL.callsite.resolvedStrategy",
       "label": "resolved strategy selected for candidate planning",
-      "file": "projection/simulate.ts",
-      "lines": [3512, 3512],
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [693, 693],
       "anchors": [
-        { "line": 3512, "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy" }
+        { "line": 693, "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy" }
       ]
     },
     {
       "id": "AL.callsite.plan",
       "label": "fixed-point request delegation and Form 8606 handoff by exact plan identity",
-      "file": "projection/simulate.ts",
-      "lines": [3724, 3740],
+      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "lines": [905, 921],
       "anchors": [
-        { "line": 3724, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
-        { "line": 3726, "text": "states: Object.freeze([...rmdBalances])," },
-        { "line": 3731, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 3734, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
-        { "line": 3738, "text": "iraCharacter: iraCharacterProbe," }
+        { "line": 905, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
+        { "line": 907, "text": "states: Object.freeze([...rmdBalances])," },
+        { "line": 912, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 915, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 919, "text": "iraCharacter: iraCharacterProbe," }
       ]
     }
   ],
