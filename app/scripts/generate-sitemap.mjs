@@ -2,7 +2,7 @@
 /**
  * Build-time sitemap generator. Emits dist/sitemap.xml from the top-level
  * routes (sitemapRoutes.mjs, pinned against the planner's route groups by
- * src/sitemapRoutes.test.ts) plus every Learning Center article slug in
+ * scripts/sitemapRoutes.test.mjs) plus every Learning Center article slug in
  * learningRegistry.ts (loaded through vite SSR like scripts/cases.mjs, so the
  * TS source is the single source of truth). Runs as part of `pnpm build`;
  * staticwebapp.config.json and robots.txt both reference /sitemap.xml.

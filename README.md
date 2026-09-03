@@ -90,7 +90,7 @@ Runs on every push and PR to `main`. Scans the repo with Semgrep's `p/default` r
 
 [`.github/workflows/zap.yml`](.github/workflows/zap.yml)
 
-Reusable workflow invoked by the Azure deploy job after a **PR preview** is live (production pushes are not scanned). Runs a passive ZAP baseline scan against the deployed URL and uploads HTML/JSON reports. **Only High-risk alerts fail the check** — lower severities are surfaced for review. Can also be triggered manually from the Actions tab with a custom `target_url`.
+Reusable workflow invoked by the Azure deploy job after a **PR preview** is live (production pushes are not scanned). Runs a passive ZAP baseline scan against the deployed URL and uploads HTML/JSON reports. **High-risk alerts fail the check** — lower severities are surfaced for review — and so does a missing report, since a scan that produced nothing has not passed. Can also be triggered manually from the Actions tab with a custom `target_url`.
 
 ### Resolve gate — dependency trust policy
 

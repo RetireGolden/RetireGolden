@@ -8,7 +8,7 @@
  * (`/plan/:id/*`, `/compare`, `/import`) are deliberately absent: they render
  * only from local IndexedDB state, so there is nothing for a crawler to fetch.
  *
- * src/sitemapRoutes.test.ts pins this list against the planner's exported
+ * scripts/sitemapRoutes.test.mjs pins this list against the planner's exported
  * route groups, so a new public content route fails the app test suite until
  * it is either listed here or named in that test's exclusion list.
  */

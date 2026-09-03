@@ -5,8 +5,8 @@ distributed under their respective licenses. Generated from the resolved
 production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
-Source:    pnpm list --prod --depth Infinity (workspace root)
-Lockfile:  pnpm-lock.yaml sha256 565a19074256928b6763084ccd8c2ef2d325bff9bcf1323a85455927334b4a27
+Source:      pnpm list --prod --depth Infinity (workspace root)
+Attributed:  38 packages, sha256 ef7af1c0cbe46b5b4de4b6d8db1e56118e50af262fc12f02564d96d46e1d25dc
 
 ================================================================================
 

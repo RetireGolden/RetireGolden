@@ -11,9 +11,10 @@
  * `@types/*` packages are excluded — they ship as types, never reach the
  * runtime bundle, and carry no attribution obligation.
  *
- * The output is reproducible: same lockfile and same node_modules, same bytes.
- * Nothing here reads the clock, so a CI drift check can diff the committed file
- * against a fresh run and only see real dependency changes.
+ * The output is reproducible: same production tree, same bytes. Nothing here
+ * reads the clock, and the provenance digest covers the attributed package set
+ * rather than the lockfile, so a CI drift check sees a diff only when the
+ * shipped third-party set actually changed — not on a devDependency bump.
  *
  * This is a dev/build-time tool with no runtime dependencies; it shells out to
  * `pnpm list` and reads the filesystem only. @see DOCS/enhancements/gap-analysis-closeout.md WS-E
@@ -279,11 +280,16 @@ function main() {
   // Provenance has to be a function of the inputs, not of the clock: this line
   // used to carry the run date, which made every re-run a diff and left a CI
   // drift check unable to tell "a dependency changed" from "it is a new day".
-  // The lockfile digest changes only when the dependency set does. Newlines are
-  // normalised first so a CRLF Windows checkout and an LF CI checkout of the
-  // same lockfile hash the same.
-  const lockfileText = readFileSync(join(appDir, '..', 'pnpm-lock.yaml'), 'utf8').replace(/\r\n/g, '\n')
-  const lockfileDigest = createHash('sha256').update(lockfileText).digest('hex')
+  //
+  // The input hashed is the attributed set itself — every included package at
+  // every resolved version — not the whole lockfile. Hashing the lockfile would
+  // make the notices file change (and the CI drift check go red) on any
+  // devDependency bump, which changes no attribution at all. This digest moves
+  // only when the shipped production set moves, which is exactly when the
+  // notice text below can change. Versions are sorted so the digest does not
+  // depend on the order `pnpm list` happened to walk the tree.
+  const attributedSet = included.map(([name, versions]) => `${name}@${[...versions].sort().join(',')}`).join('\n')
+  const attributedDigest = createHash('sha256').update(attributedSet).digest('hex')
   const out = []
   out.push('THIRD-PARTY NOTICES')
   out.push('')
@@ -292,8 +298,8 @@ function main() {
   out.push('production dependency tree (direct + transitive, excluding TypeScript-only')
   out.push('@types/* packages that never reach the runtime bundle).')
   out.push('')
-  out.push(`Source:    pnpm list --prod --depth Infinity (workspace root)`)
-  out.push(`Lockfile:  pnpm-lock.yaml sha256 ${lockfileDigest}`)
+  out.push(`Source:      pnpm list --prod --depth Infinity (workspace root)`)
+  out.push(`Attributed:  ${included.length} packages, sha256 ${attributedDigest}`)
   out.push('')
   out.push('================================================================================')
   out.push('')

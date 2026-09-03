@@ -23,7 +23,7 @@ noise never breaks the pipeline.
 | Target | The repo checkout | The PR preview/staging URL (read from CI/CD, see below) |
 | Ruleset / scan | `p/default` (OSS, local) | Passive **baseline** scan (non-intrusive) |
 | Reports everything to | `semgrep-sarif` artifact + GitHub **code scanning** (Security tab) | `zap-baseline-report` artifact (HTML/MD/JSON) + job log |
-| **Blocks the merge on** | **ERROR**-severity findings only | **High-risk** alerts only (`riskcode 3`) |
+| **Blocks the merge on** | **ERROR**-severity findings only | **High-risk** alerts (`riskcode 3`) — or a missing `report_json.json`, which fails closed |
 | Secrets required | None (pure OSS local scan) | None (built-in `GITHUB_TOKEN`) |
 | Required status check | `Scan (p/default)` | `ZAP DAST / ZAP Baseline` |
 
@@ -48,9 +48,15 @@ Running both on each PR gives coverage from both directions.
 **Workflow:** [`.github/workflows/semgrep.yml`](../../.github/workflows/semgrep.yml)
 
 - **Triggers** on `push` and `pull_request` to `main`.
-- Runs inside the official `semgrep/semgrep` container.
+- Runs the Semgrep CLI on a `setup-python` runner, installed from the version pin in
+  [`.github/semgrep-requirements.txt`](../../.github/semgrep-requirements.txt) (`pip install -r`).
+  The scanner is pinned like every Action in this repo, so a Semgrep CLI release cannot move a
+  required check on its own; Dependabot (pip ecosystem) proposes the bumps.
 - Uses the **`p/default`** ruleset — Semgrep's curated, low-false-positive set. This is a **purely local,
-  open-source** scan: no Semgrep account or token is involved.
+  open-source** scan: no Semgrep account or token is involved. Note that the ruleset itself is *not*
+  pinned: `p/default` is fetched from the registry at scan time, so an upstream rule change can still
+  alter this check's findings with no repo change. Pinning it would mean vendoring the rules, which
+  this repo does not do today.
 
 **Two-phase behavior (report, then gate):**
 
@@ -90,10 +96,16 @@ Running both on each PR gives coverage from both directions.
    would block on Low/Informational noise like missing headers). It writes `report_json.json`,
    `report_md.md`, and `report_html.html` to the workspace and uploads them as the
    **`zap-baseline-report`** artifact. (`allow_issue_writing` is off — review via the artifact.)
-2. **Gate** — a follow-up step parses `report_json.json` and fails the job **only when a High-risk alert is
-   present** (`riskcode == "3"`). Low/Medium/Informational alerts are reported but never block. Because the
+2. **Gate** — a follow-up step parses `report_json.json` and fails the job when a High-risk alert is
+   present (`riskcode == "3"`). Low/Medium/Informational alerts are reported but never block. Because the
    artifact is uploaded before the gate runs, the full report stays available for review even when the gate
    fails.
+
+   The gate also **fails closed on a missing report**: because phase 1 never fails on its own, this step
+   is the entire enforcement of the required check, so a run that produced no `report_json.json` — the
+   scan crashed, the target never came up — exits `1` rather than warning and passing. A red gate with
+   "report not found" in the log means the scan did not happen; go read the `dast` job log rather than
+   the (absent) report.
 
 ---
 

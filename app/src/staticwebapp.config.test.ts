@@ -2,6 +2,24 @@ import { describe, expect, it } from 'vitest'
 import swaConfig from '../public/staticwebapp.config.json'
 import viteConfigText from '../vite.config.ts?raw'
 
+/**
+ * The `expiration.maxAgeSeconds` of one named workbox runtime-cache entry in
+ * vite.config.ts, in seconds. The config is TypeScript source rather than data,
+ * so it is read as text — but anchored on the entry's `cacheName` and evaluated
+ * as arithmetic, so the assertion is about that cache's window and not about
+ * how the number happens to be spelled.
+ */
+function swMaxAgeSeconds(cacheName: string): number {
+  const from = viteConfigText.indexOf(`cacheName: '${cacheName}'`)
+  expect(from, `runtime cache '${cacheName}'`).toBeGreaterThan(-1)
+  const expression = /maxAgeSeconds:\s*([^,}]+)/.exec(viteConfigText.slice(from))?.[1]?.trim()
+  expect(expression, `maxAgeSeconds for '${cacheName}'`).toBeDefined()
+  // Only integer products (`604800`, `7 * 24 * 60 * 60`) are supported; a more
+  // elaborate expression should fail loudly rather than be silently mis-read.
+  expect(expression, `maxAgeSeconds for '${cacheName}'`).toMatch(/^[\d_]+(\s*\*\s*[\d_]+)*$/)
+  return expression!.split('*').reduce((product, factor) => product * Number(factor.replace(/_/g, '').trim()), 1)
+}
+
 describe('staticwebapp.config.json', () => {
   it('explicitly excludes the incident switch from the PWA precache', () => {
     expect(viteConfigText).toContain("globIgnores: ['**/import-feature.json']")
@@ -71,8 +89,16 @@ describe('staticwebapp.config.json', () => {
       expect(entry?.headers?.['Cache-Control'], route).toBe('public, max-age=604800')
     }
     // The service worker holds the same images; a longer cache-first window
-    // there would defeat the shortened header.
-    expect(viteConfigText).toContain('maxAgeSeconds: 7 * 24 * 60 * 60')
+    // there would defeat the shortened header. Read the number out of the
+    // `learn-images` runtime-cache entry and compare it to the host's own
+    // max-age, so the two move together and neither a reverted TTL elsewhere
+    // in the file nor a rewrite of `7 * 24 * 60 * 60` to `604800` is mistaken
+    // for the entry under test.
+    const hostMaxAge = Number(
+      /max-age=(\d+)/.exec(routes.find((r) => r.route === '/learn/images/*')?.headers?.['Cache-Control'] ?? '')?.[1],
+    )
+    expect(hostMaxAge).toBe(604_800)
+    expect(swMaxAgeSeconds('learn-images')).toBe(hostMaxAge)
   })
 
   it('gives the service worker the same navigation-fallback exclusions as the host', () => {
