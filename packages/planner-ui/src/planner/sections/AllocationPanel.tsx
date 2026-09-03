@@ -16,12 +16,6 @@ import { NumberField, PercentField, ReadonlyField, SelectField } from '../fields
 import { Modal } from '../Modal'
 import { currentStartYear } from '../useProjection'
 
-/**
- * Allocation → expected-return estimator. Long-run nominal assumptions
- * (illustrative, before fees): stocks ≈ 7%, bonds ≈ 4%, cash ≈ 2.5%.
- */
-const ASSET_RETURN = { stocks: 7, bonds: 4, cash: 2.5 } as const
-
 function riskLabel(stocksPct: number): string {
   if (stocksPct < 25) return 'Conservative: low volatility, lower growth'
   if (stocksPct < 50) return 'Balanced: moderate ups and downs'
@@ -29,17 +23,49 @@ function riskLabel(stocksPct: number): string {
   return 'Aggressive: expect large drawdowns on the way'
 }
 
-export function ReturnEstimatorModal({ initialPct, onApply, onClose }: { initialPct: number | null; onApply: (pct: number) => void; onClose: () => void }) {
-  const guessStocks = initialPct === null ? 60 : Math.min(100, Math.max(0, Math.round(((initialPct - ASSET_RETURN.cash) / (ASSET_RETURN.stocks - ASSET_RETURN.cash)) * 100 / 5) * 5))
+/**
+ * The estimator's three sliders as a weight vector in ASSET_CLASS_IDS order
+ * (usStocks, intlStocks, bonds, cash), so the blend is priced by the engine
+ * rather than restated here. The stocks slider is one equity share and rides
+ * on US stocks; a plan that wants the domestic/international split priced
+ * separately uses the asset-class panel below, which carries all four.
+ */
+const estimatorWeights = (stocks: number, bonds: number, cash: number): number[] => [
+  stocks / 100,
+  0,
+  bonds / 100,
+  cash / 100,
+]
+
+/**
+ * Allocation → expected-return estimator.
+ *
+ * The rates are the plan's own resolved asset-class parameters, so a return
+ * edited in Assumptions is honored here as well as in the panel below, and
+ * the copy quotes the numbers it actually blends (never a literal).
+ */
+export function ReturnEstimatorModal({ plan, initialPct, onApply, onClose }: { plan: Plan; initialPct: number | null; onApply: (pct: number) => void; onClose: () => void }) {
+  const params = resolveAssetClassParams(plan.assumptions.assetClassParams)
+  const stocksPct = params.usStocks.returnPct
+  const bondsPct = params.bonds.returnPct
+  const cashPct = params.cash.returnPct
+  // Invert the all-stocks/all-cash line to place the opening slider on the
+  // rate the account already carries. With the two rates equal there is no
+  // line to invert, so the estimator opens on its usual 60 % default.
+  const span = stocksPct - cashPct
+  const guessStocks =
+    initialPct === null || span === 0
+      ? 60
+      : Math.min(100, Math.max(0, Math.round(((initialPct - cashPct) / span) * 100 / 5) * 5))
   const [stocks, setStocks] = useState(guessStocks)
   const [bonds, setBonds] = useState(Math.min(100 - guessStocks, 30))
   const cash = Math.max(0, 100 - stocks - bonds)
-  const blended = (stocks * ASSET_RETURN.stocks + bonds * ASSET_RETURN.bonds + cash * ASSET_RETURN.cash) / 100
+  const blended = blendedReturnPct(estimatorWeights(stocks, bonds, cash), params)
   return (
     <Modal title="Estimate expected return" onClose={onClose}>
       <p className="card-hint">
-        Describe roughly how this account is invested; we blend long-run nominal return assumptions (stocks {ASSET_RETURN.stocks}%,
-        bonds {ASSET_RETURN.bonds}%, cash {ASSET_RETURN.cash}%; illustrative, before fees, not a forecast). More stocks
+        Describe roughly how this account is invested; we blend your long-run nominal return assumptions (stocks {stocksPct}%,
+        bonds {bondsPct}%, cash {cashPct}%; illustrative, before fees, not a forecast). More stocks
         means higher expected growth and bigger swings; Monte Carlo is where that risk shows up.
       </p>
       <div className="alloc-row">
@@ -99,6 +125,7 @@ export function ReturnEstimatorModal({ initialPct, onApply, onClose }: { initial
 
 function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: AllocationWeights; onCommit: (w: AllocationWeights) => void }) {
   const sum = ASSET_CLASS_IDS.reduce((s, id) => s + weights[id], 0)
+  const sums100 = Math.abs(sum - 100) <= 0.5
   return (
     <div className="nested-form-section field-span-full">
       {title ? <h4>{title}</h4> : null}
@@ -111,12 +138,18 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
             min={0}
             max={100}
             step={5}
-            onCommit={(v) => onCommit({ ...weights, [id]: Math.min(100, Math.max(0, v ?? 0)) })}
+            // No clamp: the field's own 0–100 range flags an entry outside it
+            // while typing and hands back the plan's value on blur (D5), so a
+            // weight only reaches here once it is already inside the range.
+            onCommit={(v) => onCommit({ ...weights, [id]: v ?? 0 })}
           />
         ))}
       </div>
-      <p className={Math.abs(sum - 100) <= 0.5 ? 'muted small' : 'issue-list small'} role="status">
-        Total {sum.toFixed(0)}%{Math.abs(sum - 100) > 0.5 ? ' (weights must sum to 100%)' : ''}
+      {/* Each weight is committed whatever the row adds up to, so a mismatch is
+          the `.field-warning` case rather than `.field-error`'s danger token:
+          the warn treatment, `role="status"`, and nothing marked invalid. */}
+      <p className={sums100 ? 'muted small' : 'field-warning'} role="status">
+        Total {sum.toFixed(0)}%{sums100 ? '' : ' (weights must sum to 100%)'}
       </p>
     </div>
   )

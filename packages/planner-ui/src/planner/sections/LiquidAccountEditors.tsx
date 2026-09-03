@@ -75,7 +75,10 @@ export function TaxableAccountEditor({
             help="Share of dividends taxed at long-term capital-gain rates federally. The rest is taxed as ordinary dividends."
             path={`accounts.${index}.qualifiedRatio`}
             value={(account.qualifiedRatio ?? 0.85) * 100}
-            onCommit={(value) => onCommit('qualifiedRatio', Math.min(1, Math.max(0, (value ?? 85) / 100)))}
+            // ÷ 100 is the unit the plan stores, not a bound: the path already
+            // carries the schema's 0–1 as 0–100 here, so a share outside it is
+            // flagged while typing and never reaches this handler (D5).
+            onCommit={(value) => onCommit('qualifiedRatio', (value ?? 85) / 100)}
           />
           <TaxExemptInterestYieldField
             account={account}
@@ -110,11 +113,10 @@ export function TaxableAccountEditor({
             path={`accounts.${index}.qualifiedRatio`}
             value={account.qualifiedRatio === undefined ? null : account.qualifiedRatio * 100}
             allowNull
+            // As above: the ÷ 100 converts the unit, and the path's own 0–100
+            // is what refuses a share outside the range before it commits.
             onCommit={(value) =>
-              onCommit(
-                'qualifiedRatio',
-                value === null || value === undefined ? undefined : Math.min(1, Math.max(0, value / 100)),
-              )
+              onCommit('qualifiedRatio', value === null || value === undefined ? undefined : value / 100)
             }
           />
           <TaxExemptInterestYieldField

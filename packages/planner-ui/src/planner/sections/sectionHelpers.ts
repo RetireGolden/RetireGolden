@@ -11,8 +11,20 @@ import {
   permanentLifePolicySchema,
 } from '@retiregolden/engine/model/plan'
 import { ANNUITY_MIN_START_AGE } from '../../accountStartAgeBounds'
+import { boundsForPath } from '../schemaBounds'
 
 export const newId = () => crypto.randomUUID()
+
+/**
+ * The lowest start age the engine's own schema states, read from the generated
+ * bounds map rather than restated here: the pension and annuity Start age
+ * fields already advertise this number by path, so reading it the same way
+ * keeps a field's `min` and the repair below from drifting apart.
+ * `ANNUITY_MIN_START_AGE` stays as the fallback for a map that does not carry
+ * the path — the same value, kept for the published-engine floor its module
+ * header records.
+ */
+const annuityStartAgeFloor = (): number => boundsForPath('accounts.0.startAge')?.min ?? ANNUITY_MIN_START_AGE
 
 /**
  * The one label for a person's own PIA wherever a surface shows it: the
@@ -388,7 +400,8 @@ export function annuityStartAgeHelp(bounds: AnnuityStartAgeBounds | null): strin
 export function clampedAnnuityStartAge(plan: Plan, account: Account): number | null {
   if (account.type !== 'annuity') return null
   const ceiling = annuityStartAgeCeiling(plan, account) ?? ANNUITY_MAX_START_AGE
-  if (account.startAge < ANNUITY_MIN_START_AGE) return ANNUITY_MIN_START_AGE
+  const floor = annuityStartAgeFloor()
+  if (account.startAge < floor) return floor
   return account.startAge > ceiling ? ceiling : null
 }
 

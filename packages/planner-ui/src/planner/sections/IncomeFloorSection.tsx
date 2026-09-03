@@ -123,7 +123,9 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
           source={provenanceSource('real-yield-curve')}
           path={fieldPath('annualRealAmount')}
           value={ladder.annualRealAmount}
-          onCommit={(v) => edit((l) => void (l.annualRealAmount = Math.max(0, v ?? 0)))}
+          // The path carries the schema's own floor of 0, so a negative amount
+          // is flagged while typing and never reaches this handler (D5).
+          onCommit={(v) => edit((l) => void (l.annualRealAmount = v ?? 0))}
         />
         <NumberField
           label="First payout year"

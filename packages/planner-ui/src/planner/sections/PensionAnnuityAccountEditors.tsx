@@ -9,11 +9,7 @@ import {
   type Plan,
 } from '@retiregolden/engine/model/plan'
 
-import {
-  ANNUITY_MIN_START_AGE,
-  PENSION_MAX_START_AGE,
-  PENSION_MIN_START_AGE,
-} from '../../accountStartAgeBounds'
+import { ANNUITY_MIN_START_AGE } from '../../accountStartAgeBounds'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField } from '../fields'
 import { fmtMoney } from '../format'
 import { updateAccountField } from '../eligibilityFactActions'
@@ -74,16 +70,14 @@ export function PensionAccountEditor({
         ]}
         onCommit={(v) => onCommit('source', v)}
       />
+      {/* No clamp on the way in: the path carries the schema's own 40–80, so an
+          age outside it is flagged while typing and the plan's value comes back
+          on blur (D5) — this handler only ever sees an age already inside. */}
       <NumberField
         label="Start age"
         path={`accounts.${index}.startAge`}
         value={account.startAge}
-        onCommit={(v) =>
-          onCommit(
-            'startAge',
-            Math.max(PENSION_MIN_START_AGE, Math.min(PENSION_MAX_START_AGE, Math.round(v ?? 65))),
-          )
-        }
+        onCommit={(v) => onCommit('startAge', Math.round(v ?? 65))}
       />
       <MoneyField label="Monthly amount" path={`accounts.${index}.monthlyAmount`} value={account.monthlyAmount} onCommit={(v) => onCommit('monthlyAmount', v ?? 0)} />
       <PercentField label="COLA" path={`accounts.${index}.colaPct`} value={account.colaPct} onCommit={(v) => onCommit('colaPct', v ?? 0)} />
@@ -406,9 +400,9 @@ function PensionDecisionPanel({ plan, pensionId }: { plan: Plan; pensionId: stri
         <table className="compare-table">
           <thead>
             <tr>
-              <th>Annuity value ÷ offer</th>
+              <th scope="col">Annuity value ÷ offer</th>
               {analysis.sensitivity.discountRatesPct.map((rate) => (
-                <th key={rate}>{rate.toFixed(1)}%</th>
+                <th scope="col" key={rate}>{rate.toFixed(1)}%</th>
               ))}
             </tr>
           </thead>
