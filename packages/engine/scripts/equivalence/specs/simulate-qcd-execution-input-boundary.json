@@ -154,33 +154,33 @@
     {
       "id": "AJ.callsite.contract",
       "label": "post-forced-distribution QCD preparation snapshot",
-      "file": "projection/simulate.ts",
-      "lines": [4499, 4541],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1569, 1611],
       "anchors": [
-        { "line": 4499, "text": "const qcdExecutionInput = annualQcdExecutionInput(Object.freeze({" },
-        { "line": 4504, "text": "people: Object.freeze(people.map((person) => Object.freeze({" },
-        { "line": 4509, "text": "balances: Object.freeze(rmdBalances.map((state) => Object.freeze({" },
-        { "line": 4526, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(" },
-        { "line": 4538, "text": "offsetHistoryUnprovableDonorIds: Object.freeze([" }
+        { "line": 1569, "text": "const qcdExecutionInput = annualQcdExecutionInput(Object.freeze({" },
+        { "line": 1574, "text": "people: Object.freeze(people.map((person) => Object.freeze({" },
+        { "line": 1579, "text": "balances: Object.freeze(rmdBalances.map((state) => Object.freeze({" },
+        { "line": 1596, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(" },
+        { "line": 1608, "text": "offsetHistoryUnprovableDonorIds: Object.freeze([" }
       ]
     },
     {
       "id": "AJ.callsite.outputs",
       "label": "prerequisite publication and retained executor handoff",
-      "file": "projection/simulate.ts",
-      "lines": [4542, 4542],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1612, 1612],
       "anchors": [
-        { "line": 4542, "text": "const qcdActionPrerequisiteResult = qcdExecutionInput.prerequisite" }
+        { "line": 1612, "text": "const qcdActionPrerequisiteResult = qcdExecutionInput.prerequisite" }
       ]
     },
     {
       "id": "AJ.callsite.execute",
       "label": "caller-owned named-QCD executor call",
-      "file": "projection/simulate.ts",
-      "lines": [4583, 4584],
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "lines": [1653, 1654],
       "anchors": [
-        { "line": 4583, "text": "if (qcdExecutionInput.status === 'ready') {" },
-        { "line": 4584, "text": "qcdActionExecution = executeAnnualQcds(qcdExecutionInput.executorInput)" }
+        { "line": 1653, "text": "if (qcdExecutionInput.status === 'ready') {" },
+        { "line": 1654, "text": "qcdActionExecution = executeAnnualQcds(qcdExecutionInput.executorInput)" }
       ]
     }
   ],

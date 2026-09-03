@@ -107,28 +107,28 @@
       "label": "frozen annual contract sharing one settlement-assumption vector",
       "file": "projection/simulate.ts",
       "lines": [
-        7297,
-        7316
+        5208,
+        5227
       ],
       "anchors": [
         {
-          "line": 7297,
+          "line": 5208,
           "text": "const linkedGroupFundingForAttempt = ("
         },
         {
-          "line": 7300,
+          "line": 5211,
           "text": ") => annualConversionLinkedWithdrawalFunding(Object.freeze({"
         },
         {
-          "line": 7305,
+          "line": 5216,
           "text": "omitActionIds: annualLinkedGroupOmissionIds,"
         },
         {
-          "line": 7307,
+          "line": 5218,
           "text": "runPass: ("
         },
         {
-          "line": 7309,
+          "line": 5220,
           "text": ") => runPostContributionAnnualPass("
         }
       ]

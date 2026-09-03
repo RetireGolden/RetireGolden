@@ -145,8 +145,8 @@
       "dueOn": "2026-12-03",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
-        "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
-        "packages/engine/src/projection/simulate.ts"
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+        "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts"
       ],
       "implementations": [
         {
@@ -159,20 +159,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+          "functions": [
+            {
+              "name": "annualForcedDistributionQcdAndRetirementActions",
+              "line": 310
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts",
           "functions": [
             {
               "name": "annualLegacyQcdGiftPlan",
               "line": 82
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
-            {
-              "name": "simulatePlan",
-              "line": 725
             }
           ]
         }
@@ -300,7 +300,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 725
+              "line": 667
             }
           ]
         }
@@ -436,7 +436,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 725
+              "line": 667
             }
           ]
         }
@@ -552,7 +552,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 725
+              "line": 667
             }
           ]
         }
@@ -920,7 +920,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 725
+              "line": 667
             }
           ]
         }
@@ -1102,7 +1102,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 725
+              "line": 667
             }
           ]
         }
@@ -1747,7 +1747,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 725
+              "line": 667
             }
           ]
         }
