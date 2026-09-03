@@ -1,0 +1,4 @@
+# Review routing for outside contributions. The repository admin named in
+# AGENTS.md owns everything; GitHub requests review from the owner on each PR.
+# Only handles named in AGENTS.md may appear here.
+* @FlyOverCoderKY

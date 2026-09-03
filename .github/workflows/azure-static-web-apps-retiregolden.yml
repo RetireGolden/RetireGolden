@@ -101,6 +101,14 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Type check + Build (packages, then app)
         run: pnpm build
+      # THIRD-PARTY-NOTICES.txt is the shipped AGPL attribution surface and is
+      # generated from the lockfile by scripts/generate-third-party-notices.mjs.
+      # Nothing else fails when a dependency change lands without regenerating
+      # it, so regenerate here and fail on drift.
+      - name: Third-party notices are current
+        run: |
+          pnpm --filter retiregolden-web licenses
+          git diff --exit-code -- app/THIRD-PARTY-NOTICES.txt app/public/THIRD-PARTY-NOTICES.txt
       # The dev/test loop aliases the engine package to its TS source, so this
       # is the only per-PR check that the published exports map + dist emit
       # actually resolve for an external consumer.
