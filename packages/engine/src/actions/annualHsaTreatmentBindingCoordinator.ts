@@ -26,6 +26,7 @@ import {
 import type { ActionId, AllocationId } from './identity.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
+import { INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
 
 export interface HsaAllocationReimbursementClaims {
   actionId: ActionId
@@ -115,32 +116,6 @@ const ESTABLISHMENT_KEYS = ['predicate', 'ownerPersonId', 'ownerHsaEstablishedDa
 const EXPENSE_KEYS = ['reimbursementScopeId', 'medicalExpenseId', 'medicalExpenseEvidenceId', 'immutableExpenseSourceRecordId', 'patientPersonId', 'expenseIncurredDate', 'originalEligibleExpenseAmount', 'reimbursedBeforeAmount', 'qualifiedMedicalExpense', 'eligibilityEvidenceId']
 const CLAIM_KEYS = ['medicalExpenseId', 'reimbursedByAllocationAmount', 'patientRelationshipToDistributionOwner', 'patientRelationshipEvidenceId']
 const BOUNDARIES: Boundaries = { committed: false, movement: 'notCommitted', runtimeInflows: 'notInventoried', actionability: 'notEstablished', publication: 'notEstablished', planMutation: 'notPerformed', simulatorIntegration: 'notPerformed' }
-const INVALID = Symbol('invalid')
-
-function plainSnapshot(value: unknown, seen = new WeakSet<object>()): unknown | typeof INVALID {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
-  if (typeof value === 'number') return Number.isFinite(value) && !Object.is(value, -0) ? value : INVALID
-  if (typeof value !== 'object' || seen.has(value)) return INVALID
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if ((array && prototype !== Array.prototype) || (!array && prototype !== Object.prototype && prototype !== null)) return INVALID
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string') || (array && (keys.length !== value.length + 1 || !keys.includes('length')))) return INVALID
-    const output: unknown[] | Record<string, unknown> = array ? [] : Object.create(null) as Record<string, unknown>
-    seen.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (descriptor === undefined || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) return INVALID
-      if (array && (!Number.isSafeInteger(Number(key)) || String(Number(key)) !== key || Number(key) >= value.length)) return INVALID
-      const child = plainSnapshot(descriptor.value, seen)
-      if (child === INVALID) return INVALID
-      Object.defineProperty(output, key, { enumerable: true, configurable: true, writable: true, value: child })
-    }
-    return output
-  } catch { return INVALID }
-}
 
 function exactKeys(value: unknown, expected: readonly string[]): value is Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
@@ -285,8 +260,8 @@ function assertRejoin(
 export function coordinateAnnualHsaTreatmentBinding(
   raw: Readonly<CoordinateAnnualHsaTreatmentBindingInput>,
 ): Readonly<CoordinateAnnualHsaTreatmentBindingResult> {
-  const snapshot = plainSnapshot(raw)
-  if (snapshot === INVALID || !exactKeys(snapshot, INPUT_KEYS) || !validContainers(snapshot)) return blocked({}, 'input', 'invalidInput', 'Annual HSA treatment input must be acyclic plain data with exact object and array shapes')
+  const snapshot = plainDataSnapshot(raw)
+  if (snapshot === INVALID_SNAPSHOT || !exactKeys(snapshot, INPUT_KEYS) || !validContainers(snapshot)) return blocked({}, 'input', 'invalidInput', 'Annual HSA treatment input must be acyclic plain data with exact object and array shapes')
   const input = snapshot as unknown as CoordinateAnnualHsaTreatmentBindingInput
   if (input.reimbursementClaimInventoryComplete !== true || input.ownerBirthEvidenceComplete !== true || input.disabilityStatusEvidenceComplete !== true) return blocked({}, 'input', 'invalidInput', 'Annual HSA treatment inventories must be explicitly complete')
   const callerStrings = new Set<string>()

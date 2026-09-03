@@ -22,6 +22,7 @@ import {
 import { createActionReason, type ActionReason } from './reasons.js'
 import { deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
+import { INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraPhysicalSourceSnapshotEvidence {
   predicate: 'beneficiaryTraditionalIraPhysicalSourceBeforeWithdrawal'
@@ -152,70 +153,6 @@ const SOURCE_KEYS = [
   'physicalSourceEvidenceId',
 ] as const
 
-const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function plainDataSnapshot(
-  value: unknown,
-  ancestors = new Set<object>(),
-): unknown | typeof INVALID_SNAPSHOT {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) return value
-  if (typeof value !== 'object' || ancestors.has(value)) {
-    return INVALID_SNAPSHOT
-  }
-  try {
-    const isArray = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if (
-      (isArray && prototype !== Array.prototype) ||
-      (!isArray && prototype !== Object.prototype && prototype !== null)
-    ) return INVALID_SNAPSHOT
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
-    if (isArray) {
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const size = length?.value
-      if (
-        length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
-        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
-        !keys.includes('length') ||
-        Array.from({ length: size }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))
-      ) return INVALID_SNAPSHOT
-    }
-    const output: unknown[] | Record<string, unknown> = isArray
-      ? []
-      : Object.create(null) as Record<string, unknown>
-    ancestors.add(value)
-    for (const key of keys) {
-      if (isArray && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (
-        descriptor === undefined ||
-        !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')
-      ) return INVALID_SNAPSHOT
-      const child = plainDataSnapshot(descriptor.value, ancestors)
-      if (child === INVALID_SNAPSHOT) return INVALID_SNAPSHOT
-      Object.defineProperty(output, key, {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: child,
-      })
-    }
-    return output
-  } catch {
-    return INVALID_SNAPSHOT
-  } finally {
-    ancestors.delete(value)
-  }
-}
 
 function exactKeys(
   value: unknown,

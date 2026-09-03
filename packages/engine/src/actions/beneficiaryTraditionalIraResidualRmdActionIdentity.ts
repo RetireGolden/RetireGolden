@@ -14,6 +14,7 @@ import {
   allocateRetirementActionCandidateIdentity,
 } from './retirementActionCandidateIdentityAllocator.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityInput {
   readonly plan: unknown
@@ -82,55 +83,6 @@ export type PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityResult =
 const INPUT_KEYS = [
   'plan', 'planSnapshotEvidenceId', 'physicalTransactionInput',
 ] as const
-const INVALID = Symbol('invalid')
-
-function snapshot(value: unknown, ancestors = new Set<object>()): unknown | typeof INVALID {
-  if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) return value
-  if (typeof value !== 'object' || ancestors.has(value)) return INVALID
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if ((array && prototype !== Array.prototype) ||
-      (!array && prototype !== Object.prototype && prototype !== null)) return INVALID
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID
-    if (array) {
-      // Read the array length off its property descriptor, never off `.length`.
-      // A Proxy array answers `.length` through its get trap, which is caller
-      // code running inside the boundary that exists to keep caller code out.
-      // Matches plainDataSnapshot in beneficiaryTraditionalIraMovementCandidate:
-      // an enumerable or non-safe-integer length is rejected too, so a hostile
-      // array cannot present an inconsistent descriptor set to deeper traversal.
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const size = length?.value
-      if (
-        length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
-        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
-        !keys.includes('length') ||
-        Array.from({ length: size }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))
-      ) return INVALID
-    }
-    const copy: unknown[] | Record<string, unknown> = array ? [] : Object.create(null)
-    ancestors.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (descriptor === undefined || !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')) return INVALID
-      const child = snapshot(descriptor.value, ancestors)
-      if (child === INVALID) return INVALID
-      if (array) (copy as unknown[])[Number(key)] = child
-      else (copy as Record<string, unknown>)[key as string] = child
-    }
-    return copy
-  } catch {
-    return INVALID
-  } finally {
-    ancestors.delete(value)
-  }
-}
 
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
@@ -195,7 +147,7 @@ function provenSources(
 function prepare(
   input: Readonly<PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityInput>,
 ): Readonly<PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityResult> {
-  const raw = snapshot(input)
+  const raw = plainDataSnapshot(input)
   if (!exactInput(raw) || !nonblank(raw.planSnapshotEvidenceId)) return unsupported()
   const parsed = planSchema.strict().safeParse(raw.plan)
   if (!parsed.success) return unsupported()

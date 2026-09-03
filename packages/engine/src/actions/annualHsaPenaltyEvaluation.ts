@@ -18,6 +18,7 @@ import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { addUsdCents, asUsdCents, type UsdCents } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
+import { INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
 
 export interface HsaPenaltyOwnerBirthEvidence {
   predicate: 'authoritativeHsaOwnerBirthDate'
@@ -209,34 +210,6 @@ export type EvaluateAnnualHsaPenaltyResult =
 const INPUT_KEYS = ['characterInput', 'ownerBirthEvidenceComplete', 'ownerBirthEvidence', 'disabilityStatusEvidenceComplete', 'disabilityStatusEvidence']
 const BIRTH_KEYS = ['predicate', 'ownerPersonId', 'birthDate', 'birthDateEvidenceId', 'authoritative']
 const DISABILITY_KEYS = ['predicate', 'ownerPersonId', 'evaluationDate', 'disabilityQualificationDate', 'qualifiedOnEvaluationDate', 'disabilityEvidenceId', 'authoritative']
-const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function plainSnapshot(value: unknown, seen = new WeakSet<object>()): unknown | typeof INVALID_SNAPSHOT {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
-  if (typeof value === 'number') return Number.isFinite(value) && !Object.is(value, -0) ? value : INVALID_SNAPSHOT
-  if (typeof value !== 'object' || seen.has(value)) return INVALID_SNAPSHOT
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if ((array && prototype !== Array.prototype) || (!array && prototype !== Object.prototype && prototype !== null)) return INVALID_SNAPSHOT
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string') || (array && (keys.length !== value.length + 1 || !keys.includes('length')))) return INVALID_SNAPSHOT
-    const output: unknown[] | Record<string, unknown> = array ? [] : Object.create(null) as Record<string, unknown>
-    seen.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (descriptor === undefined || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) return INVALID_SNAPSHOT
-      if (array && (!Number.isSafeInteger(Number(key)) || String(Number(key)) !== key || Number(key) >= value.length)) return INVALID_SNAPSHOT
-      const child = plainSnapshot(descriptor.value, seen)
-      if (child === INVALID_SNAPSHOT) return INVALID_SNAPSHOT
-      Object.defineProperty(output, key, { enumerable: true, configurable: true, writable: true, value: child })
-    }
-    return output
-  } catch {
-    return INVALID_SNAPSHOT
-  }
-}
 
 function exactKeys(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
@@ -418,7 +391,7 @@ function evaluateSegment(
 export function evaluateAnnualHsaPenalty(
   input: Readonly<EvaluateAnnualHsaPenaltyInput>,
 ): Readonly<EvaluateAnnualHsaPenaltyResult> {
-  const raw = plainSnapshot(input)
+  const raw = plainDataSnapshot(input)
   if (raw === INVALID_SNAPSHOT || !exactKeys(raw, INPUT_KEYS)) return blocked(null, 'invalidInput', 'Annual HSA penalty input must be exact lossless plain data')
   const snapshot = raw as unknown as EvaluateAnnualHsaPenaltyInput
   const character = classifyAnnualHsaWithdrawalCharacter(snapshot.characterInput)

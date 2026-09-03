@@ -42,6 +42,7 @@ import {
 } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { plainDataSnapshot } from './plainData.js'
 export interface BeneficiaryTraditionalIraResidualInheritanceBinding {
   readonly sourceAccountId: AccountId
   readonly beneficiaryPersonId: PersonId
@@ -142,45 +143,6 @@ const BASIS_KEYS = [
   'yearEndApplicablePoolBalanceAmount', 'form8606Line7DistributionAmount',
   'form8606Line8NetConversionAmount', 'evidenceId',
 ] as const
-const INVALID = Symbol('invalid')
-function snapshot(value: unknown, ancestors = new Set<object>()): unknown | typeof INVALID {
-  if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) return value
-  if (typeof value !== 'object' || ancestors.has(value)) return INVALID
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if ((array && prototype !== Array.prototype) ||
-      (!array && prototype !== Object.prototype && prototype !== null)) return INVALID
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID
-    if (array) {
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const size = length?.value
-      if (length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
-        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
-        !keys.includes('length') || Array.from({ length: size }, (_, index) =>
-          String(index)).some((key) => !keys.includes(key))) return INVALID
-    }
-    const copy: unknown[] | Record<string, unknown> = array ? [] : Object.create(null)
-    ancestors.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (descriptor === undefined || !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')) return INVALID
-      const child = snapshot(descriptor.value, ancestors)
-      if (child === INVALID) return INVALID
-      if (array) (copy as unknown[])[Number(key)] = child
-      else (copy as Record<string, unknown>)[key as string] = child
-    }
-    return copy
-  } catch {
-    return INVALID
-  } finally {
-    ancestors.delete(value)
-  }
-}
 function exact(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
   return value !== null && !Array.isArray(value) && typeof value === 'object' &&
     Object.keys(value).length === keys.length &&
@@ -373,7 +335,7 @@ function claim(
 function prepare(
   input: Readonly<PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationInput>,
 ): Readonly<PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResult> {
-  const raw = snapshot(input)
+  const raw = plainDataSnapshot(input)
   if (!exact(raw, INPUT_KEYS) || !Array.isArray(raw.residualInheritanceBindings)) {
     return unsupported()
   }

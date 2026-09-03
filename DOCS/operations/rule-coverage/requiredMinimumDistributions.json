@@ -2788,7 +2788,7 @@
           "functions": [
             {
               "name": "evaluateBeneficiaryTraditionalIraDeathPenalty",
-              "line": 287
+              "line": 220
             }
           ]
         },
@@ -2961,7 +2961,7 @@
           "functions": [
             {
               "name": "prepareBeneficiaryTraditionalIraResidualRmdAllocation",
-              "line": 550
+              "line": 496
             }
           ]
         }
