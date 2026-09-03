@@ -8,5 +8,5 @@ Standing rules live in @AGENTS.md
   clusters) in subagents with `model: "opus"`. Keep the main session on
   orchestration, judgment calls (disputed findings, merge gating), and
   verifying each subagent's report against live GitHub state before acting.
-- Any subagent that will post to GitHub gets the plain-text-name rule from
+- Any subagent that will post to GitHub gets the no-guessed-handles rule from
   AGENTS.md in its prompt.
