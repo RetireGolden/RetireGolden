@@ -17,6 +17,7 @@ import {
   usdCentsSchema,
 } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { exactKeys } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraResidualRmdScheduleEvidence {
   readonly predicate:
@@ -74,16 +75,6 @@ const APPLICATION_KEYS = [
   'coordinatorEvidenceId',
   'applicationEvidenceId',
 ] as const
-
-function exactRecord(
-  value: unknown,
-  keys: readonly string[],
-): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) &&
-    typeof value === 'object' &&
-    Object.keys(value).length === keys.length &&
-    keys.every((key) => Object.hasOwn(value, key))
-}
 
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
@@ -188,7 +179,7 @@ export function validateBeneficiaryTraditionalIraResidualRmdSchedule(
   allocationInput:
     Readonly<PrepareBeneficiaryTraditionalIraResidualRmdAllocationInput>,
 ): value is BeneficiaryTraditionalIraResidualRmdScheduleEvidence {
-  if (!exactRecord(value, SCHEDULE_KEYS)) return false
+  if (!exactKeys(value, SCHEDULE_KEYS)) return false
   const rmd = allocationInput.rmdTransition
   const schedule =
     value as unknown as BeneficiaryTraditionalIraResidualRmdScheduleEvidence
@@ -215,7 +206,7 @@ export function validateBeneficiaryTraditionalIraResidualRmdSchedule(
   const applications = schedule.predecessorApplications
   for (let index = 0; index < applications.length; index += 1) {
     const rawApplication: unknown = applications[index]
-    if (!exactRecord(rawApplication, APPLICATION_KEYS)) return false
+    if (!exactKeys(rawApplication, APPLICATION_KEYS)) return false
     const application = rawApplication as unknown as
       BeneficiaryTraditionalIraDetachedPhysicalApplication
     const applicationDate = parseCivilIsoDate(application.executionDate)

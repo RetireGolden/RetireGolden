@@ -42,7 +42,7 @@ import {
 } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
-import { plainDataSnapshot } from './plainData.js'
+import { exactKeys, plainDataSnapshot } from './plainData.js'
 export interface BeneficiaryTraditionalIraResidualInheritanceBinding {
   readonly sourceAccountId: AccountId
   readonly beneficiaryPersonId: PersonId
@@ -143,11 +143,6 @@ const BASIS_KEYS = [
   'yearEndApplicablePoolBalanceAmount', 'form8606Line7DistributionAmount',
   'form8606Line8NetConversionAmount', 'evidenceId',
 ] as const
-function exact(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object' &&
-    Object.keys(value).length === keys.length &&
-    keys.every((key) => Object.hasOwn(value, key))
-}
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
@@ -261,7 +256,7 @@ function residualSeeds(
   const bySource = new Map(bindings.map((binding) =>
     [binding.sourceAccountId, binding] as const))
   if (bySource.size !== bindings.length ||
-    bindings.some((binding) => !exact(binding, BINDING_KEYS))) return null
+    bindings.some((binding) => !exactKeys(binding, BINDING_KEYS))) return null
   const result: MemberSeed[] = []
   for (const application of identity.physicalTransaction.residualApplications) {
     const allocation = request.allocations.find((entry) =>
@@ -336,7 +331,7 @@ function prepare(
   input: Readonly<PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationInput>,
 ): Readonly<PrepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalizationResult> {
   const raw = plainDataSnapshot(input)
-  if (!exact(raw, INPUT_KEYS) || !Array.isArray(raw.residualInheritanceBindings)) {
+  if (!exactKeys(raw, INPUT_KEYS) || !Array.isArray(raw.residualInheritanceBindings)) {
     return unsupported()
   }
   const value = raw as unknown as
@@ -390,7 +385,7 @@ function prepare(
   ])
   if (oldPool === null || oldPool === undefined || oldBasis === undefined ||
     newLine7 === null || !usdCentsSchema.safeParse(residualAmount).success ||
-    !exact(postPool, BASIS_KEYS) ||
+    !exactKeys(postPool, BASIS_KEYS) ||
     !sameSet(oldPool.accountIds, oldBasis.accountIds) ||
     postPool.predicate !== oldPool.predicate ||
     postPool.beneficiaryPersonId !== oldPool.beneficiaryPersonId ||

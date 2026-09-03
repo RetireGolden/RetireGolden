@@ -111,8 +111,12 @@ export function plainDataSnapshot(
  * Both directions are checked — every actual key is expected, and every
  * expected key is present — so the result does not depend on `expected` being
  * duplicate-free, which the per-module copies silently assumed.
+ *
+ * The guard intersects rather than replaces: narrowing an `unknown` yields a
+ * record, and narrowing an already-typed value keeps its declared shape, which
+ * is what the copies returning a bare `boolean` gave their callers.
  */
-export function exactKeys(value: unknown, expected: readonly string[]): value is UnknownRecord {
+export function exactKeys<T>(value: T, expected: readonly string[]): value is T & UnknownRecord {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
   const keys = Object.keys(value)
   return keys.length === expected.length &&

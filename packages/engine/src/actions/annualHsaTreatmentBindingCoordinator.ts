@@ -26,7 +26,7 @@ import {
 import type { ActionId, AllocationId } from './identity.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface HsaAllocationReimbursementClaims {
   actionId: ActionId
@@ -117,18 +117,12 @@ const EXPENSE_KEYS = ['reimbursementScopeId', 'medicalExpenseId', 'medicalExpens
 const CLAIM_KEYS = ['medicalExpenseId', 'reimbursedByAllocationAmount', 'patientRelationshipToDistributionOwner', 'patientRelationshipEvidenceId']
 const BOUNDARIES: Boundaries = { committed: false, movement: 'notCommitted', runtimeInflows: 'notInventoried', actionability: 'notEstablished', publication: 'notEstablished', planMutation: 'notPerformed', simulatorIntegration: 'notPerformed' }
 
-function exactKeys(value: unknown, expected: readonly string[]): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
-  const keys = Object.keys(value)
-  return keys.length === expected.length && keys.every((key) => expected.includes(key))
-}
-
 function validContainers(input: Record<string, unknown>): boolean {
   if (!Array.isArray(input.reimbursementClaims) || !Array.isArray(input.ownerBirthEvidence) || !Array.isArray(input.disabilityStatusEvidence)) return false
   const scope = input.reimbursementScope
   if (!exactKeys(scope, SCOPE_KEYS) || !Array.isArray(scope.eligibleHsaOwnerPersonIds) || !Array.isArray(scope.coveredHsaAccountIds) || !Array.isArray(scope.ownerEstablishments) || !Array.isArray(scope.expenses) || !exactKeys(scope.priorHistory, HISTORY_KEYS)) return false
   if (scope.ownerEstablishments.some((item) => !exactKeys(item, ESTABLISHMENT_KEYS)) || scope.expenses.some((item) => !exactKeys(item, EXPENSE_KEYS))) return false
-  return input.reimbursementClaims.every((record) => exactKeys(record, CLAIM_RECORD_KEYS) && Array.isArray(record.reimbursementClaims) && record.reimbursementClaims.every((claim) => exactKeys(claim, CLAIM_KEYS)))
+  return input.reimbursementClaims.every((record) => exactKeys(record, CLAIM_RECORD_KEYS) && Array.isArray(record.reimbursementClaims) && record.reimbursementClaims.every((claim: unknown) => exactKeys(claim, CLAIM_KEYS)))
 }
 
 function blocked(

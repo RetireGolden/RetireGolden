@@ -168,7 +168,7 @@
           "functions": [
             {
               "name": "prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization",
-              "line": 666
+              "line": 661
             }
           ]
         },
@@ -1065,11 +1065,11 @@
           "functions": [
             {
               "name": "conversionDestinationIssue",
-              "line": 338
+              "line": 332
             },
             {
               "name": "conversionSourceIssue",
-              "line": 294
+              "line": 288
             }
           ]
         },
@@ -1078,7 +1078,7 @@
           "functions": [
             {
               "name": "targetIdentitySemanticsIssue",
-              "line": 354
+              "line": 348
             }
           ]
         },
@@ -1087,7 +1087,7 @@
           "functions": [
             {
               "name": "adaptFillTargetRothConversionGeneratorCandidate",
-              "line": 382
+              "line": 369
             }
           ]
         },
@@ -1213,7 +1213,7 @@
           "functions": [
             {
               "name": "prepareBeneficiaryTraditionalIraResidualRmdAnnualRefinalization",
-              "line": 666
+              "line": 661
             }
           ]
         },
@@ -1222,7 +1222,7 @@
           "functions": [
             {
               "name": "conversionSourceIssue",
-              "line": 294
+              "line": 288
             }
           ]
         },

@@ -22,7 +22,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface HsaReimbursementPriorHistoryEvidence {
   predicate: 'completeHsaReimbursementPriorHistory'
@@ -200,12 +200,6 @@ const ESTABLISHMENT_KEYS = ['predicate', 'ownerPersonId', 'ownerHsaEstablishedDa
 const EXPENSE_KEYS = ['reimbursementScopeId', 'medicalExpenseId', 'medicalExpenseEvidenceId', 'immutableExpenseSourceRecordId', 'patientPersonId', 'expenseIncurredDate', 'originalEligibleExpenseAmount', 'reimbursedBeforeAmount', 'qualifiedMedicalExpense', 'eligibilityEvidenceId']
 const ALLOCATION_KEYS = ['actionId', 'allocationId', 'sourceAccountId', 'distributionOwnerPersonId', 'evaluationDate', 'actionExecutionSequence', 'allocationSequenceWithinAction', 'physicalApplicationEvidenceId', 'executedAmount', 'ownerHsaEstablishedDate', 'ownerHsaEstablishedDateEvidenceId', 'reimbursementClaims']
 const CLAIM_KEYS = ['medicalExpenseId', 'reimbursedByAllocationAmount', 'patientRelationshipToDistributionOwner', 'patientRelationshipEvidenceId']
-
-function exactKeys(value: unknown, expected: readonly string[]): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
-  const keys = Object.keys(value)
-  return keys.length === expected.length && keys.every((key) => expected.includes(key))
-}
 
 function nonblank(value: unknown, label: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) throw new TypeError(`${label} must be a nonblank stable identifier`)

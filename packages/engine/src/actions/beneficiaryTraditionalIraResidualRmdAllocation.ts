@@ -15,7 +15,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { plainDataSnapshot } from './plainData.js'
+import { exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraResidualRmdAllocationInput {
   readonly rmdTransition:
@@ -114,16 +114,6 @@ const SOURCE_KEYS = [
   'coordinatorEvidenceId',
   'transitionEvidenceId',
 ] as const
-
-function exactRecord(
-  value: unknown,
-  keys: readonly string[],
-): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) &&
-    typeof value === 'object' &&
-    Object.keys(value).length === keys.length &&
-    keys.every((key) => Object.hasOwn(value, key))
-}
 
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
@@ -297,7 +287,7 @@ function exactSourceTransitionEvidenceId(
 function validRmd(
   value: unknown,
 ): value is BeneficiaryTraditionalIraDetachedRmdTransition {
-  if (!exactRecord(value, RMD_KEYS)) return false
+  if (!exactKeys(value, RMD_KEYS)) return false
   const rmd = value as unknown as BeneficiaryTraditionalIraDetachedRmdTransition
   return rmd.predicate === 'beneficiaryTraditionalIraDetachedRmdTransition' &&
     personIdSchema.safeParse(rmd.beneficiaryPersonId).success &&
@@ -326,7 +316,7 @@ function validSource(
   value: unknown,
   rmd: BeneficiaryTraditionalIraDetachedRmdTransition,
 ): value is BeneficiaryTraditionalIraDetachedSourceBalanceTransition {
-  if (!exactRecord(value, SOURCE_KEYS)) return false
+  if (!exactKeys(value, SOURCE_KEYS)) return false
   const source =
     value as unknown as BeneficiaryTraditionalIraDetachedSourceBalanceTransition
   return source.predicate ===
@@ -353,7 +343,7 @@ function prepare(
 ): Readonly<PrepareBeneficiaryTraditionalIraResidualRmdAllocationResult> {
   const raw = plainDataSnapshot(input)
   if (
-    !exactRecord(raw, INPUT_KEYS) ||
+    !exactKeys(raw, INPUT_KEYS) ||
     !validRmd(raw.rmdTransition) ||
     !Array.isArray(raw.sourceBalanceTransitions) ||
     raw.sourceBalanceTransitions.length === 0

@@ -11,7 +11,7 @@ import {
   type BeneficiaryTraditionalIraResidualRmdScheduleEvidence,
 } from './beneficiaryTraditionalIraResidualRmdChronology.js'
 import { deepFreeze } from './freeze.js'
-import { plainDataSnapshot } from './plainData.js'
+import { exactKeys, plainDataSnapshot } from './plainData.js'
 
 export type {
   BeneficiaryTraditionalIraResidualRmdScheduleEvidence,
@@ -96,16 +96,6 @@ export type StageBeneficiaryTraditionalIraResidualRmdMovementResult =
   | UnsupportedBeneficiaryTraditionalIraResidualRmdMovementResult
 
 const INPUT_KEYS = ['allocationInput', 'scheduleEvidence'] as const
-
-function exactRecord(
-  value: unknown,
-  keys: readonly string[],
-): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) &&
-    typeof value === 'object' &&
-    Object.keys(value).length === keys.length &&
-    keys.every((key) => Object.hasOwn(value, key))
-}
 
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
@@ -222,7 +212,7 @@ function stage(
   input: Readonly<StageBeneficiaryTraditionalIraResidualRmdMovementInput>,
 ): Readonly<StageBeneficiaryTraditionalIraResidualRmdMovementResult> {
   const raw = plainDataSnapshot(input)
-  if (!exactRecord(raw, INPUT_KEYS)) return unsupported()
+  if (!exactKeys(raw, INPUT_KEYS)) return unsupported()
   const allocation =
     prepareBeneficiaryTraditionalIraResidualRmdAllocation(
       raw.allocationInput as Readonly<

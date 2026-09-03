@@ -22,7 +22,7 @@ import type { PositiveUsdCents, UsdCents } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraDeathBeneficiaryEvidence {
   predicate: 'beneficiaryTraditionalIraDeathBeneficiary'
@@ -159,17 +159,6 @@ function evidenceId(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null
 }
 
-
-function exactKeys(
-  value: unknown,
-  keys: readonly string[],
-): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  const actual = Object.keys(value)
-  return actual.length === keys.length && actual.every((key) => keys.includes(key))
-}
 
 function characterBinding(
   character: Readonly<BeneficiaryTraditionalIraWithdrawalTaxCharacter>,

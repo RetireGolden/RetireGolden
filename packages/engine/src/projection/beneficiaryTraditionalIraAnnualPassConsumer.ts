@@ -27,7 +27,7 @@ import {
   type SimulatorAnnualPassTransaction,
 } from './annualPassTransaction.js'
 import { deepFreeze } from '../actions/freeze.js'
-import { INVALID_SNAPSHOT, plainDataSnapshot } from '../actions/plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from '../actions/plainData.js'
 
 export interface BeneficiaryTraditionalIraAnnualPassAccountRow {
   readonly accountId: AccountId
@@ -120,12 +120,6 @@ function unsupported(): Readonly<UnsupportedBeneficiaryTraditionalIraAnnualPassR
     actionability: 'notEstablished', simulatorStatus: 'notEstablished',
     deferredEvidence: null,
   })
-}
-
-function exactRecord(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object' &&
-    Object.keys(value).length === keys.length &&
-    keys.every((key) => Object.hasOwn(value, key))
 }
 
 function inputReferences(value: unknown): ApplyBeneficiaryTraditionalIraAnnualPassInput | null {
@@ -239,7 +233,7 @@ function currentBalances(state: SimulatorAnnualPassStateBindings): CurrentBalanc
 
 function providerFacts(value: unknown): BeneficiaryTraditionalIraAnnualPassEvidenceFacts | null {
   const snapshot = plainDataSnapshot(value)
-  if (!exactRecord(snapshot, FACT_KEYS)) return null
+  if (!exactKeys(snapshot, FACT_KEYS)) return null
   return snapshot as unknown as BeneficiaryTraditionalIraAnnualPassEvidenceFacts
 }
 

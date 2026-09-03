@@ -18,7 +18,7 @@ import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { addUsdCents, asUsdCents, type UsdCents } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface HsaPenaltyOwnerBirthEvidence {
   predicate: 'authoritativeHsaOwnerBirthDate'
@@ -210,12 +210,6 @@ export type EvaluateAnnualHsaPenaltyResult =
 const INPUT_KEYS = ['characterInput', 'ownerBirthEvidenceComplete', 'ownerBirthEvidence', 'disabilityStatusEvidenceComplete', 'disabilityStatusEvidence']
 const BIRTH_KEYS = ['predicate', 'ownerPersonId', 'birthDate', 'birthDateEvidenceId', 'authoritative']
 const DISABILITY_KEYS = ['predicate', 'ownerPersonId', 'evaluationDate', 'disabilityQualificationDate', 'qualifiedOnEvaluationDate', 'disabilityEvidenceId', 'authoritative']
-
-function exactKeys(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
-  const actual = Object.keys(value)
-  return actual.length === keys.length && actual.every((key) => keys.includes(key))
-}
 
 function blocked(
   character: Readonly<ClassifyAnnualHsaWithdrawalCharacterResult> | null,

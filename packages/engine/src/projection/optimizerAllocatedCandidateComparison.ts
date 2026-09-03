@@ -11,6 +11,7 @@ import {
 } from './optimizerExactLedgerComparison.js'
 import type { RetirementActionReadinessVeto } from './optimizePlan.js'
 import { deepFreeze } from '../actions/freeze.js'
+import { asUnknownRecord, type UnknownRecord } from '../actions/plainData.js'
 
 export interface OptimizerAllocatedCandidateComparisonEvidence {
   readonly winnerSource: 'candidate' | 'milp'
@@ -28,13 +29,6 @@ export interface OptimizerAllocatedCandidateComparisonInput {
   readonly allocatedEvaluation: Readonly<ExactDecisionEvaluation>
 }
 
-type UnknownRecord = Record<string, unknown>
-
-function record(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? value as UnknownRecord
-    : null
-}
 
 function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
@@ -83,7 +77,7 @@ function allocatedRequests(
   const candidate = evaluation.candidate
   if (!nonBlank(candidate.id) || candidate.conversions !== undefined ||
       retirementActionReadinessDiagnostic(candidate, plan as Plan) !== null) return null
-  const readiness = record(candidate.retirementActionReadiness)
+  const readiness = asUnknownRecord(candidate.retirementActionReadiness)
   const rawActionIds = readiness?.['actionRequestIds']
   if (readiness?.['state'] !== 'identityComplete' || !Array.isArray(rawActionIds) ||
       rawActionIds.length === 0 || rawActionIds.some((id) => !nonBlank(id))) return null
@@ -150,12 +144,12 @@ function committedExecutionCentsByYear(
       year.retirementActionExecution,
       year.rothConversionActionExecution,
     ]) {
-      const execution = record(rawExecution)
+      const execution = asUnknownRecord(rawExecution)
       if (execution === null) continue
       const evidence = execution['evidence']
       if (!Array.isArray(evidence)) continue
       for (const rawEvidence of evidence) {
-        const entry = record(rawEvidence)
+        const entry = asUnknownRecord(rawEvidence)
         const actionId = entry?.['actionId']
         if (entry === null || !nonBlank(actionId) || !requestById.has(actionId)) continue
         const matches = records.get(actionId) ?? []
@@ -195,7 +189,7 @@ function preservedConversionRequests(
   const requests: RothConversionRequest[] = []
   const seenActionIds = new Set<string>()
   for (const rawRequest of plan.strategies.retirementActions) {
-    if (record(rawRequest)?.['kind'] !== 'rothConversion') continue
+    if (asUnknownRecord(rawRequest)?.['kind'] !== 'rothConversion') continue
     const parsed = rothConversionRequestSchema.safeParse(rawRequest)
     if (!parsed.success || allocatedActionIds.has(parsed.data.actionId) ||
         seenActionIds.has(parsed.data.actionId)) return null
@@ -218,12 +212,12 @@ function publishedExecutionCentsByYear(
   const seen = new Set<string>()
   const byYear = new Map<number, number>()
   for (const year of result.years) {
-    const publication = record(year.retirementActionPublication)
+    const publication = asUnknownRecord(year.retirementActionPublication)
     if (publication !== null && publication['taxYear'] !== year.year) return null
     const records = publication?.['records']
     if (!Array.isArray(records)) continue
     for (const rawRecord of records) {
-      const entry = record(rawRecord)
+      const entry = asUnknownRecord(rawRecord)
       const actionId = entry?.['actionId']
       if (entry === null || !nonBlank(actionId)) continue
       const request = requestById.get(actionId)
@@ -278,7 +272,7 @@ function acaEvidenceIsActionable(
 ): boolean {
   return result.years.every((year) => {
     if (year.aca === undefined) return true
-    return record(year.aca)?.['readiness'] === 'actionable'
+    return asUnknownRecord(year.aca)?.['readiness'] === 'actionable'
   })
 }
 

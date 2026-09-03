@@ -23,7 +23,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { plainDataSnapshot } from './plainData.js'
+import { exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraSimulatorLedgerIdentity {
   predicate: 'beneficiaryTraditionalIraSimulatorLedgerIdentity'
@@ -169,15 +169,6 @@ const SNAPSHOT_KEYS = [
 ] as const
 const BALANCE_KEYS = ['accountId', 'openingBalancePlanDollars'] as const
 
-function recordWithKeys(
-  value: unknown,
-  expected: readonly string[],
-): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object' &&
-    Object.keys(value).length === expected.length &&
-    expected.every((key) => Object.hasOwn(value, key))
-}
-
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
@@ -269,12 +260,12 @@ function prepare(
 ): Readonly<PrepareBeneficiaryTraditionalIraAnnualSimulatorDeltaResult> {
   const raw = plainDataSnapshot(input)
   if (
-    !recordWithKeys(raw, INPUT_KEYS) ||
-    !recordWithKeys(raw.ledgerIdentity, LEDGER_KEYS) ||
-    !recordWithKeys(raw.simulatorSnapshot, SNAPSHOT_KEYS) ||
+    !exactKeys(raw, INPUT_KEYS) ||
+    !exactKeys(raw.ledgerIdentity, LEDGER_KEYS) ||
+    !exactKeys(raw.simulatorSnapshot, SNAPSHOT_KEYS) ||
     !Array.isArray(raw.simulatorSnapshot.accountBalances) ||
     raw.simulatorSnapshot.accountBalances.some((row) =>
-      !recordWithKeys(row, BALANCE_KEYS))
+      !exactKeys(row, BALANCE_KEYS))
   ) return unsupported()
   const snapshot = raw as unknown as
     PrepareBeneficiaryTraditionalIraAnnualSimulatorDeltaInput

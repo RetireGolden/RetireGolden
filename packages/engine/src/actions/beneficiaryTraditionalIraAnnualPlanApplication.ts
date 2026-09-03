@@ -20,7 +20,7 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { plainDataSnapshot } from './plainData.js'
+import { exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraAnnualOpeningBalanceEvidence {
   sourceAccountId: AccountId
@@ -116,19 +116,6 @@ const INHERITANCE_KEYS = [
   'deathDate',
   'inheritanceEvidenceId',
 ] as const
-
-function exactKeys(value: object, expected: readonly string[]): boolean {
-  return Object.keys(value).length === expected.length &&
-    expected.every((key) => Object.hasOwn(value, key))
-}
-
-function recordWithKeys(
-  value: unknown,
-  keys: readonly string[],
-): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object' &&
-    exactKeys(value, keys)
-}
 
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
@@ -234,13 +221,13 @@ function prepare(
 ): Readonly<PreparePlanBeneficiaryTraditionalIraAnnualApplicationResult> {
   const raw = plainDataSnapshot(input)
   if (
-    !recordWithKeys(raw, INPUT_KEYS) ||
+    !exactKeys(raw, INPUT_KEYS) ||
     !nonblank(raw.planSnapshotEvidenceId) ||
     !Array.isArray(raw.annualOpeningBalances) ||
     !Array.isArray(raw.inheritanceBindings) ||
-    raw.annualOpeningBalances.some((entry) => !recordWithKeys(entry, BALANCE_KEYS)) ||
+    raw.annualOpeningBalances.some((entry) => !exactKeys(entry, BALANCE_KEYS)) ||
     raw.inheritanceBindings.some((entry) =>
-      !recordWithKeys(entry, INHERITANCE_KEYS))
+      !exactKeys(entry, INHERITANCE_KEYS))
   ) return unsupported()
   const snapshot = raw as unknown as
     PreparePlanBeneficiaryTraditionalIraAnnualApplicationInput

@@ -32,6 +32,7 @@ import {
   type Plan,
 } from '../model/plan.js'
 import { deepFreeze } from './freeze.js'
+import { asUnknownRecord, type UnknownRecord } from './plainData.js'
 
 export interface RetirementActionManualReviewInput {
   plan: Readonly<Plan>
@@ -152,19 +153,12 @@ export type RetirementActionManualReviewResult =
   | RetirementActionManualReviewRequiredResult
   | RetirementActionManualReviewBlockedResult
 
-type UnknownRecord = Record<string, unknown>
-
-function record(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? value as UnknownRecord
-    : null
-}
 
 function normalizeOptionalUndefinedFields(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map((entry) => normalizeOptionalUndefinedFields(entry))
   }
-  const source = record(value)
+  const source = asUnknownRecord(value)
   if (source === null) return value
   const normalized: UnknownRecord = {}
   for (const [key, entry] of Object.entries(source)) {
@@ -509,7 +503,7 @@ function manualReviewRequired(
 function reviewUnchecked(
   input: RetirementActionManualReviewInput,
 ): RetirementActionManualReviewResult {
-  const rawInput = record(input)
+  const rawInput = asUnknownRecord(input)
   if (rawInput === null) {
     return blocked([issue('invalidInput', '$', 'Manual review input must be an object.')])
   }
@@ -533,8 +527,8 @@ function reviewUnchecked(
     )])
   }
   const targetActionId = parsedTargetActionId.data
-  const rawPlan = record(rawInput['plan'])
-  const rawStrategies = record(rawPlan?.['strategies'])
+  const rawPlan = asUnknownRecord(rawInput['plan'])
+  const rawStrategies = asUnknownRecord(rawPlan?.['strategies'])
   const rawActions = rawStrategies?.['retirementActions']
   if (!Array.isArray(rawActions)) {
     return blocked([issue(
@@ -554,7 +548,7 @@ function reviewUnchecked(
   }
   const targetIndexes: number[] = []
   for (let index = 0; index < rawActions.length; index += 1) {
-    if (record(rawActions[index])?.['actionId'] === targetActionId) targetIndexes.push(index)
+    if (asUnknownRecord(rawActions[index])?.['actionId'] === targetActionId) targetIndexes.push(index)
   }
   if (targetIndexes.length === 0) {
     return blocked([issue(
@@ -612,7 +606,7 @@ function reviewUnchecked(
     if (semanticsIssue !== null) return blocked([semanticsIssue], target)
   }
 
-  const replacement = record(rawInput['replacementIntent'])
+  const replacement = asUnknownRecord(rawInput['replacementIntent'])
   if (replacement === null) {
     return blocked([issue(
       'replacementMissing',
@@ -620,7 +614,7 @@ function reviewUnchecked(
       'A complete explicit manual replacement intent is required.',
     )], target)
   }
-  if (record(replacement['provenance'])?.['source'] !== 'manual') {
+  if (asUnknownRecord(replacement['provenance'])?.['source'] !== 'manual') {
     return blocked([issue(
       'replacementProvenanceInvalid',
       'replacementIntent.provenance.source',

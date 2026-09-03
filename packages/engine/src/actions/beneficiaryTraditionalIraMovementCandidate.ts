@@ -22,7 +22,7 @@ import {
 import { createActionReason, type ActionReason } from './reasons.js'
 import { deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
-import { INVALID_SNAPSHOT, plainDataSnapshot } from './plainData.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraPhysicalSourceSnapshotEvidence {
   predicate: 'beneficiaryTraditionalIraPhysicalSourceBeforeWithdrawal'
@@ -153,17 +153,6 @@ const SOURCE_KEYS = [
   'physicalSourceEvidenceId',
 ] as const
 
-
-function exactKeys(
-  value: unknown,
-  keys: readonly string[],
-): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  const actual = Object.keys(value)
-  return actual.length === keys.length && actual.every((key) => keys.includes(key))
-}
 
 function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0

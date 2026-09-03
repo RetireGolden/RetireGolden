@@ -14,7 +14,7 @@ import {
   allocateRetirementActionCandidateIdentity,
 } from './retirementActionCandidateIdentityAllocator.js'
 import { deriveActionStructuralId } from './structuralId.js'
-import { plainDataSnapshot } from './plainData.js'
+import { exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityInput {
   readonly plan: unknown
@@ -88,12 +88,6 @@ function nonblank(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function exactInput(value: unknown): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object' &&
-    Object.keys(value).length === INPUT_KEYS.length &&
-    INPUT_KEYS.every((key) => Object.hasOwn(value, key))
-}
-
 function freeze<T>(value: T): Readonly<T> {
   if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
     for (const child of Object.values(value as Record<string, unknown>)) freeze(child)
@@ -148,7 +142,7 @@ function prepare(
   input: Readonly<PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityInput>,
 ): Readonly<PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityResult> {
   const raw = plainDataSnapshot(input)
-  if (!exactInput(raw) || !nonblank(raw.planSnapshotEvidenceId)) return unsupported()
+  if (!exactKeys(raw, INPUT_KEYS) || !nonblank(raw.planSnapshotEvidenceId)) return unsupported()
   const parsed = planSchema.strict().safeParse(raw.plan)
   if (!parsed.success) return unsupported()
   const transaction = prepareBeneficiaryTraditionalIraResidualRmdPhysicalTransaction(
