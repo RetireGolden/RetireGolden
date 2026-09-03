@@ -629,6 +629,56 @@ describe('ScenariosPage comparison lifecycle', () => {
     expect(add?.disabled).toBe(true)
   })
 
+  it('shows the reset care recipient on the same render as the plan swap (render-phase, not an effect behind it)', async () => {
+    const original = await mount()
+    const leverSelect = container.querySelector<HTMLSelectElement>('select')!
+    await act(async () => {
+      leverSelect.value = 'care'
+      leverSelect.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const recipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )!
+    const recipient = document.getElementById(recipientLabel.htmlFor) as HTMLSelectElement
+    const removedPerson = original.household.people[1]!
+    await act(async () => {
+      recipient.value = removedPerson.id
+      recipient.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+
+    const differentCouple = planWithoutPerson(original, removedPerson.id)
+    differentCouple.id = 'different-couple-sync-check'
+    differentCouple.household.people.push({
+      ...removedPerson,
+      id: 'replacement-household-member-sync',
+      name: 'Replacement household member',
+    })
+
+    // A SYNCHRONOUS act() callback commits the render without ever awaiting a
+    // passive effect (see the render-phase comment above `seenPlanId` in
+    // `AddScenario`, and `UpdateBalancesPanel`'s `resets transient panel state
+    // when the plan identity changes` test, which uses this same technique).
+    // If the reset instead lived in a `useEffect`, the stale recipient would
+    // still be selected here, one render behind the plan swap.
+    act(() => {
+      root.render(
+        <MemoryRouter>
+          <WorkspaceReadOnlyContext.Provider value={false}>
+            <PlanCtx.Provider value={contextFor(differentCouple)}>
+              <ScenariosPage />
+            </PlanCtx.Provider>
+          </WorkspaceReadOnlyContext.Provider>
+        </MemoryRouter>,
+      )
+    })
+
+    const nextRecipientLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => label.textContent === 'Care recipient',
+    )!
+    const nextRecipient = document.getElementById(nextRecipientLabel.htmlFor) as HTMLSelectElement
+    expect(nextRecipient.value).toBe('')
+  })
+
   it('sanitizes retained property choices across plan switches, deletion, and a single-property view', async () => {
     const original = createSamplePlan()
     const originalHome = original.accounts.find((account) => account.type === 'property')!
