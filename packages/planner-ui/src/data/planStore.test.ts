@@ -16,12 +16,10 @@ import {
   duplicatePlan,
   listPlanSummaries,
   loadPlan,
+  PLAN_DB_NAME,
   PLAN_STORAGE_UNAVAILABLE,
   savePlan,
 } from './planStore'
-
-/** `DB_NAME` is module-private; the connection-failure cases need the real name. */
-const DB_NAME_UNDER_TEST = 'retiregolden.v2'
 
 let counter = 0
 const testIds = () => `store-${++counter}`
@@ -197,7 +195,7 @@ describe('planStore connection failures', () => {
     // of the transient failure: recoverable, and previously fatal for the tab
     // because the rejected promise stayed in the memo.
     const ahead = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = globalThis.indexedDB.open(DB_NAME_UNDER_TEST, 2)
+      const request = globalThis.indexedDB.open(PLAN_DB_NAME, 2)
       request.onupgradeneeded = () => undefined
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error ?? new Error('open failed'))
@@ -206,7 +204,7 @@ describe('planStore connection failures', () => {
 
     ahead.close()
     await new Promise<void>((resolve) => {
-      const request = globalThis.indexedDB.deleteDatabase(DB_NAME_UNDER_TEST)
+      const request = globalThis.indexedDB.deleteDatabase(PLAN_DB_NAME)
       request.onsuccess = () => resolve()
       request.onerror = () => resolve()
     })

@@ -22,10 +22,12 @@ import { importErrorMessage } from './importErrorMessage'
 
 /** What a "Download backup" attempt actually produced, for the caller that has to act on it. */
 export interface ExportAllOutcome {
-  /** A backup file was handed to the browser. False when the plan list itself could not be read. */
+  /** A backup file was handed to the browser. False when no file was produced at all. */
   downloaded: boolean
-  /** Plans the store listed but could not return a valid plan for. They are NOT in the file. */
-  unreadable: number
+  /** Names of plans the store listed but could not return a valid plan for. They are NOT in the file. */
+  unreadable: string[]
+  /** Why no file was produced; null when one was. */
+  reason: string | null
 }
 
 /**
@@ -35,10 +37,40 @@ export interface ExportAllOutcome {
  */
 const STORAGE_UNAVAILABLE = 'Storage is unavailable in this browser right now.'
 
+/** The other way a backup produces no file: the records read, the envelope did not build. */
+const BACKUP_NOT_BUILT = 'The backup file could not be built in this browser.'
+
+/**
+ * Plans named in a notice, so "which ones?" has an answer without opening the
+ * file and comparing libraries. Long libraries stop at three and count the
+ * rest: past that the notice stops being readable, which helps nobody.
+ */
+function namedPlans(names: readonly string[]): string {
+  const shown = names.slice(0, 3).map((name) => `"${name}"`)
+  const rest = names.length - shown.length
+  return rest > 0 ? `${shown.join(', ')} and ${rest} more` : shown.join(', ')
+}
+
+/**
+ * The one sentence naming what a backup left out. Worded the same in the
+ * download notice and in the clear-all disclosure, because it is the same
+ * fact and the second one is read while deciding whether to erase.
+ */
+function missingFromBackup(names: readonly string[]): string {
+  const one = names.length === 1
+  return (
+    `${names.length} plan${one ? '' : 's'} could not be read, so ` +
+    `${one ? 'it is' : 'they are'} not in the backup: ${namedPlans(names)}.`
+  )
+}
+
 export function useHomeData() {
   const navigate = useNavigate()
   const store = usePlanStore()
   const [plans, setPlans] = useState<PlanSummary[] | null>(null)
+  // The last list read failed. Distinct from "the library is empty", which is
+  // what an empty `plans` alone would mean to every consumer of this hook.
+  const [listUnavailable, setListUnavailable] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   // A just-deleted plan, held in memory for a brief undo window. The delete is
   // already committed to storage, so an expired or navigated-away toast never
@@ -48,23 +80,35 @@ export function useHomeData() {
   // True while an Undo restore save is in flight; finalize must not purge.
   const undoRestoreInFlight = useRef(false)
   const undoTimer = useRef<number | null>(null)
-  // Whether "Clear all data" has already stopped once to disclose a backup it
-  // could not complete. It stops once, not every time.
-  const backupShortfallDisclosed = useRef(false)
+  // The backup shortfall the CURRENT "Clear all data" episode has already
+  // disclosed. It stops that episode once: choosing "Clear all data" again
+  // with the same shortfall proceeds, so one unreadable record cannot make the
+  // store permanently unclearable. Cleared the moment an episode ends any
+  // other way (cancelled, or erased), so a later clear-all gets its own stop
+  // instead of inheriting a consumed one.
+  const disclosedShortfall = useRef<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const { confirm, prompt, dialogs } = useDialogs()
 
   // A rejected list must not leave the skeleton spinning forever, and it must
-  // not read as "you have no plans" either. Show the empty list the page can
-  // actually render, and say why it is empty. `planStore.db()` no longer
-  // caches a rejected open, so the next refresh really can succeed.
+  // not be mistaken for an empty library either: that would render the
+  // first-run welcome over someone's plans and disable their backup. Keep the
+  // last list that WAS read, fall back to an empty one only when no read has
+  // ever succeeded, and flag the failure so the page can say so. The flag,
+  // not a notice, carries it: a notice would race with (and overwrite) the
+  // outcome of whatever action triggered the refresh. `planStore.db()` no
+  // longer caches a rejected open, so the next refresh really can succeed.
   const refresh = useCallback(() => {
-    void listPlansVia(store).then(setPlans, () => {
-      setPlans([])
-      setNotice(
-        `Your saved plans could not be read. ${STORAGE_UNAVAILABLE} None are listed here. Reloading the page tries again.`,
-      )
-    })
+    void listPlansVia(store).then(
+      (list) => {
+        setPlans(list)
+        setListUnavailable(false)
+      },
+      () => {
+        setPlans((previous) => previous ?? [])
+        setListUnavailable(true)
+      },
+    )
   }, [store])
 
   const clearUndoTimer = () => {
@@ -140,28 +184,34 @@ export function useHomeData() {
       summaries = await listPlansVia(store)
     } catch {
       setNotice(`No backup was downloaded. ${STORAGE_UNAVAILABLE}`)
-      return { downloaded: false, unreadable: 0 }
+      return { downloaded: false, unreadable: [], reason: STORAGE_UNAVAILABLE }
     }
     const loaded: Plan[] = []
-    let unreadable = 0
+    const unreadable: string[] = []
     for (const s of summaries) {
       const r = await loadPlanVia(store, s.id).catch(() => null)
       if (r?.ok) loaded.push(r.plan)
-      else unreadable++
+      else unreadable.push(s.name)
     }
-    const blob = new Blob([serializeV2Backup(loaded)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `retiregolden-backup-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(a.href)
-    if (unreadable > 0) {
-      setNotice(
-        `Backup downloaded with ${loaded.length} plan${loaded.length === 1 ? '' : 's'}. ` +
-          `${unreadable} plan${unreadable === 1 ? '' : 's'} could not be read, so ${unreadable === 1 ? 'it is' : 'they are'} not in the file.`,
-      )
+    // Serializing and handing the blob to the browser can throw too (a
+    // structure the serializer refuses, a host with no object URLs). Left
+    // unguarded that rejects the promise the clear-all flow awaits, which
+    // would abandon the erase silently — the one outcome this whole file
+    // exists to prevent.
+    try {
+      const blob = new Blob([serializeV2Backup(loaded)], { type: 'application/json' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `retiregolden-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } catch {
+      setNotice(`No backup was downloaded. ${BACKUP_NOT_BUILT}`)
+      return { downloaded: false, unreadable, reason: BACKUP_NOT_BUILT }
     }
-    return { downloaded: true, unreadable }
+    const held = `Backup downloaded with ${loaded.length} plan${loaded.length === 1 ? '' : 's'}.`
+    setNotice(unreadable.length === 0 ? held : `${held} ${missingFromBackup(unreadable)}`)
+    return { downloaded: true, unreadable, reason: null }
   }
 
   const handleImportFile = async (file: File) => {
@@ -186,24 +236,35 @@ export function useHomeData() {
       return
     }
     // The store can reject part-way through (quota, private mode). Counting
-    // both sides and refreshing regardless is what keeps the notice honest:
+    // every outcome and refreshing regardless is what keeps the notice honest:
     // the plans written before the failure are really there, and a thrown
-    // loop would have told the user nothing happened at all.
+    // loop would have told the user nothing happened at all. A REJECTED write
+    // and a REFUSED one are different problems with different fixes, so they
+    // are counted apart rather than pooled into one storage complaint.
     let saved = 0
-    let failed = 0
+    const unwritable: string[] = []
+    const invalid: string[] = []
     for (const p of normalized) {
       try {
         const result = await savePlanVia(store, p)
         if (result.ok) saved++
-        else failed++
+        else invalid.push(p.name)
       } catch {
-        failed++
+        unwritable.push(p.name)
       }
     }
+    const failed = unwritable.length + invalid.length
+    const detail =
+      (unwritable.length > 0
+        ? ` ${unwritable.length} could not be saved to this browser: ${namedPlans(unwritable)}.`
+        : '') +
+      (invalid.length > 0 ? ` ${invalid.length} could not be read as a valid plan: ${namedPlans(invalid)}.` : '')
     setNotice(
       failed === 0
         ? `Imported ${saved} plan${saved === 1 ? '' : 's'}.${skipped}`
-        : `Imported ${saved} of ${normalized.length} plans. ${failed} could not be saved to this browser.${skipped}`,
+        : saved === 0
+          ? `No plans were imported.${detail}${skipped}`
+          : `Imported ${saved} of ${normalized.length} plans.${detail}${skipped}`,
     )
     refresh()
   }
@@ -322,22 +383,34 @@ export function useHomeData() {
         },
       },
     })
-    if (!ok) return
+    if (!ok) {
+      // The episode ended without erasing anything, so the next one starts
+      // over: whatever was disclosed here has not been acted on.
+      disclosedShortfall.current = null
+      return
+    }
     let shortfall: string | null = null
     if (backup.attempt !== null) {
       const outcome = await backup.attempt
       shortfall = !outcome.downloaded
-        ? `The backup could not be downloaded. ${STORAGE_UNAVAILABLE}`
-        : outcome.unreadable > 0
-          ? `${outcome.unreadable} plan${outcome.unreadable === 1 ? '' : 's'} could not be read, so ` +
-            `${outcome.unreadable === 1 ? 'it is' : 'they are'} not in the backup you just downloaded.`
+        ? `No backup was downloaded. ${outcome.reason ?? STORAGE_UNAVAILABLE}`
+        : outcome.unreadable.length > 0
+          ? missingFromBackup(outcome.unreadable)
           : null
-      if (shortfall !== null && !backupShortfallDisclosed.current) {
-        backupShortfallDisclosed.current = true
+      // Stop on a shortfall this episode has not already shown. Comparing the
+      // TEXT is what keeps a second, different shortfall from riding through
+      // on the first one's disclosure.
+      if (shortfall !== null && disclosedShortfall.current !== shortfall) {
+        disclosedShortfall.current = shortfall
         setNotice(`Nothing was erased. ${shortfall} Choose "Clear all data" again to erase anyway.`)
+        // Nothing changed, but the list may have failed to read while the
+        // backup ran; re-read so the page behind the dialog is current.
+        refresh()
         return
       }
     }
+    // Past the stop, this episode is over however it ends below.
+    disclosedShortfall.current = null
     // A pending delete-undo would let "Undo" resurrect a plan after the
     // erasure — drop it before clearing so "erases ALL data" stays true.
     dismissUndo()
@@ -378,6 +451,7 @@ export function useHomeData() {
 
   return {
     plans,
+    listUnavailable,
     notice,
     setNotice,
     undoPlan,

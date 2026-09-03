@@ -22,6 +22,7 @@ export function PlanPickerPage() {
   const navigate = useNavigate()
   const {
     plans,
+    listUnavailable,
     notice,
     undoPlan,
     undoDelete,
@@ -37,7 +38,11 @@ export function PlanPickerPage() {
     dialogs,
   } = useHomeData()
 
-  const { mode, welcomeExpanded, dismissWelcome, showWelcome } = useHomeMode(plans)
+  // A list that could not be read is not a library that is empty. Rendering
+  // the newcomer welcome over someone's plans, on the one screen that offers
+  // the backup, is the worst available reading of a failed read — so the mode
+  // is derived from "unknown" (null), exactly as it is while the list loads.
+  const { mode, welcomeExpanded, dismissWelcome, showWelcome } = useHomeMode(listUnavailable ? null : plans)
   const readOnly = useWorkspaceReadOnly()
   const isLoading = plans === null
   const isFirstRun = !isLoading && mode === 'first-run'
@@ -57,6 +62,15 @@ export function PlanPickerPage() {
 
   return (
     <section className="page picker-page">
+      {/* Outside the polite status region below: this is the state of the
+          list itself, not the outcome of an action, and it stays on screen
+          until a read succeeds. */}
+      {listUnavailable ? (
+        <div className="callout callout--warn" role="alert">
+          Your saved plans could not be read, so this page cannot list them. Storage is unavailable in this browser
+          right now. Reloading the page tries again.
+        </div>
+      ) : null}
       <div role="status" aria-live="polite">
         {notice ? <div className="callout callout--info">{notice}</div> : null}
         {undoPlan ? (
@@ -117,6 +131,7 @@ export function PlanPickerPage() {
 
       <DataAndPrivacyCard
         plans={plans}
+        listUnavailable={listUnavailable}
         fileInput={fileInput}
         onExportAll={handleExportAll}
         onImportFile={handleImportFile}

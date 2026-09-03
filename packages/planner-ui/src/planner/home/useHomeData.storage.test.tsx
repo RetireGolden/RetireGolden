@@ -18,6 +18,7 @@ import { PlanStoreProvider } from '../../data/PlanStoreProvider'
 import type { PlanStore } from '../../data/planStoreContext'
 import { _resetRefreshHistoryForTests } from '../../import/refreshHistory'
 import { serializeV2Backup } from '../../data/v2Backup'
+import { waitFor } from '../../testSupport/settle'
 import { useHomeData } from './useHomeData'
 
 /** The latest hook value, published from an effect so render stays pure. */
@@ -114,11 +115,14 @@ async function click(el: Element | null | undefined) {
   })
 }
 
-/** Let the post-confirm erase sequence (two databases) settle. */
-async function flush() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 50))
-  })
+/**
+ * Wait for the post-confirm erase sequence (two databases, several awaits) to
+ * reach its notice. A predicate rather than a fixed sleep: the sequence is as
+ * slow as the host's IndexedDB is, and a timeout that says what it was waiting
+ * for beats an assertion against a half-finished DOM.
+ */
+function waitForNotice(text: string) {
+  return waitFor(() => notice().includes(text), { what: `the notice "${text}"`, describe: notice })
 }
 
 async function typeConfirmation(text: string) {
@@ -132,13 +136,75 @@ async function typeConfirmation(text: string) {
 }
 
 describe('planner home plan list', () => {
-  it('says the plan list could not be read instead of showing an empty library', async () => {
+  it('flags an unreadable list rather than reporting an empty library', async () => {
     await render(storeOf([], { listPlans: () => Promise.reject(new Error('storage refused')) }))
 
-    // Not a hung skeleton, and not a silent "you have no plans": the page
-    // renders an empty list and names why it is empty.
+    // Not a hung skeleton, and not "you have no plans": an empty list plus a
+    // flag the page reads to keep first-run UI (and a disabled backup) away.
     expect(api().plans).toEqual([])
-    expect(notice()).toContain('Your saved plans could not be read')
+    expect(api().listUnavailable).toBe(true)
+    // The flag carries it, not the notice: a notice here would overwrite the
+    // outcome of whatever action asked for the refresh.
+    expect(notice()).toBe('')
+  })
+
+  it('keeps the last list it read when a later refresh fails', async () => {
+    let fail = false
+    const store = storeOf([plan('good-1', 'Readable')], {
+      listPlans: async () => {
+        if (fail) throw new Error('storage refused')
+        return [{ id: 'good-1', name: 'Readable', updatedAtIso: '2026-06-11T12:00:00.000Z' }]
+      },
+    })
+    await render(store)
+    expect(api().plans).toHaveLength(1)
+
+    fail = true
+    await act(async () => api().refresh())
+    await waitFor(() => api().listUnavailable, { what: 'the list-unavailable flag' })
+
+    // Blanking the list here would hide plans that are still stored.
+    expect(api().plans?.map((s) => s.name)).toEqual(['Readable'])
+  })
+})
+
+describe('planner home plan actions', () => {
+  it('says the new plan was not saved when the store rejects', async () => {
+    await render(storeOf([], { savePlan: () => Promise.reject(new Error('quota exceeded')) }))
+
+    await act(async () => api().createAndOpen(plan('new-1', 'New')))
+
+    expect(notice()).toBe('Could not save the new plan. Storage is unavailable in this browser right now.')
+  })
+
+  it('says the duplicate was not made when the store rejects', async () => {
+    const summary = { id: 'good-1', name: 'Readable', updatedAtIso: '2026-06-11T12:00:00.000Z' }
+    await render(storeOf([plan('good-1', 'Readable')], { loadPlan: () => Promise.reject(new Error('refused')) }))
+
+    const duplicating = act(async () => {
+      void api().handleDuplicate(summary)
+    })
+    await duplicating
+    await click(dialogButton('Duplicate'))
+    await waitForNotice('Could not duplicate')
+
+    expect(notice()).toBe('Could not duplicate "Readable". Storage is unavailable in this browser right now.')
+  })
+
+  it('offers no Undo when the delete could not be made', async () => {
+    const summary = { id: 'good-1', name: 'Readable', updatedAtIso: '2026-06-11T12:00:00.000Z' }
+    await render(storeOf([plan('good-1', 'Readable')], { deletePlan: () => Promise.reject(new Error('refused')) }))
+
+    const deleting = act(async () => {
+      void api().handleDelete(summary)
+    })
+    await deleting
+    await click(dialogButton('Delete plan'))
+    await waitForNotice('Could not delete')
+
+    expect(notice()).toBe('Could not delete "Readable". Storage is unavailable in this browser right now.')
+    // An Undo toast here would offer to reverse something that did not happen.
+    expect(api().undoPlan).toBeNull()
   })
 })
 
@@ -158,10 +224,21 @@ describe('planner home backup download', () => {
 
     const outcome = await act(async () => api().handleExportAll())
 
-    expect(outcome).toEqual({ downloaded: true, unreadable: 1 })
+    expect(outcome).toEqual({ downloaded: true, unreadable: ['From a newer deploy'], reason: null })
+    // Named, not just counted: "which ones?" is the question a user has to
+    // answer before deciding the backup is enough to erase against.
     expect(notice()).toBe(
-      'Backup downloaded with 1 plan. 1 plan could not be read, so it is not in the file.',
+      'Backup downloaded with 1 plan. 1 plan could not be read, so it is not in the backup: "From a newer deploy".',
     )
+  })
+
+  it('acknowledges a backup that held everything', async () => {
+    await render(storeOf([plan('good-1', 'Readable'), plan('good-2', 'Also readable')]))
+
+    const outcome = await act(async () => api().handleExportAll())
+
+    expect(outcome).toEqual({ downloaded: true, unreadable: [], reason: null })
+    expect(notice()).toBe('Backup downloaded with 2 plans.')
   })
 
   it('reports a backup that could not be produced at all', async () => {
@@ -169,16 +246,36 @@ describe('planner home backup download', () => {
 
     const outcome = await act(async () => api().handleExportAll())
 
-    expect(outcome).toEqual({ downloaded: false, unreadable: 0 })
+    expect(outcome).toEqual({
+      downloaded: false,
+      unreadable: [],
+      reason: 'Storage is unavailable in this browser right now.',
+    })
     expect(notice()).toContain('No backup was downloaded')
+  })
+
+  it('reports a file that could not be handed to the browser', async () => {
+    // Every record read; the download itself is what failed. Left unguarded
+    // this rejection would abandon the clear-all flow with nothing said.
+    URL.createObjectURL = vi.fn(() => {
+      throw new Error('no object URLs in this host')
+    })
+    await render(storeOf([plan('good-1', 'Readable')]))
+
+    const outcome = await act(async () => api().handleExportAll())
+
+    expect(outcome.downloaded).toBe(false)
+    expect(notice()).toBe('No backup was downloaded. The backup file could not be built in this browser.')
   })
 })
 
 describe('planner home clear all', () => {
-  it('stops the erase when the backup it offered was incomplete', async () => {
-    const deleted: string[] = []
+  const SHORTFALL = '1 plan could not be read, so it is not in the backup: "From a newer deploy".'
+
+  /** A store with one readable plan and one record this build cannot open. */
+  function partialStore(deleted: string[]): PlanStore {
     const good = plan('good-1', 'Readable')
-    const store = storeOf([good], {
+    return storeOf([good], {
       listPlans: async () => [
         { id: 'good-1', name: 'Readable', updatedAtIso: '2026-06-11T12:00:00.000Z' },
         { id: 'future-1', name: 'From a newer deploy', updatedAtIso: '2026-06-11T12:00:00.000Z' },
@@ -188,57 +285,84 @@ describe('planner home clear all', () => {
         deleted.push(id)
       },
     })
-    await render(store)
+  }
 
-    const clearing = act(async () => {
+  /** Open the dialog, take the offered backup, and confirm the erase. */
+  async function clearAllWithBackup() {
+    await act(async () => {
       void api().handleClearAll()
     })
-    await clearing
     await click(dialogButton('Download backup'))
     await typeConfirmation('delete')
     await click(dialogButton('Erase everything'))
-    await flush()
+  }
+
+  it('stops the erase when the backup it offered was incomplete', async () => {
+    const deleted: string[] = []
+    await render(partialStore(deleted))
+
+    await clearAllWithBackup()
+    await waitForNotice('Nothing was erased')
 
     expect(deleted).toEqual([])
-    expect(notice()).toBe(
-      'Nothing was erased. 1 plan could not be read, so it is not in the backup you just downloaded. ' +
-        'Choose "Clear all data" again to erase anyway.',
-    )
+    expect(notice()).toBe(`Nothing was erased. ${SHORTFALL} Choose "Clear all data" again to erase anyway.`)
 
     // Second pass: the disclosure has been read, so the erase goes through
     // even with the same incomplete backup. Stopping every time would make an
     // unreadable record an unclearable store.
+    await clearAllWithBackup()
+    await waitForNotice('has been erased')
+
+    expect(deleted).toEqual(['good-1', 'future-1'])
+    expect(notice()).toBe(`All RetireGolden data has been erased from this browser. ${SHORTFALL}`)
+  })
+
+  it('stops again for a later clear-all, rather than spending the disclosure once', async () => {
+    const deleted: string[] = []
+    await render(partialStore(deleted))
+
+    // Episode one: stopped, then erased. The stop must not be consumed for
+    // good — a later erase is a new decision and gets its own warning.
+    await clearAllWithBackup()
+    await waitForNotice('Nothing was erased')
+    await clearAllWithBackup()
+    await waitForNotice('has been erased')
+
+    await clearAllWithBackup()
+    await waitForNotice('Nothing was erased')
+
+    expect(notice()).toBe(`Nothing was erased. ${SHORTFALL} Choose "Clear all data" again to erase anyway.`)
+  })
+
+  it('does not carry a stop into a pass where no backup was taken', async () => {
+    const deleted: string[] = []
+    await render(partialStore(deleted))
+
+    // No "Download backup" on this pass, so there is no shortfall to disclose
+    // and nothing to hold the erase back.
     await act(async () => {
       void api().handleClearAll()
     })
-    await click(dialogButton('Download backup'))
     await typeConfirmation('delete')
     await click(dialogButton('Erase everything'))
-    await flush()
+    await waitForNotice('has been erased')
 
     expect(deleted).toEqual(['good-1', 'future-1'])
-    expect(notice()).toBe(
-      'All RetireGolden data has been erased from this browser. ' +
-        '1 plan could not be read, so it is not in the backup you just downloaded.',
-    )
+    expect(notice()).toBe('All RetireGolden data has been erased from this browser.')
   })
 
   it('erases when the backup held every plan', async () => {
     const deleted: string[] = []
-    const store = storeOf([plan('good-1', 'Readable')], {
-      deletePlan: async (id) => {
-        deleted.push(id)
-      },
-    })
-    await render(store)
+    await render(
+      storeOf([plan('good-1', 'Readable')], {
+        deletePlan: async (id) => {
+          deleted.push(id)
+        },
+      }),
+    )
 
-    await act(async () => {
-      void api().handleClearAll()
-    })
-    await click(dialogButton('Download backup'))
-    await typeConfirmation('delete')
-    await click(dialogButton('Erase everything'))
-    await flush()
+    await clearAllWithBackup()
+    await waitForNotice('has been erased')
 
     expect(deleted).toEqual(['good-1'])
     expect(notice()).toBe('All RetireGolden data has been erased from this browser.')
@@ -265,7 +389,17 @@ describe('planner home restore from backup', () => {
     // The two that landed really are stored; a thrown loop used to claim
     // nothing had happened at all.
     expect(written).toHaveLength(2)
-    expect(notice()).toBe('Imported 2 of 3 plans. 1 could not be saved to this browser.')
+    expect(notice()).toBe('Imported 2 of 3 plans. 1 could not be saved to this browser: "C".')
+  })
+
+  it('does not frame a total failure as an import count', async () => {
+    const store = storeOf([], { savePlan: () => Promise.reject(new Error('quota exceeded')) })
+    await render(store)
+
+    await act(async () => api().handleImportFile(backupFile([plan('a', 'A'), plan('b', 'B')])))
+
+    // "Imported 0 of 2 plans" reads like a result; nothing landed.
+    expect(notice()).toBe('No plans were imported. 2 could not be saved to this browser: "A", "B".')
   })
 
   it('still says how many landed on the happy path', async () => {

@@ -17,16 +17,24 @@ import {
 import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 import { duplicateNameDefault } from './planName'
 
-const DB_NAME = 'retiregolden.v2'
+/**
+ * The browser database holding every plan record. Exported so a test can open
+ * the same database the app opens: a test that re-typed the name would keep
+ * passing against a database nothing else uses if this name ever changed.
+ */
+export const PLAN_DB_NAME = 'retiregolden.v2'
+const DB_NAME = PLAN_DB_NAME
 const DB_VERSION = 1
 const PLANS_STORE = 'plans'
 
 /**
- * What every store operation rejects with when the host exposes no IndexedDB
- * at all (a server-side render, a browser-free test host, a browser policy
- * that removes the API). Named so callers can tell "this host has no storage"
- * apart from "this record is corrupt" instead of catching a bare
- * `ReferenceError` thrown from inside `idb`.
+ * The rejection reason every store operation carries when the host exposes no
+ * IndexedDB at all (a server-side render, a browser-free test host, a browser
+ * policy that removes the API). It exists so the failure is a stable, matchable
+ * sentence rather than a bare `ReferenceError` thrown from inside `idb`; the
+ * UI catches these rejections generically and words them for the surface, so
+ * this is the store's contract with its tests and with any future caller that
+ * needs to tell "no storage here" apart from "this record is corrupt".
  */
 export const PLAN_STORAGE_UNAVAILABLE = 'IndexedDB is not available in this host.'
 

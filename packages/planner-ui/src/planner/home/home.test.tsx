@@ -157,6 +157,34 @@ describe('planner home adaptive layout', () => {
     expect(container.querySelector('#home-export-why')).toBeNull()
   })
 
+  it('does not read a failed list as a first-run empty library', async () => {
+    const refusingStore: PlanStore = {
+      listPlans: () => Promise.reject(new Error('storage refused')),
+      loadPlan: async () => null,
+      savePlan: async () => undefined,
+      deletePlan: async () => undefined,
+    }
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanStoreProvider store={refusingStore}>
+            <PlanPickerPage />
+          </PlanStoreProvider>
+        </MemoryRouter>,
+      )
+    })
+
+    // The newcomer welcome over someone's plans is the wrong reading, and a
+    // disabled backup with "No plan to export yet" is a false statement.
+    expect(container.querySelector('.home-hero h1')).toBeNull()
+    expect(container.querySelector('#home-export-why')).toBeNull()
+    const exportBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent === 'Download plan backup',
+    ) as HTMLButtonElement
+    expect(exportBtn.disabled).toBe(false)
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('could not be read')
+  })
+
   it('lists Start here articles as a column of full phrases', async () => {
     await renderHome()
     const items = container.querySelectorAll('.home-start-here-list li')

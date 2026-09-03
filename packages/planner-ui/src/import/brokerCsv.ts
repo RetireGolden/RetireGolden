@@ -49,15 +49,31 @@ const UNRECOGNIZED_MESSAGE =
   'This file does not look like a Schwab, Fidelity, or Vanguard positions export. ' +
   'Download the positions/holdings CSV from your broker, or use the spreadsheet import to map columns yourself.'
 
-/** Rows that are file furniture, not positions — silently structural, never balances. */
-function isFooterOrNoise(cells: string[]): boolean {
+/** Boilerplate the brokers append below the positions — never a balance. */
+function isFooterText(cells: string[]): boolean {
   const first = (cells[0] ?? '').trim().toLowerCase()
-  if (first === '') return true
   if (first.startsWith('the data and information')) return true // Fidelity disclaimer
   if (first.startsWith('date downloaded')) return true
   if (first.startsWith('brokerage services')) return true
   if (first.startsWith('"disclaimer') || first.startsWith('disclaimer')) return true
   return false
+}
+
+/** A row with nothing in it at all: a section separator, never data. */
+function isEmptyRow(cells: string[]): boolean {
+  return cells.every((cell) => (cell ?? '').trim() === '')
+}
+
+/**
+ * Rows that are file furniture, not positions — silently structural, never
+ * balances. Schwab's sectioned layout leads with the symbol, so a blank first
+ * cell there is separator furniture. `parseAccountColumnFile` must NOT use
+ * this rule: Fidelity and Vanguard put Account Number first, where a blank
+ * first cell is a row missing its account, which gets disclosed instead.
+ */
+function isFooterOrNoise(cells: string[]): boolean {
+  if ((cells[0] ?? '').trim() === '') return true
+  return isFooterText(cells)
 }
 
 /** Return an ISO calendar date only for the explicit US broker date shapes we recognize. */
@@ -273,7 +289,11 @@ function parseAccountColumnFile(
 
   for (let r = headerIndex + 1; r < rows.length; r++) {
     const cells = rows[r]!
-    if (isFooterOrNoise(cells)) continue
+    // Deliberately NOT `isFooterOrNoise`: these layouts put Account Number in
+    // column 0, so its blank-first-cell rule would swallow exactly the rows
+    // the disclosure below exists to report, and it would do so on the real
+    // Fidelity and Vanguard shapes rather than only on odd ones.
+    if (isEmptyRow(cells) || isFooterText(cells)) continue
     // Vanguard appends a transactions section with its own header; stop there.
     if (broker === 'vanguard' && findColumn(cells, 'trade date') !== -1) break
 

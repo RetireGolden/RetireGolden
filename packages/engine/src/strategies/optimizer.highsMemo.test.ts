@@ -28,14 +28,20 @@ vi.mock('highs', () => ({
   },
 }))
 
-const PACK = packForYear(2025).pack
+const PACK_YEAR = 2025
+const PACK = packForYear(PACK_YEAR).pack
 
-/** One flat year with nothing to decide; the solve result is stubbed anyway. */
+/**
+ * One year, kept internally consistent (the year matches the pack it carries)
+ * so nothing here misleads a later reader who reuses it. The numbers are not
+ * the subject: the mocked loader stubs every solve, so what this fixture has
+ * to do is reach `getHighs` at all.
+ */
 function input(): OptimizerInput {
   return {
     years: [
       {
-        year: 2030,
+        year: PACK_YEAR,
         pack: PACK,
         filingStatus: 'single' as FilingStatus,
         ordinaryIncomeBase: 0,

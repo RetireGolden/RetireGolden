@@ -42,12 +42,18 @@ Z12345678,Individual,,Account Total,,,,$25050.00,,,$15000.00,,
 `
 
 /**
- * An account-column layout whose account number is NOT the first column, with
- * a continuation row that leaves the account cell blank. The column order is
- * what makes the row reach the blank-account branch at all: with the account
- * first, an empty leading cell is already treated as footer noise.
+ * The REAL Fidelity/Vanguard column order (Account Number first) with a
+ * continuation row that leaves the account cell blank. This is the shape that
+ * matters: a blank leading cell used to read as footer noise, so the row's
+ * money vanished from the import with nothing said about it.
  */
-const BLANK_ACCOUNT_FIXTURE = `Symbol,Account Number,Account Name,Description,Quantity,Last Price,Current Value,Cost Basis Total
+const BLANK_ACCOUNT_FIXTURE = `Account Number,Account Name,Symbol,Description,Quantity,Last Price,Current Value,Cost Basis Total
+Z12345678,Individual,AAPL,APPLE INC,100,$190.50,$19050.00,$15000.00
+,,MSFT,MICROSOFT CORP,10,$400.00,$4000.00,$3000.00
+`
+
+/** The same missing account, in a layout that puts Symbol first. */
+const BLANK_ACCOUNT_SYMBOL_FIRST_FIXTURE = `Symbol,Account Number,Account Name,Description,Quantity,Last Price,Current Value,Cost Basis Total
 AAPL,Z12345678,Individual,APPLE INC,100,$190.50,$19050.00,$15000.00
 MSFT,,,MICROSOFT CORP,10,$400.00,$4000.00,$3000.00
 `
@@ -136,6 +142,16 @@ describe('parseBrokerPositionsCsv — Fidelity', () => {
     expect(orphan!.detail).toContain('$4,000')
     expect(orphan!.detail).toContain('no account number')
     expect(orphan!.locator).toEqual({ kind: 'csvRow', row: 3, column: 'account number' })
+  })
+
+  it('discloses the same row when the layout puts the account column later', () => {
+    const r = parseBrokerPositionsCsv(BLANK_ACCOUNT_SYMBOL_FIRST_FIXTURE)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+
+    expect(r.accounts[0]!.totalValue).toBe(19_050)
+    const orphan = r.review.find((i) => i.status === 'skipped' && i.source === 'Row 3')
+    expect(orphan?.detail).toContain('$4,000')
   })
 })
 
