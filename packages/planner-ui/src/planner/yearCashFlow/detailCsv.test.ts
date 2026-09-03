@@ -179,7 +179,7 @@ describe('serializeYearCashFlowDetailCsv', () => {
     expect(csv).not.toMatch(/(?:^|,)=SUM\(A1\)/)
   })
 
-  it('csvEscape\'s hostile labels the same way inheritedCsv does', () => {
+  it('quotes hostile labels the same way inheritedCsv does', () => {
     const plan = csvPlan()
     const cashFlow: YearCashFlow = {
       ...csvCashFlow(),

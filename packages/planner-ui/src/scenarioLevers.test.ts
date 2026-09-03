@@ -197,6 +197,13 @@ describe('scenario lever contract', () => {
   })
 
   it.each([
+    // The schema-read bounds this lever validates against (`scenarioLevers.ts`'s
+    // `RETIREMENT_AGE_BOUNDS`) restate the same {30, 80} literals the lever
+    // always enforced; buildExampleCouple's youngest/oldest retirement ages
+    // (64, 66) plus a ±yearsDelta within the lever's own ±50 clamp land one
+    // person outside each side.
+    [{ id: 'retirementAge', yearsDelta: -40 }, 'at least 30'],
+    [{ id: 'retirementAge', yearsDelta: 20 }, 'at most 80'],
     [{ id: 'socialSecurityClaim', claimAge: 61 }, 'at least 62'],
     [{ id: 'allocation', stockPct: Number.POSITIVE_INFINITY }, 'finite number'],
     [{ id: 'survivorSpending', percent: 101 }, 'at most 100'],

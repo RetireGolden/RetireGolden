@@ -235,8 +235,6 @@ function AddScenario() {
   const [kind, setKind] = useState<ScenarioLeverId>('retirementAge')
   const [params, setParams] = useState<LeverParams>(() => defaultLeverParams(startYear))
   const [saveError, setSaveError] = useState<string | null>(null)
-  const previousPlanId = useRef(plan.id)
-  const previousStartYear = useRef(startYear)
   const householdPersonIds = useMemo(
     () => new Set(plan.household.people.map((person) => person.id)),
     [plan.household.people],
@@ -249,44 +247,33 @@ function AddScenario() {
     () => new Set(homeSaleProperties.map((property) => property.id)),
     [homeSaleProperties],
   )
-  useEffect(() => {
-    const planChanged = previousPlanId.current !== plan.id
-    const priorStartYear = previousStartYear.current
-    previousPlanId.current = plan.id
-    previousStartYear.current = startYear
-    setParams((current) => {
-      const yearSafe = rebaseYearRelativeParams(current, priorStartYear, startYear)
-      const recipientStillValid =
-        plan.household.people.length > 1 &&
-        householdPersonIds.has(yearSafe.carePersonId)
-      const propertyStillValid =
-        homeSaleProperties.length > 1 &&
-        homeSalePropertyIds.has(yearSafe.homePropertyId)
-      const clearCareRecipient =
-        yearSafe.carePersonId !== '' && (planChanged || !recipientStillValid)
-      const clearHomeProperty =
-        yearSafe.homePropertyId !== '' && (planChanged || !propertyStillValid)
-      if (
-        yearSafe === current &&
-        !clearCareRecipient &&
-        !clearHomeProperty
-      ) {
-        return current
-      }
-      return {
-        ...yearSafe,
-        carePersonId: clearCareRecipient ? '' : yearSafe.carePersonId,
-        homePropertyId: clearHomeProperty ? '' : yearSafe.homePropertyId,
-      }
+  // Render-phase "adjust state while rendering" reset (the pattern
+  // `UpdateBalancesPanel.tsx`'s `seenPlanId` comment documents): a passive
+  // effect would commit one render with the PREVIOUS plan's params before
+  // the reset landed — a visible flash of stale offsets, and a lever click
+  // during that window would build a request against the wrong plan. Doing
+  // the reset here means React discards the interrupted render and re-runs
+  // with the corrected params instead of ever committing the stale one.
+  const [seenPlanId, setSeenPlanId] = useState(plan.id)
+  const [seenStartYear, setSeenStartYear] = useState(startYear)
+  const planChanged = seenPlanId !== plan.id
+  const startYearChanged = seenStartYear !== startYear
+  const yearSafe = rebaseYearRelativeParams(params, seenStartYear, startYear)
+  const recipientStillValid =
+    plan.household.people.length > 1 && householdPersonIds.has(yearSafe.carePersonId)
+  const propertyStillValid =
+    homeSaleProperties.length > 1 && homeSalePropertyIds.has(yearSafe.homePropertyId)
+  const clearCareRecipient = yearSafe.carePersonId !== '' && (planChanged || !recipientStillValid)
+  const clearHomeProperty = yearSafe.homePropertyId !== '' && (planChanged || !propertyStillValid)
+  if (planChanged || startYearChanged || clearCareRecipient || clearHomeProperty) {
+    setSeenPlanId(plan.id)
+    setSeenStartYear(startYear)
+    setParams({
+      ...yearSafe,
+      carePersonId: clearCareRecipient ? '' : yearSafe.carePersonId,
+      homePropertyId: clearHomeProperty ? '' : yearSafe.homePropertyId,
     })
-  }, [
-    homeSaleProperties.length,
-    homeSalePropertyIds,
-    householdPersonIds,
-    plan.household.people.length,
-    plan.id,
-    startYear,
-  ])
+  }
   const set = <K extends keyof LeverParams>(key: K, value: LeverParams[K]) =>
     setParams((current) => ({ ...current, [key]: value }))
   const previewRequest = useMemo(

@@ -39,6 +39,7 @@ import type {
   ProjectionResult,
   YearResult,
 } from '@retiregolden/engine/projection/types'
+import { csvCell } from '../csvCell'
 import { acaLedgerSummary } from '../planner/acaReportStatus'
 import { fmtMoney } from '../planner/format'
 import { isPlanIncomplete } from '../planner/planCompleteness'
@@ -576,14 +577,14 @@ function chartDataRows(plan: Plan, result: ProjectionResult): ReportChartDataRow
     }
     return {
       year: year.year,
-      cash: Math.round(categories.cash),
-      taxable: Math.round(categories.taxable),
-      equityComp: Math.round(categories.equityComp),
-      traditional: Math.round(categories.traditional),
-      roth: Math.round(categories.roth),
-      hsa: Math.round(categories.hsa),
-      income: Math.round(year.incomes.total),
-      spendingPlusTax: Math.round(year.expenses.total + year.tax + year.penalties),
+      cash: roundDollar(categories.cash),
+      taxable: roundDollar(categories.taxable),
+      equityComp: roundDollar(categories.equityComp),
+      traditional: roundDollar(categories.traditional),
+      roth: roundDollar(categories.roth),
+      hsa: roundDollar(categories.hsa),
+      income: roundDollar(year.incomes.total),
+      spendingPlusTax: roundDollar(year.expenses.total + year.tax + year.penalties),
     }
   })
 }
@@ -1312,18 +1313,6 @@ function normalizeJson(value: unknown): JsonValue | undefined {
  */
 export function serializeReportModel(model: ReportModel): string {
   return `${JSON.stringify(normalizeJson(model) ?? null, null, 2)}\n`
-}
-
-function csvCell(value: string | number | null): string {
-  if (value === null) return ''
-  if (typeof value === 'number') return String(value)
-  // Text cells can carry user-entered names. Neutralize spreadsheet formula
-  // injection: a cell starting with = + - @ or a tab/CR is evaluated by
-  // Excel/Sheets even when quoted, so prefix it with an apostrophe (the
-  // standard render-as-text marker). Then quote anything containing commas,
-  // quotes, or line breaks (\r included — a bare CR also splits rows).
-  const neutralized = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
-  return /[",\n\r]/.test(neutralized) ? `"${neutralized.replace(/"/g, '""')}"` : neutralized
 }
 
 function csvTable(header: string[], rows: (string | number | null)[][]): string {

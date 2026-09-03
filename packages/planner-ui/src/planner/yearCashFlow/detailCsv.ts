@@ -28,14 +28,13 @@
  * (no `cashFlow`, or `notReconciled`) emits the header plus this summary
  * row only — never a best-effort dump of an unsafe graph.
  *
- * Cells are `csvEscape`'d with the same quoting rules as `inheritedCsv.ts`.
- * Text cells whose first non-control, non-whitespace character is `=`, `+`,
- * `-`, or `@` are prefixed with an apostrophe before that escape so
- * spreadsheet hosts treat them as text.
- * Numeric cells are left as bare numbers.
+ * Cells go through the shared `csvCell` (see `csvCell.ts`): a text cell
+ * whose first non-space character is `=`, `+`, `-`, `@`, or a literal
+ * tab/CR is prefixed with an apostrophe before quoting so spreadsheet hosts
+ * treat it as text. Numeric cells are left as bare numbers.
  */
 
-import { csvEscape } from '../inheritedCsv'
+import { csvCell } from '../../csvCell'
 import type { YearCashFlowSankeyModel, YearCashFlowTableRow } from './buildYearCashFlow'
 
 export const YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS = [
@@ -60,23 +59,8 @@ export const YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS = [
 
 export type YearCashFlowDetailCsvColumn = (typeof YEAR_CASH_FLOW_DETAIL_CSV_COLUMNS)[number]
 
-function isSpreadsheetFormulaLike(value: string): boolean {
-  const chars = [...value]
-  const index = chars.findIndex((ch) => ch.codePointAt(0)! > 0x20)
-  if (index === -1) return false
-  const first = chars[index]
-  return first === '=' || first === '+' || first === '-' || first === '@'
-}
-
-function cell(value: string | number | null | undefined): string {
-  if (value === null || value === undefined) return ''
-  if (typeof value === 'number') return csvEscape(String(value))
-  const neutralized = isSpreadsheetFormulaLike(value) ? `'${value}` : value
-  return csvEscape(neutralized)
-}
-
 function rowCells(values: readonly (string | number | null | undefined)[]): string {
-  return values.map(cell).join(',')
+  return values.map(csvCell).join(',')
 }
 
 function taxCharacterCell(row: Pick<YearCashFlowTableRow, 'taxCharacter'>): string {

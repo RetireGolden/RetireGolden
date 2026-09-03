@@ -25,13 +25,9 @@ import {
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import type { YearResult } from '@retiregolden/engine/projection/types'
-import {
-  ACCOUNT_CATEGORIES,
-  ACCOUNT_CATEGORY_COLOR,
-  ACCOUNT_CATEGORY_LABEL,
-  categoryBalances,
-} from './accountCategories'
+import { ACCOUNT_CATEGORIES, ACCOUNT_CATEGORY_COLOR, ACCOUNT_CATEGORY_LABEL } from './accountCategories'
 import { serializeSinglePlan } from '../data/planFormat'
+import { buildExpenseRows, buildIncomeRows, buildLedgerCsv, buildResultsRows } from './resultsRows'
 import { CopyButton } from './CopyButton'
 import { usePlan } from './planContextCore'
 import { isPlanIncomplete } from './planCompleteness'
@@ -41,11 +37,8 @@ import { useReportBranding } from '../report/brandingContext'
 import {
   buildInheritedSchedules,
   inheritedDeadlineExplanation,
-  inheritedEvidenceNote,
   type ReportInheritedScheduleAccount,
 } from '../report/reportModel'
-import { needsProfessionalConfirmation } from './professionalConfirmation'
-import { csvEscape, inheritedCsvColumnHeaders } from './inheritedCsv'
 import { fmtMoney, fmtMoneyCompact } from './format'
 import { useProjection } from './useProjection'
 import { BucketLensCard } from './BucketLensCard'
@@ -132,16 +125,6 @@ const EXPENSE_CATEGORIES = [
 
 function moneyTick(v: number): string {
   return fmtMoneyCompact(v)
-}
-
-/** Plan accounts that publish inherited-IRA evidence rows (CSV column order). */
-function inheritedAccountIds(plan: Plan): string[] {
-  return plan.accounts
-    .filter(
-      (account) =>
-        (account.type === 'traditional' || account.type === 'roth') && account.inherited !== undefined,
-    )
-    .map((account) => account.id)
 }
 
 /**
@@ -694,105 +677,12 @@ export function ResultsPage() {
     view.result.years,
   )
 
-  const rows = useMemo(
-    () =>
-      view.result.years.map((y) => {
-        const cats = categoryBalances(plan, y)
-        // The engine publishes `fiNumber` in today's dollars; the line is
-        // plotted against nominal balances, so it rides the view's own
-        // inflation helper rather than a second compounding written here.
-        const nominalFiTarget = view.inflate(y.year, view.summary.fiNumber)
-        return {
-          year: y.year,
-          ...Object.fromEntries(ACCOUNT_CATEGORIES.map((c) => [c, adj(y.year, cats[c])])),
-          income: adj(y.year, y.incomes.total),
-          spending: adj(y.year, y.expenses.total + y.tax + y.penalties),
-          tax: adj(y.year, y.tax),
-          magi: adj(y.year, y.magi),
-          shortfall: adj(y.year, y.shortfall),
-          investable: adj(y.year, y.investableTotal),
-          fiTarget: adj(y.year, nominalFiTarget),
-        }
-      }),
-    [view, plan, adj],
-  )
-
-  const incomeRows = useMemo(
-    () =>
-      view.result.years.map((y) => ({
-        year: y.year,
-        wages: adj(y.year, y.incomes.wages),
-        socialSecurity: adj(y.year, y.incomes.socialSecurity),
-        pension: adj(y.year, y.incomes.pension),
-        annuity: adj(y.year, y.incomes.annuity),
-        tipsLadder: adj(y.year, y.incomes.tipsLadder),
-        recurring: adj(y.year, y.incomes.recurring),
-        oneTime: adj(y.year, y.incomes.oneTime),
-        taxableYield: adj(y.year, y.incomes.taxableYield),
-        taxExemptInterest: adj(y.year, y.incomes.taxExemptInterest),
-      })),
-    [view, adj],
-  )
-
-  const expenseRows = useMemo(
-    () =>
-      view.result.years.map((y) => ({
-        year: y.year,
-        base: adj(y.year, y.expenses.baseSpending),
-        healthcare: adj(y.year, y.expenses.healthcare),
-        property: adj(y.year, y.expenses.propertyCosts),
-        debt: adj(y.year, y.expenses.debtService),
-        insurance: adj(y.year, y.expenses.insurancePremiums),
-        care: adj(y.year, Math.max(0, y.expenses.careCost - y.expenses.ltcBenefit)),
-        goals: adj(y.year, y.expenses.oneTimeGoals),
-        taxes: adj(y.year, y.tax + y.penalties),
-      })),
-    [view, adj],
-  )
+  const rows = useMemo(() => buildResultsRows(view, plan, adj), [view, plan, adj])
+  const incomeRows = useMemo(() => buildIncomeRows(view, adj), [view, adj])
+  const expenseRows = useMemo(() => buildExpenseRows(view, adj), [view, adj])
 
   const handleCsv = () => {
-    const inheritedIds = inheritedAccountIds(plan)
-    // Per-account inherited columns, flattened in plan account order (same
-    // convention as the rest of this ledger export).
-    const inheritedCols = inheritedCsvColumnHeaders(inheritedIds)
-    const cols = [
-      'year', 'filingStatus', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder', 'recurring', 'oneTimeIncome', 'taxableInterest', 'taxExemptInterest', 'ordinaryDividends', 'qualifiedDividends', 'taxableYield', 'totalIncome',
-      'baseSpending', 'goals', 'debtService', 'propertyCosts', 'healthcare', 'insurancePremiums', 'careCost', 'ltcBenefit', 'requiredSpending', 'targetSpending', 'idealSpending', 'excessSpending', 'intendedSpending', 'totalExpenses', 'contributions', 'employerMatch', 'rmd', 'qcd',
-      'rothConversion', 'tax', 'amt', 'penalties', 'magi', 'withdrawals', 'realizedGains', 'lossCarryforwardUsed', 'lossCarryforwardRemaining', 'shortfall', 'investable',
-      'requiredShortfall', 'targetShortfall', 'idealShortfall', 'excessShortfall', 'guardrailAction', 'guardrailFactor', 'flexibleGoalsFunded', 'flexibleGoalsPartiallyFunded', 'flexibleGoalsDeferred', 'flexibleGoalsSkipped', 'flexibleGoalFundedAmount', 'flexibleGoalUnfundedAmount', 'insuranceCashValue', 'ladderValue', 'deathBenefit', 'netWorth',
-      ...inheritedCols,
-    ]
-    const lines = [cols.join(',')]
-    for (const y of view.result.years) {
-      const byAccount = new Map((y.inheritedAccounts ?? []).map((row) => [row.accountId, row]))
-      const inheritedValues = inheritedIds.flatMap((id) => {
-        const row = byAccount.get(id)
-        if (!row) return ['', '', '', '', '', '']
-        const confirm = needsProfessionalConfirmation(row) ? 'yes' : ''
-        const note = csvEscape(inheritedEvidenceNote(row))
-        return [
-          row.requiredAmount,
-          row.executedRequiredAmount,
-          row.voluntaryAmount,
-          csvEscape(row.requirementKind),
-          csvEscape(confirm),
-          note,
-        ]
-      })
-      lines.push(
-        [
-          y.year, y.filingStatus, y.incomes.wages, y.incomes.socialSecurity, y.incomes.pension, y.incomes.annuity, y.incomes.tipsLadder, y.incomes.recurring,
-          y.incomes.oneTime, y.incomes.taxableInterest, y.incomes.taxExemptInterest, y.incomes.ordinaryDividends, y.incomes.qualifiedDividends, y.incomes.taxableYield, y.incomes.total, y.expenses.baseSpending, y.expenses.oneTimeGoals, y.expenses.debtService,
-          y.expenses.propertyCosts, y.expenses.healthcare, y.expenses.insurancePremiums, y.expenses.careCost, y.expenses.ltcBenefit, y.expenses.requiredSpending, y.expenses.targetSpending, y.expenses.idealSpending, y.expenses.excessSpending, y.expenses.intendedSpending, y.expenses.total, y.contributions, y.employerMatch, y.rmd, y.qcd, y.rothConversion, y.tax, y.amt, y.penalties,
-          y.magi, y.withdrawals.total, y.realizedGains, y.capitalLossUsedAgainstGains + y.capitalLossUsedAgainstOrdinary, y.capitalLossCarryforwardRemaining, y.shortfall, y.investableTotal,
-          y.requiredShortfall, y.targetShortfall, y.idealShortfall, y.excessShortfall, y.guardrailAction, y.expenses.guardrailFactor.toFixed(2), y.flexibleGoals.funded, y.flexibleGoals.partiallyFunded, y.flexibleGoals.deferred, y.flexibleGoals.skipped, y.flexibleGoals.fundedAmount, y.flexibleGoals.unfundedAmount, y.insuranceCashValue, y.ladderValue, y.deathBenefit, y.netWorth,
-          ...inheritedValues,
-        ]
-          .map((v) => (typeof v === 'number' ? Math.round(v) : v))
-          .join(','),
-      )
-    }
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+    const blob = new Blob([buildLedgerCsv(plan, view)], { type: 'text/csv' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = `${plan.name.replace(/\W+/g, '-').toLowerCase()}-ledger.csv`
