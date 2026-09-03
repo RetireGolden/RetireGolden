@@ -150,9 +150,23 @@ function walkNodeModules(root, out = new Map(), treeRoot = undefined) {
 }
 
 /** Find the LICENSE/NOTICE file for a package at `pkgDir`. */
+// Match directory entries case-insensitively. Some packages ship a lowercase
+// `license` file (clsx does); an exact-path probe finds it on Windows (NTFS is
+// case-insensitive) and misses it on Linux, so the notices generated in CI
+// would drop that package's attribution. Reading the directory once and
+// comparing lowercased names gives the same answer on both.
 function findLicenseFile(pkgDir, treeRoots) {
+  let entries
+  try {
+    entries = readdirSync(pkgDir)
+  } catch {
+    return null
+  }
+  const byLower = new Map(entries.map((entry) => [entry.toLowerCase(), entry]))
   for (const name of LICENSE_FILENAMES) {
-    const candidate = containedInAny(join(pkgDir, name), treeRoots)
+    const entry = byLower.get(name.toLowerCase())
+    if (entry === undefined) continue
+    const candidate = containedInAny(join(pkgDir, entry), treeRoots)
     if (candidate !== null) return candidate
   }
   return null
