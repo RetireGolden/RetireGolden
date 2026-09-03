@@ -166,24 +166,24 @@
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        1756,
-        1766
+        1772,
+        1782
       ],
       "anchors": [
         {
-          "line": 1756,
+          "line": 1772,
           "text": "if (row.runtime.creditsAggregatedIra) {"
         },
         {
-          "line": 1757,
+          "line": 1773,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1766,
+          "line": 1782,
           "text": "})"
         }
       ],
-      "note": "REPINNED after the annuity-funding extraction and prerequisite stack changed the caller position. These lines are the creditsAggregatedIra gate and the complete runtime-application call. Exact content anchors now make any later positional drift fail the normal engine test suite before coverage is collected."
+      "note": "REPINNED after the annuity-funding extraction and prerequisite stack changed the caller position. These lines are the creditsAggregatedIra gate and the complete runtime-application call. Exact content anchors now make any later positional drift fail the normal engine test suite before coverage is collected. REPINNED AGAIN on 2026-09-03, +16 lines: the projection-seam slice added a shared scalar-binding record and an indexing-helper import above this block in simulate.ts. This is the lone-entry case DOCS/testing.md names -- every other entry in this spec sits in a different file at delta zero, so nothing corroborates the shift and the positional lines have to move explicitly. The block itself is unchanged, operand for operand."
     },
     {
       "id": "C",

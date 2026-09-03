@@ -160,16 +160,16 @@
       "label": "distributed taxable-yield input selection and positional cardinality guard",
       "file": "projection/internal/distributedTaxableYieldRows.ts",
       "lines": [
-        83,
-        84
+        84,
+        85
       ],
       "anchors": [
         {
-          "line": 83,
+          "line": 84,
           "text": "const { states, startOfYearBalances, allocationTrack, classParams } = input"
         },
         {
-          "line": 84,
+          "line": 85,
           "text": "if (startOfYearBalances.length !== states.length) {"
         }
       ],
@@ -180,20 +180,20 @@
       "label": "distributed taxable-yield positional row production",
       "file": "projection/internal/distributedTaxableYieldRows.ts",
       "lines": [
-        87,
-        151
+        88,
+        152
       ],
       "anchors": [
         {
-          "line": 87,
+          "line": 88,
           "text": "const rows: DistributedTaxableYieldResultRow[] = []"
         },
         {
-          "line": 119,
+          "line": 120,
           "text": "const qualified = dividends * Math.min(1, Math.max(0, account.qualifiedRatio ?? blendedYield?.qualifiedRatio ?? DEFAULT_QUALIFIED_DIVIDEND_RATIO))"
         },
         {
-          "line": 151,
+          "line": 152,
           "text": "}"
         }
       ]
