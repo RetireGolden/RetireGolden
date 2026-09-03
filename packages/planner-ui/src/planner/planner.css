@@ -780,9 +780,11 @@
    What made the same field two different widths was never the track function
    but the CONTAINER: an item row insets its contents by 1rem plus its border,
    so a flexible track resolved 215.9px at the top of a card and 204.6px inside
-   a row at 1024 (211.9 vs 200.6 at 768). That inset is cancelled at `.item-row`
-   below, which lines the two grids up on one width and on one left edge with
-   the card's own heading. */
+   a row at 1024 (211.9 vs 200.6 at 768). That inset is cancelled at
+   `.card > .item-row` below, which lines a card's own grid and its rows' grids
+   up on one width, and on one left edge with the card's heading. The pull is
+   scoped to a card's direct children on purpose: a row nested inside another
+   row, and a `.nested-form-section` well, both keep their own box. */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
@@ -926,13 +928,13 @@
   font-size: 0.98rem;
 }
 
-/* A nested well is a form grid too, and it is inset again inside the item row
-   that already inset it, so its own `auto-fit` tracks were the third field
-   width on one page. It now takes the shared fixed track from `.form-grid`
-   (#465, D9) — only the count differs, which is what a narrower container is
-   supposed to change. The two marker classes the wells used to carry held
-   nothing but that override, so they are gone from the markup as well. The
-   phase-row rule below is a separator, not a grid, and stays. */
+/* A nested well used to set its own `auto-fit` track function, a third field
+   width on one page. It now takes the shared track from `.form-grid` (#465,
+   D9). It still insets what it holds by its own padding, so a grid inside one
+   resolves narrower than the card grid — the bounded-group treatment (#521),
+   and deliberate. The two marker classes the wells used to carry held nothing
+   but that override, so they are gone from the markup as well. The phase-row
+   rule below is a separator, not a grid, and stays. */
 
 .nested-phase-row {
   border-bottom: 1px dashed var(--border);

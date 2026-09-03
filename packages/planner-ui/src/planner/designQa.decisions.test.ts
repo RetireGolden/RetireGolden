@@ -4,7 +4,7 @@
  * #553, #572).
  *
  * jsdom computes no layout, so what a chrome pin can hold is the rule that
- * decides the geometry. The measurements that chose the fixed track were taken
+ * decides the geometry. The measurements behind the grid rules were taken
  * in a real browser on /plan/:id/spending, /assumptions and /accounts, and are
  * recorded above the pin. The behaviour halves live in warnings.test.ts (the
  * bands), designQa.decisions.markup.test.tsx (what renders), and
