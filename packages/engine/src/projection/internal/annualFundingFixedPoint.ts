@@ -17,6 +17,15 @@
  */
 
 const DEFAULT_DIRECT_ITERATION_LIMIT = 8
+/**
+ * Passes allowed for the coordinated-HECM draw loop, which sits outside the
+ * direct fixed point: each pass re-solves the funding root because the draw
+ * moves ACA MAGI, the premium moves with it, and that moves the pre-tax need
+ * the draw is sizing. Larger than DEFAULT_DIRECT_ITERATION_LIMIT because that
+ * coupling makes it the slower of the two to settle; a plan that never settles
+ * leaves the loop unconverged rather than spinning. Value unchanged.
+ */
+const COORDINATED_HECM_DRAW_PASS_LIMIT = 16
 export const ANNUAL_FUNDING_FIXED_POINT_MAX_EVALUATIONS = 160
 
 export interface AnnualFundingFixedPointEvaluation {
@@ -210,7 +219,7 @@ export function annualFundingFixedPoint<
   ) {
     let candidateDraw = 0
     let coordinatedDrawConverged = false
-    for (let drawPass = 0; drawPass < 16; drawPass++) {
+    for (let drawPass = 0; drawPass < COORDINATED_HECM_DRAW_PASS_LIMIT; drawPass++) {
       const candidateCashInflows = input.baseCashInflows + candidateDraw
       const probe = solveFundingRoot(
         Math.max(0, input.spendingUsesBeforeTax - candidateCashInflows),

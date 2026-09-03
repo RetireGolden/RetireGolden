@@ -265,9 +265,17 @@ export function createMarketModel(config: MarketModelConfig): MarketModel {
       return createGaussianModel(config)
     case 'ar1':
       return createAR1Model(config)
-    default:
-      // exhaustive guard for future
-      return createLognormalModel(config as LognormalModelConfig)
+    default: {
+      // MarketModelConfig is a discriminated union, so this branch is
+      // unreachable and the `never` binding turns a forgotten case into a
+      // compile error. The cast-to-lognormal it replaces defeated exactly
+      // that: a new model type would have compiled, then silently run as
+      // lognormal and reported the wrong distribution.
+      const exhaustive: never = config
+      throw new Error(
+        'Unknown market model type: ' + String((exhaustive as { type?: unknown }).type),
+      )
+    }
   }
 }
 
