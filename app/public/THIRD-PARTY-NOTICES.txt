@@ -6,7 +6,7 @@ production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
 Source:      pnpm list --prod --depth Infinity (workspace root)
-Attributed:  38 packages, sha256 ef7af1c0cbe46b5b4de4b6d8db1e56118e50af262fc12f02564d96d46e1d25dc
+Attributed:  38 packages, sha256 4d6965704318f8785013d0004ba2fcdf4c70cc8d5cbe487ac81dad8adb476b8a
 
 ================================================================================
 
@@ -509,7 +509,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-highs (1.14.2)
+highs (1.15.2)
 License: MIT
 Author: Ophir LOJKINE
 Homepage: https://lovasoa.github.io/highs-js/
@@ -602,7 +602,7 @@ THIS SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react (19.2.7)
+react (19.2.8)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -630,7 +630,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-dom (19.2.7)
+react-dom (19.2.8)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -658,7 +658,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-is (19.2.7)
+react-is (19.2.8)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -746,7 +746,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-recharts (3.9.2)
+recharts (3.10.1)
 License: MIT
 Author: recharts group
 Homepage: https://github.com/recharts/recharts
