@@ -95,7 +95,7 @@ describe('plainDataSnapshot', () => {
 
     expect(plainDataSnapshot({ [Symbol('key')]: 1 })).toBe(INVALID_SNAPSHOT)
 
-    class Holder { constructor(readonly amount = 1) {} }
+    class Holder { amount = 1 }
     expect(plainDataSnapshot(new Holder())).toBe(INVALID_SNAPSHOT)
     expect(plainDataSnapshot(new Map())).toBe(INVALID_SNAPSHOT)
     expect(plainDataSnapshot(new Date(0))).toBe(INVALID_SNAPSHOT)
