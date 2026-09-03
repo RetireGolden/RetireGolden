@@ -36,7 +36,10 @@ jobs:
           python-version: "3.x"
 
       - name: Install Semgrep CLI
-        run: python -m pip install --upgrade semgrep
+        # Pinned like every Action in this repo: the scanner runs over the
+        # checked-out tree and gates a required check, so "latest" is not an
+        # acceptable version. Dependabot (pip ecosystem) proposes bumps.
+        run: python -m pip install -r .github/semgrep-requirements.txt
 
       - name: Semgrep scan
         # `semgrep scan` exits 0 even when findings exist (unlike `--error`),

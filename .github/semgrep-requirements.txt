@@ -1,0 +1,4 @@
+# Semgrep CLI version used by .github/workflows/semgrep.yml. Pinned like every
+# GitHub Action in this repo; Dependabot (pip ecosystem, directory /.github)
+# proposes bumps. Keep this the only line so the pin stays greppable.
+semgrep==1.176.0

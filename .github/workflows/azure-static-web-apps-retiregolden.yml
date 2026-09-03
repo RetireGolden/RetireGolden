@@ -18,6 +18,13 @@ concurrency:
   group: swa-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'run-ci') }}
 
+# Least privilege for every job that checks out PR code and runs pnpm install
+# and the build (third-party lifecycle scripts run there). `deploy` widens to
+# `pull-requests: write` for its own preview-URL comment; `dast` and
+# `close_pull_request` need nothing beyond the Azure token.
+permissions:
+  contents: read
+
 jobs:
   # --- Code Quality Jobs ---
   # On PRs the full pipeline is gated behind the `run-ci` label so review-bot
