@@ -291,6 +291,18 @@ interface NumericProps extends BaseProps, ControlProps {
   onCommit: (value: number | null) => void
   /** When false (default for most), clearing the field commits 0 instead of null. */
   allowNull?: boolean
+  /**
+   * A caution the field cannot derive from its own path, because it is about
+   * this value against ANOTHER field's — a success band whose cut edge is not
+   * below its raise edge. `warnings.ts` is keyed by one path and reads one
+   * number, so it cannot state these; the card holding both fields can.
+   *
+   * It reads in the same `.field-warning` treatment as a path warning and
+   * carries the same promise: the plan holds the value, nothing is refused,
+   * and the control never goes `aria-invalid`. Where both apply, the path's
+   * own warning wins, because that one is about the number in this box.
+   */
+  warning?: string | null
 }
 
 interface MoneyFieldProps extends NumericProps {
@@ -326,6 +338,7 @@ export function MoneyField({
   value,
   onCommit,
   allowNull,
+  warning: crossFieldWarning,
   onInvalid,
   fractionDigits,
   placeholder,
@@ -343,8 +356,9 @@ export function MoneyField({
   const issue = useFieldIssue(path)
   const error = rangeError ?? issue?.advice ?? null
   // Read from the value the plan holds, not the text being typed, so the note
-  // is about what was stored rather than a keystroke on the way there.
-  const warning = warningFor(path, value)
+  // is about what was stored rather than a keystroke on the way there. A
+  // cross-field caution from the card fills in where this path has none.
+  const warning = warningFor(path, value) ?? crossFieldWarning ?? null
   const formatted = value === null
     ? ''
     : fractionDigits === undefined
@@ -449,6 +463,7 @@ export function NumberField({
   value,
   onCommit,
   allowNull,
+  warning: crossFieldWarning,
   suffix,
   step,
   min,
@@ -476,8 +491,9 @@ export function NumberField({
   const issue = useFieldIssue(path)
   const error = rangeError ?? issue?.advice ?? null
   // Read from the value the plan holds, not the text being typed, so the note
-  // is about what was stored rather than a keystroke on the way there.
-  const warning = warningFor(path, value)
+  // is about what was stored rather than a keystroke on the way there. A
+  // cross-field caution from the card fills in where this path has none.
+  const warning = warningFor(path, value) ?? crossFieldWarning ?? null
   const outOfRange = (n: number): 'low' | 'high' | null => checkRange(n, bounds).side
   // Clearing a required field commits 0 when 0 is a value the engine allows
   // here, which is the documented "off" state for the rate overrides and every
