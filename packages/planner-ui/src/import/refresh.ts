@@ -247,9 +247,18 @@ const collapseText = (s: string): string => normalizeUnicodeText(s)
  * label (a Vanguard raw account number) is all-mask and normalizes to the
  * empty string, matching nothing — the user assigns it by hand, exactly as
  * the panel's original heuristic did.
+ *
+ * NFKC-normalized FIRST, before the mask regexes run: the mask patterns
+ * below test with JS `\d` (ASCII `[0-9]` only), so a fullwidth or other
+ * compatibility digit run (e.g. a PDF-copy-pasted "１２３４５６７８") would
+ * survive the mask strip untouched and then fold to ordinary ASCII digits
+ * once `collapseText` NFKC-normalizes it — turning a would-be-masked account
+ * number into matchable name content. Folding first makes the mask regexes
+ * see the same ASCII digits `collapseText` would have produced anyway.
  */
 export function normalizeBrokerAccountLabel(raw: string): string {
   const unmasked = raw
+    .normalize('NFKC')
     .toLowerCase()
     .replace(/\.\.\.\s*\w+/g, ' ') // Schwab/Fidelity trailing "...789" mask
     // Parenthesized ACCOUNT NUMBERS only ("(Z12345678)", "(...4321)") — a

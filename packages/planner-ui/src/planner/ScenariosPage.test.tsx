@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
+import { flushSync } from 'react-dom'
 import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
@@ -646,25 +647,48 @@ describe('ScenariosPage comparison lifecycle', () => {
       recipient.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const differentCouple = planWithoutPerson(original, removedPerson.id)
-    differentCouple.id = 'different-couple-sync-check'
-    differentCouple.household.people.push({
+    // A DIFFERENT plan that happens to reuse `removedPerson.id` for an
+    // unrelated person — the "cloned plan shares ids" scenario
+    // `UpdateBalancesPanel.test.tsx`'s analogous reset test describes.
+    // Because the id still resolves to a real household member,
+    // `recipientStillValid` alone would NOT force a clear; only
+    // `planChanged` does. That makes this the scenario the render-phase
+    // reset actually has to win a race against: if the clear landed one
+    // commit late, the stale id would not read back as blank (no matching
+    // option — the easy, already-covered case above) but as the WRONG
+    // person silently selected, which is the case a delayed lever click
+    // could act on.
+    const differentPlanSameIds = structuredClone(original)
+    differentPlanSameIds.id = 'different-plan-same-ids-sync-check'
+    differentPlanSameIds.household.people[1] = {
       ...removedPerson,
-      id: 'replacement-household-member-sync',
-      name: 'Replacement household member',
-    })
+      name: 'Unrelated person reusing the same id',
+    }
 
-    // A SYNCHRONOUS act() callback commits the render without ever awaiting a
-    // passive effect (see the render-phase comment above `seenPlanId` in
-    // `AddScenario`, and `UpdateBalancesPanel`'s `resets transient panel state
-    // when the plan identity changes` test, which uses this same technique).
-    // If the reset instead lived in a `useEffect`, the stale recipient would
-    // still be selected here, one render behind the plan swap.
-    act(() => {
+    // `flushSync`, not `act()`, on purpose: `act()` — sync or async — also
+    // flushes React's passive effects before returning control, so an
+    // `act()`-wrapped render cannot tell a render-phase reset apart from a
+    // `useEffect` that reaches the same end state one commit later; both
+    // read back as already-corrected by the time `act()` returns (this is
+    // why an earlier version of this test, wrapped in `act(() => {...})`,
+    // could not have caught the regression it described — nor can a bare,
+    // unwrapped `root.render()`, since `createRoot`'s updates are themselves
+    // scheduled through React's own async work loop and may not have
+    // committed AT ALL by the time an unwrapped call returns). `flushSync`
+    // forces the render and commit to complete synchronously — DOM mutations
+    // included — but deliberately leaves passive effects (`useEffect`) on
+    // their normal, later, scheduled pass. The render-phase `seenPlanId`
+    // pattern in `AddScenario` (documented above it) never commits the stale
+    // recipient at all, so this synchronous read already shows it cleared. A
+    // `useEffect`-based reset would commit the id-colliding, WRONG-person
+    // recipient on this same synchronous flush and only clear it on the
+    // effect's follow-up commit, which has not happened yet — so this
+    // assertion would fail if the reset regressed back into an effect.
+    flushSync(() => {
       root.render(
         <MemoryRouter>
           <WorkspaceReadOnlyContext.Provider value={false}>
-            <PlanCtx.Provider value={contextFor(differentCouple)}>
+            <PlanCtx.Provider value={contextFor(differentPlanSameIds)}>
               <ScenariosPage />
             </PlanCtx.Provider>
           </WorkspaceReadOnlyContext.Provider>
@@ -677,6 +701,11 @@ describe('ScenariosPage comparison lifecycle', () => {
     )!
     const nextRecipient = document.getElementById(nextRecipientLabel.htmlFor) as HTMLSelectElement
     expect(nextRecipient.value).toBe('')
+
+    // Settle the (no-op, in the correct implementation) passive-effect pass
+    // this render scheduled, so the test doesn't leave pending React work
+    // for `afterEach`'s unmount to absorb.
+    await act(async () => {})
   })
 
   it('sanitizes retained property choices across plan switches, deletion, and a single-property view', async () => {

@@ -219,6 +219,23 @@ describe('classifyRefresh — matching', () => {
     expect(hit!.targetAccountId).toBe('acct-401k')
   })
 
+  it('masks a fullwidth-digit account number the same way it masks the ASCII form', () => {
+    // A PDF-copy-pasted or CJK-locale export can render an account number in
+    // fullwidth digits ("１２３４５６７８"). NFKC folds those to ASCII BEFORE
+    // the mask regexes run, so they are stripped as a mask the same way
+    // "12345678" is — not left behind as matchable name content once
+    // collapseText's own NFKC pass folds them later.
+    expect(normalizeBrokerAccountLabel('Brokerage １２３４５６７８')).toBe(
+      normalizeBrokerAccountLabel('Brokerage 12345678'),
+    )
+    const plan = planWith(loadedTaxable('acct-401k', '401k'))
+    const { candidates: [c] } = classifyRefresh(plan, [
+      src('Brokerage １２３４５６７８', 40_000, null),
+    ])
+    expect(c!.match).toBe('unmatched')
+    expect(c!.targetAccountId).toBeNull()
+  })
+
   it('keeps non-ASCII letters as name content instead of stripping them to punctuation', () => {
     // Pre-fix, collapseText's ASCII-only filter treated "É" as punctuation
     // and dropped it, so "Épargne" normalized to "pargne" — losing the

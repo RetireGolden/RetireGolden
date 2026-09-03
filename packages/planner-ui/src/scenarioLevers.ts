@@ -47,8 +47,20 @@ import { boundsForPath } from './planner/schemaBounds'
 // is the single source of truth for what a value is allowed to be — see
 // `planner/schemaBounds.ts`). Module-level: the schema doesn't change within
 // a session, so this is computed once, not per lever invocation.
-const RETIREMENT_AGE_BOUNDS = boundsForPath('household.people.N.retirementAge')
-const SS_CLAIM_AGE_YEARS_BOUNDS = boundsForPath('incomes.N.claimAge.years')
+//
+// `boundsForPath` returns null only for a path the schema doesn't recognize
+// as a bounded number — normally impossible for these two wired paths (a
+// drift test in `schemaFieldBounds.test.ts` fails the build the moment the
+// generated map and the live engine schema disagree), but `?? FALLBACK`
+// below is what stands between a broken generate step and this lever
+// silently accepting any age at all: `validateNumber` treats an `undefined`
+// bound as "no restriction", so an unguarded `RETIREMENT_AGE_BOUNDS?.min`
+// would fail OPEN rather than fail closed. The fallback restates the
+// literals this lever always enforced before it started reading the schema.
+const RETIREMENT_AGE_FALLBACK_BOUNDS = { min: 30, max: 80 }
+const SS_CLAIM_AGE_YEARS_FALLBACK_BOUNDS = { min: 62, max: 70 }
+const RETIREMENT_AGE_BOUNDS = boundsForPath('household.people.N.retirementAge') ?? RETIREMENT_AGE_FALLBACK_BOUNDS
+const SS_CLAIM_AGE_YEARS_BOUNDS = boundsForPath('incomes.N.claimAge.years') ?? SS_CLAIM_AGE_YEARS_FALLBACK_BOUNDS
 
 export type ScenarioLeverId =
   | 'retirementAge'
@@ -1008,8 +1020,8 @@ export function buildScenarioLever(
       for (const person of editablePeople) {
         const nextAge = person.retirementAge! + request.yearsDelta
         const ageIssue = validateNumber(nextAge, `${person.name} retirement age`, {
-          min: RETIREMENT_AGE_BOUNDS?.min,
-          max: RETIREMENT_AGE_BOUNDS?.max,
+          min: RETIREMENT_AGE_BOUNDS.min,
+          max: RETIREMENT_AGE_BOUNDS.max,
         })
         if (ageIssue) return unavailable(definition, [ageIssue], warnings)
         if (
@@ -1081,8 +1093,8 @@ export function buildScenarioLever(
 
     case 'socialSecurityClaim': {
       const inputIssue = validateNumber(request.claimAge, 'Social Security claim age', {
-        min: SS_CLAIM_AGE_YEARS_BOUNDS?.min,
-        max: SS_CLAIM_AGE_YEARS_BOUNDS?.max,
+        min: SS_CLAIM_AGE_YEARS_BOUNDS.min,
+        max: SS_CLAIM_AGE_YEARS_BOUNDS.max,
         integer: true,
       })
       if (inputIssue) return unavailable(definition, [inputIssue])
