@@ -5,6 +5,10 @@
  * delta), runs the real plan once per candidate in a Web Worker — shared
  * market paths for the success rate — and ranks the rows with a per-state
  * driver drill-down. Income tax only; the page names what's out of scope.
+ *
+ * As on Scenarios, the candidate-draft fields carry hand-written min/max and no
+ * schema `path` by design: a draft candidate is not a value at a plan path
+ * until its patch is applied, so there is no path for `boundsForPath` to read.
  */
 
 import { useMemo, useRef, useState } from 'react'
