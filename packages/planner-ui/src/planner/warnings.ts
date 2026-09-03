@@ -96,7 +96,8 @@ const classPaths = (leaf: string): string[] =>
  *   the shape the engine requires, not a mistake.
  * - `strategies.rothConversion.targetValue` carries a bracket rate, a tier
  *   index, or a MAGI ceiling at one path, so no single band fits it. The
- *   engine validates it per target kind instead (plan.ts, D6).
+ *   engine validates it per target kind instead (model/planCrossFieldChecks.ts,
+ *   D6).
  */
 const BAND_BY_PATH: Readonly<Record<string, Band>> = {
   // D1 — returns, inflation and raises: beyond ±30 %.

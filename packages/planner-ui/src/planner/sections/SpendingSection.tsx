@@ -143,10 +143,11 @@ export function SpendingSection() {
             path="expenses.baseAnnual"
             value={e.baseAnnual}
             // The floor is not pulled down with the baseline: the engine states
-            // "required annual spending cannot exceed baseline" itself (plan.ts
-            // superRefine), so a baseline below the floor surfaces as an issue on
-            // the Required floor field rather than as a silent rewrite of a number
-            // nobody touched (D5).
+            // "required annual spending cannot exceed baseline" itself
+            // (model/planCrossFieldChecks.ts, run from plan.ts's superRefine),
+            // so a baseline below the floor surfaces as an issue on the
+            // Required floor field rather than as a silent rewrite of a
+            // number nobody touched (D5).
             onCommit={(v) => update((d) => void (d.expenses.baseAnnual = v ?? 0))}
           />
           <MoneyField

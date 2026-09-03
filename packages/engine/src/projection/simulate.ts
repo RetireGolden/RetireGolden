@@ -2882,8 +2882,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      * One record shared by the funding-and-close phase's ledger and by
      * `annualPassState`, so the two seams cannot drift apart and neither one
      * needs a copy-back block at the call site. A phase's `.write` lands on the
-     * local here directly; adding an eleventh scalar is a compile error at both
-     * ends rather than a silently dropped mutation at one of them.
+     * local here directly; adding an eleventh scalar is a compile error at the
+     * funding interface end (this record must list it) and, via the trailing
+     * `satisfies`, at the rollback-registry end too: `annualPassState` spreads
+     * this record in below, and a spread's members are not excess-checked
+     * against `SimulatorAnnualPassStateBindings`, so without the `satisfies`
+     * clause a scalar named here but not on that interface would compile,
+     * write through, and never be captured or restored by
+     * `SIMULATOR_ANNUAL_PASS_STATE_REGISTRY` — silently surviving a
+     * rolled-back attempt into the committed year.
      */
     const annualPassScalarBindings:
       PhaseLedgerScalarBindings<AnnualFundingApplicationAndClosePhaseScalars> = {
@@ -2927,7 +2934,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           () => priorYearPortfolioReturnPct,
           (value) => { priorYearPortfolioReturnPct = value },
         ),
-      }
+      } satisfies Pick<
+        SimulatorAnnualPassStateBindings,
+        keyof AnnualFundingApplicationAndClosePhaseScalars
+      >
 
     /** The one scalar latch the owned-IRA settlement phase sets for the year. */
     const settlementScalarBindings:

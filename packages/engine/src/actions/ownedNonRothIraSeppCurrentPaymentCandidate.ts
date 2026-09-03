@@ -721,9 +721,12 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
 
   const issues: OwnedNonRothIraSeppNonconformanceIssue[] = []
   const coverageYear = Number(coverage.evaluationDate.slice(0, 4))
-  // Re-derived through the shared part builder the producer mints with, so a
-  // reordering on either side is a compile error rather than a silent
-  // canonicalBindingMismatch at runtime.
+  // Re-derived through the shared part builder the producer mints with, so
+  // dropping or renaming a field on either side is a compile error rather
+  // than a silent canonicalBindingMismatch at runtime. A reorder of the part
+  // list itself is not a compile error -- see the note on
+  // `coverageEvidenceIdParts` -- it is caught by that helper's own pinned-ID
+  // test.
   const expectedCharacterCoverageEvidenceId = mintCoverageEvidenceId(
     coverageEvidenceIdParts(coverage),
   )

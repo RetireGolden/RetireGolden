@@ -19,8 +19,10 @@ export const OWNED_IRA_PENALTY_COVERAGE_ID_PREFIX =
  * (`evaluateOwnedNonRothIraPenaltyPrerequisites`) mints the ID from a freshly
  * characterized withdrawal; the SEPP consumers re-derive it from the coverage
  * evidence they were handed and refuse the route when the two disagree. Both
- * sides read the same field list here, so a reordering is a compile error
- * rather than a silent runtime nonconformance.
+ * sides read the same field list here, so dropping or renaming a field is a
+ * compile error at every call site that names it. `coverageEvidenceIdParts`
+ * still turns this into a positional `unknown[]`, so reordering its array
+ * entries is not itself a compile error -- see the note there.
  */
 export interface OwnedNonRothIraPenaltyCoverageEvidenceIdFields {
   readonly actionId: ActionId
@@ -51,6 +53,10 @@ export interface OwnedNonRothIraPenaltyCoverageEvidenceIdFields {
  * serialize byte-identically.
  *
  * Changing this order changes every previously minted ID. Do not reorder.
+ * The return type is a positional `readonly unknown[]`, so a reorder here
+ * compiles cleanly; it is `ownedNonRothIraPenaltyCoverageEvidenceId.test.ts`'s
+ * pinned byte-for-byte ID and its fourteen-part shape assertion that catch a
+ * reorder, at runtime, not the type checker.
  *
  * @internal
  */

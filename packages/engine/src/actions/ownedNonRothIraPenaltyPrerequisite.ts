@@ -744,8 +744,10 @@ function buildPenaltyCharacterCoverage(
   }
   // The coverage record and its evidence ID commit to one field list. Both
   // read it from `idFields`, and both SEPP consumers re-derive the ID from
-  // the same shared part builder, so the cross-module contract cannot drift
-  // on one side alone.
+  // the same shared part builder, so dropping or renaming a field here is a
+  // compile error on every side that names it. See the note on
+  // `coverageEvidenceIdParts` for what that guarantee does not cover
+  // (positional reordering).
   const idFields: OwnedNonRothIraPenaltyCoverageEvidenceIdFields = {
     actionId: withdrawal.actionId,
     allocationId: withdrawal.allocationId,

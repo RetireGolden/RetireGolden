@@ -361,9 +361,12 @@ function canonicalCoverage(
       'SEPP annual character-coverage evidence ID',
     ),
   }
-  // Re-derived through the shared part builder the producer mints with, so a
-  // reordering on either side is a compile error rather than a silent
-  // producerConforming: false at runtime.
+  // Re-derived through the shared part builder the producer mints with, so
+  // dropping or renaming a field on either side is a compile error rather
+  // than a silent producerConforming: false at runtime. A reorder of the
+  // part list itself is not a compile error -- see the note on
+  // `coverageEvidenceIdParts` -- it is caught by that helper's own pinned-ID
+  // test.
   const expectedEvidenceId = mintCoverageEvidenceId(
     coverageEvidenceIdParts(coverage),
   )

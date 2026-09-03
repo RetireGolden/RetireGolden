@@ -413,9 +413,9 @@ export function labelOfSegments(segments: readonly string[], plan?: Plan): strin
 
 /**
  * The engine's cross-field messages that name schema keys rather than fields
- * (packages/engine/src/model/plan.ts superRefine). Matched exactly, so a
- * reworded engine message falls through to the key-by-key translation below
- * rather than being mistranslated.
+ * (packages/engine/src/model/planCrossFieldChecks.ts, run from plan.ts's
+ * superRefine). Matched exactly, so a reworded engine message falls through
+ * to the key-by-key translation below rather than being mistranslated.
  */
 const CUSTOM_ADVICE: Record<string, string> = {
   "cashValueSchedule is required when cashValueMode is 'schedule'": 'Add at least one schedule row, or grow cash value by a flat rate',
