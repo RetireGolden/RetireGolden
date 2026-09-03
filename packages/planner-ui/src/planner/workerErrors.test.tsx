@@ -106,6 +106,9 @@ describe('SsAnalysisPage robustness check failure', () => {
   it('renders an error and re-enables the button when Monte Carlo rejects', async () => {
     mockedRunMc.mockImplementation(() => Promise.reject(new Error('worker exploded')))
     await mount(<SsAnalysisPage />, createSamplePlan())
+    // The claim-age sweep is debounced 200 ms off the render path; the
+    // robustness button only exists once it has settled.
+    await advanceBy(400)
     const button = [...container.querySelectorAll('button')].find((b) =>
       b.textContent?.includes('Check robustness'),
     )

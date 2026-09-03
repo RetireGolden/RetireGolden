@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useRoutes } from 'react-router'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
+import { ShellErrorBoundary } from './ShellErrorBoundary.tsx'
 import { plannerContentRoutes, plannerHomeRoutes, plannerNotFoundRoute, plannerWorkspaceRoutes } from './routes/groups'
 import { readLocal, STORAGE_KEYS, writeLocal } from './data/localStore'
 import { listPlansVia, usePlanStore, type PlanStore } from './data/planStoreContext'
@@ -233,6 +234,9 @@ export function App({
   }, [])
 
   return (
+    // Above every provider and the chrome, so a throw outside the route still
+    // leaves the household a way back to their plans (ShellErrorBoundary.tsx).
+    <ShellErrorBoundary>
     <ImportAvailabilityProvider enabled={importEnabled} resolved={importResolved}>
       <PlanStoreProvider store={store} readOnly={readOnly}>
         <ReportBrandingContext.Provider value={reportBranding ?? null}>
@@ -308,5 +312,6 @@ export function App({
         </ReportBrandingContext.Provider>
       </PlanStoreProvider>
     </ImportAvailabilityProvider>
+    </ShellErrorBoundary>
   )
 }

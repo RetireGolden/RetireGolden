@@ -6,7 +6,7 @@
  *    benefits alone (the actuarial / insurance lens).
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   CartesianGrid,
@@ -50,11 +50,15 @@ import {
   sweepClaimingStrategies,
   type MonthlyClaim,
   type MonthlyRefinement,
+  type SweepResult,
   type SweepRow,
   sweepVerdict,
 } from './ssAnalysis'
 import { chartTooltipStyle } from './chartStyle'
 import { ScrollRegion } from './ScrollRegion'
+
+/** Off the keystroke path, the same interval the survivor-transition sweep uses. */
+const SWEEP_DEBOUNCE_MS = 200
 
 type Tab = 'plan' | 'benefits' | 'breakeven'
 
@@ -432,7 +436,35 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   const readOnly = useWorkspaceReadOnly()
   const startYear = currentStartYear()
   const [objectiveId, setObjectiveId] = useState<ObjectivePolicyId>('max-after-tax-estate')
-  const sweep = useMemo(() => sweepClaimingStrategies(plan, startYear, objectiveId), [plan, startYear, objectiveId])
+  /**
+   * The sweep, off the render path.
+   *
+   * 81 full ledger simulations for a couple (139 ms measured) ran synchronously
+   * inside a `useMemo`, so every plan edit froze the tab with no loading state
+   * at all. This is the shape `SurvivorTransitionPage` already uses: debounce
+   * into state, hold the result WITH the inputs it was computed for so a stale
+   * sweep can never render against an edited plan, and absorb a throw into an
+   * error card rather than a stuck skeleton.
+   */
+  const [snapshot, setSnapshot] = useState<{
+    plan: typeof plan
+    objectiveId: ObjectivePolicyId
+    sweep: SweepResult | null
+  } | null>(null)
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        setSnapshot({ plan, objectiveId, sweep: sweepClaimingStrategies(plan, startYear, objectiveId) })
+      } catch {
+        setSnapshot({ plan, objectiveId, sweep: null })
+      }
+    }, SWEEP_DEBOUNCE_MS)
+    // Cancellation: a plan or ranking change before the timer fires drops the
+    // sweep that was queued for the old inputs.
+    return () => window.clearTimeout(timer)
+  }, [plan, startYear, objectiveId])
+  const settled = snapshot !== null && snapshot.plan === plan && snapshot.objectiveId === objectiveId ? snapshot : null
+  const sweep = settled?.sweep ?? null
   const [mc, setMc] = useState<Record<string, number> | null>(null)
   const [mcRunning, setMcRunning] = useState(false)
   const [mcError, setMcError] = useState<string | null>(null)
@@ -441,10 +473,11 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   // Only the engine's winner is ever crowned (banner, Apply, refine, table and
   // heatmap highlights). A flat objective, a current claim that already leads,
   // or no eligible candidate gets a note instead (#454).
-  const verdict = sweepVerdict(sweep)
-  const best: SweepRow | undefined = verdict === 'winner' ? (sweep.winner ?? undefined) : undefined
+  const verdict = sweep === null ? null : sweepVerdict(sweep)
+  const best: SweepRow | undefined =
+    sweep !== null && verdict === 'winner' ? (sweep.winner ?? undefined) : undefined
   const current = currentClaim(plan, personIds)
-  const currentRow = sweep.rows.find((r) => personIds.every((id) => r.claimByPersonId[id] === current[id]))
+  const currentRow = sweep?.rows.find((r) => personIds.every((id) => r.claimByPersonId[id] === current[id]))
   const keyOf = (r: SweepRow) => personIds.map((id) => r.claimByPersonId[id]).join('-')
 
   const applyMonthly = (claim: Record<string, MonthlyClaim>) =>
@@ -455,6 +488,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
     })
 
   const runRobustness = async () => {
+    if (sweep === null) return
     setMcRunning(true)
     setMcError(null)
     try {
@@ -478,8 +512,10 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
     }
   }
 
-  return (
-    <div>
+  // The header stays on screen in every state, so the ranking can be changed
+  // while the previous one is still being swept.
+  const header = (
+    <>
       <p className="card-hint">
         Each claim-age combination is run through your full plan: taxes, Roth conversions, IRMAA, ACA, and RMDs
         included, and ranked by the objective you choose{' '}
@@ -498,6 +534,28 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         />
         </div>
       </div>
+    </>
+  )
+
+  if (sweep === null) {
+    return (
+      <div>
+        {header}
+        {settled === null ? (
+          <div className="skeleton" style={{ height: '12rem' }} aria-label="Comparing claim ages" />
+        ) : (
+          <div className="callout callout--warn" role="alert">
+            The claim-age comparison could not run on this plan. The rest of the planner is unaffected. If this
+            persists, check the plan for validation issues on the Enter screens.
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {header}
 
       {verdict === 'flat' || verdict === 'current-best' || verdict === 'ineligible' ? (
         <div className="callout callout--note" role="note">
