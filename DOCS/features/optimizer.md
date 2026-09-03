@@ -380,7 +380,7 @@ measurements that justified the MILP path are recorded here so the decision stay
 Both are negligible against UX budget — the solve itself is not the cost. Behaviour was correct: the solver
 converted in the low bracket, spread conversions across years, and never tripped the IRMAA threshold.
 
-**Bundle cost:** `highs.wasm` is **3.0 MB** (3,078,627 bytes) plus 67 KB of `highs.js` glue. The wasm dominates
+**Bundle cost:** `highs.wasm` is **3.3 MB** (3,431,156 bytes, `highs` 1.15.2) plus 68 KB of `highs.js` glue. The wasm dominates
 and is fetched only when Optimize is invoked: the worker entry imports it via `highs/runtime?url` (the package's
 exported alias for `build/highs.wasm`), which yields a URL string and makes Vite emit the wasm as a separate
 asset that never enters the main/app chunk — and `runOptimizeRequest` imports the `highs.js` glue dynamically,
@@ -388,4 +388,4 @@ so the worker's other channels pay nothing for either. The wasm is also excluded
 runtime-cached instead ([operations/bundle-budget.md](../operations/bundle-budget.md)).
 
 **Decision:** MILP via HiGHS-WASM is viable — proceed with the MILP path, no heuristic fallback needed. The
-only cost to manage is the one-time 3 MB wasm load, deferred until the optimize channel actually runs.
+only cost to manage is the one-time 3.3 MB wasm load, deferred until the optimize channel actually runs.

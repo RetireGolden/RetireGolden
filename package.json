@@ -10,11 +10,11 @@
     "overrides": {
       "sharp": "^0.35.0",
       "ejs>jake": "^12.10.1",
-      "highs": "1.14.2",
-      "react": "19.2.7",
-      "react-dom": "19.2.7",
-      "react-is": "19.2.7",
-      "recharts": "3.9.2",
+      "highs": "1.15.2",
+      "react": "19.2.8",
+      "react-dom": "19.2.8",
+      "react-is": "19.2.8",
+      "recharts": "3.10.1",
       "es-toolkit": "1.49.0",
       "immer": "11.1.11"
     }

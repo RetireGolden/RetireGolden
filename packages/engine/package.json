@@ -340,7 +340,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "highs": "^1.14.2",
+    "highs": "^1.15.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
