@@ -19,6 +19,10 @@ import { deriveActionStructuralId } from './structuralId.js'
 import type {
   OwnedNonRothIraPenaltyCharacterCoverageEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
+import {
+  coverageEvidenceIdParts,
+  mintCoverageEvidenceId,
+} from './ownedNonRothIraPenaltyCoverageEvidenceId.js'
 import type {
   OwnedNonRothIraSubtype,
 } from './ownedNonRothIraWithdrawalCharacter.js'
@@ -717,39 +721,11 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
 
   const issues: OwnedNonRothIraSeppNonconformanceIssue[] = []
   const coverageYear = Number(coverage.evaluationDate.slice(0, 4))
-  const canonicalCoverageSourceEvidence = {
-    predicate: 'ownedNonRothIraPenaltySourceForWithdrawal' as const,
-    actionId: coverage.actionId,
-    allocationId: coverage.allocationId,
-    sourceAccountId: coverage.sourceAccountId,
-    ownerPersonId: coverage.ownerPersonId,
-    subtype: coverage.subtype,
-    evaluationDate: coverage.evaluationDate,
-    distributionDateEvidenceId:
-      coverage.sourceEvidenceIds.distributionDateEvidenceId,
-    accountOwnershipEvidenceId:
-      coverage.sourceEvidenceIds.accountOwnershipEvidenceId,
-    iraClassificationEvidenceId:
-      coverage.sourceEvidenceIds.iraClassificationEvidenceId,
-  }
-  const expectedCharacterCoverageEvidenceId = legacyJsonId(
-    'owned-ira-penalty-character-coverage',
-    [
-      coverage.actionId,
-      coverage.allocationId,
-      coverage.sourceAccountId,
-      coverage.ownerPersonId,
-      coverage.subtype,
-      coverage.evaluationDate,
-      coverage.executedAmount,
-      coverage.basisReturnExcludedAmount,
-      coverage.ordinaryIncomeExposureAmount,
-      coverage.basisEvidenceId,
-      coverage.line7AllocationEvidenceId,
-      coverage.characterEvidenceIds,
-      canonicalCoverageSourceEvidence,
-      coverage.ageThresholdEvidenceId,
-    ],
+  // Re-derived through the shared part builder the producer mints with, so a
+  // reordering on either side is a compile error rather than a silent
+  // canonicalBindingMismatch at runtime.
+  const expectedCharacterCoverageEvidenceId = mintCoverageEvidenceId(
+    coverageEvidenceIdParts(coverage),
   )
   addIssue(issues, 'canonicalBindingMismatch',
     coverage.predicate !==

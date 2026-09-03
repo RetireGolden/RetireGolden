@@ -39,6 +39,10 @@ import {
 import {
   classifyOwnedNonRothIraAnnualWithdrawals,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+import {
+  coverageEvidenceIdParts,
+  mintCoverageEvidenceId,
+} from './ownedNonRothIraPenaltyCoverageEvidenceId.js'
 
 function legacyJsonId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
@@ -1195,39 +1199,9 @@ function withCoverageAmounts(
     basisReturnExcludedAmount: asUsdCents(basisAmount),
     ordinaryIncomeExposureAmount: asUsdCents(ordinaryAmount),
   }
-  const sourceEvidence = {
-    predicate: 'ownedNonRothIraPenaltySourceForWithdrawal' as const,
-    actionId: coverage.actionId,
-    allocationId: coverage.allocationId,
-    sourceAccountId: coverage.sourceAccountId,
-    ownerPersonId: coverage.ownerPersonId,
-    subtype: coverage.subtype,
-    evaluationDate: coverage.evaluationDate,
-    distributionDateEvidenceId:
-      coverage.sourceEvidenceIds.distributionDateEvidenceId,
-    accountOwnershipEvidenceId:
-      coverage.sourceEvidenceIds.accountOwnershipEvidenceId,
-    iraClassificationEvidenceId:
-      coverage.sourceEvidenceIds.iraClassificationEvidenceId,
-  }
   return {
     ...coverage,
-    evidenceId: legacyJsonId('owned-ira-penalty-character-coverage', [
-      coverage.actionId,
-      coverage.allocationId,
-      coverage.sourceAccountId,
-      coverage.ownerPersonId,
-      coverage.subtype,
-      coverage.evaluationDate,
-      coverage.executedAmount,
-      coverage.basisReturnExcludedAmount,
-      coverage.ordinaryIncomeExposureAmount,
-      coverage.basisEvidenceId,
-      coverage.line7AllocationEvidenceId,
-      coverage.characterEvidenceIds,
-      sourceEvidence,
-      coverage.ageThresholdEvidenceId,
-    ]),
+    evidenceId: mintCoverageEvidenceId(coverageEvidenceIdParts(coverage)),
   }
 }
 

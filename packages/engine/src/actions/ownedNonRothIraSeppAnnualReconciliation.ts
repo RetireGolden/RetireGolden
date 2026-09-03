@@ -23,6 +23,10 @@ import type {
   OwnedNonRothIraPenaltyCharacterCoverageEvidence,
 } from './ownedNonRothIraPenaltyPrerequisite.js'
 import {
+  coverageEvidenceIdParts,
+  mintCoverageEvidenceId,
+} from './ownedNonRothIraPenaltyCoverageEvidenceId.js'
+import {
   validateOwnedNonRothIraSeppCurrentPaymentCandidate,
   type OwnedNonRothIraSeppAnnualOpeningStateEvidence,
   type OwnedNonRothIraSeppAnnualScheduleEvidence,
@@ -259,10 +263,6 @@ const resultFlags: OwnedNonRothIraSeppAnnualResultBase = {
   penaltyTreatment: 'notEstablished',
 }
 
-function legacyJsonId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
-}
-
 function civilDate(value: string, label: string): string {
   if (parseCivilIsoDate(value) === null) {
     throw new RangeError(`${label} must be a canonical civil ISO date`)
@@ -361,39 +361,11 @@ function canonicalCoverage(
       'SEPP annual character-coverage evidence ID',
     ),
   }
-  const canonicalSourceEvidence = {
-    predicate: 'ownedNonRothIraPenaltySourceForWithdrawal' as const,
-    actionId: coverage.actionId,
-    allocationId: coverage.allocationId,
-    sourceAccountId: coverage.sourceAccountId,
-    ownerPersonId: coverage.ownerPersonId,
-    subtype: coverage.subtype,
-    evaluationDate: coverage.evaluationDate,
-    distributionDateEvidenceId:
-      coverage.sourceEvidenceIds.distributionDateEvidenceId,
-    accountOwnershipEvidenceId:
-      coverage.sourceEvidenceIds.accountOwnershipEvidenceId,
-    iraClassificationEvidenceId:
-      coverage.sourceEvidenceIds.iraClassificationEvidenceId,
-  }
-  const expectedEvidenceId = legacyJsonId(
-    'owned-ira-penalty-character-coverage',
-    [
-      coverage.actionId,
-      coverage.allocationId,
-      coverage.sourceAccountId,
-      coverage.ownerPersonId,
-      coverage.subtype,
-      coverage.evaluationDate,
-      coverage.executedAmount,
-      coverage.basisReturnExcludedAmount,
-      coverage.ordinaryIncomeExposureAmount,
-      coverage.basisEvidenceId,
-      coverage.line7AllocationEvidenceId,
-      coverage.characterEvidenceIds,
-      canonicalSourceEvidence,
-      coverage.ageThresholdEvidenceId,
-    ],
+  // Re-derived through the shared part builder the producer mints with, so a
+  // reordering on either side is a compile error rather than a silent
+  // producerConforming: false at runtime.
+  const expectedEvidenceId = mintCoverageEvidenceId(
+    coverageEvidenceIdParts(coverage),
   )
   return {
     coverage,

@@ -29,6 +29,11 @@ import {
   type ReconcileOwnedNonRothIraSeppAnnualScheduleInput,
   type ReconcileOwnedNonRothIraSeppAnnualScheduleResult,
 } from './ownedNonRothIraSeppAnnualReconciliation.js'
+import {
+  coverageEvidenceIdParts,
+  mintCoverageEvidenceId,
+  type OwnedNonRothIraPenaltyCoverageEvidenceIdFields,
+} from './ownedNonRothIraPenaltyCoverageEvidenceId.js'
 import { deepFreeze } from './freeze.js'
 import { requireNonblankId } from './plainData.js'
 
@@ -737,28 +742,11 @@ function buildPenaltyCharacterCoverage(
       'IRA withdrawal character must bind the supplied annual basis evidence',
     )
   }
-  const evidenceId = stableId(
-    'owned-ira-penalty-character-coverage',
-    [
-      withdrawal.actionId,
-      withdrawal.allocationId,
-      withdrawal.sourceAccountId,
-      ownerPersonId,
-      withdrawal.subtype,
-      sourceEvidence.evaluationDate,
-      withdrawal.executedAmount,
-      character.basisReturnAmount,
-      character.ordinaryIncomeAmount,
-      annualBasisEvidenceId,
-      line7AllocationEvidenceId,
-      character.characterEvidenceIds,
-      sourceEvidence,
-      ageThresholdEvidenceId,
-    ],
-  )
-  return {
-    predicate:
-      'completeOwnedNonRothIraPenaltyCharacterCoverageForAllocation',
+  // The coverage record and its evidence ID commit to one field list. Both
+  // read it from `idFields`, and both SEPP consumers re-derive the ID from
+  // the same shared part builder, so the cross-module contract cannot drift
+  // on one side alone.
+  const idFields: OwnedNonRothIraPenaltyCoverageEvidenceIdFields = {
     actionId: withdrawal.actionId,
     allocationId: withdrawal.allocationId,
     sourceAccountId: withdrawal.sourceAccountId,
@@ -780,7 +768,12 @@ function buildPenaltyCharacterCoverage(
         sourceEvidence.iraClassificationEvidenceId,
     },
     ageThresholdEvidenceId,
-    evidenceId,
+  }
+  return {
+    predicate:
+      'completeOwnedNonRothIraPenaltyCharacterCoverageForAllocation',
+    ...idFields,
+    evidenceId: mintCoverageEvidenceId(coverageEvidenceIdParts(idFields)),
   }
 }
 
