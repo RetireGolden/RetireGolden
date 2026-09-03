@@ -81,12 +81,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 329 |
+| Engine source files | 334 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 55 |
-| registered | 102 |
-| rule-free | 172 |
+| partial | 56 |
+| registered | 103 |
+| rule-free | 175 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -94,17 +94,17 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Directory | Files | Partial | Registered | Rule-free | Unswept |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | (root) | 3 | 0 | 0 | 3 | 0 |
-| actions | 76 | 15 | 33 | 28 | 0 |
+| actions | 77 | 15 | 33 | 29 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 2 | 2 | 15 | 0 |
 | insights | 22 | 2 | 3 | 17 | 0 |
-| internal | 10 | 1 | 3 | 6 | 0 |
+| internal | 11 | 1 | 3 | 7 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 0 | 1 | 1 | 0 |
-| model | 3 | 3 | 0 | 0 | 0 |
+| model | 4 | 4 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
-| params | 8 | 0 | 6 | 2 | 0 |
-| projection | 90 | 20 | 15 | 55 | 0 |
+| params | 9 | 0 | 7 | 2 | 0 |
+| projection | 91 | 20 | 15 | 56 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
 | rules | 25 | 0 | 20 | 5 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -147,6 +147,7 @@ None.
 | ladder/ladderMath.ts | 2026-08-27 | TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain |
 | model/migrations.ts | 2026-08-24 | Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records |
 | model/plan.ts | 2026-08-24 | Inherited IRA regime parse rules; spouse J&S RMD gate; 403(b) aggregation; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates |
+| model/planCrossFieldChecks.ts | 2026-09-03 | The cross-field validator, moved verbatim out of the superRefine body in model/plan.ts and unchanged in rule, message, or order; it carries the same residual claims the model/plan.ts entry names for cross-field rules: inherited IRA regime parse rules; spouse J&S RMD gate; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates. The qualified-annuity start-age bounds it applies come from the latestNonQlacQualifiedAnnuityStartAge and latestQlacAnnuityStartAge helpers that stay in model/plan.ts |
 | model/retirementActionAnnualTaxFacts.ts | 2026-08-24 | April filing deadline w/ weekend & Emancipation Day adjustments; post-year IRA contribution window invariants; record names other files |
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |

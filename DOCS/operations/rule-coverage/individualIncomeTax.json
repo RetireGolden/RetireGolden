@@ -94,6 +94,7 @@
       "dueOn": "2026-12-27",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
+        "packages/engine/src/params/indexingScale.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
@@ -107,11 +108,20 @@
           ]
         },
         {
+          "path": "packages/engine/src/params/indexingScale.ts",
+          "functions": [
+            {
+              "name": "indexingScaleFor",
+              "line": 49
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/simulate.ts",
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -358,7 +368,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2054
+              "line": 2014
             }
           ]
         },
@@ -456,7 +466,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2054
+              "line": 2014
             }
           ]
         },
