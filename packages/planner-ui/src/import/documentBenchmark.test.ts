@@ -522,6 +522,18 @@ describe('the benchmark is test instrumentation, not published surface', () => {
     // …while the module that IS published stays published.
     expect(packageJson.files).not.toContain('!src/import/documentText.ts')
   })
+
+  it('also excludes test snapshots and fixture JSON, wherever in src they live', () => {
+    // Same failure shape as the module list above, but for test artifacts:
+    // a vitest snapshot or a `*.fixture.json` (e.g. `completeExportManifest.fixture.json`)
+    // ships instrumentation to every consumer unless a deny-entry catches it.
+    const packageJson = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8'),
+    ) as { files: string[] }
+
+    expect(packageJson.files).toContain('!src/**/__snapshots__')
+    expect(packageJson.files).toContain('!src/**/*.fixture.json')
+  })
 })
 
 describe('the detectors are general, not fitted to the corpus', () => {
