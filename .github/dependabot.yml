@@ -16,7 +16,7 @@ updates:
       github-actions:
         patterns:
           - "*"
-  # The semgrep CLI pin (.github/semgrep-requirements.txt) that
+  # The semgrep CLI pin (.github/requirements.txt) that
   # .github/workflows/semgrep.yml installs.
   - package-ecosystem: "pip"
     directory: "/.github"

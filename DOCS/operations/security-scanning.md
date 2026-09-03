@@ -49,7 +49,7 @@ Running both on each PR gives coverage from both directions.
 
 - **Triggers** on `push` and `pull_request` to `main`.
 - Runs the Semgrep CLI on a `setup-python` runner, installed from the version pin in
-  [`.github/semgrep-requirements.txt`](../../.github/semgrep-requirements.txt) (`pip install -r`).
+  [`.github/requirements.txt`](../../.github/requirements.txt) (`pip install -r`).
   The scanner is pinned like every Action in this repo, so a Semgrep CLI release cannot move a
   required check on its own; Dependabot (pip ecosystem) proposes the bumps.
 - Uses the **`p/default`** ruleset — Semgrep's curated, low-false-positive set. This is a **purely local,
