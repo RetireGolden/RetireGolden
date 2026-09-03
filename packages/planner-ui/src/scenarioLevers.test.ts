@@ -7,6 +7,7 @@ import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { buildExampleCouple } from './planner/examples/buildExampleCouple'
 import {
   buildScenarioLever,
+  SCENARIO_LEVER_BUILDERS,
   SCENARIO_LEVER_DEFINITIONS,
   type ScenarioLeverRequest,
 } from './scenarioLevers'
@@ -3098,5 +3099,17 @@ describe('scenario lever contract', () => {
       expect(result.name).toContain('4 years')
       expect(result.name).toContain('125,000 per year')
     }
+  })
+})
+
+describe('SCENARIO_LEVER_BUILDERS registry', () => {
+  it.each(SCENARIO_LEVER_DEFINITIONS)('has exactly one builder for "$id"', ({ id }) => {
+    expect(typeof SCENARIO_LEVER_BUILDERS[id]).toBe('function')
+  })
+
+  it('has no builder beyond the ids SCENARIO_LEVER_DEFINITIONS declares', () => {
+    const definedIds = SCENARIO_LEVER_DEFINITIONS.map((definition) => definition.id).sort()
+    const registeredIds = Object.keys(SCENARIO_LEVER_BUILDERS).sort()
+    expect(registeredIds).toEqual(definedIds)
   })
 })
