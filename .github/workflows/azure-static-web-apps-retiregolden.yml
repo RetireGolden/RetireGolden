@@ -130,7 +130,10 @@ jobs:
           name: dist
           path: app/dist
 
+      # Node only: this job deploys the downloaded artifact and never runs pnpm.
       - uses: ./.github/actions/setup-toolchain
+        with:
+          pnpm: 'false'
 
       - name: Deploy to Azure Static Web Apps
         id: builddeploy

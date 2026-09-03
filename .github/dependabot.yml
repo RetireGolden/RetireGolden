@@ -16,6 +16,20 @@ updates:
       github-actions:
         patterns:
           - "*"
+  # Composite actions live outside .github/workflows, so their `uses:` pins
+  # need their own entry to stay under Dependabot.
+  - package-ecosystem: "github-actions"
+    directory: "/.github/actions/setup-toolchain"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
   # The semgrep CLI pin (.github/requirements.txt) that
   # .github/workflows/semgrep.yml installs.
   - package-ecosystem: "pip"

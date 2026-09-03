@@ -21,9 +21,10 @@ RetireGolden/
 ├── LICENSE            AGPL-3.0-only (© RetireGolden, LLC); see TRADEMARKS.md for the brand policy
 └── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, grok-code-review.yml, openrouter-code-review.yml, owl-parity.yml,
                         semgrep.yml, zap.yml, cla.yml (CLA signatures), resolve-gate.yml (fresh
-- `.github/actions/setup-toolchain/action.yml` — the shared composite every Node-running workflow uses for pnpm + Node (single home of the CI Node major and the pnpm store cache); jobs keep their own checkout and install line.
                         dependency resolve exercises the pnpm trust policy), publish-engine.yml /
                         publish-planner-ui.yml (npm releases on engine-v* / planner-ui-v* tags)
+    actions/setup-toolchain/  the composite every Node-running job uses for pnpm + Node (single home of the
+                        CI Node major and the pnpm store cache); jobs keep their own checkout and install line
 ```
 
 The root `LICENSE` is AGPL-3.0-only; copyright is held by RetireGolden, LLC. `app/THIRD-PARTY-NOTICES.txt` (and the shipped copy

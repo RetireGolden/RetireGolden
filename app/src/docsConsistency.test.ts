@@ -32,9 +32,12 @@ import { COMPLETE_EXPORT_FORMAT_VERSION } from '../../packages/planner-ui/src/da
 import { CURRENT_PLAN_SCHEMA_VERSION } from '@retiregolden/engine/model/plan'
 import { LEARNING_ARTICLES } from '@retiregolden/planner-ui/learn/learningRegistry'
 
-const workflowFiles = Object.keys(import.meta.glob('../../.github/workflows/*.yml')).map(
-  (path) => path.split('/').pop()!,
-)
+const allWorkflowSources = import.meta.glob('../../.github/workflows/*.yml', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
+const workflowFiles = Object.keys(allWorkflowSources).map((path) => path.split('/').pop()!)
 const nodeFloor = (JSON.parse(repoPackageJson) as { engines: { node: string } }).engines.node
 const appNodeFloor = (JSON.parse(appPackageJson) as { engines: { node: string } }).engines.node
 // packages/engine and packages/planner-ui are published to npm and ship no jsdom (it's a
@@ -107,10 +110,16 @@ describe('docs consistency', () => {
     expect(nodeFloor).toMatch(/^>=\d+(?:\.\d+){0,2}$/)
     expect(nodeFloor.slice('>='.length).split('.')[0]).toBe(ciNodeVersion)
     for (const workflow of nodePinnedWorkflows) {
-      // Every Node-running workflow goes through the composite, so the version is pinned
-      // once; a raw setup-node step would reintroduce a second place to bump.
+      // Every Node-running workflow goes through the composite, so the version is pinned once.
       expect(workflow).toContain('uses: ./.github/actions/setup-toolchain')
-      expect(workflow).not.toMatch(/uses: actions\/setup-node@/)
+    }
+    // ...and no workflow at all, listed here or added later, may carry a raw setup-node
+    // step, which would reintroduce a second place to bump.
+    expect(Object.keys(allWorkflowSources).length).toBe(workflowFiles.length)
+    for (const [path, source] of Object.entries(allWorkflowSources)) {
+      expect(source, `${path} should use the composite, not a raw actions/setup-node`).not.toMatch(
+        /uses: actions\/setup-node@/,
+      )
     }
     expect(codeMap).toContain(`Node.js ${nodeFloor}`)
     expect(codeMap).toContain(`engines: node ${nodeFloor}`)

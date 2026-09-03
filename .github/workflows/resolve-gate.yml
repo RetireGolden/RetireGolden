@@ -26,7 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # No store cache: this job deletes the lockfile and resolves from scratch,
+      # so a cache keyed on the committed lockfile would only be written back
+      # under a key nothing else can hit.
       - uses: ./.github/actions/setup-toolchain
+        with:
+          cache: 'false'
 
       - name: Resolve with no lockfile
         run: |
