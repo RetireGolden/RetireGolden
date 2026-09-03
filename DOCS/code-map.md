@@ -64,12 +64,12 @@ type-checks against the real `dist/` through a project reference). No React/DOM/
 
 | Folder (`src/`) | What's here |
 |--------|-------------|
-| `model/` | `plan.ts` (Zod `Plan` schema, `CURRENT_PLAN_SCHEMA_VERSION`), `migrations.ts` |
+| `model/` | `plan.ts` (Zod `Plan` schema, `CURRENT_PLAN_SCHEMA_VERSION`), `planCrossFieldChecks.ts` (the named cross-field validators `plan.ts`'s `superRefine` delegates to), `migrations.ts` |
 | `schema/` | Plan JSON Schema package surfaces: lightweight current entry (`current.ts`), legacy compatibility barrel (`index.ts`), explicit generated versions (`plan.v1..v5.generated.ts`), generator (`generate.ts`), and metadata (`planSchemaMeta.ts`) |
 | `rules/` | `records/` (one typed frozen record per statutory rule, in per-domain modules), `taxRuleRegistry.ts` (the types, the spread-composed frozen registry, and the re-verification helpers), `describeRule.ts` (the fixture helper that requires a `produced` reading for an `approximated` record), the conformance and quote-fidelity suites, and `approximations/` |
 | `actions/` | Identity-bearing retirement actions: the request contract (`contract.ts`), exact-cent money/identity/structural-ID primitives, the three executors the ledger calls (`execution.ts`, `rothConversionExecution.ts`, `annualQcdExecution.ts`), the conversion-linked funding group, the owned-IRA / beneficiary / SEPP / employer-plan evidence boundaries, and `reasons.ts` (the typed refusal registry) |
-| `internal/` | Not part of the package's public API: the bounded annual-attempt driver, the T0 counterfactual liability run, and the owned-IRA runtime source-series / replay / settlement chain the simulator runs after each attempt |
-| `params/` | `index.ts` (incl. `TRUSTEES_DEFAULT_SS_HAIRCUT`) + `provenance.ts`; federal packs in `data/` (e.g. `year2026.ts`); per-state in `state/` |
+| `internal/` | Not part of the package's public API: the bounded annual-attempt driver, the T0 counterfactual liability run, the owned-IRA runtime source-series / replay / settlement chain the simulator runs after each attempt, and `simulatorAnnualPassStateRegistry.ts` (the one capture/restore inventory for the annual pass's rollback state) |
+| `params/` | `index.ts` (incl. `TRUSTEES_DEFAULT_SS_HAIRCUT`) + `provenance.ts`; `indexingScale.ts` (the shared IRC 1(j)(3)(B)-family statutory-indexing rule); federal packs in `data/` (e.g. `year2026.ts`); per-state in `state/` |
 | `tax/` | `federalTax.ts` (incl. `applyCapitalLossCarryforward`), `stateTax.ts`, `aca.ts`, `medicare.ts` |
 | `allocation/` | `assetClasses.ts` (per-class returns/volatilities/yields, blended-return helpers) |
 | `ladder/` | TIPS income floor: `ladderMath.ts` (rung solve, pricing, `realPresentValue`), `bridge.ts` (SS bridge sizing), `fundedRatio.ts`, `fedInvest.ts` (CSV parsing/date math only — the fetch + cache live in `planner-ui/src/data/fedInvestClient.ts`) |

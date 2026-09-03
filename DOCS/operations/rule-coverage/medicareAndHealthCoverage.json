@@ -28,7 +28,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 1822
+              "line": 1818
             }
           ]
         },
@@ -46,7 +46,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         },
@@ -103,7 +103,7 @@
           "functions": [
             {
               "name": "acaYearContractSchema",
-              "line": 1736
+              "line": 1732
             }
           ]
         },
@@ -112,7 +112,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -155,7 +155,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2054
+              "line": 2014
             }
           ]
         },
@@ -262,7 +262,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2054
+              "line": 2014
             }
           ]
         },
@@ -483,7 +483,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 1822
+              "line": 1818
             }
           ]
         },
@@ -501,7 +501,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -628,7 +628,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 1822
+              "line": 1818
             }
           ]
         },
@@ -655,7 +655,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         },
@@ -702,7 +702,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 395
+              "line": 415
             }
           ]
         },
@@ -711,7 +711,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -763,7 +763,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 395
+              "line": 415
             }
           ]
         },
@@ -772,7 +772,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -838,7 +838,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -924,7 +924,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         },
@@ -1087,7 +1087,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 1822
+              "line": 1818
             }
           ]
         },
@@ -1114,7 +1114,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }

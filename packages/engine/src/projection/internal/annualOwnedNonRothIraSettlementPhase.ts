@@ -41,6 +41,7 @@ import {
   type SimulateAnnualCounterfactualRequest,
 } from '../../internal/counterfactualAnnualLiability.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
+import type { PhaseLedgerScalarBindings } from './phaseLedgerScalars.js'
 
 type TreatAsOwnAccount = Parameters<typeof isTreatAsOwnEffective>[0]
 
@@ -68,8 +69,20 @@ export interface AnnualOwnedNonRothIraSettlementPhaseFacts {
 
 export interface AnnualOwnedNonRothIraSettlementPhaseLedger {
   iraBasisByOwner: Map<string, number>
-  ownedNonRothIraSettlementRolledBackHousehold: boolean
   ownedNonRothIraSettlementRolledBackOwners: Set<string>
+  /**
+   * The one scalar latch this phase sets, bound rather than copied back.
+   *
+   * The owner latch beside it is a `Set` the phase mutates in place; this one
+   * is a boolean, and used to travel home through a hand-written assignment at
+   * the call site that no type checked.
+   */
+  readonly scalars: PhaseLedgerScalarBindings<AnnualOwnedNonRothIraSettlementPhaseScalars>
+}
+
+/** The scalar simulator locals the owned-IRA settlement phase latches. */
+export interface AnnualOwnedNonRothIraSettlementPhaseScalars {
+  ownedNonRothIraSettlementRolledBackHousehold: boolean
 }
 
 export interface AnnualOwnedNonRothIraSettlementPhaseCallbacks {
@@ -373,7 +386,7 @@ export function annualOwnedNonRothIraSettlementPhase(
         // rather than the rest of the horizon.
         if (disqualification.horizon === 'remainingProjection') {
           if (disqualification.ownerPersonId === null) {
-            ledger.ownedNonRothIraSettlementRolledBackHousehold = true
+            ledger.scalars.ownedNonRothIraSettlementRolledBackHousehold.write(true)
           } else {
             ownedNonRothIraSettlementRolledBackOwners.add(
               disqualification.ownerPersonId,

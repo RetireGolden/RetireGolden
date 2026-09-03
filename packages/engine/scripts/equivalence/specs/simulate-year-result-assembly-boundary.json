@@ -115,20 +115,20 @@
       "label": "settled annual inputs grouped at the final-publication callsite",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        2127,
-        2214
+        2172,
+        2259
       ],
       "anchors": [
         {
-          "line": 2127,
+          "line": 2172,
           "text": "const yearResult = annualYearResultAssembly({"
         },
         {
-          "line": 2168,
+          "line": 2213,
           "text": "settlement: settlementPublication,"
         },
         {
-          "line": 2209,
+          "line": 2254,
           "text": "balanceSheet: {"
         }
       ]
@@ -138,20 +138,20 @@
       "label": "cash-flow publication gate and pass-local evidence handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        2215,
-        2308
+        2260,
+        2353
       ],
       "anchors": [
         {
-          "line": 2215,
+          "line": 2260,
           "text": "...(publishCashFlow"
         },
         {
-          "line": 2218,
+          "line": 2263,
           "text": "yearSites: yearSites!,"
         },
         {
-          "line": 2305,
+          "line": 2350,
           "text": "shortfallAfterHecm,"
         }
       ]

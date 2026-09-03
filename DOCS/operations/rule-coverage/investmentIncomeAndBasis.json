@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 409
+              "line": 405
             }
           ]
         }
@@ -134,7 +134,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         },
@@ -349,11 +349,11 @@
           "functions": [
             {
               "name": "LP_LTCG_RATE",
-              "line": 75
+              "line": 76
             },
             {
               "name": "buildOptimizerInput",
-              "line": 482
+              "line": 483
             }
           ]
         }
@@ -417,7 +417,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 409
+              "line": 405
             }
           ]
         },
@@ -435,7 +435,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 588
+              "line": 598
             }
           ]
         }
@@ -502,7 +502,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         },
@@ -568,7 +568,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 409
+              "line": 405
             }
           ]
         },
@@ -648,7 +648,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         },
@@ -923,7 +923,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 395
+              "line": 415
             }
           ]
         },
@@ -932,7 +932,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         },
@@ -993,7 +993,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 409
+              "line": 405
             }
           ]
         },
@@ -1054,7 +1054,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 409
+              "line": 405
             }
           ]
         }
@@ -1426,7 +1426,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1491
+              "line": 1487
             }
           ]
         },
@@ -1435,7 +1435,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -1489,7 +1489,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 409
+              "line": 405
             }
           ]
         },
@@ -1507,7 +1507,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -1549,7 +1549,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 409
+              "line": 405
             }
           ]
         }
@@ -1696,7 +1696,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -1774,7 +1774,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1491
+              "line": 1487
             }
           ]
         },
@@ -1792,7 +1792,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -1855,7 +1855,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1491
+              "line": 1487
             }
           ]
         },
@@ -1873,7 +1873,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }
@@ -1921,7 +1921,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1491
+              "line": 1487
             }
           ]
         },
@@ -1930,7 +1930,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 590
+              "line": 600
             }
           ]
         }

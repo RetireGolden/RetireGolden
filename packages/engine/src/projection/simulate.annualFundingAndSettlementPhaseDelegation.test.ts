@@ -164,4 +164,32 @@ describe('simulatePlan delegates grouped funding and settlement phases', () => {
     expect(settlement.returned.optimizerProbe).not.toBeNull()
     expect(probes).toEqual([settlement.returned.optimizerProbe])
   })
+
+  it("hands the funding phase the simulator's own scalar cells, not copies", () => {
+    simulatePlan(plan(), {
+      startYear: YEAR,
+      horizonEndYear: YEAR,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+
+    const settlement = seam.settlementCalls[0]!
+    const funding = seam.fundingCalls[0]!
+
+    // The ten money-bearing scalars the funding-and-close phase writes are the
+    // very bindings the annual-pass transaction rolls back, so a phase write
+    // lands on `simulatePlan`'s own local. The old seam copied numbers out of a
+    // plain ledger object by hand, and a forgotten line would have been silent.
+    const keys = Object.keys(funding.input.ledger.scalars) as
+      (keyof typeof funding.input.ledger.scalars)[]
+    expect(keys).toHaveLength(10)
+    for (const key of keys) {
+      expect(funding.input.ledger.scalars[key]).toBe(settlement.input.state[key])
+    }
+
+    // The settlement phase's single latch is bound the same way.
+    expect(
+      typeof settlement.input.ledger.scalars
+        .ownedNonRothIraSettlementRolledBackHousehold.write,
+    ).toBe('function')
+  })
 })

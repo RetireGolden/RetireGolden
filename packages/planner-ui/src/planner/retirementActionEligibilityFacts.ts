@@ -25,8 +25,9 @@
  * - **Within a role.** `JSON.stringify` over the key tuple is injective, and
  *   the Plan already rejects two records sharing a natural key (the
  *   duplicate-classification-source, duplicate-activity-source-and-year, and
- *   duplicate-contribution-donor-and-year refinements in `model/plan.ts`). Two
- *   live records therefore never share a key, and never share an ID.
+ *   duplicate-contribution-donor-and-year refinements in
+ *   `model/planCrossFieldChecks.ts`). Two live records therefore never share a
+ *   key, and never share an ID.
  * - **Against runtime evidence.** The simulator mints `projection-*` IDs and
  *   the manual-review preview mints `planner-preview-*` IDs. A UI-authored plan
  *   consequently cannot trip the whole-batch `evidenceIdReused` refusal in

@@ -10,6 +10,12 @@ import type {
 } from './types.js'
 import { SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS } from
   '../internal/simulatorAnnualPassValueBindingKeys.js'
+import type { SimulatorAnnualPassCapturedState } from
+  '../internal/simulatorAnnualPassStateRegistry.js'
+import {
+  captureSimulatorAnnualPassState,
+  restoreSimulatorAnnualPassState,
+} from '../internal/simulatorAnnualPassStateRegistry.js'
 
 /**
  * A simulator balance row at the post-contribution annual-pass boundary.
@@ -143,14 +149,6 @@ export class SimulatorAnnualPassTransactionSettledError extends Error {
   }
 }
 
-interface BalanceSnapshot {
-  record: SimulatorAnnualPassBalanceRecord
-  account: SimulatorAnnualPassBalanceRecord['account']
-  accountId: string
-  balance: number
-  costBasis: number
-}
-
 interface ValueBindingMethodSnapshot {
   readonly key: typeof SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS[number]
   readonly binding: object
@@ -164,126 +162,8 @@ interface AnnualPassSnapshot {
       SimulatorAnnualPassStateBindings[Key]
   }
   valueBindingMethods: readonly ValueBindingMethodSnapshot[]
-  balances: BalanceSnapshot[]
-  retirementRuntimeOccurrences:
-    SimulatorAnnualRetirementRuntimeOccurrence[]
-  retirementRuntimeApplications:
-    SimulatorRetirementRuntimeApplication[]
-  nextRetirementRuntimeMutationOrdinal: number
-  iraProRata: Array<[string, IraProRataYear]>
-  iraBasisByOwner: Array<[string, number]>
-  rothBasis: Array<[string, RothBasisState]>
-  rothAssumedContributionRemaining: Array<[string, number]>
-  rothCounterfactualFreeCoverConsumed: Array<[string, number]>
-  propertyValues: Array<[string, number]>
-  hecmStates: Array<[string, SimulatorAnnualPassHecmState]>
-  insuranceCashValues: Array<[string, number]>
-  allocationTrack: Array<[string, SimulatorAnnualPassAllocationTrackState]>
-  seppAmortAmount: Array<[string, number]>
-  magiHistory: Array<[number, number]>
-  deferredFirstRmdByApplicablePlan:
-    Array<[string, SimulatorAnnualPassDeferredFirstRmd]>
-  namedQcdOffsetConsumedByDonor: Array<[string, number]>
-  namedQcdOffsetHistoryUnprovable: string[]
-  warnings: string[]
-  unassignedCash: number
-  priorYearPortfolioReturnPct: number
-  capitalLossPool: number
-  hsaReimbursablePool: number
-  depletionYear: number | null
-  conversionNontaxable: number
-  healthcare: number
-  qualifiedMedicalThisYear: number
-  hsaQualifiedCap: number
-  requiredSpendingBase: number
-  targetSpendingBase: number
-  expenses: YearExpenses
-}
-
-function cloneIraProRata(value: IraProRataYear): IraProRataYear {
-  return { basis: value.basis, nontaxableFraction: value.nontaxableFraction }
-}
-
-function cloneRothBasis(value: RothBasisState): RothBasisState {
-  return {
-    contributionBasis: value.contributionBasis,
-    conversionLayers: value.conversionLayers.map((layer) => ({
-      year: layer.year,
-      amount: layer.amount,
-      taxableAmount: layer.taxableAmount,
-    })),
-  }
-}
-
-function cloneHecmState(value: SimulatorAnnualPassHecmState): SimulatorAnnualPassHecmState {
-  return { principalLimit: value.principalLimit, loanBalance: value.loanBalance }
-}
-
-function cloneAllocationTrackState(
-  value: SimulatorAnnualPassAllocationTrackState,
-): SimulatorAnnualPassAllocationTrackState {
-  return { policy: structuredClone(value.policy), weights: [...value.weights] }
-}
-
-function cloneDeferredFirstRmd(
-  value: SimulatorAnnualPassDeferredFirstRmd,
-): SimulatorAnnualPassDeferredFirstRmd {
-  return {
-    applicablePlan: structuredClone(value.applicablePlan),
-    distributionCalendarYear: value.distributionCalendarYear,
-    dueYear: value.dueYear,
-    requiredAmount: value.requiredAmount,
-  }
-}
-
-function cloneExpenses(value: YearExpenses): YearExpenses {
-  return { ...value }
-}
-
-function cloneRuntimeOccurrence(
-  value: Readonly<SimulatorAnnualRetirementRuntimeOccurrence>,
-): SimulatorAnnualRetirementRuntimeOccurrence {
-  return { ...value }
-}
-
-function cloneRuntimeApplication(
-  value: Readonly<SimulatorRetirementRuntimeApplication>,
-): SimulatorRetirementRuntimeApplication {
-  // Both destination-credit kinds are plural now: a year holds one aggregate
-  // credit per converting owner and one named credit per committed request, and
-  // each carries its own source arrays. A shallow spread would leave the
-  // snapshot sharing those arrays with the live journal, so a rollback would
-  // restore an array the aborted attempt had already appended to.
-  return value.applicationKind === 'aggregateRothDestinationCredit' ||
-      value.applicationKind === 'namedRothDestinationCredit'
-    ? {
-        ...value,
-        producerOccurrenceKeys: [...value.producerOccurrenceKeys],
-        sourceOwnerPersonIds: [...value.sourceOwnerPersonIds],
-      }
-    : { ...value }
-}
-
-function snapshotMap<Key, Value>(
-  source: ReadonlyMap<Key, Value>,
-  cloneValue: (value: Value) => Value,
-): Array<[Key, Value]> {
-  return [...source].map(([key, value]) => [key, cloneValue(value)])
-}
-
-function restoreMap<Key, Value>(
-  target: Map<Key, Value>,
-  snapshot: ReadonlyArray<readonly [Key, Value]>,
-  cloneValue: (value: Value) => Value,
-): void {
-  target.clear()
-  for (const [key, value] of snapshot) target.set(key, cloneValue(value))
-}
-
-function restoreExpenses(target: YearExpenses, snapshot: YearExpenses): void {
-  // Remove runtime-added properties as well as restoring deleted/changed ones.
-  for (const key of Object.keys(target)) delete (target as unknown as Record<string, unknown>)[key]
-  Object.assign(target, cloneExpenses(snapshot))
+  /** One captured value per registered key, produced by the state registry. */
+  state: SimulatorAnnualPassCapturedState
 }
 
 function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPassSnapshot {
@@ -299,58 +179,7 @@ function captureSnapshot(bindings: SimulatorAnnualPassStateBindings): AnnualPass
         write: binding.write,
       }
       }),
-    balances: bindings.balances.map((record) => ({
-      record,
-      account: record.account,
-      accountId: record.account.id,
-      balance: record.balance,
-      costBasis: record.costBasis,
-    })),
-    retirementRuntimeOccurrences:
-      bindings.retirementRuntimeOccurrences.map(cloneRuntimeOccurrence),
-    retirementRuntimeApplications:
-      bindings.retirementRuntimeApplications.map(cloneRuntimeApplication),
-    nextRetirementRuntimeMutationOrdinal:
-      bindings.nextRetirementRuntimeMutationOrdinal.read(),
-    iraProRata: snapshotMap(bindings.iraProRata, cloneIraProRata),
-    iraBasisByOwner: snapshotMap(bindings.iraBasisByOwner, (value) => value),
-    rothBasis: snapshotMap(bindings.rothBasis, cloneRothBasis),
-    rothAssumedContributionRemaining: snapshotMap(
-      bindings.rothAssumedContributionRemaining,
-      (value) => value,
-    ),
-    rothCounterfactualFreeCoverConsumed: snapshotMap(
-      bindings.rothCounterfactualFreeCoverConsumed,
-      (value) => value,
-    ),
-    propertyValues: snapshotMap(bindings.propertyValues, (value) => value),
-    hecmStates: snapshotMap(bindings.hecmStates, cloneHecmState),
-    insuranceCashValues: snapshotMap(bindings.insuranceCashValues, (value) => value),
-    allocationTrack: snapshotMap(bindings.allocationTrack, cloneAllocationTrackState),
-    seppAmortAmount: snapshotMap(bindings.seppAmortAmount, (value) => value),
-    magiHistory: snapshotMap(bindings.magiHistory, (value) => value),
-    deferredFirstRmdByApplicablePlan: snapshotMap(
-      bindings.deferredFirstRmdByApplicablePlan,
-      cloneDeferredFirstRmd,
-    ),
-    namedQcdOffsetConsumedByDonor:
-      snapshotMap(bindings.namedQcdOffsetConsumedByDonor, (value) => value),
-    namedQcdOffsetHistoryUnprovable: [
-      ...bindings.namedQcdOffsetHistoryUnprovable,
-    ],
-    warnings: [...bindings.warnings],
-    unassignedCash: bindings.unassignedCash.read(),
-    priorYearPortfolioReturnPct: bindings.priorYearPortfolioReturnPct.read(),
-    capitalLossPool: bindings.capitalLossPool.read(),
-    hsaReimbursablePool: bindings.hsaReimbursablePool.read(),
-    depletionYear: bindings.depletionYear.read(),
-    conversionNontaxable: bindings.conversionNontaxable.read(),
-    healthcare: bindings.healthcare.read(),
-    qualifiedMedicalThisYear: bindings.qualifiedMedicalThisYear.read(),
-    hsaQualifiedCap: bindings.hsaQualifiedCap.read(),
-    requiredSpendingBase: bindings.requiredSpendingBase.read(),
-    targetSpendingBase: bindings.targetSpendingBase.read(),
-    expenses: cloneExpenses(bindings.expenses),
+    state: captureSimulatorAnnualPassState(bindings),
   }
 }
 
@@ -371,83 +200,7 @@ function restoreSnapshot(bindings: SimulatorAnnualPassStateBindings, snapshot: A
     restored.write = write
   }
 
-  for (const { record, account, accountId, balance, costBasis } of snapshot.balances) {
-    const mutableRecord = record as {
-      account: { id: string }
-      balance: number
-      costBasis: number
-    }
-    const mutableAccount = account as { id: string }
-    mutableRecord.account = mutableAccount
-    mutableAccount.id = accountId
-    record.balance = balance
-    record.costBasis = costBasis
-  }
-  bindings.balances.splice(0, bindings.balances.length, ...snapshot.balances.map(({ record }) => record))
-
-  bindings.retirementRuntimeOccurrences.splice(
-    0,
-    bindings.retirementRuntimeOccurrences.length,
-    ...snapshot.retirementRuntimeOccurrences.map(cloneRuntimeOccurrence),
-  )
-  bindings.retirementRuntimeApplications.splice(
-    0,
-    bindings.retirementRuntimeApplications.length,
-    ...snapshot.retirementRuntimeApplications.map(cloneRuntimeApplication),
-  )
-  bindings.nextRetirementRuntimeMutationOrdinal.write(
-    snapshot.nextRetirementRuntimeMutationOrdinal,
-  )
-
-  restoreMap(bindings.iraProRata, snapshot.iraProRata, cloneIraProRata)
-  restoreMap(bindings.iraBasisByOwner, snapshot.iraBasisByOwner, (value) => value)
-  restoreMap(bindings.rothBasis, snapshot.rothBasis, cloneRothBasis)
-  restoreMap(
-    bindings.rothAssumedContributionRemaining,
-    snapshot.rothAssumedContributionRemaining,
-    (value) => value,
-  )
-  restoreMap(
-    bindings.rothCounterfactualFreeCoverConsumed,
-    snapshot.rothCounterfactualFreeCoverConsumed,
-    (value) => value,
-  )
-  restoreMap(bindings.propertyValues, snapshot.propertyValues, (value) => value)
-  restoreMap(bindings.hecmStates, snapshot.hecmStates, cloneHecmState)
-  restoreMap(bindings.insuranceCashValues, snapshot.insuranceCashValues, (value) => value)
-  restoreMap(bindings.allocationTrack, snapshot.allocationTrack, cloneAllocationTrackState)
-  restoreMap(bindings.seppAmortAmount, snapshot.seppAmortAmount, (value) => value)
-  restoreMap(bindings.magiHistory, snapshot.magiHistory, (value) => value)
-  restoreMap(
-    bindings.deferredFirstRmdByApplicablePlan,
-    snapshot.deferredFirstRmdByApplicablePlan,
-    cloneDeferredFirstRmd,
-  )
-  restoreMap(
-    bindings.namedQcdOffsetConsumedByDonor,
-    snapshot.namedQcdOffsetConsumedByDonor,
-    (value) => value,
-  )
-
-  bindings.namedQcdOffsetHistoryUnprovable.clear()
-  for (const donorPersonId of snapshot.namedQcdOffsetHistoryUnprovable) {
-    bindings.namedQcdOffsetHistoryUnprovable.add(donorPersonId)
-  }
-  bindings.warnings.clear()
-  for (const warning of snapshot.warnings) bindings.warnings.add(warning)
-
-  bindings.unassignedCash.write(snapshot.unassignedCash)
-  bindings.priorYearPortfolioReturnPct.write(snapshot.priorYearPortfolioReturnPct)
-  bindings.capitalLossPool.write(snapshot.capitalLossPool)
-  bindings.hsaReimbursablePool.write(snapshot.hsaReimbursablePool)
-  bindings.depletionYear.write(snapshot.depletionYear)
-  bindings.conversionNontaxable.write(snapshot.conversionNontaxable)
-  bindings.healthcare.write(snapshot.healthcare)
-  bindings.qualifiedMedicalThisYear.write(snapshot.qualifiedMedicalThisYear)
-  bindings.hsaQualifiedCap.write(snapshot.hsaQualifiedCap)
-  bindings.requiredSpendingBase.write(snapshot.requiredSpendingBase)
-  bindings.targetSpendingBase.write(snapshot.targetSpendingBase)
-  restoreExpenses(bindings.expenses, snapshot.expenses)
+  restoreSimulatorAnnualPassState(bindings, snapshot.state)
 }
 
 /**

@@ -146,6 +146,7 @@ const EXPECTED_REACHABILITY: Readonly<Record<string, readonly string[]>> = {
     'exactCentProRata',
     'freeze',
     'ownedNonRothIraAnnualPhysicalTransaction',
+    'ownedNonRothIraPenaltyCoverageEvidenceId',
     'plainData',
     'structuralId',
   ],

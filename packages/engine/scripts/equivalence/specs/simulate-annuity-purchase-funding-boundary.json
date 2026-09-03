@@ -8,20 +8,20 @@
       "label": "qualified non-QLAC owner birth-year selection through the shared civil-date parser",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
       "lines": [
-        126,
-        131
+        127,
+        132
       ],
       "anchors": [
         {
-          "line": 126,
+          "line": 127,
           "text": "} else if ("
         },
         {
-          "line": 128,
+          "line": 129,
           "text": "latestNonQlacQualifiedAnnuityStartAge("
         },
         {
-          "line": 131,
+          "line": 132,
           "text": ")"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "QLAC owner birth-month selection through the shared civil-date parser",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
       "lines": [
-        119,
-        123
+        120,
+        124
       ],
       "anchors": [
         {
-          "line": 119,
+          "line": 120,
           "text": "if (account.purchase.qlac === true) {"
         },
         {
-          "line": 121,
+          "line": 122,
           "text": "account.startAge >"
         },
         {
-          "line": 123,
+          "line": 124,
           "text": ") {"
         }
       ]
@@ -54,21 +54,21 @@
       "label": "positional overlay setup, account selection and first funding-position lookup",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
       "lines": [
-        74,
-        92
+        75,
+        93
       ],
       "note": "The missing-funding body on lines 93-95 is excluded: parsePlan requires every annuity purchase fundingAccountId to resolve to a supported funding account. The helper unit suite covers the structural missing-id input and first-position behavior directly; validated Plan input also rejects a duplicate id once an annuity purchase references it.",
       "anchors": [
         {
-          "line": 74,
+          "line": 75,
           "text": "const shadow = input.balances.map(({ balance, costBasis }) => ({"
         },
         {
-          "line": 83,
+          "line": 84,
           "text": "!account.purchase ||"
         },
         {
-          "line": 92,
+          "line": 93,
           "text": ")"
         }
       ]
@@ -78,21 +78,21 @@
       "label": "qualified owner fallback and QLAC/non-QLAC ceiling selection",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
       "lines": [
-        102,
-        123
+        103,
+        124
       ],
       "note": "The late-QLAC warning body on lines 124-125 and late non-QLAC body on line 133 are excluded. parsePlan refuses both late-start shapes before corpus capture, while simulatePlan's public TypeScript signature still permits a caller-built in-memory Plan; focused unit tests directly pin both warnings and their order.",
       "anchors": [
         {
-          "line": 102,
+          "line": 103,
           "text": "// Last line rather than the only one. `parsePlan` refuses a qualified"
         },
         {
-          "line": 112,
+          "line": 113,
           "text": "// distribution exclusion 1.401(a)(9)-5(b)(4) reserves for a QLAC. Say so"
         },
         {
-          "line": 123,
+          "line": 124,
           "text": ") {"
         }
       ]
@@ -102,20 +102,20 @@
       "label": "qualified non-QLAC required-beginning-date ceiling calculation",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
       "lines": [
-        126,
-        132
+        127,
+        133
       ],
       "anchors": [
         {
-          "line": 126,
+          "line": 127,
           "text": "} else if ("
         },
         {
-          "line": 129,
+          "line": 130,
           "text": "socialSecurityDobParts(owner).y,"
         },
         {
-          "line": 132,
+          "line": 133,
           "text": ") {"
         }
       ]
@@ -125,20 +125,20 @@
       "label": "QLAC cap, spendability, premium funding and shortfall warning",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
       "lines": [
-        136,
-        150
+        137,
+        151
       ],
       "anchors": [
         {
-          "line": 136,
+          "line": 137,
           "text": "const qlacCap = input.qlacPremiumCap * input.limitGrowth"
         },
         {
-          "line": 142,
+          "line": 143,
           "text": "}"
         },
         {
-          "line": 150,
+          "line": 151,
           "text": "}"
         }
       ]
@@ -148,20 +148,20 @@
       "label": "taxable/equity basis arithmetic and positional shadow update",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
       "lines": [
-        152,
-        177
+        153,
+        178
       ],
       "anchors": [
         {
-          "line": 152,
+          "line": 153,
           "text": "let capitalGainOrLoss = 0"
         },
         {
-          "line": 164,
+          "line": 165,
           "text": "} else if (funding.account.type === 'equityComp' && opening.balance > 0) {"
         },
         {
-          "line": 177,
+          "line": 178,
           "text": "}"
         }
       ]
@@ -171,20 +171,20 @@
       "label": "fresh ledger/debit payloads, positional purchase rows and return",
       "file": "projection/internal/annualAnnuityPurchaseFunding.ts",
       "lines": [
-        178,
-        200
+        179,
+        201
       ],
       "anchors": [
         {
-          "line": 178,
+          "line": 179,
           "text": "const record: RecordedAnnuityPurchase = {"
         },
         {
-          "line": 189,
+          "line": 190,
           "text": "funded,"
         },
         {
-          "line": 200,
+          "line": 201,
           "text": "return rows"
         }
       ]
@@ -194,16 +194,16 @@
       "label": "annuity-purchase helper invocation",
       "file": "projection/simulate.ts",
       "lines": [
-        1593,
-        1601
+        1609,
+        1617
       ],
       "anchors": [
         {
-          "line": 1593,
+          "line": 1609,
           "text": "const annuityPurchaseRows = annualAnnuityPurchaseFunding({"
         },
         {
-          "line": 1601,
+          "line": 1617,
           "text": "})"
         }
       ],
@@ -214,20 +214,20 @@
       "label": "positional row selection and position check",
       "file": "projection/simulate.ts",
       "lines": [
-        1605,
-        1607
+        1621,
+        1623
       ],
       "anchors": [
         {
-          "line": 1605,
+          "line": 1621,
           "text": "for (let accountIndex = 0; accountIndex < plan.accounts.length; accountIndex++) {"
         },
         {
-          "line": 1606,
+          "line": 1622,
           "text": "const row = annuityPurchaseRows[accountIndex]!"
         },
         {
-          "line": 1607,
+          "line": 1623,
           "text": "if (row.accountIndex !== accountIndex) {"
         }
       ],
@@ -238,24 +238,24 @@
       "label": "none-row skip and funding-account validation",
       "file": "projection/simulate.ts",
       "lines": [
-        1610,
-        1618
+        1626,
+        1634
       ],
       "anchors": [
         {
-          "line": 1610,
+          "line": 1626,
           "text": "if (row.kind === 'none') continue"
         },
         {
-          "line": 1612,
+          "line": 1628,
           "text": "const funding = balances[row.fundingIndex]"
         },
         {
-          "line": 1617,
+          "line": 1633,
           "text": "funding.account.id !== account.purchase.fundingAccountId"
         },
         {
-          "line": 1618,
+          "line": 1634,
           "text": ") {"
         }
       ],
@@ -266,24 +266,24 @@
       "label": "ordered warning/gain/basis/balance/ledger/optimizer effect application",
       "file": "projection/simulate.ts",
       "lines": [
-        1621,
-        1633
+        1637,
+        1649
       ],
       "anchors": [
         {
-          "line": 1621,
+          "line": 1637,
           "text": "for (const warning of row.warnings) warnings.add(warning)"
         },
         {
-          "line": 1623,
+          "line": 1639,
           "text": "if (row.capitalGainOrLossDelta !== null) {"
         },
         {
-          "line": 1628,
+          "line": 1644,
           "text": "yearSites?.recordAnnuityPurchase(row.record)"
         },
         {
-          "line": 1633,
+          "line": 1649,
           "text": "if (row.debit !== null) exogenousStrategyDebits.push(row.debit)"
         }
       ]
@@ -293,32 +293,32 @@
       "label": "qualified runtime occurrence, debit and deferred contract-credit planning",
       "file": "projection/simulate.ts",
       "lines": [
-        1634,
-        1692
+        1650,
+        1708
       ],
       "anchors": [
         {
-          "line": 1634,
+          "line": 1650,
           "text": "if (row.funded > 0 && funding.account.type === 'traditional') {"
         },
         {
-          "line": 1641,
+          "line": 1657,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 1651,
+          "line": 1667,
           "text": "if (isAggregatedIra(funding.account)) {"
         },
         {
-          "line": 1679,
+          "line": 1695,
           "text": "if (annuityContractValue.has(account.id)) {"
         },
         {
-          "line": 1683,
+          "line": 1699,
           "text": "pendingAnnuityContractCredits.push({"
         },
         {
-          "line": 1692,
+          "line": 1708,
           "text": "}"
         }
       ]
@@ -328,16 +328,16 @@
       "label": "funded investment-in-contract carry",
       "file": "projection/simulate.ts",
       "lines": [
-        1694,
-        1697
+        1710,
+        1713
       ],
       "anchors": [
         {
-          "line": 1694,
+          "line": 1710,
           "text": "annuityInvestmentInContract.set("
         },
         {
-          "line": 1697,
+          "line": 1713,
           "text": ")"
         }
       ]
@@ -347,20 +347,20 @@
       "label": "contiguous ordered annuity-contract premium credits",
       "file": "projection/simulate.ts",
       "lines": [
-        1699,
-        1717
+        1715,
+        1733
       ],
       "anchors": [
         {
-          "line": 1699,
+          "line": 1715,
           "text": "for (const credit of pendingAnnuityContractCredits) {"
         },
         {
-          "line": 1700,
+          "line": 1716,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1717,
+          "line": 1733,
           "text": "})"
         }
       ]

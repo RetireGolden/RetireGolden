@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 329,
+    "totalFiles": 334,
     "byStatus": {
-      "partial": 55,
-      "registered": 102,
-      "rule-free": 172,
+      "partial": 56,
+      "registered": 103,
+      "rule-free": 175,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -205,6 +205,11 @@
       "path": "model/plan.ts",
       "sweptOn": "2026-08-24",
       "note": "Inherited IRA regime parse rules; spouse J&S RMD gate; 403(b) aggregation; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates"
+    },
+    {
+      "path": "model/planCrossFieldChecks.ts",
+      "sweptOn": "2026-09-03",
+      "note": "The cross-field validator, moved verbatim out of the superRefine body in model/plan.ts and unchanged in rule, message, or order; it carries the same residual claims the model/plan.ts entry names for cross-field rules: inherited IRA regime parse rules; spouse J&S RMD gate; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates. The qualified-annuity start-age bounds it applies come from the latestNonQlacQualifiedAnnuityStartAge and latestQlacAnnuityStartAge helpers that stay in model/plan.ts"
     },
     {
       "path": "model/retirementActionAnnualTaxFacts.ts",
@@ -372,11 +377,11 @@
     },
     {
       "directory": "actions",
-      "files": 76,
+      "files": 77,
       "byStatus": {
         "partial": 15,
         "registered": 33,
-        "rule-free": 28
+        "rule-free": 29
       }
     },
     {
@@ -406,11 +411,11 @@
     },
     {
       "directory": "internal",
-      "files": 10,
+      "files": 11,
       "byStatus": {
         "partial": 1,
         "registered": 3,
-        "rule-free": 6
+        "rule-free": 7
       }
     },
     {
@@ -431,9 +436,9 @@
     },
     {
       "directory": "model",
-      "files": 3,
+      "files": 4,
       "byStatus": {
-        "partial": 3
+        "partial": 4
       }
     },
     {
@@ -446,19 +451,19 @@
     },
     {
       "directory": "params",
-      "files": 8,
+      "files": 9,
       "byStatus": {
-        "registered": 6,
+        "registered": 7,
         "rule-free": 2
       }
     },
     {
       "directory": "projection",
-      "files": 90,
+      "files": 91,
       "byStatus": {
         "partial": 20,
         "registered": 15,
-        "rule-free": 55
+        "rule-free": 56
       }
     },
     {

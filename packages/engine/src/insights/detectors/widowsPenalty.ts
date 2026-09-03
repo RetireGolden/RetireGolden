@@ -2,6 +2,7 @@ import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { computeFederalTax } from '../../tax/federalTax.js'
 import { LATEST_PACK_YEAR } from '../../params/index.js'
+import { flatInflationPath, indexingScaleFor } from '../../params/indexingScale.js'
 import { selectedLogicalBalanceAccounts } from '../../model/plan.js'
 
 /**
@@ -80,12 +81,18 @@ export const widowsPenalty: Detector = {
       // moment a second pack year exists a projection started in the earlier one
       // would measure the scale from ITS year while `computeFederalTax` prices
       // `jumpYear` off the latest pack -- over-indexing the survivor's thresholds
-      // by the gap and understating the jump. This is `limitScale` from
-      // simulate.ts, which is the rule the ledger actually applies.
-      const inflationScale =
-        jumpYear <= LATEST_PACK_YEAR
-          ? 1
-          : Math.pow(1 + ctx.plan.assumptions.inflationPct / 100, jumpYear - LATEST_PACK_YEAR)
+      // by the gap and understating the jump. Passing LATEST_PACK_YEAR is what
+      // the ledger's own `packForYear(jumpYear)` resolves to for any stand-in
+      // year, so this detector and the ledger measure from the same origin.
+      //
+      // The rule itself is `indexingScaleFor`, shared with simulate.ts and the
+      // optimizer rather than reimplemented here. The path is flat: a detector
+      // reads a settled projection and has no Monte Carlo inflation series.
+      const inflationScale = indexingScaleFor(
+        LATEST_PACK_YEAR,
+        jumpYear,
+        flatInflationPath(ctx.plan.assumptions.inflationPct / 100),
+      )
       const jointAges65Plus = ctx.plan.household.people.filter(
         (p) => jumpYear - Number(p.dob.slice(0, 4)) >= 65,
       ).length

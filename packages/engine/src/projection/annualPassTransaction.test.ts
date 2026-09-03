@@ -7,6 +7,10 @@ import {
   type SimulatorAnnualPassStateBindings,
   type SimulatorAnnualPassValueBinding,
 } from './annualPassTransaction.js'
+import {
+  captureSimulatorAnnualPassStateKey,
+  SIMULATOR_ANNUAL_PASS_STATE_KEYS,
+} from '../internal/simulatorAnnualPassStateRegistry.js'
 
 interface ScalarState {
   nextRetirementRuntimeMutationOrdinal: number
@@ -240,47 +244,28 @@ function fixture(): {
   return { bindings, scalars, originalBalances }
 }
 
+/**
+ * A JSON view of every registered piece of annual-pass state.
+ *
+ * Driven by the state registry rather than a hand-written list of the same
+ * fields. That list was the reason the rollback assertion could not fail for a
+ * newly added field: the snapshot and the test's view were copies of each other,
+ * so a field missing from both compared equal to itself.
+ */
+function perKeyStateBytes(
+  bindings: SimulatorAnnualPassStateBindings,
+): Record<string, string> {
+  const bytes: Record<string, string> = {}
+  for (const key of SIMULATOR_ANNUAL_PASS_STATE_KEYS) {
+    bytes[key] = JSON.stringify(
+      captureSimulatorAnnualPassStateKey(bindings, key) ?? null,
+    )
+  }
+  return bytes
+}
+
 function stateBytes(bindings: SimulatorAnnualPassStateBindings): string {
-  return JSON.stringify({
-    balances: bindings.balances.map(({ account, balance, costBasis }) => ({ id: account.id, balance, costBasis })),
-    retirementRuntimeOccurrences: bindings.retirementRuntimeOccurrences,
-    retirementRuntimeApplications: bindings.retirementRuntimeApplications,
-    nextRetirementRuntimeMutationOrdinal:
-      bindings.nextRetirementRuntimeMutationOrdinal.read(),
-    iraProRata: [...bindings.iraProRata],
-    iraBasisByOwner: [...bindings.iraBasisByOwner],
-    rothBasis: [...bindings.rothBasis],
-    rothAssumedContributionRemaining: [...bindings.rothAssumedContributionRemaining],
-    rothCounterfactualFreeCoverConsumed: [...bindings.rothCounterfactualFreeCoverConsumed],
-    propertyValues: [...bindings.propertyValues],
-    hecmStates: [...bindings.hecmStates],
-    insuranceCashValues: [...bindings.insuranceCashValues],
-    allocationTrack: [...bindings.allocationTrack],
-    seppAmortAmount: [...bindings.seppAmortAmount],
-    magiHistory: [...bindings.magiHistory],
-    deferredFirstRmdByApplicablePlan: [
-      ...bindings.deferredFirstRmdByApplicablePlan,
-    ],
-    namedQcdOffsetConsumedByDonor: [...bindings.namedQcdOffsetConsumedByDonor],
-    namedQcdOffsetHistoryUnprovable: [
-      ...bindings.namedQcdOffsetHistoryUnprovable,
-    ],
-    warnings: [...bindings.warnings],
-    scalars: {
-      unassignedCash: bindings.unassignedCash.read(),
-      priorYearPortfolioReturnPct: bindings.priorYearPortfolioReturnPct.read(),
-      capitalLossPool: bindings.capitalLossPool.read(),
-      hsaReimbursablePool: bindings.hsaReimbursablePool.read(),
-      depletionYear: bindings.depletionYear.read(),
-      conversionNontaxable: bindings.conversionNontaxable.read(),
-      healthcare: bindings.healthcare.read(),
-      qualifiedMedicalThisYear: bindings.qualifiedMedicalThisYear.read(),
-      hsaQualifiedCap: bindings.hsaQualifiedCap.read(),
-      requiredSpendingBase: bindings.requiredSpendingBase.read(),
-      targetSpendingBase: bindings.targetSpendingBase.read(),
-    },
-    expenses: bindings.expenses,
-  })
+  return JSON.stringify(perKeyStateBytes(bindings))
 }
 
 function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): void {
@@ -539,6 +524,23 @@ describe('simulator annual-pass transaction', () => {
     expect(bindings.warnings).toBe(originalContainers.warnings)
     expect(bindings.expenses).toBe(originalContainers.expenses)
     expect([...bindings.warnings]).toEqual(['first warning', 'second warning'])
+  })
+
+  it('mutates every registered state key, so the rollback assertion can fail', () => {
+    // The guard the byte comparison above needs to mean anything. `stateBytes`
+    // is now derived from the state registry, so it grows automatically with a
+    // new binding; this proves the *mutation* side grew too. Without it, a new
+    // key that `mutateEntireAnnualPass` never touches is trivially equal before
+    // and after and the rollback test passes while proving nothing about it.
+    const { bindings } = fixture()
+    const before = perKeyStateBytes(bindings)
+
+    mutateEntireAnnualPass(bindings)
+
+    const after = perKeyStateBytes(bindings)
+    const unmutated = SIMULATOR_ANNUAL_PASS_STATE_KEYS
+      .filter((key) => after[key] === before[key])
+    expect(unmutated).toEqual([])
   })
 
   it('restores the named-QCD donor ledgers a rolled-back attempt wrote', () => {
