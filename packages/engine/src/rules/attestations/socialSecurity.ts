@@ -1,0 +1,22 @@
+/**
+ * Coverage attestations for `socialSecurity/`.
+ *
+ * One slice of the coverage attestation registry. `../coverageAttestations.ts`
+ * composes every slice into `COVERAGE_ATTESTATIONS`; read it for what an
+ * attestation means and how sweeps work. Entries were moved here verbatim from
+ * the single file this registry used to be.
+ */
+import type { CoverageAttestation } from '../coverageAttestations.js'
+
+export const socialSecurityAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
+  'socialSecurity/annualTiming.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-01', note: 'shared parser for the already-schema-validated ISO birth date used by annual Social Security projection and milestone consumers. It performs no age, entitlement, or benefit arithmetic; the rule-bearing payable-month boundary remains registered in projection/internal/annualSocialSecurity.ts' }),
+  'socialSecurity/benefitFactor.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
+  'socialSecurity/claimFactor.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'Worker 62y0m-70y0m claim window registered under usc-42-402-worker-claim-window-62-to-70; DRC and early-reduction composition registered under cfr-20-404-313 and cfr-20-404-410 which now name the factor; spousal and ARF records already named it' }),
+  'socialSecurity/disability.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-27', note: null }),
+  'socialSecurity/familyMaximum.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
+  'socialSecurity/maritalBenefits.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records' }),
+  'socialSecurity/nra.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-26', note: null }),
+  'socialSecurity/piaFromEarnings.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-27', note: 'AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations' }),
+  'socialSecurity/ssaWageData.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
+  'socialSecurity/survivorBenefit.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
+})

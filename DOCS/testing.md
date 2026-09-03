@@ -54,6 +54,7 @@ File naming marks the intent, co-located beside the code under test:
 | `*.external.golden.test.ts` | Frozen fixtures from an external oracle | [`packages/engine/src/tax/federalTax.external.golden.test.ts`](../packages/engine/src/tax/federalTax.external.golden.test.ts) |
 | `*.characterization.test.ts` | Reviewed regression snapshots | [`packages/engine/src/projection/fullPlan.characterization.test.ts`](../packages/engine/src/projection/fullPlan.characterization.test.ts) |
 | `*.adversarial.test.ts` | Hostile-input tests for parsers/imports | [`packages/planner-ui/src/socialSecurity/ssaStatementXml.adversarial.test.ts`](../packages/planner-ui/src/socialSecurity/ssaStatementXml.adversarial.test.ts) |
+| `*.approximation.test.ts` | A fixture that pins an `approximated` registry record's stated delta against the code, grouped by rule rather than by module | [`packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts`](../packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts) |
 
 External-oracle fixtures follow the sourcing, tolerance, and record-keeping rules in
 [external-oracles.md](external-oracles.md).
@@ -68,6 +69,20 @@ from producer to consumer. The producer side of the contract is still co-located
 [`packages/planner-ui/src/data/planFormat.test.ts`](../packages/planner-ui/src/data/planFormat.test.ts).
 See [plan-file-format.md](features/plan-file-format.md) for the full split. Do not recreate the
 removed dev dependency on `@retiregolden/mcp` to bring that test back.
+
+**A second documented exception to co-location: the approximation suite.** Every
+`*.approximation.test.ts` file lives under
+[`packages/engine/src/rules/approximations/`](../packages/engine/src/rules/approximations/), grouped
+by the `approximated` registry record (or cluster of related records) it pins, not beside the module(s)
+whose behavior it asserts against. A single approximated gap routinely spans more than one file — the
+account-eligibility proxy fixtures assert through both `strategies/accountEligibility.ts` and the
+calendar-date arithmetic in `actions/civilDate.ts`, and the SEPP/HSA cluster spans six records across
+eight distinct modules — so co-locating by module would either duplicate the fixture per file it touches or
+force an arbitrary pick of one. Grouping by rule instead keeps every fixture pinning the same authority
+next to its siblings, which is what lets a reviewer sweep one file to see everything a given statutory
+gap covers. Each fixture still asserts against the real exported engine entry point, never a
+reimplementation, and still fails the moment the gap it names is closed — see `describeRule.ts` for the
+`produced`/`accepted` contract these fixtures fulfill.
 
 Shared helpers are intentionally thin: [`packages/engine/src/testing/money.ts`](../packages/engine/src/testing/money.ts)
 (money/percent assertions with explicit tolerances) and
