@@ -25,9 +25,11 @@
      - describeRule.ts imports `vitest`, so a consumer who did reach it would
        fault on a bare framework import in a package the README promises is
        framework-free. Every importer is a `*.test.ts`.
-     - coverageAttestations.ts (~116 KB) and coverageReport.ts are the
-       coverage publisher's inputs, read from source by the tests and by
-       rules-coverage.mjs, never from dist.
+     - coverageAttestations.ts and its per-directory shards under
+       src/rules/attestations/ (formerly one ~116 KB file, now composed from
+       the shards the same way taxRuleRegistry.ts composes records/*.ts) and
+       coverageReport.ts are the coverage publisher's inputs, read from
+       source by the tests and by rules-coverage.mjs, never from dist.
      Together they were ~146 KB of test-harness code in every install. */
   "exclude": [
     "src/**/*.test.ts",
@@ -35,6 +37,7 @@
     "src/rules/symbolLines.ts",
     "src/rules/describeRule.ts",
     "src/rules/coverageAttestations.ts",
+    "src/rules/attestations/**",
     "src/rules/coverageReport.ts"
   ]
 }

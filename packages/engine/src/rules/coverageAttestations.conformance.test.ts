@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   BASELINE_UNSWEPT,
+  COVERAGE_ATTESTATION_MODULES,
   COVERAGE_ATTESTATIONS,
   type CoverageAttestationStatus,
 } from './coverageAttestations.js'
@@ -27,6 +28,20 @@ function differences(left: readonly string[], right: readonly string[]): readonl
   return left.filter((value) => !rightSet.has(value))
 }
 
+/**
+ * Every attestation shard module on disk, read from the source scan rather
+ * than the hand-kept `COVERAGE_ATTESTATION_MODULES` list — the same technique
+ * `taxRuleRegistry.conformance.test.ts` uses for `records/*.ts`, so a shard
+ * added to disk but never wired into the composing spread cannot hide: it
+ * would show up here and nowhere else.
+ */
+const ATTESTATION_MODULE_FILE = /^(?:\.\.\/rules|\.)\/attestations\/([^/]+)\.ts$/u
+
+const attestationModuleFileNames = Object.keys(engineSources)
+  .map((path) => ATTESTATION_MODULE_FILE.exec(path)?.[1])
+  .filter((name): name is string => name !== undefined)
+  .sort()
+
 describe('coverage attestations', () => {
   it('attests exactly the engine source-file set', () => {
     const attestedPaths = Object.keys(COVERAGE_ATTESTATIONS).sort()
@@ -37,6 +52,58 @@ describe('coverage attestations', () => {
       'missing attestation paths: ' + (missing.join(', ') || 'none') +
         '; stale attestation paths: ' + (stale.join(', ') || 'none'),
     ).toEqual({ missing: [], stale: [] })
+  })
+
+  it('accounts for every attestation shard on disk, so an orphan cannot hide', () => {
+    // Mirrors the record-module guard in taxRuleRegistry.conformance.test.ts:
+    // the directory itself is the authority, so a shard file that is written
+    // but wired into neither this list nor the composing spread satisfies the
+    // comparison trivially (it is on neither side) and fails here instead.
+    expect(attestationModuleFileNames)
+      .toEqual([...COVERAGE_ATTESTATION_MODULES.map(([name]) => name)].sort())
+  })
+
+  it('shards each attestation under its own top-level directory prefix', () => {
+    // 'topLevel' is the one shard for files directly under src/ (no '/' in
+    // the key); every other shard's keys must start with `${name}/`.
+    const misplaced: string[] = []
+    for (const [name, records] of COVERAGE_ATTESTATION_MODULES) {
+      const expectedPrefix = name === 'topLevel' ? null : `${name}/`
+      for (const path of Object.keys(records)) {
+        const belongs = expectedPrefix === null ? !path.includes('/') : path.startsWith(expectedPrefix)
+        if (!belongs) misplaced.push(`${path} (in shard '${name}')`)
+      }
+    }
+    expect(misplaced, 'attestation keys outside their shard\'s directory prefix: ' + (misplaced.join(', ') || 'none'))
+      .toEqual([])
+  })
+
+  it('keeps every shard disjoint from every other shard', () => {
+    const seenIn = new Map<string, string>()
+    const collisions: string[] = []
+    for (const [name, records] of COVERAGE_ATTESTATION_MODULES) {
+      for (const path of Object.keys(records)) {
+        const firstShard = seenIn.get(path)
+        if (firstShard !== undefined) {
+          collisions.push(`${path} (in both '${firstShard}' and '${name}')`)
+        } else {
+          seenIn.set(path, name)
+        }
+      }
+    }
+    expect(collisions, 'attestation keys claimed by more than one shard: ' + (collisions.join(', ') || 'none'))
+      .toEqual([])
+  })
+
+  it('sums every shard\'s key count to the published total, so a spread collision cannot hide', () => {
+    // Object spread lets a later duplicate key silently overwrite an earlier
+    // one; the losing entry then vanishes from COVERAGE_ATTESTATIONS with no
+    // error. Counting keys shard by shard catches that the same way
+    // taxRuleRegistry's per-module count does: if two shards claim the same
+    // path, the parts sum to more than the whole.
+    const perModule = COVERAGE_ATTESTATION_MODULES.map(([name, records]) => [name, Object.keys(records).length] as const)
+    const total = perModule.reduce((sum, [, count]) => sum + count, 0)
+    expect({ total, perModule }).toEqual({ total: Object.keys(COVERAGE_ATTESTATIONS).length, perModule })
   })
 
   it('keeps each status internally honest', () => {
