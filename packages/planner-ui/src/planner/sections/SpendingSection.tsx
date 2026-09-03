@@ -88,6 +88,22 @@ export function SpendingSection() {
     e.spendingPolicy?.mode === 'riskBasedGuardrails' && bandLower >= bandUpper
       ? 'The cut edge is not below the raise edge, so the balance thresholds cannot be solved. Kept as entered.'
       : null
+  /**
+   * The withdrawal-rate pair, read the same way: neither edge's own path
+   * carries what the other holds, and `spendingPolicySchema` accepts each
+   * percent on its own with no cross-field refine (engine/model/plan.ts).
+   * With the pair inverted, `nextGuardrailMultiplier` (engine/spending/
+   * guardrails.ts) cuts whenever the rate clears the upper edge and raises
+   * otherwise — there is no rate left that holds — so this is the same
+   * `.field-warning` contract as the success band above: nothing refused,
+   * nothing rewritten, nothing marked invalid, just said.
+   */
+  const guardrailLower = e.spendingPolicy?.lowerGuardrailPct ?? 80
+  const guardrailUpper = e.spendingPolicy?.upperGuardrailPct ?? 120
+  const guardrailWarning =
+    e.spendingPolicy?.mode === 'withdrawalRateGuardrails' && guardrailLower >= guardrailUpper
+      ? 'The lower guardrail is not below the upper guardrail, so every withdrawal rate would cut or raise spending, never hold. Kept as entered.'
+      : null
   const hasEarlyPullFlexibleGoals = e.oneTimeGoals.some((g) => {
     const flexibility = g.flexibility ?? 'fixed'
     const earliestYear = Math.min(g.earliestYear ?? g.year, g.year)
@@ -250,6 +266,7 @@ export function SpendingSection() {
                 learn={LEARN.spendingBudget}
                 step={5}
                 path="expenses.spendingPolicy.upperGuardrailPct"
+                warning={guardrailWarning}
                 value={e.spendingPolicy.upperGuardrailPct ?? 120}
                 onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.upperGuardrailPct = v ?? 120))}
               />
@@ -260,6 +277,7 @@ export function SpendingSection() {
                 learn={LEARN.spendingBudget}
                 step={5}
                 path="expenses.spendingPolicy.lowerGuardrailPct"
+                warning={guardrailWarning}
                 value={e.spendingPolicy.lowerGuardrailPct ?? 80}
                 onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.lowerGuardrailPct = v ?? 80))}
               />

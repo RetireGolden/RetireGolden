@@ -163,3 +163,88 @@ describe('a required floor above the baseline is kept, and the engine says so', 
     expect(input.getAttribute('aria-invalid')).toBe('true')
   })
 })
+
+describe('an inverted withdrawal-rate guardrail pair is kept and explained, not reordered', () => {
+  it('warns under both edges without marking either control invalid', () => {
+    const host = mount((plan) => {
+      plan.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails', lowerGuardrailPct: 90, upperGuardrailPct: 80 }
+    })
+    for (const label of ['Upper guardrail', 'Lower guardrail']) {
+      const { input, box } = field(host, label)
+      const warning = box.querySelector('.field-warning')
+      expect(warning?.textContent, label).toContain('lower guardrail is not below the upper guardrail')
+      expect(warning?.getAttribute('role'), label).toBe('status')
+      // The plan holds the value, so it is a status and never a fault.
+      expect(input.getAttribute('aria-invalid'), label).toBeNull()
+      expect(box.querySelector('.field-error'), label).toBeNull()
+    }
+    // Both percents are still exactly what was entered — no reordering (D5),
+    // the same invariant the success band above pins.
+    const upper = field(host, 'Upper guardrail').input
+    const lower = field(host, 'Lower guardrail').input
+    expect([upper.value, lower.value]).toEqual(['80', '90'])
+  })
+
+  it('says nothing when the pair is ordered', () => {
+    const host = mount((plan) => {
+      plan.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails', lowerGuardrailPct: 80, upperGuardrailPct: 120 }
+    })
+    expect(field(host, 'Upper guardrail').box.querySelector('.field-warning')).toBeNull()
+    expect(field(host, 'Lower guardrail').box.querySelector('.field-warning')).toBeNull()
+  })
+})
+
+describe('a flexible goal’s funding window is kept and explained, not reordered (#598)', () => {
+  it('shows the engine’s refusal on Latest year when the goal year moves past it', () => {
+    // `oneTimeGoals[i].year = Math.round(v ?? g.year)` used to
+    // `Math.max`/`Math.min` the window's other side along with it (D5); that
+    // rewrite is gone, so a goal year moved past `latestYear` is a pair the
+    // engine's superRefine refuses ("latestYear cannot be before the goal
+    // year", plan.ts) rather than one the UI silently widens to fit.
+    const host = mount((plan) => {
+      // Replaces the example's own goal (also "Year"-labelled) so the DOM
+      // carries exactly one Year field, not two.
+      plan.expenses.oneTimeGoals = [
+        {
+          id: 'goal-1',
+          label: 'Trip',
+          year: 2040,
+          amount: 10_000,
+          flexibility: 'movable',
+          earliestYear: 2035,
+          latestYear: 2035,
+        },
+      ]
+    })
+    const { input, box } = field(host, 'Latest year')
+    // Not pulled forward with the goal year: the box still shows what was set.
+    expect(input.value).toBe('2035')
+    const error = box.querySelector('.field-error')
+    expect(error?.textContent).toContain('cannot be before the goal year')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    // The goal year itself is untouched too.
+    expect(field(host, 'Year').input.value).toBe('2040')
+  })
+
+  it('shows the engine’s refusal on Earliest year when the goal year moves before it', () => {
+    const host = mount((plan) => {
+      plan.expenses.oneTimeGoals = [
+        {
+          id: 'goal-1',
+          label: 'Trip',
+          year: 2028,
+          amount: 10_000,
+          flexibility: 'movable',
+          earliestYear: 2032,
+          latestYear: 2032,
+        },
+      ]
+    })
+    const { input, box } = field(host, 'Earliest year')
+    expect(input.value).toBe('2032')
+    const error = box.querySelector('.field-error')
+    expect(error?.textContent).toContain('cannot be after the goal year')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(field(host, 'Year').input.value).toBe('2028')
+  })
+})

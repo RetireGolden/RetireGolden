@@ -145,11 +145,17 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
           />
         ))}
       </div>
-      {/* Each weight is committed whatever the row adds up to, so a mismatch is
-          the `.field-warning` case rather than `.field-error`'s danger token:
-          the warn treatment, `role="status"`, and nothing marked invalid. */}
-      <p className={sums100 ? 'muted small' : 'field-warning'} role="status">
-        Total {sum.toFixed(0)}%{sums100 ? '' : ' (weights must sum to 100%)'}
+      {/* allocationWeightsSchema.refine (engine/model/plan.ts) rejects the plan
+          at exactly this tolerance (±0.5), so a mismatch here is never a value
+          the engine holds — PlanContext.update keeps `saveState: 'invalid'`
+          and drops the edit rather than autosaving it. That is `.field-error`'s
+          contract (a refused value), not `.field-warning`'s (an accepted one
+          that is probably a mistake), so a mismatch reads in the danger token
+          with an assertive role. No single input here carries the failing
+          path (the four weights are pathless — see the panel-level comment
+          below), so the summary line itself is the only place to say so. */}
+      <p className={sums100 ? 'muted small' : 'field-error'} role={sums100 ? 'status' : 'alert'}>
+        Total {sum.toFixed(0)}%{sums100 ? '' : ' (weights must sum to 100% — not saved until they do)'}
       </p>
     </div>
   )

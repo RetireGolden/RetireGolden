@@ -47,6 +47,16 @@ describe('projectPlan', () => {
     expect(projection.inflate(START_YEAR, 10_000)).toBeCloseTo(10_000)
     expect(projection.deflate(START_YEAR, 10_000)).toBeCloseTo(10_000)
   })
+
+  it('omits YearResult.cashFlow unless captureAnnualCashFlow is requested', () => {
+    const plan = fixturePlan()
+    const byStartYear = projectPlan(plan, START_YEAR)
+    expect(byStartYear.result.years.some((year) => year.cashFlow !== undefined)).toBe(false)
+
+    const captured = projectPlan(plan, { startYear: START_YEAR, captureAnnualCashFlow: true })
+    expect(captured.result.years.some((year) => year.cashFlow !== undefined)).toBe(true)
+    expect(captured.result.years[0]?.cashFlow?.reconciliation.status).toBeDefined()
+  })
 })
 
 describe('inflationView', () => {
@@ -70,15 +80,5 @@ describe('inflationView', () => {
   it('reads a year before the base year as the inverse, not as zero growth', () => {
     const money = inflationView(RATE_PCT, START_YEAR)
     expect(money.inflate(START_YEAR - 2, 1)).toBeCloseTo(1 / Math.pow(1.025, 2), 9)
-  })
-
-  it('omits YearResult.cashFlow unless captureAnnualCashFlow is requested', () => {
-    const plan = fixturePlan()
-    const byStartYear = projectPlan(plan, START_YEAR)
-    expect(byStartYear.result.years.some((year) => year.cashFlow !== undefined)).toBe(false)
-
-    const captured = projectPlan(plan, { startYear: START_YEAR, captureAnnualCashFlow: true })
-    expect(captured.result.years.some((year) => year.cashFlow !== undefined)).toBe(true)
-    expect(captured.result.years[0]?.cashFlow?.reconciliation.status).toBeDefined()
   })
 })

@@ -455,7 +455,14 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
     const timer = window.setTimeout(() => {
       try {
         setSnapshot({ plan, objectiveId, sweep: sweepClaimingStrategies(plan, startYear, objectiveId) })
-      } catch {
+      } catch (err) {
+        // A plan that fails validation is the common case the card names, but
+        // this also catches a genuine bug in the sweep itself — the same
+        // ambiguity SurvivorTransitionPage's identical backstop carries. Log
+        // it the way the error boundaries above this tab do (ShellErrorBoundary,
+        // RouteErrorBoundary), so the second case is not silent to the console
+        // even though the card's wording still names the first.
+        console.error('Claim-age sweep failed:', err)
         setSnapshot({ plan, objectiveId, sweep: null })
       }
     }, SWEEP_DEBOUNCE_MS)
