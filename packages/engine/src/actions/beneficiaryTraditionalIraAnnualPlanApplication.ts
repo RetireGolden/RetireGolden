@@ -19,6 +19,8 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraAnnualOpeningBalanceEvidence {
   sourceAccountId: AccountId
@@ -114,87 +116,6 @@ const INHERITANCE_KEYS = [
   'deathDate',
   'inheritanceEvidenceId',
 ] as const
-const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function plainDataSnapshot(
-  value: unknown,
-  ancestors = new Set<object>(),
-): unknown | typeof INVALID_SNAPSHOT {
-  if (
-    value === null || typeof value === 'string' || typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) return value
-  if (typeof value !== 'object' || ancestors.has(value)) return INVALID_SNAPSHOT
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if (
-      (array && prototype !== Array.prototype) ||
-      (!array && prototype !== Object.prototype && prototype !== null)
-    ) return INVALID_SNAPSHOT
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
-    if (array) {
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const size = length?.value
-      if (
-        length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
-        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
-        !keys.includes('length') ||
-        Array.from({ length: size }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))
-      ) return INVALID_SNAPSHOT
-    }
-    const output: unknown[] | Record<string, unknown> = array
-      ? []
-      : Object.create(null) as Record<string, unknown>
-    ancestors.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (
-        descriptor === undefined || !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')
-      ) return INVALID_SNAPSHOT
-      const child = plainDataSnapshot(descriptor.value, ancestors)
-      if (child === INVALID_SNAPSHOT) return INVALID_SNAPSHOT
-      if (array) (output as unknown[])[Number(key as string)] = child
-      else (output as Record<string, unknown>)[key as string] = child
-    }
-    ancestors.delete(value)
-    return output
-  } catch {
-    return INVALID_SNAPSHOT
-  }
-}
-
-function exactKeys(value: object, expected: readonly string[]): boolean {
-  return Object.keys(value).length === expected.length &&
-    expected.every((key) => Object.hasOwn(value, key))
-}
-
-function recordWithKeys(
-  value: unknown,
-  keys: readonly string[],
-): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object' &&
-    exactKeys(value, keys)
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function unsupported(): Readonly<
   UnsupportedPlanBeneficiaryTraditionalIraAnnualApplicationResult
@@ -296,13 +217,13 @@ function prepare(
 ): Readonly<PreparePlanBeneficiaryTraditionalIraAnnualApplicationResult> {
   const raw = plainDataSnapshot(input)
   if (
-    !recordWithKeys(raw, INPUT_KEYS) ||
+    !exactKeys(raw, INPUT_KEYS) ||
     !nonblank(raw.planSnapshotEvidenceId) ||
     !Array.isArray(raw.annualOpeningBalances) ||
     !Array.isArray(raw.inheritanceBindings) ||
-    raw.annualOpeningBalances.some((entry) => !recordWithKeys(entry, BALANCE_KEYS)) ||
+    raw.annualOpeningBalances.some((entry) => !exactKeys(entry, BALANCE_KEYS)) ||
     raw.inheritanceBindings.some((entry) =>
-      !recordWithKeys(entry, INHERITANCE_KEYS))
+      !exactKeys(entry, INHERITANCE_KEYS))
   ) return unsupported()
   const snapshot = raw as unknown as
     PreparePlanBeneficiaryTraditionalIraAnnualApplicationInput

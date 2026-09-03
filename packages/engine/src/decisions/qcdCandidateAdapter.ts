@@ -37,6 +37,7 @@ import {
   inspectCompleteRetirementActionCandidateSchedule,
   type RetirementActionCandidateScheduleIssue,
 } from './retirementActionCandidateSchedule.js'
+import { asUnknownRecord, exactKeys } from '../actions/plainData.js'
 
 export interface QcdEfficiencyCandidateRuntimeFacts {
   personAliveEvidenceId: string
@@ -126,19 +127,6 @@ export type QcdEfficiencyCandidateAdaptationResult =
   | AdaptedQcdEfficiencyCandidate
   | BlockedQcdEfficiencyCandidate
 
-type UnknownRecord = Record<string, unknown>
-
-function record(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? value as UnknownRecord
-    : null
-}
-
-function keysExactly(value: UnknownRecord, expected: readonly string[]): boolean {
-  const actual = Object.keys(value).sort(compareUtf16CodeUnits)
-  const canonical = [...expected].sort(compareUtf16CodeUnits)
-  return actual.length === canonical.length && actual.every((key, index) => key === canonical[index])
-}
 
 function localIssue(
   kind: LocalQcdEfficiencyCandidateIssueKind,
@@ -174,11 +162,11 @@ function alternativeEvidence(
   disposition: 'eligible' | 'blocked',
   reasonCodes: readonly string[],
 ): QcdEfficiencyAlternativeEvidence {
-  const outer = record(alternative)
-  const intent = record(outer?.['intent'])
-  const source = record(intent?.['sourceAllocation'])
-  const charity = record(intent?.['charity'])
-  const runtimeFacts = record(outer?.['runtimeFacts'])
+  const outer = asUnknownRecord(alternative)
+  const intent = asUnknownRecord(outer?.['intent'])
+  const source = asUnknownRecord(intent?.['sourceAllocation'])
+  const charity = asUnknownRecord(intent?.['charity'])
+  const runtimeFacts = asUnknownRecord(outer?.['runtimeFacts'])
   return {
     alternativeId: stringOrNull(outer?.['alternativeId']) ?? '',
     donorPersonId: stringOrNull(intent?.['donorPersonId']) as PersonId | null,
@@ -210,12 +198,12 @@ function exactExploratoryCandidate(
   expectedProjectionBindingId: string,
 ): QcdEfficiencyCandidateIssue | null {
   try {
-    const outer = record(candidate)
-    const readiness = record(outer?.['retirementActionReadiness'])
-    const metadata = record(outer?.['metadata'])
-    const patch = record(outer?.['planPatch'])
-    const strategies = record(patch?.['strategies'])
-    const itemized = record(strategies?.['itemizedDeductions'])
+    const outer = asUnknownRecord(candidate)
+    const readiness = asUnknownRecord(outer?.['retirementActionReadiness'])
+    const metadata = asUnknownRecord(outer?.['metadata'])
+    const patch = asUnknownRecord(outer?.['planPatch'])
+    const strategies = asUnknownRecord(patch?.['strategies'])
+    const itemized = asUnknownRecord(strategies?.['itemizedDeductions'])
     const planItemized = plan.strategies.itemizedDeductions
     const charitable = planItemized?.charitable ?? 0
     if (
@@ -230,7 +218,7 @@ function exactExploratoryCandidate(
     }
     if (
       outer === null ||
-      !keysExactly(outer, [
+      !exactKeys(outer, [
         'id',
         'source',
         'category',
@@ -246,12 +234,12 @@ function exactExploratoryCandidate(
       outer['label'] !== 'Donations routed as QCDs' ||
       outer['explanation'] !== qcdEfficiencyRationale(charitable) ||
       patch === null ||
-      !keysExactly(patch, ['strategies']) ||
+      !exactKeys(patch, ['strategies']) ||
       strategies === null ||
-      !keysExactly(strategies, ['qcdAnnual', 'itemizedDeductions']) ||
+      !exactKeys(strategies, ['qcdAnnual', 'itemizedDeductions']) ||
       strategies['qcdAnnual'] !== charitable ||
       itemized === null ||
-      !keysExactly(itemized, [
+      !exactKeys(itemized, [
         'stateAndLocalTaxes',
         'mortgageInterest',
         'charitable',
@@ -260,19 +248,19 @@ function exactExploratoryCandidate(
       itemized['stateAndLocalTaxes'] !== planItemized?.stateAndLocalTaxes ||
       itemized['mortgageInterest'] !== planItemized?.mortgageInterest ||
       readiness === null ||
-      !keysExactly(readiness, ['state', 'reason']) ||
+      !exactKeys(readiness, ['state', 'reason']) ||
       readiness['state'] !== 'exploratoryNonActionable' ||
       readiness['reason'] !== QCD_EFFICIENCY_EXPLORATORY_REASON ||
       metadata === null ||
-      !keysExactly(metadata, ['qcdAnnualTargets', 'qcdProjectionBindingId']) ||
+      !exactKeys(metadata, ['qcdAnnualTargets', 'qcdProjectionBindingId']) ||
       !Array.isArray(metadata['qcdAnnualTargets']) ||
       metadata['qcdAnnualTargets'].length !== expectedTargets.length ||
       metadata['qcdAnnualTargets'].some((target, index) => {
-        const targetRecord = record(target)
+        const targetRecord = asUnknownRecord(target)
         const expected = expectedTargets[index]
         return targetRecord === null ||
           expected === undefined ||
-          !keysExactly(targetRecord, ['year', 'requestedAmount']) ||
+          !exactKeys(targetRecord, ['year', 'requestedAmount']) ||
           targetRecord['year'] !== expected.year ||
           targetRecord['requestedAmount'] !== expected.requestedAmount
       })
@@ -428,15 +416,15 @@ export function adaptQcdEfficiencyDetectorCandidate(
   }> = []
 
   for (const [index, alternative] of alternativeSnapshots.entries()) {
-    const outer = record(alternative)
-    const runtimeFacts = record(outer?.['runtimeFacts'])
+    const outer = asUnknownRecord(alternative)
+    const runtimeFacts = asUnknownRecord(outer?.['runtimeFacts'])
     const alternativeId = stringOrNull(outer?.['alternativeId'])
     if (
       outer === null ||
-      !keysExactly(outer, ['alternativeId', 'intent', 'runtimeFacts']) ||
+      !exactKeys(outer, ['alternativeId', 'intent', 'runtimeFacts']) ||
       alternativeId === null ||
       runtimeFacts === null ||
-      !keysExactly(runtimeFacts, [
+      !exactKeys(runtimeFacts, [
         'personAliveEvidenceId',
         'donorAlive',
         'priorQcdOffsetEvidenceId',
@@ -488,10 +476,10 @@ export function adaptQcdEfficiencyDetectorCandidate(
     seenRuntimeEvidenceIds.add(personAliveEvidenceId)
     seenRuntimeEvidenceIds.add(priorQcdOffsetEvidenceId)
 
-    const intentRecord = record(outer['intent'])
-    const provenanceRecord = record(intentRecord?.['provenance'])
-    const sourceAllocationRecord = record(intentRecord?.['sourceAllocation'])
-    const charityRecord = record(intentRecord?.['charity'])
+    const intentRecord = asUnknownRecord(outer['intent'])
+    const provenanceRecord = asUnknownRecord(intentRecord?.['provenance'])
+    const sourceAllocationRecord = asUnknownRecord(intentRecord?.['sourceAllocation'])
+    const charityRecord = asUnknownRecord(intentRecord?.['charity'])
     if (
       intentRecord === null ||
       provenanceRecord === null ||

@@ -24,6 +24,9 @@ import {
   createActionReason,
   type ActionReason,
 } from './reasons.js'
+import { deepFreeze } from './freeze.js'
+import { compareUtf16CodeUnits } from './structuralId.js'
+import { requireNonblankId } from './plainData.js'
 
 export interface OwnedNonRothIraMovementSourceEvidence {
   predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource'
@@ -176,29 +179,8 @@ interface ScheduledRequest {
   chronologyKey: string
 }
 
-function compareUtf16CodeUnits(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
-}
-
-function nonblankId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a nonblank stable identifier`)
-  }
-  return value
 }
 
 function centsFromBigInt(value: bigint, label: string): UsdCents {
@@ -292,11 +274,11 @@ function validateSourceEvidence(
     accountKind: evidence.accountKind,
     inheritanceStatus: evidence.inheritanceStatus,
     subtype: evidence.subtype,
-    accountOwnershipEvidenceId: nonblankId(
+    accountOwnershipEvidenceId: requireNonblankId(
       evidence.accountOwnershipEvidenceId,
       'Account ownership evidence ID',
     ),
-    iraClassificationEvidenceId: nonblankId(
+    iraClassificationEvidenceId: requireNonblankId(
       evidence.iraClassificationEvidenceId,
       'IRA classification evidence ID',
     ),

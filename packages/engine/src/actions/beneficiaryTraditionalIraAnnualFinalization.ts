@@ -16,6 +16,8 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
+import { INVALID_SNAPSHOT, exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraAnnualBatchMemberManifest {
   actionId: ActionId
@@ -129,90 +131,6 @@ const MEMBER_KEYS = [
   'closingBalanceAmount',
   'movementCandidateId',
 ] as const
-const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function plainDataSnapshot(
-  value: unknown,
-  ancestors = new Set<object>(),
-): unknown | typeof INVALID_SNAPSHOT {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) return value
-  if (typeof value !== 'object' || ancestors.has(value)) return INVALID_SNAPSHOT
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if (
-      (array && prototype !== Array.prototype) ||
-      (!array && prototype !== Object.prototype && prototype !== null)
-    ) return INVALID_SNAPSHOT
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
-    if (array) {
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const arrayLength = length?.value
-      if (
-        length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof arrayLength !== 'number' ||
-        !Number.isSafeInteger(arrayLength) || arrayLength < 0 ||
-        keys.length !== arrayLength + 1 || !keys.includes('length') ||
-        Array.from({ length: arrayLength }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))
-      ) return INVALID_SNAPSHOT
-    }
-    const output: unknown[] | Record<string, unknown> = array
-      ? []
-      : Object.create(null) as Record<string, unknown>
-    ancestors.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (
-        descriptor === undefined ||
-        !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')
-      ) return INVALID_SNAPSHOT
-      const child = plainDataSnapshot(descriptor.value, ancestors)
-      if (child === INVALID_SNAPSHOT) return INVALID_SNAPSHOT
-      Object.defineProperty(output, key, {
-        configurable: true,
-        enumerable: true,
-        writable: true,
-        value: child,
-      })
-    }
-    return output
-  } catch {
-    return INVALID_SNAPSHOT
-  } finally {
-    ancestors.delete(value)
-  }
-}
-
-function exactKeys(value: unknown, keys: readonly string[]): boolean {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  const actual = Object.keys(value)
-  return actual.length === keys.length && actual.every((key) => keys.includes(key))
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function unsupported(): Readonly<
   UnsupportedBeneficiaryTraditionalIraAnnualEvidenceResult

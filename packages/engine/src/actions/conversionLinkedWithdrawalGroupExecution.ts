@@ -25,6 +25,7 @@ import {
 import type { ActionId, PersonId } from './identity.js'
 import { asUsdCents, type UsdCents } from './money.js'
 import { compareUtf16CodeUnits } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 /** A leg nobody reported on moved nothing and was authored nothing. */
 const ZERO_CENTS: UsdCents = asUsdCents(0)
@@ -320,14 +321,6 @@ export interface ExecuteConversionLinkedWithdrawalGroupsResult {
   readonly ordering: Readonly<MergedRetirementActionSchedule> | null
   readonly groups: readonly Readonly<ConversionLinkedWithdrawalGroupExecutionRecord>[]
   readonly funding: ConversionLinkedWithdrawalGroupFundingEvaluation
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function refusedFunding(

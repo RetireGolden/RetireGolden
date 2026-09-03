@@ -21,6 +21,8 @@ import {
 import type { PositiveUsdCents, UsdCents } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface BeneficiaryTraditionalIraDeathBeneficiaryEvidence {
   predicate: 'beneficiaryTraditionalIraDeathBeneficiary'
@@ -157,95 +159,6 @@ function evidenceId(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null
 }
 
-const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function plainDataSnapshot(
-  value: unknown,
-  ancestors = new Set<object>(),
-): unknown | typeof INVALID_SNAPSHOT {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) return value
-  if (typeof value !== 'object' || ancestors.has(value)) {
-    return INVALID_SNAPSHOT
-  }
-  try {
-    const isArray = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if (
-      (isArray && prototype !== Array.prototype) ||
-      (!isArray && prototype !== Object.prototype && prototype !== null)
-    ) return INVALID_SNAPSHOT
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
-    if (isArray) {
-      // This branch was absent: the loop below skips the `length` key without
-      // anything having checked it, so an array could carry arbitrary extra
-      // keys, a getter-backed length, or a length disagreeing with its indices.
-      // Same guard as the other plainDataSnapshot implementations here.
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const size = length?.value
-      if (
-        length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
-        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
-        !keys.includes('length') ||
-        Array.from({ length: size }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))
-      ) return INVALID_SNAPSHOT
-    }
-    const output: unknown[] | Record<string, unknown> = isArray
-      ? []
-      : Object.create(null) as Record<string, unknown>
-    ancestors.add(value)
-    for (const key of keys) {
-      if (isArray && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (
-        descriptor === undefined ||
-        !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')
-      ) return INVALID_SNAPSHOT
-      const child = plainDataSnapshot(descriptor.value, ancestors)
-      if (child === INVALID_SNAPSHOT) return INVALID_SNAPSHOT
-      Object.defineProperty(output, key, {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: child,
-      })
-    }
-    return output
-  } catch {
-    return INVALID_SNAPSHOT
-  } finally {
-    ancestors.delete(value)
-  }
-}
-
-function exactKeys(
-  value: unknown,
-  keys: readonly string[],
-): value is Readonly<Record<string, unknown>> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  const actual = Object.keys(value)
-  return actual.length === keys.length && actual.every((key) => keys.includes(key))
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function characterBinding(
   character: Readonly<BeneficiaryTraditionalIraWithdrawalTaxCharacter>,

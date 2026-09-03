@@ -65,6 +65,8 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { addCalendarMonths, parseCivilIsoDate } from './civilDate.js'
+import { deepFreeze } from './freeze.js'
+import { nonblank } from './plainData.js'
 
 export interface PlanOwnedNonRothIraOpeningBalanceEvidence {
   predicate:
@@ -272,20 +274,6 @@ interface CanonicalInventory {
   line8Entries: AnnualIraBasisAllocationEntryInput[]
   ledgerRunId: string
   claimedEvidenceIds: Set<string>
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
 }
 
 function inventoryIssue(

@@ -29,6 +29,8 @@ import {
   type ReconcileOwnedNonRothIraSeppAnnualScheduleInput,
   type ReconcileOwnedNonRothIraSeppAnnualScheduleResult,
 } from './ownedNonRothIraSeppAnnualReconciliation.js'
+import { deepFreeze } from './freeze.js'
+import { requireNonblankId } from './plainData.js'
 
 export interface OwnedNonRothIraPenaltyOwnerEvidence {
   predicate: 'ownerBirthDateForIraPenaltyAgeThreshold'
@@ -403,23 +405,6 @@ export interface EvaluateOwnedNonRothIraPenaltyPrerequisitesResult {
     readonly Readonly<OwnedNonRothIraPenaltyPrerequisiteEvaluation>[]
 }
 
-function nonblankId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a nonblank stable identifier`)
-  }
-  return value
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
 }
@@ -612,7 +597,7 @@ function validateCharacter(
         'IRA withdrawal character evidence amount must match its segment',
       )
     }
-    const segmentBasisEvidenceId = nonblankId(
+    const segmentBasisEvidenceId = requireNonblankId(
       segment.characterEvidence.basisEvidenceId,
       'IRA character basis evidence ID',
     )
@@ -702,15 +687,15 @@ function validateSourceEvidence(
     ownerPersonId: personIdSchema.parse(input.ownerPersonId),
     subtype: validateSubtype(input.subtype),
     evaluationDate,
-    distributionDateEvidenceId: nonblankId(
+    distributionDateEvidenceId: requireNonblankId(
       input.distributionDateEvidenceId,
       'IRA distribution-date evidence ID',
     ),
-    accountOwnershipEvidenceId: nonblankId(
+    accountOwnershipEvidenceId: requireNonblankId(
       input.accountOwnershipEvidenceId,
       'IRA account-ownership evidence ID',
     ),
-    iraClassificationEvidenceId: nonblankId(
+    iraClassificationEvidenceId: requireNonblankId(
       input.iraClassificationEvidenceId,
       'IRA-classification evidence ID',
     ),
@@ -899,11 +884,11 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       'IRA penalty input must carry allocation-bound annual line-7 evidence',
     )
   }
-  const line7AllocationEvidenceId = nonblankId(
+  const line7AllocationEvidenceId = requireNonblankId(
     characterization.line7AllocationEvidence.allocationEvidenceId,
     'Form 8606 line-7 allocation evidence ID',
   )
-  const annualBasisEvidenceId = nonblankId(
+  const annualBasisEvidenceId = requireNonblankId(
     annualBasisEvidence.basisEvidenceId,
     'Annual IRA basis evidence ID',
   )
@@ -934,7 +919,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     input.ownerEvidence.birthDate,
     'IRA owner birth date',
   )
-  const birthDateEvidenceId = nonblankId(
+  const birthDateEvidenceId = requireNonblankId(
     input.ownerEvidence.evidenceId,
     'IRA owner birth-date evidence ID',
   )
@@ -1202,11 +1187,11 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       const sourceAccountId = accountIdSchema.parse(
         routeInput.sourceAccountId,
       )
-      const electionId = nonblankId(
+      const electionId = requireNonblankId(
         routeInput.electionId,
         'IRA SEPP route election ID',
       )
-      const scheduleId = nonblankId(
+      const scheduleId = requireNonblankId(
         routeInput.scheduleId,
         'IRA SEPP route schedule ID',
       )
@@ -1425,7 +1410,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       disabilityInput.evaluationDate,
       'IRA disability evaluation date',
     )
-    const disabilityEvidenceId = nonblankId(
+    const disabilityEvidenceId = requireNonblankId(
       disabilityInput.disabilityEvidenceId,
       'IRA disability evidence ID',
     )
@@ -1536,7 +1521,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       rejectedInput.evaluationDate,
       'Rejected IRA disability evaluation date',
     )
-    const disabilityEvidenceId = nonblankId(
+    const disabilityEvidenceId = requireNonblankId(
       rejectedInput.disabilityEvidenceId,
       'Rejected IRA disability evidence ID',
     )
@@ -1611,12 +1596,12 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       sourceAccountId: accountIdSchema.parse(aliveInput.sourceAccountId),
       ownerPersonId: personIdSchema.parse(aliveInput.ownerPersonId),
       evaluationDate,
-      distributionDateEvidenceId: nonblankId(
+      distributionDateEvidenceId: requireNonblankId(
         aliveInput.distributionDateEvidenceId,
         'IRA owner-alive distribution-date evidence ID',
       ),
       aliveOnEvaluationDate: aliveInput.aliveOnEvaluationDate,
-      ownerAliveEvidenceId: nonblankId(
+      ownerAliveEvidenceId: requireNonblankId(
         aliveInput.ownerAliveEvidenceId,
         'IRA owner-alive evidence ID',
       ),
@@ -1674,7 +1659,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       status: seppInput.status,
       electionId: seppInput.electionId,
       scheduleId: seppInput.scheduleId,
-      seppStatusEvidenceId: nonblankId(
+      seppStatusEvidenceId: requireNonblankId(
         seppInput.seppStatusEvidenceId,
         'IRA SEPP status evidence ID',
       ),
@@ -1736,7 +1721,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       ),
       attested: attestationInput.attested,
       evidenceScope: attestationInput.evidenceScope,
-      attestationEvidenceId: nonblankId(
+      attestationEvidenceId: requireNonblankId(
         attestationInput.attestationEvidenceId,
         'IRA other-exception attestation evidence ID',
       ),
@@ -1804,7 +1789,7 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       participationInput.participationStartDate,
       'SIMPLE IRA participation start date',
     )
-    const participationStartEvidenceId = nonblankId(
+    const participationStartEvidenceId = requireNonblankId(
       participationInput.participationStartEvidenceId,
       'SIMPLE IRA participation evidence ID',
     )

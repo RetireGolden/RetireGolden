@@ -6,6 +6,8 @@ import { asUsdCents, positiveUsdCentsSchema, usdCentsSchema, type UsdCents } fro
 import { createActionReason, type ActionReason } from './reasons.js'
 import type { QualifiedDisabilityEventEvidence, RejectedDisabilityStatusEvidence } from './ownedNonRothIraPenaltyPrerequisite.js'
 import type { AcceptedTraditionalEmployerPlanWithdrawalClassification } from './traditionalEmployerPlanWithdrawalCharacter.js'
+import { deepFreeze } from './freeze.js'
+import { requireNonblankId } from './plainData.js'
 
 type EmployerPenaltyIdentity = {
   actionId: ActionId; allocationId: AllocationId
@@ -203,11 +205,6 @@ export interface UnsupportedTraditionalEmployerPlanPenaltyResult {
 
 export type EvaluateTraditionalEmployerPlanPenaltyPrerequisiteResult = AcceptedTraditionalEmployerPlanPenaltyResult | UnsupportedTraditionalEmployerPlanPenaltyResult
 
-function nonblank(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) throw new TypeError(`${label} must be a nonblank stable identifier`)
-  return value
-}
-
 function civilDate(value: unknown, label: string): string {
   if (typeof value !== 'string') throw new RangeError(`${label} must be a canonical civil date`)
   const parsed = parseCivilIsoDate(value)
@@ -233,15 +230,6 @@ function clonePlain<T>(value: T): T { structural(value); return structuredClone(
 
 function requireDistinctEvidenceIds(ids: readonly string[]): void { if (new Set(ids).size !== ids.length) throw new RangeError('Negative employer-penalty facts must use distinct evidence IDs') }
 
-function deepFreeze<T>(value: T, visited = new WeakSet<object>()): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !visited.has(value)) {
-    visited.add(value)
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child, visited)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
 function sameIdentity(value: EmployerPenaltyIdentity, identity: EmployerPenaltyIdentity): boolean {
   return value.actionId === identity.actionId &&
     value.allocationId === identity.allocationId &&
@@ -263,7 +251,7 @@ function characterCoverage(
   const basis = accepted.basisEvidence
   const availability = accepted.availabilityEvidence
   const availabilityDate = civilDate(availability.eventDate, 'Employer distribution availability event date')
-  const basisEvidenceId = nonblank(basis.basisEvidenceId, 'Employer basis evidence ID')
+  const basisEvidenceId = requireNonblankId(basis.basisEvidenceId, 'Employer basis evidence ID')
   const executedAmount = usdCentsSchema.parse(basis.executedAmount)
   const basisReturnExcludedAmount = usdCentsSchema.parse(basis.basisRecoveredAmount)
   const ordinaryIncomeAmount = usdCentsSchema.parse(basis.ordinaryIncomeAmount)
@@ -286,7 +274,7 @@ function characterCoverage(
     !['separationFromService', 'inServiceWithdrawal', 'planTermination', 'requiredDistribution'].includes(availability.eventKind) ||
     availabilityDate < birthDate || availabilityDate > identity.evaluationDate ||
     availability.availableOnEvaluationDate !== true ||
-    !nonblank(availability.planTermsEvidenceId, 'Employer distribution plan-terms evidence ID') ||
+    !requireNonblankId(availability.planTermsEvidenceId, 'Employer distribution plan-terms evidence ID') ||
     basis.rule !== 'proRataSingleDistribution' ||
     basis.sourcePlanAccountId !== identity.sourceAccountId ||
     basis.aggregateBasisRatio.representation !== 'exactMinorUnitRational' ||
@@ -364,7 +352,7 @@ function disabilityEvidence(
     value.kind !== 'disability' ||
     personIdSchema.parse(value.disabledPersonId) !== identity.participantPersonId ||
     civilDate(value.evaluationDate, 'Disability evaluation date') !== identity.evaluationDate ||
-    !nonblank(value.disabilityEvidenceId, 'Disability evidence ID') ||
+    !requireNonblankId(value.disabilityEvidenceId, 'Disability evidence ID') ||
     (qualificationDate !== null && qualificationDate < birthDate) ||
     (value.qualifiedOnEvaluationDate && (qualificationDate === null || qualificationDate > identity.evaluationDate)) ||
     (!value.qualifiedOnEvaluationDate && qualificationDate !== null && qualificationDate <= identity.evaluationDate)
@@ -415,7 +403,7 @@ function seppAssessment(
   if (value.status === 'none') {
     if (
       value.electionId !== null || value.scheduleId !== null ||
-      !nonblank(value.seppStatusEvidenceId, 'Employer SEPP status evidence ID')
+      !requireNonblankId(value.seppStatusEvidenceId, 'Employer SEPP status evidence ID')
     ) throw new RangeError('No-SEPP evidence must carry literal null election and schedule IDs')
     const evidenceId = stableId('employer-sepp-rejected', [identity, value, coverage.evidenceId, coverage.characterEvidenceIds])
     return {
@@ -438,21 +426,21 @@ function seppAssessment(
     payment.scheduleStateAfterId,
   ]
   if (
-    nonblank(election.electionId, 'Employer SEPP election ID') !== election.electionId ||
-    !nonblank(election.scheduleId, 'Employer SEPP schedule ID') ||
+    requireNonblankId(election.electionId, 'Employer SEPP election ID') !== election.electionId ||
+    !requireNonblankId(election.scheduleId, 'Employer SEPP schedule ID') ||
     (election.method !== 'rmd' && election.method !== 'amortization' && election.method !== 'fixedAnnuitization') ||
     election.participantPersonId !== identity.participantPersonId ||
     election.sourceAccountId !== identity.sourceAccountId ||
-    !nonblank(election.electionEvidenceId, 'Employer SEPP election evidence ID') ||
+    !requireNonblankId(election.electionEvidenceId, 'Employer SEPP election evidence ID') ||
     !seppSeriesBeginsAfterSeparation(electionStartDate, separationDate) ||
     electionStartDate > identity.evaluationDate ||
     !Number.isSafeInteger(payment.scheduledPaymentSequence) ||
     payment.scheduledPaymentSequence < 1 ||
     payment.scheduleTaxYear !== Number(identity.evaluationDate.slice(0, 4)) ||
-    !nonblank(payment.currentDistributionEvidenceId, 'Employer SEPP current distribution evidence ID') ||
-    (payment.previousScheduleStateId !== null && !nonblank(payment.previousScheduleStateId, 'Previous SEPP state ID')) ||
-    !nonblank(payment.scheduleStateBeforeId, 'SEPP state-before ID') ||
-    !nonblank(payment.scheduleStateAfterId, 'SEPP state-after ID') ||
+    !requireNonblankId(payment.currentDistributionEvidenceId, 'Employer SEPP current distribution evidence ID') ||
+    (payment.previousScheduleStateId !== null && !requireNonblankId(payment.previousScheduleStateId, 'Previous SEPP state ID')) ||
+    !requireNonblankId(payment.scheduleStateBeforeId, 'SEPP state-before ID') ||
+    !requireNonblankId(payment.scheduleStateAfterId, 'SEPP state-after ID') ||
     payment.scheduleStateBeforeId === payment.scheduleStateAfterId
     || new Set(distinctIds).size !== distinctIds.length
     || (payment.scheduledPaymentSequence === 1
@@ -502,7 +490,7 @@ function otherAssessment(
     !sameIdentity(value, identity) ||
     typeof value.otherExceptionClaimed !== 'boolean' ||
     value.evidenceScope !== 'planningEvidenceNotFilingGradeLegalAdjudication' ||
-    !nonblank(value.attestationEvidenceId, 'Other-exception attestation evidence ID') ||
+    !requireNonblankId(value.attestationEvidenceId, 'Other-exception attestation evidence ID') ||
     (value.otherExceptionClaimed
       ? typeof value.exceptionDescription !== 'string' || value.exceptionDescription.trim().length === 0
       : value.exceptionDescription !== null)
@@ -576,7 +564,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
   if (
     participant.predicate !== 'employerPlanParticipantBirthDateForPenalty' ||
     participant.participantPersonId !== identity.participantPersonId ||
-    !nonblank(participant.birthDateEvidenceId, 'Participant birth-date evidence ID')
+    !requireNonblankId(participant.birthDateEvidenceId, 'Participant birth-date evidence ID')
   ) throw new RangeError('Participant birth-date evidence must bind employer penalty identity')
   const age59HalfDate = addCalendarMonths(birthDate, 714)
   const birth = parseCivilIsoDate(birthDate)!
@@ -621,7 +609,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
         separation.sourceAccountId !== identity.sourceAccountId ||
         separation.participantPersonId !== identity.participantPersonId ||
         separation.authoritative !== true ||
-        !nonblank(separation.separationEvidenceId, 'Employer separation evidence ID')
+        !requireNonblankId(separation.separationEvidenceId, 'Employer separation evidence ID')
       ) throw new RangeError('Separation evidence must bind the named sponsoring plan and participant')
       const availability = snapshot.characterization.acceptedSourceEligibility.availabilityEvidence
       if (

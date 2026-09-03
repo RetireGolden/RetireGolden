@@ -63,7 +63,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 374
+              "line": 368
             }
           ]
         },
@@ -196,7 +196,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 374
+              "line": 368
             }
           ]
         }
@@ -254,7 +254,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 374
+              "line": 368
             }
           ]
         },
@@ -336,7 +336,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 374
+              "line": 368
             }
           ]
         }
@@ -387,7 +387,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 374
+              "line": 368
             }
           ]
         }
@@ -448,7 +448,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdStandardSection170pLedger",
-              "line": 309
+              "line": 303
             }
           ]
         },
@@ -602,7 +602,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdStandardSection170pLedger",
-              "line": 309
+              "line": 303
             }
           ]
         }
@@ -803,7 +803,7 @@
           "functions": [
             {
               "name": "buildAnnualSection68ItemizedDeductionEvidence",
-              "line": 282
+              "line": 276
             }
           ]
         },

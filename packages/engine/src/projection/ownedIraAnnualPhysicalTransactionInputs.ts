@@ -15,6 +15,7 @@ import type {
   StagedOwnedNonRothIraAnnualEventApplicationInput,
 } from '../actions/ownedNonRothIraAnnualPhysicalTransaction.js'
 import { deriveActionStructuralId } from '../actions/structuralId.js'
+import { deepFreeze } from '../actions/freeze.js'
 
 /**
  * Turns the annual pass's sealed runtime journal into the per-owner input the
@@ -138,16 +139,6 @@ export interface OwnedIraAnnualPhysicalTransactionInputsBlocked {
 export type BuildOwnedIraAnnualPhysicalTransactionInputsResult =
   | OwnedIraAnnualPhysicalTransactionInputsBuilt
   | OwnedIraAnnualPhysicalTransactionInputsBlocked
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function blocked(
   issues: readonly Readonly<OwnedIraAnnualPhysicalTransactionInputsIssue>[],

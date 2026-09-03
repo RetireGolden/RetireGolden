@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 820
+              "line": 805
             }
           ]
         }
@@ -76,7 +76,7 @@
           "functions": [
             {
               "name": "evaluateRetirementActionSchedule",
-              "line": 1013
+              "line": 1001
             }
           ]
         }
@@ -118,7 +118,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 562
+              "line": 550
             }
           ]
         }
@@ -156,7 +156,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 820
+              "line": 805
             }
           ]
         },
@@ -165,7 +165,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 562
+              "line": 550
             }
           ]
         }
@@ -221,7 +221,7 @@
           "functions": [
             {
               "name": "traditionalWithdrawalPenaltyRate",
-              "line": 1422
+              "line": 1419
             }
           ]
         }
@@ -315,7 +315,7 @@
           "functions": [
             {
               "name": "prepareBeneficiaryTraditionalIraAnnualSimulatorDelta",
-              "line": 567
+              "line": 491
             }
           ]
         },
@@ -324,7 +324,7 @@
           "functions": [
             {
               "name": "evaluateBeneficiaryTraditionalIraDeathPenalty",
-              "line": 296
+              "line": 209
             }
           ]
         },
@@ -333,7 +333,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 820
+              "line": 805
             }
           ]
         },
@@ -342,7 +342,7 @@
           "functions": [
             {
               "name": "traditionalWithdrawalPenaltyRate",
-              "line": 1422
+              "line": 1419
             }
           ]
         }
@@ -415,7 +415,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 820
+              "line": 805
             }
           ]
         },
@@ -424,7 +424,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 562
+              "line": 550
             }
           ]
         }
@@ -481,7 +481,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 820
+              "line": 805
             }
           ]
         },
@@ -490,7 +490,7 @@
           "functions": [
             {
               "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
-              "line": 714
+              "line": 699
             }
           ]
         }
@@ -550,7 +550,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 562
+              "line": 550
             }
           ]
         }
@@ -611,7 +611,7 @@
           "functions": [
             {
               "name": "traditionalWithdrawalPenaltyRate",
-              "line": 1422
+              "line": 1419
             }
           ]
         }
@@ -754,11 +754,11 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 562
+              "line": 550
             },
             {
               "name": "seppSeriesBeginsAfterSeparation",
-              "line": 393
+              "line": 381
             }
           ]
         }
@@ -811,7 +811,7 @@
           "functions": [
             {
               "name": "buildAnnualRetirementPhysicalEventInventory",
-              "line": 1352
+              "line": 1343
             }
           ]
         },
@@ -896,7 +896,7 @@
           "functions": [
             {
               "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
-              "line": 714
+              "line": 699
             }
           ]
         },
@@ -905,7 +905,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 442
+              "line": 427
             }
           ]
         }
@@ -964,7 +964,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 562
+              "line": 550
             }
           ]
         }
@@ -1002,7 +1002,7 @@
           "functions": [
             {
               "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
-              "line": 714
+              "line": 699
             }
           ]
         },
@@ -1011,7 +1011,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 442
+              "line": 427
             }
           ]
         }
@@ -1071,7 +1071,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 820
+              "line": 805
             }
           ]
         }
@@ -1131,7 +1131,7 @@
           "functions": [
             {
               "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
-              "line": 714
+              "line": 699
             }
           ]
         }
@@ -1288,7 +1288,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 442
+              "line": 427
             }
           ]
         },
@@ -1297,7 +1297,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 562
+              "line": 550
             }
           ]
         }
@@ -1608,7 +1608,7 @@
           "functions": [
             {
               "name": "acceptsContributions",
-              "line": 1278
+              "line": 1275
             }
           ]
         }
@@ -1673,7 +1673,7 @@
           "functions": [
             {
               "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
-              "line": 714
+              "line": 699
             }
           ]
         },
@@ -1682,7 +1682,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 442
+              "line": 427
             }
           ]
         }
@@ -1720,7 +1720,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 820
+              "line": 805
             }
           ]
         },
@@ -1729,7 +1729,7 @@
           "functions": [
             {
               "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
-              "line": 714
+              "line": 699
             }
           ]
         }
@@ -1789,7 +1789,7 @@
           "functions": [
             {
               "name": "reconcileOwnedNonRothIraSeppAnnualSchedule",
-              "line": 714
+              "line": 699
             }
           ]
         }
@@ -1828,7 +1828,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 442
+              "line": 427
             }
           ]
         },

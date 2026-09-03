@@ -6,6 +6,7 @@ import type { StageAnnualQcdTaxCharacterPostPassInput } from './annualQcdTaxChar
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 import type { AnnualLiabilityRunBinding } from './annualLiabilityRunIdentity.js'
 import type { TaxableWithdrawalTaxUnitEvidence } from './taxableWithdrawalCharacter.js'
+import { deepFreeze } from './freeze.js'
 
 /** The canonical liability-run binding, under this ledger's published name. */
 export type AnnualQcdSection170pRunBinding = AnnualLiabilityRunBinding
@@ -140,13 +141,6 @@ class LedgerError extends Error {
   constructor(kind: AnnualQcdStandardSection170pIssue['kind'], detail: string) { super(detail); this.kind = kind }
 }
 function fail(kind: AnnualQcdStandardSection170pIssue['kind'], detail: string): never { throw new LedgerError(kind, detail) }
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 function id(value: unknown, label: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) fail('taxUnitInvalid', `${label} is required.`)
   return value

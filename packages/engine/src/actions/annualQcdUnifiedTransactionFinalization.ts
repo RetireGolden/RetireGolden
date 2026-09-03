@@ -7,6 +7,7 @@ import { asUsdCents, type UsdCents } from './money.js'
 import { preparePlanOwnedNonRothIraAnnualPhysicalTransaction, type OwnedNonRothIraAnnualQcdPhysicalApplication,
   type PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput } from './ownedNonRothIraAnnualPhysicalTransaction.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface FinalizeAnnualQcdUnifiedTransactionInput {
   readonly physicalTransactionInput: Readonly<PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput>
@@ -62,7 +63,6 @@ export interface AnnualQcdUnifiedFinalizationBlocked extends ResultBase {
 export type FinalizeAnnualQcdUnifiedTransactionResult = AnnualQcdUnifiedFinalizationBridged | AnnualQcdUnifiedFinalizationBlocked
 class BridgeError extends Error { readonly kind: AnnualQcdUnifiedFinalizationIssue['kind']; constructor(kind: AnnualQcdUnifiedFinalizationIssue['kind'], detail: string) { super(detail); this.kind = kind } }
 function fail(kind: AnnualQcdUnifiedFinalizationIssue['kind'], detail: string): never { throw new BridgeError(kind, detail) }
-function deepFreeze<T>(value: T): Readonly<T> { if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) { for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child); Object.freeze(value) } return value as Readonly<T> }
 function blocked(error: unknown): AnnualQcdUnifiedFinalizationBlocked {
   const issue = error instanceof BridgeError ? { kind: error.kind, detail: error.message } : { kind: 'hostileInput' as const, detail: 'Unified QCD finalization input must be detached canonical data.' }
   return deepFreeze({ status: 'annualQcdUnifiedFinalizationBlocked', committed: false, movement: 'notCommitted', actionability: 'notEstablished',

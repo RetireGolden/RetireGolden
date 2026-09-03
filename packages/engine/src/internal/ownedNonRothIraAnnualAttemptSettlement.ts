@@ -35,6 +35,7 @@ import {
   type OwnedNonRothIraContiguousReplayIssue,
   type OwnedNonRothIraContiguousReplayResult,
 } from './ownedNonRothIraContiguousReplay.js'
+import { deepFreeze } from '../actions/freeze.js'
 import { SIMULATOR_ANNUAL_PASS_VALUE_BINDING_KEYS } from
   './simulatorAnnualPassValueBindingKeys.js'
 
@@ -230,16 +231,6 @@ interface AttemptStateCheckpoint {
     readonly Readonly<SimulatorRetirementRuntimeApplication>[]
   readonly nextMutationOrdinal: number
   readonly invariantState: unknown
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function same(left: unknown, right: unknown): boolean {

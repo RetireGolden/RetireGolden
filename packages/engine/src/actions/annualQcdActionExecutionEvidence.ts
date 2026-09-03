@@ -14,6 +14,7 @@ import type { AccountId, ActionId, AllocationId, PersonId, PlanId } from './iden
 import { asUsdCents, type PositiveUsdCents, type UsdCents } from './money.js'
 import { createActionReason, type ActionReason } from './reasons.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface PublishAnnualQcdActionExecutionEvidenceInput {
   readonly ownerFinalizationInputs: readonly Readonly<FinalizeAnnualQcdUnifiedTransactionInput>[]
@@ -110,7 +111,6 @@ export interface AnnualQcdActionExecutionEvidenceBlocked {
 export type PublishAnnualQcdActionExecutionEvidenceResult = AnnualQcdActionExecutionEvidencePublished | AnnualQcdActionExecutionEvidenceBlocked
 class PublishError extends Error { readonly kind: AnnualQcdActionExecutionEvidenceIssue['kind']; constructor(kind: AnnualQcdActionExecutionEvidenceIssue['kind'], detail: string) { super(detail); this.kind = kind } }
 function fail(kind: AnnualQcdActionExecutionEvidenceIssue['kind'], detail: string): never { throw new PublishError(kind, detail) }
-function deepFreeze<T>(value: T): Readonly<T> { if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) { for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child); Object.freeze(value) } return value as Readonly<T> }
 function blocked(error: unknown): AnnualQcdActionExecutionEvidenceBlocked {
   const issue = error instanceof PublishError ? { kind: error.kind, detail: error.message } : { kind: 'hostileInput' as const, detail: 'QCD action-execution publication input must be detached canonical data.' }
   return deepFreeze({ status: 'annualQcdActionExecutionEvidenceBlocked', committed: false, movement: 'notCommitted', actionability: 'notEstablished',

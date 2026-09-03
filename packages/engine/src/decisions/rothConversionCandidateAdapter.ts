@@ -6,7 +6,7 @@ import {
   type RetirementActionCandidateIdentityIssue,
   type RothConversionCandidateIdentityIntent,
 } from '../actions/retirementActionCandidateIdentityAllocator.js'
-import { deriveActionStructuralId } from '../actions/structuralId.js'
+import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import type { Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import {
@@ -15,11 +15,11 @@ import {
   type RetirementActionCandidateScheduleIssue,
 } from './retirementActionCandidateSchedule.js'
 import type { DecisionCandidate } from './types.js'
+import { asUnknownRecord, exactKeys } from '../actions/plainData.js'
 
 const EXPLORATORY_REASON =
   'This aggregate strategy does not yet identify legal owners, source accounts, and destination accounts.'
 
-type UnknownRecord = Record<string, unknown>
 
 export interface FillTargetRothConversionCandidateIssue {
   kind: 'invalidExploratoryCandidate' | 'invalidConversionIntent'
@@ -72,19 +72,6 @@ export interface FillTargetRothConversionExploratorySourceProvenance {
   metadataContext: Record<string, unknown> | null
 }
 
-function record(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? value as UnknownRecord
-    : null
-}
-
-function hasExactKeys(value: UnknownRecord, keys: readonly string[]): boolean {
-  const actual = Object.keys(value).sort()
-  const expected = [...keys].sort()
-  return actual.length === expected.length &&
-    actual.every((key, index) => key === expected[index])
-}
-
 function issue(
   kind: FillTargetRothConversionCandidateIssue['kind'],
   field: string,
@@ -132,7 +119,7 @@ function exactGeneratorFillTarget(
   candidate: Readonly<DecisionCandidate>,
 ): FillTargetStrategy | BlockedFillTargetRothConversionCandidate {
   try {
-    const candidateRecord = record(candidate)
+    const candidateRecord = asUnknownRecord(candidate)
     if (candidateRecord === null) {
       return issue(
         'invalidExploratoryCandidate',
@@ -150,7 +137,7 @@ function exactGeneratorFillTarget(
       'retirementActionReadiness',
       ...(candidateRecord['metadata'] === undefined ? [] : ['metadata']),
     ]
-    if (!hasExactKeys(candidateRecord, allowedCandidateKeys)) {
+    if (!exactKeys(candidateRecord, allowedCandidateKeys)) {
       return issue(
         'invalidExploratoryCandidate',
         '$',
@@ -172,10 +159,10 @@ function exactGeneratorFillTarget(
       )
     }
 
-    const readiness = record(candidateRecord['retirementActionReadiness'])
+    const readiness = asUnknownRecord(candidateRecord['retirementActionReadiness'])
     if (
       readiness === null ||
-      !hasExactKeys(readiness, ['state', 'reason']) ||
+      !exactKeys(readiness, ['state', 'reason']) ||
       readiness['state'] !== 'exploratoryNonActionable' ||
       readiness['reason'] !== EXPLORATORY_REASON
     ) {
@@ -186,16 +173,16 @@ function exactGeneratorFillTarget(
       )
     }
 
-    const patch = record(candidateRecord['planPatch'])
-    const strategies = record(patch?.['strategies'])
-    const strategy = record(strategies?.['rothConversion'])
+    const patch = asUnknownRecord(candidateRecord['planPatch'])
+    const strategies = asUnknownRecord(patch?.['strategies'])
+    const strategy = asUnknownRecord(strategies?.['rothConversion'])
     if (
       patch === null ||
-      !hasExactKeys(patch, ['strategies']) ||
+      !exactKeys(patch, ['strategies']) ||
       strategies === null ||
-      !hasExactKeys(strategies, ['rothConversion']) ||
+      !exactKeys(strategies, ['rothConversion']) ||
       strategy === null ||
-      !hasExactKeys(strategy, [
+      !exactKeys(strategy, [
         'mode',
         'target',
         'targetValue',
@@ -273,7 +260,7 @@ function validateDatedIntent(
   index: number,
 ): BlockedFillTargetRothConversionCandidate | null {
   try {
-    const intentRecord = record(intent)
+    const intentRecord = asUnknownRecord(intent)
     const date = typeof intentRecord?.['executionDate'] === 'string'
       ? parseCivilIsoDate(intentRecord['executionDate'])
       : null
@@ -300,7 +287,7 @@ function validateDatedIntent(
         'Every conversion intent must fall inside the exploratory fill-target window.',
       )
     }
-    const provenance = record(intentRecord['provenance'])
+    const provenance = asUnknownRecord(intentRecord['provenance'])
     if (
       provenance === null ||
       provenance['source'] !== 'generator' ||
@@ -312,7 +299,7 @@ function validateDatedIntent(
         'Every conversion intent must preserve generator provenance whose source ID exactly matches the exploratory candidate ID.',
       )
     }
-    const taxFunding = record(intentRecord['taxFunding'])
+    const taxFunding = asUnknownRecord(intentRecord['taxFunding'])
     if (
       taxFunding === null ||
       (taxFunding['kind'] !== 'noneExpected' && taxFunding['kind'] !== 'externalCash')
@@ -333,18 +320,14 @@ function validateDatedIntent(
   }
 }
 
-function compareUtf16(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
-}
-
 function compareAllocatedRequests(
   left: { request: RothConversionRequest },
   right: { request: RothConversionRequest },
 ): number {
   return left.request.year - right.request.year ||
-    compareUtf16(left.request.executionDate!, right.request.executionDate!) ||
+    compareUtf16CodeUnits(left.request.executionDate!, right.request.executionDate!) ||
     left.request.executionSequence - right.request.executionSequence ||
-    compareUtf16(left.request.actionId, right.request.actionId)
+    compareUtf16CodeUnits(left.request.actionId, right.request.actionId)
 }
 
 function adaptedCandidateId(
@@ -353,7 +336,7 @@ function adaptedCandidateId(
 ): string {
   const requests = allocations
     .map((allocation) => allocation.request)
-    .sort((left, right) => compareUtf16(left.actionId, right.actionId))
+    .sort((left, right) => compareUtf16CodeUnits(left.actionId, right.actionId))
   return deriveActionStructuralId('retirement-action-fill-target-candidate', [
     exploratoryCandidateId,
     requests,

@@ -1262,4 +1262,75 @@ describe('manual retirement-action review and replacement', () => {
       issues: [{ kind: 'invalidInput', field: '$' }],
     })
   })
+
+  it('freezes only a parsed copy of the target action, never the caller\'s raw input', () => {
+    // Review round 2 finding on PR #599: does the shared deepFreeze (which no
+    // longer short-circuits on an already-frozen parent) reach caller-owned
+    // Plan data through the target embedded in a blocked() result? It cannot:
+    // reviewAndReplaceRetirementActionManually structuredClones its input
+    // before any parsing, and the target is then rebuilt a second time by
+    // persistedRetirementActionRequestSchema.safeParse (contract.ts), whose
+    // provenance and allocations sub-schemas are plain object/array schemas
+    // with no z.any()/z.unknown() escape hatch. Both layers guarantee the
+    // frozen published target is a fresh object graph, never the caller's.
+    const rawProvenance = { source: 'manual', sourceId: 'raw-provenance' }
+    const rawAllocation = { allocationId: 'alloc-1', sourceAccountId: 'cash-a', requestedAmount: 10_000 }
+    const rawAllocations = [rawAllocation]
+    const rawTargetAction = {
+      actionId: 'target-1',
+      kind: 'ordinaryWithdrawal',
+      year: 2030,
+      executionSequence: 1,
+      requestedAmount: 10_000,
+      personId: 'nonexistent-person',
+      provenance: rawProvenance,
+      allocations: rawAllocations,
+      purpose: { kind: 'spending' },
+    }
+    const rawPlan = {
+      id: 'plan-1',
+      household: { people: [] },
+      accounts: [],
+      strategies: { retirementActions: [rawTargetAction] },
+    }
+    const rawInput = { plan: rawPlan, targetActionId: 'target-1' } as unknown as
+      RetirementActionManualReviewInput
+
+    const result = reviewAndReplaceRetirementActionManually(rawInput)
+
+    expect(result.status).toBe('blocked')
+    if (result.status !== 'blocked') return
+    expect(result.issues).toMatchObject([{
+      kind: 'invalidInput',
+      field: 'target',
+    }])
+    expect(result.target).not.toBeNull()
+    const target = result.target!
+    expect(target.kind).toBe('ordinaryWithdrawal')
+    if (target.kind !== 'ordinaryWithdrawal') return
+
+    // (a) The published target is not the caller's object, nor any of its
+    // nested objects — a fresh copy at every level, not an alias.
+    expect(target).not.toBe(rawTargetAction)
+    expect(target.provenance).not.toBe(rawProvenance)
+    expect(target.allocations).not.toBe(rawAllocations)
+    expect(target.allocations[0]).not.toBe(rawAllocation)
+
+    // (b) The caller's original objects are untouched: never frozen, still
+    // mutable after the call.
+    expect(Object.isFrozen(rawTargetAction)).toBe(false)
+    expect(Object.isFrozen(rawProvenance)).toBe(false)
+    expect(Object.isFrozen(rawAllocation)).toBe(false)
+    rawProvenance.sourceId = 'mutated-after-call'
+    expect(rawProvenance.sourceId).toBe('mutated-after-call')
+    rawAllocation.requestedAmount = 1
+    expect(rawAllocation.requestedAmount).toBe(1)
+
+    // (c) The published evidence is itself deeply frozen.
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(Object.isFrozen(target)).toBe(true)
+    expect(Object.isFrozen(target.provenance)).toBe(true)
+    expect(Object.isFrozen(target.allocations)).toBe(true)
+    expect(Object.isFrozen(target.allocations[0])).toBe(true)
+  })
 })

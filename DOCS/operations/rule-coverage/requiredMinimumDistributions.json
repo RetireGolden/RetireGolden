@@ -203,7 +203,7 @@
           "functions": [
             {
               "name": "followsOwnerRmds",
-              "line": 1382
+              "line": 1379
             }
           ]
         }
@@ -658,7 +658,7 @@
           "functions": [
             {
               "name": "followsOwnerRmds",
-              "line": 1382
+              "line": 1379
             }
           ]
         },
@@ -930,7 +930,7 @@
           "functions": [
             {
               "name": "followsOwnerRmds",
-              "line": 1382
+              "line": 1379
             }
           ]
         }
@@ -2531,7 +2531,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdPhysicalExecution",
-              "line": 512
+              "line": 505
             }
           ]
         }
@@ -2676,7 +2676,7 @@
           "functions": [
             {
               "name": "isTreatAsOwnEffective",
-              "line": 1232
+              "line": 1229
             }
           ]
         },
@@ -2788,7 +2788,7 @@
           "functions": [
             {
               "name": "evaluateBeneficiaryTraditionalIraDeathPenalty",
-              "line": 296
+              "line": 209
             }
           ]
         },
@@ -2869,7 +2869,7 @@
           "functions": [
             {
               "name": "executeRothConversions",
-              "line": 928
+              "line": 921
             }
           ]
         },
@@ -2961,7 +2961,7 @@
           "functions": [
             {
               "name": "prepareBeneficiaryTraditionalIraResidualRmdAllocation",
-              "line": 559
+              "line": 482
             }
           ]
         }
@@ -3140,7 +3140,7 @@
           "functions": [
             {
               "name": "executeRothConversions",
-              "line": 928
+              "line": 921
             }
           ]
         },
@@ -3149,7 +3149,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2704
+              "line": 2697
             }
           ]
         },
@@ -3185,7 +3185,7 @@
           "functions": [
             {
               "name": "resolveOwnerIraRmdSatisfaction",
-              "line": 246
+              "line": 247
             }
           ]
         }

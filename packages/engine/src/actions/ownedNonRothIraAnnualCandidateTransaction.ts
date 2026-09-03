@@ -33,6 +33,7 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface PreparePlanOwnedNonRothIraAnnualCandidateTransactionInput
   extends BuildAnnualRetirementPhysicalEventInventoryInput {
@@ -161,16 +162,6 @@ export type PreparePlanOwnedNonRothIraAnnualCandidateTransactionResult =
   | PlanOwnedNonRothIraCandidateTransactionBlockedResult
   | PlanOwnedNonRothIraCandidateTransactionScheduleInvalidResult
   | PlanOwnedNonRothIraAnnualCandidateTransactionPreparedResult
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function blocked(
   inventory: Readonly<AnnualRetirementInventoryBuiltResult>,

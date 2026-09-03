@@ -14,6 +14,8 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraResidualRmdAllocationInput {
   readonly rmdTransition:
@@ -112,88 +114,9 @@ const SOURCE_KEYS = [
   'coordinatorEvidenceId',
   'transitionEvidenceId',
 ] as const
-const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function plainDataSnapshot(
-  value: unknown,
-  ancestors = new Set<object>(),
-): unknown | typeof INVALID_SNAPSHOT {
-  if (
-    value === null || typeof value === 'string' ||
-    typeof value === 'number' || typeof value === 'boolean'
-  ) return value
-  if (typeof value !== 'object' || ancestors.has(value)) return INVALID_SNAPSHOT
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if (
-      (array && prototype !== Array.prototype) ||
-      (!array && prototype !== Object.prototype && prototype !== null)
-    ) return INVALID_SNAPSHOT
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
-    if (array) {
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const size = length?.value
-      if (
-        length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
-        !Number.isSafeInteger(size) || size < 0 ||
-        keys.length !== size + 1 || !keys.includes('length') ||
-        Array.from({ length: size }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))
-      ) return INVALID_SNAPSHOT
-    }
-    const output: unknown[] | Record<string, unknown> = array
-      ? []
-      : Object.create(null) as Record<string, unknown>
-    ancestors.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (
-        descriptor === undefined || !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')
-      ) return INVALID_SNAPSHOT
-      const child = plainDataSnapshot(descriptor.value, ancestors)
-      if (child === INVALID_SNAPSHOT) return INVALID_SNAPSHOT
-      if (array) (output as unknown[])[Number(key as string)] = child
-      else (output as Record<string, unknown>)[key as string] = child
-    }
-    return output
-  } catch {
-    return INVALID_SNAPSHOT
-  } finally {
-    ancestors.delete(value)
-  }
-}
-
-function exactRecord(
-  value: unknown,
-  keys: readonly string[],
-): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) &&
-    typeof value === 'object' &&
-    Object.keys(value).length === keys.length &&
-    keys.every((key) => Object.hasOwn(value, key))
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 function uniqueNonblank(values: readonly unknown[]): values is readonly string[] {
   return values.every(nonblank) && new Set(values).size === values.length
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 /**
@@ -360,7 +283,7 @@ function exactSourceTransitionEvidenceId(
 function validRmd(
   value: unknown,
 ): value is BeneficiaryTraditionalIraDetachedRmdTransition {
-  if (!exactRecord(value, RMD_KEYS)) return false
+  if (!exactKeys(value, RMD_KEYS)) return false
   const rmd = value as unknown as BeneficiaryTraditionalIraDetachedRmdTransition
   return rmd.predicate === 'beneficiaryTraditionalIraDetachedRmdTransition' &&
     personIdSchema.safeParse(rmd.beneficiaryPersonId).success &&
@@ -389,7 +312,7 @@ function validSource(
   value: unknown,
   rmd: BeneficiaryTraditionalIraDetachedRmdTransition,
 ): value is BeneficiaryTraditionalIraDetachedSourceBalanceTransition {
-  if (!exactRecord(value, SOURCE_KEYS)) return false
+  if (!exactKeys(value, SOURCE_KEYS)) return false
   const source =
     value as unknown as BeneficiaryTraditionalIraDetachedSourceBalanceTransition
   return source.predicate ===
@@ -416,7 +339,7 @@ function prepare(
 ): Readonly<PrepareBeneficiaryTraditionalIraResidualRmdAllocationResult> {
   const raw = plainDataSnapshot(input)
   if (
-    !exactRecord(raw, INPUT_KEYS) ||
+    !exactKeys(raw, INPUT_KEYS) ||
     !validRmd(raw.rmdTransition) ||
     !Array.isArray(raw.sourceBalanceTransitions) ||
     raw.sourceBalanceTransitions.length === 0

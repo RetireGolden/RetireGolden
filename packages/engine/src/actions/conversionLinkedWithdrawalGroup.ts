@@ -4,6 +4,7 @@ import type { ActionId, PersonId } from './identity.js'
 import type { UsdCents } from './money.js'
 import type { ActionReason } from './reasons.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 /**
  * What the annual group decision says about one conversion and the withdrawal
@@ -260,14 +261,6 @@ export interface RetirementActionGroupRuntimeEvidence
   extends RetirementActionEligibilityRuntimeEvidence {
   readonly conversionLinkedWithdrawalGroups?:
     Readonly<ConversionLinkedWithdrawalGroupAssessment>
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 /**

@@ -13,7 +13,9 @@ import { createActionReason, type ActionReason } from './reasons.js'
 import {
   allocateRetirementActionCandidateIdentity,
 } from './retirementActionCandidateIdentityAllocator.js'
+import { deepFreeze } from './freeze.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { exactKeys, nonblank, plainDataSnapshot } from './plainData.js'
 
 export interface PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityInput {
   readonly plan: unknown
@@ -82,73 +84,6 @@ export type PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityResult =
 const INPUT_KEYS = [
   'plan', 'planSnapshotEvidenceId', 'physicalTransactionInput',
 ] as const
-const INVALID = Symbol('invalid')
-
-function snapshot(value: unknown, ancestors = new Set<object>()): unknown | typeof INVALID {
-  if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) return value
-  if (typeof value !== 'object' || ancestors.has(value)) return INVALID
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if ((array && prototype !== Array.prototype) ||
-      (!array && prototype !== Object.prototype && prototype !== null)) return INVALID
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID
-    if (array) {
-      // Read the array length off its property descriptor, never off `.length`.
-      // A Proxy array answers `.length` through its get trap, which is caller
-      // code running inside the boundary that exists to keep caller code out.
-      // Matches plainDataSnapshot in beneficiaryTraditionalIraMovementCandidate:
-      // an enumerable or non-safe-integer length is rejected too, so a hostile
-      // array cannot present an inconsistent descriptor set to deeper traversal.
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const size = length?.value
-      if (
-        length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
-        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
-        !keys.includes('length') ||
-        Array.from({ length: size }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))
-      ) return INVALID
-    }
-    const copy: unknown[] | Record<string, unknown> = array ? [] : Object.create(null)
-    ancestors.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (descriptor === undefined || !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')) return INVALID
-      const child = snapshot(descriptor.value, ancestors)
-      if (child === INVALID) return INVALID
-      if (array) (copy as unknown[])[Number(key)] = child
-      else (copy as Record<string, unknown>)[key as string] = child
-    }
-    return copy
-  } catch {
-    return INVALID
-  } finally {
-    ancestors.delete(value)
-  }
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
-
-function exactInput(value: unknown): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object' &&
-    Object.keys(value).length === INPUT_KEYS.length &&
-    INPUT_KEYS.every((key) => Object.hasOwn(value, key))
-}
-
-function freeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) freeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function identifiers(value: unknown, key = '', result = new Set<string>()): Set<string> {
   if (typeof value === 'string') {
@@ -166,7 +101,7 @@ function identifiers(value: unknown, key = '', result = new Set<string>()): Set<
 }
 
 function unsupported(): Readonly<UnsupportedBeneficiaryTraditionalIraResidualRmdActionIdentityResult> {
-  return freeze({
+  return deepFreeze({
     status: 'unsupported', movement: 'notCommitted', committed: false,
     actionability: 'notEstablished',
     reasons: [createActionReason('withdrawal-inherited-facts-missing')],
@@ -195,8 +130,8 @@ function provenSources(
 function prepare(
   input: Readonly<PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityInput>,
 ): Readonly<PrepareBeneficiaryTraditionalIraResidualRmdActionIdentityResult> {
-  const raw = snapshot(input)
-  if (!exactInput(raw) || !nonblank(raw.planSnapshotEvidenceId)) return unsupported()
+  const raw = plainDataSnapshot(input)
+  if (!exactKeys(raw, INPUT_KEYS) || !nonblank(raw.planSnapshotEvidenceId)) return unsupported()
   const parsed = planSchema.strict().safeParse(raw.plan)
   if (!parsed.success) return unsupported()
   const transaction = prepareBeneficiaryTraditionalIraResidualRmdPhysicalTransaction(
@@ -206,7 +141,7 @@ function prepare(
   )
   if (transaction.status === 'unsupported') return unsupported()
   if (transaction.status === 'noResidualRmdPhysicalTransaction') {
-    return freeze({
+    return deepFreeze({
       status: 'noResidualRmdActionIdentity',
       noIdentityReason: transaction.noTransactionReason,
       movement: 'notCommitted', committed: false,
@@ -289,7 +224,7 @@ function prepare(
     ]],
   )
   if (!nonblank(identityEvidenceId) || reserved.has(identityEvidenceId)) return unsupported()
-  return freeze({
+  return deepFreeze({
     status: 'residualRmdActionIdentityPrepared', movement: 'notCommitted',
     committed: false, actionability: 'notEstablished', reasons: [],
     request: allocated.request, physicalTransaction: transaction,

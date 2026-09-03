@@ -22,6 +22,8 @@ import type {
 import type {
   OwnedNonRothIraSubtype,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+import { deepFreeze } from './freeze.js'
+import { requireNonblankId } from './plainData.js'
 
 export type OwnedNonRothIraSeppMethod =
   | 'requiredMinimumDistribution'
@@ -280,25 +282,8 @@ const resultFlags: OwnedNonRothIraSeppCurrentPaymentResultBase = {
   penaltyTreatment: 'notEstablished',
 }
 
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
 function legacyJsonId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`
-}
-
-function nonblankId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new TypeError(`${label} must be a nonblank stable identifier`)
-  }
-  return value
 }
 
 function civilDate(value: string, label: string): string {
@@ -345,7 +330,7 @@ function canonicalPriorPaymentHistoryWithoutId(
 ): OwnedNonRothIraSeppPriorPaymentHistoryWithoutId {
   const usedCurrentDistributionEvidenceIds =
     input.usedCurrentDistributionEvidenceIds.map(
-      (evidenceId) => nonblankId(
+      (evidenceId) => requireNonblankId(
         evidenceId,
         'Prior SEPP used distribution evidence ID',
       ),
@@ -360,12 +345,12 @@ function canonicalPriorPaymentHistoryWithoutId(
   }
   return {
     predicate: input.predicate,
-    electionId: nonblankId(input.electionId, 'Prior SEPP election ID'),
-    scheduleId: nonblankId(input.scheduleId, 'Prior SEPP schedule ID'),
+    electionId: requireNonblankId(input.electionId, 'Prior SEPP election ID'),
+    scheduleId: requireNonblankId(input.scheduleId, 'Prior SEPP schedule ID'),
     participantPersonId: personIdSchema.parse(input.participantPersonId),
     sourceAccountId: accountIdSchema.parse(input.sourceAccountId),
     taxYear: taxYear(input.taxYear, 'Prior SEPP history tax year'),
-    openingStateEvidenceId: nonblankId(
+    openingStateEvidenceId: requireNonblankId(
       input.openingStateEvidenceId,
       'Prior SEPP opening-state evidence ID',
     ),
@@ -381,7 +366,7 @@ function canonicalPriorPaymentHistoryWithoutId(
     lastPaymentDate: input.lastPaymentDate === null
       ? null
       : civilDate(input.lastPaymentDate, 'Prior SEPP payment date'),
-    terminalStateEvidenceId: nonblankId(
+    terminalStateEvidenceId: requireNonblankId(
       terminalStateEvidenceId,
       'Prior SEPP terminal-state evidence ID',
     ),
@@ -492,23 +477,23 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     accountKind: sourceInput.accountKind,
     inheritanceStatus: sourceInput.inheritanceStatus,
     subtype: subtype(sourceInput.subtype),
-    accountOwnershipEvidenceId: nonblankId(
+    accountOwnershipEvidenceId: requireNonblankId(
       sourceInput.accountOwnershipEvidenceId,
       'SEPP source ownership evidence ID',
     ),
-    iraClassificationEvidenceId: nonblankId(
+    iraClassificationEvidenceId: requireNonblankId(
       sourceInput.iraClassificationEvidenceId,
       'SEPP source classification evidence ID',
     ),
-    sourceEvidenceId: nonblankId(
+    sourceEvidenceId: requireNonblankId(
       sourceInput.sourceEvidenceId,
       'SEPP source evidence ID',
     ),
   }
   const election: OwnedNonRothIraSeppElectionEvidence = {
     predicate: electionInput.predicate,
-    electionId: nonblankId(electionInput.electionId, 'SEPP election ID'),
-    scheduleId: nonblankId(electionInput.scheduleId, 'SEPP schedule ID'),
+    electionId: requireNonblankId(electionInput.electionId, 'SEPP election ID'),
+    scheduleId: requireNonblankId(electionInput.scheduleId, 'SEPP schedule ID'),
     participantPersonId: personIdSchema.parse(
       electionInput.participantPersonId,
     ),
@@ -519,15 +504,15 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
       'SEPP election start date',
     ),
     method: electionInput.method,
-    electionEvidenceId: nonblankId(
+    electionEvidenceId: requireNonblankId(
       electionInput.electionEvidenceId,
       'SEPP election evidence ID',
     ),
   }
   const annualSchedule: OwnedNonRothIraSeppAnnualScheduleEvidence = {
     predicate: annualInput.predicate,
-    electionId: nonblankId(annualInput.electionId, 'Annual SEPP election ID'),
-    scheduleId: nonblankId(annualInput.scheduleId, 'Annual SEPP schedule ID'),
+    electionId: requireNonblankId(annualInput.electionId, 'Annual SEPP election ID'),
+    scheduleId: requireNonblankId(annualInput.scheduleId, 'Annual SEPP schedule ID'),
     participantPersonId: personIdSchema.parse(
       annualInput.participantPersonId,
     ),
@@ -536,18 +521,18 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     annualScheduledGrossAmount: positiveUsdCentsSchema.parse(
       annualInput.annualScheduledGrossAmount,
     ),
-    annualScheduleEvidenceId: nonblankId(
+    annualScheduleEvidenceId: requireNonblankId(
       annualInput.annualScheduleEvidenceId,
       'Annual SEPP schedule evidence ID',
     ),
   }
   const noModification: OwnedNonRothIraSeppNoModificationEvidence = {
     predicate: modificationInput.predicate,
-    electionId: nonblankId(
+    electionId: requireNonblankId(
       modificationInput.electionId,
       'SEPP no-modification election ID',
     ),
-    scheduleId: nonblankId(
+    scheduleId: requireNonblankId(
       modificationInput.scheduleId,
       'SEPP no-modification schedule ID',
     ),
@@ -563,21 +548,21 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     ),
     disqualifyingModification:
       modificationInput.disqualifyingModification,
-    noModificationEvidenceId: nonblankId(
+    noModificationEvidenceId: requireNonblankId(
       modificationInput.noModificationEvidenceId,
       'SEPP no-modification evidence ID',
     ),
   }
   const opening: OwnedNonRothIraSeppAnnualOpeningStateEvidence = {
     predicate: openingInput.predicate,
-    electionId: nonblankId(openingInput.electionId, 'Opening SEPP election ID'),
-    scheduleId: nonblankId(openingInput.scheduleId, 'Opening SEPP schedule ID'),
+    electionId: requireNonblankId(openingInput.electionId, 'Opening SEPP election ID'),
+    scheduleId: requireNonblankId(openingInput.scheduleId, 'Opening SEPP schedule ID'),
     participantPersonId: personIdSchema.parse(
       openingInput.participantPersonId,
     ),
     sourceAccountId: accountIdSchema.parse(openingInput.sourceAccountId),
     taxYear: taxYear(openingInput.taxYear, 'Opening SEPP state tax year'),
-    priorHistoryTerminalStateId: nonblankId(
+    priorHistoryTerminalStateId: requireNonblankId(
       openingInput.priorHistoryTerminalStateId,
       'Opening SEPP prior-history terminal-state ID',
     ),
@@ -585,7 +570,7 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     scheduledGrossAmount: openingInput.scheduledGrossAmount,
     actualQualifyingGrossAmount:
       openingInput.actualQualifyingGrossAmount,
-    openingStateEvidenceId: nonblankId(
+    openingStateEvidenceId: requireNonblankId(
       openingInput.openingStateEvidenceId,
       'Opening SEPP state evidence ID',
     ),
@@ -602,15 +587,15 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     terminalStateEvidenceId: string
   } = {
     ...canonicalHistoryWithoutId,
-    priorHistoryEvidenceId: nonblankId(
+    priorHistoryEvidenceId: requireNonblankId(
       historyInput.priorHistoryEvidenceId,
       'Prior SEPP history evidence ID',
     ),
   }
   const payment: OwnedNonRothIraSeppCurrentPaymentEvidence = {
     predicate: paymentInput.predicate,
-    electionId: nonblankId(paymentInput.electionId, 'Current SEPP election ID'),
-    scheduleId: nonblankId(paymentInput.scheduleId, 'Current SEPP schedule ID'),
+    electionId: requireNonblankId(paymentInput.electionId, 'Current SEPP election ID'),
+    scheduleId: requireNonblankId(paymentInput.scheduleId, 'Current SEPP schedule ID'),
     actionId: actionIdSchema.parse(paymentInput.actionId),
     allocationId: allocationIdSchema.parse(paymentInput.allocationId),
     sourceAccountId: accountIdSchema.parse(paymentInput.sourceAccountId),
@@ -618,7 +603,7 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
       paymentInput.distributionDate,
       'Current SEPP distribution date',
     ),
-    currentDistributionEvidenceId: nonblankId(
+    currentDistributionEvidenceId: requireNonblankId(
       paymentInput.currentDistributionEvidenceId,
       'Current SEPP distribution-date evidence ID',
     ),
@@ -626,20 +611,20 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
       paymentInput.paymentSequence,
       'Current SEPP payment sequence',
     ),
-    previousScheduleStateId: nonblankId(
+    previousScheduleStateId: requireNonblankId(
       paymentInput.previousScheduleStateId,
       'Current SEPP previous schedule-state ID',
     ),
     currentScheduledGrossAmount: positiveUsdCentsSchema.parse(
       paymentInput.currentScheduledGrossAmount,
     ),
-    paymentScheduleEvidenceId: nonblankId(
+    paymentScheduleEvidenceId: requireNonblankId(
       paymentInput.paymentScheduleEvidenceId,
       'Current SEPP payment-schedule evidence ID',
     ),
   }
   const characterEvidenceIds = coverageInput.characterEvidenceIds.map(
-    (evidenceId) => nonblankId(
+    (evidenceId) => requireNonblankId(
       evidenceId,
       'SEPP character-segment evidence ID',
     ),
@@ -674,34 +659,34 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     ordinaryIncomeExposureAmount: usdCentsSchema.parse(
       coverageInput.ordinaryIncomeExposureAmount,
     ),
-    basisEvidenceId: nonblankId(
+    basisEvidenceId: requireNonblankId(
       coverageInput.basisEvidenceId,
       'SEPP character-coverage basis evidence ID',
     ),
-    line7AllocationEvidenceId: nonblankId(
+    line7AllocationEvidenceId: requireNonblankId(
       coverageInput.line7AllocationEvidenceId,
       'SEPP line-7 allocation evidence ID',
     ),
     characterEvidenceIds,
     sourceEvidenceIds: {
-      distributionDateEvidenceId: nonblankId(
+      distributionDateEvidenceId: requireNonblankId(
         coverageInput.sourceEvidenceIds.distributionDateEvidenceId,
         'SEPP coverage distribution-date evidence ID',
       ),
-      accountOwnershipEvidenceId: nonblankId(
+      accountOwnershipEvidenceId: requireNonblankId(
         coverageInput.sourceEvidenceIds.accountOwnershipEvidenceId,
         'SEPP coverage ownership evidence ID',
       ),
-      iraClassificationEvidenceId: nonblankId(
+      iraClassificationEvidenceId: requireNonblankId(
         coverageInput.sourceEvidenceIds.iraClassificationEvidenceId,
         'SEPP coverage classification evidence ID',
       ),
     },
-    ageThresholdEvidenceId: nonblankId(
+    ageThresholdEvidenceId: requireNonblankId(
       coverageInput.ageThresholdEvidenceId,
       'SEPP coverage age-threshold evidence ID',
     ),
-    evidenceId: nonblankId(
+    evidenceId: requireNonblankId(
       coverageInput.evidenceId,
       'SEPP character-coverage evidence ID',
     ),

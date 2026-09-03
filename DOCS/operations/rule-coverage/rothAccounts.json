@@ -49,7 +49,7 @@
           "functions": [
             {
               "name": "evaluateConversion",
-              "line": 650
+              "line": 647
             }
           ]
         }
@@ -474,7 +474,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 248
+              "line": 230
             }
           ]
         },
@@ -483,7 +483,7 @@
           "functions": [
             {
               "name": "executeRothConversions",
-              "line": 928
+              "line": 921
             }
           ]
         }
@@ -553,7 +553,7 @@
           "functions": [
             {
               "name": "preparePlanOwnedNonRothIraAnnualPhysicalTransaction",
-              "line": 1455
+              "line": 1446
             }
           ]
         },
@@ -562,7 +562,7 @@
           "functions": [
             {
               "name": "conversionDestinationIssue",
-              "line": 338
+              "line": 332
             }
           ]
         },
@@ -589,7 +589,7 @@
           "functions": [
             {
               "name": "evaluateRetirementActionEligibility",
-              "line": 1140
+              "line": 1137
             }
           ]
         }

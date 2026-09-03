@@ -34,6 +34,7 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface AnnualRetirementActionExecutorAssignment {
   actionId: ActionId
@@ -124,16 +125,6 @@ type CurrentRetirementAction = Exclude<
   | { kind: 'legacyAggregateRothConversion' }
   | { kind: 'legacyAggregateQcd' }
 >
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function currentActions(
   plan: Plan,

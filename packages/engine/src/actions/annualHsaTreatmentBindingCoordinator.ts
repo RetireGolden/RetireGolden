@@ -25,6 +25,8 @@ import {
 } from './annualHsaPenaltyEvaluation.js'
 import type { ActionId, AllocationId } from './identity.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface HsaAllocationReimbursementClaims {
   actionId: ActionId
@@ -114,53 +116,13 @@ const ESTABLISHMENT_KEYS = ['predicate', 'ownerPersonId', 'ownerHsaEstablishedDa
 const EXPENSE_KEYS = ['reimbursementScopeId', 'medicalExpenseId', 'medicalExpenseEvidenceId', 'immutableExpenseSourceRecordId', 'patientPersonId', 'expenseIncurredDate', 'originalEligibleExpenseAmount', 'reimbursedBeforeAmount', 'qualifiedMedicalExpense', 'eligibilityEvidenceId']
 const CLAIM_KEYS = ['medicalExpenseId', 'reimbursedByAllocationAmount', 'patientRelationshipToDistributionOwner', 'patientRelationshipEvidenceId']
 const BOUNDARIES: Boundaries = { committed: false, movement: 'notCommitted', runtimeInflows: 'notInventoried', actionability: 'notEstablished', publication: 'notEstablished', planMutation: 'notPerformed', simulatorIntegration: 'notPerformed' }
-const INVALID = Symbol('invalid')
-
-function plainSnapshot(value: unknown, seen = new WeakSet<object>()): unknown | typeof INVALID {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
-  if (typeof value === 'number') return Number.isFinite(value) && !Object.is(value, -0) ? value : INVALID
-  if (typeof value !== 'object' || seen.has(value)) return INVALID
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if ((array && prototype !== Array.prototype) || (!array && prototype !== Object.prototype && prototype !== null)) return INVALID
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string') || (array && (keys.length !== value.length + 1 || !keys.includes('length')))) return INVALID
-    const output: unknown[] | Record<string, unknown> = array ? [] : Object.create(null) as Record<string, unknown>
-    seen.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (descriptor === undefined || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) return INVALID
-      if (array && (!Number.isSafeInteger(Number(key)) || String(Number(key)) !== key || Number(key) >= value.length)) return INVALID
-      const child = plainSnapshot(descriptor.value, seen)
-      if (child === INVALID) return INVALID
-      Object.defineProperty(output, key, { enumerable: true, configurable: true, writable: true, value: child })
-    }
-    return output
-  } catch { return INVALID }
-}
-
-function exactKeys(value: unknown, expected: readonly string[]): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
-  const keys = Object.keys(value)
-  return keys.length === expected.length && keys.every((key) => expected.includes(key))
-}
 
 function validContainers(input: Record<string, unknown>): boolean {
   if (!Array.isArray(input.reimbursementClaims) || !Array.isArray(input.ownerBirthEvidence) || !Array.isArray(input.disabilityStatusEvidence)) return false
   const scope = input.reimbursementScope
   if (!exactKeys(scope, SCOPE_KEYS) || !Array.isArray(scope.eligibleHsaOwnerPersonIds) || !Array.isArray(scope.coveredHsaAccountIds) || !Array.isArray(scope.ownerEstablishments) || !Array.isArray(scope.expenses) || !exactKeys(scope.priorHistory, HISTORY_KEYS)) return false
   if (scope.ownerEstablishments.some((item) => !exactKeys(item, ESTABLISHMENT_KEYS)) || scope.expenses.some((item) => !exactKeys(item, EXPENSE_KEYS))) return false
-  return input.reimbursementClaims.every((record) => exactKeys(record, CLAIM_RECORD_KEYS) && Array.isArray(record.reimbursementClaims) && record.reimbursementClaims.every((claim) => exactKeys(claim, CLAIM_KEYS)))
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
+  return input.reimbursementClaims.every((record) => exactKeys(record, CLAIM_RECORD_KEYS) && Array.isArray(record.reimbursementClaims) && record.reimbursementClaims.every((claim: unknown) => exactKeys(claim, CLAIM_KEYS)))
 }
 
 function blocked(
@@ -292,8 +254,8 @@ function assertRejoin(
 export function coordinateAnnualHsaTreatmentBinding(
   raw: Readonly<CoordinateAnnualHsaTreatmentBindingInput>,
 ): Readonly<CoordinateAnnualHsaTreatmentBindingResult> {
-  const snapshot = plainSnapshot(raw)
-  if (snapshot === INVALID || !exactKeys(snapshot, INPUT_KEYS) || !validContainers(snapshot)) return blocked({}, 'input', 'invalidInput', 'Annual HSA treatment input must be acyclic plain data with exact object and array shapes')
+  const snapshot = plainDataSnapshot(raw)
+  if (snapshot === INVALID_SNAPSHOT || !exactKeys(snapshot, INPUT_KEYS) || !validContainers(snapshot)) return blocked({}, 'input', 'invalidInput', 'Annual HSA treatment input must be acyclic plain data with exact object and array shapes')
   const input = snapshot as unknown as CoordinateAnnualHsaTreatmentBindingInput
   if (input.reimbursementClaimInventoryComplete !== true || input.ownerBirthEvidenceComplete !== true || input.disabilityStatusEvidenceComplete !== true) return blocked({}, 'input', 'invalidInput', 'Annual HSA treatment inventories must be explicitly complete')
   const callerStrings = new Set<string>()

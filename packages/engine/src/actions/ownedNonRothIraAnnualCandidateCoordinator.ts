@@ -39,6 +39,7 @@ import type {
   ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   OwnedNonRothIraPoolMemberEvidence,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+import { deepFreeze } from './freeze.js'
 
 export type OwnedNonRothIraCandidateOwnerAliveEvidence = Omit<
   OwnedNonRothIraOwnerAliveEvidence,
@@ -138,16 +139,6 @@ export type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateResult =
   | OwnedNonRothIraAnnualCandidateNoPositiveMovementResult
   | OwnedNonRothIraAnnualCandidateEvidenceBlockedResult
   | OwnedNonRothIraAnnualCandidateEvidenceBoundResult
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function stableId(prefix: string, parts: readonly unknown[]): string {
   return `${prefix}:${JSON.stringify(parts)}`

@@ -24,6 +24,7 @@ import {
   irc408d8APriorReductionsAreProvable,
 } from './qcdDeductibleContributionOffset.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface AnnualQcdPersonalLimitEvidence {
   readonly predicate: 'annualQcdExactYearPersonalLimit'
@@ -159,13 +160,6 @@ function cents(value: bigint, label: string): UsdCents {
     fail('hostileInput', `${label} exceeded the exact-cent range.`)
   }
   return asUsdCents(Number(value))
-}
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 function blocked(error: unknown): AnnualQcdTaxCharacterPostPassBlocked {
   const issue = error instanceof StageError

@@ -42,6 +42,7 @@ import {
   type Account,
   type Plan,
 } from '../model/plan.js'
+import { asUnknownRecord, type UnknownRecord } from './plainData.js'
 
 export interface RetirementActionCandidateSourceIntent {
   /** Existing stable Plan account identity; categories and display names are not accepted. */
@@ -145,13 +146,6 @@ export type RetirementActionCandidateIdentityAllocationResult =
   | AllocatedRetirementActionCandidateIdentity
   | BlockedRetirementActionCandidateIdentity
 
-type UnknownRecord = Record<string, unknown>
-
-function record(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? value as UnknownRecord
-    : null
-}
 
 function issue(
   kind: RetirementActionCandidateIdentityIssueKind,
@@ -194,7 +188,7 @@ function sourceIntentsWithCallerIndexes(
 ): Array<{ source: UnknownRecord; callerIndex: number }> | null {
   if (!Array.isArray(value) || value.length === 0) return null
   return value.flatMap((item, callerIndex) => {
-    const source = record(item)
+    const source = asUnknownRecord(item)
     return source === null ? [] : [{ source, callerIndex }]
   })
 }
@@ -491,7 +485,7 @@ function allocateQcdCandidateIdentityUnchecked(
     ))
   }
 
-  const source = record(candidate['sourceAllocation'])
+  const source = asUnknownRecord(candidate['sourceAllocation'])
   let sourceAccountId: AccountId | null = null
   let sourceAmount: PositiveUsdCents | null = null
   if (source === null) {
@@ -684,7 +678,7 @@ function allocateRetirementActionCandidateIdentityUnchecked(
   plan: Readonly<Plan>,
   intent: RetirementActionCandidateIdentityIntent,
 ): RetirementActionCandidateIdentityAllocationResult {
-  const candidate = record(intent)
+  const candidate = asUnknownRecord(intent)
   if (candidate === null) {
     return blocked([issue(
       'invalidIntent',
@@ -932,7 +926,7 @@ function allocateRetirementActionCandidateIdentityUnchecked(
 
   if (
     kind === 'rothConversion' &&
-    record(candidate['taxFunding'])?.['kind'] === 'linkedWithdrawal'
+    asUnknownRecord(candidate['taxFunding'])?.['kind'] === 'linkedWithdrawal'
   ) {
     issues.push(issue(
       'invalidIntent',
@@ -956,11 +950,11 @@ function allocateRetirementActionCandidateIdentityUnchecked(
   )
   const purposeIdentityFacts = kind === 'ordinaryWithdrawal'
     ? {
-        kind: record(candidate['purpose'])?.['kind'] ?? null,
-        referenceId: record(candidate['purpose'])?.['referenceId'] ?? null,
+        kind: asUnknownRecord(candidate['purpose'])?.['kind'] ?? null,
+        referenceId: asUnknownRecord(candidate['purpose'])?.['referenceId'] ?? null,
       }
     : null
-  const funding = kind === 'rothConversion' ? record(candidate['taxFunding']) : null
+  const funding = kind === 'rothConversion' ? asUnknownRecord(candidate['taxFunding']) : null
   const taxFundingIdentityFacts = funding === null
     ? null
     : funding['kind'] === 'linkedWithdrawal'

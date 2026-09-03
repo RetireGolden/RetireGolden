@@ -18,6 +18,7 @@ import {
   type UsdCents,
 } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface HsaWithdrawalCharacterEvidence {
   rule: 'hsaImmutableReimbursementLedger'
@@ -122,16 +123,6 @@ export type ClassifyAnnualHsaWithdrawalCharacterResult =
   | AnnualHsaWithdrawalCharacterAccepted
   | AnnualHsaWithdrawalCharacterLedgerBlocked
   | AnnualHsaWithdrawalCharacterIdentifierCollision
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function collectStrings(
   value: unknown,

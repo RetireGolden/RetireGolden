@@ -26,6 +26,8 @@ import {
   type SimulatorAnnualPassStateBindings,
   type SimulatorAnnualPassTransaction,
 } from './annualPassTransaction.js'
+import { deepFreeze } from '../actions/freeze.js'
+import { INVALID_SNAPSHOT, exactKeys, nonblank, plainDataSnapshot } from '../actions/plainData.js'
 
 export interface BeneficiaryTraditionalIraAnnualPassAccountRow {
   readonly accountId: AccountId
@@ -111,17 +113,6 @@ const INPUT_KEYS = [
 const FACT_KEYS = [
   'transactionInput', 'annualOpeningBalances', 'inheritanceBindings',
 ] as const
-const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function unsupported(): Readonly<UnsupportedBeneficiaryTraditionalIraAnnualPassResult> {
   return deepFreeze({
@@ -129,66 +120,6 @@ function unsupported(): Readonly<UnsupportedBeneficiaryTraditionalIraAnnualPassR
     actionability: 'notEstablished', simulatorStatus: 'notEstablished',
     deferredEvidence: null,
   })
-}
-
-function plainDataSnapshot(
-  value: unknown,
-  ancestors = new Set<object>(),
-): unknown | typeof INVALID_SNAPSHOT {
-  if (
-    value === null || typeof value === 'string' || typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) return value
-  if (typeof value !== 'object' || ancestors.has(value)) return INVALID_SNAPSHOT
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if (
-      (array && prototype !== Array.prototype) ||
-      (!array && prototype !== Object.prototype && prototype !== null)
-    ) return INVALID_SNAPSHOT
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
-    if (array) {
-      const length = Object.getOwnPropertyDescriptor(value, 'length')
-      const size = length?.value
-      if (
-        length === undefined || length.enumerable ||
-        !Object.hasOwn(length, 'value') || typeof size !== 'number' ||
-        !Number.isSafeInteger(size) || size < 0 || keys.length !== size + 1 ||
-        !keys.includes('length') ||
-        Array.from({ length: size }, (_, index) => String(index))
-          .some((key) => !keys.includes(key))
-      ) return INVALID_SNAPSHOT
-    }
-    const output: unknown[] | Record<string, unknown> = array
-      ? []
-      : Object.create(null) as Record<string, unknown>
-    ancestors.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (
-        descriptor === undefined || !descriptor.enumerable ||
-        !Object.hasOwn(descriptor, 'value')
-      ) return INVALID_SNAPSHOT
-      const child = plainDataSnapshot(descriptor.value, ancestors)
-      if (child === INVALID_SNAPSHOT) return INVALID_SNAPSHOT
-      if (array) (output as unknown[])[Number(key as string)] = child
-      else (output as Record<string, unknown>)[key as string] = child
-    }
-    return output
-  } catch {
-    return INVALID_SNAPSHOT
-  } finally {
-    ancestors.delete(value)
-  }
-}
-
-function exactRecord(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
-  return value !== null && !Array.isArray(value) && typeof value === 'object' &&
-    Object.keys(value).length === keys.length &&
-    keys.every((key) => Object.hasOwn(value, key))
 }
 
 function inputReferences(value: unknown): ApplyBeneficiaryTraditionalIraAnnualPassInput | null {
@@ -216,10 +147,6 @@ function inputReferences(value: unknown): ApplyBeneficiaryTraditionalIraAnnualPa
   } catch {
     return null
   }
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
 }
 
 interface CurrentBalances {
@@ -302,7 +229,7 @@ function currentBalances(state: SimulatorAnnualPassStateBindings): CurrentBalanc
 
 function providerFacts(value: unknown): BeneficiaryTraditionalIraAnnualPassEvidenceFacts | null {
   const snapshot = plainDataSnapshot(value)
-  if (!exactRecord(snapshot, FACT_KEYS)) return null
+  if (!exactKeys(snapshot, FACT_KEYS)) return null
   return snapshot as unknown as BeneficiaryTraditionalIraAnnualPassEvidenceFacts
 }
 

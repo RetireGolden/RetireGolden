@@ -26,7 +26,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdResidualForm8606",
-              "line": 304
+              "line": 297
             }
           ]
         },
@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 477
+              "line": 471
             }
           ]
         }
@@ -154,7 +154,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 477
+              "line": 471
             }
           ]
         },
@@ -230,7 +230,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 477
+              "line": 471
             }
           ]
         },
@@ -409,7 +409,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 477
+              "line": 471
             }
           ]
         },
@@ -534,7 +534,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 477
+              "line": 471
             }
           ]
         },
@@ -638,7 +638,7 @@
           "functions": [
             {
               "name": "finalizeAnnualQcdDerivedTaxCharacter",
-              "line": 189
+              "line": 183
             }
           ]
         },
@@ -647,7 +647,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -656,7 +656,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -713,7 +713,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -722,7 +722,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -820,7 +820,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -838,7 +838,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -998,7 +998,7 @@
           "functions": [
             {
               "name": "finalizeAnnualQcdDerivedTaxCharacter",
-              "line": 189
+              "line": 183
             }
           ]
         },
@@ -1007,7 +1007,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -1016,7 +1016,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -1191,7 +1191,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 477
+              "line": 471
             }
           ]
         },
@@ -1200,7 +1200,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2704
+              "line": 2697
             }
           ]
         }
@@ -1263,7 +1263,7 @@
           "functions": [
             {
               "name": "coordinateAnnualQcdDeductionTreatment",
-              "line": 237
+              "line": 231
             }
           ]
         },
@@ -1272,7 +1272,7 @@
           "functions": [
             {
               "name": "finalizeAnnualQcdDerivedTaxCharacter",
-              "line": 189
+              "line": 183
             }
           ]
         },
@@ -1281,7 +1281,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 477
+              "line": 471
             }
           ]
         }
@@ -1343,7 +1343,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -1352,7 +1352,7 @@
           "functions": [
             {
               "name": "publishAnnualRetirementActions",
-              "line": 2055
+              "line": 2048
             }
           ]
         },
@@ -1361,7 +1361,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -1419,7 +1419,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -1428,7 +1428,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -1473,7 +1473,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -1482,7 +1482,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdPhysicalExecution",
-              "line": 512
+              "line": 505
             }
           ]
         },
@@ -1491,7 +1491,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2704
+              "line": 2697
             }
           ]
         },
@@ -1500,7 +1500,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -1542,7 +1542,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdTaxCharacterPostPass",
-              "line": 477
+              "line": 471
             }
           ]
         }
@@ -1601,7 +1601,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -1610,7 +1610,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdPhysicalExecution",
-              "line": 512
+              "line": 505
             }
           ]
         },
@@ -1619,7 +1619,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 2704
+              "line": 2697
             }
           ]
         },
@@ -1628,7 +1628,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -1676,7 +1676,7 @@
           "functions": [
             {
               "name": "evaluateAnnualQcdExecutionPrerequisites",
-              "line": 817
+              "line": 808
             }
           ]
         },
@@ -1685,7 +1685,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 826
+              "line": 823
             }
           ]
         }
@@ -1738,7 +1738,7 @@
           "functions": [
             {
               "name": "executeAnnualQcds",
-              "line": 524
+              "line": 517
             }
           ]
         },

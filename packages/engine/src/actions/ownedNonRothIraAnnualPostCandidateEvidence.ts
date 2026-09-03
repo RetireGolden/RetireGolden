@@ -41,6 +41,8 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
+import { nonblank } from './plainData.js'
 
 export interface PlanOwnedNonRothIraCandidateAllocationApplication {
   actionId: ActionId
@@ -260,14 +262,6 @@ export type BuildPlanOwnedNonRothIraAnnualPostCandidateClassificationInputResult
 
 type OwnedIraPlanAccount = Extract<Plan['accounts'][number], { type: 'traditional' }>
 
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
 function issue(
   kind: PlanOwnedNonRothIraPostCandidateEvidenceIssueKind,
   detail: string,
@@ -288,10 +282,6 @@ function blocked(
     reconciliationEvidence: null,
     issues: issues as [PlanOwnedNonRothIraPostCandidateEvidenceIssue, ...PlanOwnedNonRothIraPostCandidateEvidenceIssue[]],
   })
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
 }
 
 function canonicalRequest(raw: unknown): OrdinaryWithdrawalRequest {

@@ -17,6 +17,7 @@ import {
   type UsdCents,
 } from './money.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface AnnualQcdResidualRemainderBinding {
   readonly postPassApplicationEvidenceId: string
@@ -97,14 +98,6 @@ function fail(
   kind: AnnualQcdResidualForm8606Issue['kind'],
   detail: string,
 ): never { throw new ResidualError(kind, detail) }
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 
 function cents(value: bigint, label: string): UsdCents {
   if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) {

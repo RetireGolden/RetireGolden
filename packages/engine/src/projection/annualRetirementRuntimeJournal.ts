@@ -23,6 +23,8 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from '../actions/structuralId.js'
+import { deepFreeze } from '../actions/freeze.js'
+import { nonblank } from '../actions/plainData.js'
 
 export interface SimulatorAnnualRetirementRuntimeJournalContext {
   planId: PlanId
@@ -101,20 +103,6 @@ const resolvedKinds = new Set<AnnualRetirementRuntimeEventKind>(
 const runtimeKinds = new Set<AnnualRetirementRuntimeEventKind>(
   annualRetirementRuntimeEventKinds,
 )
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
-function nonblank(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0
-}
 
 /**
  * The journal's own copy of the inventory's origin classifier. The two are

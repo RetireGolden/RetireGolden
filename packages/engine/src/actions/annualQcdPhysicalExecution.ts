@@ -17,6 +17,7 @@ import {
   evaluateAnnualQcdExecutionPrerequisites,
   type AnnualQcdExecutionPrerequisitesEvaluated,
 } from './annualQcdExecutionPrerequisite.js'
+import { deepFreeze } from './freeze.js'
 
 export interface AnnualQcdRmdPoolOpeningSnapshot {
   readonly predicate: 'annualQcdOwnedIraRmdPoolOpeningSnapshot'
@@ -119,14 +120,6 @@ function fail(
   taxYear: number | null = null,
 ): never {
   throw new StageError(kind, detail, taxYear)
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function blocked(error: unknown): AnnualQcdPhysicalExecutionBlocked {

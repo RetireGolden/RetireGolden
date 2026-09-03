@@ -46,6 +46,8 @@ import {
   ledgerCentsToPlanDollars,
   signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'
+import { deepFreeze } from './freeze.js'
+import { compareUtf16CodeUnits } from './structuralId.js'
 
 export interface AccountOpeningBalanceSnapshot {
   accountId: AccountId
@@ -661,10 +663,6 @@ interface ScheduledRequest {
   scheduleInvalid: boolean
 }
 
-function compareUtf16CodeUnits(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
-}
-
 function centsFromBigInt(value: bigint): UsdCents {
   if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new RangeError('Exact-cent arithmetic exceeded the safe-integer range')
@@ -698,16 +696,6 @@ function indexUnique<T>(
     result.set(key, result.has(key) ? null : value)
   }
   return result
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
-      deepFreeze(child)
-    }
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
 }
 
 function reasonKey(reason: ActionReason): string {

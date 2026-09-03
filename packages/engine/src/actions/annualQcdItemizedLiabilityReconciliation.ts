@@ -13,6 +13,7 @@ import {
 import type { PersonId } from './identity.js'
 import { asUsdCents, type UsdCents } from './money.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
 
 export interface AnnualQcdItemizedLiabilitySourceInput {
   readonly taxUnitId: string
@@ -92,13 +93,6 @@ class ReconciliationError extends Error {
   constructor(kind: AnnualQcdItemizedLiabilityIssue['kind'], detail: string) { super(detail); this.kind = kind }
 }
 function fail(kind: AnnualQcdItemizedLiabilityIssue['kind'], detail: string): never { throw new ReconciliationError(kind, detail) }
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
 function id(value: unknown, label: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) fail('liabilitySourceInvalid', `${label} is required.`)
   return value

@@ -21,6 +21,8 @@ import {
   compareUtf16CodeUnits,
   deriveActionStructuralId,
 } from './structuralId.js'
+import { deepFreeze } from './freeze.js'
+import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot, requireNonblankId } from './plainData.js'
 
 export interface HsaReimbursementPriorHistoryEvidence {
   predicate: 'completeHsaReimbursementPriorHistory'
@@ -198,54 +200,6 @@ const ESTABLISHMENT_KEYS = ['predicate', 'ownerPersonId', 'ownerHsaEstablishedDa
 const EXPENSE_KEYS = ['reimbursementScopeId', 'medicalExpenseId', 'medicalExpenseEvidenceId', 'immutableExpenseSourceRecordId', 'patientPersonId', 'expenseIncurredDate', 'originalEligibleExpenseAmount', 'reimbursedBeforeAmount', 'qualifiedMedicalExpense', 'eligibilityEvidenceId']
 const ALLOCATION_KEYS = ['actionId', 'allocationId', 'sourceAccountId', 'distributionOwnerPersonId', 'evaluationDate', 'actionExecutionSequence', 'allocationSequenceWithinAction', 'physicalApplicationEvidenceId', 'executedAmount', 'ownerHsaEstablishedDate', 'ownerHsaEstablishedDateEvidenceId', 'reimbursementClaims']
 const CLAIM_KEYS = ['medicalExpenseId', 'reimbursedByAllocationAmount', 'patientRelationshipToDistributionOwner', 'patientRelationshipEvidenceId']
-const INVALID_SNAPSHOT = Symbol('invalidSnapshot')
-
-function plainSnapshot(value: unknown, seen = new WeakSet<object>()): unknown | typeof INVALID_SNAPSHOT {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
-  if (typeof value === 'number') return Number.isFinite(value) && !Object.is(value, -0) ? value : INVALID_SNAPSHOT
-  if (typeof value !== 'object' || seen.has(value)) return INVALID_SNAPSHOT
-  try {
-    const array = Array.isArray(value)
-    const prototype = Object.getPrototypeOf(value)
-    if ((array && prototype !== Array.prototype) || (!array && prototype !== Object.prototype && prototype !== null)) return INVALID_SNAPSHOT
-    const keys = Reflect.ownKeys(value)
-    if (keys.some((key) => typeof key !== 'string')) return INVALID_SNAPSHOT
-    if (array && (keys.length !== value.length + 1 || !keys.includes('length'))) return INVALID_SNAPSHOT
-    const output: unknown[] | Record<string, unknown> = array ? [] : Object.create(null) as Record<string, unknown>
-    seen.add(value)
-    for (const key of keys) {
-      if (array && key === 'length') continue
-      const descriptor = Object.getOwnPropertyDescriptor(value, key)
-      if (descriptor === undefined || !descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) return INVALID_SNAPSHOT
-      if (array && (!Number.isSafeInteger(Number(key)) || String(Number(key)) !== key || Number(key) >= value.length)) return INVALID_SNAPSHOT
-      const child = plainSnapshot(descriptor.value, seen)
-      if (child === INVALID_SNAPSHOT) return INVALID_SNAPSHOT
-      Object.defineProperty(output, key, { enumerable: true, configurable: true, writable: true, value: child })
-    }
-    return output
-  } catch {
-    return INVALID_SNAPSHOT
-  }
-}
-
-function exactKeys(value: unknown, expected: readonly string[]): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
-  const keys = Object.keys(value)
-  return keys.length === expected.length && keys.every((key) => expected.includes(key))
-}
-
-function deepFreeze<T>(value: T): Readonly<T> {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child)
-    Object.freeze(value)
-  }
-  return value as Readonly<T>
-}
-
-function nonblank(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) throw new TypeError(`${label} must be a nonblank stable identifier`)
-  return value
-}
 
 function civilDate(value: unknown, taxYear?: number): string {
   if (typeof value !== 'string') throw new TypeError('HSA evidence requires canonical civil dates')
@@ -279,7 +233,7 @@ function compareAllocations(left: Allocation, right: Allocation): number {
 }
 
 function claimId(registry: Map<string, string>, id: unknown, role: string, identity: readonly unknown[]): string {
-  const accepted = nonblank(id, `${role} ID`)
+  const accepted = requireNonblankId(id, `${role} ID`)
   const claim = JSON.stringify([role, ...identity])
   const prior = registry.get(accepted)
   if (prior !== undefined && prior !== claim) throw new Error(`Identifier ${accepted} is reused across HSA evidence identities`)
@@ -307,13 +261,13 @@ function validatedInput(raw: unknown): EvaluateAnnualHsaReimbursementLedgerInput
  * actionability, classify income, evaluate penalties, publish, or mutate Plan.
  */
 export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnnualHsaReimbursementLedgerInput>): Readonly<EvaluateAnnualHsaReimbursementLedgerResult> {
-  const snapshot = plainSnapshot(input)
+  const snapshot = plainDataSnapshot(input)
   if (snapshot === INVALID_SNAPSHOT) return blocked(null, 'invalidInput', 'Annual HSA ledger input must be losslessly snapshottable acyclic plain data')
   let taxYear: number | null = null
   try {
     const accepted = validatedInput(snapshot)
     taxYear = accepted.taxYear
-    const scopeId = nonblank(accepted.scope.reimbursementScopeId, 'HSA reimbursement scope')
+    const scopeId = requireNonblankId(accepted.scope.reimbursementScopeId, 'HSA reimbursement scope')
     const history = accepted.scope.priorHistory
     if (history.reimbursementScopeId !== scopeId) throw new RangeError('Prior history must bind the reimbursement scope')
     const registry = new Map<string, string>()
@@ -339,11 +293,11 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
     const expenseIds = new Set<string>()
     const expenseIdentity = new Set<string>()
     let state: StateRecord[] = accepted.scope.expenses.map((expense) => {
-      const medicalExpenseId = nonblank(expense.medicalExpenseId, 'Medical expense')
+      const medicalExpenseId = requireNonblankId(expense.medicalExpenseId, 'Medical expense')
       if (expenseIds.has(medicalExpenseId)) throw new RangeError('Medical expense IDs must be unique within a reimbursement scope')
       expenseIds.add(medicalExpenseId)
       claimId(registry, medicalExpenseId, 'medicalExpense', [scopeId, medicalExpenseId])
-      const immutableSourceRecordId = nonblank(expense.immutableExpenseSourceRecordId, 'Immutable medical expense source record')
+      const immutableSourceRecordId = requireNonblankId(expense.immutableExpenseSourceRecordId, 'Immutable medical expense source record')
       const patientPersonId = personIdSchema.parse(expense.patientPersonId)
       const incurred = civilDate(expense.expenseIncurredDate)
       const original = positiveUsdCentsSchema.parse(expense.originalEligibleExpenseAmount)
@@ -360,7 +314,7 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
     })
     state = canonicalState(state)
     const openingExpenseStateId = stateId(scopeId, state)
-    if (nonblank(history.terminalExpenseStateId, 'Prior-history terminal expense state') !== openingExpenseStateId) throw new RangeError('Prior history must bind the exact opening expense state')
+    if (requireNonblankId(history.terminalExpenseStateId, 'Prior-history terminal expense state') !== openingExpenseStateId) throw new RangeError('Prior history must bind the exact opening expense state')
     const expectedHistoryId = deriveActionStructuralId('hsa-reimbursement-prior-history', [scopeId, history.terminalLedgerEvidenceId, openingExpenseStateId])
     if (history.priorHistoryEvidenceId !== expectedHistoryId) throw new RangeError('Prior-history evidence ID must bind its terminal ledger and expense state')
     if (state.some((record) => record.reimbursedBeforeAmount > 0) && history.terminalLedgerEvidenceId === null) throw new RangeError('Opening reimbursements require a prior-history terminal ledger')
@@ -380,7 +334,7 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
       claimId(registry, allocationId, 'allocation', [allocationId])
       claimId(registry, allocation.physicalApplicationEvidenceId, 'physicalApplicationEvidence', [actionId, allocationId])
       claimId(registry, allocation.ownerHsaEstablishedDateEvidenceId, 'ownerHsaEstablishmentEvidence', [owner, established])
-      const reimbursementClaims = allocation.reimbursementClaims.map((claim) => ({ ...claim, medicalExpenseId: nonblank(claim.medicalExpenseId, 'Claimed medical expense') })).sort((left, right) => compareUtf16CodeUnits(left.medicalExpenseId, right.medicalExpenseId))
+      const reimbursementClaims = allocation.reimbursementClaims.map((claim) => ({ ...claim, medicalExpenseId: requireNonblankId(claim.medicalExpenseId, 'Claimed medical expense') })).sort((left, right) => compareUtf16CodeUnits(left.medicalExpenseId, right.medicalExpenseId))
       for (const claim of reimbursementClaims) claimId(registry, claim.patientRelationshipEvidenceId, 'patientRelationshipEvidence', [owner, claim.medicalExpenseId, claim.patientRelationshipToDistributionOwner, evaluationDate])
       return { ...allocation, actionId, allocationId, sourceAccountId, distributionOwnerPersonId: owner, evaluationDate, actionExecutionSequence: actionSequence, allocationSequenceWithinAction: allocationSequence, executedAmount, ownerHsaEstablishedDate: established, reimbursementClaims }
     }).sort(compareAllocations)
@@ -411,7 +365,7 @@ export function evaluateAnnualHsaReimbursementLedger(input: Readonly<EvaluateAnn
       const consumptions: HsaQualifiedExpenseConsumptionEvidence[] = []
       let qualified = usdCentsSchema.parse(0)
       for (const claim of allocation.reimbursementClaims) {
-        const medicalExpenseId = nonblank(claim.medicalExpenseId, 'Claimed medical expense')
+        const medicalExpenseId = requireNonblankId(claim.medicalExpenseId, 'Claimed medical expense')
         if (claims.has(medicalExpenseId)) throw new RangeError('A medical expense may appear only once in an HSA allocation')
         claims.add(medicalExpenseId)
         const index = state.findIndex((record) => record.medicalExpenseId === medicalExpenseId)
