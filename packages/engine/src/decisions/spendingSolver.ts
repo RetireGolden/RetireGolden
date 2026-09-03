@@ -12,7 +12,7 @@
  * fixed probe sequence, integer-dollar midpoints, no randomness.
  */
 
-import { formatGroupedNumber, formatWholeUsd } from '../insights/evidenceFormat.js'
+import { formatGroupedNumber, formatWholeUsd } from '../internal/evidenceFormat.js'
 import { evaluateCandidate, planForCandidate, type EvaluateCandidateOptions } from './evaluateCandidate.js'
 import { nominalDollarsAtPlanEnd } from './objectives.js'
 import type { DecisionCandidate, DecisionContext, ExactDecisionEvaluation } from './types.js'

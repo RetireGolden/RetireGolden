@@ -1,4 +1,4 @@
-import { formatWholeUsd } from '../evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { EMBEDDED_REAL_YIELD_CURVE } from '../../params/index.js'
 import { BRIDGE_FUNDING_MIN_FRACTION, sizeBridge } from '../../ladder/bridge.js'

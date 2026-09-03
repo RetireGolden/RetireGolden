@@ -1,4 +1,4 @@
-import { formatWholeUsd } from '../evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { Account } from '../../model/plan.js'
 import { spiaPayoutRate } from '../../decisions/spiaQuotes.js'

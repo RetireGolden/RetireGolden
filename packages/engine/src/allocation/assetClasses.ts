@@ -165,7 +165,10 @@ export function blendedReturnPct(weights: number[], params: Record<AssetClassId,
 export interface BlendedTaxableYield {
   interestYieldPct: number
   dividendYieldPct: number
-  /** Dividend-weighted qualified share, 0–1 (0.85 fallback when no dividends). */
+  /**
+   * Dividend-weighted qualified share, 0–1. Falls back to
+   * `DEFAULT_QUALIFIED_DIVIDEND_RATIO` when the blend produces no dividends.
+   */
   qualifiedRatio: number
 }
 

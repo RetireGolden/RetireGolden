@@ -227,7 +227,8 @@ export interface YearResult {
    *   bracket target, non-actionable ACA evidence, a safety-net floor trim, or
    *   simply no headroom — or a `manual`/`optimized` schedule with no entry for
    *   the year; in every one of those the sized household amount failed the
-   *   `> 0.01` test and the policy was never called;
+   *   `> AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS` test
+   *   (`projection/moneyTolerance.ts`) and the policy was never called;
    * - the `YearResult` was constructed by an external consumer rather than by
    *   `simulatePlan`, which is what the optionality is for.
    *

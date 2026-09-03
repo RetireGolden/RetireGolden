@@ -1,4 +1,4 @@
-import { formatWholeUsd } from '../evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import { probabilityBandSpendingGuardrailGenerator } from '../../decisions/generators.js'
 import type { DecisionContext } from '../../decisions/types.js'
 import type { Plan } from '../../model/plan.js'

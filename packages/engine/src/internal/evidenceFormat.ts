@@ -13,8 +13,15 @@
  * `packages/engine/eslint.config.js` bans the zero-argument form in `src/**`
  * so a new call site cannot reintroduce the host dependence.
  *
+ * It lives in `internal/` rather than under `insights/` because its callers
+ * span three layers that do not otherwise depend on each other: the annual
+ * ledger (`projection/internal/annualAnnuityPurchaseFunding.ts`), the decision
+ * layer, and the detectors. Housing it under `insights/` would have pointed
+ * the ledger at the recommendation layer that already type-imports the ledger,
+ * so a later value import here would have closed a module cycle.
+ *
  * This module deliberately imports nothing: it is a leaf that any layer may
- * use without creating a cycle.
+ * use without creating a cycle. Keep it that way.
  */
 
 /** The one locale every engine-published number is formatted in. */

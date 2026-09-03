@@ -9,7 +9,7 @@
  * is one relocation factor, so the card says "worth a look", never "move".
  */
 
-import { formatEvidencePercent, formatWholeUsd } from '../evidenceFormat.js'
+import { formatEvidencePercent, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightEvidence } from '../types.js'
 import { stateParamsFor } from '../../params/state/index.js'
 import {

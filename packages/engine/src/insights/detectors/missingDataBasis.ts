@@ -1,4 +1,4 @@
-import { formatEvidenceUsd } from '../evidenceFormat.js'
+import { formatEvidenceUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard, InsightEvidence } from '../types.js'
 import type {
   EmployerRothAccountActivity,

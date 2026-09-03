@@ -310,8 +310,12 @@ describe.each(CHOLESKY_MODELS)('$name class shocks', (model) => {
       return
     }
     if (model.name === 'user-shock') {
-      // Year 3 (1-based) holds cash flat at 0 by class id, which coincides with
-      // this convention's constant; every other year is the lognormal centre.
+      // Every year is 0 here, but that is not evidence about the shock year:
+      // cash is the zero-vol class, so the lognormal centre and the shock
+      // year's flat-cash rule produce the same 0. This case pins the
+      // non-shock years only. The id-driven shock year is pinned at non-zero
+      // volatility by the dedicated suite below, which is what would fail if
+      // the transform stopped reading AssetClassId.
       expect(series.every((v) => v === 0)).toBe(true)
       return
     }
@@ -335,5 +339,61 @@ describe.each(CHOLESKY_MODELS)('$name class shocks', (model) => {
       // crosses -100% many times over, which the lognormal form never can.
       expect(min).toBeLessThan(-100)
     }
+  })
+})
+
+/**
+ * user-shock owns the only per-class transform that reads `AssetClassId`, so
+ * it is the one model the generic table above cannot discriminate: at the
+ * zero-vol class the id rule and the lognormal centre agree on 0. These cases
+ * run every class at its real volatility, where the two disagree in every
+ * class, and pin the documented rule — in the shock year cash is held flat,
+ * equities take the shock in full, everything else takes 60% of it.
+ */
+describe('user-shock class shocks — the id-driven shock year', () => {
+  const SHOCK_YEAR = 3 // 1-based, so index 2
+  const SHOCK_PCT = -25
+  const shocked = createUserShockModel({
+    type: 'user-shock',
+    shockYear: SHOCK_YEAR,
+    shockPct: SHOCK_PCT,
+    inflationMeanPct: 2.5,
+    classShocks: { volatilityPctByClass: defaultVols },
+  })
+  const path = shocked.generatePath(createRng(19), 40).classReturnShockPct!
+  const shockIndex = SHOCK_YEAR - 1
+
+  it('holds cash flat and prices the risk classes off the shock, not the draw', () => {
+    expect(path.cash![shockIndex]).toBe(0)
+    expect(path.usStocks![shockIndex]).toBe(SHOCK_PCT)
+    expect(path.intlStocks![shockIndex]).toBe(SHOCK_PCT)
+    expect(path.bonds![shockIndex]).toBeCloseTo(SHOCK_PCT * 0.6, 12)
+  })
+
+  it('leaves every other year on the lognormal centre, cash included', () => {
+    // Cash carries real volatility here, so a shock-year rule that leaked into
+    // the neighbouring years would show up as an exact 0 or an exact -25.
+    for (const id of ASSET_CLASS_IDS) {
+      for (let i = 0; i < path[id]!.length; i++) {
+        if (i === shockIndex) continue
+        expect(path[id]![i]).not.toBe(0)
+        expect(path[id]![i]).not.toBe(SHOCK_PCT)
+      }
+    }
+  })
+
+  it('applies the rule in the configured year only, wherever that year is', () => {
+    // Guards against the index being read off `i` rather than the 1-based
+    // `shockYear`: move the shock and the flat-cash year moves with it.
+    const later = createUserShockModel({
+      type: 'user-shock',
+      shockYear: 9,
+      shockPct: SHOCK_PCT,
+      inflationMeanPct: 2.5,
+      classShocks: { volatilityPctByClass: defaultVols },
+    }).generatePath(createRng(19), 40).classReturnShockPct!
+    expect(later.cash![8]).toBe(0)
+    expect(later.usStocks![8]).toBe(SHOCK_PCT)
+    expect(later.cash![shockIndex]).not.toBe(0)
   })
 })

@@ -1,4 +1,4 @@
-import { formatGroupedNumber, formatWholeUsd } from '../evidenceFormat.js'
+import { formatGroupedNumber, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, DetectorContext } from '../types.js'
 import { irmaaTierForMagi, irmaaTierThreshold } from '../../params/index.js'
 import { medicareAnnualPremiumPerPerson } from '../../tax/medicare.js'

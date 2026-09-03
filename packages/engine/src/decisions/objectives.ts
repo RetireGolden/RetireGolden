@@ -8,7 +8,7 @@
  * can pick an objective that bypasses exact evaluation.
  */
 
-import { formatWholeUsd } from '../insights/evidenceFormat.js'
+import { formatWholeUsd } from '../internal/evidenceFormat.js'
 import type { Plan } from '../model/plan.js'
 import { rmdStartAgeForBirthYear } from '../params/index.js'
 import type { ProjectionResult } from '../projection/types.js'

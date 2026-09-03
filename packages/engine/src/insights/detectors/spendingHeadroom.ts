@@ -9,7 +9,7 @@
  * so the card and that surface report the same solved level.
  */
 
-import { formatWholeUsd } from '../evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector } from '../types.js'
 import {
   createDecisionContext,

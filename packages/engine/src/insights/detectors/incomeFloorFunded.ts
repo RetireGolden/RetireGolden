@@ -1,4 +1,4 @@
-import { formatEvidencePercent, formatWholeUsd } from '../evidenceFormat.js'
+import { formatEvidencePercent, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { EMBEDDED_REAL_YIELD_CURVE } from '../../params/index.js'
 import { computeFundedRatio } from '../../ladder/fundedRatio.js'

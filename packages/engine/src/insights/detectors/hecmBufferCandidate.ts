@@ -1,4 +1,4 @@
-import { formatEvidencePercent, formatWholeUsd } from '../evidenceFormat.js'
+import { formatEvidencePercent, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { Account } from '../../model/plan.js'
 import { hecmPrincipalLimitFactorPct } from '../../params/index.js'

@@ -10,7 +10,7 @@
  * — never re-derived in candidate logic.
  */
 
-import { formatWholeUsd } from '../insights/evidenceFormat.js'
+import { formatWholeUsd } from '../internal/evidenceFormat.js'
 import type { Plan } from '../model/plan.js'
 import {
   decodeScenarioPointer,

@@ -11,7 +11,7 @@
  * ranking with candidate-id tie-breaks, and a fixed evaluation bound.
  */
 
-import { formatGroupedNumber } from '../insights/evidenceFormat.js'
+import { formatGroupedNumber } from '../internal/evidenceFormat.js'
 import { evaluateCandidate, type EvaluateCandidateOptions } from './evaluateCandidate.js'
 import { maximizeAfterTaxEstate, type ObjectivePolicy } from './objectives.js'
 import type { CandidateGenerator, DecisionCandidate, DecisionContext, ExactDecisionEvaluation } from './types.js'

@@ -97,8 +97,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | actions | 74 | 15 | 33 | 26 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
 | decisions | 19 | 2 | 2 | 15 | 0 |
-| insights | 23 | 2 | 3 | 18 | 0 |
-| internal | 9 | 1 | 3 | 5 | 0 |
+| insights | 22 | 2 | 3 | 17 | 0 |
+| internal | 10 | 1 | 3 | 6 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 0 | 1 | 1 | 0 |
 | model | 3 | 3 | 0 | 0 | 0 |

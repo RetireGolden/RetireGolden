@@ -1,4 +1,4 @@
-import { formatEvidencePercent, formatWholeUsd } from '../evidenceFormat.js'
+import { formatEvidencePercent, formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { analyzePensionElections, pensionTakeLumpSumPatch } from '../../decisions/pensionElection.js'
 

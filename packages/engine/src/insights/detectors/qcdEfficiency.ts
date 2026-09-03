@@ -1,4 +1,4 @@
-import { formatWholeUsd } from '../evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import { planDollarsToLedgerCents } from '../../actions/planBalanceAdapter.js'
 import {
   compareUtf16CodeUnits,

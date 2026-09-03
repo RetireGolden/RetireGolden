@@ -6,7 +6,7 @@
  * caller retains every live mutation, runtime occurrence/application write,
  * mutation ordinal, contract-value credit, and cross-year investment write.
  */
-import { formatWholeUsd } from '../../insights/evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Account, Person } from '../../model/plan.js'
 import {
   latestNonQlacQualifiedAnnuityStartAge,

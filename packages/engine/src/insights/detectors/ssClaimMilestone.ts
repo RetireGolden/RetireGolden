@@ -1,4 +1,4 @@
-import { formatEvidenceAge, formatEvidenceUsd } from '../evidenceFormat.js'
+import { formatEvidenceAge, formatEvidenceUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import type { FormerSpouse, Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'

@@ -1,4 +1,4 @@
-import { formatWholeUsd } from '../evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import { rmdStartAgeForBirthYear } from '../../params/index.js'
 import type { Detector } from '../types.js'
 import { selectedLogicalBalanceAccounts } from '../../model/plan.js'

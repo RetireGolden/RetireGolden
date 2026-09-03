@@ -397,20 +397,20 @@
     },
     {
       "directory": "insights",
-      "files": 23,
+      "files": 22,
       "byStatus": {
         "partial": 2,
         "registered": 3,
-        "rule-free": 18
+        "rule-free": 17
       }
     },
     {
       "directory": "internal",
-      "files": 9,
+      "files": 10,
       "byStatus": {
         "partial": 1,
         "registered": 3,
-        "rule-free": 5
+        "rule-free": 6
       }
     },
     {

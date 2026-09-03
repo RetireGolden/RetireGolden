@@ -1,4 +1,4 @@
-import { formatEvidenceUsd } from '../evidenceFormat.js'
+import { formatEvidenceUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { packForYear } from '../../params/index.js'
 

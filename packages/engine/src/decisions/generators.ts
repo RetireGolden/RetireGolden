@@ -7,7 +7,7 @@
  * exact-ledger evaluation does.
  */
 
-import { formatWholeUsd } from '../insights/evidenceFormat.js'
+import { formatWholeUsd } from '../internal/evidenceFormat.js'
 import type { Account, AllocationWeights, IncomeStream, Plan, TipsLadder } from '../model/plan.js'
 import { packForYear, rmdStartAgeForBirthYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import { BRIDGE_FUNDING_MIN_FRACTION, sizeBridge } from '../ladder/bridge.js'

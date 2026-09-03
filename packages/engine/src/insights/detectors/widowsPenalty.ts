@@ -1,4 +1,4 @@
-import { formatWholeUsd } from '../evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
 import { computeFederalTax } from '../../tax/federalTax.js'
 import { LATEST_PACK_YEAR } from '../../params/index.js'

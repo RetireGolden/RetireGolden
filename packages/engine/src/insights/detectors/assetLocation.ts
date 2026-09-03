@@ -6,7 +6,7 @@
  * prices every bounded swap on the exact ledger and previews the winner.
  */
 
-import { formatWholeUsd } from '../evidenceFormat.js'
+import { formatWholeUsd } from '../../internal/evidenceFormat.js'
 import { planUsesAssetAllocation } from '../../allocation/assetClasses.js'
 import { createDecisionContext, evaluateCandidate } from '../../decisions/evaluateCandidate.js'
 import { assetLocationGenerator } from '../../decisions/generators.js'

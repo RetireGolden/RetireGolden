@@ -14,7 +14,7 @@
  *    are priced by the engine rather than a side model.
  */
 
-import { formatWholeUsd } from '../insights/evidenceFormat.js'
+import { formatWholeUsd } from '../internal/evidenceFormat.js'
 import type { Account, Plan } from '../model/plan.js'
 import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import type { CandidateGenerator, DecisionCandidate, DecisionContext } from './types.js'

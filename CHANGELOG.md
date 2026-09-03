@@ -11,9 +11,16 @@ they were built out. They had accumulated under "Runtime contract" on
 [packages/engine/README.md](packages/engine/README.md) — the npm landing page —
 where roughly sixty lines of implementation narrative sat above Usage and
 buried the actual contract (ESM/Node, purity and the injection seams,
-determinism, the optional cash-flow capture, versioned parameter packs). They
-are history, not a promise to a consumer; none of the functions named is
-reachable through the exports map. Recorded verbatim so nothing is lost.
+determinism, the optional cash-flow capture, versioned parameter packs).
+Recorded verbatim so nothing is lost.
+
+Moving them changes what the README emphasizes, not what the package
+publishes: every function named below is exported from `actions/index.ts` and
+so is reachable on the `@retiregolden/engine/actions` subpath, and several are
+also reachable on their own `actions/<module>` subpath, which
+`packages/engine/scripts/pack-smoke.mjs` asserts on every pack. What these
+notes are is build-out narrative — how each boundary came to have the shape it
+has — rather than the runtime contract a consumer needs on the landing page.
 
 - The owned-IRA penalty prerequisite can accept raw annual SEPP schedule routes,
   rebuild each route's complete inventory from canonical annual character, and
