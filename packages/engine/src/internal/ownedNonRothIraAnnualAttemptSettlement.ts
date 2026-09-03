@@ -311,9 +311,7 @@ function snapshotAnnualPassValues(
   ) as SimulatorAnnualPassValueSnapshot
 }
 
-function snapshotInvariantState(
-  state: Readonly<SimulatorAnnualPassStateBindings>,
-): Readonly<{
+type SimulatorAnnualPassInvariantSnapshot = Readonly<{
   balanceCostBasis: readonly (readonly [string, number])[]
   iraProRata: readonly [string, unknown][]
   iraBasisByOwner: readonly [string, unknown][]
@@ -332,7 +330,35 @@ function snapshotInvariantState(
   warnings: readonly string[]
   valueBindings: SimulatorAnnualPassValueSnapshot
   expenses: unknown
-}> {
+}>
+
+/**
+ * Every annual-pass state key is either measured by the snapshot above (under
+ * its own name, or nested in `valueBindings`) or named below as deliberately
+ * unmeasured. Adding state to the bindings without deciding which side it falls
+ * on is a compile error naming the undecided key, rather than a silently
+ * unwatched invariant. A typo in one of the unmeasured names excludes nothing
+ * and so fails the same way.
+ */
+type UnaccountedInvariantStateKey = Exclude<
+  keyof SimulatorAnnualPassStateBindings,
+  | keyof SimulatorAnnualPassInvariantSnapshot
+  | keyof SimulatorAnnualPassValueSnapshot
+  // Runtime journals, the mutation ordinal, and the balance amounts have their
+  // own independent YearResult bindings; only the balances' cost basis is
+  // carried here, under its own name.
+  | 'balances'
+  | 'retirementRuntimeOccurrences'
+  | 'retirementRuntimeApplications'
+  | 'nextRetirementRuntimeMutationOrdinal'
+>
+const INVARIANT_STATE_IS_ACCOUNTED_FOR:
+  [UnaccountedInvariantStateKey] extends [never] ? true : UnaccountedInvariantStateKey = true
+void INVARIANT_STATE_IS_ACCOUNTED_FOR
+
+function snapshotInvariantState(
+  state: Readonly<SimulatorAnnualPassStateBindings>,
+): SimulatorAnnualPassInvariantSnapshot {
   // Runtime journals, ordinal, and end balances have independent YearResult
   // bindings. Every other transaction-owned field is named here and must stay
   // checkpoint-equal unless the integration supplies a complete attempt-bound
