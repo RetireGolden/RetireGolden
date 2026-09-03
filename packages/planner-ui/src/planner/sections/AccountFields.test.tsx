@@ -1103,6 +1103,39 @@ describe('AccountFields pension and annuity editor boundaries', () => {
     expect(controlByLabel(fields, 'Model a purchase event')).toBeTruthy()
     expect(() => controlByLabel(fields, 'Lump-sum offer on record')).toThrow('no label "Lump-sum offer on record"')
   })
+
+  // #486, decision D8 on #495: neither guaranteed-income card carries the
+  // Estate beneficiary control any more (the projection never read it on
+  // either), and both say why in the card's own words.
+  it.each([
+    ['annuity', (): Account => ({
+      type: 'annuity',
+      id: 'annuity',
+      name: 'Annuity',
+      ownerPersonId: 'af-owner',
+      annualReturnPct: null,
+      startAge: 70,
+      monthlyAmount: 1_500,
+      colaPct: 0,
+      taxablePct: 60,
+    })],
+    ['pension', (): Account => ({
+      type: 'pension',
+      id: 'pension',
+      name: 'Pension',
+      ownerPersonId: 'af-owner',
+      annualReturnPct: null,
+      startAge: 65,
+      monthlyAmount: 2_000,
+      colaPct: 0,
+      survivorPct: 50,
+    })],
+  ])('hides Estate beneficiary on a %s and notes that guaranteed income does not pass to the estate', (_kind, build) => {
+    const fields = renderFields(planWithAccount(build()))
+
+    expect(() => controlByLabel(fields, 'Estate beneficiary')).toThrow('no label "Estate beneficiary"')
+    expect(fields.textContent).toContain('Guaranteed income does not pass to the estate.')
+  })
 })
 
 describe('AccountFields extracted editor commit wiring', () => {

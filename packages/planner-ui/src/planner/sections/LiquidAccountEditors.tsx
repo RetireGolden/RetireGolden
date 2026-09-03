@@ -89,6 +89,7 @@ export function TaxableAccountEditor({
             label="Interest yield override"
             help="Optional. Leave blank to use the blended interest yield from the class mix (shown as 'This year's blend' in the asset-class panel below). Enter a value to override it for this account."
             hint="Blank = use blended yield."
+            path={`accounts.${index}.interestYieldPct`}
             value={account.interestYieldPct ?? null}
             allowNull
             onCommit={(value) => onCommit('interestYieldPct', value ?? undefined)}
@@ -97,6 +98,7 @@ export function TaxableAccountEditor({
             label="Dividend yield override"
             help="Optional. Leave blank to use the blended dividend yield from the class mix. Enter a value to override it for this account."
             hint="Blank = use blended yield."
+            path={`accounts.${index}.dividendYieldPct`}
             value={account.dividendYieldPct ?? null}
             allowNull
             onCommit={(value) => onCommit('dividendYieldPct', value ?? undefined)}
@@ -145,9 +147,11 @@ function ReinvestYieldField({
 
 export function EquityCompAccountEditor({
   account,
+  index,
   onCommit,
 }: {
   account: Extract<Account, { type: 'equityComp' }>
+  index: number
   onCommit: CommitAccountFieldFor<Extract<Account, { type: 'equityComp' }>>
 }) {
   return (
@@ -155,6 +159,7 @@ export function EquityCompAccountEditor({
       <MoneyField
         label="Cost basis"
         hint="Aggregate basis; gains realize pro-rata."
+        path={`accounts.${index}.costBasis`}
         value={account.costBasis}
         onCommit={(value) => onCommit('costBasis', value ?? 0)}
       />

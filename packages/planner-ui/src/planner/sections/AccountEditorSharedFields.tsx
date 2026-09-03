@@ -97,7 +97,7 @@ export function AccountEditorShell({
         onCommit={onCommit}
         onEstimate={() => setEstimating(true)}
       />
-      <ContributionFields account={account} onCommit={onCommit} />
+      <ContributionFields account={account} index={index} onCommit={onCommit} />
       <EstateBeneficiaryFields account={account} index={index} onCommit={onCommit} />
       {estimating ? (
         <ReturnEstimatorModal
@@ -137,6 +137,7 @@ function InvestmentFields({
             label="Expected return"
             help="Average annual nominal growth for this account. Leave blank to use the plan-wide default from Assumptions, or click Calculate to estimate it from how the account is invested."
             hint="Blank = default assumption."
+            path={`accounts.${index}.annualReturnPct`}
             value={account.annualReturnPct}
             allowNull
             onCommit={(value) => onCommit('annualReturnPct', value)}
@@ -176,9 +177,11 @@ function InvestmentFields({
 
 function ContributionFields({
   account,
+  index,
   onCommit,
 }: {
   account: Account
+  index: number
   onCommit: CommitAccountField
 }) {
   if (inheritedContributionsBlocked(account)) {
@@ -217,7 +220,7 @@ function ContributionFields({
             }
             return (
               <div key={phaseIndex} className="nested-phase-row">
-                <div className="form-grid nested-phase-grid">
+                <div className="form-grid">
                   <MoneyField
                     label="Amount / year"
                     value={phase.annualAmount}
@@ -272,6 +275,7 @@ function ContributionFields({
         <MoneyField
           label="Annual contribution"
           hint="While the owner has wages; IRS caps applied."
+          path={`accounts.${index}.annualContribution`}
           value={account.annualContribution}
           onCommit={(value) => onCommit('annualContribution', value ?? 0)}
         />
@@ -289,7 +293,23 @@ function EstateBeneficiaryFields({
   index: number
   onCommit: CommitAccountField
 }) {
-  if (account.type === 'debt' || account.type === 'property' || account.type === 'pension') return null
+  if (account.type === 'debt' || account.type === 'property') return null
+  // A guaranteed-income contract is not a logical balance account, so
+  // `estateBreakdown` never reads an estate beneficiary off a pension or an
+  // annuity: what the contract leaves behind is its own survivor benefit,
+  // period-certain, or lump-sum term. The control was hidden on Pension and
+  // shown on Annuity, which made the same inert field look meaningful on one
+  // card and absent on the other (#486). Decision D8 on #495: hide it on both
+  // and say why. The schema keeps the field, so an imported plan that carries
+  // one still round-trips.
+  if (account.type === 'pension' || account.type === 'annuity') {
+    return (
+      <p className="card-hint">
+        Guaranteed income does not pass to the estate. What continues after a death comes from the contract
+        itself — a survivor benefit, guaranteed years, or a lump sum — not from an estate beneficiary.
+      </p>
+    )
+  }
 
   return (
     <>

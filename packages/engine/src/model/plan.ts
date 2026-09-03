@@ -12,7 +12,7 @@
 
 import { z } from 'zod'
 import { persistedRetirementActionRequestSchema } from '../actions/contract.js'
-import { rmdStartAgeForBirthYear } from '../params/index.js'
+import { packForYear, rmdStartAgeForBirthYear } from '../params/index.js'
 import { addCalendarMonths, parseCivilIsoDate } from '../actions/civilDate.js'
 import { usdCentsSchema } from '../actions/money.js'
 import {
@@ -2000,6 +2000,42 @@ export const rothConversionStrategySchema = z.discriminatedUnion('mode', [
   }),
 ])
 
+/**
+ * The ordinary rate-bracket percentages the parameter pack publishes for a
+ * calendar year, ascending, unioned across the filing-status tables.
+ *
+ * A fill-to-target conversion aims at the top of a bracket the tax engine will
+ * actually apply: `strategies/rothConversion.ts#ceilingFor` looks `targetValue`
+ * up in this same table and, finding nothing, returns no ceiling — so the
+ * strategy converts nothing at all and says nothing about why (#508). The rates
+ * are read from the pack rather than written down here because parameters are
+ * data, not code (DOCS/standards.md); the reading is registered as
+ * `irc-1-j-2-progressive-ordinary-rate-schedule` — "the 10/12/22/24/32/35/37
+ * structure is current law indefinitely" (IRC 1(j)(2)(C); Rev. Proc. 2025-32
+ * section 4.01, Table 3). Both status tables carry the same ladder, so the
+ * union is the published set whichever status the household files under, and a
+ * plan whose filing status changes never invalidates a bracket already chosen.
+ */
+function publishedBracketRatesPct(year: number): number[] {
+  const { brackets } = packForYear(year).pack.federalTax
+  const rates = new Set<number>()
+  for (const table of [brackets.single, brackets.marriedFilingJointly]) {
+    for (const bracket of table) rates.add(bracket.ratePct)
+  }
+  return [...rates].sort((a, b) => a - b)
+}
+
+/**
+ * How many IRMAA tiers the pack publishes for a calendar year. A fill-to-target
+ * tier is 1-based over that table (`ceilingFor` reads `irmaaTiers[tier - 1]`),
+ * and the statute's sliding scale has exactly these steps above the standard
+ * premium — "35, 50, 65, 80 or 85 percent", registered as
+ * `usc-42-1395r-i-irmaa-applicable-percentage` (42 U.S.C. 1395r(i)(3)).
+ */
+function publishedIrmaaTierCount(year: number): number {
+  return packForYear(year).pack.medicare.irmaaTiers.length
+}
+
 export const withdrawalStrategySchema = z.discriminatedUnion('mode', [
   /** Drain cash → taxable → vested equity comp → traditional → Roth → HSA (SEQUENTIAL_ORDER in simulate.ts). */
   z.object({ mode: z.literal('sequential') }),
@@ -3192,6 +3228,83 @@ export const planSchema = z
         }
       }
     })
+    // A recurring stream that ends before it starts pays nothing and says
+    // nothing about why, the same defect the ladder refinement above catches
+    // (#524; #495 decision D5). Both bounds are optional — an open-ended stream
+    // leaves either or both null — so only a stream with both is compared.
+    plan.incomes.forEach((income, i) => {
+      if (income.type !== 'recurring') return
+      if (income.startYear === null || income.endYear === null) return
+      if (income.endYear < income.startYear) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['incomes', i, 'endYear'],
+          message: 'a recurring income must end in or after the year it starts',
+        })
+      }
+    })
+    // The Roth fill-to-target window, on the same rule, plus the target value
+    // per target kind (#508; #495 decisions D5 and D6). Each of these is a
+    // value `strategies/rothConversion.ts#ceilingFor` cannot turn into a
+    // ceiling, so the strategy silently converts nothing today.
+    const rothConversion = plan.strategies.rothConversion
+    if (rothConversion.mode === 'fillToTarget') {
+      if (rothConversion.endYear < rothConversion.startYear) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['strategies', 'rothConversion', 'endYear'],
+          message: 'a conversion window must end in or after the year it starts',
+        })
+      }
+      // The window's first year is the tax year the target is read against.
+      const taxYear = rothConversion.startYear
+      const targetValue = rothConversion.targetValue
+      const targetPath = ['strategies', 'rothConversion', 'targetValue']
+      if (rothConversion.target === 'topOfBracket') {
+        // "Fill to the top of this bracket" needs a bracket ABOVE the chosen
+        // one to supply the ceiling, so the highest published rate — the
+        // open-ended top bracket, with nothing above it — is not a target the
+        // ledger can price. `ceilingFor` says the same in its own terms
+        // (`strategies/rothConversion.ts`: "unknown rate or open-ended top
+        // bracket"). The top rate is read off the pack's own ascending ladder
+        // rather than written down, so a pack whose schedule changes moves this
+        // rule with it (Nathan, 2026-09-02, on #495 D6).
+        //
+        // No year is named in the message: beyond the last published pack
+        // `packForYear` stands in with the latest one, so calling these "the
+        // 2050 rates" would assert a publication that has not happened (review
+        // r1-8). The ladder itself is not indexed — only the bounds are — so
+        // the set is the same list whichever year stands in.
+        const fillable = publishedBracketRatesPct(taxYear).slice(0, -1)
+        if (targetValue === null || !fillable.includes(targetValue)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: targetPath,
+            message: `a bracket target must be one of the published rates below the top bracket (${fillable.join(', ')})`,
+          })
+        }
+      } else if (rothConversion.target === 'irmaaTier') {
+        const tiers = publishedIrmaaTierCount(taxYear)
+        if (targetValue === null || !Number.isInteger(targetValue) || targetValue < 1 || targetValue > tiers) {
+          ctx.addIssue({
+            code: 'custom',
+            path: targetPath,
+            message: `an IRMAA tier target must be a whole number from 1 to ${tiers}`,
+          })
+        }
+      } else if (rothConversion.target === 'fixedMagi') {
+        // A ceiling of 0 is not a small conversion window, it is no window at
+        // all: the metric it caps is a floored MAGI, so nothing can ever fit
+        // under it and `ceilingFor` refuses it too (Nathan, 2026-09-02, D6).
+        if (targetValue === null || targetValue <= 0) {
+          ctx.addIssue({
+            code: 'custom',
+            path: targetPath,
+            message: 'a fixed MAGI target must be above 0',
+          })
+        }
+      }
+    }
     // The required floor cannot exceed the target lifestyle it sits under.
     if (plan.expenses.requiredAnnual !== undefined && plan.expenses.requiredAnnual > plan.expenses.baseAnnual) {
       ctx.addIssue({

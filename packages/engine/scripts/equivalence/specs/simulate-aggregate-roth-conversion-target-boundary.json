@@ -229,21 +229,21 @@
       "label": "taxable target translation and safety-net decision gate",
       "file": "projection/internal/annualAggregateRothConversionTargetPlan.ts",
       "lines": [
-        284,
-        291
+        294,
+        301
       ],
       "note": "The safety-net trim call and helper are corpus-cold because no validated corpus member combines a positive fill target with a positive safety-net floor. Direct tests pin liquid headroom, exact tax callback inputs, all three refinement passes, trim-to-zero, and warning emission.",
       "anchors": [
         {
-          "line": 284,
+          "line": 294,
           "text": "const sources = input.readSources()"
         },
         {
-          "line": 285,
+          "line": 295,
           "text": "const desiredPlanDollars = grossAmountForTaxable(sources, sized.amount)"
         },
         {
-          "line": 290,
+          "line": 300,
           "text": "return result({ desiredPlanDollars, warnings: [] })"
         }
       ]

@@ -26,7 +26,10 @@ and after-tax estate.
   taxable stepped-up at death, and cash pass untaxed), or `charity` (`charityPct` passes to charity fully
   untaxed, the remainder following the non-spouse rules). Absent the field, the legacy flat treatment applies.
   The HSA's older `beneficiary` field remains a spouse/non-spouse shorthand; when both are present,
-  `estateBeneficiary` wins.
+  `estateBeneficiary` wins. A pension and an annuity are **not** logical balance accounts, so
+  `estateBreakdown` never reads the field on either: what a guaranteed-income contract leaves behind is its
+  survivor benefit, its period certain, or a lump-sum election. The schema still accepts the field on both
+  (an imported plan round-trips unchanged) and neither editor offers it, with a card note saying why (#486).
 - **Heir tax by account class.** `assumptions.heirTaxByClass` optionally overrides the flat `heirTaxRatePct`
   (§13) per pre-tax class (`traditional`, `hsa`), so a large inherited traditional balance can be priced at a
   higher heir bracket than a modest HSA. An omitted class falls back to `heirTaxRatePct`.

@@ -267,6 +267,14 @@ transitions, restrained hover states that shift a border or tint a background by
   hover/focus reveals its field chrome — inline editing without a form feel.
 - **Help ladder:** label → one-line hint → a single `HelpTip` (ⓘ) → "Learn more" link. Never
   stack more than one tip on a field.
+- **Three levels of feedback under a field, and only one shows at a time.** `.field-error` is what
+  the engine refused: danger token, the control `aria-invalid`, the save chip jumps to it.
+  `.field-note` is what the field did not keep: muted token, `role="status"`, the plan's own value
+  came back. `.field-warning` is a value the engine accepts that is almost certainly not what was
+  meant — a 999% rate, a $100M balance, a goal year in the past: the `callout--warn` treatment
+  (1px warn-tinted border and ground, never a side-stripe) at field scale, `role="status"`, and the
+  control is **never** `aria-invalid`, because the plan holds the value. The thresholds are a
+  product decision, recorded in `planner/warnings.ts`, not a bound the engine enforces.
 - **Native control chrome is styled once, app-wide.** Checkboxes, radios, selects, range
   sliders, and number inputs take the shared treatment in `index.css`: `appearance: none`
   (number inputs keep `textfield` and only drop the spin buttons), a box on Surface White edged
@@ -299,6 +307,15 @@ transitions, restrained hover states that shift a border or tint a background by
 - **Breadcrumbs:** muted with `/` separators; current page is Ink at 550.
 
 ### Forms and figures
+- **One column rhythm** (`.form-grid`): tracks are `repeat(auto-fill, minmax(11.5rem, 1fr))` and
+  keep filling the row, so a child spanning `1 / -1` reaches both edges. Equal field widths come
+  from equal CONTAINERS, not from fixing the track: `.card > .item-row` cancels its own inset with
+  `margin-inline: calc(-1rem - 1px)`, so a card's heading, a top-of-form field, and a field inside
+  a row all start on one left edge and resolve one track width. Two rules about that pull: never
+  fix the track instead — the row's remainder then falls outside the grid box and full-row panels
+  stop short; and keep it on the **child** combinator — an item row can nest inside another, and a
+  descendant selector would cancel an inset the inner row never added. A nested row keeps its box,
+  as does a `.nested-form-section` well, which is a deliberately bounded group.
 - **Compound field with actions** (`.field-with-action`): input plus its buttons in one cell.
   Add `.field-with-action--wide` to span two grid columns beside sibling fields; use
   `.field-span-full` only when the row really belongs to it.

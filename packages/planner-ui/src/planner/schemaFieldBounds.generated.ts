@@ -23,6 +23,8 @@ export interface SchemaBounds {
 }
 
 export const SCHEMA_FIELD_BOUNDS: Record<string, SchemaBounds> = {
+  'accounts.N.annualContribution': { min: 0 },
+  'accounts.N.annualReturnPct': { exclusiveMin: -100, exclusiveMax: 1000 },
   'accounts.N.balance': { min: 0 },
   'accounts.N.colaPct': { exclusiveMin: -100, exclusiveMax: 1000 },
   'accounts.N.costBasis': { min: 0 },

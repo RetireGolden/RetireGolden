@@ -20,6 +20,27 @@ Two modes:
 2. **Fill-to-target strategy** — `sizeRothConversion` bisects each year's conversion up to a chosen
    ceiling: top of a tax bracket (12/22/24…), an IRMAA tier edge, the ACA 400% FPL cliff, or a fixed MAGI.
 
+   The window and the target are validated by `planSchema`, which accepts only what `ceilingFor` can turn
+   into a ceiling — a target the ledger cannot price would convert nothing every year, which is not a plan
+   anyone meant to author. `endYear` may not precede `startYear`. A `topOfBracket` target must be one of the
+   rate percentages the parameter pack publishes for the window's first year
+   (`irc-1-j-2-progressive-ordinary-rate-schedule`) **except the highest**: filling to the top of a bracket
+   needs a bracket above it to supply the threshold, and the top bracket is open-ended (IRC 1(j)(2)(C) prints
+   its row as "Over $640,600", with no upper bound). An `irmaaTier` target must be a whole number inside the
+   pack's tier table (`usc-42-1395r-i-irmaa-applicable-percentage`). A `fixedMagi` target must be above 0 —
+   the metric it caps is a floored MAGI, so a ceiling of 0 admits nothing. The top rate is read off the
+   pack's own ascending ladder rather than written down, so a pack whose schedule changes moves the rule with
+   it. The planner offers exactly the fillable rates as a select rather than a free number box.
+
+   `sizeRothConversion` still reports a target it cannot price (`bad_target` → the projection warning "The
+   Roth-conversion target is invalid for this plan (unknown bracket or tier); no conversion made", shown on
+   Results under Modeling notes). That path is no longer reachable from an ordinary stored plan, and is kept
+   for the case the schema cannot catch: the target is validated against the pack for the window's FIRST
+   year, while sizing looks it up in the pack for the year being priced, so a window that outlives a change
+   to the rate ladder or the tier count can still hold a target that was valid when it was authored. The
+   same `bad_target` reason also carries the `bracketTargeted` **withdrawal** strategy's own bad-bracket
+   warning, whose `strategies.withdrawalOrder.bracketPct` has no such schema rule.
+
 Both are **aggregate**: a schedule is a year and a household amount, and nothing else. A named `rothConversion`
 retirement action is the identity-bearing path — it names the owner, the source accounts, and the destination
 Roth, and the annual ledger commits it

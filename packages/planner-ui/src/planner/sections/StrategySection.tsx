@@ -3,6 +3,7 @@
 import { lazy, Suspense, useId } from 'react'
 
 import { usePlan } from '../planContextCore'
+import { bracketOptions } from '../bracketOptions'
 import { CheckboxField, MoneyField, NumberField, SelectField } from '../fields'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
@@ -260,11 +261,31 @@ export function StrategySection() {
                 })
               }
             />
-            {rc.target !== 'acaCliff' ? (
+            {rc.target === 'topOfBracket' ? (
+              /* Only a rate with a bracket above it names a ceiling the
+                 conversion can aim at, so the control is the list of those
+                 rates rather than a number box that used to accept 37.5 % and
+                 then convert nothing (#508, decision D6). The window's first
+                 year picks the pack, which is the year the engine validates
+                 against. */
+              <SelectField
+                label="Bracket"
+                help="Convert just enough each year to fill ordinary income to the top of this bracket. The listed rates are the ones with a bracket above them to stop at; the top rate has none, so it cannot be filled to."
+                learn={LEARN.marginalVsEffective}
+                path="strategies.rothConversion.targetValue"
+                value={rc.targetValue === null ? '' : String(rc.targetValue)}
+                placeholder="Choose a bracket"
+                options={bracketOptions(rc.startYear, rc.targetValue)}
+                onCommit={(v) =>
+                  update((d) => {
+                    const m = d.strategies.rothConversion
+                    if (m.mode === 'fillToTarget') m.targetValue = Number(v)
+                  })
+                }
+              />
+            ) : rc.target !== 'acaCliff' ? (
               <NumberField
-                label={rc.target === 'topOfBracket' ? 'Bracket' : rc.target === 'irmaaTier' ? 'Tier index' : 'MAGI ($)'}
-                // The unit rides in the affix like every other percent field (#451).
-                suffix={rc.target === 'topOfBracket' ? '%' : undefined}
+                label={rc.target === 'irmaaTier' ? 'Tier index' : 'MAGI ($)'}
                 path="strategies.rothConversion.targetValue"
                 value={rc.targetValue}
                 allowNull

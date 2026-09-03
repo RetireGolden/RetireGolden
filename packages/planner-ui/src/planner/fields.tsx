@@ -13,6 +13,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } f
 
 import { boundsForPath, checkRange, nativeMax, nativeMin, notKeptNote, type SchemaBounds } from './schemaBounds'
 import { useFieldIssue } from './useFieldIssue'
+import { warningFor } from './warnings'
 
 import { LearnLink, type LearnHook } from '../learn/LearnLink'
 import { capIsoDateYear, editingMoneyText, nextMoneyFieldText } from './fieldInput'
@@ -217,9 +218,17 @@ function FieldShell({
   id,
   error,
   note,
+  warning,
   wide,
   children,
-}: BaseProps & { id: string; error?: string | null; note?: string | null; wide?: boolean; children: ReactNode }) {
+}: BaseProps & {
+  id: string
+  error?: string | null
+  note?: string | null
+  warning?: string | null
+  wide?: boolean
+  children: ReactNode
+}) {
   return (
     <div className={['field', wide ? 'field--wide' : null, error ? 'field--invalid' : null].filter(Boolean).join(' ')}>
       {/* .field--invalid tints the caption; the control itself carries aria-invalid. */}
@@ -246,6 +255,17 @@ function FieldShell({
         // blur wrote it), so it has to announce itself to be heard.
         <p className="field-note" id={`${id}-note`} role="status">
           {note}
+        </p>
+      ) : null}
+      {/* A value the engine accepts that is almost certainly not what was
+          meant (#495 decisions D1, D2, D3, D7 and the past-year half of D4).
+          The plan holds it: nothing is refused, the control never goes
+          aria-invalid, and this is a status rather than an error. It reads in
+          the warn token like a `callout--warn`, one step down from
+          `.field-error`'s danger token. */}
+      {!error && !note && warning ? (
+        <p className="field-warning" id={`${id}-warning`} role="status">
+          {warning}
         </p>
       ) : null}
     </div>
@@ -322,6 +342,9 @@ export function MoneyField({
   const [notKept, setNotKept] = useState<string | null>(null)
   const issue = useFieldIssue(path)
   const error = rangeError ?? issue?.advice ?? null
+  // Read from the value the plan holds, not the text being typed, so the note
+  // is about what was stored rather than a keystroke on the way there.
+  const warning = warningFor(path, value)
   const formatted = value === null
     ? ''
     : fractionDigits === undefined
@@ -357,7 +380,7 @@ export function MoneyField({
     inputRef.current?.select()
   }, [focused, text])
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} note={notKept}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} note={notKept} warning={warning}>
       <div className={placeholder !== undefined ? 'input-affix input-affix--optional' : 'input-affix'}>
         {/* A blank optional field is a non-amount state, so the unit chip steps
             back for as long as the placeholder is showing, focused or not; it
@@ -376,7 +399,10 @@ export function MoneyField({
           placeholder={placeholder}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy(describedById, error ? `${id}-error` : notKept && `${id}-note`)}
+          aria-describedby={describedBy(
+            describedById,
+            error ? `${id}-error` : notKept ? `${id}-note` : warning && `${id}-warning`,
+          )}
           data-path={path}
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.preventDefault()
@@ -449,6 +475,9 @@ export function NumberField({
   const [adjustedNote, setAdjustedNote] = useState<string | null>(null)
   const issue = useFieldIssue(path)
   const error = rangeError ?? issue?.advice ?? null
+  // Read from the value the plan holds, not the text being typed, so the note
+  // is about what was stored rather than a keystroke on the way there.
+  const warning = warningFor(path, value)
   const outOfRange = (n: number): 'low' | 'high' | null => checkRange(n, bounds).side
   // Clearing a required field commits 0 when 0 is a value the engine allows
   // here, which is the documented "off" state for the rate overrides and every
@@ -470,7 +499,11 @@ export function NumberField({
       max={nativeMax(bounds)}
       disabled={disabled}
       aria-invalid={error ? true : undefined}
-      aria-describedby={describedBy(suffixId, describedById, error ? `${id}-error` : adjustedNote && `${id}-note`)}
+      aria-describedby={describedBy(
+        suffixId,
+        describedById,
+        error ? `${id}-error` : adjustedNote ? `${id}-note` : warning && `${id}-warning`,
+      )}
       data-path={path}
       onFocus={() => setFocused(true)}
       onBlur={(e) => {
@@ -531,7 +564,7 @@ export function NumberField({
     />
   )
   return (
-    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} note={adjustedNote}>
+    <FieldShell label={label} hint={hint} help={help} learn={learn} source={source} id={id} error={error} note={adjustedNote} warning={warning}>
       {suffix ? (
         <div className="input-affix">
           {input}

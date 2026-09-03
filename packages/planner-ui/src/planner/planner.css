@@ -769,6 +769,22 @@
   max-width: 70ch;
 }
 
+/* One column rhythm for every form grid (#465, decision D9 on #495).
+
+   The tracks stay FLEXIBLE and keep filling the row. A fixed track shares its
+   width across containers too, but it leaves the row's remainder outside the
+   grid box, and a child spanning `1 / -1` — a nested well, the employer-match
+   panel, a contribution schedule — then stops at the last track instead of the
+   row's edge (caught by app/e2e/accounts-layout.spec.ts).
+
+   What made the same field two different widths was never the track function
+   but the CONTAINER: an item row insets its contents by 1rem plus its border,
+   so a flexible track resolved 215.9px at the top of a card and 204.6px inside
+   a row at 1024 (211.9 vs 200.6 at 768). That inset is cancelled at
+   `.card > .item-row` below, which lines a card's own grid and its rows' grids
+   up on one width, and on one left edge with the card's heading. The pull is
+   scoped to a card's direct children on purpose: a row nested inside another
+   row, and a `.nested-form-section` well, both keep their own box. */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
@@ -829,6 +845,31 @@
   .form-grid > .field-with-action > button {
     margin-top: -0.45rem;
   }
+
+  /* A field showing a message has a THIRD child — the engine's error, the
+     not-kept note, or a plausibility warning — so the two-child selectors above
+     skip it and it used to lay out as an ordinary block spanning both tracks.
+     A spanning block's height is distributed across the tracks it spans, so it
+     inflated the label track for its whole row and then sat at the top of it
+     while its neighbours bottom-aligned: measured 578px against 623px for its
+     two row-mates at 1024, with an inflation warning showing (#495 D1).
+     Subgridding the same two tracks lines all three back up; the message takes
+     an implicit row inside them and stays inside the field's box, so nothing
+     below it moves. Scoped to exactly three children, and never to the
+     hand-built full-row schedule block (`[role='group']`, `.field-span-full`),
+     whose own children are rows rather than a label and a control. */
+  .form-grid > .field:not([role='group']):not(.field-span-full):has(> :nth-child(3)):not(:has(> :nth-child(4))) {
+    display: grid;
+    grid-template-rows: subgrid;
+  }
+
+  .form-grid > .field:not([role='group']):not(.field-span-full):has(> :nth-child(3)):not(:has(> :nth-child(4))) > :first-child {
+    align-self: end;
+  }
+
+  .form-grid > .field:not([role='group']):not(.field-span-full):has(> :nth-child(3)):not(:has(> :nth-child(4))) > :nth-child(2) {
+    margin-top: -0.45rem;
+  }
 }
 
 /* A compound field (input + actions) that keeps the grid rhythm: two
@@ -887,10 +928,13 @@
   font-size: 0.98rem;
 }
 
-.nested-control-grid,
-.nested-phase-grid {
-  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
-}
+/* A nested well used to set its own `auto-fit` track function, a third field
+   width on one page. It now takes the shared track from `.form-grid` (#465,
+   D9). It still insets what it holds by its own padding, so a grid inside one
+   resolves narrower than the card grid — the bounded-group treatment (#521),
+   and deliberate. The two marker classes the wells used to carry held nothing
+   but that override, so they are gone from the markup as well. The phase-row
+   rule below is a separator, not a grid, and stays. */
 
 .nested-phase-row {
   border-bottom: 1px dashed var(--border);
@@ -1020,12 +1064,35 @@
   height: auto;
 }
 
+/* An item row keeps its own chrome — 1px border, page radius, the surface-2
+   fill — and its own padding. */
 .item-row {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
   padding: 0.9rem 1rem;
   margin-bottom: 0.8rem;
+}
+
+/* A CARD-LEVEL row stops insetting what it holds (#465, D9 on #495): its border
+   box is pulled out by exactly the inset it adds back (1rem of padding plus the
+   1px border), so the grid inside it is as wide as the card's own and one
+   flexible track resolves to one width in both. The pull is 17px against the
+   card's 1.25rem (20px) side padding, so the row still clears the card's border
+   by 3px rather than bleeding through it. The gain is not only equal widths:
+   the card's heading, a top-of-form field, and a field inside a row all start
+   on the same left edge.
+
+   The direct-child selector is load-bearing. An item row can sit inside another
+   one — the Strategy eligibility card nests an activity row inside a well
+   inside an IRA row — and an unscoped pull applied to those too, cancelling an
+   inset the inner row never added and landing its border exactly on its
+   container's (measured: a probe row at 285..968 inside a well of 285..968,
+   both borders on one line). Inside any container padded by less than 17px the
+   same pull would break out of it. A nested row keeps its own box; only a row
+   that is a card's own child is flattened. */
+.card > .item-row {
+  margin-inline: calc(-1rem - 1px);
 }
 
 .item-row-head {
@@ -3535,6 +3602,22 @@ html:has(.kpi-bar) {
 .field-note {
   margin: 0.3rem 0 0;
   color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* A value the engine accepts that is almost certainly not what was meant
+   (#495 decisions D1, D2, D3, D7, D4). It is not a fault — the plan holds the
+   value and the control is not aria-invalid — so it wears the warn token in
+   the `callout--warn` treatment (1px border, tinted ground, never a colored
+   side-stripe, DESIGN.md §Callouts) at field scale rather than `.field-error`'s
+   danger token. Both themes define --warn, so light and dark stay in parity. */
+.field-warning {
+  margin: 0.3rem 0 0;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface-1));
+  color: var(--fg);
   font-size: 0.85rem;
 }
 

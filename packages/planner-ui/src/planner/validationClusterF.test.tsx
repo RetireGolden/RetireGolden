@@ -382,9 +382,10 @@ describe('validation cluster F', () => {
     expectInvalid(labelledControl('Annual gross'), 'Must be at least 0')
     expectInvalid(labelledControl('Stop age'), 'Must be at most 80')
     expectInvalid(labelledControl("Annual amount (today's $)"), 'Must be at least 0')
-    // The engine has no start-before-end rule for a recurring stream, so the
-    // inverted years are not an issue it can report (a product range, see the PR).
-    expect(issues.some((i) => i.includes('endYear'))).toBe(false)
-    expect(labelledControl('End year').hasAttribute('aria-invalid')).toBe(false)
+    // Since #495 decision D5 the engine refuses a stream that ends before it
+    // starts, the way it already refused a TIPS ladder that does, and the
+    // message lands on the End year field rather than under the card (#524).
+    expect(issues).toContain('incomes.1.endYear: a recurring income must end in or after the year it starts')
+    expectInvalid(labelledControl('End year'), 'a recurring income must end in or after the year it starts')
   })
 })
