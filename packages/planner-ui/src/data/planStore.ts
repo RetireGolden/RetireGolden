@@ -17,20 +17,54 @@ import {
 import { rebindScenarioPatchesToPlan } from '@retiregolden/engine/scenarios/patch'
 import { duplicateNameDefault } from './planName'
 
-const DB_NAME = 'retiregolden.v2'
+/**
+ * The browser database holding every plan record. Exported so a test can open
+ * the same database the app opens: a test that re-typed the name would keep
+ * passing against a database nothing else uses if this name ever changed.
+ */
+export const PLAN_DB_NAME = 'retiregolden.v2'
+const DB_NAME = PLAN_DB_NAME
 const DB_VERSION = 1
 const PLANS_STORE = 'plans'
 
+/**
+ * The rejection reason every store operation carries when the host exposes no
+ * IndexedDB at all (a server-side render, a browser-free test host, a browser
+ * policy that removes the API). It exists so the failure is a stable, matchable
+ * sentence rather than a bare `ReferenceError` thrown from inside `idb`; the
+ * UI catches these rejections generically and words them for the surface, so
+ * this is the store's contract with its tests and with any future caller that
+ * needs to tell "no storage here" apart from "this record is corrupt".
+ */
+export const PLAN_STORAGE_UNAVAILABLE = 'IndexedDB is not available in this host.'
+
 let dbPromise: Promise<IDBPDatabase> | null = null
 
+/**
+ * The single connection to the plans database, opened once per tab.
+ *
+ * A REJECTED open is deliberately not retained. `dbPromise ??= openDB(...)`
+ * on its own memoises the rejection, so one transient failure (a private
+ * window's storage policy, an upgrade blocked by another tab) would keep
+ * every later read and write failing for the lifetime of the tab, with a
+ * reload the only recovery. Dropping the memo lets the next call try again.
+ * `import/refreshHistory.ts` holds the same two rules for its own database.
+ */
 function db(): Promise<IDBPDatabase> {
-  dbPromise ??= openDB(DB_NAME, DB_VERSION, {
-    upgrade(database) {
-      if (!database.objectStoreNames.contains(PLANS_STORE)) {
-        database.createObjectStore(PLANS_STORE, { keyPath: 'id' })
-      }
-    },
-  })
+  if (typeof indexedDB === 'undefined') return Promise.reject(new Error(PLAN_STORAGE_UNAVAILABLE))
+  if (dbPromise === null) {
+    const opening: Promise<IDBPDatabase> = openDB(DB_NAME, DB_VERSION, {
+      upgrade(database) {
+        if (!database.objectStoreNames.contains(PLANS_STORE)) {
+          database.createObjectStore(PLANS_STORE, { keyPath: 'id' })
+        }
+      },
+    }).catch((reason: unknown) => {
+      if (dbPromise === opening) dbPromise = null
+      throw reason
+    })
+    dbPromise = opening
+  }
   return dbPromise
 }
 

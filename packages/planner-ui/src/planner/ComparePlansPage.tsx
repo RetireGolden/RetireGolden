@@ -85,12 +85,24 @@ export function ComparePlansPage() {
   const [right, setRight] = useState<ComparedPlan | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
+  // A rejected list must not leave the skeleton up forever, and an empty list
+  // must not be mistaken for "you only have one plan": one is a browser that
+  // refused, the other is a library the user can act on.
+  const [listUnavailable, setListUnavailable] = useState(false)
+
   useEffect(() => {
-    void listPlansVia(store).then((items) => {
-      setSummaries(items)
-      setLeftId(items[0]?.id ?? '')
-      setRightId(items.find((p) => p.id !== items[0]?.id)?.id ?? '')
-    })
+    void listPlansVia(store).then(
+      (items) => {
+        setSummaries(items)
+        setListUnavailable(false)
+        setLeftId(items[0]?.id ?? '')
+        setRightId(items.find((p) => p.id !== items[0]?.id)?.id ?? '')
+      },
+      () => {
+        setSummaries([])
+        setListUnavailable(true)
+      },
+    )
   }, [store])
 
   useEffect(() => {
@@ -100,7 +112,17 @@ export function ComparePlansPage() {
         setter(null)
         return
       }
-      const r = await loadPlanVia(store, id)
+      // A rejected read leaves the selection with nothing behind it; say so
+      // rather than leaving the comparison silently one-sided.
+      let r
+      try {
+        r = await loadPlanVia(store, id)
+      } catch {
+        if (cancelled) return
+        setter(null)
+        setNotice('One of those plans could not be read. Storage is unavailable in this browser right now.')
+        return
+      }
       if (cancelled) return
       if (r.ok) setter({ plan: r.plan, view: projectPlan(r.plan) })
       else {
@@ -193,6 +215,14 @@ export function ComparePlansPage() {
       {notice ? <div className="callout callout--warn">{notice}</div> : null}
       {summaries === null ? (
         <div className="skeleton" style={{ height: '8rem' }} aria-label="Loading plans" />
+      ) : listUnavailable ? (
+        <div className="empty-state">
+          <h2>Your plans could not be read</h2>
+          <p>
+            Storage is unavailable in this browser right now, so there is nothing to compare yet. Reloading the page
+            tries again.
+          </p>
+        </div>
       ) : summaries.length < 2 ? (
         <div className="empty-state">
           <h2>Two plans are needed</h2>

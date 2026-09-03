@@ -1043,7 +1043,17 @@ async function getHighs(locateFile?: (f: string) => string): Promise<HighsModule
     const loader = (await import('highs')).default as unknown as (options?: {
       locateFile?: (file: string) => string
     }) => Promise<HighsModule>
-    highsPromise = loader(locateFile ? { locateFile } : undefined)
+    // A REJECTED load must not stay in the memo. Storing the pending promise
+    // and never clearing it turns one transient wasm load failure into a
+    // permanently dead optimizer for the rest of the worker's life, with a
+    // page reload the only recovery; clearing lets the next call try again.
+    const loading: Promise<HighsModule> = loader(locateFile ? { locateFile } : undefined).catch(
+      (reason: unknown) => {
+        if (highsPromise === loading) highsPromise = null
+        throw reason
+      },
+    )
+    highsPromise = loading
   }
   return highsPromise
 }

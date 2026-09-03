@@ -49,15 +49,31 @@ const UNRECOGNIZED_MESSAGE =
   'This file does not look like a Schwab, Fidelity, or Vanguard positions export. ' +
   'Download the positions/holdings CSV from your broker, or use the spreadsheet import to map columns yourself.'
 
-/** Rows that are file furniture, not positions — silently structural, never balances. */
-function isFooterOrNoise(cells: string[]): boolean {
+/** Boilerplate the brokers append below the positions — never a balance. */
+function isFooterText(cells: string[]): boolean {
   const first = (cells[0] ?? '').trim().toLowerCase()
-  if (first === '') return true
   if (first.startsWith('the data and information')) return true // Fidelity disclaimer
   if (first.startsWith('date downloaded')) return true
   if (first.startsWith('brokerage services')) return true
   if (first.startsWith('"disclaimer') || first.startsWith('disclaimer')) return true
   return false
+}
+
+/** A row with nothing in it at all: a section separator, never data. */
+function isEmptyRow(cells: string[]): boolean {
+  return cells.every((cell) => (cell ?? '').trim() === '')
+}
+
+/**
+ * Rows that are file furniture, not positions — silently structural, never
+ * balances. Schwab's sectioned layout leads with the symbol, so a blank first
+ * cell there is separator furniture. `parseAccountColumnFile` must NOT use
+ * this rule: Fidelity and Vanguard put Account Number first, where a blank
+ * first cell is a row missing its account, which gets disclosed instead.
+ */
+function isFooterOrNoise(cells: string[]): boolean {
+  if ((cells[0] ?? '').trim() === '') return true
+  return isFooterText(cells)
 }
 
 /** Return an ISO calendar date only for the explicit US broker date shapes we recognize. */
@@ -269,15 +285,37 @@ function parseAccountColumnFile(
   const byAccount = new Map<string, Aggregate>()
   const valueLabel = (rows[headerIndex]?.[cols.value] ?? '').trim().toLowerCase()
   const basisLabel = cols.basis === -1 ? '' : (rows[headerIndex]?.[cols.basis] ?? '').trim().toLowerCase()
+  const accountLabel = (rows[headerIndex]?.[cols.account] ?? '').trim().toLowerCase()
 
   for (let r = headerIndex + 1; r < rows.length; r++) {
     const cells = rows[r]!
-    if (isFooterOrNoise(cells)) continue
+    // Deliberately NOT `isFooterOrNoise`: these layouts put Account Number in
+    // column 0, so its blank-first-cell rule would swallow exactly the rows
+    // the disclosure below exists to report, and it would do so on the real
+    // Fidelity and Vanguard shapes rather than only on odd ones.
+    if (isEmptyRow(cells) || isFooterText(cells)) continue
     // Vanguard appends a transactions section with its own header; stop there.
     if (broker === 'vanguard' && findColumn(cells, 'trade date') !== -1) break
 
     const accountRaw = (cells[cols.account] ?? '').trim()
-    if (accountRaw === '') continue
+    if (accountRaw === '') {
+      // A blank account cell has nothing to add the row's value to, and a
+      // silent `continue` here understated the imported balance whenever an
+      // export used blank cells for continuation rows. Every other skip in
+      // this parser is disclosed; this one is too.
+      const orphaned = parseMoney(cells[cols.value])
+      review.push({
+        status: 'skipped',
+        source: `Row ${String(lines[r]!)}`,
+        detail:
+          orphaned !== null
+            ? `$${orphaned.toLocaleString('en-US')} was not counted. The row has no account number, so there is no account to add it to.`
+            : 'Row had no account number, so it was not counted.',
+        locator: csvRow(lines[r]!, accountLabel || undefined),
+        confidence: 'unmapped',
+      })
+      continue
+    }
     const name = cols.accountName === -1 ? '' : (cells[cols.accountName] ?? '').trim()
     const label = name !== '' ? `${name} (${accountRaw})` : accountRaw
     const key = accountRaw

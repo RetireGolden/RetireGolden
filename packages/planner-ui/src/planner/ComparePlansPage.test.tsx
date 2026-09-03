@@ -87,6 +87,48 @@ describe('ComparePlansPage chrome (#384)', () => {
     expect(container.querySelector('select')).toBeNull()
   })
 
+  it('says the list could not be read rather than holding the skeleton', async () => {
+    const refusing: PlanStore = {
+      ...makeStore([]),
+      listPlans: () => Promise.reject(new Error('storage refused')),
+    }
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanStoreProvider store={refusing}>
+            <ComparePlansPage />
+          </PlanStoreProvider>
+        </MemoryRouter>,
+      )
+    })
+    await settle()
+
+    // Not a skeleton that never resolves, and not "Two plans are needed",
+    // which would blame a library nobody managed to read.
+    expect(container.querySelector('[aria-label="Loading plans"]')).toBeNull()
+    expect(container.querySelector('h2')?.textContent).toBe('Your plans could not be read')
+  })
+
+  it('says so when one of the selected plans cannot be read', async () => {
+    const [a, b] = twoPlans()
+    const refusing: PlanStore = {
+      ...makeStore([a, b]),
+      loadPlan: () => Promise.reject(new Error('storage refused')),
+    }
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanStoreProvider store={refusing}>
+            <ComparePlansPage />
+          </PlanStoreProvider>
+        </MemoryRouter>,
+      )
+    })
+    await waitFor(() => container.querySelector('.callout--warn') !== null, { what: 'the load-failure callout' })
+
+    expect(container.querySelector('.callout--warn')?.textContent).toContain('could not be read')
+  })
+
   it('associates Plan A / Plan B labels via for/id and skins the selects as fields', async () => {
     await mount(twoPlans())
     await waitFor(() => container.querySelectorAll('select').length === 2, { what: 'Plan A and Plan B selects' })

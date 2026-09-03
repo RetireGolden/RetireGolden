@@ -5,6 +5,8 @@ import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
 
 type DataAndPrivacyCardProps = {
   plans: PlanSummary[] | null
+  /** The last list read failed, so an empty `plans` does not mean an empty library. */
+  listUnavailable?: boolean
   fileInput: RefObject<HTMLInputElement | null>
   onExportAll: () => void
   onImportFile: (file: File) => void
@@ -13,6 +15,7 @@ type DataAndPrivacyCardProps = {
 
 export function DataAndPrivacyCard({
   plans,
+  listUnavailable = false,
   fileInput,
   onExportAll,
   onImportFile,
@@ -20,8 +23,12 @@ export function DataAndPrivacyCard({
 }: DataAndPrivacyCardProps) {
   const readOnly = useWorkspaceReadOnly()
   const listReady = plans !== null
-  const canExport = listReady && plans.length > 0
-  const emptyLibrary = listReady && plans.length === 0
+  // A failed list must not disable the backup and claim there is nothing to
+  // export: that is the moment the user most wants a copy, and the export
+  // re-reads the store, so pressing it is a real retry that reports its own
+  // outcome either way.
+  const canExport = listReady && (plans.length > 0 || listUnavailable)
+  const emptyLibrary = listReady && !listUnavailable && plans.length === 0
   return (
     <div className="card home-privacy-card">
       <h2>Your data stays on your device, not on our servers</h2>

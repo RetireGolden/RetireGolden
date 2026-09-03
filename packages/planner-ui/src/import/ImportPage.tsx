@@ -179,7 +179,8 @@ function EnabledImportPage() {
     setSource(null)
   }
 
-  const handleFile = async (file: File) => {
+  /** Read the chosen file and build a draft. Rejections are routed by `handleFile`. */
+  const draftFromFile = async (file: File) => {
     const epoch = importEpoch.current
     setError(null)
     // The mappers cap CHARACTERS; File.size is BYTES. UTF-8 decodes to at
@@ -193,6 +194,10 @@ function EnabledImportPage() {
         : 'File is too large to be a positions/plan export.'
     if (file.size > charCap * 3) return setError(tooLarge)
     const raw = await file.arrayBuffer()
+    // First point where the wizard could have moved on under us. Every state
+    // write after an await is epoch-checked, including the too-large refusal
+    // below: a reset wizard has no callout for it to land in.
+    if (epoch !== importEpoch.current) return
     const text = new TextDecoder().decode(raw)
     if (text.length > charCap) return setError(tooLarge)
     // Identify the source at the async edge: hash the raw bytes once, here, so
@@ -257,6 +262,26 @@ function EnabledImportPage() {
     }
   }
 
+  /**
+   * The file picker's entry point. `file.arrayBuffer()` rejects on ordinary
+   * conditions (the file moved, or its permission was revoked, between the
+   * picker returning and the read), and the call site is `void handleFile(f)`,
+   * so an uncaught rejection leaves the wizard looking inert with nothing said.
+   * `PlanContext.tsx` routes the same class of rejection for autosave.
+   */
+  const handleFile = async (file: File) => {
+    const epoch = importEpoch.current
+    try {
+      await draftFromFile(file)
+    } catch {
+      // A moved epoch means the user already reset or switched sources, so
+      // this failure has no callout left to land in.
+      if (epoch === importEpoch.current) {
+        setError('That file could not be read. It may have moved or changed since you chose it.')
+      }
+    }
+  }
+
   // Roles the user (or the header-row guess) put on two columns at once. The
   // mapping step warns on these and Continue waits for them.
   const duplicateRoles = duplicateColumnRoles(roles)
@@ -287,7 +312,26 @@ function EnabledImportPage() {
 
   const saveAndOpen = async () => {
     if (!draft) return
-    const r = await savePlanVia(store, draft.plan)
+    // "Start over" and "Choose a different source" stay clickable while the
+    // write is in flight. A user who took one of them has abandoned this
+    // draft, so neither its error nor its navigation may arrive afterwards
+    // and hijack the wizard they are now looking at.
+    const epoch = importEpoch.current
+    let r
+    try {
+      r = await savePlanVia(store, draft.plan)
+    } catch {
+      // Quota or a private window can reject the write. The draft exists only
+      // on this screen, so a dead button here is one navigation from losing
+      // it: say what happened and leave the draft where it is.
+      if (epoch === importEpoch.current) {
+        setError(
+          'The draft plan could not be saved. Storage is unavailable in this browser right now, so this draft is still only on this screen.',
+        )
+      }
+      return
+    }
+    if (epoch !== importEpoch.current) return
     if (r.ok) navigate(`/plan/${r.plan.id}`)
     else setError(`Could not save the draft plan: ${r.issues.join('; ')}`)
   }
@@ -392,13 +436,26 @@ function EnabledImportPage() {
                 <button type="button" className="btn btn-primary" onClick={() => void saveAndOpen()}>
                   Save draft &amp; open in the planner
                 </button>
-                <button type="button" className="btn btn-secondary" onClick={downloadReport}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={downloadReport}
+                  aria-describedby="import-report-contents"
+                >
                   Download import report
                 </button>
                 <button type="button" className="btn btn-secondary" onClick={reset}>
                   Start over
                 </button>
               </div>
+              {/* The report carries every review item's source and detail
+                  (provenance.ts). What that holds depends on the source: the
+                  broker path puts account labels and dollar figures in it, the
+                  1040 path the lines that were entered. Name the shape once,
+                  here, rather than claiming broker specifics on every source. */}
+              <p id="import-report-contents" className="field-hint">
+                The report file lists what mapped and what was skipped, with the values behind each item.
+              </p>
             </>
           ) : source === 'tenforty' ? (
             <>
