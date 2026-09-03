@@ -1062,21 +1062,34 @@
   height: auto;
 }
 
-/* An item row's own chrome is unchanged — 1px border, page radius, the
-   surface-2 fill — but it no longer insets what it holds (#465, D9 on #495).
-   Its border box is pulled out by exactly the inset it adds back (1rem of
-   padding plus the 1px border), so the grid inside it is as wide as the card's
-   own, and one flexible track resolves to one width in both. The pull is 17px
-   against the card's 1.25rem (20px) side padding, so the row still clears the
-   card's border by 3px rather than bleeding through it. The gain is not only
-   equal widths: the card's heading, a top-of-form field, and a field inside a
-   row now all start on the same left edge. */
+/* An item row keeps its own chrome — 1px border, page radius, the surface-2
+   fill — and its own padding. */
 .item-row {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
   padding: 0.9rem 1rem;
   margin-bottom: 0.8rem;
+}
+
+/* A CARD-LEVEL row stops insetting what it holds (#465, D9 on #495): its border
+   box is pulled out by exactly the inset it adds back (1rem of padding plus the
+   1px border), so the grid inside it is as wide as the card's own and one
+   flexible track resolves to one width in both. The pull is 17px against the
+   card's 1.25rem (20px) side padding, so the row still clears the card's border
+   by 3px rather than bleeding through it. The gain is not only equal widths:
+   the card's heading, a top-of-form field, and a field inside a row all start
+   on the same left edge.
+
+   The direct-child selector is load-bearing. An item row can sit inside another
+   one — the Strategy eligibility card nests an activity row inside a well
+   inside an IRA row — and an unscoped pull applied to those too, cancelling an
+   inset the inner row never added and landing its border exactly on its
+   container's (measured: a probe row at 285..968 inside a well of 285..968,
+   both borders on one line). Inside any container padded by less than 17px the
+   same pull would break out of it. A nested row keeps its own box; only a row
+   that is a card's own child is flattened. */
+.card > .item-row {
   margin-inline: calc(-1rem - 1px);
 }
 

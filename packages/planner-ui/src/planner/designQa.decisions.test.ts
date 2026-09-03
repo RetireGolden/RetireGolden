@@ -52,15 +52,47 @@ describe('D9 (#465): one column rhythm for every form grid', () => {
     expect(css).not.toMatch(/repeat\(auto-fill, var\(--form-col\)\)/)
   })
 
-  it('an item row adds no inset, so its grid is as wide as the card’s own', () => {
+  it('a card-level item row adds no inset, so its grid is as wide as the card’s own', () => {
     // The pull is exactly what the row adds back: 1rem of padding + 1px border.
     const body = rule('.item-row')
     expect(body).toMatch(/padding:\s*0\.9rem 1rem/)
     expect(body).toMatch(/border:\s*1px solid var\(--border\)/)
-    expect(body).toMatch(/margin-inline:\s*calc\(-1rem - 1px\)/)
+    // …and it belongs to the card-level row ONLY, never to `.item-row` at large.
+    expect(body).not.toMatch(/margin-inline/)
+    expect(rule('.card > .item-row')).toMatch(/margin-inline:\s*calc\(-1rem - 1px\)/)
   })
 
-  it('a nested well no longer sets a column width of its own', () => {
+  // Review r4-1. An item row can sit inside another one, and an unscoped pull
+  // applied to those too — cancelling an inset the inner row never added, and
+  // landing its border exactly on its container's. Measured in Chromium on
+  // /plan/:id/accounts at 1024 by probing a row into a well inside an account
+  // row: unscoped it came back 285..968 against a well of 285..968 (both
+  // borders on one line); scoped to `.card >` it comes back 302..951 inside
+  // that same well — its own inset kept, nothing past the well or the card.
+  // Sweeping every card on Household, Income, Assumptions and Accounts, the
+  // worst overhang past a card edge is 0px.
+  it('a nested item row keeps its own box: the pull cannot double-apply', () => {
+    // A descendant combinator here would reach a row inside a row; the child
+    // combinator is what makes the rule un-nestable.
+    expect(css).toMatch(/\n\.card > \.item-row \{/)
+    expect(css).not.toMatch(/\n\.item-row \{[^}]*margin-inline/)
+    expect(css).not.toMatch(/\n\.card \.item-row \{/)
+    // The nested case is real, not hypothetical: the Strategy eligibility card
+    // puts an activity row inside a well inside an IRA row.
+    const editor = sheet('./sections/RetirementActionEligibilityFactsEditor.tsx')
+    const outerRow = editor.indexOf('<div className="item-row" data-eligibility-ira=')
+    const well = editor.indexOf('<div className="nested-form-section field-span-full">')
+    const innerRow = editor.indexOf('<div className="item-row" data-eligibility-activity=')
+    expect(outerRow).toBeGreaterThanOrEqual(0)
+    expect(well).toBeGreaterThan(outerRow)
+    expect(innerRow).toBeGreaterThan(well)
+  })
+
+  // A well is still a bounded container and still insets what it holds by its
+  // own padding (#521), so a grid inside one resolves narrower than the card's
+  // — 649px against 683px at 1024 on Accounts. What it no longer does is set a
+  // different track FUNCTION, which is what made a form read as three grids.
+  it('a nested well no longer overrides the shared track function', () => {
     expect(css).not.toMatch(/repeat\(auto-fit, minmax\(11\.5rem, 1fr\)\)/)
     // The two marker classes carried nothing but that override, so they are
     // gone from the markup rather than left dangling with no rule behind them.

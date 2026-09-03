@@ -309,10 +309,13 @@ transitions, restrained hover states that shift a border or tint a background by
 ### Forms and figures
 - **One column rhythm** (`.form-grid`): tracks are `repeat(auto-fill, minmax(11.5rem, 1fr))` and
   keep filling the row, so a child spanning `1 / -1` reaches both edges. Equal field widths come
-  from equal CONTAINERS, not from fixing the track: `.item-row` cancels its own inset with
+  from equal CONTAINERS, not from fixing the track: `.card > .item-row` cancels its own inset with
   `margin-inline: calc(-1rem - 1px)`, so a card's heading, a top-of-form field, and a field inside
-  a row all start on one left edge and resolve one track width. Never fix the track to line the
-  grids up — the row's remainder then falls outside the grid box and full-row panels stop short.
+  a row all start on one left edge and resolve one track width. Two rules about that pull: never
+  fix the track instead — the row's remainder then falls outside the grid box and full-row panels
+  stop short; and keep it on the **child** combinator — an item row can nest inside another, and a
+  descendant selector would cancel an inset the inner row never added. A nested row keeps its box,
+  as does a `.nested-form-section` well, which is a deliberately bounded group.
 - **Compound field with actions** (`.field-with-action`): input plus its buttons in one cell.
   Add `.field-with-action--wide` to span two grid columns beside sibling fields; use
   `.field-span-full` only when the row really belongs to it.
