@@ -488,10 +488,12 @@ export const individualIncomeTaxRecords = {
     verifiedOn: '2026-08-29',
     implementedBy: [
       'packages/engine/src/params/index.ts',
+      'packages/engine/src/params/indexingScale.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#indexFederalTaxPack',
+      'packages/engine/src/params/indexingScale.ts#indexingScaleFor',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

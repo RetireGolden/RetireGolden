@@ -48,7 +48,8 @@ import {
   resolveAssetClassParams,
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
-import { packForYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
+import { packForYear, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
+import { indexingScaleFor } from '../params/indexingScale.js'
 import type { AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import {
   collidingEncodedCashFlowSegments,
@@ -738,9 +739,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   /** Same for healthcare (general inflation + the healthcare premium). */
   const healthInflFactorFrom = (fromYear: number, toYear: number) =>
     factorFrom(cumHealthInfl, inflation + healthExtra, fromYear, toYear)
-  /** Statutory limits are indexed; project them past the latest pack at the inflation path. */
+  /**
+   * Statutory limits are indexed; project them past the latest pack at the
+   * inflation path. The rule lives in `params/indexingScale.ts`, shared with the
+   * optimizer's LP and the widow's-penalty detector; the ledger's contribution
+   * is the path, which follows a Monte Carlo `market.inflationPct` series where
+   * one is supplied. A year the pack prices exactly needs no projection at all.
+   */
   const limitScale = (pack: ParameterPack, isStandIn: boolean, year: number): number =>
-    !isStandIn || year <= LATEST_PACK_YEAR ? 1 : inflFactorFrom(pack.year, year)
+    !isStandIn ? 1 : indexingScaleFor(pack.year, year, inflFactorFrom)
 
   // --- mutable engine state ---------------------------------------------
   const balances: BalanceState[] = []
