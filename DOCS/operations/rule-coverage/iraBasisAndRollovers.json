@@ -45,7 +45,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 239
+              "line": 236
             }
           ]
         }
@@ -96,7 +96,7 @@
           "functions": [
             {
               "name": "stageOwnedNonRothIraOrdinaryWithdrawalMovements",
-              "line": 401
+              "line": 398
             }
           ]
         }
@@ -408,7 +408,7 @@
           "functions": [
             {
               "name": "isAggregatedIra",
-              "line": 1392
+              "line": 1389
             }
           ]
         }
@@ -532,7 +532,7 @@
           "functions": [
             {
               "name": "stageOwnedNonRothIraOrdinaryWithdrawalMovements",
-              "line": 401
+              "line": 398
             }
           ]
         }
@@ -840,7 +840,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 239
+              "line": 236
             }
           ]
         },
@@ -960,7 +960,7 @@
           "functions": [
             {
               "name": "allocateAnnualIraBasis",
-              "line": 455
+              "line": 452
             }
           ]
         },
@@ -978,7 +978,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 239
+              "line": 236
             }
           ]
         }
@@ -1087,7 +1087,7 @@
           "functions": [
             {
               "name": "adaptFillTargetRothConversionGeneratorCandidate",
-              "line": 386
+              "line": 382
             }
           ]
         },
@@ -1249,11 +1249,11 @@
           "functions": [
             {
               "name": "evaluateConversion",
-              "line": 650
+              "line": 647
             },
             {
               "name": "isConvertibleToRoth",
-              "line": 1360
+              "line": 1357
             }
           ]
         }
@@ -1355,7 +1355,7 @@
           "functions": [
             {
               "name": "evaluateConversion",
-              "line": 650
+              "line": 647
             }
           ]
         }

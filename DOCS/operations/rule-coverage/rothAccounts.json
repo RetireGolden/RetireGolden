@@ -49,7 +49,7 @@
           "functions": [
             {
               "name": "evaluateConversion",
-              "line": 650
+              "line": 647
             }
           ]
         }
@@ -474,7 +474,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 239
+              "line": 236
             }
           ]
         },
@@ -589,7 +589,7 @@
           "functions": [
             {
               "name": "evaluateRetirementActionEligibility",
-              "line": 1140
+              "line": 1137
             }
           ]
         }

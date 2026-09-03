@@ -62,6 +62,7 @@ import {
 } from '../actions/reasons.js'
 import type { Account, Person, Plan } from '../model/plan.js'
 import { deriveRbdComparison } from '../rmd/applicableAge.js'
+import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 
 export type TraditionalAccount = Extract<Account, { type: 'traditional' }>
 export type EquityCompAccount = Extract<Account, { type: 'equityComp' }>
@@ -392,10 +393,6 @@ function reasonKey(reason: ActionReason): string {
     reason.accountId ?? null,
     reason.allocationId ?? null,
   ])
-}
-
-function compareUtf16CodeUnits(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
 }
 
 function sortedAllocations(

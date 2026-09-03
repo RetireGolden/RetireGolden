@@ -47,6 +47,7 @@ import {
   signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'
 import { deepFreeze } from './freeze.js'
+import { compareUtf16CodeUnits } from './structuralId.js'
 
 export interface AccountOpeningBalanceSnapshot {
   accountId: AccountId
@@ -660,10 +661,6 @@ interface ScheduledRequest {
   chronologyKey: string
   scheduleGroupKey: string
   scheduleInvalid: boolean
-}
-
-function compareUtf16CodeUnits(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
 }
 
 function centsFromBigInt(value: bigint): UsdCents {

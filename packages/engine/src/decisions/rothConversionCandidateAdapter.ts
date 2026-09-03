@@ -6,7 +6,7 @@ import {
   type RetirementActionCandidateIdentityIssue,
   type RothConversionCandidateIdentityIntent,
 } from '../actions/retirementActionCandidateIdentityAllocator.js'
-import { deriveActionStructuralId } from '../actions/structuralId.js'
+import { compareUtf16CodeUnits, deriveActionStructuralId } from '../actions/structuralId.js'
 import type { Plan } from '../model/plan.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import {
@@ -333,18 +333,14 @@ function validateDatedIntent(
   }
 }
 
-function compareUtf16(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
-}
-
 function compareAllocatedRequests(
   left: { request: RothConversionRequest },
   right: { request: RothConversionRequest },
 ): number {
   return left.request.year - right.request.year ||
-    compareUtf16(left.request.executionDate!, right.request.executionDate!) ||
+    compareUtf16CodeUnits(left.request.executionDate!, right.request.executionDate!) ||
     left.request.executionSequence - right.request.executionSequence ||
-    compareUtf16(left.request.actionId, right.request.actionId)
+    compareUtf16CodeUnits(left.request.actionId, right.request.actionId)
 }
 
 function adaptedCandidateId(
@@ -353,7 +349,7 @@ function adaptedCandidateId(
 ): string {
   const requests = allocations
     .map((allocation) => allocation.request)
-    .sort((left, right) => compareUtf16(left.actionId, right.actionId))
+    .sort((left, right) => compareUtf16CodeUnits(left.actionId, right.actionId))
   return deriveActionStructuralId('retirement-action-fill-target-candidate', [
     exploratoryCandidateId,
     requests,

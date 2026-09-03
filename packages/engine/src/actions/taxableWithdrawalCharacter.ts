@@ -19,6 +19,7 @@ import {
 import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import { deepFreeze } from './freeze.js'
+import { compareUtf16CodeUnits } from './structuralId.js'
 
 export type TaxableWithdrawalFederalFilingStatus =
   | 'single'
@@ -174,10 +175,6 @@ function nonblankId(value: unknown, label: string): string {
     throw new TypeError(`${label} must be a nonblank stable identifier`)
   }
   return value
-}
-
-function compareUtf16CodeUnits(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
 }
 
 function centsFromBigInt(value: bigint): UsdCents {

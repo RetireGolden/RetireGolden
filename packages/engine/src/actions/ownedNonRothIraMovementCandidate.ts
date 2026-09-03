@@ -25,6 +25,7 @@ import {
   type ActionReason,
 } from './reasons.js'
 import { deepFreeze } from './freeze.js'
+import { compareUtf16CodeUnits } from './structuralId.js'
 
 export interface OwnedNonRothIraMovementSourceEvidence {
   predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource'
@@ -175,10 +176,6 @@ interface ScheduledRequest {
   request: OrdinaryWithdrawalRequest
   executionDate: string | null
   chronologyKey: string
-}
-
-function compareUtf16CodeUnits(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
 }
 
 function stableId(prefix: string, parts: readonly unknown[]): string {

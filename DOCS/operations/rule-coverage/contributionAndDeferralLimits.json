@@ -779,7 +779,7 @@
           "functions": [
             {
               "name": "isConvertibleToRoth",
-              "line": 1360
+              "line": 1357
             }
           ]
         }
@@ -876,7 +876,7 @@
           "functions": [
             {
               "name": "evaluateConversion",
-              "line": 650
+              "line": 647
             }
           ]
         }
@@ -2676,7 +2676,7 @@
           "functions": [
             {
               "name": "executeOrdinaryWithdrawals",
-              "line": 2135
+              "line": 2132
             }
           ]
         },
