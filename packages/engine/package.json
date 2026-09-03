@@ -340,17 +340,17 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "highs": "^1.14.2",
+    "highs": "^1.15.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^4.1.6",
+    "@vitest/coverage-v8": "^4.1.11",
     "ajv": "^8.20.0",
-    "eslint": "^10.3.0",
+    "eslint": "^10.9.1",
     "globals": "^17.6.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.59.2",
-    "vitest": "^4.0.16"
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
   }
 }
