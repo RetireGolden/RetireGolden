@@ -78,7 +78,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/jsdom": "^28.0.3",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.5",
@@ -89,7 +89,7 @@
     "eslint-plugin-react-refresh": "^0.5.5",
     "fake-indexeddb": "^6.2.5",
     "globals": "^17.6.0",
-    "jsdom": "^29.1.1",
+    "jsdom": "^30.0.1",
     "pdfjs-dist": "^6.2.108",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
