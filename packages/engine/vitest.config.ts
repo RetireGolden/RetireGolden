@@ -25,10 +25,20 @@ export default defineConfig({
           lines: 90,
         },
         // `insights/` is deliberately absent: the detector suites live in the
-        // app workspace (app/src/integration/) because they exercise the
-        // detectors through app harnesses (useProjection, the learning
-        // registry, the spending solver), so package-local coverage there is
-        // not meaningful.
+        // planner-ui workspace (src/integration/insightsDetectors.test.ts,
+        // guaranteedIncomeDetectors.test.ts, incomeCoverage.test.ts) because
+        // they exercise the detectors through consumer harnesses
+        // (useProjection, the learning registry, the spending solver), so
+        // package-local coverage here is not meaningful. The cost is real: a
+        // published @retiregolden/engine cannot be validated standalone for
+        // detectors, and closing that needs engine-local fixtures over plain
+        // projection outputs before any threshold is worth setting.
+        //
+        // `rules/` and `schema/` are absent for a different reason: neither is
+        // guarded by how many of its lines a test happens to run. The registry
+        // and its attestations are data, pinned exactly by the conformance and
+        // freshness suites against committed artifacts, and the JSON schemas
+        // are generated and pinned by equality against the shipped plan.v*.json.
         'src/{actions,allocation,decisions,ladder,model,montecarlo,params,projection,rmd,scenarios,spending,strategies,tax}/**': {
           statements: 90,
           branches: 75,

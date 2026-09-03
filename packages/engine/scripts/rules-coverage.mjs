@@ -1,13 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
-import { makeSymbolLineFor } from './rule-tooling-shared.mjs'
+import { fileURLToPath } from 'node:url'
+import { loadModule, makeSymbolLineFor } from './rule-tooling-shared.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..')
 const repositoryDir = resolve(engineDir, '..', '..')
 const sourceDir = join(engineDir, 'src')
-const rulesDir = join(sourceDir, 'rules')
 
 const TEST_SOURCE = /\.test\.(ts|mts|cts|tsx)$/
 
@@ -24,11 +23,6 @@ export function testSourcesInGlobShape(directory = sourceDir) {
     }
   }
   return sources
-}
-
-async function loadModule(name) {
-  const path = join(rulesDir, name)
-  return import(pathToFileURL(path).href)
 }
 
 /**
