@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { csvEscape, inheritedCsvColumnHeaders } from './inheritedCsv'
+import { csvCell } from '../csvCell'
+import { inheritedCsvColumnHeaders } from './inheritedCsv'
 
 describe('ResultsPage inherited CSV escaping', () => {
   it('quotes hostile account ids in inherited column headers', () => {
@@ -11,6 +12,6 @@ describe('ResultsPage inherited CSV escaping', () => {
   })
 
   it('doubles embedded quotes in escaped cells', () => {
-    expect(csvEscape('say "hello", world')).toBe('"say ""hello"", world"')
+    expect(csvCell('say "hello", world')).toBe('"say ""hello"", world"')
   })
 })
