@@ -230,16 +230,32 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules, re
     for (const path of manifest.implementedBy) lines.push('- ' + path)
     lines.push('')
     lines.push('**Fixture files:**')
-    if (manifest.fixtureFiles.length === 0) {
-      if (rule.classification === 'outOfScope') {
+    if (rule.classification === 'outOfScope') {
+      // outOfScope has two shapes (see TaxRuleOutOfScope) and only one of
+      // them has anything to fixture. describeRule refuses every outOfScope
+      // id outright, so manifest.fixtureFiles is always empty here — the
+      // real answer lives in outOfScope.shape and, for typedRefusal,
+      // refusalFixtureFiles (the describeRefusal scan, tracked separately
+      // from the describeRule scan above).
+      if (rule.outOfScope.shape === 'inexpressibleInput') {
         lines.push(
-          '- No discriminating fixtures: this rule is outOfScope and is enforced as a typed refusal — confirm the refusal behavior and its tests instead of a describeRule fixture.',
+          '- No fixture: this rule is outOfScope with shape `inexpressibleInput` — no accepted input reaches it, so there is nothing for describeRule or describeRefusal to drive. Its obligation is `missingInputFacts`; confirm each fact below is still absent from `model/plan.ts` / `params/types.ts`:',
+        )
+        for (const fact of rule.outOfScope.missingInputFacts) lines.push('  - ' + fact)
+      } else if (manifest.refusalFixtureFiles.length === 0) {
+        lines.push(
+          '- No `describeRefusal` fixture yet: this rule is outOfScope with shape `typedRefusal` and is in `REFUSAL_FIXTURE_BACKLOG`. Write one driving the refusal site named in `implementedByFunctions`, or confirm the backlog `// why:` note is still accurate.',
         )
       } else {
         lines.push(
-          '- WARNING: conformance anomaly — `' + id + '` is not outOfScope but has empty fixtureFiles; investigate before proceeding.',
+          '- Covered by `describeRefusal`, not `describeRule` (outOfScope, shape `typedRefusal`) — confirm the refusal behavior still holds:',
         )
+        for (const path of manifest.refusalFixtureFiles) lines.push('  - ' + path)
       }
+    } else if (manifest.fixtureFiles.length === 0) {
+      lines.push(
+        '- WARNING: conformance anomaly — `' + id + '` is not outOfScope but has empty fixtureFiles; investigate before proceeding.',
+      )
     } else {
       for (const path of manifest.fixtureFiles) lines.push('- ' + path)
     }

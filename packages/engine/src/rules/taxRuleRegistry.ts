@@ -173,6 +173,18 @@ export type TaxRuleClassification = 'settled' | 'unsettled' | 'approximated' | '
  * plan or parameter fact is missing — stays `typedRefusal` and stays in
  * `REFUSAL_FIXTURE_BACKLOG`, which is the honest place for "we have not worked
  * this one out yet".
+ *
+ * Two backlog records are `typedRefusal` in this narrower sense rather than in
+ * the sense the shape's own name promises: `irc-199A-a-qualified-business-income-deduction-not-modeled`
+ * and `notice-2022-6-3-02-e-modification-trigger-detection` each describe, in
+ * their own `statement`, a scenario where the engine computes a genuine zero
+ * instead of refusing — `approximated` territory, not a refusal that exists
+ * yet. `typedRefusal` is still the more honest of the two shapes for them: the
+ * fact they turn on IS expressible in the input model (unlabeled ordinary
+ * income, a caller attestation), so `inexpressibleInput` would be false, and
+ * there is no refusal to name a missing fact around. Each backlog entry's
+ * `// why:` comment says so, and fixing it is a product decision — whether the
+ * engine should start refusing — not a fixture this test suite can write.
  */
 export type TaxRuleOutOfScope =
   | { readonly shape: 'typedRefusal' }

@@ -339,13 +339,13 @@ for (const [path, rawSource] of Object.entries(testSources)) {
  * reclassified out of `outOfScope`, or redeclared `inexpressibleInput`, has to
  * leave here too.
  *
- * Most of the original 60 entries left by declaration rather than by fixture.
+ * Of the original 70 entries, 57 left by declaration rather than by fixture:
  * `outOfScope` covers two shapes (see `TaxRuleOutOfScope`) and only one of them
- * has a refusal to drive; 57 of those records name, in `missingInputFacts`, the
- * plan or parameter facts that keep any accepted input from reaching them, and
- * those records are exempt here because a fixture would have nothing to call.
- * What is left is the honest remainder: records that claim a typed refusal the
- * engine does not actually make yet.
+ * has a refusal to drive, so those 57 name, in `missingInputFacts`, the plan or
+ * parameter facts that keep any accepted input from reaching them and are
+ * exempt here because a fixture would have nothing to call. The other 11 left
+ * by a real `describeRefusal` fixture. What is left is the honest remainder:
+ * records that claim a typed refusal the engine does not actually make yet.
  */
 const REFUSAL_FIXTURE_BACKLOG: readonly string[] = [
     // why: the record is shaped `typedRefusal`, but federalTax.ts subtracts a

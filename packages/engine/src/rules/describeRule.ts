@@ -128,7 +128,9 @@ export function describeRule<
   }
   if (rule.classification === 'outOfScope') {
     throw new RangeError(
-      `Rule ${ruleId} is out of scope; cover the typed refusal rather than a computed value`,
+      rule.outOfScope.shape === 'inexpressibleInput'
+        ? `Rule ${ruleId} is out of scope with shape 'inexpressibleInput'; no accepted input reaches it, so there is nothing to fixture. Its obligation is missingInputFacts, not describeRule or describeRefusal`
+        : `Rule ${ruleId} is out of scope with shape 'typedRefusal'; cover the refusal with describeRefusal instead of a computed value`,
     )
   }
 

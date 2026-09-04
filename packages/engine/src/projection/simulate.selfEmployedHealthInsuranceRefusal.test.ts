@@ -7,6 +7,17 @@
  * which is a typed refusal for premium-tax-credit MAGI. Asserting anything but
  * `notApplicable` fails the credit closed rather than computing a 162(l)
  * figure, and this fixture drives that through the real projection.
+ *
+ * The real federal tax calculator runs here rather than a stub, so this
+ * fixture actually observes a federal tax result instead of a constant: the
+ * record's own statement also says "federal tax has no above-the-line
+ * self-employed health-insurance line", and a stubbed calculator that ignores
+ * its input could not fail if that stopped being true. The income model has
+ * no self-employment or earned-income-from-a-trade-or-business fact today
+ * (the same absence the record's statement names), so no accepted plan can
+ * currently drive a 162(l) figure through this calculator either way; running
+ * the real one is the fixture doing what it can given that absence, not a
+ * claim that this closes the gap on its own.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -18,6 +29,7 @@ import {
   singlePersonPlan,
   validatePlan,
 } from '../testing/planFixtures.js'
+import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { simulatePlan } from './simulate.js'
 
 const YEAR = 2026
@@ -44,7 +56,7 @@ function acaYear(
   const result = simulatePlan(validatePlan(plan), {
     startYear: YEAR,
     horizonEndYear: YEAR,
-    taxCalculator: { compute: () => 0 },
+    taxCalculator: createFederalTaxCalculator(),
   })
   const aca = result.years[0]?.aca
   if (aca === undefined) throw new Error('fixture produced no ACA result')

@@ -8,12 +8,13 @@ import { TAX_RULE_REGISTRY, type TaxRuleId, type TaxRuleRecord } from './taxRule
  * `describeRule` is the sibling of this helper and refuses an `outOfScope` id
  * outright, because there is no computed value to discriminate between
  * readings of. That refusal left the classification with no coverage
- * obligation at all: an `outOfScope` record asserts the engine fails closed,
- * and until now nothing checked that the refusal existed, still existed, or
- * still had the shape the record describes. That is exactly the rot the
- * `produced` field on `describeRule` was invented to stop, on the slice of the
- * registry (73 of 416 records, under a fifth) that says "we will not answer
- * this".
+ * obligation at all: a `typedRefusal` `outOfScope` record asserts the engine
+ * fails closed, and until now nothing checked that the refusal existed, still
+ * existed, or still had the shape the record describes. That is exactly the
+ * rot the `produced` field on `describeRule` was invented to stop, on the
+ * slice of the registry (73 of 416 records, under a fifth) that says "we will
+ * not answer this" — of which only the `typedRefusal` shape has a refusal to
+ * check; see below.
  *
  * Only one of the two `outOfScope` shapes takes a fixture. A record declares
  * which it is in `outOfScope` (see `TaxRuleOutOfScope`): `typedRefusal` fails

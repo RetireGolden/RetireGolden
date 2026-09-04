@@ -88,6 +88,25 @@ export interface CoverageRule {
       readonly line: number
     }[]
   }[]
+  /**
+   * `describeRefusal` fixture files for a `typedRefusal` `outOfScope` rule —
+   * empty for every other classification, and for an `inexpressibleInput`
+   * rule, which has no refusal to drive. Scanned separately from
+   * `fixtureFiles`/`fixtures`: those two track `describeRule` blocks only, so
+   * a rule covered by a refusal fixture instead would otherwise publish an
+   * empty fixture list and read as unfixtured.
+   */
+  readonly refusalFixtureFiles: readonly string[]
+  /** Same shape as `fixtures`, one entry per `describeRefusal` call. */
+  readonly refusalFixtures: readonly {
+    readonly path: string
+    readonly line: number
+    readonly note: string | null
+    readonly tests: readonly {
+      readonly title: string
+      readonly line: number
+    }[]
+  }[]
   readonly authorities: readonly {
     readonly kind: TaxRuleAuthority['kind']
     readonly citation: TaxRuleAuthority['citation']
@@ -446,7 +465,19 @@ function lineAt(newlines: readonly number[], position: number): number {
   return low + 1
 }
 
-function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): ReadonlyMap<string, readonly FixtureDetail[]> {
+/**
+ * Scans `testSources` for `describeRule(<id>` or `describeRefusal(<id>`
+ * blocks, keyed by rule id — the two helpers make different claims about a
+ * rule and are published in separate fields (`fixtures` vs
+ * `refusalFixtures`), but the source-level shape of a call (an id string
+ * literal, then a balanced extent with it() tests inside) is identical for
+ * both, so one scan serves either name.
+ */
+function detailsByRule(
+  testSources: Readonly<Record<string, string>>,
+  callName: 'describeRule' | 'describeRefusal',
+): ReadonlyMap<string, readonly FixtureDetail[]> {
+  const callPattern = new RegExp(callName.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&') + '\\(\\s*\'([^\']+)\'', 'gu')
   const details = new Map<string, FixtureDetail[]>()
   for (const [path, source] of Object.entries(testSources)) {
     if (path.endsWith(CONFORMANCE_SOURCE)) continue
@@ -454,7 +485,7 @@ function fixtureDetailsByRule(testSources: Readonly<Record<string, string>>): Re
     const fixturePath = path
       .replace(/^\.\.\//u, 'packages/engine/src/')
       .replace(/^\.\//u, 'packages/engine/src/rules/')
-    const calls = [...source.matchAll(/describeRule\(\s*'([^']+)'/gu)]
+    const calls = [...source.matchAll(callPattern)]
     const newlines = calls.length > 0 ? newlineOffsets(source) : []
     for (let index = 0; index < calls.length; index += 1) {
       const match = calls[index]!
@@ -770,7 +801,8 @@ function buildMarkdown(manifest: CoverageReportManifest, rules: readonly Coverag
  * across machines without a filesystem read or clock observation.
  */
 export function buildCoverageReport(input: CoverageReportInput): CoverageReport {
-  const fixtureDetails = fixtureDetailsByRule(input.testSources)
+  const fixtureDetails = detailsByRule(input.testSources, 'describeRule')
+  const refusalFixtureDetails = detailsByRule(input.testSources, 'describeRefusal')
   const rules: readonly CoverageRule[] = Object.entries(input.registry)
     .map(([id, rule]) => ({
       id,
@@ -796,6 +828,8 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       })),
       fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
       fixtures: fixtureDetails.get(id) ?? [],
+      refusalFixtureFiles: [...new Set((refusalFixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
+      refusalFixtures: refusalFixtureDetails.get(id) ?? [],
       // Distinct quotes of one provision collapse to one public identity once
       // quotedText is stripped; duplicates would inflate link lists downstream.
       authorities: dedupeAuthorityIdentities(rule.authority),

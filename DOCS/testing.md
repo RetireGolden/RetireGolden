@@ -89,11 +89,11 @@ reimplementation, and still fails the moment the gap it names is closed — see 
 `describeRule` refuses an `outOfScope` rule id outright, because that classification is a claim that the
 engine produces no figure at all, so there is no computed value for candidate readings to disagree about.
 That left 73 of the registry's 416 records with no coverage obligation of any kind: the slice (under a
-fifth of the registry) that says "we will not answer this", unwatched. An `outOfScope` record asserts the engine fails closed with a typed
-refusal, and nothing checked that the refusal existed, still existed, or still had the shape the record
-describes. It is the same rot the `produced` field was invented to stop on the `approximated` records,
-running in the flattering direction, because "we refuse this" keeps reading as careful long after the
-refusal was quietly replaced by a number.
+fifth of the registry) that says "we will not answer this", unwatched. A `typedRefusal` `outOfScope`
+record asserts the engine fails closed with a typed refusal, and nothing checked that the refusal existed,
+still existed, or still had the shape the record describes. It is the same rot the `produced` field was
+invented to stop on the `approximated` records, running in the flattering direction, because "we refuse
+this" keeps reading as careful long after the refusal was quietly replaced by a number.
 
 Which of those two things an `outOfScope` record is claiming is not left to its prose. Every such record
 carries a required `outOfScope` field naming one of two shapes, and the shape decides the obligation:
@@ -128,10 +128,19 @@ co-located like every other suite, beside the module whose refusal they assert.
 gated by `REFUSAL_FIXTURE_BACKLOG`. That allowlist is asserted by equality, not containment, so it
 ratchets in both directions: authoring a fixture without deleting its id fails, and deleting an id without
 authoring a fixture fails, and so does an entry that is no longer shaped `typedRefusal`. The declared
-shape is not an escape hatch from that list: the same suite asserts that every `inexpressibleInput` record
-names its missing facts, and that none of them carries a refusal fixture, so redeclaring a record to buy
-its way out of a fixture fails rather than passes. `wa-rcw-82-87-capital-gains-excise` is the archetype of
-the second shape, and says exactly that in its own statement.
+shape is not an escape hatch from *forgetting* to update the backlog: the same suite asserts that every
+`inexpressibleInput` record names its missing facts, and that none of them carries a refusal fixture, so
+redeclaring a record without also touching the backlog fails rather than passes. `wa-rcw-82-87-capital-gains-excise`
+is the archetype of the second shape, and says exactly that in its own statement.
+
+What conformance does not do is bind `missingInputFacts` to the schema mechanically. The obligation for the
+second shape is met by prose — a fact string naming what `model/plan.ts` or `params/types.ts` lacks — and the
+runtime check is structural only (non-empty, no blank entries): it does not grep either schema file for the
+identifiers a fact names, so a fact string cannot be machine-verified as still absent, and an author who
+redeclares a `typedRefusal` record `inexpressibleInput` with a plausible-sounding but wrong fact would not be
+caught here. The facts are checked by hand against the schema at authorship and at re-verification time (see
+the binding edit order above); that check is manual, not machine-enforced, and is a known residual risk
+rather than a gap this suite closes.
 
 The two scans are kept separate on purpose. A `describeRefusal` call never counts toward the settled,
 unsettled, or approximated coverage tests, and a `describeRule` call never counts toward this one.
