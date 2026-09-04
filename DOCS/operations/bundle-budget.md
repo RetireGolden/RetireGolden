@@ -40,7 +40,7 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | planner Web Worker, and **exactly one of them** | 1000 KiB | 903 KiB | The engine simulation core, shipped once |
 | engine simulation core (`useProjection`) | 640 KiB | 572 KiB | The deterministic ledger the analysis pages share |
 | Learning Center registry | 150 KiB | 124 KiB | Article *metadata* — bodies load per article |
-| chart vendor (`CartesianChart`) | 380 KiB | 326 KiB | Recharts and its d3 slices |
+| chart vendor (`CartesianChart`) | 380 KiB | 331 KiB | Recharts and its d3 slices |
 | plan route group (`PlanRoutes`), and **exactly one of them** | 300 KiB | 267 KiB | The lazy plan-route boundary staying route-sized |
 | app entry (the script `index.html` loads) | 300 KiB | 248 KiB | The chunk a cold visit blocks on first |
 | every other JS chunk | 260 KiB | 96 KiB (`ResultsPage`) | Route and page chunks staying route-sized |
