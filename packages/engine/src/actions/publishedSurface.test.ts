@@ -11,11 +11,16 @@ import barrelSource from './index.ts?raw'
 // module internal, or makes it public API that a semver bump then has to
 // honour. This suite is the guard.
 //
-// It deliberately does not require the two lists to agree. They do not today,
-// and pruning a subpath is a breaking change for external consumers; that is a
-// deliberate versioned pass, not a test failure. What it does is make the
-// current split explicit, so adding or moving a module shows up as a diff in
-// the table below rather than as silence.
+// It deliberately does not require the two lists to agree. They do not: the
+// subpath list is now the ten modules a consumer actually imports one at a
+// time, pruned in 0.3.0 from the 39 that had accumulated, while the barrel
+// keeps publishing the wider set. What this suite does is make the current
+// split explicit, so adding or moving a module shows up as a diff in the
+// table below rather than as silence.
+//
+// Adding a subpath back is a decision, not a convenience: every listed name is
+// public API a semver bump then has to honour, and the ./actions barrel
+// already reaches every module worth publishing.
 
 const packageJson = JSON.parse(packageJsonRaw) as {
   exports: Record<string, unknown>
@@ -68,6 +73,18 @@ function categorize(name: string): 'both' | 'barrelOnly' | 'subpathOnly' | 'neit
  */
 const EXPECTED_REACHABILITY: Readonly<Record<string, readonly string[]>> = {
   both: [
+    'annualQcdExecutionPrerequisite',
+    'civilDate',
+    'contract',
+    'execution',
+    'identity',
+    'money',
+    'planBalanceAdapter',
+    'reasons',
+    'retirementActionCandidateIdentityAllocator',
+    'retirementActionManualReview',
+  ],
+  barrelOnly: [
     'annualHsaOpeningAuthority',
     'annualHsaPenaltyEvaluation',
     'annualHsaPhysicalMovementCandidate',
@@ -76,46 +93,19 @@ const EXPECTED_REACHABILITY: Readonly<Record<string, readonly string[]>> = {
     'annualHsaWithdrawalCharacter',
     'annualIraBasisAllocation',
     'annualOwnedNonRothIraPoolCapacity',
-    'annualQcdExecutionPrerequisite',
-    'annualQcdPhysicalExecution',
-    'annualQcdResidualForm8606',
-    'annualQcdTaxCharacterPostPass',
-    'annualRetirementActionMovementCoordinator',
-    'annualRetirementActionPublication',
-    'annualRetirementPhysicalEventInventory',
-    'civilDate',
-    'contract',
-    'execution',
-    'identity',
-    'money',
-    'ownedNonRothIraAnnualCandidateCoordinator',
-    'ownedNonRothIraAnnualCandidateTransaction',
-    'ownedNonRothIraAnnualFilingEvidence',
-    'ownedNonRothIraAnnualFilingSourceResolver',
-    'ownedNonRothIraAnnualFinalization',
-    'ownedNonRothIraAnnualPlanCoordinator',
-    'ownedNonRothIraAnnualPostCandidateEvidence',
-    'ownedNonRothIraMovementCandidate',
-    'ownedNonRothIraPenaltyPrerequisite',
-    'ownedNonRothIraSeppAnnualReconciliation',
-    'ownedNonRothIraSeppCurrentPaymentCandidate',
-    'ownedNonRothIraWithdrawalCharacter',
-    'planBalanceAdapter',
-    'reasons',
-    'retirementActionCandidateIdentityAllocator',
-    'retirementActionManualReview',
-    'rothConversionExecution',
-    'taxableWithdrawalCharacter',
-    'traditionalEmployerPlanPenaltyPrerequisite',
-  ],
-  barrelOnly: [
     'annualQcdActionExecutionEvidence',
     'annualQcdDeductionTreatmentCoordinator',
     'annualQcdDerivedTaxCharacter',
     'annualQcdExecution',
     'annualQcdItemizedLiabilityReconciliation',
     'annualQcdItemizedSection170Ledger',
+    'annualQcdPhysicalExecution',
+    'annualQcdResidualForm8606',
     'annualQcdStandardSection170pLedger',
+    'annualQcdTaxCharacterPostPass',
+    'annualRetirementActionMovementCoordinator',
+    'annualRetirementActionPublication',
+    'annualRetirementPhysicalEventInventory',
     'annualSection68ItemizedDeduction',
     'beneficiaryTraditionalIraAnnualFinalization',
     'beneficiaryTraditionalIraAnnualPhysicalTransaction',
@@ -133,7 +123,22 @@ const EXPECTED_REACHABILITY: Readonly<Record<string, readonly string[]>> = {
     'conversionLinkedWithdrawalGroup',
     'conversionLinkedWithdrawalGroupExecution',
     'conversionTaxFundingEvidence',
+    'ownedNonRothIraAnnualCandidateCoordinator',
+    'ownedNonRothIraAnnualCandidateTransaction',
+    'ownedNonRothIraAnnualFilingEvidence',
+    'ownedNonRothIraAnnualFilingSourceResolver',
+    'ownedNonRothIraAnnualFinalization',
+    'ownedNonRothIraAnnualPlanCoordinator',
+    'ownedNonRothIraAnnualPostCandidateEvidence',
+    'ownedNonRothIraMovementCandidate',
+    'ownedNonRothIraPenaltyPrerequisite',
+    'ownedNonRothIraSeppAnnualReconciliation',
+    'ownedNonRothIraSeppCurrentPaymentCandidate',
+    'ownedNonRothIraWithdrawalCharacter',
     'qcdDeductibleContributionOffset',
+    'rothConversionExecution',
+    'taxableWithdrawalCharacter',
+    'traditionalEmployerPlanPenaltyPrerequisite',
     'traditionalEmployerPlanWithdrawalCharacter',
   ],
   subpathOnly: [],
