@@ -60,7 +60,7 @@ import {
   type AnnualAcaResultPublicationResult,
 } from './annualAcaResultPublication.js'
 import { annualOptimizerProbePublication } from './annualOptimizerProbePublication.js'
-import { annualPermanentLifeTransitions } from './annualPermanentLifeTransitions.js'
+import { annualPropertyAndInsuranceClosePhase } from './annualPropertyAndInsuranceClosePhase.js'
 import { annualSnapshot } from './annualSnapshot.js'
 import { annualWithdrawalApplyFlowPlan } from './annualWithdrawalApplyFlowPlan.js'
 import {
@@ -83,7 +83,6 @@ import {
   annualFundingCandidateEvaluation,
   type AnnualFundingCandidateEvaluationContext,
 } from './annualFundingCandidateEvaluation.js'
-import { propertyEventsAndGrowth } from './propertyEventsAndGrowth.js'
 import { publishedEntityFacts } from './publishedEntityFacts.js'
 import { attributeShortfall } from '../../spending/layers.js'
 import {
@@ -1791,69 +1790,30 @@ export function annualFundingApplicationAndClosePhase(
 
     if (shortfallAfterHecm > EPSILON && depletionYear === null) depletionYear = year
 
-    // --- property events + growth ------------------------------------------
-    // The phase itself lives in `internal/propertyEventsAndGrowth.ts`. It owns
-    // the growth, the legacy tax-free sale and the line accrual; this loop owns
-    // every write, applied per row in the same statement order the inlined
-    // phase used (close the line, deposit, publish, write the value back, then
-    // compound what is left open). `plan.accounts` order is load-bearing three
-    // ways at once — deposit order, value compounding, and whether a same-id
-    // line accrues before a later row closes it. The helper carries a private
-    // numeric shadow of both maps, plus an accrued-id set so each actual HECM
-    // line receives its annual multiplier exactly once.
-    for (const row of propertyEventsAndGrowth({
-      accounts: plan.accounts,
+    // --- property events + growth, then permanent-life transitions ---------
+    // Both are application loops over a sibling phase rows, they deposit into
+    // the same annual cash channel, and each writes a live map the year
+    // publishes from, so they travel together. The sub-phase lives in
+    // `internal/annualPropertyAndInsuranceClosePhase.ts` and takes its own
+    // 14-field input; `inflRateAt` moved into it, because the property row
+    // producer is its only caller anywhere in this file.
+    const propertyAndInsurance = annualPropertyAndInsuranceClosePhase({
       year,
-      propertyValues,
-      inflRateAt,
-      hecmStates,
-      // Gated on the ARRAY this payload feeds, which is what the inlined phase
-      // gated on: it built its literal inside `legacyPropertySaleDeposits?.push(
-      // { … })`. Both are assigned in the same `if (publishCashFlow)` block, so
-      // this is a no-op today; writing it this way makes the payload's laziness
-      // hold by construction rather than by that coincidence.
-      surplusDestination: legacyPropertySaleDeposits === null ? null : surplusDestination,
-    })) {
-      if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
-      if (row.deposit !== null) deposit(row.deposit)
-      if (row.record !== null) legacyPropertySaleDeposits?.push(row.record)
-      propertyValues.set(row.propertyAccountId, row.value)
-      if (row.hecmGrowth !== null) {
-        const line = hecmStates.get(row.propertyAccountId)!
-        line.principalLimit *= row.hecmGrowth
-        line.loanBalance *= row.hecmGrowth
-      }
-    }
-
-    // --- insurance: permanent-life cash value + death benefit --------------
-    const permanentLife = annualPermanentLifeTransitions({
+      accounts: plan.accounts,
       policies: plan.insurance,
+      propertyValues,
+      hecmStates,
       insuranceCashValues,
-      resolveInsured: (personId) => {
-        const insured = personById.get(personId)
-        return insured === undefined
-          ? null
-          : {
-              deathAge: lifeAgeOf(insured),
-              ageAttained: stateOf(personId).ageAttained,
-            }
-      },
+      personById,
+      stateOf,
+      lifeAgeOf,
+      inflRateAt,
+      deposit,
+      legacyPropertySaleDeposits,
+      deathBenefits,
+      surplusDestination,
     })
-    const deathBenefitPaid = permanentLife.deathBenefitPaid
-    for (const transition of permanentLife.transitions) {
-      if (transition.payout !== null) {
-        deposit(transition.payout)
-        if (transition.payout > 0) {
-          deathBenefits?.push({
-            policyId: transition.policyId,
-            insuredPersonId: transition.insuredPersonId,
-            amount: transition.payout,
-            destination: surplusDestination!,
-          })
-        }
-      }
-      insuranceCashValues.set(transition.policyId, transition.cashValue)
-    }
+    const deathBenefitPaid = propertyAndInsurance.deathBenefitPaid
 
     // --- post-solve growth + owned-non-Roth-IRA capture ---------------------
     // The sub-phase lives in `internal/annualPostGrowthCapturePhase.ts`. It is
