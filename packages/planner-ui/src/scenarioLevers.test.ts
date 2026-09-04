@@ -7,7 +7,6 @@ import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { buildExampleCouple } from './planner/examples/buildExampleCouple'
 import {
   buildScenarioLever,
-  SCENARIO_LEVER_BUILDERS,
   SCENARIO_LEVER_DEFINITIONS,
   type ScenarioLeverRequest,
 } from './scenarioLevers'
@@ -3102,14 +3101,28 @@ describe('scenario lever contract', () => {
   })
 })
 
-describe('SCENARIO_LEVER_BUILDERS registry', () => {
-  it.each(SCENARIO_LEVER_DEFINITIONS)('has exactly one builder for "$id"', ({ id }) => {
-    expect(typeof SCENARIO_LEVER_BUILDERS[id]).toBe('function')
-  })
-
-  it('has no builder beyond the ids SCENARIO_LEVER_DEFINITIONS declares', () => {
-    const definedIds = SCENARIO_LEVER_DEFINITIONS.map((definition) => definition.id).sort()
-    const registeredIds = Object.keys(SCENARIO_LEVER_BUILDERS).sort()
-    expect(registeredIds).toEqual(definedIds)
+// Every `ScenarioLeverId` has exactly one builder registered in the
+// module-private `SCENARIO_LEVER_BUILDERS` map: a missing or extra key
+// there is a `tsc -b` compile error (the map is annotated with the
+// homomorphic mapped type `{ [Id in ScenarioLeverId]: LeverBuilder<Id> }`),
+// and CI runs that build for this package. The runtime check below can't
+// reach the map directly — it isn't exported, on purpose, since exporting it
+// would let a caller invoke a builder without the calendar-year validation
+// and cloning `buildScenarioLever` does first (see the comment on its
+// declaration) — so it instead dispatches through the public
+// `buildScenarioLever` with a deliberately incomplete request per id and
+// confirms it comes back as a well-formed result (built or unavailable, per
+// that lever's own required fields), never as a thrown "builder is not a
+// function", which is what a missing registry entry would produce.
+describe('every ScenarioLeverId dispatches to a registered builder', () => {
+  it.each(SCENARIO_LEVER_DEFINITIONS)('does not throw for "$id" with an incomplete request', ({ id }) => {
+    const plan = buildExampleCouple()
+    const request = { id } as unknown as ScenarioLeverRequest
+    let result: ReturnType<typeof buildScenarioLever> | undefined
+    expect(() => {
+      result = buildScenarioLever(plan, request, context)
+    }).not.toThrow()
+    expect(result).toBeDefined()
+    expect(typeof result?.ok).toBe('boolean')
   })
 })

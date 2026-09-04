@@ -988,7 +988,12 @@ type LeverRequestFor<Id extends ScenarioLeverId> = Extract<ScenarioLeverRequest,
 interface LeverBuildArgs<Id extends ScenarioLeverId> {
   /** The plan as the caller passed it in — never mutated. */
   plan: Plan
-  /** A clone of `plan` this builder edits in place before handing it to `finish`. */
+  /**
+   * A clone of `plan`. Most builders edit this in place before handing it to
+   * `finish`; `buildRelocationLever` is the one exception — it hands `finish`
+   * a separate, deeper clone from `applyScenarioPatchInput` instead and
+   * leaves this one untouched.
+   */
   edited: Plan
   definition: ScenarioLeverDefinition
   request: LeverRequestFor<Id>
@@ -1101,10 +1106,13 @@ function buildSpendingLever({
     plan,
     edited,
     definition,
-    // The four lever names below keep their bare-number shape: each is
-    // stored in `plan.scenarios[].name` and in its patch title, so adding a
-    // currency symbol would read differently from every name a saved plan
-    // already holds. What moves is only where the grouping comes from.
+    // This lever's name keeps its bare-number shape, like the other three
+    // levers whose generated name also embeds a formatted dollar amount
+    // (buildRothTargetLever's fixed-MAGI target, buildRothScheduleLever's
+    // conversion amount, buildCareLever's annual cost): each is stored in
+    // `plan.scenarios[].name` and in its patch title, so adding a currency
+    // symbol would read differently from every name a saved plan already
+    // holds. What moves is only where the grouping comes from.
     `Household base spending: ${fmtNumber(proposed)} per year`,
     warnings,
     context,
@@ -1585,7 +1593,10 @@ function buildDefaultReturnLever({
 }
 
 /**
- * Scale every existing pension’s monthly income and shift its start age.
+ * Scale each existing pension’s monthly income and shift its start age,
+ * skipping pensions whose lump-sum election is already effective at
+ * projection start (they no longer pay, so they are filtered out and only
+ * warned about).
  */
 function buildPensionLever({
   plan,
@@ -1855,7 +1866,9 @@ function buildSurvivorSpendingLever({
 }
 
 /**
- * Add a modeled long-term-care event for one or both people.
+ * Add a modeled long-term-care event for one household member. In a
+ * two-person household the caller must choose which person via
+ * `request.personId`; adding care for both people takes two calls.
  */
 function buildCareLever({
   plan,
@@ -2021,7 +2034,21 @@ function buildStopContributionsLever({
   return finish(plan, edited, definition, 'Coast check: stop contributing', warnings, context)
 }
 
-export const SCENARIO_LEVER_BUILDERS: { [Id in ScenarioLeverId]: LeverBuilder<Id> } = {
+// Not exported: every builder here skips the calendar-year validation and
+// the `clonePlan` step that `buildScenarioLever` below performs before
+// dispatching, so calling one directly could pass through an invalid
+// `startYear` or mutate the caller's live plan. Keeping this module-private
+// also keeps it off the `./scenario-levers` subpath's public contract (see
+// packages/planner-ui/README.md), which the package documents as
+// semver-frozen and currently lists only `buildScenarioLever`,
+// `SCENARIO_LEVER_DEFINITIONS`, `supportedRothBracketTargets`, and
+// `supportedRothIrmaaTiers`.
+//
+// Exhaustiveness (every `ScenarioLeverId` has exactly one builder, no more
+// no less) is enforced here by the homomorphic mapped-type annotation: a
+// missing or extra key is a `tsc -b` compile error, which CI runs for this
+// package.
+const SCENARIO_LEVER_BUILDERS: { [Id in ScenarioLeverId]: LeverBuilder<Id> } = {
   retirementAge: buildRetirementAgeLever,
   spending: buildSpendingLever,
   socialSecurityClaim: buildSocialSecurityClaimLever,
