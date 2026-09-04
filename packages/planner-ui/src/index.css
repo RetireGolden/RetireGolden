@@ -477,8 +477,16 @@ code {
    so a single-class utility would win or lose against an equally specific
    component rule depending on the bundler. Doubling makes the utility 0-2-0,
    which beats every single-class component rule in either order; it is still
-   below the inline styles these replace, and below any component rule that
-   already needed two classes to say something.
+   below the inline styles these replace.
+
+   A component rule that itself needs two classes/a descendant combinator to
+   say something (e.g. `.mc-hero .muted`) is also 0-2-0 — that tie is NOT
+   resolved by the doubling, it is broken by stylesheet order, which is the
+   exact thing that differs between dev and production here. Do not add one
+   of these utilities to a node that already carries such a rule for the
+   same property; leave the site's literal inline instead (see the
+   staticGuards.test.ts allowlist entry for SurvivalPercentileModal.tsx,
+   which is exactly this case).
    --------------------------------------------------------------------------- */
 .mt-xs.mt-xs {
   margin-top: var(--space-xs);

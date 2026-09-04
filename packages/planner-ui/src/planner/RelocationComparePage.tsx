@@ -303,7 +303,7 @@ export function RelocationComparePage() {
           changes your plan. Use &quot;Add as scenario&quot; on a result row to keep one.
         </p>
         {drafts.map((draft, i) => (
-          <div className="item-row" key={i} style={{ marginTop: i === 0 ? 0 : '0.75rem' }}>
+          <div className={i === 0 ? 'item-row' : 'item-row mt-ms'} key={i}>
             <div className="item-row-head">
               <span className="item-row-title">
                 <TypeChip>Candidate</TypeChip>

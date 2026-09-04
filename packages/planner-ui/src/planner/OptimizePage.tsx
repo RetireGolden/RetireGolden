@@ -552,7 +552,7 @@ export function OptimizePage() {
           <>
             <div className="skeleton" style={{ height: '2rem', marginTop: '0.75rem' }} aria-label="Optimizing" />
             {coOptimizeRequested ? (
-              <p className="field-hint" style={{ margin: '0.5rem 0 0' }} role="status">
+              <p className="field-hint mt-sm" role="status">
                 Also optimizing Social Security claim age: the optimizer is re-run in full for every claim
                 combination, so this takes several times longer than a standard optimize.
               </p>

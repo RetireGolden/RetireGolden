@@ -84,11 +84,19 @@ describe('spacing uses the scale, not fresh inline literals', () => {
   // converted to them. Nothing stops the next component from typing
   // `marginTop: '0.75rem'` again, and the migration would then unwind one
   // edit at a time. This fails the moment an inline margin-top/-bottom/gap
-  // repeats a value the scale already has a name for.
+  // repeats a value the scale already has a name for — whether that's a
+  // plain single-quoted literal, a double-quoted one, a value picked by a
+  // ternary/computed expression, or the `margin: 'Xrem 0 0'` shorthand
+  // family that is exactly equivalent to a bare marginTop (the 13 sites
+  // this PR itself converted away from used that shorthand).
   //
   // Off-scale values (0.6rem, 0.9rem, 1.25rem, 0.25rem) are NOT flagged:
   // they are deliberate one-offs, and forcing them onto the scale is a
-  // layout decision, not a mechanical one.
+  // layout decision, not a mechanical one. Only utility classes this
+  // migration actually shipped are policed here — a scale value with no
+  // corresponding .mt-*/.mb-*/.gap-* utility (e.g. --space-xl on
+  // marginBottom) is out of this guard's stated scope, not silently
+  // covered by it.
 
   /** Every value the --space-* scale names, mapped to the utility to use. */
   const utilityFor: Record<string, Record<string, string>> = {
@@ -112,6 +120,8 @@ describe('spacing uses the scale, not fresh inline literals', () => {
     { file: 'planner/ResultsPage.tsx', property: 'marginTop', value: '0.5rem', count: 1, why: "ScrollRegion style prop also carries border: 'none'" },
     { file: 'planner/SpendingSolverPage.tsx', property: 'marginTop', value: '0.75rem', count: 1, why: "loading skeleton, sized inline by height: '2rem'" },
     { file: 'planner/SsAnalysisPage.tsx', property: 'marginBottom', value: '0.75rem', count: 1, why: "form grid also carries maxWidth: '26rem'" },
+    { file: 'planner/SurvivalPercentileModal.tsx', property: 'marginTop', value: '0.35rem', count: 1, why: "the `margin: '0.35rem 0 0'` shorthand sits on a .muted paragraph under .mc-hero, and .mc-hero .muted { margin: 0 } is a two-class CSS rule tied at 0-2-0 with .mt-xs.mt-xs — converting would make the margin depend on whether index.css or planner.css loads last, so the literal (which always beats both) stays" },
+    { file: 'routes/RouteFallback.tsx', property: 'marginBottom', value: '1rem', count: 1, why: "loading skeleton, sized inline by height: '2rem' — same idiom as the allowlisted PlanPickerPage.tsx skeleton" },
   ]
 
   const key = (file: string, property: string, value: string): string => `${file} ${property}: '${value}'`
@@ -129,19 +139,40 @@ describe('spacing uses the scale, not fresh inline literals', () => {
     }
   })
 
-  it('no planner/learn .tsx inlines a spacing value the scale names', () => {
-    const scoped = appFiles.filter((f) => /\.tsx$/.test(f) && /^(planner|learn)\//.test(rel(f)))
+  it('no planner/learn/routes .tsx inlines a spacing value the scale names', () => {
+    const scoped = appFiles.filter((f) => /\.tsx$/.test(f) && /^(planner|learn|routes)\//.test(rel(f)))
     expect(scoped.length).toBeGreaterThan(50)
 
     const found = new Map<string, number>()
     for (const file of scoped) {
       const text: string = readFileSync(file, 'utf8')
-      for (const match of text.matchAll(/\b(marginTop|marginBottom|gap):\s*'([^']+)'/g)) {
+
+      // Longhand marginTop/marginBottom/gap: single- or double-quoted, and a
+      // quoted literal reached through a ternary/computed expression (e.g.
+      // `marginTop: i === 0 ? 0 : '0.75rem'`) all count — only the property's
+      // full value expression up to the next comma/brace is captured, then
+      // every quoted rem literal inside that expression is checked.
+      for (const match of text.matchAll(/\b(marginTop|marginBottom|gap):\s*([^,}]+)/g)) {
         const property = match[1]!
-        const value = match[2]!
-        const utility = utilityFor[property]?.[value]
+        const expr = match[2]!
+        for (const qm of expr.matchAll(/['"]([\d.]+rem)['"]/g)) {
+          const value = qm[1]!
+          const utility = utilityFor[property]?.[value]
+          if (utility === undefined) continue
+          const k = key(rel(file), property, value)
+          found.set(k, (found.get(k) ?? 0) + 1)
+        }
+      }
+
+      // The `margin: 'Xrem 0 0'` shorthand is exactly a marginTop: 'Xrem' —
+      // right/left/bottom are pinned to 0 — so it is policed the same way.
+      // `margin: '0 0 Xrem'` (bottom-only, the heading idiom) does not match
+      // this shape and stays out of scope on purpose.
+      for (const match of text.matchAll(/\bmargin:\s*['"]([\d.]+rem)\s+0\s+0['"]/g)) {
+        const value = match[1]!
+        const utility = utilityFor.marginTop?.[value]
         if (utility === undefined) continue
-        const k = key(rel(file), property, value)
+        const k = key(rel(file), 'marginTop', value)
         found.set(k, (found.get(k) ?? 0) + 1)
       }
     }
