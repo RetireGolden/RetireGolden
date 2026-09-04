@@ -52,20 +52,20 @@
       "label": "annual lifestyle helper invocation and result consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2072,
-        2091
+        2073,
+        2092
       ],
       "anchors": [
         {
-          "line": 2072,
+          "line": 2073,
           "text": "const {"
         },
         {
-          "line": 2077,
+          "line": 2078,
           "text": "} = annualLifestyleLayers({"
         },
         {
-          "line": 2091,
+          "line": 2092,
           "text": "})"
         }
       ]
@@ -99,24 +99,24 @@
       "label": "ordered insurance-premium fold and publication",
       "file": "projection/simulate.ts",
       "lines": [
-        2158,
-        2165
+        2159,
+        2166
       ],
       "anchors": [
         {
-          "line": 2158,
+          "line": 2159,
           "text": "let insurancePremiums = 0"
         },
         {
-          "line": 2159,
+          "line": 2160,
           "text": "for (const row of annualInsurancePremiumRows({"
         },
         {
-          "line": 2164,
+          "line": 2165,
           "text": "yearSites?.recordInsurancePremium(row.record)"
         },
         {
-          "line": 2165,
+          "line": 2166,
           "text": "}"
         }
       ]
@@ -150,24 +150,24 @@
       "label": "ordered property-cost fold and publication",
       "file": "projection/simulate.ts",
       "lines": [
-        2194,
-        2203
+        2195,
+        2204
       ],
       "anchors": [
         {
-          "line": 2194,
+          "line": 2195,
           "text": "let propertyCosts = 0"
         },
         {
-          "line": 2195,
+          "line": 2196,
           "text": "for (const row of annualPropertyCarryingCosts({"
         },
         {
-          "line": 2202,
+          "line": 2203,
           "text": "yearSites?.recordPropertyCosts(row.record)"
         },
         {
-          "line": 2203,
+          "line": 2204,
           "text": "}"
         }
       ]
@@ -201,24 +201,24 @@
       "label": "expense-summary invocation and spending-base consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2346,
-        2376
+        2294,
+        2324
       ],
       "anchors": [
         {
-          "line": 2346,
+          "line": 2294,
           "text": "const expenseSummary = annualExpenseSummary({"
         },
         {
-          "line": 2371,
+          "line": 2319,
           "text": "})"
         },
         {
-          "line": 2372,
+          "line": 2320,
           "text": "const expenses = expenseSummary.expenses"
         },
         {
-          "line": 2376,
+          "line": 2324,
           "text": "const excessSpendingBase = expenseSummary.excessSpendingBase"
         }
       ]

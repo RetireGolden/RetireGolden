@@ -89,6 +89,7 @@ import {
 import type { PhaseLedgerScalarBindings } from './internal/phaseLedgerScalars.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualTaxUnitIdentityPhase } from './internal/annualTaxUnitIdentityPhase.js'
+import { annualOneTimeGoalFundingPhase } from './internal/annualOneTimeGoalFundingPhase.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import {
   annualDebtServiceRows,
@@ -2267,92 +2268,39 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const cutting = guardrailFunding.cutting
     const canPullForwardGoals = guardrailFunding.canPullForwardGoals
 
-    // One-time goals. Under guardrails they route through the scheduler (which
-    // may delay/skip flexible goals when cutting); otherwise every goal funds in
-    // its target year exactly, as it always has. A *skipped* goal is intended
-    // spending that never happens, so its amount is tracked as a target miss (a
-    // required-classified skip is also a required miss) rather than silently
-    // vanishing from both sides of the ledger.
-    let oneTimeGoalsFunded = 0
-    let requiredGoalsFunded = 0
-    let targetGoalsFunded = 0
-    let idealGoalsFunded = 0
-    let excessGoalsFunded = 0
-    let skippedTargetNominal = 0
-    let skippedIdealNominal = 0
-    let skippedExcessNominal = 0
-    let skippedRequiredNominal = 0
-    const goalOutcomeCounts = { funded: 0, partiallyFunded: 0, deferred: 0, skipped: 0, fundedAmount: 0, unfundedAmount: 0 }
-    if (anyAlive) {
-      if (goalScheduler) {
-        const plannedGoals = goalScheduler.planYear(year, {
-          inflFactor,
-          cutting,
-          canPullForward: canPullForwardGoals,
-          availableBudget: cutting ? 0 : canPullForwardGoals ? remainingUpsideBudget : null,
-        })
-        for (const r of plannedGoals.results) {
-          if (r.outcome === 'funded' || r.outcome === 'partiallyFunded') {
-            oneTimeGoalsFunded += r.fundedNominal
-            if (r.classification === 'required') requiredGoalsFunded += r.fundedNominal
-            else if (r.classification === 'target') targetGoalsFunded += r.fundedNominal
-            else if (r.classification === 'ideal') idealGoalsFunded += r.fundedNominal
-            else excessGoalsFunded += r.fundedNominal
-            if (r.outcome === 'funded') goalOutcomeCounts.funded++
-            else goalOutcomeCounts.partiallyFunded++
-            goalOutcomeCounts.fundedAmount += r.fundedNominal
-            goalOutcomeCounts.unfundedAmount += r.unfundedNominal
-            if (r.unfundedNominal > 0) {
-              if (r.classification === 'required') skippedRequiredNominal += r.unfundedNominal
-              else if (r.classification === 'target') skippedTargetNominal += r.unfundedNominal
-              else if (r.classification === 'ideal') skippedIdealNominal += r.unfundedNominal
-              else skippedExcessNominal += r.unfundedNominal
-            }
-            yearSites?.recordGoalOutcome({
-              goalId: r.id,
-              classification: r.classification,
-              outcome: r.outcome,
-              requested: r.fundedNominal + r.unfundedNominal,
-              fundedNominal: r.fundedNominal,
-            })
-          } else if (r.outcome === 'deferred') {
-            goalOutcomeCounts.deferred++
-          } else {
-            if (r.classification === 'required') skippedRequiredNominal += r.amountNominal
-            else if (r.classification === 'target') skippedTargetNominal += r.amountNominal
-            else if (r.classification === 'ideal') skippedIdealNominal += r.amountNominal
-            else skippedExcessNominal += r.amountNominal
-            goalOutcomeCounts.unfundedAmount += r.amountNominal
-            goalOutcomeCounts.skipped++
-            yearSites?.recordGoalOutcome({
-              goalId: r.id,
-              classification: r.classification,
-              outcome: 'skipped',
-              requested: r.amountNominal,
-              fundedNominal: 0,
-            })
-          }
-        }
-      } else {
-        for (const goal of plan.expenses.oneTimeGoals) {
-          if (goal.year !== year) continue
-          const amount = goal.amount * inflFactor
-          oneTimeGoalsFunded += amount
-          const classification = goal.classification ?? 'target'
-          if (classification === 'required') requiredGoalsFunded += amount
-          else if (classification === 'target') targetGoalsFunded += amount
-          else if (classification === 'ideal') idealGoalsFunded += amount
-          else excessGoalsFunded += amount
-          yearSites?.recordGoalOutcome({
-            goalId: goal.id,
-            classification,
-            outcome: 'funded',
-            requested: amount,
-            fundedNominal: amount,
-          })
-        }
-      }
-    }
+    // One-time goals. The phase lives in
+    // `internal/annualOneTimeGoalFundingPhase.ts`: under guardrails they route
+    // through the scheduler (which may delay/skip flexible goals when cutting);
+    // otherwise every goal funds in its target year exactly, as it always has.
+    // A *skipped* goal is intended spending that never happens, so its amount is
+    // tracked as a target miss (a required-classified skip is also a required
+    // miss) rather than silently vanishing from both sides of the ledger.
+    // Every accumulator starts at zero and has no earlier writer this year, so
+    // the fold moved with the loops; `goalOutcomeCounts` comes back by identity
+    // because the year publishes that very object as `spending.flexibleGoals`.
+    const oneTimeGoalFunding = annualOneTimeGoalFundingPhase({
+      year,
+      inflFactor,
+      anyAlive,
+      goalScheduler,
+      oneTimeGoals: plan.expenses.oneTimeGoals,
+      cutting,
+      canPullForwardGoals,
+      remainingUpsideBudget,
+      commitGoalOutcome: yearSites === null
+        ? undefined
+        : (row) => yearSites.recordGoalOutcome(row),
+    })
+    const oneTimeGoalsFunded = oneTimeGoalFunding.oneTimeGoalsFunded
+    const requiredGoalsFunded = oneTimeGoalFunding.requiredGoalsFunded
+    const targetGoalsFunded = oneTimeGoalFunding.targetGoalsFunded
+    const idealGoalsFunded = oneTimeGoalFunding.idealGoalsFunded
+    const excessGoalsFunded = oneTimeGoalFunding.excessGoalsFunded
+    const skippedRequiredNominal = oneTimeGoalFunding.skippedRequiredNominal
+    const skippedTargetNominal = oneTimeGoalFunding.skippedTargetNominal
+    const skippedIdealNominal = oneTimeGoalFunding.skippedIdealNominal
+    const skippedExcessNominal = oneTimeGoalFunding.skippedExcessNominal
+    const goalOutcomeCounts = oneTimeGoalFunding.goalOutcomeCounts
 
     // Base layers are funding-consistent (they exclude skipped goals) so the
     // shortfall attribution below stays clean; skipped goals are folded back into
