@@ -145,7 +145,7 @@
       "file": "projection/internal/annualQcdExecutionInput.ts",
       "lines": [355, 409],
       "anchors": [
-        { "line": 355, "text": "const poolId = `projection-owned-ira-pool:${JSON.stringify([" },
+        { "line": 355, "text": "const poolId = deriveActionStructuralId('projection-owned-ira-pool', [" },
         { "line": 363, "text": "completePoolEvidence: Object.freeze({" },
         { "line": 388, "text": "annualFacts: Object.freeze({" },
         { "line": 405, "text": "return Object.freeze({" }

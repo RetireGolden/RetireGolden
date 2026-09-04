@@ -24,7 +24,7 @@ import {
   type QualifiedCharitableDistributionRequest,
   type StageAnnualQcdPhysicalExecutionInput,
 } from '../../actions/index.js'
-import { compareUtf16CodeUnits } from '../../actions/structuralId.js'
+import { compareUtf16CodeUnits, deriveActionStructuralId } from '../../actions/structuralId.js'
 
 export interface AnnualQcdExecutionInputPerson {
   readonly personId: string
@@ -129,12 +129,12 @@ export function annualQcdExecutionInput(
   const personAliveEvidenceFor = (
     request: Readonly<QualifiedCharitableDistributionRequest>,
   ) => Object.freeze({
-    evidenceId: `projection-alive:${JSON.stringify([
+    evidenceId: deriveActionStructuralId('projection-alive', [
       request.actionId,
       request.donorPersonId,
       input.taxYear,
       request.executionDate ?? null,
-    ])}`,
+    ]),
     actionId: request.actionId,
     personId: request.donorPersonId,
     actionYear: input.taxYear,
@@ -172,12 +172,12 @@ export function annualQcdExecutionInput(
     }
     const actionDate = request.executionDate ?? null
     return Object.freeze({
-      evidenceId: `projection-prior-qcd-offset:${JSON.stringify([
+      evidenceId: deriveActionStructuralId('projection-prior-qcd-offset', [
         request.actionId,
         request.donorPersonId,
         input.taxYear,
         actionDate,
-      ])}`,
+      ]),
       actionId: request.actionId,
       donorPersonId: request.donorPersonId,
       actionYear: input.taxYear,
@@ -254,11 +254,11 @@ export function annualQcdExecutionInput(
       .sort(compareUtf16CodeUnits))
     return {
       predicate: 'annualQcdOwnedIraRmdPoolOpeningSnapshot' as const,
-      poolId: `projection-owned-ira-rmd-pool:${JSON.stringify([
+      poolId: deriveActionStructuralId('projection-owned-ira-rmd-pool', [
         input.plan.id,
         donorId,
         input.taxYear,
-      ])}`,
+      ]),
       taxYear: input.taxYear,
       donorPersonId: asPersonId(donorId),
       scope: 'ownedIra' as const,
@@ -272,11 +272,11 @@ export function annualQcdExecutionInput(
       ),
       rmdRemainingBefore: remaining,
       upstreamEvidenceId:
-        `projection-owner-ira-rmd-satisfaction:${JSON.stringify([
+        deriveActionStructuralId('projection-owner-ira-rmd-satisfaction', [
           input.plan.id,
           donorId,
           input.taxYear,
-        ])}`,
+        ]),
     }
   }))
 
@@ -334,17 +334,17 @@ export function annualQcdExecutionInput(
             BigInt(Math.min(gift, preDistribution))),
         ),
         iraClassificationEvidenceId:
-          `projection-owned-ira-classification:${JSON.stringify([
+          deriveActionStructuralId('projection-owned-ira-classification', [
             input.plan.id,
             account.accountId,
             input.taxYear,
-          ])}`,
+          ]),
         accountOwnershipEvidenceId:
-          `projection-owned-ira-ownership:${JSON.stringify([
+          deriveActionStructuralId('projection-owned-ira-ownership', [
             input.plan.id,
             account.accountId,
             input.taxYear,
-          ])}`,
+          ]),
       }
     }))
     const poolBalance = asUsdCents(Number(poolMembers.reduce(
@@ -352,11 +352,11 @@ export function annualQcdExecutionInput(
         sum + BigInt(member.yearEndApplicableBalanceAmount),
       0n,
     )))
-    const poolId = `projection-owned-ira-pool:${JSON.stringify([
+    const poolId = deriveActionStructuralId('projection-owned-ira-pool', [
       input.plan.id,
       donorId,
       input.taxYear,
-    ])}`
+    ])
     return Object.freeze({
       ownerPersonId: asPersonId(donorId),
       ownerWideNonRothIraPoolId: poolId,
@@ -371,18 +371,18 @@ export function annualQcdExecutionInput(
             ...ReturnType<typeof asAccountId>[],
           ],
         yearEndApplicablePoolBalanceAmount: poolBalance,
-        evidenceId: `projection-owned-ira-pool-evidence:${JSON.stringify([
+        evidenceId: deriveActionStructuralId('projection-owned-ira-pool-evidence', [
           input.plan.id,
           donorId,
           input.taxYear,
-        ])}`,
+        ]),
       }),
       annualBasisRecordEvidenceId:
-        `projection-owned-ira-annual-basis:${JSON.stringify([
+        deriveActionStructuralId('projection-owned-ira-annual-basis', [
           input.plan.id,
           donorId,
           input.taxYear,
-        ])}`,
+        ]),
       taxYear: input.taxYear,
       poolMembers,
       annualFacts: Object.freeze({
