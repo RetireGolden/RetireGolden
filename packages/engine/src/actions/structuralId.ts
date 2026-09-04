@@ -132,6 +132,65 @@ function sha256(value: string): string {
   return hash.map((word) => word.toString(16).padStart(8, '0')).join('')
 }
 
+/**
+ * Longest canonical payload this module will keep a digest for, in UTF-16
+ * code units, and the most entries it will hold.
+ *
+ * The cache below is a pure memo — same canonical string, same digest — so
+ * these two numbers change nothing but memory and speed. They exist because
+ * the engine runs inside a long-lived worker: an unbounded map keyed by
+ * caller-shaped strings would grow for the life of the process. Bounding the
+ * entry count alone would not bound the memory, because the keys are the
+ * payloads themselves and a payload has no fixed size, so the length cap
+ * bounds each entry and the entry cap bounds their number. Together they hold
+ * the cache under roughly 8 MB in the worst case and a fraction of a megabyte
+ * in practice, where the repeated payloads are the short per-year identity
+ * ones (tens of bytes each).
+ *
+ * A payload longer than the cap is hashed and not retained: long payloads are
+ * the one-off aggregate records, which are hashed once and never repeat, so
+ * caching them would spend the whole budget on entries that never hit.
+ */
+const DIGEST_CACHE_MAX_PAYLOAD_LENGTH = 512
+const DIGEST_CACHE_MAX_ENTRIES = 8192
+
+const digestCache = new Map<string, string>()
+
+/** @internal The two bounds above, so a test can assert against them. */
+export const DIGEST_CACHE_BOUNDS = Object.freeze({
+  maxPayloadLength: DIGEST_CACHE_MAX_PAYLOAD_LENGTH,
+  maxEntries: DIGEST_CACHE_MAX_ENTRIES,
+})
+
+/** @internal How many digests the memo is holding right now. */
+export function digestCacheSize(): number {
+  return digestCache.size
+}
+
+/**
+ * @internal Empties the memo, so a test can derive the same ID both cold and
+ * warm and compare. Callers get the same ID either way, so nothing outside a
+ * test has a reason to call this.
+ */
+export function clearDigestCache(): void {
+  digestCache.clear()
+}
+
+function cachedSha256(canonical: string): string {
+  if (canonical.length > DIGEST_CACHE_MAX_PAYLOAD_LENGTH) {
+    return sha256(canonical)
+  }
+  const cached = digestCache.get(canonical)
+  if (cached !== undefined) return cached
+  const digest = sha256(canonical)
+  // Clear rather than evict one entry: the working set here is a small,
+  // stable group of per-year identity payloads, so a full clear costs one
+  // rebuild of that group and needs no recency bookkeeping on the hot path.
+  if (digestCache.size >= DIGEST_CACHE_MAX_ENTRIES) digestCache.clear()
+  digestCache.set(canonical, digest)
+  return digest
+}
+
 const STRUCTURAL_PARTS_ERROR =
   'Structural ID parts must be JSON-serializable'
 
@@ -236,6 +295,12 @@ function canonicalJsonValue(
  * checks below prevent lossy JSON semantics for in-contract plain data. This
  * synchronous implementation remains browser-safe.
  *
+ * Every payload is canonicalized on every call; only the digest of an
+ * already-seen canonical string is reused, from the bounded memo above. The
+ * validation therefore still runs against the caller's actual object graph
+ * each time, and the memo can only ever return the digest the same canonical
+ * string would have produced.
+ *
  * @internal
  */
 export function deriveActionStructuralId(
@@ -254,7 +319,7 @@ export function deriveActionStructuralId(
   if (canonical === undefined) {
     throw new TypeError(STRUCTURAL_PARTS_ERROR)
   }
-  return `${prefix}:${sha256(canonical)}`
+  return `${prefix}:${cachedSha256(canonical)}`
 }
 
 /** @internal Compare strings by raw UTF-16 code units, independent of locale. */
