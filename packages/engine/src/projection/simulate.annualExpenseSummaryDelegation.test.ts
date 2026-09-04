@@ -7,6 +7,11 @@
  * block would still match. These sentinels instead prove that `simulatePlan`
  * publishes the helper's exact mutable object and carries each separate layer
  * base into downstream shortfall attribution.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here. The second
+ * mock below (the goal scheduler) is not a delegation seam and keeps its own
+ * hand-written factory.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -15,53 +20,48 @@ import type {
   AnnualExpenseSummaryInput,
 } from './internal/annualExpenseSummary.js'
 
-interface SeamCall {
-  readonly input: AnnualExpenseSummaryInput
-  readonly natural: AnnualExpenseSummary
-  readonly injected: AnnualExpenseSummary
-}
-
-const seam = vi.hoisted(() => ({ calls: [] as SeamCall[] }))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualExpenseSummaryInput,
+      AnnualExpenseSummary,
+      AnnualExpenseSummaryInput
+    >(),
+)
 const guardrailSeam = vi.hoisted(() => ({ calls: 0 }))
 
-vi.mock('./internal/annualExpenseSummary.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualExpenseSummary.js')>()
-  return {
-    ...original,
-    annualExpenseSummary: (
-      input: AnnualExpenseSummaryInput,
-    ): AnnualExpenseSummary => {
-      const natural = original.annualExpenseSummary(input)
-      const ordinal = seam.calls.length
-      const injected: AnnualExpenseSummary = {
-        expenses: {
-          baseSpending: 2_001 + ordinal,
-          oneTimeGoals: 2_003 + ordinal,
-          debtService: 2_005 + ordinal,
-          propertyCosts: 2_007 + ordinal,
-          healthcare: 2_011 + ordinal,
-          insurancePremiums: 2_013 + ordinal,
-          careCost: 2_017 + ordinal,
-          ltcBenefit: 2_019 + ordinal,
-          requiredSpending: 2_023 + ordinal,
-          targetSpending: 2_029 + ordinal,
-          idealSpending: 2_031 + ordinal,
-          excessSpending: 2_037 + ordinal,
-          intendedSpending: 2_039 + ordinal,
-          guardrailFactor: 0.81 + ordinal / 100,
-          total: 101 + ordinal,
-        },
-        requiredSpendingBase: 137 + ordinal,
-        targetSpendingBase: 159 + ordinal,
-        idealSpendingBase: 23 + ordinal,
-        excessSpendingBase: 29 + ordinal,
-      }
-      seam.calls.push({ input: { ...input }, natural, injected })
-      return injected
-    },
-  }
-})
+vi.mock('./internal/annualExpenseSummary.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualExpenseSummary.js')>(),
+    'annualExpenseSummary',
+    (_natural, { ordinal }): AnnualExpenseSummary => ({
+      expenses: {
+        baseSpending: 2_001 + ordinal,
+        oneTimeGoals: 2_003 + ordinal,
+        debtService: 2_005 + ordinal,
+        propertyCosts: 2_007 + ordinal,
+        healthcare: 2_011 + ordinal,
+        insurancePremiums: 2_013 + ordinal,
+        careCost: 2_017 + ordinal,
+        ltcBenefit: 2_019 + ordinal,
+        requiredSpending: 2_023 + ordinal,
+        targetSpending: 2_029 + ordinal,
+        idealSpending: 2_031 + ordinal,
+        excessSpending: 2_037 + ordinal,
+        intendedSpending: 2_039 + ordinal,
+        guardrailFactor: 0.81 + ordinal / 100,
+        total: 101 + ordinal,
+      },
+      requiredSpendingBase: 137 + ordinal,
+      targetSpendingBase: 159 + ordinal,
+      idealSpendingBase: 23 + ordinal,
+      excessSpendingBase: 29 + ordinal,
+    }),
+    { capture: (input): AnnualExpenseSummaryInput => ({ ...input }) },
+  ),
+)
 
 vi.mock('../spending/flexibleGoals.js', async (importOriginal) => {
   const original =
@@ -127,6 +127,7 @@ vi.mock('../spending/guardrails.js', async (importOriginal) => {
 })
 
 import type { Account, CareEvent, InsurancePolicy } from '../model/plan.js'
+import { expectSeamRanAtLeastOnce } from './simulate.seamGuard.test-support.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   cashAccount,
@@ -189,7 +190,7 @@ function careEvent(): CareEvent {
 }
 
 function run() {
-  seam.calls.length = 0
+  seam.reset()
   guardrailSeam.calls = 0
   const plan = singlePersonPlan({ planningAge: 90 })
   plan.expenses.baseAnnual = 41
@@ -206,7 +207,7 @@ function run() {
     horizonEndYear: 2027,
     taxCalculator: createFlatTaxCalculator(0),
   })
-  return { result, calls: [...seam.calls] }
+  return { result, calls: [...expectSeamRanAtLeastOnce(seam)] }
 }
 
 describe('simulatePlan delegates final annual expense assembly', () => {
@@ -218,7 +219,9 @@ describe('simulatePlan delegates final annual expense assembly', () => {
     for (let ordinal = 0; ordinal < calls.length; ordinal++) {
       const call = calls[ordinal]!
       const raising = ordinal === 0
-      expect(call.input).toEqual({
+      // `captured` is the shallow copy taken at call time, so a later mutation
+      // of the live input cannot rewrite what this asserts.
+      expect(call.captured).toEqual({
         requiredLifestyle: 17,
         targetLifestyle: 24,
         targetLifestyleFunded: raising ? 24 : 12,

@@ -1,4 +1,9 @@
-/** Hostile seam guard for the core annual-pass publication coordinator. */
+/**
+ * Hostile seam guard for the core annual-pass publication coordinator.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -6,42 +11,37 @@ import type {
 } from './internal/annualYearResultAssembly.js'
 import type { YearResult } from './types.js'
 
-interface AssemblyCall {
-  readonly input: AnnualYearResultAssemblyInput
-  readonly natural: YearResult
-  readonly injected: YearResult
-}
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<AnnualYearResultAssemblyInput, YearResult>(),
+)
 
-const seam = vi.hoisted(() => ({ calls: [] as AssemblyCall[] }))
+vi.mock('./internal/annualYearResultAssembly.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualYearResultAssembly.js')
+    >(),
+    'annualYearResultAssembly',
+    (natural, { ordinal }): YearResult => ({
+      ...natural,
+      flexibleGoals: {
+        funded: 100 + ordinal,
+        partiallyFunded: 200 + ordinal,
+        deferred: 300 + ordinal,
+        skipped: 400 + ordinal,
+        fundedAmount: 500 + ordinal,
+        unfundedAmount: 600 + ordinal,
+      },
+    }),
+  ),
+)
 
-vi.mock('./internal/annualYearResultAssembly.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualYearResultAssembly.js')
-  >()
-  return {
-    ...original,
-    annualYearResultAssembly: (
-      input: AnnualYearResultAssemblyInput,
-    ): YearResult => {
-      const natural = original.annualYearResultAssembly(input)
-      const ordinal = seam.calls.length
-      const injected: YearResult = {
-        ...natural,
-        flexibleGoals: {
-          funded: 100 + ordinal,
-          partiallyFunded: 200 + ordinal,
-          deferred: 300 + ordinal,
-          skipped: 400 + ordinal,
-          fundedAmount: 500 + ordinal,
-          unfundedAmount: 600 + ordinal,
-        },
-      }
-      seam.calls.push({ input, natural, injected })
-      return injected
-    },
-  }
-})
-
+import {
+  expectPublishedFromSeam,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import {
   singlePersonPlan,
   traditionalAccount,
@@ -54,7 +54,7 @@ const zeroTax: TaxCalculator = { compute: () => 0 }
 
 describe('simulatePlan YearResult assembly delegation', () => {
   beforeEach(() => {
-    seam.calls.length = 0
+    seam.reset()
   })
 
   it('commits the exact coordinator object when no outer replay attaches', () => {
@@ -73,15 +73,15 @@ describe('simulatePlan YearResult assembly delegation', () => {
       taxCalculator: zeroTax,
     })
 
-    expect(seam.calls.length).toBeGreaterThan(0)
+    const calls = expectSeamRanAtLeastOnce(seam)
     expect(result.years).toHaveLength(1)
     const published = result.years[0]!
-    const committedCall = seam.calls.find(
-      ({ injected }) => injected === published,
-    )
+    const committedCall = calls.find(({ injected }) => injected === published)
     expect(committedCall).toBeDefined()
-    expect(published.flexibleGoals).toBe(
+    expectPublishedFromSeam(
+      published.flexibleGoals,
       committedCall!.injected.flexibleGoals,
+      'year.flexibleGoals',
     )
     expect(committedCall!.input).toMatchObject({
       chronology: { year: 2026, filingStatus: 'single' },
@@ -133,15 +133,21 @@ describe('simulatePlan YearResult assembly delegation', () => {
 
     expect(result.years).toHaveLength(1)
     const published = result.years[0]!
-    const committedCall = seam.calls.find(
+    const committedCall = expectSeamRanAtLeastOnce(seam).find(
       ({ injected }) => injected.flexibleGoals === published.flexibleGoals,
     )
     expect(committedCall).toBeDefined()
     expect(published).not.toBe(committedCall!.injected)
-    expect(published.flexibleGoals).toBe(
+    expectPublishedFromSeam(
+      published.flexibleGoals,
       committedCall!.injected.flexibleGoals,
+      'year.flexibleGoals',
     )
-    expect(published.balances).toBe(committedCall!.injected.balances)
+    expectPublishedFromSeam(
+      published.balances,
+      committedCall!.injected.balances,
+      'year.balances',
+    )
     expect(published).toHaveProperty('ownedNonRothIraAnnualReplay')
     expect(Object.keys(published).at(-1)).toBe('ownedNonRothIraAnnualReplay')
   })

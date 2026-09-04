@@ -104,7 +104,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 4 | 4 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 9 | 0 | 7 | 2 | 0 |
-| projection | 91 | 20 | 15 | 56 | 0 |
+| projection | 92 | 20 | 15 | 57 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
 | rules | 47 | 0 | 20 | 27 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |

@@ -459,11 +459,11 @@
     },
     {
       "directory": "projection",
-      "files": 91,
+      "files": 92,
       "byStatus": {
         "partial": 20,
         "registered": 15,
-        "rule-free": 56
+        "rule-free": 57
       }
     },
     {

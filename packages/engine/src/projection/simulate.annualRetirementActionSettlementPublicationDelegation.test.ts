@@ -1,4 +1,9 @@
-/** Hostile delegation guard for the settlement-publication coordinator seam. */
+/**
+ * Hostile delegation guard for the settlement-publication coordinator seam.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -11,52 +16,58 @@ import type {
   ExecuteConversionLinkedWithdrawalGroupsResult,
 } from '../actions/index.js'
 
-const seam = vi.hoisted(() => ({
-  calls: [] as AnnualRetirementActionSettlementPublicationInput[],
-  publication: Object.freeze({ sentinel: 'publication' }),
-  linkedExecution: Object.freeze({ sentinel: 'linked-execution' }),
-  prerequisiteEvidence: Object.freeze([{ sentinel: 'qcd-prerequisite' }]),
-}))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualRetirementActionSettlementPublicationInput,
+      AnnualRetirementActionSettlementPublicationResult
+    >(),
+)
 
 vi.mock(
   './internal/annualRetirementActionSettlementPublication.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualRetirementActionSettlementPublication.js')
-    >()
-    return {
-      ...original,
-      annualRetirementActionSettlementPublication: (
-        input: AnnualRetirementActionSettlementPublicationInput,
-      ): AnnualRetirementActionSettlementPublicationResult => {
-        original.annualRetirementActionSettlementPublication(input)
-        seam.calls.push(input)
-        return {
-          retirementActionPublication:
-            seam.publication as unknown as AnnualRetirementActionPublication,
-          conversionLinkedWithdrawalGroupExecution:
-            seam.linkedExecution as unknown as ExecuteConversionLinkedWithdrawalGroupsResult,
-          qcdActionPrerequisites: {
-            status: 'evaluated',
-            committed: false,
-            taxYear: input.taxYear,
-            requests: [],
-            evidence: seam.prerequisiteEvidence,
-            publicationSource: {
-              executorSource: 'qcd',
-              records: [],
-              scheduleDiagnostics: [],
-            },
-            issues: [],
-          } as unknown as Extract<
-            EvaluateAnnualQcdExecutionPrerequisitesResult,
-            { status: 'evaluated' }
-          >,
-        }
-      },
-    }
-  },
+  async (importOriginal) =>
+    seam.through(
+      await importOriginal<
+        typeof import('./internal/annualRetirementActionSettlementPublication.js')
+      >(),
+      'annualRetirementActionSettlementPublication',
+      (
+        _natural,
+        { input },
+      ): AnnualRetirementActionSettlementPublicationResult => ({
+        retirementActionPublication: Object.freeze({
+          sentinel: 'publication',
+        }) as unknown as AnnualRetirementActionPublication,
+        conversionLinkedWithdrawalGroupExecution: Object.freeze({
+          sentinel: 'linked-execution',
+        }) as unknown as ExecuteConversionLinkedWithdrawalGroupsResult,
+        qcdActionPrerequisites: {
+          status: 'evaluated',
+          committed: false,
+          taxYear: input.taxYear,
+          requests: [],
+          evidence: Object.freeze([{ sentinel: 'qcd-prerequisite' }]),
+          publicationSource: {
+            executorSource: 'qcd',
+            records: [],
+            scheduleDiagnostics: [],
+          },
+          issues: [],
+        } as unknown as Extract<
+          EvaluateAnnualQcdExecutionPrerequisitesResult,
+          { status: 'evaluated' }
+        >,
+      }),
+    ),
 )
+
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+} from './simulate.seamGuard.test-support.js'
 
 import { singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
@@ -66,7 +77,7 @@ const zeroTax: TaxCalculator = { compute: () => 0 }
 
 describe('simulatePlan settlement-publication delegation', () => {
   beforeEach(() => {
-    seam.calls.length = 0
+    seam.reset()
   })
 
   it('publishes the coordinator-owned objects without rebuilding them', () => {
@@ -85,21 +96,28 @@ describe('simulatePlan settlement-publication delegation', () => {
       taxCalculator: zeroTax,
     })
 
-    expect(seam.calls).toHaveLength(1)
-    expect(seam.calls[0]).toMatchObject({
+    const call = expectSeamRan(seam, 1)[0]!
+    expect(call.input).toMatchObject({
       planId: plan.id,
       taxYear: 2026,
       taxPlanDollars: 0,
       penaltiesPlanDollars: 0,
     })
-    expect(result.years[0]!.retirementActionPublication).toBe(
-      seam.publication,
+    const year = result.years[0]!
+    expectPublishedFromSeam(
+      year.retirementActionPublication,
+      call.injected.retirementActionPublication,
+      'year.retirementActionPublication',
     )
-    expect(
-      result.years[0]!.conversionLinkedWithdrawalGroupExecution,
-    ).toBe(seam.linkedExecution)
-    expect(result.years[0]!.qcdActionPrerequisites).toBe(
-      seam.prerequisiteEvidence,
+    expectPublishedFromSeam(
+      year.conversionLinkedWithdrawalGroupExecution,
+      call.injected.conversionLinkedWithdrawalGroupExecution,
+      'year.conversionLinkedWithdrawalGroupExecution',
+    )
+    expectPublishedFromSeam(
+      year.qcdActionPrerequisites,
+      call.injected.qcdActionPrerequisites!.evidence,
+      'year.qcdActionPrerequisites',
     )
   })
 })
