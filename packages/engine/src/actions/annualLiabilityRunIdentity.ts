@@ -368,7 +368,14 @@ export function mintAnnualLiabilityRunIdentity(
   }
 }
 
-/** Whether two run bindings name the same run of the same filing unit's year. */
+/**
+ * Whether two run bindings name the same run of the same filing unit's year.
+ *
+ * This is the sanctioned way to compare two `AnnualLiabilityRunBinding`s. No
+ * module in the tree needs it yet (only its own test does); it stays exported
+ * so the next consumer reuses this predicate instead of inlining a two-field
+ * comparison that could drift from it.
+ */
 export function sameAnnualLiabilityRun(
   left: Readonly<AnnualLiabilityRunBinding>,
   right: Readonly<AnnualLiabilityRunBinding>,
