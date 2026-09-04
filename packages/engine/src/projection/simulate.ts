@@ -61,7 +61,7 @@ import {
   type PhysicalBalanceState,
 } from './internal/annualLogicalBalanceLedger.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
-import { annualAnnuityPurchaseFunding } from './internal/annualAnnuityPurchaseFunding.js'
+import { annualAnnuityPurchaseApplicationPhase } from './internal/annualAnnuityPurchaseApplicationPhase.js'
 import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
 import { annualForcedDistributionQcdAndRetirementActionsPhase } from
   './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js'
@@ -1370,30 +1370,14 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     /** Contract-value credits, held back so the phase runs contiguously. */
-    const pendingAnnuityContractCredits: {
-      producerOccurrenceKey: string
-      annuityAccountId: string
-      ownerPersonId: string | null
-      creditedAmountPlanDollars: number
-      contractValueBeforePlanDollars: number
-      contractValueAfterPlanDollars: number
-    }[] = []
     // --- annuity purchase funding (guaranteed-income-and-estate-depth) -------
-    // A purchased annuity trades a premium out of a funding account in its
-    // purchase year. The move is a transfer, not spending: cash and qualified
-    // (traditional) sources move at book value; a taxable/equity-comp source
-    // realizes gains pro-rata like any sale, folded into this year's realized
-    // gains, and the premium leaves the account. A qualified premium leaving a
-    // traditional balance shrinks future RMDs automatically. A QLAC premium is
-    // held to the statutory cap. The premium actually funded becomes the
-    // contract's investment for the non-qualified exclusion ratio.
-    //
-    // The late-start warning is a last line rather than the only one.
-    // `parsePlan` refuses a qualified purchase that starts paying later than
-    // its shape permits, but simulatePlan accepts an in-memory Plan by type.
-    // The pure planner therefore preserves the warning for that reachable
-    // shape alongside the statutory cap and available-funding warnings.
-    const annuityPurchaseRows = annualAnnuityPurchaseFunding({
+    // The phase lives in `internal/annualAnnuityPurchaseApplicationPhase.ts`:
+    // the positional refusals, the funding-account mutation, the realized-gain
+    // fold that continues from the rebalance's non-zero base, and the
+    // runtime-journal rows -- every debit first, then every deferred contract
+    // credit, so a household that buys two contracts in one year keeps each
+    // application phase to one contiguous run.
+    const annuityPurchaseApplication = annualAnnuityPurchaseApplicationPhase({
       accounts: plan.accounts,
       balances,
       peopleById: personById,
@@ -1401,124 +1385,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       year,
       qlacPremiumCap: pack.annuities.qlacPremiumCap,
       limitGrowth,
+      rebalanceRealizedGains,
+      warnings,
+      exogenousStrategyDebits,
+      annuityContractValue,
+      annuityInvestmentInContract,
+      runtimeOccurrenceKey,
+      recordAnnualRetirementRuntimeOccurrence,
+      recordAnnualRetirementRuntimeApplication,
+      yearSites,
     })
-    if (annuityPurchaseRows.length !== plan.accounts.length) {
-      throw new Error('Annuity-purchase funding row count does not match Plan accounts')
-    }
-    for (let accountIndex = 0; accountIndex < plan.accounts.length; accountIndex++) {
-      const row = annuityPurchaseRows[accountIndex]!
-      if (row.accountIndex !== accountIndex) {
-        throw new Error('Annuity-purchase funding row lost its Plan position')
-      }
-      if (row.kind === 'none') continue
-      const account = plan.accounts[accountIndex]
-      const funding = balances[row.fundingIndex]
-      if (
-        account?.type !== 'annuity' ||
-        !account.purchase ||
-        funding === undefined ||
-        funding.account.id !== account.purchase.fundingAccountId
-      ) {
-        throw new Error('Annuity-purchase funding row does not resolve its funding account')
-      }
-      for (const warning of row.warnings) warnings.add(warning)
-      const fundingBalanceBefore = funding.balance
-      if (row.capitalGainOrLossDelta !== null) {
-        rebalanceRealizedGains += row.capitalGainOrLossDelta
-        funding.costBasis = row.closingCostBasis!
-      }
-      funding.balance = row.closingBalance
-      yearSites?.recordAnnuityPurchase(row.record)
-      // The premium leaves an LP bucket for a contract the LP does not carry.
-      // Captured here rather than from the occurrence below, which is emitted
-      // only for a traditional funding source — a cash- or brokerage-funded
-      // premium moves exactly the same dollars and publishes nothing.
-      if (row.debit !== null) exogenousStrategyDebits.push(row.debit)
-      if (row.funded > 0 && funding.account.type === 'traditional') {
-        const kind = 'annuityFundingTransfer' as const
-        const producerOccurrenceKey = runtimeOccurrenceKey(
-          kind,
-          funding.account.id,
-          account.id,
-        )
-        recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey,
-          kind,
-          grossAmountPlanDollars: row.funded,
-          ownerPersonId: funding.account.ownerPersonId,
-          sourceAccountId: funding.account.id,
-          executionDate: null,
-          executionSequence: null,
-          movementAuthorityId: null,
-        })
-        if (isAggregatedIra(funding.account)) {
-          recordAnnualRetirementRuntimeApplication({
-            applicationKind: 'debit',
-            producerOccurrenceKey,
-            simulatorPhase: 'annuityPurchaseFunding',
-            ownerPersonId: funding.account.ownerPersonId,
-            sourceAccountId: funding.account.id,
-            sourceBalanceBeforePlanDollars: fundingBalanceBefore,
-            appliedAmountPlanDollars: row.funded,
-            sourceBalanceAfterPlanDollars: funding.balance,
-          })
-          // THE CREDIT BESIDE THE DEBIT. The premium is not a distribution --
-          // IRC 408(d)(1) reaches only what is paid or distributed OUT, and
-          // Publication 590-B says the owner is not taxed on receiving the
-          // contract -- so the value did not leave the section 408(d)(2)
-          // aggregate, it changed which asset holds it. Recording only the debit
-          // asserted the opposite by omission: the line-6 denominator lost the
-          // premium and nothing gained it. Withheld where the contract has no
-          // channel at all, so the year refuses in the source series rather
-          // than crediting one that cannot say whose aggregate it belongs to.
-          //
-          // DEFERRED PAST THE LOOP rather than recorded in place, and a
-          // household that buys two contracts in one year is the whole reason.
-          // The replay requires application phases to be non-decreasing across
-          // the year, so debit-credit-debit-credit would refuse an ordinary
-          // Plan on an ordering rule that is about the simulator's own passes
-          // and not about anything the statute cares about. Every debit first,
-          // then every credit, keeps each phase to one contiguous run.
-          if (annuityContractValue.has(account.id)) {
-            const contractValueBefore = annuityContractValue.get(account.id)!
-            const contractValueAfter = contractValueBefore + row.funded
-            annuityContractValue.set(account.id, contractValueAfter)
-            pendingAnnuityContractCredits.push({
-              producerOccurrenceKey,
-              annuityAccountId: account.id,
-              ownerPersonId: funding.account.ownerPersonId,
-              creditedAmountPlanDollars: row.funded,
-              contractValueBeforePlanDollars: contractValueBefore,
-              contractValueAfterPlanDollars: contractValueAfter,
-            })
-          }
-        }
-      }
-      annuityInvestmentInContract.set(
-        account.id,
-        (annuityInvestmentInContract.get(account.id) ?? 0) + row.funded,
-      )
-    }
-    for (const credit of pendingAnnuityContractCredits) {
-      recordAnnualRetirementRuntimeApplication({
-        applicationKind: 'annuityContractPremiumCredit',
-        simulatorPhase: 'annuityPurchaseContractCredit',
-        producerOccurrenceKey: null,
-        ownerPersonId: null,
-        sourceAccountId: null,
-        sourceBalanceBeforePlanDollars: null,
-        sourceBalanceAfterPlanDollars: null,
-        producerOccurrenceKeys: [credit.producerOccurrenceKey],
-        sourceOwnerPersonIds: [credit.ownerPersonId],
-        destinationAnnuityAccountId: credit.annuityAccountId,
-        destinationOwnerPersonId: credit.ownerPersonId,
-        destinationContractValueBeforePlanDollars:
-          credit.contractValueBeforePlanDollars,
-        destinationCreditedAmountPlanDollars: credit.creditedAmountPlanDollars,
-        destinationContractValueAfterPlanDollars:
-          credit.contractValueAfterPlanDollars,
-      })
-    }
+    rebalanceRealizedGains = annuityPurchaseApplication.rebalanceRealizedGains
 
     // --- pension lump-sum rollover (annuity-pension-and-home-equity, step 3) -
     // An elected lump sum commutes the pension: the offer amount arrives as a
