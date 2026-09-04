@@ -6,6 +6,7 @@ import type {
 } from './identity.js'
 import type { UsdCents } from './money.js'
 import type { OwnedNonRothIraSubtype } from './ownedNonRothIraWithdrawalCharacter.js'
+import { deriveActionStructuralId } from './structuralId.js'
 
 /**
  * The one prefix the owned-IRA penalty character-coverage evidence ID carries.
@@ -96,14 +97,19 @@ export function coverageEvidenceIdParts(
 }
 
 /**
- * Mints the character-coverage evidence ID from its part list. This is the
- * historical `${prefix}:${JSON.stringify(parts)}` form and its output is
- * frozen: existing evidence IDs must remain byte-identical, so this must not
- * be migrated to the hashed structural form without a coordinated change on
- * every producer and consumer at once.
+ * Mints the character-coverage evidence ID from its part list, through the
+ * hardened structural minter: canonical key order, no `NaN`/`Infinity`/`-0`,
+ * no cycles or non-plain prototypes, and a fixed 64-hex digest instead of the
+ * whole payload inline. The historical `${prefix}:${JSON.stringify(parts)}`
+ * form it replaced could not say any of that.
+ *
+ * The output is still a frozen wire format: producer and both SEPP consumers
+ * compare minted IDs, so changing this function, or the part order it is fed,
+ * must remain one coordinated change across every call site. They all reach it
+ * through this one export, which is what makes that possible.
  *
  * @internal
  */
 export function mintCoverageEvidenceId(parts: readonly unknown[]): string {
-  return `${OWNED_IRA_PENALTY_COVERAGE_ID_PREFIX}:${JSON.stringify(parts)}`
+  return deriveActionStructuralId(OWNED_IRA_PENALTY_COVERAGE_ID_PREFIX, parts)
 }

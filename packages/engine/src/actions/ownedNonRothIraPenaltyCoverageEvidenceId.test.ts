@@ -17,16 +17,18 @@ import {
 } from './ownedNonRothIraPenaltyCoverageEvidenceId.js'
 
 /**
- * Characterization pin, not an oracle. The expected value below is the exact
- * string the pre-extraction code minted for these inputs, captured before the
- * producer and the two SEPP consumers were collapsed onto one shared part
+ * Characterization pin, not an oracle. The expected value below is what
+ * `deriveActionStructuralId` produces for these inputs through the shared part
  * builder. Its authority is the frozen wire format of already-minted evidence
- * IDs, not a statute: any reordering, added field, or move to the hashed
- * structural form would silently flip every consumer's conformance check, so
- * this test exists to make that a red test instead.
+ * IDs, not a statute: producer and both SEPP consumers compare minted IDs, so
+ * any reordering, added field, or change of minter would silently flip every
+ * consumer's conformance check, and this test exists to make that a red test
+ * instead. It replaced the raw-`JSON.stringify` pin captured before the three
+ * sides were collapsed onto one part builder.
  */
 const PINNED_COVERAGE_EVIDENCE_ID =
-  'owned-ira-penalty-character-coverage:["action-1","allocation-1","ira-account-1","owner-1","traditional","2030-06-01",100000,40000,60000,"basis-evidence-1","line7-allocation-evidence-1",["character-segment-evidence-1","character-segment-evidence-2"],{"predicate":"ownedNonRothIraPenaltySourceForWithdrawal","actionId":"action-1","allocationId":"allocation-1","sourceAccountId":"ira-account-1","ownerPersonId":"owner-1","subtype":"traditional","evaluationDate":"2030-06-01","distributionDateEvidenceId":"distribution-date-evidence-1","accountOwnershipEvidenceId":"ownership-evidence-1","iraClassificationEvidenceId":"classification-evidence-1"},"age-threshold-evidence-1"]'
+  'owned-ira-penalty-character-coverage:b448b74151a530fee7a01614a0d370cc' +
+  '1abd5a84b0a725a65ba2af2b14bc6f8d'
 
 function pinnedFields(): OwnedNonRothIraPenaltyCoverageEvidenceIdFields {
   return {
@@ -134,9 +136,11 @@ function evaluatedCoverage() {
 }
 
 describe('owned IRA penalty character-coverage evidence ID', () => {
-  it('mints the pinned pre-extraction ID byte for byte', () => {
+  it('mints the pinned ID byte for byte', () => {
     expect(mintCoverageEvidenceId(coverageEvidenceIdParts(pinnedFields())))
       .toBe(PINNED_COVERAGE_EVIDENCE_ID)
+    expect(mintCoverageEvidenceId(coverageEvidenceIdParts(pinnedFields())))
+      .toMatch(/^owned-ira-penalty-character-coverage:[0-9a-f]{64}$/)
   })
 
   it('commits to exactly fourteen ordered parts', () => {
