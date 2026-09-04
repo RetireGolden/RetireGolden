@@ -3100,3 +3100,44 @@ describe('scenario lever contract', () => {
     }
   })
 })
+
+// Every `ScenarioLeverId` has exactly one builder registered in the
+// module-private `SCENARIO_LEVER_BUILDERS` map: a missing or extra key
+// there is a `tsc -b` compile error (the map is annotated with the
+// homomorphic mapped type `{ [Id in ScenarioLeverId]: LeverBuilder<Id> }`),
+// and CI runs that build for this package. The runtime check below can't
+// reach the map directly — it isn't exported, on purpose, since exporting it
+// would let a caller invoke a builder without the calendar-year validation
+// and cloning `buildScenarioLever` does first (see the comment on its
+// declaration) — so it instead dispatches through the public
+// `buildScenarioLever` with a deliberately incomplete request per id and
+// confirms it comes back as a well-formed result (built or unavailable, per
+// that lever's own required fields). A thrown error is reported with which
+// of the two distinct failure modes it looks like, rather than left as an
+// opaque "expected function not to throw": "... is not a function" means the
+// registry entry for that id is missing (or was replaced with a non-function
+// during the test run); anything else means the builder itself violates the
+// convention every other builder in this file follows of reporting a bad
+// request via `unavailable(...)` rather than throwing.
+describe('every ScenarioLeverId dispatches to a registered builder', () => {
+  it.each(SCENARIO_LEVER_DEFINITIONS)('does not throw for "$id" with an incomplete request', ({ id }) => {
+    const plan = buildExampleCouple()
+    const request = { id } as unknown as ScenarioLeverRequest
+    let result: ReturnType<typeof buildScenarioLever> | undefined
+    try {
+      result = buildScenarioLever(plan, request, context)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      const looksLikeMissingBuilder = /is not a function/.test(message)
+      throw new Error(
+        `buildScenarioLever threw for "${id}": ${message}\n` +
+          (looksLikeMissingBuilder
+            ? `This looks like a missing SCENARIO_LEVER_BUILDERS entry for "${id}".`
+            : `This lever's builder threw instead of returning unavailable(...) for a bad request.`),
+        { cause: error },
+      )
+    }
+    expect(result).toBeDefined()
+    expect(typeof result?.ok).toBe('boolean')
+  })
+})
