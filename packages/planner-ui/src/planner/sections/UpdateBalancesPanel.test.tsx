@@ -204,6 +204,38 @@ async function chooseFile(el: HTMLElement, text: string) {
   })
 }
 
+/**
+ * Dispatch a file at the hidden input whose `text()` this test resolves BY HAND,
+ * so the read stays outstanding while the test does something else to the panel.
+ * Returns the resolver; call it inside an `act` and settle to let the panel's
+ * continuation run (or be discarded, which is what these specs are about).
+ */
+function startHeldRead(el: HTMLElement, name = 'positions.csv'): (text: string) => void {
+  let resolveText!: (value: string) => void
+  const file = new File(['ignored'], name, { type: 'text/csv' })
+  Object.defineProperty(file, 'text', {
+    value: () =>
+      new Promise<string>((resolve) => {
+        resolveText = resolve
+      }),
+    configurable: true,
+  })
+  const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+  Object.defineProperty(input, 'files', { value: [file], configurable: true })
+  act(() => {
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  return (text: string) => resolveText(text)
+}
+
+/** Drive the row-`i` select the way React sees a real user change. */
+function selectTarget(el: HTMLElement, i: number, accountId: string) {
+  const sel = selects(el)[i]!
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!
+  setter.call(sel, accountId)
+  sel.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
 function enableDurableRefreshHistory() {
   // The idb wrapper touches more than `indexedDB`; installing only the
   // factory leaves IDBRequest and friends undefined and open() throws mid
@@ -1553,5 +1585,268 @@ describe('UpdateBalancesPanel protection pending', () => {
     act(() => applyButton(container!).click())
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 1, costBasis: 1 })
     expect(plan.accounts.find((a) => a.id === 'acct-roth')!).toMatchObject({ balance: 14000 })
+  })
+})
+
+/**
+ * Put `plan`'s brokerage account in the state a stored refresh left it in, and
+ * store the snapshot that would undo that refresh — the setup every "Restore
+ * previous balances" spec below needs before it can click anything.
+ */
+async function seedRestorableSnapshot(plan: Plan): Promise<void> {
+  const brokerage = plan.accounts.find((account) => account.id === 'acct-brokerage')!
+  if (brokerage.type !== 'taxable') throw new Error('expected taxable account')
+  brokerage.balance = 50_000
+  brokerage.costBasis = 30_000
+  await saveRefreshSnapshot({
+    id: `snap-${plan.id}`,
+    planId: plan.id,
+    appliedAtIso: '2026-07-15T12:00:00.000Z',
+    sourceLabel: 'Schwab — positions.csv',
+    sourceSha256: '',
+    changes: [
+      {
+        accountId: 'acct-brokerage',
+        accountName: 'Brokerage',
+        before: { balance: 10_000, costBasis: 8_000 },
+        after: { balance: 50_000, costBasis: 30_000 },
+      },
+    ],
+  })
+}
+
+/**
+ * The rest of the concurrency matrix. The two blocks above pin the READ paths —
+ * a newer file superseding an older one, a plan swap mid-read, protection going
+ * unknown mid-read. What is left, and what these specs pin one guard at a time,
+ * is the same window on the WRITE paths (apply and restore both suspend on a
+ * durable undo record before they mutate) plus the one read case the size check
+ * makes special:
+ *
+ *  - `readEpoch` — every new SELECTION supersedes an older outstanding read,
+ *    including one the panel refuses on size before it reads a byte.
+ *  - `panelEpoch` — any act that changes what the preview promises (a new file,
+ *    a re-target, a release) invalidates an apply suspended on its undo write.
+ *    Cancel is the case the first block already pins.
+ *  - `committedPlanId` — nothing started under one plan may land after a
+ *    `/plan/:id` swap: not a parse, not an apply, not a restore.
+ *  - `protectionUnknownEpoch` (whose false→true edges `committedProtectionPending`
+ *    counts) — the same, for protection going back to UNKNOWN mid-write.
+ *
+ * Each spec asserts BOTH halves of the abort: no plan mutation, and no orphan
+ * undo record left behind for a write that never ran.
+ */
+describe('UpdateBalancesPanel concurrency guards', () => {
+  it('lets an oversize selection supersede an outstanding read', async () => {
+    // `handleFile` claims the read epoch BEFORE the size check, so a selection the
+    // panel refuses is still a newer selection. Without that ordering the refusal
+    // message and the older read's table end up on screen together, the table
+    // describing a file the user has already replaced.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    const resolveSlow = startHeldRead(el, 'slow.csv')
+    expect(el.querySelector('tbody')).toBeNull() // outstanding
+
+    const tooLarge = new File(['not read'], 'too-large.csv', { type: 'text/csv' })
+    Object.defineProperty(tooLarge, 'size', { value: 16 * 1024 * 1024 + 1 })
+    const input = el.querySelector<HTMLInputElement>('input[type="file"]')!
+    Object.defineProperty(input, 'files', { value: [tooLarge], configurable: true })
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      await Promise.resolve()
+    })
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('no larger than 16 MiB')
+
+    // The superseded read settles with a CSV that would otherwise build a table.
+    await act(async () => {
+      resolveSlow(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(el.querySelector('tbody')).toBeNull()
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('no larger than 16 MiB')
+  })
+
+  it('keeps the newer file when a superseded read settles with different contents', async () => {
+    // The block above already chooses two files back-to-back, but both of its reads
+    // settle with the SAME CSV, so an older read that wrongly won would redraw an
+    // identical table and go unnoticed. Give the two reads DIFFERENT files — a
+    // two-section CSV and a one-section one — so "the newer read wins" is visible
+    // in the row count rather than assumed.
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    const resolveSlow = startHeldRead(el, 'slow.csv')
+    const resolveFast = startHeldRead(el, 'fast.csv')
+
+    await act(async () => {
+      resolveFast(ROTH_ONLY_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(selects(el).length).toBe(1)
+
+    await act(async () => {
+      resolveSlow(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(selects(el).length).toBe(1)
+    expect(selects(el)[0]!.value).toBe('acct-roth')
+  })
+
+  it('abandons an apply suspended on its durable write when a row is re-targeted', async () => {
+    // Apply yields on its undo-record write with the delta it built already
+    // captured. A re-target in that window means the preview no longer shows what
+    // the suspended apply would write, which is the agreement the panel keeps.
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    act(() => {
+      applyButton(el).click()
+      selectTarget(el, 1, '')
+    })
+    await advanceBy(20)
+    await advanceBy(20)
+
+    expect(accountBalance(plan, 'acct-brokerage')).toBe(1)
+    expect(accountBalance(plan, 'acct-roth')).toBe(1)
+    expect(await listRefreshSnapshots(plan.id)).toEqual([])
+  })
+
+  it('abandons an apply suspended on its durable write when a row releases a protected account', async () => {
+    // A release changes the effective protection set, and the suspended apply
+    // closed over the set from before it. Letting it land would write the plan
+    // against a protection set neither the user nor the preview now describes.
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    act(() => {
+      applyButton(el).click()
+      el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Brokerage"]')!.click()
+    })
+    await advanceBy(20)
+    await advanceBy(20)
+
+    expect(accountBalance(plan, 'acct-brokerage')).toBe(1)
+    expect(accountBalance(plan, 'acct-roth')).toBe(1)
+    expect(await listRefreshSnapshots(plan.id)).toEqual([])
+  })
+
+  it('abandons an apply suspended on its durable write when a new file is chosen', async () => {
+    // The visible chooser is replaced by the preview while a table is up, but the
+    // hidden input can still be driven directly — and `handleFile` treats that like
+    // Cancel, because the preview the apply was authorised against is gone.
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    const el = renderPanel(plan)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    act(() => applyButton(el).click())
+    const resolveNext = startHeldRead(el, 'second.csv')
+    await advanceBy(20)
+    await advanceBy(20)
+
+    expect(accountBalance(plan, 'acct-brokerage')).toBe(1)
+    expect(accountBalance(plan, 'acct-roth')).toBe(1)
+    expect(await listRefreshSnapshots(plan.id)).toEqual([])
+
+    // Not stuck: the newer read still builds its own table.
+    await act(async () => {
+      resolveNext(TWO_ACCOUNT_CSV)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(el.querySelector('tbody')).not.toBeNull()
+  })
+
+  it('abandons an apply suspended on its durable write when the plan identity changes', async () => {
+    // The suspended apply's `update` still points at P1 — the test's own provider
+    // binds `update` to whichever plan object it was built with, so the stale
+    // closure could never reach P2 even with the guard removed. What the identity
+    // guard actually prevents is the write landing on P1 itself after the user has
+    // navigated away from it: without it, the apply still refreshes P1 underneath
+    // the panel now showing P2, and cloned plans share account ids, so a write that
+    // did cross plans would look plausible instead of throwing.
+    enableDurableRefreshHistory()
+    const p1 = planWithAccounts()
+    const el = renderPanel(p1)
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    const p2 = planWithAccounts()
+    expect(p2.id).not.toBe(p1.id)
+    act(() => {
+      applyButton(el).click()
+      root!.render(enabledPanelTree(p2))
+    })
+    await advanceBy(20)
+    await advanceBy(20)
+
+    expect(accountBalance(p1, 'acct-brokerage')).toBe(1)
+    expect(await listRefreshSnapshots(p1.id)).toEqual([])
+  })
+
+  it('abandons an apply suspended on its durable write when protection goes back to unknown', async () => {
+    // The render-phase reset clears the table, but the suspended apply closed over
+    // the delta it already built — applying it against a set the host has
+    // withdrawn is exactly the overwrite the seam exists to prevent.
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    const el = renderPanel(plan, { protectedAccounts: [] })
+    await chooseFile(el, TWO_ACCOUNT_CSV)
+
+    act(() => {
+      applyButton(el).click()
+      root!.render(enabledPanelTree(plan, { protectedAccounts: [], pending: true }))
+    })
+    await advanceBy(20)
+    await advanceBy(20)
+
+    expect(accountBalance(plan, 'acct-brokerage')).toBe(1)
+    expect(accountBalance(plan, 'acct-roth')).toBe(1)
+    expect(await listRefreshSnapshots(plan.id)).toEqual([])
+  })
+
+  it('abandons a restore suspended on its undo write when the plan identity changes', async () => {
+    // Restore has the same pre-mutation durable write as Apply, so it has the same
+    // window. A restore that never ran must leave neither a reverted plan nor an
+    // undo point offering to re-do it.
+    enableDurableRefreshHistory()
+    const p1 = planWithAccounts()
+    await seedRestorableSnapshot(p1)
+    const el = renderPanel(p1)
+    await advanceBy(20)
+
+    const p2 = planWithAccounts()
+    expect(p2.id).not.toBe(p1.id)
+    act(() => {
+      restoreButtons(el)[0]!.click()
+      root!.render(enabledPanelTree(p2))
+    })
+    await advanceBy(20)
+    await advanceBy(20)
+
+    expect(accountBalance(p1, 'acct-brokerage')).toBe(50_000)
+    expect((await listRefreshSnapshots(p1.id)).map((item) => item.sourceLabel)).toEqual(['Schwab — positions.csv'])
+  })
+
+  it('abandons a restore suspended on its undo write when protection goes back to unknown', async () => {
+    // Advisor-frozen accounts are off-limits to restore exactly as they are to
+    // refresh, and the entry check closed over the protection that was known when
+    // the click happened.
+    enableDurableRefreshHistory()
+    const plan = planWithAccounts()
+    await seedRestorableSnapshot(plan)
+    const el = renderPanel(plan, { protectedAccounts: [] })
+    await advanceBy(20)
+
+    act(() => {
+      restoreButtons(el)[0]!.click()
+      root!.render(enabledPanelTree(plan, { protectedAccounts: [], pending: true }))
+    })
+    await advanceBy(20)
+    await advanceBy(20)
+
+    expect(accountBalance(plan, 'acct-brokerage')).toBe(50_000)
+    expect((await listRefreshSnapshots(plan.id)).map((item) => item.sourceLabel)).toEqual(['Schwab — positions.csv'])
   })
 })

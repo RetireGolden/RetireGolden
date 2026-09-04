@@ -248,7 +248,7 @@ function AddScenario() {
     [homeSaleProperties],
   )
   // Render-phase "adjust state while rendering" reset (the pattern
-  // `UpdateBalancesPanel.tsx`'s `seenPlanId` comment documents): a passive
+  // `useRefreshSession.ts`'s `seenPlanId` comment documents): a passive
   // effect would commit one render with the PREVIOUS plan's params before
   // the reset landed — a visible flash of stale offsets, and a lever click
   // during that window would build a request against the wrong plan. Doing

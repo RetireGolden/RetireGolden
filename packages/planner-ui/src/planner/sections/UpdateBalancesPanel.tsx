@@ -44,7 +44,7 @@
  * two rows on one plan account), and the two say so separately.
  */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import {
@@ -91,6 +91,7 @@ import {
 } from '../refreshProtectionContext'
 import { fmtMoney, fmtMoneyCents } from '../format'
 import { ScrollRegion } from '../ScrollRegion'
+import { useRefreshSession } from './useRefreshSession'
 
 const EMPTY_PROTECTED: ReadonlySet<string> = new Set()
 const EMPTY_REMEMBERED: ReadonlyMap<string, string> = new Map()
@@ -265,79 +266,23 @@ function UpdateBalancesPanelBody({
     }
   }, [plan.id])
 
+  // Every concurrency guard this panel needs, in one place: the per-read and
+  // per-preview epochs, the commit-synchronous plan identity and
+  // protection-unknown generation, and the single durable-write slot apply and
+  // restore share. The correctness argument for all of them — what can move under
+  // a continuation, and why each counter advances where it does — lives in
+  // `useRefreshSession`'s header. What is left here is state and rendering.
+  const session = useRefreshSession(plan.id, protectionPending)
+
   // The workspace reuses this one panel instance across `/plan/:id` navigation, so
   // the transient file state (parsed table, row-scoped releases, status message)
   // would otherwise survive into a DIFFERENT plan. Cloned plans share account ids,
   // so a stale release could bypass protection cross-plan. Reset everything back to
-  // its seed the moment the plan IDENTITY changes, tracked by the render-phase
-  // "adjust state while rendering" pattern (not an effect — the reset must land
-  // before this render derives anything from `parsed`, and React discards the
-  // interrupted render without an extra commit).
-  const [seenPlanId, setSeenPlanId] = useState(plan.id)
-  // One epoch guarding every async file read against a NEWER read (a second file
-  // chosen while the first is outstanding). It is bumped ONLY inside event handlers —
-  // at the very start of `handleFile`, before its await — never during render. A
-  // read captures the epoch before awaiting `file.text()` and discards its parse if
-  // the epoch moved while the read was outstanding, so a stale continuation cannot
-  // overwrite a newer selection. Keeping the bump out of render is load-bearing: a
-  // ref mutation does NOT roll back when React discards a concurrent render, so a
-  // render-phase bump could invalidate a legitimate read that belongs to the STILL-
-  // VISIBLE plan the discarded render never replaced. Handlers only ever run for a
-  // committed tree, so an epoch bumped there is always real.
-  const readEpoch = useRef(0)
-  // Re-entrancy guard: the durable-write awaits inside apply yield to the
-  // event loop, so a second click must not start a second apply.
-  const applying = useRef(false)
-  // Restore also persists its new undo point before it mutates, so two clicks
-  // could otherwise both capture the same before-state.
-  const restoring = useRef(false)
-  // Cancel must invalidate an apply suspended on a durable-history write.
-  // Like the read epoch, this is advanced only from real event/continuation
-  // paths, never while rendering.
-  const panelEpoch = useRef(0)
-  // Plan identity guard, separate from the read epoch. `committedPlanId` tracks the
-  // plan whose render actually COMMITTED, updated in a layout effect. Layout effects
-  // run synchronously inside the commit task, so a pending `file.text()` microtask
-  // cannot interleave between commit and this ref update (the flaw of an earlier
-  // passive-effect version), and a discarded render never runs effects — so the ref
-  // is only ever advanced by a real plan swap, never by a render React threw away.
-  // `handleFile` captures `plan.id` before its await and discards its parse if the
-  // committed plan identity changed while the read was outstanding — the id-based
-  // half of the guard that a plain (same-plan) re-render leaves untouched.
-  const committedPlanId = useRef(plan.id)
-  useLayoutEffect(() => {
-    committedPlanId.current = plan.id
-  }, [plan.id])
-  // The same commit-synchronous treatment for protection going back to UNKNOWN
-  // mid-read — tracked as a GENERATION, not as the current value. A read started
-  // while protection was known lands in a microtask that closed over the OLD
-  // `protectionPending`, so the handler's entry check cannot see the flip; and a
-  // read slow enough to span a whole false→true→false cycle would find only the
-  // final `false`, then call `setParsed` and restore the very preview the pending
-  // transition deliberately cleared. Counting the false→true EDGES instead means a
-  // token captured before the await answers "did protection go unknown while I was
-  // reading?" rather than "is it unknown right now?".
-  //
-  // Advanced in a layout effect for the same reason as `committedPlanId`: layout
-  // effects run synchronously inside the commit task, so a pending `file.text()`
-  // microtask cannot interleave between the commit and this update, and a render
-  // React discards never runs effects — so a discarded concurrent render can
-  // neither mis-arm the counter nor invalidate a legitimate read.
-  const committedProtectionPending = useRef(protectionPending)
-  const protectionUnknownEpoch = useRef(0)
-  useLayoutEffect(() => {
-    if (protectionPending && !committedProtectionPending.current) protectionUnknownEpoch.current += 1
-    committedProtectionPending.current = protectionPending
-  }, [protectionPending])
-  if (seenPlanId !== plan.id) {
-    // Render-phase STATE reset on a plan-identity change: this is the sanctioned
-    // "adjust state while rendering" pattern (rollback-safe — React discards the
-    // interrupted render and re-runs with the reset state, no extra commit). Only
-    // STATE is touched here; the read epoch is deliberately NOT bumped in render (a
-    // ref mutation would not roll back on a discarded render). The in-flight-read
-    // discard across a plan swap is handled by the commit-synchronous
-    // `committedPlanId` ref instead.
-    setSeenPlanId(plan.id)
+  // its seed the moment the plan IDENTITY changes — during render, not in an effect,
+  // so the reset lands before this render derives anything from `parsed`. Only STATE
+  // is touched here; the in-flight-read discard across the same swap rides on the
+  // session's commit-synchronous plan identity instead.
+  if (session.planChanged) {
     setParsed(null)
     setReleased(new Map())
     setMessage(null)
@@ -351,14 +296,10 @@ function UpdateBalancesPanelBody({
   // that no longer applies, and it would silently change when the host's answer
   // lands. Only the false→true edge resets: true→false (the host finishing its
   // load) simply re-enables an already-empty panel.
-  const [seenPending, setSeenPending] = useState(protectionPending)
-  if (seenPending !== protectionPending) {
-    setSeenPending(protectionPending)
-    if (protectionPending) {
-      setParsed(null)
-      setReleased(new Map())
-      setMessage(null)
-    }
+  if (session.protectionWentUnknown) {
+    setParsed(null)
+    setReleased(new Map())
+    setMessage(null)
   }
 
   const updatable = plan.accounts.filter(isBalanceUpdatable).map((a) => ({ id: a.id, name: a.name }))
@@ -391,7 +332,7 @@ function UpdateBalancesPanelBody({
   // AND clear the status message — a message left behind would point the user at
   // controls the reset just removed.
   const resetPanel = () => {
-    panelEpoch.current += 1
+    session.invalidate()
     setParsed(null)
     setReleased(new Map())
     setMessage(null)
@@ -402,13 +343,14 @@ function UpdateBalancesPanelBody({
     // disabled, but the hidden input can still be driven directly). Parsing here
     // would seed row selections from a protected set the host has not resolved.
     if (protectionPending) return
-    // Every new selection supersedes an older read, including one rejected on
-    // size before it starts reading either the text or hash bytes.
-    const token = ++readEpoch.current
-    // A programmatic file selection can arrive while a durable Apply is
-    // suspended even though the visible chooser has been replaced by its
-    // preview. Treat it like Cancel: the older preview is no longer current.
-    panelEpoch.current += 1
+    // Claim the read SYNCHRONOUSLY, before anything else: every new selection
+    // supersedes an older outstanding read — including one rejected on size below,
+    // before it starts reading either the text or hash bytes — and invalidates an
+    // apply suspended on its durable write, because the preview that apply was
+    // authorised against is about to be torn down. (A programmatic selection can
+    // arrive while such an apply is suspended even though the visible chooser has
+    // been replaced by its preview; treat it like Cancel.)
+    const token = session.beginRead()
     if (file.size > MAX_REFRESH_FILE_BYTES) {
       resetPanel()
       setMessage('This broker CSV is too large to read. Choose a CSV no larger than 16 MiB.')
@@ -423,31 +365,19 @@ function UpdateBalancesPanelBody({
     // the table and releases down first makes the restore immediate.
     setParsed(null)
     setReleased(new Map())
-    // Claim the read epoch SYNCHRONOUSLY (in this handler, never in render): each file
-    // selection supersedes any prior in-flight read, so two files chosen back-to-back
-    // can't let the OLDER read win. Also snapshot the plan identity and the
-    // protection-unknown epoch this read belongs to. After the await, discard if ANY of
-    // three things moved: the read epoch (a newer file choice), the committed plan
-    // identity (a `/plan/:id` navigation swap) — cloned plans share account ids, so a
-    // read started under the old plan must not repopulate the panel after the swap — or
-    // the protection-unknown epoch, because a read that began while protection was known
-    // must not seed a table if the host has said, at any point since, that it no longer
-    // knows. Every one of the three refs is advanced in an event handler or a layout
-    // effect, so this microtask cannot slip in before the change is recorded.
-    const capturedPlanId = plan.id
-    const capturedProtectionEpoch = protectionUnknownEpoch.current
+    // The token claimed above carries the plan this read belongs to, so the
+    // mappings load and the post-await identity check can never disagree.
     const [text, source, storedMappings] = await Promise.all([
       file.text(),
       sourceIdentity(file),
-      listRefreshManualMappings(capturedPlanId),
+      listRefreshManualMappings(token.planId),
     ])
-    if (
-      token !== readEpoch.current ||
-      committedPlanId.current !== capturedPlanId ||
-      protectionUnknownEpoch.current !== capturedProtectionEpoch
-    ) {
-      return // a newer file choice, a plan swap, or protection going unknown — drop it
-    }
+    // Drop the parse if anything moved while the read was outstanding: a newer
+    // file choice, a `/plan/:id` swap (cloned plans share account ids, so a read
+    // started under the old plan must not repopulate the panel after the swap), or
+    // protection going unknown at any point since — a read that began while
+    // protection was known must not seed a table the host no longer stands behind.
+    if (!session.isCurrent(token)) return
     const r = parseBrokerPositionsCsv(text)
     if (!r.ok) {
       resetPanel()
@@ -590,7 +520,7 @@ function UpdateBalancesPanelBody({
     // Any assignment change invalidates an apply suspended on its durable
     // writes: the mutation must never apply a selection the preview no
     // longer shows (the panel's preview/apply-agreement rule).
-    panelEpoch.current += 1
+    session.invalidate()
     setParsed((prev) => {
       if (!prev) return prev
       const manualTargetIndexes = new Set(prev.manualTargetIndexes)
@@ -616,18 +546,19 @@ function UpdateBalancesPanelBody({
   // account id → row index so sibling rows stay locked out of the same account.
   const allowRefresh = (i: number, accId: string) => {
     // A release changes the effective protection set; same rule as above.
-    panelEpoch.current += 1
+    session.invalidate()
     setReleased((prev) => new Map(prev).set(accId, i))
     setParsed((prev) => (prev ? { ...prev, targets: prev.targets.map((t, j) => (j === i ? accId : t)) } : prev))
   }
 
   const apply = async () => {
-    if (applying.current || restoring.current) return
-    applying.current = true
+    // The durable-write awaits below yield to the event loop, so a second click —
+    // or a Restore click — must not start a second write against the same
+    // before-state. `null` means one is already in flight.
+    const token = session.beginApply()
+    if (token === null) return
     try {
-    const applyEpoch = panelEpoch.current
-    const applyProtectionEpoch = protectionUnknownEpoch.current
-    const targetPlanId = plan.id
+    const targetPlanId = token.planId
     // `protectionPending` joins `blocked` as a refusal: applying against a set the
     // host has not resolved is exactly the overwrite the seam exists to prevent.
     if (!parsed || !delta || blocked || protectionPending) return
@@ -670,7 +601,7 @@ function UpdateBalancesPanelBody({
       // Hosts without IndexedDB have no durable store and stay synchronous.
       if (refreshHistoryAvailable()) {
         snapshotPersisted = await saveRefreshSnapshot(snapshot)
-        if (applyEpoch !== panelEpoch.current || committedPlanId.current !== targetPlanId || protectionUnknownEpoch.current !== applyProtectionEpoch) {
+        if (!session.isCurrent(token)) {
           // Cancelled, or the user switched plans while the undo record was
           // being written: a snapshot for an apply that never ran must not
           // offer a restore.
@@ -717,7 +648,7 @@ function UpdateBalancesPanelBody({
           } catch {
             // Best-effort; classification simply re-derives next time.
           }
-          if (applyEpoch !== panelEpoch.current || committedPlanId.current !== targetPlanId || protectionUnknownEpoch.current !== applyProtectionEpoch) {
+          if (!session.isCurrent(token)) {
             // Same rule as the first await: a cancelled (or plan-switched)
             // apply must leave neither a restore record nor remembered
             // assignments - a cancelled apply is not an apply.
@@ -768,23 +699,25 @@ function UpdateBalancesPanelBody({
           : 'No accounts were assigned, so nothing changed.',
     )
     } finally {
-      applying.current = false
+      session.endWrite()
     }
   }
 
   const restoreSnapshot = async (snapshot: RefreshSnapshot) => {
-    if (restoring.current || applying.current) return
-    restoring.current = true
+    // Restore persists its new undo point before it mutates, so it shares the
+    // apply's single durable-write slot: two clicks would otherwise both capture
+    // the same before-state.
+    const token = session.beginRestore()
+    if (token === null) return
     try {
-      if (snapshot.planId !== plan.id) return
+      if (snapshot.planId !== token.planId) return
       // Advisor-frozen accounts are off-limits to restore exactly as they are
       // to refresh; while protection is still resolving, nothing is written.
       if (protectionPending) {
         setMessage(PENDING_EXPLANATION)
         return
       }
-      const targetPlanId = plan.id
-      const restoreProtectionEpoch = protectionUnknownEpoch.current
+      const targetPlanId = token.planId
       const beforeRestore = restoreDeltas(plan, snapshot, hostProtectedIds)
       const outcome = revertToSnapshot(plan, snapshot)
       const protectedRestoreAccountIds = new Set<string>()
@@ -808,7 +741,7 @@ function UpdateBalancesPanelBody({
           // undo point for a restore that never ran must not exist.
           if (refreshHistoryAvailable()) {
             undoPersisted = await saveRefreshSnapshot(undoSnapshot)
-            if (committedPlanId.current !== targetPlanId || protectionUnknownEpoch.current !== restoreProtectionEpoch) {
+            if (!session.isCurrent(token)) {
               if (undoPersisted) void deleteRefreshSnapshot(undoSnapshot.id)
               return
             }
@@ -822,7 +755,7 @@ function UpdateBalancesPanelBody({
           )
         }
       }
-      if (committedPlanId.current !== targetPlanId || protectionUnknownEpoch.current !== restoreProtectionEpoch) return
+      if (!session.isCurrent(token)) return
       update((draft) => {
         if (draft.id !== targetPlanId) return
         const reverted = revertToSnapshot(draft, snapshot)
@@ -868,7 +801,7 @@ function UpdateBalancesPanelBody({
               : ''),
       )
     } finally {
-      restoring.current = false
+      session.endWrite()
     }
   }
 
