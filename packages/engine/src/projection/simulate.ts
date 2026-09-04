@@ -90,6 +90,7 @@ import type { PhaseLedgerScalarBindings } from './internal/phaseLedgerScalars.js
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualTaxUnitIdentityPhase } from './internal/annualTaxUnitIdentityPhase.js'
 import { annualOneTimeGoalFundingPhase } from './internal/annualOneTimeGoalFundingPhase.js'
+import { annualAssumedCharacterPhase } from './internal/annualAssumedCharacterPhase.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import {
   annualDebtServiceRows,
@@ -127,8 +128,6 @@ import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
 import { splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import {
   asAccountId,
-  ledgerCentsToPlanDollars,
-  planDollarsToLedgerCents,
   type ActionId,
   type ConversionLinkedWithdrawalGroupLiabilityRun,
 } from '../actions/index.js'
@@ -150,8 +149,6 @@ import {
   REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
   type AnnualConversionLinkedWithdrawalRelease,
 } from './internal/annualConversionLinkedWithdrawalFunding.js'
-import { deriveOwnedNonRothIraReplayAllocationIdentity } from
-  '../internal/ownedNonRothIraReplayIdentity.js'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
@@ -2932,137 +2929,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const rmdNontaxable = 0
     const seppNontaxable = 0
-    const assumedEffectByIdentity = new Map(
-      assumedEffects
-        .filter((effect) => effect.taxYear === year)
-        .map((effect) => [
-          JSON.stringify([effect.actionId, effect.allocationId]),
-          effect,
-        ]),
-    )
-    const resolveAssumedCharacter = (input: {
-      ownerPersonId: string
-      calculationScope:
-        'form8606Line7Distributions' | 'form8606Line8NetConversions'
-      occurrenceKind:
-        | 'ownedIraRmd'
-        | 'annuityContractDistribution'
-        | 'automaticSeppDistribution'
-        | 'legacyNeedBasedWithdrawal'
-        | 'legacyQcd'
-        | 'legacyRothConversion'
-        | 'namedRothConversion'
-      producerOccurrenceKey: string
-      sourceAccountId: string
-      mutationOrdinal: number
-      grossAmountPlanDollars: number
-      remainingBasisPlanDollars?: number
-    }): { basisReturn: number; ordinaryIncome: number } | null => {
-      let grossAmount: ReturnType<typeof planDollarsToLedgerCents>
-      let remainingBasis:
-        ReturnType<typeof planDollarsToLedgerCents> | null = null
-      try {
-        grossAmount = planDollarsToLedgerCents(input.grossAmountPlanDollars)
-        if (input.remainingBasisPlanDollars !== undefined) {
-          remainingBasis = planDollarsToLedgerCents(
-            input.remainingBasisPlanDollars,
-          )
-        }
-      } catch {
-        return null
-      }
-      const identity = deriveOwnedNonRothIraReplayAllocationIdentity({
-        planId: plan.id,
-        taxYear: year,
-        producerOccurrenceKey: input.producerOccurrenceKey,
-        occurrenceKind: input.occurrenceKind,
-        sourceAccountId: input.sourceAccountId,
-        mutationOrdinal: input.mutationOrdinal,
-      })
-      const effect = assumedEffectByIdentity.get(JSON.stringify([
-        identity.actionId,
-        identity.allocationId,
-      ]))
-      if (effect === undefined ||
-          effect.ownerPersonId !== input.ownerPersonId ||
-          effect.calculationScope !== input.calculationScope ||
-          effect.actionId !== identity.actionId ||
-          effect.allocationId !== identity.allocationId ||
-          effect.sourceAccountId !== input.sourceAccountId ||
-          effect.grossAmount !== grossAmount ||
-          (remainingBasis !== null && effect.basisReturnAmount > remainingBasis)) {
-        return null
-      }
-      return {
-        basisReturn: ledgerCentsToPlanDollars(effect.basisReturnAmount),
-        ordinaryIncome: ledgerCentsToPlanDollars(effect.ordinaryIncomeAmount),
-      }
-    }
-    /**
-     * Observation-only: per-channel Form 8606 taxable ordinary income produced
-     * this year for owners with omitted `nondeductibleBasis`. Per-attempt;
-     * drives the assumed-basis consequential verdict. Each channel accumulates
-     * only the taxable character that channel's binding transaction produced
-     * under the assumption — never the year's full gross for that channel.
-     */
-    type Form8606ConsequentialChannel =
-      | 'distributions'
-      | 'conversions'
-      | 'annuityPayments'
-    const form8606ConsequentialByOwner = new Map<string, {
-      distributions: number
-      conversions: number
-      annuityPayments: number
-    }>()
-    const noteForm8606Taxable = (
-      ownerPersonId: string,
-      taxable: number,
-      channel: Form8606ConsequentialChannel,
-    ): void => {
-      if (taxable <= 0 || !ownersWithOmittedNondeductibleBasis.has(ownerPersonId)) return
-      const entry = form8606ConsequentialByOwner.get(ownerPersonId) ?? {
-        distributions: 0,
-        conversions: 0,
-        annuityPayments: 0,
-      }
-      entry[channel] += taxable
-      form8606ConsequentialByOwner.set(ownerPersonId, entry)
-    }
-    const splitWithAssumedCharacter = (
-      state: IraProRataYear,
-      amount: number,
-      input: Omit<Parameters<typeof resolveAssumedCharacter>[0],
-        'grossAmountPlanDollars' | 'remainingBasisPlanDollars'>,
-    ) => {
-      const assumed = resolveAssumedCharacter({
-        ...input,
-        grossAmountPlanDollars: amount,
-        remainingBasisPlanDollars: state.basis,
-      })
-      // Fallback path: settlement published no matching assumed effect, so this
-      // draw is priced with the pre-distribution pro-rata state (or full ordinary
-      // when that state cannot answer). That is the registered legacy tax path —
-      // not an executed character under assumed-zero basis. Do not publish an
-      // assumed-basis verdict here (same silence as the annuity refused-settlement
-      // site): the settlement never priced this transaction over the assumption.
-      if (assumed === null) {
-        return splitAnnualIraDistribution(state, amount)
-      }
-      const split = {
-        nontaxable: assumed.basisReturn,
-        taxable: assumed.ordinaryIncome,
-        next: {
-          basis: Math.max(0, state.basis - assumed.basisReturn),
-          nontaxableFraction: state.nontaxableFraction,
-        },
-      }
-      const channel: Form8606ConsequentialChannel =
-        input.calculationScope === 'form8606Line8NetConversions'
-          ? 'conversions'
-          : 'distributions'
-      noteForm8606Taxable(input.ownerPersonId, split.taxable, channel)
-      return split
-    }
+    // The assumed-character resolver, its Form 8606 consequential observer,
+    // and the pro-rata split wrapper that joins them. The phase lives in
+    // `internal/annualAssumedCharacterPhase.ts` and is built PER PASS, not per
+    // year: T0, staging and the committed settlement each enter with their own
+    // settlement effects. `form8606ConsequentialByOwner` comes back live and by
+    // identity, because the funding-close phase publishes that very map.
+    const assumedCharacter = annualAssumedCharacterPhase({
+      planId: plan.id,
+      year,
+      assumedEffects,
+      ownersWithOmittedNondeductibleBasis,
+      splitAnnualIraDistribution,
+    })
+    const resolveAssumedCharacter = assumedCharacter.resolveAssumedCharacter
+    const noteForm8606Taxable = assumedCharacter.noteForm8606Taxable
+    const splitWithAssumedCharacter = assumedCharacter.splitWithAssumedCharacter
+    const form8606ConsequentialByOwner =
+      assumedCharacter.form8606ConsequentialByOwner
 
     const forcedDistributionPhase =
       annualForcedDistributionQcdAndRetirementActionsPhase(Object.freeze({
