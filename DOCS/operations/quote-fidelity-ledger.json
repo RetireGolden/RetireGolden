@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-09-04T17:47:16.011Z",
-  "recordCount": 417,
-  "urlCount": 305,
-  "fetched": 0,
-  "cached": 305,
-  "entryCount": 1071,
+  "generatedAt": "2026-09-04T23:24:50.784Z",
+  "recordCount": 418,
+  "urlCount": 309,
+  "fetched": 10,
+  "cached": 299,
+  "entryCount": 1076,
   "counts": {
-    "EXACT": 742,
+    "EXACT": 712,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
-    "ELISION-EXACT": 64,
+    "ELISION-EXACT": 63,
     "PDF-NOT-VERIFIABLE": 7,
-    "UNFETCHABLE": 3
+    "UNFETCHABLE": 39
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -6425,8 +6425,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "af6ec3bd3b93c85a",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "HTTP 404",
       "diagnosis": null
     },
     {
@@ -6435,8 +6435,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "b20aa287a892d09c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "HTTP 404",
       "diagnosis": null
     },
     {
@@ -7555,8 +7555,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "903ddfe8e0a36f3a",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7565,8 +7565,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "8bb0e85dcbf4afcb",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7575,8 +7575,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "c195ba21097d403c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7585,8 +7585,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "b828568ff8aff189",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7595,8 +7595,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "b3aba8e16ab56905",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7615,8 +7615,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "9037d520d15efed4",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7625,8 +7625,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "98fddfa2b9247dd9",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7635,8 +7635,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "f7f3e9aa15161ad9",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7645,8 +7645,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "9a4175ffc43dca42",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7655,8 +7655,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "dc3bd21c26752811",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7665,8 +7665,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0400-0499/HB0489PS.htm",
       "quoteSha256": "abb9dc8dcd0c468c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7695,8 +7695,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "c9ae1305c15d29b4",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7705,8 +7705,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "812f3749eed43308",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7715,8 +7715,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "3f137cf65421f4a3",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7725,8 +7725,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "a577b873d06ff227",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7735,8 +7735,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "7a4fe006f139c4a9",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7745,8 +7745,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "2027d4a1034943c2",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7755,8 +7755,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "871d90edb97f1ec8",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7805,8 +7805,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "7650cd3e1b3b5717",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7915,8 +7915,8 @@
       "host": "www.cga.ct.gov",
       "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
       "quoteSha256": "393c9840eee27dd1",
-      "verdict": "ELISION-EXACT",
-      "detail": "2 segments, every one a literal substring",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -7925,8 +7925,8 @@
       "host": "www.cga.ct.gov",
       "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
       "quoteSha256": "6ac95b132d29d032",
-      "verdict": "ELISION-EXACT",
-      "detail": "4 segments, every one a literal substring",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -9825,8 +9825,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
       "quoteSha256": "721b0be19f491006",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -9835,8 +9835,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
       "quoteSha256": "3f28fa756c891268",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -9845,8 +9845,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
       "quoteSha256": "95b094a95c0660b9",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -9855,8 +9855,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
       "quoteSha256": "fc789983f53168fb",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -9924,7 +9924,7 @@
       "citation": "Mont. Code Ann. 15-30-2120(3) (2025)",
       "host": "mca.legmt.gov",
       "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html",
-      "quoteSha256": "0a8732db892ce1a3",
+      "quoteSha256": "9fa5e2ed3cfafdfa",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -10295,8 +10295,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "5a3ae08ee2db6ce7",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10305,8 +10305,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "d6441a972aec0818",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10315,8 +10315,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "d5f125fd5fc1cd0e",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10325,8 +10325,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "350006be96853b0a",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10335,8 +10335,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "a03cc26dd770942d",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10345,8 +10345,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "83bb22ff86bcfb21",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10355,8 +10355,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "519796c24f487c8f",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10365,8 +10365,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "3f0da14f2721b928",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10375,8 +10375,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05811",
       "quoteSha256": "f0953791a4d05667",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10758,6 +10758,56 @@
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
+    },
+    {
+      "id": "irc-6072-a-7503-ordinary-federal-filing-deadline",
+      "citation": "IRC 6072(a)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6072&num=0&edition=prelim",
+      "quoteSha256": "7358749ba5592533",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-6072-a-7503-ordinary-federal-filing-deadline",
+      "citation": "IRC 7503",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7503&num=0&edition=prelim",
+      "quoteSha256": "970de8ddba50941c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-6072-a-7503-ordinary-federal-filing-deadline",
+      "citation": "IRS Notice 2011-17",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2011-10_IRB",
+      "quoteSha256": "db7fab1836e3a7ef",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-6072-a-7503-ordinary-federal-filing-deadline",
+      "citation": "IRS Notice 2011-17",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2011-10_IRB",
+      "quoteSha256": "41a03c520a56ba89",
+      "verdict": "ELISION-EXACT",
+      "detail": "4 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-6072-a-7503-ordinary-federal-filing-deadline",
+      "citation": "IRS Announcement 2007-16",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2007-08_IRB",
+      "quoteSha256": "654245aac251d1c7",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     }
   ],
   "apostropheStyle": [
@@ -10768,13 +10818,25 @@
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
-      "id": "treas-reg-1-408-8-b-3-rmd-first-dollars-out",
+      "id": "treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd",
       "citation": "Treas. Reg. 1.408-8(b)(3)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
-      "id": "treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd",
+      "id": "irc-408-d-8-B-ii-projection-annual-age-proxy",
+      "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv)",
+      "host": "www.ecfr.gov",
+      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
+    },
+    {
+      "id": "irc-408-d-3-G-simple-two-year-rollover-bar",
+      "citation": "IRC 72(t)(6)(A)",
+      "host": "uscode.house.gov",
+      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
+    },
+    {
+      "id": "treas-reg-1-408-8-b-3-rmd-first-dollars-out",
       "citation": "Treas. Reg. 1.408-8(b)(3)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
@@ -10792,12 +10854,6 @@
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
-      "id": "irc-408-d-3-G-simple-two-year-rollover-bar",
-      "citation": "IRC 72(t)(6)(A)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
       "id": "irc-401-a-9-H-designated-beneficiary-ten-year-rule",
       "citation": "IRC 401(a)(9)(H)(i)",
       "host": "uscode.house.gov",
@@ -10810,20 +10866,8 @@
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
-      "id": "irc-72-t-2-A-i-age-59-half-annual-proxy",
-      "citation": "IRC 72(t)(1)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
       "id": "treas-reg-1-408-8-b-2-prior-december-31-balance",
       "citation": "Treas. Reg. 1.401(a)(9)-5(b)(1)",
-      "host": "www.ecfr.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
-      "id": "irc-408-d-8-B-ii-projection-annual-age-proxy",
-      "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv)",
       "host": "www.ecfr.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
@@ -10880,6 +10924,12 @@
       "citation": "Treas. Reg. 1.401(a)(9)-5(d)(2)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
+    },
+    {
+      "id": "irc-72-t-2-A-i-age-59-half-annual-proxy",
+      "citation": "IRC 72(t)(1)",
+      "host": "uscode.house.gov",
+      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-72-t-4-sepp-modification-proof-window",

@@ -178,8 +178,13 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   including unrequested and zero-balance members; employer, inherited, duplicate, and foreign members
   fail closed. A separately complete following-year nondeductible-contribution window supplies Form 8606
   lines 1 and 4 through an authoritative ordinary April 15-18 federal deadline (excluding disaster
-  relief); records must be positive exact cents, while no activity uses the explicit-empty arm. This
-  leaves line 5 equal to the exact opening basis; contributions in that following-calendar-year window do
+  relief); records must be positive exact cents, while no activity uses the explicit-empty arm. The
+  ordinary nationwide April calendar itself is registered under
+  `irc-6072-a-7503-ordinary-federal-filing-deadline` (IRC 6072(a), IRC 7503, Notice 2011-17; Announcement
+  2007-16 for the supported tax-year 2006 floor), enforced by
+  `tax/ordinaryFederalFilingDeadline.ts#ordinaryFederalFilingDeadline`, and covers only that calendar —
+  not extensions, disaster relief, state-office holidays, or taxpayer-specific deadline adjudication.
+  This leaves line 5 equal to the exact opening basis; contributions in that following-calendar-year window do
   not recover basis in the current distribution fraction
   (`form-8606-line-4-post-year-contribution-exclusion`). Rollover
   line-6 adjustments and line 8 must be explicitly zero in this standalone slice, while line 7 comes only

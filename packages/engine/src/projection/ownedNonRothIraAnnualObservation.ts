@@ -20,6 +20,7 @@ import {
 import { asUsdCents, type UsdCents } from '../actions/money.js'
 import { isTreatAsOwnEffective } from '../strategies/accountEligibility.js'
 import { deepFreeze } from '../actions/freeze.js'
+import { ordinaryFederalFilingDeadline } from '../tax/ordinaryFederalFilingDeadline.js'
 
 const MAX_SAFE_CENTS = BigInt(Number.MAX_SAFE_INTEGER)
 
@@ -378,46 +379,6 @@ function safeErrorDetail(error: unknown): string {
   } catch {
     return 'uninspectable error'
   }
-}
-
-function dayOfWeek(year: number, month: number, day: number): number {
-  const offsets = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
-  const adjustedYear = month < 3 ? year - 1 : year
-  return (
-    adjustedYear +
-    Math.floor(adjustedYear / 4) -
-    Math.floor(adjustedYear / 100) +
-    Math.floor(adjustedYear / 400) +
-    offsets[month - 1]! +
-    day
-  ) % 7
-}
-
-function observedDcEmancipationDay(year: number): number {
-  const weekday = dayOfWeek(year, 4, 16)
-  if (weekday === 6) return 15
-  if (weekday === 0) return 17
-  return 16
-}
-
-function ordinaryFederalFilingDeadline(taxYear: number): string | null {
-  // The District of Columbia holiday began affecting the nationwide federal
-  // filing deadline in filing season 2007. Earlier years need historical tax
-  // calendars rather than this deliberately narrow modern rule.
-  if (!Number.isInteger(taxYear) || taxYear < 2006 || taxYear >= 9999) {
-    return null
-  }
-  const deadlineYear = taxYear + 1
-  const emancipationDay = observedDcEmancipationDay(deadlineYear)
-  let day = 15
-  while (
-    dayOfWeek(deadlineYear, 4, day) === 0 ||
-    dayOfWeek(deadlineYear, 4, day) === 6 ||
-    day === emancipationDay
-  ) {
-    day++
-  }
-  return `${String(deadlineYear).padStart(4, '0')}-04-${String(day).padStart(2, '0')}`
 }
 
 function ownedIraSourceIds(

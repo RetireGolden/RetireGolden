@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 417,
+    "total": 418,
     "byClassification": {
       "approximated": 110,
       "outOfScope": 73,
-      "settled": 229,
+      "settled": 230,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 340,
+      "staticStatute": 341,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 311,
+      "federal": 312,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 367,
+    "totalFiles": 368,
     "byStatus": {
       "partial": 55,
-      "registered": 104,
+      "registered": 105,
       "rule-free": 208,
       "unswept": 0
     },
@@ -208,8 +208,8 @@
     },
     {
       "path": "model/retirementActionAnnualTaxFacts.ts",
-      "sweptOn": "2026-08-24",
-      "note": "April filing deadline w/ weekend & Emancipation Day adjustments; post-year IRA contribution window invariants; record names other files"
+      "sweptOn": "2026-09-04",
+      "note": "ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; persisted prior-year contribution-window and opening-basis/completeness invariants still enforced here without matching function pins"
     },
     {
       "path": "montecarlo/mortality.ts",
@@ -308,8 +308,8 @@
     },
     {
       "path": "projection/ownedNonRothIraAnnualObservation.ts",
-      "sweptOn": "2026-08-24",
-      "note": "April-15/weekend/Emancipation-Day filing deadline; no record"
+      "sweptOn": "2026-09-04",
+      "note": "ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selection and December 31 complete-pool observation remain locally enforced and sibling pool records name other files"
     },
     {
       "path": "projection/simulate.ts",
@@ -517,10 +517,10 @@
     },
     {
       "directory": "tax",
-      "files": 7,
+      "files": 8,
       "byStatus": {
         "partial": 2,
-        "registered": 4,
+        "registered": 5,
         "rule-free": 1
       }
     },
@@ -552,7 +552,7 @@
     {
       "module": "contributionAndDeferralLimits",
       "path": "rule-coverage/contributionAndDeferralLimits.json",
-      "ruleCount": 37
+      "ruleCount": 38
     },
     {
       "module": "earlyDistributionsAndSepp",
@@ -631,18 +631,18 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-04T17:47:16.011Z",
-    "entryCount": 1071,
-    "fetched": 0,
-    "cached": 305,
+    "generatedAt": "2026-09-04T23:24:50.784Z",
+    "entryCount": 1076,
+    "fetched": 10,
+    "cached": 299,
     "counts": {
-      "ELISION-EXACT": 64,
+      "ELISION-EXACT": 63,
       "ELISION-PUNCTUATION": 6,
-      "EXACT": 742,
+      "EXACT": 712,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 37,
-      "UNFETCHABLE": 3
+      "UNFETCHABLE": 39
     }
   }
 }
