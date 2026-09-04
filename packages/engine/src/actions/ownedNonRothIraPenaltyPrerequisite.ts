@@ -1073,6 +1073,50 @@ function rejectedPenaltyExceptionTuple(
 }
 
 /**
+ * Collects one evaluation per ordinary-income withdrawal, in characterization
+ * order, and freezes the owner/year result. Lifted verbatim out of
+ * `evaluateOwnedNonRothIraPenaltyPrerequisites`: it reads only the values named
+ * in its parameters and produces only the frozen result.
+ */
+function assemblePenaltyPrerequisiteResult(
+  withdrawals:
+    readonly Readonly<OwnedNonRothIraWithdrawalClassification>[],
+  evaluationByKey:
+    ReadonlyMap<string, OwnedNonRothIraPenaltyPrerequisiteEvaluation>,
+  taxYear: number,
+  ownerPersonId: PersonId,
+  ageThresholdEvidence:
+    Readonly<OwnedNonRothIraPenaltyAgeThresholdEvidence>,
+  coverage:
+    readonly Readonly<OwnedNonRothIraPenaltyCharacterCoverageEvidence>[],
+  iraSeppScheduleReconciliations:
+    readonly Readonly<OwnedNonRothIraSeppPenaltyScheduleReconciliation>[],
+): Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesResult> {
+  const evaluations: OwnedNonRothIraPenaltyPrerequisiteEvaluation[] = []
+  for (const withdrawal of withdrawals) {
+    if (withdrawal.ordinaryIncomeAmount === 0) continue
+    const evaluation = evaluationByKey.get(
+      identityKey(withdrawal.actionId, withdrawal.allocationId),
+    )
+    if (evaluation === undefined) {
+      throw new Error(
+        'Canonical IRA ordinary-income withdrawal lost its penalty evaluation',
+      )
+    }
+    evaluations.push(evaluation)
+  }
+
+  return deepFreeze({
+    taxYear,
+    ownerPersonId,
+    ageThresholdEvidence,
+    coverage,
+    iraSeppScheduleReconciliations,
+    evaluations,
+  })
+}
+
+/**
  * Builds the exact early-distribution-penalty prerequisite boundary for
  * finalized owned traditional, SEP, and SIMPLE IRA line-7 character.
  *
@@ -2498,26 +2542,13 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     }
   }
 
-  const evaluations: OwnedNonRothIraPenaltyPrerequisiteEvaluation[] = []
-  for (const withdrawal of characterization.withdrawals) {
-    if (withdrawal.ordinaryIncomeAmount === 0) continue
-    const evaluation = evaluationByKey.get(
-      identityKey(withdrawal.actionId, withdrawal.allocationId),
-    )
-    if (evaluation === undefined) {
-      throw new Error(
-        'Canonical IRA ordinary-income withdrawal lost its penalty evaluation',
-      )
-    }
-    evaluations.push(evaluation)
-  }
-
-  return deepFreeze({
+  return assemblePenaltyPrerequisiteResult(
+    characterization.withdrawals,
+    evaluationByKey,
     taxYear,
     ownerPersonId,
     ageThresholdEvidence,
     coverage,
     iraSeppScheduleReconciliations,
-    evaluations,
-  })
+  )
 }
