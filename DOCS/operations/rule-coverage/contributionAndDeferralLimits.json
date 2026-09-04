@@ -2696,23 +2696,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/execution.test.ts",
-          "line": 1788,
+          "line": 1789,
           "note": "already-vested equity execution",
           "tests": [
             {
               "title": "classifies an already-vested equity execution as ordinary income anyway",
-              "line": 1803
+              "line": 1804
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/execution.test.ts",
-          "line": 1834,
+          "line": 1835,
           "note": "partial-execution cliff vest",
           "tests": [
             {
               "title": "reports ordinary income only on the executed part of a same-year cliff vest",
-              "line": 1843
+              "line": 1844
             }
           ]
         }
