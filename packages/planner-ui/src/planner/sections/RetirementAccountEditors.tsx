@@ -509,9 +509,8 @@ export function RetirementAccountEditor({
           <NumberField
             label="SEPP start age"
             hint="Under 59½. Payments run for the longer of 5 years or until 59½."
+            path={`accounts.${index}.sepp.startAge`}
             value={account.sepp.startAge}
-            min={40}
-            max={59}
             onCommit={(v) => set('sepp', { ...account.sepp, startAge: Math.round(v ?? 55) })}
           />
           <SelectField

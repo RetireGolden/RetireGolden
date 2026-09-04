@@ -262,9 +262,8 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
               label="Benefit period (years)"
               help="How many years benefits can continue. A care episode that lasts longer than this is partly self-funded."
               learn={LEARN.ltcInsurance}
+              path={`insurance.${index}.benefitPeriodYears`}
               value={policy.benefitPeriodYears}
-              min={1}
-              max={20}
               onCommit={(v) => set('benefitPeriodYears', Math.round(v ?? 3))}
             />
           ) : null}
@@ -273,9 +272,8 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
             help="The waiting period before benefits begin. Care costs during this period are self-funded."
             learn={LEARN.ltcInsurance}
             hint="Waiting period before benefits begin."
+            path={`insurance.${index}.eliminationPeriodDays`}
             value={policy.eliminationPeriodDays}
-            min={0}
-            max={365}
             onCommit={(v) => set('eliminationPeriodDays', Math.round(v ?? 90))}
           />
           <PercentField

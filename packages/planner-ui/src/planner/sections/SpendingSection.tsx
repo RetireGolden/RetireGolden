@@ -200,8 +200,7 @@ export function SpendingSection() {
               learn={LEARN.survivorSpending}
               hint="100% = no change in survivor years."
               step={5}
-              min={0}
-              max={100}
+              path="expenses.survivorSpendingPct"
               value={e.survivorSpendingPct ?? 100}
               onCommit={(v) =>
                 update((d) => {
@@ -386,8 +385,7 @@ export function SpendingSection() {
                   hint="%/yr above inflation. VPW 60/40 ≈ 3.8%."
                   learn={LEARN.spendingBudget}
                   step={0.1}
-                  min={-5}
-                  max={12}
+                  path="expenses.spendingPolicy.abw.fixedRealReturnPct"
                   value={e.spendingPolicy.abw?.fixedRealReturnPct ?? 3.8}
                   onCommit={(v) => setAbw((abw) => void (abw.fixedRealReturnPct = v ?? 3.8))}
                 />
@@ -400,8 +398,7 @@ export function SpendingSection() {
                     hint="Expected stock return = 100 ÷ CAPE."
                     learn={LEARN.spendingBudget}
                     step={1}
-                    min={5}
-                    max={60}
+                    path="expenses.spendingPolicy.abw.startingCape"
                     value={e.spendingPolicy.abw?.startingCape ?? 25}
                     onCommit={(v) => setAbw((abw) => void (abw.startingCape = v ?? 25))}
                   />
@@ -411,8 +408,7 @@ export function SpendingSection() {
                     hint="Blends the CAPE yield with the bond yield."
                     learn={LEARN.spendingBudget}
                     step={5}
-                    min={0}
-                    max={100}
+                    path="expenses.spendingPolicy.abw.equitySharePct"
                     value={e.spendingPolicy.abw?.equitySharePct ?? 60}
                     onCommit={(v) => setAbw((abw) => void (abw.equitySharePct = v ?? 60))}
                   />
@@ -425,8 +421,7 @@ export function SpendingSection() {
                   hint="%/yr above inflation; ~2% in mid-2026."
                   learn={LEARN.spendingBudget}
                   step={0.1}
-                  min={-2}
-                  max={8}
+                  path="expenses.spendingPolicy.abw.bondRealYieldPct"
                   value={e.spendingPolicy.abw?.bondRealYieldPct ?? 2}
                   onCommit={(v) => setAbw((abw) => void (abw.bondRealYieldPct = v ?? 2))}
                 />
@@ -449,8 +444,7 @@ export function SpendingSection() {
                 hint="−1 to −1.5%/yr matches observed spending declines."
                 learn={LEARN.spendingProfiles}
                 step={0.5}
-                min={-5}
-                max={5}
+                path="expenses.spendingPolicy.abw.tiltPct"
                 value={e.spendingPolicy.abw?.tiltPct ?? 0}
                 onCommit={(v) => setAbw((abw) => void (abw.tiltPct = v ?? 0))}
               />
@@ -639,6 +633,10 @@ export function SpendingSection() {
             hint="Negative = declining real spending."
             learn={LEARN.spendingProfiles}
             step={0.5}
+            // Intentionally pathless: this drift is not a plan field. It is
+            // component state that "Apply custom shape" compiles into ordinary
+            // `expenses.phases` rows, so there is no schema path to read a
+            // range from and nothing to route an engine issue to.
             min={-5}
             max={5}
             value={customDeltaPct}
@@ -836,6 +834,12 @@ export function SpendingSection() {
                     help="Lower numbers fund first within the same spending layer. Required goals still outrank target, ideal, and excess goals."
                     learn={LEARN.spendingBudget}
                     value={g.priority ?? i}
+                    // Intentionally pathless: `expenses.oneTimeGoals.N.priority`
+                    // is `z.number().int()` with no range (engine/model/plan.ts),
+                    // so `boundsForPath` has nothing to hand back and a `path`
+                    // here would leave the field unbounded. These two are a
+                    // sort key, not a modeled quantity; they wait for the engine
+                    // to state a range rather than borrow one invented here.
                     min={0}
                     max={999}
                     onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.priority = Math.round(v ?? i)))}
@@ -864,12 +868,14 @@ export function SpendingSection() {
                       help="The smallest percent of the goal that must be available before RetireGolden records it as partially funded instead of deferred or skipped."
                       learn={LEARN.spendingBudget}
                       step={5}
-                      min={0}
-                      max={95}
+                      path={`expenses.oneTimeGoals.${i}.minFundingPct`}
                       value={g.minFundingPct ?? 50}
-                      onCommit={(v) =>
-                        update((d) => void (d.expenses.oneTimeGoals[i]!.minFundingPct = Math.min(95, Math.max(0, v ?? 50))))
-                      }
+                      // No clamp: the engine's own 0-100 range flags an entry
+                      // outside it while typing and hands back the plan's value
+                      // on blur (D5), so the percent only reaches here once it
+                      // is already one the schema accepts. The old Math.min(95)
+                      // was a bound this file invented; the schema has none.
+                      onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.minFundingPct = v ?? 50))}
                     />
                   ) : null}
                 </>

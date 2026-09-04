@@ -363,7 +363,7 @@ describe('Former spouses (#535)', () => {
   it('marks a divorced-ex record not applied while a partner is on the plan and disables its amounts', async () => {
     const stream = streamWith([divorced('ex-1')])
     const { container, unmount } = await mount(
-      <FormerSpousesEditor stream={stream} setStream={() => undefined} householdIsSingle={false} />,
+      <FormerSpousesEditor stream={stream} streamIndex={2} setStream={() => undefined} householdIsSingle={false} />,
     )
     const row = container.querySelector<HTMLElement>('.item-row')!
     expect(row.querySelector('.item-row-title')!.textContent).toContain('Not applied')
@@ -393,7 +393,7 @@ describe('Former spouses (#535)', () => {
   it('keeps the record live on a single plan and discloses a marriage under the ten-year floor', async () => {
     const stream = streamWith([divorced('ex-1', 1)])
     const { container, unmount } = await mount(
-      <FormerSpousesEditor stream={stream} setStream={() => undefined} householdIsSingle />,
+      <FormerSpousesEditor stream={stream} streamIndex={2} setStream={() => undefined} householdIsSingle />,
     )
     const row = container.querySelector<HTMLElement>('.item-row')!
     expect(row.querySelector('.item-row-title')!.textContent).not.toContain('Not applied')
@@ -409,7 +409,7 @@ describe('Former spouses (#535)', () => {
   it('shows both notes, and describes the fields by both, when a partnered record is also under the floor', async () => {
     const stream = streamWith([divorced('ex-1', 4)])
     const { container, unmount } = await mount(
-      <FormerSpousesEditor stream={stream} setStream={() => undefined} householdIsSingle={false} />,
+      <FormerSpousesEditor stream={stream} streamIndex={2} setStream={() => undefined} householdIsSingle={false} />,
     )
     const row = container.querySelector<HTMLElement>('.item-row')!
     const partner = row.querySelector<HTMLElement>('#former-spouse-ex-1-partner-note')!
@@ -427,7 +427,7 @@ describe('Former spouses (#535)', () => {
       { id: 'late-1', relationship: 'deceased', dob: '1955-01-01', piaMonthly: 2_400, marriageYears: 0.5, remarriedAtAge: null },
     ])
     const { container, unmount } = await mount(
-      <FormerSpousesEditor stream={stream} setStream={() => undefined} householdIsSingle />,
+      <FormerSpousesEditor stream={stream} streamIndex={2} setStream={() => undefined} householdIsSingle />,
     )
     const row = container.querySelector<HTMLElement>('.item-row')!
     const note = row.querySelector<HTMLElement>('#former-spouse-late-1-years-note')!
@@ -448,7 +448,7 @@ describe('Former spouses (#535)', () => {
       mut(stream)
       added.push(...(stream.formerSpouses ?? []))
     }
-    const { container, unmount } = await mount(<FormerSpousesEditor stream={stream} setStream={setStream} householdIsSingle />)
+    const { container, unmount } = await mount(<FormerSpousesEditor stream={stream} streamIndex={2} setStream={setStream} householdIsSingle />)
     const buttons = [...container.querySelectorAll('button')]
     await act(async () => buttons.find((b) => b.textContent === '+ Divorced ex-spouse')!.click())
     await act(async () => buttons.find((b) => b.textContent === '+ Deceased former spouse')!.click())
@@ -465,7 +465,7 @@ describe('Former spouses (#535)', () => {
   it('numbers two records of the same kind', async () => {
     const stream = streamWith([divorced('ex-1'), divorced('ex-2')])
     const { container, unmount } = await mount(
-      <FormerSpousesEditor stream={stream} setStream={() => undefined} householdIsSingle />,
+      <FormerSpousesEditor stream={stream} streamIndex={2} setStream={() => undefined} householdIsSingle />,
     )
     expect(rowTitles(container, '.item-row')).toEqual(['Divorced ex (1)', 'Divorced ex (2)'])
     // Chip and ordinal are one inline box, the title's first child.

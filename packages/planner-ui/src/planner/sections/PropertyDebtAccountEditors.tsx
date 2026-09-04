@@ -111,9 +111,8 @@ export function PropertyAccountEditor({
           <NumberField
             label="Line opens in"
             help="The year the line of credit is opened. Pfau's research favors opening early. The unused credit compounds from that point regardless of home value."
+            path={`accounts.${index}.hecm.openYear`}
             value={account.hecm.openYear}
-            min={1900}
-            max={2200}
             onCommit={(v) => onCommit('hecm', { ...account.hecm!, openYear: Math.round(v ?? new Date().getFullYear()) })}
           />
           <PercentField

@@ -125,6 +125,7 @@ const ITEM_NAMES: Record<string, string> = {
   retirementActions: 'Retirement action',
   contributionSchedule: 'Contribution phase',
   stages: 'Glidepath stage',
+  targets: 'Glidepath target',
 }
 
 /**
@@ -201,6 +202,13 @@ const LEAF_LABELS: Record<string, string> = {
   // Spending
   baseAnnual: 'Baseline annual spending',
   requiredAnnual: "Required floor (today's $)",
+  survivorSpendingPct: 'Survivor spending',
+  // Amortized spending (ABW); the card labels these without their unit.
+  fixedRealReturnPct: 'Expected real return',
+  startingCape: 'Starting CAPE',
+  equitySharePct: 'Stock share',
+  bondRealYieldPct: 'Real bond/TIPS yield',
+  tiltPct: 'Spending tilt',
   fromAge: 'From age',
   toAge: 'To age',
   multiplier: 'Multiplier',
@@ -210,6 +218,8 @@ const LEAF_LABELS: Record<string, string> = {
   medicareExtrasMonthlyPerPerson: 'Medicare extras / person / month',
   // Insurance and care
   annualPremium: 'Annual premium',
+  benefitPeriodYears: 'Benefit period (years)',
+  eliminationPeriodDays: 'Elimination period (days)',
   premiumEndAge: 'Premiums end at age',
   deathBenefit: 'Death benefit',
   cashValue: 'Cash value (today)',
@@ -227,7 +237,7 @@ const CONTAINER_LEAF_LABELS: Record<string, Record<string, string>> = {
   ladders: { startYear: 'First payout year', endYear: 'Last payout year' },
   careEvents: { startAge: 'Starts at age' },
   stateMoves: { fromYear: 'Move year', state: 'New state' },
-  oneTimeGoals: { amount: "Amount (today's $)" },
+  oneTimeGoals: { amount: "Amount (today's $)", minFundingPct: 'Minimum funding' },
   formerSpouses: {
     piaMonthly: 'Their PIA (monthly at FRA)',
     dob: 'Their date of birth',
@@ -255,6 +265,8 @@ const GROUP_LABELS: Record<string, string> = {
   ssCola: 'Social Security COLA',
   heirTaxByClass: 'Heir tax by class',
   healthcare: 'Healthcare',
+  spendingPolicy: 'Spending policy',
+  abw: 'Amortized spending (ABW)',
 }
 
 /** Leaves that only read well with their parent object named ("Claim age (years)", not "Years"). */
@@ -264,6 +276,10 @@ const NESTED_LEAF_LABELS: Record<string, string> = {
   'deceasedClaimAge.years': 'When they claimed (age)',
   'deceasedClaimAge.months': 'When they claimed (+ months)',
   'purchase.year': 'Purchase year',
+  'sepp.startAge': 'SEPP start age',
+  'hecm.openYear': 'Line opens in',
+  'allocation.startYear': 'Glidepath from year',
+  'allocation.endYear': 'Glidepath to year',
   'payoutForm.survivorPct': 'Survivor share',
   'payoutForm.certainYears': 'Guaranteed years',
   'heirTaxByClass.traditional': 'Traditional heir tax',

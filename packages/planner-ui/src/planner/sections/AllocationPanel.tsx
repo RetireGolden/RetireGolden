@@ -149,6 +149,20 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
             key={id}
             label={DEFAULT_ASSET_CLASS_PARAMS[id].label}
             value={weights[id]}
+            // Intentionally pathless, and the one control in this package that
+            // is pathless while editing a real plan field. The weights DO have
+            // schema paths (`accounts.N.allocation.weights.usStocks`, and the
+            // same leaves under `.from`, `.to`, `.stages.M.weights`, and
+            // `.targets.M.weights`), but this one grid renders all six of those
+            // locations. `testSupport/wiredFieldPaths.ts` reads wired paths out
+            // of the source and can only resolve a literal template at the call
+            // site, so a path built from a prefix prop here would be invisible
+            // to it — and a path neither the bounds-drift guard nor the engine
+            // round-trip suite can see is worse than none (that file's own
+            // warning). Wiring them means enumerating the four classes per
+            // location, six times over; until then the range below is the
+            // schema's own 0–100 (allocationWeightsSchema), copied, and the
+            // sum refusal is stated by the summary line under this grid.
             min={0}
             max={100}
             step={5}
@@ -166,8 +180,9 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
           contract (a refused value), not `.field-warning`'s (an accepted one
           that is probably a mistake), so a mismatch reads in the danger token
           with an assertive role. No single input here carries the failing
-          path (the four weights are pathless — see the panel-level comment
-          below), so the summary line itself is the only place to say so. */}
+          path (the four weights are pathless — see the note on the first
+          field above), so the summary line itself is the only place to say
+          so. */}
       <p className={sums100 ? 'muted small' : 'field-error'} role={sums100 ? 'status' : 'alert'}>
         Total {sum.toFixed(0)}%{sums100 ? '' : ' (weights must sum to 100% — not saved until they do)'}
       </p>
@@ -180,7 +195,18 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
  * weight grid(s) for the selected mode. All money math (blends, per-year
  * targets) comes from engine/allocation.
  */
-export function AllocationPanel({ account, plan, onCommit }: { account: AllocatableAccount; plan: Plan; onCommit: (a: AssetAllocationPolicy) => void }) {
+export function AllocationPanel({
+  account,
+  index,
+  plan,
+  onCommit,
+}: {
+  account: AllocatableAccount
+  /** Position of the account in `plan.accounts`, so the year fields carry their schema paths. */
+  index: number
+  plan: Plan
+  onCommit: (a: AssetAllocationPolicy) => void
+}) {
   const policy = account.allocation!
   const year = currentStartYear()
   const params = resolveAssetClassParams(plan.assumptions.assetClassParams)
@@ -239,8 +265,8 @@ export function AllocationPanel({ account, plan, onCommit }: { account: Allocata
       {policy.mode === 'linear' ? (
         <>
           <div className="form-grid">
-            <NumberField label="From year" value={policy.startYear} min={1900} max={2200} onCommit={(v) => onCommit({ ...policy, startYear: Math.round(v ?? year) })} />
-            <NumberField label="To year" value={policy.endYear} min={1900} max={2200} onCommit={(v) => onCommit({ ...policy, endYear: Math.round(v ?? year + 20) })} />
+            <NumberField label="From year" path={`accounts.${index}.allocation.startYear`} value={policy.startYear} onCommit={(v) => onCommit({ ...policy, startYear: Math.round(v ?? year) })} />
+            <NumberField label="To year" path={`accounts.${index}.allocation.endYear`} value={policy.endYear} onCommit={(v) => onCommit({ ...policy, endYear: Math.round(v ?? year + 20) })} />
           </div>
           <WeightsGrid title="Starting mix" weights={policy.from} onCommit={(from) => onCommit({ ...policy, from })} />
           <WeightsGrid title="Ending mix" weights={policy.to} onCommit={(to) => onCommit({ ...policy, to })} />
@@ -255,19 +281,33 @@ export function AllocationPanel({ account, plan, onCommit }: { account: Allocata
                 ? onCommit({ ...policy, stages: next as { fromYear: number; weights: AllocationWeights }[] })
                 : onCommit({ ...policy, targets: next as { year: number; weights: AllocationWeights }[] })
             const rowYear = 'fromYear' in row ? row.fromYear : row.year
+            const setRowYear = (v: number | null) => {
+              const y = Math.round(v ?? rowYear)
+              setRows(rows.map((r, idx) => (idx === i ? ('fromYear' in r ? { ...r, fromYear: y } : { ...r, year: y }) : r)) as typeof rows)
+            }
             return (
               <div key={i} className="nested-phase-row">
+                {/* One field per mode rather than one field with a computed
+                    path: `testSupport/wiredFieldPaths.ts` reads wired paths out
+                    of the source and resolves a literal template only, so a
+                    path chosen at runtime would be invisible to the bounds
+                    drift guard and the engine round-trip suite. */}
                 <div className="form-grid">
-                  <NumberField
-                    label={policy.mode === 'staged' ? 'From year' : 'Target year'}
-                    value={rowYear}
-                    min={1900}
-                    max={2200}
-                    onCommit={(v) => {
-                      const y = Math.round(v ?? rowYear)
-                      setRows(rows.map((r, idx) => (idx === i ? ('fromYear' in r ? { ...r, fromYear: y } : { ...r, year: y }) : r)) as typeof rows)
-                    }}
-                  />
+                  {policy.mode === 'staged' ? (
+                    <NumberField
+                      label="From year"
+                      path={`accounts.${index}.allocation.stages.${i}.fromYear`}
+                      value={rowYear}
+                      onCommit={setRowYear}
+                    />
+                  ) : (
+                    <NumberField
+                      label="Target year"
+                      path={`accounts.${index}.allocation.targets.${i}.year`}
+                      value={rowYear}
+                      onCommit={setRowYear}
+                    />
+                  )}
                 </div>
                 <WeightsGrid
                   weights={row.weights}

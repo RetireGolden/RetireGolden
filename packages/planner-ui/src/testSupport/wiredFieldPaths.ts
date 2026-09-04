@@ -47,6 +47,7 @@ const INDEX_OF: Record<string, string> = {
   ri: '0',
   streamIndex: '2',
   ladderIndex: '0',
+  phaseIndex: '0',
   id: WILDCARD,
 }
 

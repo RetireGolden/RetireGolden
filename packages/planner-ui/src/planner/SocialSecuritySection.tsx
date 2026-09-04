@@ -87,7 +87,15 @@ function AimeExplainer({ detail, sampleEarnings }: { detail: PiaFromEarningsResu
 }
 
 /** 40-credit (10-year) covered-work eligibility gate with an optional manual override. */
-function EligibilityNote({ stream, onCommitCredits }: { stream: SsStream; onCommitCredits: (v: number | null) => void }) {
+function EligibilityNote({
+  stream,
+  streamIndex,
+  onCommitCredits,
+}: {
+  stream: SsStream
+  streamIndex: number
+  onCommitCredits: (v: number | null) => void
+}) {
   const est = estimateCredits(stream.earnings ?? [], stream.coveredQuarters)
   return (
     <div style={{ marginTop: '0.6rem' }}>
@@ -96,10 +104,9 @@ function EligibilityNote({ stream, onCommitCredits }: { stream: SsStream; onComm
           label="Covered-work credits"
           help="SSA 'credits' (formerly quarters of coverage). You generally need 40 (about 10 years of covered work) to qualify for your own retirement benefit. Leave blank to estimate from the earnings above; set it if you know the exact number."
           hint={est.estimated ? `Blank = estimated ${est.credits} from your earnings (40 needed).` : '40 needed to qualify.'}
+          path={`incomes.${streamIndex}.coveredQuarters`}
           value={stream.coveredQuarters ?? null}
           allowNull
-          min={0}
-          max={40}
           onCommit={(v) => onCommitCredits(v === null ? null : Math.round(v))}
         />
       </div>
@@ -120,10 +127,13 @@ function EligibilityNote({ stream, onCommitCredits }: { stream: SsStream; onComm
  */
 export function FormerSpousesEditor({
   stream,
+  streamIndex,
   setStream,
   householdIsSingle,
 }: {
   stream: SsStream
+  /** Position of this stream in `plan.incomes`, so each field can carry its schema path. */
+  streamIndex: number
   setStream: (mut: (s: SsStream) => void) => void
   householdIsSingle: boolean
 }) {
@@ -238,9 +248,8 @@ export function FormerSpousesEditor({
                     ? `${DIVORCED_MIN_MARRIAGE_YEARS}+ for divorced-spousal.`
                     : `${survivorFloorLabel()} minimum.`
                 }
+                path={`incomes.${streamIndex}.formerSpouses.${i}.marriageYears`}
                 value={r.marriageYears}
-                min={0}
-                max={75}
                 step={r.relationship === 'divorced' ? 1 : 0.25}
                 disabled={inapplicable}
                 describedBy={describedBy}
@@ -250,10 +259,9 @@ export function FormerSpousesEditor({
                 <NumberField
                   label="Age you remarried"
                   help="Remarrying before 60 forfeits this survivor benefit; at or after 60 preserves it. Leave blank if you didn't remarry after this spouse died."
+                  path={`incomes.${streamIndex}.formerSpouses.${i}.remarriedAtAge`}
                   value={r.remarriedAtAge}
                   allowNull
-                  min={0}
-                  max={120}
                   onCommit={(v) => updateRecord(r.id, (x) => (x.remarriedAtAge = v === null ? null : Math.round(v)))}
                 />
               ) : null}
@@ -262,10 +270,9 @@ export function FormerSpousesEditor({
                   label="When they claimed (age)"
                   hint="Leave blank if they claimed at/after FRA."
                   help="The age the deceased claimed their own benefit. If they claimed early (before FRA), the widow's-limit (RIB-LIM) caps your survivor benefit at the larger of their reduced benefit or 82.5% of their PIA, usually higher than their reduced amount. Leave blank if they claimed at or after FRA (the safe default)."
+                  path={`incomes.${streamIndex}.formerSpouses.${i}.deceasedClaimAge.years`}
                   value={r.deceasedClaimAge?.years ?? null}
                   allowNull
-                  min={62}
-                  max={70}
                   onCommit={(v) =>
                     updateRecord(r.id, (x) => {
                       if (v === null) x.deceasedClaimAge = null
@@ -277,9 +284,8 @@ export function FormerSpousesEditor({
               {r.relationship === 'deceased' && r.deceasedClaimAge ? (
                 <NumberField
                   label="When they claimed (+ months)"
+                  path={`incomes.${streamIndex}.formerSpouses.${i}.deceasedClaimAge.months`}
                   value={r.deceasedClaimAge.months}
-                  min={0}
-                  max={11}
                   onCommit={(v) =>
                     updateRecord(r.id, (x) => {
                       if (x.deceasedClaimAge) x.deceasedClaimAge = { ...x.deceasedClaimAge, months: Math.round(v ?? 0) }
@@ -563,10 +569,9 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
                   label="Work through age"
                   help="Project earnings up to (but not including) this age. Your last full working year. Defaults to this person's retirement age."
                   hint={person.retirementAge !== null ? `Blank = retirement age (${person.retirementAge}).` : 'Blank = retirement age.'}
+                  path={`incomes.${streamIndex}.earningsProjection.throughAge`}
                   value={stream.earningsProjection.throughAge}
                   allowNull
-                  min={50}
-                  max={75}
                   onCommit={(v) =>
                     setStream((s) => {
                       if (s.earningsProjection) s.earningsProjection.throughAge = v === null ? null : Math.round(v)
@@ -603,12 +608,18 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
 
           <EligibilityNote
             stream={stream}
+            streamIndex={streamIndex}
             onCommitCredits={(v) => setStream((s) => (s.coveredQuarters = v))}
           />
         </div>
       )}
 
-      <FormerSpousesEditor stream={stream} setStream={setStream} householdIsSingle={plan.household.people.length === 1} />
+      <FormerSpousesEditor
+        stream={stream}
+        streamIndex={streamIndex}
+        setStream={setStream}
+        householdIsSingle={plan.household.people.length === 1}
+      />
 
       {resolved.warning ? <p className="field-hint" style={{ color: 'var(--warn)' }}>{resolved.warning}</p> : null}
     </div>
