@@ -24,16 +24,30 @@ export default defineConfig({
           functions: 90,
           lines: 90,
         },
-        // `insights/` is deliberately absent: the detector suites live in the
-        // planner-ui workspace (src/integration/insightsDetectors.test.ts,
-        // guaranteedIncomeDetectors.test.ts, incomeCoverage.test.ts) because
-        // they exercise the detectors through consumer harnesses
-        // (useProjection, the learning registry, the spending solver), so
-        // package-local coverage here is not meaningful. The cost is real: a
-        // published @retiregolden/engine cannot be validated standalone for
-        // detectors, and closing that needs engine-local fixtures over plain
-        // projection outputs before any threshold is worth setting.
+        // `insights/` is guarded here now. Every detector has an engine-local
+        // sibling suite driving it from plan fixtures and plain projection
+        // outputs, so a published @retiregolden/engine can be validated
+        // standalone for detectors instead of only through the planner-ui
+        // consumer harnesses (src/integration/insightsDetectors.test.ts,
+        // guaranteedIncomeDetectors.test.ts, incomeCoverage.test.ts). Those
+        // still exercise the same detectors end to end through useProjection,
+        // the learning registry, and the spending solver; what they cannot do
+        // is fail this package's own build.
         //
+        // The floors sit a few points under what the suite measures today
+        // (89.34 statements / 83.66 branches / 92.62 functions / 92.90 lines
+        // over src/insights/**) — enough headroom that an unrelated edit does
+        // not trip them, little enough that deleting a detector's fixtures
+        // does. The uncovered remainder is concentrated in the exact-ledger
+        // `evaluate()` phases the consumer suites drive; re-running the
+        // relocation sweep or the spending solver from here would be a slow
+        // second copy of those modules' own tests, not new evidence.
+        'src/insights/**': {
+          statements: 85,
+          branches: 78,
+          functions: 88,
+          lines: 88,
+        },
         // `rules/` and `schema/` are absent for a different reason: neither is
         // guarded by how many of its lines a test happens to run. The registry
         // and its attestations are data, pinned exactly by the conformance and
