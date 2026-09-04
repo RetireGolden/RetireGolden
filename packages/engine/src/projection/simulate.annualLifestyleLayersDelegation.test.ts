@@ -3,6 +3,9 @@
  * detect an orphaned helper beside a re-inlined caller, so this mock returns a
  * deliberately different four-layer result and requires every published
  * expense channel to move with it.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -11,36 +14,35 @@ import type {
 } from './internal/annualLifestyleLayers.js'
 import type { AnnualSpendingLayers } from '../spending/layers.js'
 
-interface Phase {
-  readonly input: AnnualLifestyleLayersInput
-  readonly natural: AnnualSpendingLayers
-  readonly injected: AnnualSpendingLayers
-}
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<AnnualLifestyleLayersInput, AnnualSpendingLayers>(),
+)
 
-const seam = vi.hoisted(() => ({ phases: [] as Phase[] }))
-
-vi.mock('./internal/annualLifestyleLayers.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualLifestyleLayers.js')>()
-  return {
-    ...original,
-    annualLifestyleLayers: (input: AnnualLifestyleLayersInput) => {
-      const natural = original.annualLifestyleLayers(input)
+vi.mock('./internal/annualLifestyleLayers.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualLifestyleLayers.js')>(),
+    'annualLifestyleLayers',
+    (_natural, { input }): AnnualSpendingLayers => {
       const yearOrdinal = input.year - 2026
       const abwOffset = input.abwActive ? 1 : 0
-      const injected: AnnualSpendingLayers = {
+      return {
         requiredLifestyle: 11 + abwOffset * 9 + yearOrdinal,
         discretionaryLifestyle: 7 + abwOffset * 13 + yearOrdinal * 2,
         targetLifestyle: 7 + abwOffset * 13 + yearOrdinal * 2,
         idealLifestyle: 5 + abwOffset * 10 + yearOrdinal * 3,
         excessLifestyle: 3 + abwOffset * 7 + yearOrdinal * 4,
       }
-      seam.phases.push({ input, natural, injected })
-      return injected
     },
-  }
-})
+  ),
+)
 
+import {
+  expectDistinctInjections,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import type { Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
@@ -96,13 +98,13 @@ function abwPlan(): Plan {
 }
 
 function run(plan: Plan, horizonEndYear = START_YEAR) {
-  seam.phases.length = 0
+  seam.reset()
   const result = simulatePlan(plan, {
     startYear: START_YEAR,
     horizonEndYear,
     taxCalculator: createFlatTaxCalculator(0),
   })
-  return { result, phases: [...seam.phases] }
+  return { result, phases: [...expectSeamRanAtLeastOnce(seam)] }
 }
 
 describe('simulatePlan delegates recurring lifestyle layers', () => {
@@ -110,7 +112,6 @@ describe('simulatePlan delegates recurring lifestyle layers', () => {
     const plan = fixedPlan()
     const { result, phases } = run(plan)
 
-    expect(phases.length).toBeGreaterThan(0)
     for (const phase of phases) {
       expect(phase.input.expenses).toBe(plan.expenses)
       expect(phase.input.primaryAge).toBe(60)
@@ -144,8 +145,7 @@ describe('simulatePlan delegates recurring lifestyle layers', () => {
     const plan = abwPlan()
     const { result, phases } = run(plan, END_YEAR)
 
-    expect(phases.length).toBeGreaterThan(0)
-    expect(new Set(phases.map((phase) => phase.injected)).size).toBe(phases.length)
+    expectDistinctInjections(seam)
     for (const phase of phases) {
       expect(phase.input.expenses).toBe(plan.expenses)
       expect(phase.input.abwActive).toBe(true)

@@ -1,5 +1,10 @@
-/** Hostile seam guard: the helper returns values that disagree with its natural
- * calculation, so every downstream channel must prove which result it used. */
+/**
+ * Hostile seam guard: the helper returns values that disagree with its natural
+ * calculation, so every downstream channel must prove which result it used.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -7,22 +12,24 @@ import type {
   AnnualSocialSecurityResult,
 } from './internal/annualSocialSecurity.js'
 
-interface Phase {
-  readonly input: AnnualSocialSecurityInput
-  readonly withheldAtCall: readonly (readonly [string, number])[]
-  readonly natural: AnnualSocialSecurityResult
-  readonly injected: AnnualSocialSecurityResult
-}
+type WithheldSnapshot = readonly (readonly [string, number])[]
 
-const seam = vi.hoisted(() => ({ phases: [] as Phase[] }))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualSocialSecurityInput,
+      AnnualSocialSecurityResult,
+      WithheldSnapshot
+    >(),
+)
 
-vi.mock('./internal/annualSocialSecurity.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualSocialSecurity.js')>()
-  return {
-    ...original,
-    annualSocialSecurity: (input: AnnualSocialSecurityInput) => {
-      const natural = original.annualSocialSecurity(input)
+vi.mock('./internal/annualSocialSecurity.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualSocialSecurity.js')>(),
+    'annualSocialSecurity',
+    (_natural, { input }): AnnualSocialSecurityResult => {
       const ordinal = input.year - 2026
       const activities = [
         {
@@ -53,7 +60,7 @@ vi.mock('./internal/annualSocialSecurity.js', async (importOriginal) => {
           isSpousalSurvivorGateStream: true,
         },
       ]
-      const injected: AnnualSocialSecurityResult = {
+      return {
         socialSecurity: 12_000 + ordinal,
         socialSecurityStreams: activities,
         ssEarningsTestWithheld: 700 + ordinal,
@@ -64,17 +71,12 @@ vi.mock('./internal/annualSocialSecurity.js', async (importOriginal) => {
         ],
         warnings: [`delegated Social Security warning ${input.year}`],
       }
-      seam.phases.push({
-        input,
-        withheldAtCall: [...input.withheldMonthsByPerson],
-        natural,
-        injected,
-      })
-      return injected
     },
-  }
-})
+    { capture: (input): WithheldSnapshot => [...input.withheldMonthsByPerson] },
+  ),
+)
 
+import { expectSeamRan } from './simulate.seamGuard.test-support.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   cashAccount,
@@ -85,7 +87,7 @@ import {
 import { simulatePlan } from './simulate.js'
 
 function run() {
-  seam.phases.length = 0
+  seam.reset()
   const plan = singlePersonPlan({ dob: '1960-01-01', planningAge: 90 })
   plan.accounts = [cashAccount('cash', 0)]
   plan.incomes = [socialSecurityIncome('ss-natural', 1_000, 67)]
@@ -97,19 +99,18 @@ function run() {
     taxCalculator: createFlatTaxCalculator(10),
     captureAnnualCashFlow: true,
   })
-  return { plan: validated, result, phases: [...seam.phases] }
+  return { plan: validated, result, phases: [...expectSeamRan(seam, 2)] }
 }
 
 describe('simulatePlan delegates annual Social Security', () => {
   it('applies fresh year effects and consumes the exact returned activities everywhere', () => {
     const { plan, result, phases } = run()
 
-    expect(phases).toHaveLength(2)
     expect(phases.map((phase) => phase.input.year)).toEqual([2026, 2027])
     expect(phases[0]!.input.incomes).toBe(plan.incomes)
     expect(phases[0]!.input.people).toBe(plan.household.people)
-    expect(phases[0]!.withheldAtCall).toEqual([])
-    expect(phases[1]!.withheldAtCall).toEqual([['p1', 45]])
+    expect(phases[0]!.captured).toEqual([])
+    expect(phases[1]!.captured).toEqual([['p1', 45]])
     expect(phases[0]!.injected.socialSecurityStreams)
       .not.toBe(phases[1]!.injected.socialSecurityStreams)
     for (let index = 0; index < phases[0]!.injected.socialSecurityStreams.length; index++) {
