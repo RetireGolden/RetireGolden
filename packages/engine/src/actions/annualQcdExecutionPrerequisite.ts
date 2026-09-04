@@ -358,6 +358,18 @@ interface AnnualQcdEvidenceIdentityClaim {
   readonly stableIdentity: string
 }
 
+/**
+ * A fail-closed collision guard within one evaluation, not a duplicate-fact
+ * detector across engine releases or persisted runs. `claims` below mixes
+ * freshly minted runtime evidence (the `projection-*` / `planner-preview-*`
+ * prefixes) with persisted `plan.retirementActionEligibilityFacts` records
+ * (the disjoint `planner-eligibility-*` prefix minted in planner-ui; see
+ * `retirementActionEligibilityFacts.ts`'s "Against runtime evidence" note).
+ * The two families never share a prefix, so they cannot collide by
+ * construction regardless of which algorithm mints either side — the
+ * `evidenceIdReused` issue below fires only when two claims that should have
+ * distinct identity mint the identical string, which is always a defect.
+ */
 function evidenceIdentityIssues(
   requests: readonly Readonly<QualifiedCharitableDistributionRequest>[],
   plan: Readonly<Plan>,
