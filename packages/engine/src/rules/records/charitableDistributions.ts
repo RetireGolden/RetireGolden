@@ -258,6 +258,7 @@ export const charitableDistributionRecords = {
     statement:
       'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary’s own age, not the decedent’s. Not modelled in v1: separate beneficiary basis history is required and is never borrowed from the donor’s own pool, so an inherited source is classification-only and non-actionable.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -302,6 +303,7 @@ export const charitableDistributionRecords = {
     statement:
       'A QCD may legally be made from a Roth IRA, but only to the extent the distribution would otherwise be includible in gross income. Not modelled in v1: the engine cannot prove the Roth tax character that would make any part otherwise includible, so a Roth source is unsupported rather than refused.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -457,6 +459,7 @@ export const charitableDistributionRecords = {
     statement:
       'The split-interest election under section 408(d)(8)(F) applies only to an IRA distribution made directly by the trustee to the selected charitable remainder annuity trust, charitable remainder unitrust, or charitable gift annuity, and requires the income interest in that entity to be nonassignable; its one-time character is registered on the sibling sublimit record. Not modelled: the engine refuses every known split-interest destination, so it never produces a QCD or a tax result from an indirect or direct split-interest transfer or from an assignable income interest.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -513,6 +516,7 @@ export const charitableDistributionRecords = {
     statement:
       'A one-time election permits QCDs to a split-interest entity up to $55,000 for 2026, counted within the $111,000 overall annual limit. Not modelled: the engine requires an affirmative attestation that the destination is not a split-interest entity and treats a known split-interest destination as unsupported.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -549,6 +553,7 @@ export const charitableDistributionRecords = {
     statement:
       'Section 72(t)(1) increases tax by 10 percent of the includible portion of an early distribution from a qualified retirement plan, and section 72(t)(2)(A)(i) excepts distributions made on or after the employee attains age 59½. Section 408(d)(8)(B)(ii) requires that a qualified charitable distribution be made on or after the date the individual for whose benefit the plan is maintained has attained age 70½. The engine refuses any QCD before that threshold, so every accepted QCD is past age 59½ and its includible portion falls within the 72(t)(2)(A)(i) exception; the qcdDirectTransfer penalty-coverage marker is emitted only for an already-executed age-eligible QCD.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -601,6 +606,7 @@ export const charitableDistributionRecords = {
     statement:
       'The QCD exclusion limit is a per-taxpayer dollar amount indexed annually, and the sourced figure exists only for a year the IRS has published. Not modelled: a named QCD scheduled for a year past the parameter pack is refused qcd-tax-year-limit-unsupported and moves nothing, because the projection has no sourced limit for that year and general plan inflation is not a source. The aggregate qcdAnnual arm does extrapolate its limit by plan inflation; the named arm does not inherit that, because the aggregate arm never claims an action executed and the named arm claims exactly that. A named request also stands the aggregate arm down for its year, so such a year gives nothing at all and the projection warns.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,

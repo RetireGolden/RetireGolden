@@ -15,6 +15,14 @@ import { TAX_RULE_REGISTRY, type TaxRuleId, type TaxRuleRecord } from './taxRule
  * registry (73 of 416 records, under a fifth) that says "we will not answer
  * this".
  *
+ * Only one of the two `outOfScope` shapes takes a fixture. A record declares
+ * which it is in `outOfScope` (see `TaxRuleOutOfScope`): `typedRefusal` fails
+ * closed at a named site and is what this helper covers, while
+ * `inexpressibleInput` cannot be reached by any accepted input and is refused
+ * below. That refusal is deliberate rather than a convenience — a fixture on
+ * such a record would be asserting against a neighbouring path, and passing
+ * would say nothing about the rule.
+ *
  * The obligation this helper imposes is different in kind from a discriminating
  * reading, because the claim is different in kind. An `outOfScope` record makes
  * three assertions a reader can check, so the spec asks for all three:
@@ -107,6 +115,22 @@ export function describeRefusal(
     // while leaving the figure itself unwatched.
     throw new RangeError(
       `Rule ${ruleId} is ${rule.classification}, not outOfScope; cover its computed value with describeRule instead`,
+    )
+  }
+  if (rule.outOfScope.shape === 'inexpressibleInput') {
+    // The second `outOfScope` shape has no refusal to drive: the fact the rule
+    // turns on cannot be expressed in the input model, so no accepted input
+    // reaches the rule and there is no engine call this fixture could make. A
+    // fixture here would have to invent a call, and whatever it then asserted
+    // would be about some neighbouring path rather than about this rule.
+    //
+    // So the attempt is treated as evidence about the record, not about the
+    // fixture: either the record is misclassified and its shape should be
+    // `typedRefusal`, or the fixture is aimed at the wrong rule. Both are
+    // things the author has to decide, which is why this throws instead of
+    // silently registering an empty suite.
+    throw new RangeError(
+      `Rule ${ruleId} is outOfScope with shape 'inexpressibleInput', so there is no refusal to drive; its obligation is missingInputFacts (${rule.outOfScope.missingInputFacts.join('; ')}). If the engine does fail closed for it, change the record's shape to 'typedRefusal' instead of writing this fixture`,
     )
   }
 

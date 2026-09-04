@@ -152,6 +152,7 @@ export const earlyDistributionAndSeppRecords = {
     statement:
       'For a qualified public safety employee taking a governmental-plan distribution, and for an employee providing firefighting services from a 401(a) trust, 403(a) annuity plan, or 403(b) contract, the Rule of 55 substitutes age 50 or 25 years of service under the plan, whichever is earlier. Not modelled: the engine holds no public-safety or years-of-service fact, so such a distribution must fail closed through the other-exception attestation rather than be assessed against the age-55 threshold.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -178,6 +179,14 @@ export const earlyDistributionAndSeppRecords = {
     statement:
       'Modifying a SEPP series before the later of five years from the first payment or age 59.5 increases tax in the modification year by the tax that would have applied to every prior payment, plus interest for the deferral period. Not modelled: the engine reports a final penalty of zero for qualified SEPP payments and has no path to revise them, so a modification is outside the supported model rather than costless.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a modification of an in-force series: seppElectionSchema carries only startAge and method, with no revision, stop, or modification-year fact',
+      'the prior payments the recapture is computed on',
+      'the deferral-period interest the statute adds to that recapture',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -267,6 +276,7 @@ export const earlyDistributionAndSeppRecords = {
     statement:
       'Section 72(t)(1) applies only when a taxpayer receives an amount from a qualified retirement plan, so cash, taxable-account, and equity-compensation ordinary withdrawals do not enter its additional-tax calculation. The executor instead emits typed notApplicable nonRetirementSource coverage with zero penalty exposure for those sources.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -647,6 +657,7 @@ export const earlyDistributionAndSeppRecords = {
     statement:
       'After the first valuation date a modification occurs on any addition to the account balance other than by reason of investment experience, any transfer of part of the balance to another retirement plan, or a rollover of the amount received. Not modelled: the engine tests none of the three. The annual reconciliation consumes a caller-supplied attestation that no disqualifying modification occurred and derives nothing from the account history, so an attestation supplied for a series that in fact took a contribution, a partial transfer out, or a rollover produces a zero penalty the statute would not allow. The error runs toward understating tax, and it omits the section 72(t)(4) recapture as well.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -676,6 +687,13 @@ export const earlyDistributionAndSeppRecords = {
     statement:
       'A participant who began with the fixed amortization or the fixed annuitization method may switch once, in any later distribution year, to the required minimum distribution method without that switch being a modification; any later change away from the required minimum distribution method is a modification. Not modelled: an election carries one method for the life of the series, the plan model offers no way to record the year of a switch, and the annual reconciliation binds one method to every payment in the year. The error runs toward larger later payments and faster depletion, because the engine keeps paying the level fixed amount in years when a real participant could have dropped to the smaller redetermined required minimum distribution payment.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the year of a one-time switch to the required-minimum-distribution method: seppElectionSchema binds one method for the life of the series',
+      'a per-year method on the annual reconciliation, which binds one method to every payment in the year',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -707,6 +725,7 @@ export const earlyDistributionAndSeppRecords = {
     statement:
       'When following a qualifying method exhausts the assets in the account, the resulting reduction in the final payment and the cessation of payments that follows are not a modification, and the section 72(t)(4)(A) recapture tax does not apply. Not modelled: the annual reconciliation qualifies a year only when the distributions total the annual scheduled amount exactly, and it receives no fact distinguishing a shortfall caused by an exhausted account from a shortfall caused by underpayment, so it refuses both. The error runs toward refusing a series the notice would preserve, overstating penalty rather than understating it, and a caller can avoid it only by restating the annual scheduled amount as the reduced final payment.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -919,6 +938,13 @@ export const earlyDistributionAndSeppRecords = {
     statement:
       'Section 72(t)(2)(J) excepts a distribution from a PLESA made under section 402A(e) from the early-distribution additional tax, subject to section 72(t)(3) and (4). RetireGolden has neither a PLESA account nor a PLESA withdrawal action, so it cannot determine or price that exception.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a PLESA account on rothAccountSchema or traditionalAccountSchema',
+      'a PLESA withdrawal action in persistedRetirementActionRequestSchema',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:

@@ -95,9 +95,23 @@ describes. It is the same rot the `produced` field was invented to stop on the `
 running in the flattering direction, because "we refuse this" keeps reading as careful long after the
 refusal was quietly replaced by a number.
 
+Which of those two things an `outOfScope` record is claiming is not left to its prose. Every such record
+carries a required `outOfScope` field naming one of two shapes, and the shape decides the obligation:
+
+| Shape | What the record claims | What it owes |
+|---|---|---|
+| `typedRefusal` | The engine fails closed at a named site: a typed refusal, an `unsupported` outcome, or a `notEstablished` reconciliation naming the missing rule. | A `describeRefusal` fixture that drives that site. |
+| `inexpressibleInput` | The fact the rule turns on cannot be expressed in `model/plan.ts` or `params/types.ts`, so no accepted input ever reaches the rule. | A non-empty `missingInputFacts` naming the absent plan or parameter facts, and a `statement` that says the same thing in prose. No fixture: there is nothing to call. |
+
+The field is typed rather than conventional, so the compiler refuses an `outOfScope` record with no shape,
+and refuses the field on a `settled`, `unsettled`, or `approximated` record, where it would say nothing
+about the engine. `missingInputFacts` exists only on the second shape, so a `typedRefusal` record cannot
+list facts in place of writing its fixture, and `describeRefusal` throws on an `inexpressibleInput` id
+rather than registering a suite whose assertions would necessarily be about some neighbouring path.
+
 [`packages/engine/src/rules/describeRefusal.ts`](../packages/engine/src/rules/describeRefusal.ts) is the
-sibling helper for those records. It accepts only an `outOfScope` id, and its spec asks for the three
-things such a record asserts:
+sibling helper for the `typedRefusal` records. It accepts only an `outOfScope` id, and its spec asks for
+the three things such a record asserts:
 
 | Field | What it names |
 |---|---|
@@ -110,13 +124,14 @@ restate the refusal string. `entryPoint` may name a module-private symbol, becau
 registry records; the suite reaches it through whatever public function calls it. Refusal fixtures are
 co-located like every other suite, beside the module whose refusal they assert.
 
-`taxRuleRegistry.conformance.test.ts` then requires a refusal fixture for every `outOfScope` rule, gated
-by `REFUSAL_FIXTURE_BACKLOG`. That allowlist is asserted by equality, not containment, so it ratchets in
-both directions: authoring a fixture without deleting its id fails, and deleting an id without authoring
-a fixture fails. Working it off will mean reclassifying some entries rather than fixturing them, because
-`outOfScope` covers two shapes and only one of them has a refusal to drive. Where the triggering fact
-cannot be expressed in the input model at all, no accepted input reaches the rule and there is nothing to
-call; `wa-rcw-82-87-capital-gains-excise` says exactly that in its own statement.
+`taxRuleRegistry.conformance.test.ts` then requires a refusal fixture for every `typedRefusal` rule,
+gated by `REFUSAL_FIXTURE_BACKLOG`. That allowlist is asserted by equality, not containment, so it
+ratchets in both directions: authoring a fixture without deleting its id fails, and deleting an id without
+authoring a fixture fails, and so does an entry that is no longer shaped `typedRefusal`. The declared
+shape is not an escape hatch from that list: the same suite asserts that every `inexpressibleInput` record
+names its missing facts, and that none of them carries a refusal fixture, so redeclaring a record to buy
+its way out of a fixture fails rather than passes. `wa-rcw-82-87-capital-gains-excise` is the archetype of
+the second shape, and says exactly that in its own statement.
 
 The two scans are kept separate on purpose. A `describeRefusal` call never counts toward the settled,
 unsettled, or approximated coverage tests, and a `describeRule` call never counts toward this one.

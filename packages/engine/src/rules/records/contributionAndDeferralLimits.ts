@@ -19,6 +19,16 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'For a lump sum distribution that includes employer-corporation securities, section 402(e)(4)(B) excludes the attributable net unrealized appreciation from gross income for purposes of section 72 unless the taxpayer elects otherwise. Because section 72(t)(1) reaches only the includible portion, excluded NUA is outside the additional-tax base. Current sale treatment of that excluded NUA is long-term capital gain without regard to the qualified plan’s holding period; post-distribution appreciation uses the distributee’s actual holding period. Notice 98-24 remains historical authority for that without-regard-to-plan-holding principle, but its “more than 18 months” language is the notice’s 1998-era long-term threshold under TRA 1997, not the 2026 more-than-one-year long-term rule. Not modelled: no plan input or retirement-action type can express employer securities, NUA, the qualified-lump-sum fact, an NUA elect-out, the distribution date, or a later securities sale, so employer-plan withdrawals still classify as basisReturn/ordinaryIncome and still run section 72(t) on the includible ordinary portion without any NUA adjustment.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'employer-corporation securities held inside an employer plan',
+      'the net unrealized appreciation attributable to them',
+      'the qualified-lump-sum-distribution fact',
+      'an election out of the NUA exclusion',
+      'the distribution date and any later sale of the distributed securities',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -94,6 +104,16 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'Section 404(a) supplies the employer\'s deduction gate for contributions to or under a retirement plan. For a stock-bonus or profit-sharing trust, the amount deductible in the payment year is no more than the greater of 25 percent of compensation paid or accrued to plan beneficiaries or the required section 401(k)(11) contribution. Not modelled: the Plan is a participant/household projection, not the sponsor\'s return; it has no sponsor taxpayer, employer deduction or carryover ledger, employer taxable-income surface, trust-exemption fact, or contribution-payment facts. An employer match is therefore only a participant account in-flow, not a conclusion about what the sponsor may deduct.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a sponsor taxpayer: the Plan is a participant and household projection, not the sponsor\'s return',
+      'an employer deduction and carryover ledger',
+      'employer taxable income or compensation paid to plan beneficiaries',
+      'the trust\'s section 501(a) exemption status',
+      'employer contribution-payment facts distinct from the participant account in-flow',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -264,6 +284,13 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'Notice 2014-54 treats same-time benefit disbursements from one employer plan to one recipient as a single distribution and assigns pretax dollars to direct rollovers before the recipient’s other destinations. The Plan cannot express one employer-plan disbursement split across multiple simultaneous destinations — its named conversion path is single-destination — so no engine input reaches this allocation and the engine produces no figure for it. Employer-plan after-tax basis elsewhere in the engine is governed by its own records, not this one.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'one employer-plan disbursement split across multiple simultaneous destinations: persistedRothConversionRequestSchema names a single destination',
+      'the ordering of pretax dollars among those destinations',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -811,6 +838,14 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'Section 401(m) separately recognizes employee contributions and matching contributions. A Roth path from an employer plan needs an eligible rollover distribution that is transferred to an eligible retirement plan, or the separate optional in-plan transfer section 402A(c)(4)(E) permits. The Plan has no employer-plan employee-contribution or after-tax-basis field, no plan-feature or distribution-eligibility facts for that source, and no retirement-action vocabulary for a connected employer-plan-to-Roth movement. A commonly called mega-backdoor Roth fact pattern therefore cannot be expressed or priced by the engine.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'an employer-plan employee-contribution or after-tax-basis field on traditionalAccountSchema',
+      'the plan-feature and distribution-eligibility facts that source needs',
+      'retirement-action vocabulary for a connected employer-plan-to-Roth movement',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -856,6 +891,12 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'A SIMPLE 401(k) participant election may not exceed the section 408(p)(2)(A)(ii) amount. Notice 2025-67 sets the generally applicable section 408(p)(2)(E)(i)(III) amount at 17,000 dollars for 2026, rather than the general 24,500-dollar section 402(g)(1) limit; a section 408(p)(2)(E)(i)(II) election that permits the enhanced adjusted-dollar amount is a separate claim registered at irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election. Not modelled: an employer account can be labelled only 401k, 403b, or 457b; it cannot establish that a 401(k) is a SIMPLE 401(k), so the projection cannot select the separate limit.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'SIMPLE status for a 401(k): traditionalAccountSchema\'s employerPlanType admits only 401k, 403b, and 457b',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -895,6 +936,14 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'Section 408(p)(2)(E)(i)(II) lets an eligible employer that is not described in subclause (I) elect the adjusted dollar amount — 110 percent of the section 408(p)(2)(E)(i)(III) amount in effect for calendar year 2024, as further indexed — and section 401(k)(11)(B)(i)(I) applies that election to a SIMPLE 401(k). Notice 2025-67 distinguishes that enhanced limb from the generally applicable section 408(p)(2)(E)(i)(III) amount. Not modelled: the Plan has no SIMPLE status, employer-size fact, or 408(p)(2)(E)(i)(II) election, so the projection cannot select the enhanced limit.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'SIMPLE status on an employer account',
+      'the employer-size fact that separates the (E)(i)(I) and (E)(i)(II) limbs',
+      'the employer\'s section 408(p)(2)(E)(i)(II) election',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -985,6 +1034,16 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'After an excess elective deferral is included in gross income under section 402(g)(1), the individual may allocate and notify plans by March 1 and each plan may distribute the allocated deferral and allocable income by April 15. The deferral distribution itself is not again included in gross income, while its income is income in the distribution year and bears no section 72(t) tax. Not modelled: the Plan has no original payroll deferral, plan allocation or notice, corrective-distribution date, or allocable-income fact, and no retirement-action arm can execute that correction.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the original payroll elective deferral that went over the section 402(g)(1) limit',
+      'the individual\'s allocation and notice to the plan by March 1',
+      'the corrective-distribution date',
+      'the allocable income distributed with the excess',
+      'a retirement-action arm that can execute the correction',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1103,6 +1162,15 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'A defined-contribution plan must provide either 100-percent vesting after three years of service or a nonforfeitable percentage under the two-to-six-year schedule for benefits derived from employer contributions. Not modelled: the Plan records an employer-plan balance and a simple current match formula, not a plan document, service history, contribution-source vesting ledger, or a vesting election, so it cannot determine a vested balance or test a plan schedule.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the plan document\'s vesting schedule',
+      'the participant\'s service history',
+      'a contribution-source vesting ledger separating employer contributions from the rest of the balance',
+      'the sponsor\'s vesting election',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1140,6 +1208,16 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'For a qualified employee of a qualified organization, section 402(g)(7) increases the 402(g)(1) limit by the least of 3,000 dollars, the remaining 15,000-dollar cumulative amount, or the service-based amount. The regulation requires a qualifying employee to have at least 15 years of service and treats a contribution eligible for both this special catch-up and an age-50 catch-up first as the special catch-up. Not modelled: the Plan has no qualified-organization status, plan-document election, years-of-service record, prior special-catch-up history, or ordering election.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'qualified-organization status for the 403(b) employer',
+      'the plan-document election to offer the special catch-up',
+      'the participant\'s years of service with that organization',
+      'prior special-catch-up amounts already used against the 15,000-dollar cumulative cap',
+      'the ordering election between the special catch-up and the age-50 catch-up',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1185,6 +1263,13 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'Section 414(v)(7)(A) limits its Roth condition to the additional elective deferrals under section 414(v)(1), while section 402(g)(7) independently increases the section 402(g)(1) limitation for a qualified 403(b) employee. The special 403(b) 15-year catch-up is therefore not made a designated-Roth contribution solely by the section 414(v)(7) high-earner rule. Not modelled: the Plan cannot establish that a contribution is a qualified 402(g)(7) amount, so it cannot label or act on this exclusion.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a fact establishing that a contribution is a qualified section 402(g)(7) special-catch-up amount rather than a section 414(v)(1) age-50 catch-up',
+      'the qualified-organization status and years of service that qualification rests on',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1307,6 +1392,15 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'Section 457(b)(3) lets an eligible deferred compensation plan provide a special ceiling for one or more of the participant\'s last three taxable years before normal retirement age: the lesser of twice the ordinary ceiling or the current ordinary ceiling plus unused earlier ceiling. Eligible employers include both a State, political subdivision, agency, or instrumentality under section 457(e)(1)(A) and any other organization (other than a governmental unit) exempt from tax under the subtitle under section 457(e)(1)(B). Not modelled: an employerPlanType of 457b does not establish eligible-employer status, normal retirement age under the plan, plan provision, or prior unused ceiling, so the projection cannot apply the special catch-up.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'eligible-employer status under section 457(e)(1): an employerPlanType of 457b does not establish it',
+      'normal retirement age as the plan defines it',
+      'the plan provision offering the special ceiling',
+      'prior years\' unused ordinary ceiling',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1388,6 +1482,15 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'For taxable years beginning after December 31, 2026, an eligible individual who makes qualified retirement savings contributions receives the section 6433 matching contribution, paid to an applicable retirement savings vehicle. RetireGolden models neither Saver\'s Match eligibility, qualifying contributions, matching contribution, nor the receiving account treatment, so it produces no Saver\'s Match result.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'Saver\'s Match eligibility for an individual',
+      'qualified retirement savings contributions made in the year',
+      'the matching contribution itself',
+      'the applicable retirement savings vehicle that receives it',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1431,6 +1534,13 @@ export const contributionAndDeferralLimitRecords = {
     statement:
       'When Saver\'s Match contributions exceed the end-of-year balance after a specified early distribution, section 6433(f)(6) increases chapter 1 tax by that excess, reduced by any overlapping section 72(t)(1) increase. RetireGolden has no Saver\'s Match contribution or recovery-distribution facts, so it cannot calculate this recovery tax.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a history of Saver\'s Match contributions to compare against the end-of-year balance',
+      'a specified early distribution that triggers the recovery',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:

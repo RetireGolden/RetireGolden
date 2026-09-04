@@ -1308,6 +1308,7 @@ export const requiredMinimumDistributionRecords = {
     statement:
       'A beneficiary that is not a designated beneficiary remains under the five-year rule when the employee dies before distributions begin: the entire interest must be distributed within five years. For an individual account, the §4974 required amount is the amount §1.401(a)(9)-5 requires for that calendar year. Classification refuses every estate, trust, and entity beneficiary class alike (X3) — including a see-through trust that would qualify under Treas. Reg. 1.401(a)(9)-4(f) — because the five-year/non-designated regime itself is not implemented. Projection then falls back to the separately registered legacy planning approximation in treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and irc-401-a-9-E-ii-eligible-designated-beneficiary (inheritedForcedAmount), and the refusal reason rides the evidence rows so no consumer can read the schedule as compliant.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1361,6 +1362,7 @@ export const requiredMinimumDistributionRecords = {
     statement:
       'Section 401(a)(9) applies separately to each beneficiary only when its interest is held in a separate account satisfying the regulatory requirements. The quoted (a)(1)(ii)(A) rule governs separate accounts established after the end of the calendar year following the employee\'s death: once those late-established accounts satisfy the separate-accounting requirements, later aggregate required distributions are determined without the separate-account rule of (a)(1)(i). Never-established accounts never switch that (a)(1)(i) rule on and are a different failure. Classification refuses multiple-beneficiary facts without separate-account facts (X4) rather than infer that any deadline was met; projection then falls back to the separately registered legacy planning approximation in treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and irc-401-a-9-E-ii-eligible-designated-beneficiary (inheritedForcedAmount), and the refusal reason rides the evidence rows so no consumer can read the schedule as compliant.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1402,6 +1404,7 @@ export const requiredMinimumDistributionRecords = {
     statement:
       'For an individual account, the §4974 required amount for a calendar year is the amount §1.401(a)(9)-5 requires. Where the five-year rule applies after a pre-RBD death, there is no required minimum distribution until the fifth-anniversary calendar year, and the required amount due in that year is the employee\'s entire interest. The unmodeled claim here is only that five-year application: the tenth-year entire-interest emptying is already modeled on the inheritedFinalSweep path and registered as irc-401-a-9-H-designated-beneficiary-ten-year-rule. Classification refuses every estate, trust, and entity beneficiary class alike (X3) for the five-year regime; projection then falls back to the separately registered legacy planning approximation in treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and irc-401-a-9-E-ii-eligible-designated-beneficiary (inheritedForcedAmount), and the refusal reason rides the evidence rows so no consumer can read the schedule as compliant.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:

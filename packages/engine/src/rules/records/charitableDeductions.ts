@@ -233,6 +233,16 @@ export const charitableDeductionRecords = {
     statement:
       'Section 170(b)(1)(C) limits certain capital-gain-property contributions to 30 percent of contribution base and orders them after other charitable contributions. The Plan carries one undifferentiated nonnegative charitable amount, not the contributed property\'s gain character, the section 170(b)(1)(A) recipient status, subsection (e)(1)(B) treatment, contribution ordering, or any carryforward. No accepted Plan fact identifies a contribution to which 170(b)(1)(C) applies, so the engine produces no capital-gain-property ceiling figure; a user-entered charitable amount is not such a claim.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the gain character of contributed property: itemizedDeductionsSchema carries one undifferentiated nonnegative charitable amount',
+      'the section 170(b)(1)(A) status of the recipient organization',
+      'subsection (e)(1)(B) reduction treatment for the contributed property',
+      'an ordering position among the year\'s other charitable contributions',
+      'a contribution carryforward balance from an earlier year',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -296,6 +306,18 @@ export const charitableDeductionRecords = {
     statement:
       'Section 664 applies to charitable remainder annuity trusts and unitrusts, exempts those trusts from income tax under section 664(c)(1) except for the unrelated-business taxable income excise under section 664(c)(2), and defines their required payout and charitable-remainder conditions. RetireGolden has no charitable-remainder trust entity; no initial or annual trust property value, payout rate or amount, annuitant or life/term, remainder recipient, trust income-category or corpus balance, basis, or trustee distribution. It therefore produces neither a section 664 qualification, exemption, payout, or remainder-value figure nor a section 664(b) beneficiary income-character result. A split-interest QCD is refused before settlement instead of supplying any of those trust facts.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a charitable-remainder trust entity in planSchema',
+      'initial and annual trust property value',
+      'the payout rate or annuity amount',
+      'the annuitant and the measuring life or term of years',
+      'the remainder recipient',
+      'the trust\'s income-category and corpus balances and their basis',
+      'a trustee distribution event',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -365,6 +387,17 @@ export const charitableDeductionRecords = {
     statement:
       'Section 7520 values annuity, life-or-term, remainder, and reversionary interests under prescribed tables and a valuation-month interest rate. Section 2522 allows the gift-tax charitable deduction for a retained-property transfer only subject to its stated conditions, including charitable-remainder, pooled-income, guaranteed-annuity, and fixed-percentage forms. RetireGolden has no transfer or valuation date, applicable section 7520 rate, trust property value, payout terms, measuring lives or term, prescribed-table factors, retained interest, gift, or gift-tax calculation, so it produces no section 7520 or section 2522 split-interest valuation or deduction figure.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a transfer date and valuation date',
+      'the applicable section 7520 interest rate for the valuation month',
+      'trust property value and payout terms',
+      'the measuring lives or term of years',
+      'the prescribed-table valuation factors',
+      'a retained interest, a gift, or any gift-tax calculation surface',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -526,6 +559,16 @@ export const charitableDeductionRecords = {
     statement:
       'A donor advised fund is a separately identified fund owned and controlled by a sponsoring organization, with respect to which the donor has only advisory privileges; a section 170 deduction for a contribution to it is allowed only under the section 170(f)(18) conditions, including the sponsoring organization\'s acknowledgment of exclusive legal control over the assets contributed. Not modelled: the Plan has no donor-advised-fund account, contribution event, grant schedule, advisory-privilege, sponsoring-organization, or exclusive-legal-control fact, so no accepted input reaches this rule. Generic itemized charitable and QCD fields are not a DAF. The 4966 taxable-distribution excise and the 4967 more-than-incidental-benefit excise turn on the same absent vehicle and are folded here rather than given records of their own. A named QCD whose charity is designated a donor-advised fund is a different surface, already refused at irc-408-d-8-B-i-qualified-recipient.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a donor-advised-fund account: itemizedDeductionsSchema carries only a generic charitable amount',
+      'a contribution event into such a fund and a grant schedule out of it',
+      'the donor\'s advisory privileges',
+      'the sponsoring organization',
+      'the sponsoring organization\'s acknowledgment of exclusive legal control',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,

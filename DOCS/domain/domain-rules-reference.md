@@ -19,11 +19,19 @@ Four classifications:
 - `approximated` — the engine returns a figure that is knowably not the one the authority requires. A required
   typed `errorDirection` (`understatesTax` / `overstatesTax` / `bothDirections`) says which way, anchored on the
   **taxpayer's exposure to the fisc** rather than on the quantity the rule names.
-- `outOfScope` — the engine produces no figure from the rule at all and fails closed with a typed refusal.
+- `outOfScope` — the engine produces no figure from the rule at all. A required `outOfScope.shape`
+  says which of the two ways that happens: `typedRefusal`, where the engine fails closed at a named site,
+  or `inexpressibleInput`, where the fact the rule turns on cannot be expressed in `model/plan.ts` or
+  `params/types.ts` at all, so no accepted input ever reaches the rule. The second shape lists the absent
+  facts in `missingInputFacts`; the first owes a refusal fixture instead. See
+  [testing.md](../testing.md#covering-a-rule-the-engine-refuses-to-answer) for the coverage obligations.
 - `unsettled` — authority is absent or conflicting; the rejected reading is recorded in `contraryReading`.
 
 The split between `approximated` and `outOfScope` is the load-bearing one: "computes a knowably-wrong number" and
-"refuses to answer" are different risks to whoever consumes the result, and one field used to carry both. Current
+"refuses to answer" are different risks to whoever consumes the result, and one field used to carry both. The
+`outOfScope.shape` field draws the same kind of line one level down: "we refuse this input" and "this input cannot
+be entered" are also different claims, and the shape is typed rather than left to the record's prose because only
+one of them can be pinned by a fixture. Current
 counts — total records, the classification split, and the per-state jurisdiction spread — live in the generated
 [operations/rule-coverage.md](../operations/rule-coverage.md) and are asserted against the registry at test time;
 this document deliberately states none, because dated prose counts rot. Every record also carries a `jurisdiction`,

@@ -407,6 +407,15 @@ export const rothAccountRecords = {
     statement:
       'Section 402A(c)(4)(E) permits, but does not require, an applicable retirement plan with a qualified Roth contribution program to let an individual elect a transfer of an amount not otherwise distributable under the plan to that individual\'s designated Roth account. The transfer is treated as a distribution to which section 402A(c)(4) applies and as contributed in a qualified rollover contribution. Notice 2013-74 confirms that the transferred amount and its applicable earnings retain the distribution restrictions that applied before the in-plan Roth rollover. The Plan cannot express the plan\'s optional feature, the source amount\'s pre-transfer distribution restriction, or an identity linking the employer traditional and designated Roth accounts to one plan, and the retirement-action contract has no in-plan-Roth-transfer vocabulary. No accepted engine input therefore reaches this rule.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the plan\'s optional qualified-Roth-contribution-program feature',
+      'the source amount\'s pre-transfer distribution restriction',
+      'an identity linking traditionalAccountSchema and rothAccountSchema entries to one employer plan',
+      'in-plan-Roth-transfer vocabulary in persistedRetirementActionRequestSchema',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -453,6 +462,14 @@ export const rothAccountRecords = {
     statement:
       'An applicable retirement plan may include a pension-linked emergency savings account (PLESA), which section 402A(e) generally treats as a designated Roth account. RetireGolden does not model a PLESA subaccount, its separate contribution and earnings records, or a plan feature election, so no accepted plan input reaches this rule.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a PLESA subaccount on rothAccountSchema or traditionalAccountSchema',
+      'the PLESA\'s separate contribution and earnings records',
+      'the sponsor\'s plan-feature election to offer one',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -491,6 +508,14 @@ export const rothAccountRecords = {
     statement:
       'No contribution may be accepted to a PLESA if participant contributions would exceed the lesser of the indexed 2,500-dollar amount or the lower amount selected by the plan sponsor. RetireGolden cannot accept a PLESA contribution, balance, or sponsor cap, so it produces no cap result.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a PLESA participant contribution',
+      'a PLESA balance to test the cap against',
+      'the lower cap a plan sponsor may select',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -529,6 +554,13 @@ export const rothAccountRecords = {
     statement:
       'A PLESA distribution made under section 402A(e)(7)(A) is treated as a qualified distribution for section 402A(d), whose qualified designated-Roth distributions are not includible in gross income. RetireGolden has no PLESA earnings ledger or distribution path, so it cannot apply that treatment.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a PLESA earnings ledger',
+      'a PLESA distribution action in persistedRetirementActionRequestSchema',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:

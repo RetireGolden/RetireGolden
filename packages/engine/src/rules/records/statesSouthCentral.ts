@@ -1378,6 +1378,14 @@ export const southCentralStateRecords = {
     statement:
       'The Form 40 booklet makes a pension or IRA distribution with unrecovered cost only partially taxable, and routes withdrawals whose cost recovery began before January 1, 1987 onto a separate pre-1987 worksheet path. RetireGolden\'s state tax input carries only aggregate private and public retirement dollars and ages — no Alabama cost basis, no recovery start date, and no Schedule RS worksheet lines — so no accepted plan fact reaches either cost-recovery limb; the engine taxes a non-exempt distribution in full.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'an Alabama cost basis in a pension or IRA distribution: StateRetirementExclusion carries only aggregate private and public retirement dollars and ages',
+      'the date cost recovery began, which selects the pre-1987 worksheet path',
+      'the Schedule RS worksheet lines the booklet computes the partial exclusion on',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -1414,6 +1422,12 @@ export const southCentralStateRecords = {
     statement:
       'The Form 40 booklet lists Federal Railroad Retirement benefits among the amounts a taxpayer does not report. Out of scope: the engine has no railroad-retirement income field, so the exclusion cannot be modeled or discriminated by a fixture — a household entering railroad benefits as ordinary income would see them taxed where the booklet exempts them. Registered as an absence rather than folded into the Social Security record, whose fixture only exercises `taxesSocialSecurity`.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a railroad-retirement income stream: incomeStreamSchema has no railroad-retirement type, and a household entering the benefits as ordinary income is indistinguishable from any other ordinary stream',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
