@@ -79,20 +79,57 @@ const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'd
 const CONFORMANCE_SOURCE = 'taxRuleRegistry.conformance.test.ts'
 
 /**
+ * Keywords after which `/` starts a regex rather than division, checked in
+ * addition to the punctuation set below. Not exhaustive of every keyword a
+ * full parser would accept — `else`, `do`, and the rest of the statement
+ * keywords never precede a regex literal directly in practice — but wide
+ * enough to cover how a regex literal is actually written in this repo's test
+ * sources.
+ */
+const REGEX_LITERAL_PRECEDING_KEYWORDS = new Set([
+  'return',
+  'typeof',
+  'instanceof',
+  'in',
+  'of',
+  'new',
+  'delete',
+  'void',
+  'throw',
+  'yield',
+  'case',
+])
+
+/**
  * Whether a regex literal can begin at `index`: true at the start of the
- * source or after `( , = : ; ! & | ? { [` (skipping whitespace), the same
- * heuristic a parser uses to decide `/` opens a regex rather than division.
- * Needed so a quote inside a regex literal — such as the `'` in this very
- * file's own `(['"\`]?)` character class — is never mistaken by
- * `stripComments` for a string opener, which would make it skip forward to
- * some unrelated later quote and silently fail to blank a comment (or a
- * commented-out fixture call) hiding inside that misread span.
+ * source, after `( , = : ; ! & | ? { [` (skipping whitespace), or after one of
+ * `REGEX_LITERAL_PRECEDING_KEYWORDS` — the same heuristic a parser uses to
+ * decide `/` opens a regex rather than division, plus the keyword-preceded
+ * case a punctuation-only check misses. Needed so a quote inside a regex
+ * literal — such as the `'` in this very file's own `(['"\`]?)` character
+ * class — is never mistaken by `stripComments` for a string opener, which
+ * would make it skip forward to some unrelated later quote and silently fail
+ * to blank a comment (or a commented-out fixture call) hiding inside that
+ * misread span.
+ *
+ * Deliberately still returns false after `)` and `]`: a full parser resolves
+ * those by tracking whether the matching open punctuation started an
+ * expression or a control-flow head, which this character scanner does not
+ * do. `coverageReport.ts`'s `regexCanFollow` — the accepted, shipped sibling
+ * of this heuristic — has the identical limitation; extending past it here
+ * would mean guessing at disambiguation this repo's own precedent does not
+ * attempt either.
  */
 function regexLiteralCanOpenAt(source: string, index: number): boolean {
   let cursor = index - 1
   while (cursor >= 0 && /\s/u.test(source[cursor]!)) cursor -= 1
   if (cursor < 0) return true
-  return '(,=:;!&|?{['.includes(source[cursor]!)
+  if ('(,=:;!&|?{['.includes(source[cursor]!)) return true
+  if (!/[a-zA-Z0-9_$]/u.test(source[cursor]!)) return false
+  let wordStart = cursor
+  while (wordStart >= 0 && /[a-zA-Z0-9_$]/u.test(source[wordStart]!)) wordStart -= 1
+  const word = source.slice(wordStart + 1, cursor + 1)
+  return REGEX_LITERAL_PRECEDING_KEYWORDS.has(word)
 }
 
 /**
