@@ -145,8 +145,12 @@ function blocked(error: unknown): AnnualQcdPhysicalExecutionBlocked {
 /** Returns `value` unchanged, or fails the stage when it is blank. Distinct
  * from the shared `nonblank` predicate and from `requireNonblankId`: the
  * failure is this module's typed `rmdEvidenceInvalid` issue rather than a
- * boolean or a bare throw. */
-function requireNonblankField(value: string, label: string): string {
+ * boolean or a bare throw. Named for this module rather than
+ * `requireNonblankField`, because `annualSection68ItemizedDeduction.ts` and
+ * `describeRefusal.ts` each have their own nonblank-field helper with its own
+ * throw contract; a shared name across three incompatible signatures is the
+ * same drift the shared-guard lint rule exists to prevent, one level down. */
+function requireNonblankQcdField(value: string, label: string): string {
   if (value.trim().length === 0) fail('rmdEvidenceInvalid', `${label} must be nonblank.`)
   return value
 }
@@ -291,8 +295,8 @@ function canonicalPools(
   const evidenceIds = new Set<string>()
   const claimedAccounts = new Set<AccountId>()
   const pools = input.map((raw) => {
-    const poolId = requireNonblankField(raw.poolId, 'RMD pool ID')
-    const upstreamEvidenceId = requireNonblankField(raw.upstreamEvidenceId, 'RMD upstream evidence ID')
+    const poolId = requireNonblankQcdField(raw.poolId, 'RMD pool ID')
+    const upstreamEvidenceId = requireNonblankQcdField(raw.upstreamEvidenceId, 'RMD upstream evidence ID')
     const donorPersonId = personIdSchema.parse(raw.donorPersonId)
     const sourceAccountIds = [...raw.sourceAccountIds]
       .map((id) => accountIdSchema.parse(id)).sort(compareUtf16CodeUnits)

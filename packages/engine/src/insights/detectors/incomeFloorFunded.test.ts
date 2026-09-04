@@ -65,8 +65,18 @@ describe('incomeFloorFunded', () => {
     expect(card?.evidence[0]).toEqual({ label: 'Funded ratio', value: '89.0%' })
   })
 
-  it('stays silent at the 90% boundary', () => {
-    expect(incomeFloorFunded.screen(context({ requiredAnnual: 100_000, guaranteed: 90_000 }))).toBeNull()
+  it('stays silent once guaranteed income clears the 90% gate', () => {
+    // Not fixtured at exactly 90%: `computeFundedRatio` accumulates the
+    // essential-spending and guaranteed-income present values as two
+    // independent multi-year sums, so even though they share the same curve
+    // and year offsets, floating-point rounding is not guaranteed to cancel
+    // bit-for-bit the way the exact ratio does. A construction landing one ULP
+    // on either side of the detector's hard `>= 90` gate would make this test
+    // depend on accumulation order rather than on the detector's stated
+    // condition. 92% is comfortably clear of that boundary in either
+    // direction; the below-threshold side is already pinned by the 89% case
+    // above.
+    expect(incomeFloorFunded.screen(context({ requiredAnnual: 100_000, guaranteed: 92_000 }))).toBeNull()
   })
 
   it('stays silent until the household distinguishes a required floor', () => {

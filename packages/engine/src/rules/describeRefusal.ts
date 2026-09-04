@@ -11,8 +11,9 @@ import { TAX_RULE_REGISTRY, type TaxRuleId, type TaxRuleRecord } from './taxRule
  * obligation at all: an `outOfScope` record asserts the engine fails closed,
  * and until now nothing checked that the refusal existed, still existed, or
  * still had the shape the record describes. That is exactly the rot the
- * `produced` field on `describeRule` was invented to stop, on the half of the
- * registry that says "we will not answer this".
+ * `produced` field on `describeRule` was invented to stop, on the slice of the
+ * registry (73 of 416 records, under a fifth) that says "we will not answer
+ * this".
  *
  * The obligation this helper imposes is different in kind from a discriminating
  * reading, because the claim is different in kind. An `outOfScope` record makes
@@ -75,7 +76,14 @@ export interface RuleRefusalContext {
   readonly refusal: RuleRefusalSpec['refusal']
 }
 
-function requireNonblankField(value: string, ruleId: string, field: string): string {
+/**
+ * Named for this module rather than `requireNonblankField`, because
+ * `annualQcdPhysicalExecution.ts` and `annualSection68ItemizedDeduction.ts`
+ * each have their own nonblank-field helper with its own throw contract; a
+ * shared name across three incompatible signatures is the same drift the
+ * shared-guard lint rule exists to prevent, one level down.
+ */
+function requireNonblankRefusalField(value: string, ruleId: string, field: string): string {
   const trimmed = value.trim()
   if (trimmed === '') {
     throw new RangeError(`Rule ${ruleId} refusal fixture needs a nonblank ${field}`)
@@ -102,14 +110,14 @@ export function describeRefusal(
     )
   }
 
-  const entryPoint = requireNonblankField(spec.entryPoint, ruleId, 'entryPoint')
+  const entryPoint = requireNonblankRefusalField(spec.entryPoint, ruleId, 'entryPoint')
   if (!rule.implementedByFunctions.includes(entryPoint)) {
     throw new RangeError(
       `Rule ${ruleId} does not name ${entryPoint} in implementedByFunctions; a refusal fixture must drive a refusal site the record itself claims`,
     )
   }
-  const outOfScopeInput = requireNonblankField(spec.outOfScopeInput, ruleId, 'outOfScopeInput')
-  const refusal = requireNonblankField(spec.refusal, ruleId, 'refusal')
+  const outOfScopeInput = requireNonblankRefusalField(spec.outOfScopeInput, ruleId, 'outOfScopeInput')
+  const refusal = requireNonblankRefusalField(spec.refusal, ruleId, 'refusal')
 
   const note = spec.note?.trim()
   const label = note === undefined || note === '' ? '' : ` — ${note}`

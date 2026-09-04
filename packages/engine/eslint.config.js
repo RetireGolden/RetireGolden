@@ -96,13 +96,24 @@ export default defineConfig([
         localeRestriction,
         // Both shapes, because the copy that survived the manual sweep was a
         // block-scoped `const` arrow inside a function body, not a top-level
-        // `function`.
+        // `function`. Also class methods and object-literal methods: a
+        // redefinition does not have to be a free function or a variable to
+        // cause the same grep-can't-tell-which-one drift this rule exists to
+        // stop.
         {
           selector: `FunctionDeclaration[id.name=${sharedActionGuardNamePattern}]`,
           message: sharedActionGuardMessage,
         },
         {
           selector: `VariableDeclarator[id.name=${sharedActionGuardNamePattern}]`,
+          message: sharedActionGuardMessage,
+        },
+        {
+          selector: `MethodDefinition[key.name=${sharedActionGuardNamePattern}]`,
+          message: sharedActionGuardMessage,
+        },
+        {
+          selector: `Property[key.name=${sharedActionGuardNamePattern}][value.type=/FunctionExpression$/]`,
           message: sharedActionGuardMessage,
         },
       ],

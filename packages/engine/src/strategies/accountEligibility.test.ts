@@ -1602,15 +1602,26 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
     })
     plan.household.people[0] = person('p1', '1954-08-31')
     plan.accounts = accounts
+    // Classify id 'ira' as a traditional IRA only when the fixture actually put
+    // a traditional account there. The Roth-source fixture below reuses this id
+    // for a Roth IRA (the QCD source account id the request expects), and a
+    // classification fact contradicting the account's own type would make the
+    // plan describe two incompatible things about the same account.
+    const traditionalIra = accounts.find(
+      (account): account is TraditionalAccount => account.id === 'ira' && account.type === 'traditional',
+    )
     plan.retirementActionEligibilityFacts = {
-      iraClassifications: [
-        {
-          evidenceId: 'classification-1',
-          provenance: { source: 'manual' },
-          sourceAccountId: 'ira',
-          subtype: 'traditional',
-        },
-      ],
+      iraClassifications:
+        traditionalIra === undefined
+          ? []
+          : [
+              {
+                evidenceId: 'classification-1',
+                provenance: { source: 'manual' },
+                sourceAccountId: 'ira',
+                subtype: 'traditional',
+              },
+            ],
       sepSimpleActivities: [],
       deductibleIraContributions: [
         {

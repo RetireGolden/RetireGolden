@@ -88,8 +88,8 @@ reimplementation, and still fails the moment the gap it names is closed — see 
 
 `describeRule` refuses an `outOfScope` rule id outright, because that classification is a claim that the
 engine produces no figure at all, so there is no computed value for candidate readings to disagree about.
-That left 73 of the registry's 416 records with no coverage obligation of any kind: the half that says
-"we will not answer this", unwatched. An `outOfScope` record asserts the engine fails closed with a typed
+That left 73 of the registry's 416 records with no coverage obligation of any kind: the slice (under a
+fifth of the registry) that says "we will not answer this", unwatched. An `outOfScope` record asserts the engine fails closed with a typed
 refusal, and nothing checked that the refusal existed, still existed, or still had the shape the record
 describes. It is the same rot the `produced` field was invented to stop on the `approximated` records,
 running in the flattering direction, because "we refuse this" keeps reading as careful long after the

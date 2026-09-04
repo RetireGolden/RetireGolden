@@ -97,6 +97,14 @@ describe('ssBridgeGap', () => {
 
   it('holds the shared funding fraction on both sides', () => {
     const floor = fixtureBridge().ladderCost * BRIDGE_FUNDING_MIN_FRACTION
+    // The gate is `liquid.balance < floor`, so equality must land on the
+    // "affordable" side. Rounding to Math.ceil/floor before comparing can put
+    // both cases on the same side of a fractional floor, so pin the exact
+    // boundary itself: liquid.balance === floor must still fire, and one cent
+    // below must refuse. If `<` ever became `<=`, this pair would catch it.
+    expect(ssBridgeGap.screen(context({ liquid: floor }))?.id).toBe('ss-bridge-gap')
+    expect(ssBridgeGap.screen(context({ liquid: floor - 0.01 }))).toBeNull()
+    // Comfortably above and below the floor, for readability.
     expect(ssBridgeGap.screen(context({ liquid: Math.ceil(floor) }))?.id).toBe('ss-bridge-gap')
     expect(ssBridgeGap.screen(context({ liquid: Math.floor(floor) - 1 }))).toBeNull()
   })

@@ -78,10 +78,14 @@ describe('assetLocation', () => {
   })
 
   it('prefers the bonds-to-traditional candidate as the previewed swap', () => {
-    // Named in the module as the preferred candidate; the fallback to
-    // candidates[0] exists only for a generator that stops emitting it.
+    // Named in the module as the preferred candidate ('asset-location-bonds-to-traditional',
+    // label 'Hold bonds in traditional, stocks in taxable' in generators.ts); the
+    // fallback to candidates[0] exists only for a generator that stops emitting it.
+    // Assert the label itself so a silent fallback to a different candidate fails
+    // this test rather than passing on shared shape (preview-scenario + accounts).
     const card = assetLocation.screen(context(assetLocationPlan()))
     if (card?.action.kind !== 'preview-scenario') throw new Error('expected a preview scenario')
+    expect(card.action.scenarioName).toBe('Hold bonds in traditional, stocks in taxable')
     expect(card.action.patch).toHaveProperty('accounts')
   })
 

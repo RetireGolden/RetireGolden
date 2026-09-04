@@ -77,6 +77,120 @@ const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'd
 // would both trip the unknown-rule assertion and let a guard-only reference
 // launder coverage for a rule whose actual fixture had been deleted.
 const CONFORMANCE_SOURCE = 'taxRuleRegistry.conformance.test.ts'
+
+/**
+ * Blanks out `//` and `/* *\/` comments in `source`, replacing each with
+ * whitespace of the same length so a commented-out `describeRule(` or
+ * `describeRefusal(` call can never satisfy the coverage scans below —
+ * without this, deleting a real fixture but leaving it commented out would
+ * still count as coverage under a plain regex scan. String and template
+ * literal contents are walked past but left intact, since the id argument the
+ * scans capture lives inside one.
+ */
+function stripComments(source: string): string {
+  let out = ''
+  let i = 0
+  while (i < source.length) {
+    const c = source[i]!
+    const next = source[i + 1]
+    if (c === '/' && next === '/') {
+      const eol = source.indexOf('\n', i)
+      const end = eol === -1 ? source.length : eol
+      out += ' '.repeat(end - i)
+      i = end
+      continue
+    }
+    if (c === '/' && next === '*') {
+      const close = source.indexOf('*/', i + 2)
+      const end = close === -1 ? source.length : close + 2
+      out += source.slice(i, end).replace(/[^\n]/gu, ' ')
+      i = end
+      continue
+    }
+    if (c === "'" || c === '"') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== c) {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      cursor = Math.min(cursor + 1, source.length)
+      out += source.slice(i, cursor)
+      i = cursor
+      continue
+    }
+    if (c === '`') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== '`') {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      cursor = Math.min(cursor + 1, source.length)
+      out += source.slice(i, cursor)
+      i = cursor
+      continue
+    }
+    out += c
+    i += 1
+  }
+  return out
+}
+
+/**
+ * Index just past the closing parenthesis of the call whose first `(` is at
+ * or after `start`, skipping parens that appear inside string or template
+ * literals so quoted content cannot misalign the depth count. `source` is
+ * assumed to already have comments stripped (see `stripComments`).
+ */
+function callEnd(source: string, start: number): number {
+  const open = source.indexOf('(', start)
+  if (open === -1) return source.length
+  let depth = 0
+  let i = open
+  while (i < source.length) {
+    const c = source[i]!
+    if (c === "'" || c === '"') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== c) {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      i = Math.min(cursor + 1, source.length)
+      continue
+    }
+    if (c === '`') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== '`') {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      i = Math.min(cursor + 1, source.length)
+      continue
+    }
+    if (c === '(') depth += 1
+    if (c === ')') {
+      depth -= 1
+      if (depth === 0) return i + 1
+    }
+    i += 1
+  }
+  return source.length
+}
+
+/**
+ * Whether the balanced `describeRefusal(...)` call body registers at least
+ * one `it(` test that itself calls `expect(`. `describeRefusal` validates the
+ * rule id, its classification, and the fixture's prose fields, but nothing
+ * about the helper itself forces the suite callback to assert anything —
+ * `describeRefusal(id, spec, () => {})` would otherwise satisfy the
+ * backlog-equality ratchet below while driving no refusal at all, and so
+ * would `describeRefusal(id, spec, () => { it('todo', () => {}) })`, an `it`
+ * that registers but asserts nothing. Requiring both a real `it(` AND an
+ * `expect(` inside the call's own extent closes both: an empty suite, and a
+ * suite whose only test is a no-op, are neither counted as coverage, so the
+ * rule id stays "uncovered" and must stay in `REFUSAL_FIXTURE_BACKLOG` until
+ * a real fixture is written.
+ */
+function registersATest(source: string, start: number, end: number): boolean {
+  const body = source.slice(start, end)
+  return /\bit\(\s*['"`]/u.test(body) && /\bexpect\(/u.test(body)
+}
+
 const claimedRuleIds = new Map<string, string[]>()
 // `describeRefusal` is scanned separately rather than folded into the regex
 // above. The two helpers make different claims - a discriminating computed
@@ -84,24 +198,24 @@ const claimedRuleIds = new Map<string, string[]>()
 // satisfy the settled/unsettled/approximated coverage tests, which is the one
 // substitution neither classification can afford.
 const claimedRefusalRuleIds = new Map<string, string[]>()
-for (const [path, source] of Object.entries(testSources)) {
+for (const [path, rawSource] of Object.entries(testSources)) {
   if (path.endsWith(CONFORMANCE_SOURCE)) continue
+  const source = stripComments(rawSource as string)
   for (const match of source.matchAll(/describeRule\(\s*'([^']+)'/gu)) {
     const ruleId = match[1]!
     claimedRuleIds.set(ruleId, [...(claimedRuleIds.get(ruleId) ?? []), path])
   }
   for (const match of source.matchAll(/describeRefusal\(\s*'([^']+)'/gu)) {
     const ruleId = match[1]!
+    const start = match.index ?? 0
+    const end = callEnd(source, start)
+    // A call whose suite body registers no `it(` test is not coverage: leave
+    // it out of claimedRefusalRuleIds so the id stays "uncovered" below.
+    if (!registersATest(source, start, end)) continue
     claimedRefusalRuleIds.set(ruleId, [...(claimedRefusalRuleIds.get(ruleId) ?? []), path])
   }
 }
 
-/**
- * Structural symbol table per file, shared with the coverage manifest's
- * deep-link line resolution (symbolLines.ts) so the set of names this guard
- * admits and the set of names the manifest can anchor are one implementation.
- * The synthetic probes below therefore guard both consumers.
- */
 /**
  * `outOfScope` rules that do not yet have a refusal fixture.
  *
@@ -198,6 +312,12 @@ const REFUSAL_FIXTURE_BACKLOG: readonly string[] = [
     'wa-rcw-82-87-capital-gains-excise',
 ]
 
+/**
+ * Structural symbol table per file, shared with the coverage manifest's
+ * deep-link line resolution (symbolLines.ts) so the set of names this guard
+ * admits and the set of names the manifest can anchor are one implementation.
+ * The synthetic probes below therefore guard both consumers.
+ */
 const declaredSymbolCache = new Map<string, ReadonlyMap<string, DeclaredSymbol>>()
 
 function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string, DeclaredSymbol> {
@@ -973,8 +1093,9 @@ describe('tax rule registry conformance', () => {
   })
 
   it('covers every outOfScope rule with a refusal fixture', () => {
-    // The classification with no coverage obligation at all until now, and the
-    // half of the registry that says "we will not answer this". An outOfScope
+    // The classification with no coverage obligation at all until now: a slice
+    // of the registry (73 of 416 records, under a fifth) that says "we will
+    // not answer this". An outOfScope
     // record claims the engine fails closed with a typed refusal; nothing
     // checked that the refusal existed, still existed, or still had the shape
     // the record describes. That is the same rot `produced` was invented to
