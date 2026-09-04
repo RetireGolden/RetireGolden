@@ -89,6 +89,20 @@ inflating the shared `useProjection` chunk.
 Those chunks stay precached; the split changes
 parsing and chunk ownership, not the offline guarantee or the one-worker-entry invariant.
 
+The groups match those engine modules by **exact bare filename**
+(`ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME`, `ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME`,
+`ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME`, `ANNUAL_PROJECTION_KERNEL_MODULE_NAMES` — all in
+[`app/vite.config.ts`](../../app/vite.config.ts)), not a directory glob or a naming convention: a
+convention regex was considered and rejected because it could not be made to reproduce this exact table.
+Renaming or moving one of those files under `packages/engine/src/projection/internal/` does not fail the
+build on its own — the module just silently falls out of its named chunk and back into whatever pulls it
+in. `assertProjectionInternalChunkModulesExist()`, which runs at config-load time (so `vite build`,
+`vite dev`, and every `pnpm test` invocation in `app/` all see it), and
+[`viteChunkModules.test.mjs`](../../app/scripts/viteChunkModules.test.mjs), which re-checks the same list
+independently from source text, turn that into a loud failure naming the missing file instead. The fix for
+a rename is the same either way: update the hardcoded list in `app/vite.config.ts` to match. Nothing else
+needs to change.
+
 A chunk rolldown names differently after a refactor stops matching its row and falls through to the
 260 KiB default. That is intended: a chunk that changed identity should be looked at, not silently
 inherit a large allowance. The app entry is the exception — it is identified by the script `index.html`

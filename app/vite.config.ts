@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
@@ -9,28 +10,65 @@ import { defineConfig } from 'vitest/config'
 const engineSrc = fileURLToPath(new URL('../packages/engine/src', import.meta.url)).replaceAll('\\', '/')
 const plannerUiSrc = fileURLToPath(new URL('../packages/planner-ui/src', import.meta.url)).replaceAll('\\', '/')
 
-const annualProjectionSettlementModule =
-  '/packages/engine/src/projection/internal/annualOwnedNonRothIraSettlementPhase.ts'
-const annualProjectionFundingCloseModule =
-  '/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts'
+// Every bare filename below names a module under
+// packages/engine/src/projection/internal/, matched by exact filename in
+// Rolldown's `codeSplitting` groups further down
+// (annualProjectionCodeSplitting). A rename or move does not fail the build
+// on its own — the module just silently falls out of its chunk
+// (DOCS/operations/bundle-budget.md). assertProjectionInternalChunkModulesExist,
+// right below, turns that into a loud config-load failure; app/scripts/viteChunkModules.test.mjs
+// re-checks the same bare filenames against disk from source text, so a
+// rename also fails `pnpm test`, without needing a build.
+const ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME = 'annualOwnedNonRothIraSettlementPhase.ts'
+const ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME = 'annualFundingApplicationAndClosePhase.ts'
+const ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME = 'annualAcaResultPublication.ts'
+const ANNUAL_PROJECTION_KERNEL_MODULE_NAMES = [
+  'annualFundingFixedPoint.ts',
+  'wageIncomeStreams.ts',
+  'otherIncomeStreams.ts',
+  'propertyEventsAndGrowth.ts',
+  'annualDebtAndLongTermCare.ts',
+  'annualExpenseSummary.ts',
+  'annualSnapshot.ts',
+  'publishedEntityFacts.ts',
+  'annualPermanentLifeTransitions.ts',
+  'annualInsurancePremiumRows.ts',
+  'annualLegacyQcdGiftPlan.ts',
+] as const
+
+const PROJECTION_INTERNAL_CHUNK_MODULE_NAMES: readonly string[] = [
+  ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME,
+  ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME,
+  ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME,
+  ...ANNUAL_PROJECTION_KERNEL_MODULE_NAMES,
+]
+
+function projectionInternalModulePath(name: string): string {
+  return `/packages/engine/src/projection/internal/${name}`
+}
+
+function assertProjectionInternalChunkModulesExist(): void {
+  const missing = PROJECTION_INTERNAL_CHUNK_MODULE_NAMES.filter(
+    (name) => !existsSync(`${engineSrc}/projection/internal/${name}`),
+  )
+  if (missing.length > 0) {
+    throw new Error(
+      'app/vite.config.ts: codeSplitting group(s) reference engine module(s) that no longer exist under ' +
+        `packages/engine/src/projection/internal/: ${missing.join(', ')}. Update the hardcoded list in ` +
+        'app/vite.config.ts to match the rename (see DOCS/operations/bundle-budget.md).',
+    )
+  }
+}
+assertProjectionInternalChunkModulesExist()
+
+const annualProjectionSettlementModule = projectionInternalModulePath(ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME)
+const annualProjectionFundingCloseModule = projectionInternalModulePath(ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME)
 
 const annualProjectionCoordinatorChunk = (id: string): string | null => {
-  if (id.endsWith('/packages/engine/src/projection/internal/annualAcaResultPublication.ts')) {
+  if (id.endsWith(projectionInternalModulePath(ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME))) {
     return 'annualProjectionPublications'
   }
-  if (
-    id.endsWith('/packages/engine/src/projection/internal/annualFundingFixedPoint.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/wageIncomeStreams.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/otherIncomeStreams.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/propertyEventsAndGrowth.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/annualExpenseSummary.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/annualSnapshot.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/publishedEntityFacts.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/annualPermanentLifeTransitions.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/annualInsurancePremiumRows.ts') ||
-    id.endsWith('/packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts')
-  ) {
+  if (ANNUAL_PROJECTION_KERNEL_MODULE_NAMES.some((name) => id.endsWith(projectionInternalModulePath(name)))) {
     return 'annualProjectionKernels'
   }
   return null

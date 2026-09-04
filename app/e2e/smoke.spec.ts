@@ -1,5 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 
+import { openExamplePlan } from './helpers'
+
 /**
  * Shallow happy-path smoke suite for the flows users depend on:
  * create → autosave → reload persistence, Results/Monte Carlo rendering,
@@ -122,13 +124,7 @@ test.describe('Smoke', () => {
   })
 
   test('Results and Monte Carlo render numbers for an example plan', async ({ page }) => {
-    await page.goto('/examples')
-    await expect(page.getByRole('heading', { name: 'Example library' })).toBeVisible()
-    // Non-featured examples live behind the first-run "Show all" funnel.
-    await page.getByRole('button', { name: /Show all \d+ examples/ }).click()
-    const card = page.locator('.example-card').filter({ hasText: 'Aggressive saver to early retirement' })
-    await card.getByRole('button', { name: 'Open' }).click()
-    await expect(page).toHaveURL(/\/plan\/[^/]+\/results$/)
+    await openExamplePlan(page, 'Aggressive saver to early retirement')
 
     // The KPI strip renders projected dollar figures.
     await expect(page.locator('.kpi-value').first()).toContainText('$')

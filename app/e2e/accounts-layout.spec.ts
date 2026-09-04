@@ -1,17 +1,9 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
 
-async function openExampleAccounts(page: Page, title: string) {
-  await page.goto('/examples')
-  await expect(page.getByRole('heading', { name: 'Example library' })).toBeVisible()
+import { openExamplePlan } from './helpers'
 
-  // First visits show 3 featured starters; the rest live behind "Show all".
-  // The preference persists per-context, so only expand when still collapsed.
-  const card = page.locator('.example-card').filter({ hasText: title })
-  if (!(await card.isVisible())) {
-    await page.getByRole('button', { name: /Show all \d+ examples/ }).click()
-  }
-  await card.getByRole('button', { name: 'Open' }).click()
-  await expect(page).toHaveURL(/\/plan\/[^/]+\/results$/)
+async function openExampleAccounts(page: Page, title: string) {
+  await openExamplePlan(page, title)
 
   await page.getByRole('link', { name: 'Accounts' }).click()
   // exact: true — the workspace also renders an sr-only h1 ("Accounts — <plan>")
