@@ -112,12 +112,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 338,
+          "line": 339,
           "note": null,
           "tests": [
             {
               "title": "excludes only the indexed annual limit",
-              "line": 342
+              "line": 343
             }
           ]
         }
@@ -250,12 +250,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 259,
+          "line": 260,
           "note": null,
           "tests": [
             {
               "title": "nets the prior reductions off the aggregate deductions",
-              "line": 263
+              "line": 264
             }
           ]
         }
@@ -563,35 +563,35 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 412,
+          "line": 413,
           "note": "The 408(d)(8)(B) taxable trim runs before the annual limit, not after it.",
           "tests": [
             {
               "title": "limits what survives the taxable trim, not the gross distribution",
-              "line": 420
+              "line": 421
             },
             {
               "title": "reproduces the contract's $100,000-pool worked example",
-              "line": 433
+              "line": 434
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 461,
+          "line": 462,
           "note": "The post-70.5 offset reduces the already-limited amount, not the amount going into the limit.",
           "tests": [
             {
               "title": "subtracts the deduction offset after the annual limit has bound",
-              "line": 469
+              "line": 470
             },
             {
               "title": "floors the reduction at zero rather than going negative",
-              "line": 482
+              "line": 483
             },
             {
               "title": "reproduces the contract's fully-taxable worked example",
-              "line": 494
+              "line": 495
             }
           ]
         }
@@ -1211,12 +1211,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 350,
+          "line": 351,
           "note": null,
           "tests": [
             {
               "title": "caps the QCD at aggregate pre-tax dollars and leaves the rest to basis",
-              "line": 358
+              "line": 359
             }
           ]
         }
@@ -1553,12 +1553,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 367,
+          "line": 368,
           "note": null,
           "tests": [
             {
               "title": "keeps the includible excess inside the QCD and discloses the reading",
-              "line": 375
+              "line": 376
             }
           ]
         }

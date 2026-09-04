@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 1129
+              "line": 800
             }
           ]
         }
@@ -76,7 +76,7 @@
           "functions": [
             {
               "name": "evaluateRetirementActionSchedule",
-              "line": 1005
+              "line": 1002
             }
           ]
         }
@@ -118,7 +118,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 559
+              "line": 550
             }
           ]
         }
@@ -156,7 +156,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 1129
+              "line": 800
             }
           ]
         },
@@ -165,7 +165,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 559
+              "line": 550
             }
           ]
         }
@@ -333,7 +333,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 1129
+              "line": 800
             }
           ]
         },
@@ -415,7 +415,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 1129
+              "line": 800
             }
           ]
         },
@@ -424,7 +424,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 559
+              "line": 550
             }
           ]
         }
@@ -481,7 +481,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 1129
+              "line": 800
             }
           ]
         },
@@ -501,16 +501,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1338,
+          "line": 1343,
           "note": null,
           "tests": [
             {
               "title": "excepts nothing in a year that never completed the annual payment",
-              "line": 1358
+              "line": 1363
             },
             {
               "title": "reports the year incomplete rather than partly qualified",
-              "line": 1364
+              "line": 1369
             }
           ]
         }
@@ -550,7 +550,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 559
+              "line": 550
             }
           ]
         }
@@ -561,12 +561,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
-          "line": 245,
+          "line": 246,
           "note": null,
           "tests": [
             {
               "title": "accepts separation before the birthday in the qualifying year",
-              "line": 258
+              "line": 259
             }
           ]
         }
@@ -754,11 +754,11 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 559
+              "line": 550
             },
             {
               "name": "seppSeriesBeginsAfterSeparation",
-              "line": 390
+              "line": 381
             }
           ]
         }
@@ -769,12 +769,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
-          "line": 578,
+          "line": 579,
           "note": null,
           "tests": [
             {
               "title": "does not qualify a SEPP election that starts before separation",
-              "line": 587
+              "line": 588
             }
           ]
         }
@@ -905,7 +905,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 427
+              "line": 431
             }
           ]
         }
@@ -916,20 +916,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1516,
+          "line": 1521,
           "note": null,
           "tests": [
             {
               "title": "refuses a payment its no-modification proof does not reach",
-              "line": 1536
+              "line": 1541
             },
             {
               "title": "names the insufficient modification evidence on the payment",
-              "line": 1542
+              "line": 1547
             },
             {
               "title": "reconciles once the proof reaches the payment date",
-              "line": 1547
+              "line": 1552
             }
           ]
         }
@@ -964,7 +964,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 559
+              "line": 550
             }
           ]
         }
@@ -1011,7 +1011,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 427
+              "line": 431
             }
           ]
         }
@@ -1022,16 +1022,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1373,
+          "line": 1378,
           "note": null,
           "tests": [
             {
               "title": "scores the series for the participant it belongs to, not the household",
-              "line": 1392
+              "line": 1397
             },
             {
               "title": "names the inventory member as foreign to this participant",
-              "line": 1398
+              "line": 1403
             }
           ]
         }
@@ -1071,7 +1071,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 1129
+              "line": 800
             }
           ]
         }
@@ -1142,16 +1142,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1450,
+          "line": 1455,
           "note": null,
           "tests": [
             {
               "title": "measures the year by the total of every scheduled distribution",
-              "line": 1469
+              "line": 1474
             },
             {
               "title": "keeps all three distributions in the one reconciled series",
-              "line": 1476
+              "line": 1481
             }
           ]
         }
@@ -1288,7 +1288,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 427
+              "line": 431
             }
           ]
         },
@@ -1297,7 +1297,7 @@
           "functions": [
             {
               "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
-              "line": 559
+              "line": 550
             }
           ]
         }
@@ -1308,20 +1308,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1404,
+          "line": 1409,
           "note": null,
           "tests": [
             {
               "title": "accepts the fixed annuitization method on the same footing as the others",
-              "line": 1424
+              "line": 1429
             },
             {
               "title": "accepts the required minimum distribution and fixed amortization methods",
-              "line": 1430
+              "line": 1435
             },
             {
               "title": "refuses a fourth method by name rather than reconciling it",
-              "line": 1435
+              "line": 1440
             }
           ]
         }
@@ -1682,7 +1682,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 427
+              "line": 431
             }
           ]
         }
@@ -1720,7 +1720,7 @@
           "functions": [
             {
               "name": "evaluateOwnedNonRothIraPenaltyPrerequisites",
-              "line": 1129
+              "line": 800
             }
           ]
         },
@@ -1740,16 +1740,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1481,
+          "line": 1486,
           "note": null,
           "tests": [
             {
               "title": "excepts nothing when the account made a distribution outside the series",
-              "line": 1504
+              "line": 1509
             },
             {
               "title": "names the inventory member that no scheduled payment answers",
-              "line": 1510
+              "line": 1515
             }
           ]
         }
@@ -1828,7 +1828,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 427
+              "line": 431
             }
           ]
         },
