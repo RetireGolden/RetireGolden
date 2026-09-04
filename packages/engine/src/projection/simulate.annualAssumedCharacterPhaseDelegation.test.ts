@@ -15,7 +15,9 @@
  *
  * **Per pass, not per year.** `simulatePlan` may re-enter the annual ledger
  * several times in one year (T0, staging, the committed settlement), and the
- * phase is built on each entry, so the seam count is not the year count.
+ * phase is built on each entry, so the seam count is not the year count. The
+ * fixture still spans two years, because `expectDistinctInjections` refuses a
+ * single recorded pass: one call satisfies a set-size check vacuously.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -68,7 +70,8 @@ import {
 } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
 
-const YEAR = 2026
+const START_YEAR = 2026
+const END_YEAR = 2027
 
 function iraPlan(): Plan {
   // Past every RMD start cohort, so the year actually runs an owned-IRA
@@ -87,8 +90,8 @@ describe('annual assumed-character delegation', () => {
     seam.reset()
     const plan = iraPlan()
     const result = simulatePlan(plan, {
-      startYear: YEAR,
-      horizonEndYear: YEAR,
+      startYear: START_YEAR,
+      horizonEndYear: END_YEAR,
       taxCalculator: createFlatTaxCalculator(0),
     })
 
@@ -96,7 +99,8 @@ describe('annual assumed-character delegation', () => {
     expectDistinctInjections(seam)
     for (const call of calls) {
       // The caller hands the phase this year's own facts, not a stale copy.
-      expect(call.input.year).toBe(YEAR)
+      expect(call.input.year).toBeGreaterThanOrEqual(START_YEAR)
+      expect(call.input.year).toBeLessThanOrEqual(END_YEAR)
       expect(call.input.planId).toBe(plan.id)
       // The natural map never carries the sentinel owner, so the assertion
       // below cannot pass on a value the phase would have produced anyway.

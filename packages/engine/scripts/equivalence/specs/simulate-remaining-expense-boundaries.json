@@ -180,20 +180,20 @@
       "label": "debt planner invocation, ordered balance writes, total fold and ledger publication",
       "file": "projection/simulate.ts",
       "lines": [
-        2090,
-        2103
+        2104,
+        2117
       ],
       "anchors": [
         {
-          "line": 2090,
+          "line": 2104,
           "text": "let debtService = 0"
         },
         {
-          "line": 2091,
+          "line": 2105,
           "text": "for (const row of annualDebtServiceRows({"
         },
         {
-          "line": 2103,
+          "line": 2117,
           "text": "}"
         }
       ]
@@ -203,24 +203,24 @@
       "label": "healthcare planner invocation and complete result consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2104,
-        2153
+        2118,
+        2167
       ],
       "anchors": [
         {
-          "line": 2104,
+          "line": 2118,
           "text": "const healthcarePlan = annualHealthcareExpenses({"
         },
         {
-          "line": 2148,
+          "line": 2162,
           "text": "const marketplaceMonthsByPersonPosition ="
         },
         {
-          "line": 2150,
+          "line": 2164,
           "text": "if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')"
         },
         {
-          "line": 2153,
+          "line": 2167,
           "text": "for (const warning of healthcarePlan.warnings) warnings.add(warning)"
         }
       ]
@@ -253,20 +253,20 @@
       "label": "LTC planner invocation, benefit-year writes and reporting rows",
       "file": "projection/simulate.ts",
       "lines": [
-        2169,
-        2186
+        2183,
+        2200
       ],
       "anchors": [
         {
-          "line": 2169,
+          "line": 2183,
           "text": "const longTermCare = annualLongTermCarePlan({"
         },
         {
-          "line": 2181,
+          "line": 2195,
           "text": "for (const write of longTermCare.benefitYearWrites) {"
         },
         {
-          "line": 2186,
+          "line": 2200,
           "text": "}"
         }
       ]
@@ -276,20 +276,20 @@
       "label": "guardrail planner invocation and persistent/output state consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        2222,
-        2252
+        2236,
+        2266
       ],
       "anchors": [
         {
-          "line": 2222,
+          "line": 2236,
           "text": "const guardrailFunding = annualGuardrailFundingPlan({"
         },
         {
-          "line": 2243,
+          "line": 2257,
           "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier"
         },
         {
-          "line": 2252,
+          "line": 2266,
           "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals"
         }
       ]
