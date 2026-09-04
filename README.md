@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-Eleven GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; OpenRouter review, its trusted CI broker, and CLA enforcement run on PR activity; the resolve gate re-resolves dependencies on manifest-touching PRs and weekly; Grok Build review is manual emergency-only; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+GitHub Actions builds production on pushes to `main`; the Azure preview workflow listens for opened, synchronized, reopened, and closed PR events. Semgrep runs on pushes to `main` and PRs targeting `main`, while ZAP runs only for an authorized same-repository PR preview after deploy. OpenRouter review runs on its pull-request events or manual dispatch, and its trusted broker is a `workflow_run` consumer (not a PR-activity workflow). The resolve gate covers manifest-touching PRs and weekly runs; Grok Build is manual emergency-only; Owl parity is manual; both package releases also have their version-tag triggers (`engine-v*` and `planner-ui-v*`). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -60,7 +60,7 @@ Eleven GitHub Actions workflows: the SWA pipeline and both security scans run on
 
 | Job | What it does |
 |-----|----------------|
-| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review gate; push to `main` is authorized, forks are not, and same-repository Dependabot can be authorized only after a maintainer applies `run-ci` and the exact-head trusted clean review gate passes |
+| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review gate; push to `main` is authorized, forks are not, and same-repository Dependabot can be authorized only after a maintainer applies `run-ci`, reruns the existing exact-head Azure workflow, and passes the trusted clean-review gate |
 | `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine, planner-ui, and app) |
 | `test engine`, `test planner-ui`, `test web` → `test` | Independent workspace coverage jobs run in parallel; the fail-closed aggregate keeps the required `test` context |
 | `e2e` | Playwright browser smoke/layout specs (`pnpm test:e2e` in `app/`) |
@@ -69,12 +69,12 @@ Eleven GitHub Actions workflows: the SWA pipeline and both security scans run on
 | `dast` | PR previews only — calls the ZAP workflow against the deployed preview URL |
 | `close_pull_request` | Tears down the SWA preview environment when a PR is closed |
 
-**Triggers:** push to `main` deploys production; open/sync/reopen PRs get a preview URL; closing a PR removes the preview.
+**Triggers:** push to `main` deploys production; opened/synchronized/reopened PRs create a cheap placeholder and receive a preview only after exact-head authorization; closing a PR removes the preview.
 
 Same-repository PRs first pass an API-only live authorization gate: `run-ci`, an exact-head decoded clean
 OpenRouter ledger from the real GitHub Actions bot, and a review-caller blob equal to the default branch.
 Lint, the three coverage shards (aggregated as `test`), e2e, and build then run in parallel; deploy waits
-for them all. Forks never authorize or deploy; the broker does not automatically label or rerun Dependabot PRs, but a maintainer-applied `run-ci` can authorize a same-repository Dependabot PR when its exact-head trusted clean review is valid.
+for them all. Forks never authorize or deploy; the broker does not automatically label or rerun Dependabot PRs. For manual recovery or a same-repository Dependabot PR, apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not start CI.
 
 ### OpenRouter CI broker
 
@@ -84,8 +84,6 @@ Runs on completed OpenRouter reviews and completed Azure CI runs from the defaul
 the live, same-repository PR head, decoded bot-authored clean ledger, and head/default caller-blob equality
 through GitHub APIs. It first identifies an eligible skipped Azure run, then adds `run-ci` and reruns that
 specific run, serializing competing completion events by head. It never checks out or executes PR code.
-This inaugural CI-broker PR still needs the documented manual `run-ci` fallback after its clean review;
-later PRs auto-start.
 
 **Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **24** in CI (the workspaces require Node >=24.15.0). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
 
@@ -101,7 +99,7 @@ Manually triggered (Actions tab). Runs the Owl parity harness (`pnpm owl-parity`
 
 [`.github/workflows/semgrep.yml`](.github/workflows/semgrep.yml)
 
-Runs on every push and PR to `main`. Scans the repo with Semgrep's `p/default` ruleset (open-source, no external account). Uploads a SARIF report as a build artifact and publishes findings to GitHub code scanning when available. **Only ERROR-severity findings fail the check** — lower severities are reported but do not block merge.
+Runs on pushes to `main` and PRs targeting `main`. Scans the repo with Semgrep's `p/default` ruleset (open-source, no external account). Uploads a SARIF report as a build artifact and publishes findings to GitHub code scanning when available. **Only ERROR-severity findings fail the check** — lower severities are reported but do not block merge.
 
 ### OWASP ZAP DAST — dynamic scan
 

@@ -1,7 +1,9 @@
 /**
- * Pure data-only predicates used by the trusted default-branch CI broker.
+ * Shared CI predicates and API authorization helpers.
  * Review bodies are parsed as data only; the ledger payload is never executed.
  */
+
+export const CI_ACCELERATION_HELPER_PATH = '.github/scripts/ci-acceleration.mjs'
 export const REVIEW_LEDGER_MARKER_PREFIX = '<!-- openrouter-review-ledger:v1:'
 export const REVIEW_LEDGER_HEADING = '## OpenRouter pull-request review'
 export const TRUSTED_REVIEW_AUTHOR = 'github-actions[bot]'
@@ -9,6 +11,7 @@ export const TRUSTED_REVIEW_AUTHOR_ID = 41898282
 export const TRUSTED_REVIEW_AUTHOR_TYPE = 'Bot'
 export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
+export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
   'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
@@ -24,8 +27,6 @@ export const EXPENSIVE_AZURE_JOB_NAMES = new Set([
 ])
 
 function decodeLedgerPayload(encoded) {
-  // Buffer accepts malformed base64, so require canonical standard base64
-  // before decoding the opaque marker payload as JSON.
   if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) {
     return undefined
   }
@@ -73,6 +74,11 @@ export function workflowRunUrl(owner, repo, runId) {
   return `https://github.com/${owner}/${repo}/actions/runs/${runId}`
 }
 
+export function parseWorkflowRunIdFromUrl(url) {
+  const match = /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/(\d+)$/.exec(url)
+  return match ? Number(match[1]) : undefined
+}
+
 export function newestWorkflowRun(runs) {
   return [...runs].sort((left, right) => {
     for (const [leftValue, rightValue] of [
@@ -87,16 +93,29 @@ export function newestWorkflowRun(runs) {
   })[0]
 }
 
+export function exactHeadBotReview(review, headSha) {
+  return review.user?.login === TRUSTED_REVIEW_AUTHOR &&
+    review.user?.id === TRUSTED_REVIEW_AUTHOR_ID &&
+    review.user?.type === TRUSTED_REVIEW_AUTHOR_TYPE &&
+    typeof review.commit_id === 'string' &&
+    review.commit_id === headSha
+}
+
+export function reviewReferencesAuthoritativeRun(review, workflowRunUrl) {
+  const body = typeof review.body === 'string' ? review.body : ''
+  return body.includes(`[Workflow run](${workflowRunUrl})`)
+}
+
 export function findTrustedCleanReview(reviews, context) {
-  const exactHeadBotReviews = reviews.flatMap((review, index) => {
-    const exactHeadBotReview = review.user?.login === TRUSTED_REVIEW_AUTHOR &&
-      review.user?.id === TRUSTED_REVIEW_AUTHOR_ID &&
-      review.user?.type === TRUSTED_REVIEW_AUTHOR_TYPE &&
-      typeof review.commit_id === 'string' &&
-      review.commit_id === context.headSha
-    return exactHeadBotReview ? [{ review, index }] : []
-  })
-  const latest = exactHeadBotReviews.reduce((newest, candidate) => {
+  const workflowRunUrls = context.workflowRunUrl
+    ? [context.workflowRunUrl]
+    : (context.workflowRunUrls ?? [])
+  if (workflowRunUrls.length === 0 || workflowRunUrls.some((url) => typeof url !== 'string')) return undefined
+
+  const latest = reviews.reduce((newest, review, index) => {
+    if (!exactHeadBotReview(review, context.headSha) ||
+      !workflowRunUrls.some((url) => reviewReferencesAuthoritativeRun(review, url))) return newest
+    const candidate = { review, index }
     if (!newest) return candidate
     const newestTime = Date.parse(newest.review.submitted_at ?? '') || -Infinity
     const candidateTime = Date.parse(candidate.review.submitted_at ?? '') || -Infinity
@@ -107,18 +126,22 @@ export function findTrustedCleanReview(reviews, context) {
       ? candidate
       : newest
   }, undefined)
-  const ledger = latest?.review.state === 'COMMENTED' &&
-    trustedLedger(typeof latest.review.body === 'string' ? latest.review.body : '', context)
+  if (!latest) return undefined
+
+  const ledger = latest.review.state === 'COMMENTED' &&
+    trustedLedger(typeof latest.review.body === 'string' ? latest.review.body : '', {
+      ...context,
+      workflowRunUrls,
+    })
   return ledger?.verdict === 'clean' ? latest.review : undefined
 }
 
-export function reviewRunSkipReason(workflowRun, repository) {
+function trustedOpenRouterRunProvenance(workflowRun, repository) {
   if (workflowRun.workflow_id !== TRUSTED_REVIEW_WORKFLOW_ID) {
     return 'workflow run id is not the trusted OpenRouter workflow'
   }
   if (workflowRun.name !== 'OpenRouter code review') return 'workflow run name is not OpenRouter code review'
-  if (workflowRun.event !== 'pull_request') return 'review run event is not pull_request'
-  if (workflowRun.path !== '.github/workflows/openrouter-code-review.yml') {
+  if (workflowRun.path !== TRUSTED_OPENROUTER_CALLER_PATH) {
     return 'workflow run path is not the trusted OpenRouter caller'
   }
   if (!Array.isArray(workflowRun.referenced_workflows) || !workflowRun.referenced_workflows.some(
@@ -130,6 +153,20 @@ export function reviewRunSkipReason(workflowRun, repository) {
   if (workflowRun.head_repository?.full_name !== repository.full_name) {
     return 'review run head repository is not the trusted repository'
   }
+  return undefined
+}
+
+export function reviewRunSkipReason(workflowRun, repository) {
+  const provenanceReason = trustedOpenRouterRunProvenance(workflowRun, repository)
+  if (provenanceReason) return provenanceReason
+  if (workflowRun.event !== 'pull_request') return 'review run event is not pull_request'
+  return undefined
+}
+
+export function reviewDispatchRunSkipReason(workflowRun, repository) {
+  const provenanceReason = trustedOpenRouterRunProvenance(workflowRun, repository)
+  if (provenanceReason) return provenanceReason
+  if (workflowRun.event !== 'workflow_dispatch') return 'review run event is not workflow_dispatch'
   return undefined
 }
 
@@ -162,6 +199,245 @@ export function pullRequestSkipReason(pullRequest, repository, expectedHeadSha) 
 
 export function isDependabotPullRequest(pullRequest) {
   return pullRequest.user?.login === DEPENDABOT_LOGIN
+}
+
+export function isCiRequested({ runAttempt, hasRunCiLabel }) {
+  if (runAttempt > 1) return true
+  if (hasRunCiLabel) return true
+  return false
+}
+
+export function terminalSameRepositoryWorkflowRunUrl(review, repository) {
+  const body = typeof review.body === 'string' ? review.body : ''
+  const lines = body.split(/\r?\n/)
+  if (lines.at(-1) === '') lines.pop()
+  const urlLine = lines.at(-1)
+  const urlMatch = /^\[Workflow run\]\((https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/\d+)\)$/.exec(urlLine ?? '')
+  if (!urlMatch) return undefined
+  if (!urlMatch[1].startsWith(`https://github.com/${repository.full_name}/actions/runs/`)) return undefined
+  return urlMatch[1]
+}
+
+export function ledgerWorkflowRunUrlsFromReview(review, { repository, pullNumber, headSha }) {
+  const workflowRunUrl = terminalSameRepositoryWorkflowRunUrl(review, repository)
+  if (!workflowRunUrl) return []
+  const body = typeof review.body === 'string' ? review.body : ''
+  return trustedLedger(body, {
+    repository,
+    pullNumber,
+    headSha,
+    workflowRunUrls: [workflowRunUrl],
+  }) ? [workflowRunUrl] : []
+}
+
+async function readDefaultBranchCaller(github, owner, repo, defaultBranch) {
+  return github.rest.repos.getContent({
+    owner,
+    repo,
+    path: TRUSTED_OPENROUTER_CALLER_PATH,
+    ref: defaultBranch,
+  })
+}
+
+async function proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller) {
+  try {
+    const headCaller = await github.rest.repos.getContent({
+      owner,
+      repo,
+      path: TRUSTED_OPENROUTER_CALLER_PATH,
+      ref: run.head_sha,
+    })
+    return workflowBlobMatchesDefaultBranch(headCaller, defaultCaller)
+  } catch (error) {
+    if (error !== null && typeof error === 'object' && error.status === 404) return false
+    throw error
+  }
+}
+
+export async function collectProvenanceReviewRuns(github, {
+  owner,
+  repo,
+  repository,
+  defaultBranch,
+  expectedHeadSha,
+  pullNumber,
+  reviews,
+  allowDispatch = false,
+}) {
+  let defaultCaller
+  try {
+    defaultCaller = await readDefaultBranchCaller(github, owner, repo, defaultBranch)
+  } catch {
+    return { provenanceReviewRuns: [], defaultCaller: undefined, error: 'cannot read trusted default-branch OpenRouter caller' }
+  }
+
+  const provenanceReviewRuns = []
+  const seenRunIds = new Set()
+
+  const pullRequestRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
+    owner,
+    repo,
+    workflow_id: 'openrouter-code-review.yml',
+    head_sha: expectedHeadSha,
+    per_page: 100,
+  })
+  for (const run of pullRequestRuns) {
+    if (!Number.isSafeInteger(run.id) || run.head_sha !== expectedHeadSha) continue
+    if (reviewRunSkipReason(run, repository)) continue
+    try {
+      if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
+    } catch {
+      return {
+        provenanceReviewRuns: [],
+        defaultCaller,
+        error: 'cannot inspect the exact-head OpenRouter caller',
+      }
+    }
+    provenanceReviewRuns.push(run)
+    seenRunIds.add(run.id)
+  }
+
+  if (allowDispatch) {
+    const dispatchRunIds = new Set()
+    for (const review of reviews) {
+      if (!exactHeadBotReview(review, expectedHeadSha)) continue
+      const workflowRunUrl = terminalSameRepositoryWorkflowRunUrl(review, repository)
+      const runId = workflowRunUrl && parseWorkflowRunIdFromUrl(workflowRunUrl)
+      if (Number.isSafeInteger(runId)) dispatchRunIds.add(runId)
+    }
+    for (const runId of dispatchRunIds) {
+      if (seenRunIds.has(runId)) continue
+      let run
+      try {
+        ;({ data: run } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId }))
+      } catch (error) {
+        if (error !== null && typeof error === 'object' && error.status === 404) continue
+        return {
+          provenanceReviewRuns: [],
+          defaultCaller,
+          error: 'cannot inspect a linked OpenRouter workflow run',
+        }
+      }
+      if (!Number.isSafeInteger(run.id) || run.id !== runId) continue
+      if (reviewDispatchRunSkipReason(run, repository)) continue
+      try {
+        if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
+      } catch {
+        return {
+          provenanceReviewRuns: [],
+          defaultCaller,
+          error: 'cannot inspect the linked OpenRouter caller',
+        }
+      }
+      provenanceReviewRuns.push(run)
+      seenRunIds.add(run.id)
+    }
+  }
+
+  return { provenanceReviewRuns, defaultCaller, error: undefined }
+}
+
+export async function authorizeExactHeadPullRequest(github, core, {
+  owner,
+  repo,
+  repository,
+  defaultBranch,
+  eventPr,
+  runAttempt,
+}) {
+  const eventHasRunCi = (eventPr.labels ?? []).some((entry) => entry.name === 'run-ci')
+  const eventRequested = isCiRequested({ runAttempt, hasRunCiLabel: eventHasRunCi })
+  const expectedHeadSha = eventPr.head?.sha
+  const pullNumber = eventPr.number
+
+  if (typeof expectedHeadSha !== 'string' || !Number.isSafeInteger(pullNumber)) {
+    return { authorized: false, failJob: eventRequested, reason: 'pull-request event is missing a number or head SHA' }
+  }
+
+  const associated = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+    owner, repo, commit_sha: expectedHeadSha, per_page: 100,
+  })
+  const liveAssociatedPrs = []
+  for (const association of associated) {
+    const { data: candidate } = await github.rest.pulls.get({
+      owner, repo, pull_number: association.number,
+    })
+    if (!pullRequestSkipReason(candidate, repository, expectedHeadSha)) {
+      liveAssociatedPrs.push(candidate)
+    }
+  }
+  if (liveAssociatedPrs.length !== 1 || liveAssociatedPrs[0].number !== pullNumber) {
+    return {
+      authorized: false,
+      failJob: isCiRequested({
+        runAttempt,
+        hasRunCiLabel: eventHasRunCi,
+      }),
+      reason: `expected exactly one live same-repository PR at ${expectedHeadSha}`,
+    }
+  }
+
+  const pr = liveAssociatedPrs[0]
+  const hasRunCiLabel = (pr.labels ?? []).some((entry) => entry.name === 'run-ci')
+  const ciRequested = isCiRequested({ runAttempt, hasRunCiLabel })
+
+  if (!hasRunCiLabel) {
+    return { authorized: false, failJob: ciRequested, reason: 'live PR does not have run-ci' }
+  }
+
+  const reviews = await github.paginate(github.rest.pulls.listReviews, {
+    owner, repo, pull_number: pr.number, per_page: 100,
+  })
+
+  const { provenanceReviewRuns, error } = await collectProvenanceReviewRuns(github, {
+    owner,
+    repo,
+    repository,
+    defaultBranch,
+    expectedHeadSha,
+    pullNumber: pr.number,
+    reviews,
+    allowDispatch: true,
+  })
+  if (error) {
+    return { authorized: false, failJob: ciRequested, reason: error }
+  }
+
+  const authoritativeReviewRun = newestWorkflowRun(provenanceReviewRuns)
+  if (!authoritativeReviewRun || authoritativeReviewRun.status !== 'completed' ||
+    authoritativeReviewRun.conclusion !== 'success') {
+    return {
+      authorized: false,
+      failJob: ciRequested,
+      reason: 'newest provenance-valid exact-head OpenRouter run is not successful',
+    }
+  }
+
+  const authoritativeRunUrl = workflowRunUrl(owner, repo, authoritativeReviewRun.id)
+  if (!findTrustedCleanReview(reviews, {
+    repository,
+    pullNumber: pr.number,
+    headSha: expectedHeadSha,
+    workflowRunUrl: authoritativeRunUrl,
+  })) {
+    return {
+      authorized: false,
+      failJob: ciRequested,
+      reason: 'latest exact current-head OpenRouter bot review is not a clean authoritative ledger',
+    }
+  }
+
+  const { data: finalPr } = await github.rest.pulls.get({ owner, repo, pull_number: pr.number })
+  if (pullRequestSkipReason(finalPr, repository, expectedHeadSha) ||
+    !(finalPr.labels ?? []).some((entry) => entry.name === 'run-ci')) {
+    return {
+      authorized: false,
+      failJob: ciRequested,
+      reason: 'PR head/state/repository/label changed during authorization',
+    }
+  }
+
+  return { authorized: true, failJob: false, reason: `exact-head trusted clean review for ${expectedHeadSha}` }
 }
 
 export function isExpensiveAzureJob(job) {

@@ -7,15 +7,15 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, labeled, closed]
+    types: [opened, synchronize, reopened, closed]
     branches: [main]
 
-# A newer PR commit cancels stale work.  The broker reruns the existing
-# unlabeled pull_request run after applying run-ci with GITHUB_TOKEN, whose
-# label event intentionally does not trigger another workflow run.
+# Every newer pull-request run cancels stale work. The broker applies `run-ci`
+# and then reruns the existing exact-head placeholder; applying a label alone
+# intentionally does not start another Azure workflow run.
 concurrency:
   group: swa-ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'run-ci') }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -26,8 +26,7 @@ jobs:
   authorize:
     if: >-
       github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.action != 'closed' &&
-      (github.run_attempt > 1 || github.event.action != 'labeled' || github.event.label.name == 'run-ci'))
+      (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -41,163 +40,68 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
-            if (context.eventName === 'push') {
-              core.setOutput('authorized', 'true')
-              core.info('authorized: push to main')
-              return
-            }
             const { owner, repo } = context.repo
             const repository = context.payload.repository
-            const eventPr = context.payload.pull_request
-            const expectedHeadSha = eventPr.head.sha
-            const trustedReviewWorkflowId = 341686683
-            const trustedReusableReviewWorkflow = 'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
-            const trustedReusableReviewWorkflowSha = 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
-            const decodeLedgerPayload = (encoded) => {
-              if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) return undefined
-              try {
-                const decoded = Buffer.from(encoded, 'base64').toString('utf8')
-                if (Buffer.from(decoded, 'utf8').toString('base64') !== encoded) return undefined
-                const payload = JSON.parse(decoded)
-                return payload !== null && typeof payload === 'object' && !Array.isArray(payload) ? payload : undefined
-              } catch {
-                return undefined
+            const defaultBranch = repository.default_branch
+            const helperPin = 'a003ccfffe4c6772a0849c52af63b47085fd1044'
+            const importHelper = async (content) => {
+              if (typeof content !== 'string') throw new Error('trusted CI helper has invalid content')
+              const helper = await import(`data:text/javascript;base64,${content.replace(/\s/g, '')}`)
+              if (typeof helper.authorizeExactHeadPullRequest !== 'function') {
+                throw new Error('trusted CI helper is missing authorization export')
               }
+              return helper
             }
-            const trustedReviewLedger = (review, workflowRunUrls) => {
-              const body = typeof review.body === 'string' ? review.body : ''
-              const lines = body.split(/\r?\n/)
-              if (lines.at(-1) === '') lines.pop()
-              const marker = /^<!-- openrouter-review-ledger:v1:([A-Za-z0-9+/=]+) -->$/.exec(lines[1] ?? '')
-              const payload = marker && decodeLedgerPayload(marker[1])
-              const verdict = /^\*\*Verdict:\*\* `(clean|issues)`$/.exec(lines[3] ?? '')?.[1]
-              const validPayload = payload?.lv === 1 && payload.repo === repository.full_name &&
-                payload.pr === eventPr.number && payload.sha === expectedHeadSha &&
-                typeof payload.gen === 'string' && /^[a-f0-9]{12}$/.test(payload.gen) &&
-                Number.isSafeInteger(payload.round) && payload.round > 0 && Array.isArray(payload.findings) &&
-                ((verdict === 'clean' && payload.findings.length === 0) ||
-                  (verdict === 'issues' && payload.findings.length > 0))
-              const trusted = review.user?.login === 'github-actions[bot]' &&
-                review.user?.id === 41898282 && review.user?.type === 'Bot' && review.state === 'COMMENTED' &&
-                typeof review.commit_id === 'string' && review.commit_id === expectedHeadSha &&
-                lines[0] === '## OpenRouter pull-request review' && lines[2] === '' &&
-                verdict !== undefined && lines[4]?.startsWith('**Scope:** `') &&
-                lines[5]?.startsWith('**Mode:** `') && lines[6] === `**Commit:** \`${expectedHeadSha}\`` &&
-                workflowRunUrls.some((url) => lines.at(-1) === `[Workflow run](${url})`) &&
-                validPayload
-              return trusted ? verdict : undefined
-            }
-            const isLiveExpectedPr = (candidate) => candidate.state === 'open' &&
-              candidate.base?.ref === 'main' &&
-              candidate.head?.repo?.full_name === context.payload.repository.full_name &&
-              candidate.head?.sha === expectedHeadSha
-            const associated = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
-              owner, repo, commit_sha: expectedHeadSha, per_page: 100,
-            })
-            const liveAssociatedPrs = []
-            for (const association of associated) {
-              const { data: candidate } = await github.rest.pulls.get({
-                owner, repo, pull_number: association.number,
-              })
-              if (isLiveExpectedPr(candidate)) liveAssociatedPrs.push(candidate)
-            }
-            if (liveAssociatedPrs.length !== 1 || liveAssociatedPrs[0].number !== eventPr.number) {
-              core.setOutput('authorized', 'false')
-              return core.info(`not authorized: expected exactly one live same-repository PR at ${expectedHeadSha}`)
-            }
-            const pr = liveAssociatedPrs[0]
-            if (!pr.labels.some((label) => label.name === 'run-ci')) {
-              core.setOutput('authorized', 'false')
-              return core.info('not authorized: live PR does not have run-ci')
-            }
-            const reviews = await github.paginate(github.rest.pulls.listReviews, {
-              owner, repo, pull_number: pr.number, per_page: 100,
-            })
-            const reviewRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
-              owner, repo, workflow_id: 'openrouter-code-review.yml', per_page: 100,
-            })
-            let defaultCaller
-            try {
-              defaultCaller = await github.rest.repos.getContent({
-                owner, repo, path: '.github/workflows/openrouter-code-review.yml', ref: repository.default_branch,
-              })
-            } catch {
-              core.setOutput('authorized', 'false')
-              return core.info('not authorized: cannot read trusted default-branch OpenRouter caller')
-            }
-            const provenanceReviewRuns = []
-            for (const run of reviewRuns) {
-              const isTrustedRun = run.name === 'OpenRouter code review' && run.event === 'pull_request' &&
-                run.workflow_id === trustedReviewWorkflowId && run.head_sha === expectedHeadSha &&
-                run.path === '.github/workflows/openrouter-code-review.yml' &&
-                Array.isArray(run.referenced_workflows) && run.referenced_workflows.some(
-                  (workflow) => workflow?.path === trustedReusableReviewWorkflow &&
-                    workflow?.sha === trustedReusableReviewWorkflowSha,
-                ) &&
-                run.head_repository?.full_name === repository.full_name
-              if (!isTrustedRun) continue
+            const loadHelper = async () => {
+              let helperFile
               try {
-                const headCaller = await github.rest.repos.getContent({
-                  owner, repo, path: '.github/workflows/openrouter-code-review.yml', ref: run.head_sha,
+                helperFile = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: '.github/scripts/ci-acceleration.mjs',
+                  ref: defaultBranch,
                 })
-                if (!Array.isArray(headCaller.data) && headCaller.data.type === 'file' &&
-                  !Array.isArray(defaultCaller.data) && defaultCaller.data.type === 'file' &&
-                  typeof headCaller.data.sha === 'string' && headCaller.data.sha === defaultCaller.data.sha) {
-                  provenanceReviewRuns.push(run)
-                }
-              } catch {
-                core.info(`not authorized: cannot prove trusted caller blob for OpenRouter run ${run.id}`)
+              } catch (error) {
+                // The immutable blob is only an inaugural bootstrap fallback:
+                // default-branch helper load failures otherwise fail closed.
+                if (error?.status !== 404) throw error
+                const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
+                return importHelper(blob.data?.content)
               }
-            }
-            const reviewRunOrder = (left, right) => {
-              for (const [leftValue, rightValue] of [
-                [Date.parse(left.created_at ?? '') || -Infinity, Date.parse(right.created_at ?? '') || -Infinity],
-                [Number.isSafeInteger(left.run_number) ? left.run_number : -Infinity, Number.isSafeInteger(right.run_number) ? right.run_number : -Infinity],
-                [Number.isSafeInteger(left.run_attempt) ? left.run_attempt : -Infinity, Number.isSafeInteger(right.run_attempt) ? right.run_attempt : -Infinity],
-                [Number.isSafeInteger(left.id) ? left.id : -Infinity, Number.isSafeInteger(right.id) ? right.id : -Infinity],
-              ]) {
-                if (leftValue !== rightValue) return rightValue > leftValue ? 1 : -1
+              if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file') {
+                throw new Error('trusted CI helper response is not a file')
               }
-              return 0
+              return importHelper(helperFile.data.content)
             }
-            const authoritativeReviewRun = provenanceReviewRuns.sort(reviewRunOrder)[0]
-            if (!authoritativeReviewRun || authoritativeReviewRun.status !== 'completed' ||
-              authoritativeReviewRun.conclusion !== 'success') {
+            const eventPr = context.payload.pull_request
+            const requested = context.eventName === 'pull_request' && (
+              context.runAttempt > 1 ||
+              eventPr?.labels?.some((label) => label.name === 'run-ci')
+            )
+            try {
+              if (context.eventName === 'push') {
+                core.setOutput('authorized', 'true')
+                core.info('authorized: push to main')
+                return
+              }
+              const helper = await loadHelper()
+              const result = await helper.authorizeExactHeadPullRequest(github, core, {
+                owner,
+                repo,
+                repository,
+                defaultBranch,
+                eventPr: context.payload.pull_request,
+                runAttempt: context.runAttempt,
+              })
+              core.setOutput('authorized', result.authorized ? 'true' : 'false')
+              core.info(`${result.authorized ? 'authorized' : 'not authorized'}: ${result.reason}`)
+              if (result.failJob) core.setFailed(result.reason)
+            } catch (error) {
               core.setOutput('authorized', 'false')
-              return core.info('not authorized: newest provenance-valid exact-head OpenRouter run is not successful')
+              const message = error instanceof Error ? error.message : String(error)
+              if (requested) core.setFailed(message)
+              else core.info(`not authorized: ${message}`)
             }
-            const workflowRunUrls = [`https://github.com/${owner}/${repo}/actions/runs/${authoritativeReviewRun.id}`]
-            const latestExactHeadBotReview = reviews.reduce((newest, review, index) => {
-              const exactHeadBotReview = review.user?.login === 'github-actions[bot]' &&
-                review.user?.id === 41898282 && review.user?.type === 'Bot' &&
-                typeof review.commit_id === 'string' && review.commit_id === expectedHeadSha
-              if (!exactHeadBotReview) return newest
-              const candidate = { review, index }
-              if (!newest) return candidate
-              const newestTime = Date.parse(newest.review.submitted_at ?? '') || -Infinity
-              const candidateTime = Date.parse(review.submitted_at ?? '') || -Infinity
-              if (candidateTime !== newestTime) return candidateTime > newestTime ? candidate : newest
-              const newestId = newest.review.id ?? -Infinity
-              const candidateId = review.id ?? -Infinity
-              return candidateId > newestId || (candidateId === newestId && index > newest.index)
-                ? candidate
-                : newest
-            }, undefined)
-            const latestVerdict = latestExactHeadBotReview &&
-              trustedReviewLedger(latestExactHeadBotReview.review, workflowRunUrls)
-            if (latestVerdict !== 'clean') {
-              core.setOutput('authorized', 'false')
-              return core.info('not authorized: latest exact current-head OpenRouter bot review is not a clean authoritative ledger')
-            }
-            // Re-read immediately before releasing code-execution jobs: a new
-            // commit after the API work must fail closed rather than test it.
-            const { data: finalPr } = await github.rest.pulls.get({ owner, repo, pull_number: pr.number })
-            if (!isLiveExpectedPr(finalPr) || !finalPr.labels.some((label) => label.name === 'run-ci')) {
-              core.setOutput('authorized', 'false')
-              return core.info('not authorized: PR head/state/repository/label changed during authorization')
-            }
-            core.setOutput('authorized', 'true')
-            core.info(`authorized: exact-head trusted clean review for ${expectedHeadSha}`)
 
   lint:
     if: needs.authorize.outputs.authorized == 'true'
@@ -255,7 +159,7 @@ jobs:
   # into a real failure rather than a branch-protection-satisfying skip.
   test:
     name: test
-    if: always() && needs.authorize.outputs.authorized == 'true'
+    if: always() && !cancelled() && needs.authorize.outputs.authorized == 'true'
     needs: [authorize, test_engine, test_planner_ui, test_web]
     runs-on: ubuntu-latest
     steps:
@@ -305,7 +209,7 @@ jobs:
       - name: Smoke test the packed planner-ui artifact
         run: node packages/planner-ui/scripts/pack-smoke.mjs
       - name: Upload build output
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist
           path: app/dist

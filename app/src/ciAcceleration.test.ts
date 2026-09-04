@@ -1,20 +1,42 @@
+import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw'
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
 import {
+  authorizeExactHeadPullRequest,
+  collectProvenanceReviewRuns,
   findTrustedCleanReview,
   hasActiveOrRealAzureWork,
   hasOnlySkippedExpensiveAzureJobs,
+  isCiRequested,
   isDependabotPullRequest,
   isExpensiveAzureJob,
+  ledgerWorkflowRunUrlsFromReview,
   newestWorkflowRun,
+  parseWorkflowRunIdFromUrl,
   pullRequestSkipReason,
+  reviewDispatchRunSkipReason,
   reviewRunSkipReason,
+  terminalSameRepositoryWorkflowRunUrl,
   workflowBlobMatchesDefaultBranch,
 } from '../../.github/scripts/ci-acceleration.mjs'
+import type {
+  GetContentRequest,
+  GetWorkflowRunRequest,
+  PaginatedRequest,
+  PaginatedRequestParameters,
+} from '../../.github/scripts/ci-acceleration.mjs'
+
+const helperPath = new URL('../../.github/scripts/ci-acceleration.mjs', import.meta.url)
+const helperContent = readFileSync(helperPath, 'utf8')
+const expectedHelperBlobSha = createHash('sha1')
+  .update(`blob ${Buffer.byteLength(helperContent, 'utf8')}\0${helperContent}`, 'utf8')
+  .digest('hex')
 
 const sha = 'a'.repeat(40)
 const workflowUrl = 'https://github.com/RetireGolden/RetireGolden/actions/runs/123'
+const dispatchWorkflowUrl = 'https://github.com/RetireGolden/RetireGolden/actions/runs/456'
 const repository = { full_name: 'RetireGolden/RetireGolden' }
 const pullNumber = 620
 const payload = {
@@ -30,8 +52,6 @@ const encodePayload = (value: object) => btoa(JSON.stringify(value))
 const encodedPayload = encodePayload(payload)
 const encodedIssuesPayload = encodePayload({ ...payload, findings: [{ rule: 'injected-test-finding' }] })
 
-// Structural copy of the long production review body. The ledger marker is
-// line two; the lane report between the visible fields and workflow link varies.
 const cleanReviewBody = [
   '## OpenRouter pull-request review',
   `<!-- openrouter-review-ledger:v1:${encodedPayload} -->`,
@@ -53,7 +73,7 @@ const cleanReviewBody = [
   `[Workflow run](${workflowUrl})`,
 ].join('\n')
 
-const reviewContext = { repository, pullNumber, headSha: sha, workflowRunUrls: [workflowUrl] }
+const reviewContext = { repository, pullNumber, headSha: sha, workflowRunUrl: workflowUrl }
 
 function review(overrides: Record<string, unknown> = {}) {
   return {
@@ -65,7 +85,106 @@ function review(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function trustedRun(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 123,
+    name: 'OpenRouter code review',
+    event: 'pull_request',
+    status: 'completed',
+    conclusion: 'success',
+    workflow_id: 341686683,
+    head_sha: sha,
+    path: '.github/workflows/openrouter-code-review.yml',
+    head_repository: repository,
+    referenced_workflows: [{
+      path: 'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
+      sha: 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
+    }],
+    created_at: '2026-09-04T12:00:00Z',
+    run_number: 1,
+    run_attempt: 1,
+    ...overrides,
+  }
+}
+
+function mockGithub(overrides: Record<string, unknown> = {}) {
+  const defaultCaller = { data: { type: 'file', sha: 'default-blob' } }
+  const headCaller = { data: { type: 'file', sha: 'default-blob' } }
+  const pr = {
+    state: 'open',
+    number: pullNumber,
+    base: { ref: 'main' },
+    user: { login: 'FlyOverCoderKY' },
+    head: { sha, repo: repository },
+    labels: [{ name: 'run-ci' }],
+  }
+  const defaultRest = {
+    pulls: {
+      get: async () => ({ data: pr }),
+      listReviews: async function listReviews() {},
+    },
+    repos: {
+      listPullRequestsAssociatedWithCommit: async function listPullRequestsAssociatedWithCommit() {},
+      getContent: async (_args: GetContentRequest) => {
+        if (_args.path === '.github/workflows/openrouter-code-review.yml') {
+          return _args.ref === 'main' ? defaultCaller : headCaller
+        }
+        throw new Error(`unexpected getContent path ${_args.path}`)
+      },
+    },
+    actions: {
+      listWorkflowRuns: async function listWorkflowRuns() {},
+      getWorkflowRun: async ({ run_id }: { run_id: number }) => ({
+        data: trustedRun({ id: run_id, event: 'workflow_dispatch', head_sha: 'b'.repeat(40) }),
+      }),
+    },
+    git: {
+      getBlob: async () => ({ data: { content: Buffer.from(helperContent).toString('base64') } }),
+    },
+  }
+  const { rest: overrideRestValue, ...topLevelOverrides } = overrides
+  const overrideRest = (overrideRestValue ?? {}) as {
+    pulls?: Record<string, unknown>
+    repos?: Record<string, unknown>
+    actions?: Record<string, unknown>
+    git?: Record<string, unknown>
+  }
+  return {
+    paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+      if (request.name.includes('listPullRequestsAssociatedWithCommit')) return [pr]
+      if (request.name.includes('listReviews')) return [review()]
+      if (request.name.includes('listWorkflowRuns')) {
+        expect(params.head_sha).toBe(sha)
+        return [trustedRun()]
+      }
+      throw new Error(`unexpected paginate ${request.name}`)
+    },
+    rest: {
+      ...defaultRest,
+      ...overrideRest,
+      pulls: { ...defaultRest.pulls, ...overrideRest.pulls },
+      repos: { ...defaultRest.repos, ...overrideRest.repos },
+      actions: { ...defaultRest.actions, ...overrideRest.actions },
+      git: { ...defaultRest.git, ...overrideRest.git },
+    },
+    ...topLevelOverrides,
+  }
+}
+
 describe('OpenRouter CI authorization contract', () => {
+  it('pins the Azure bootstrap helper blob to the final helper content', () => {
+    expect(swaWorkflow).toContain(`const helperPin = '${expectedHelperBlobSha}'`)
+    expect(helperContent).not.toContain('gitBlobSha')
+    expect(helperContent).not.toContain('node:crypto')
+  })
+
+  it('loads the helper through the same base64 data URL used by Actions', async () => {
+    const encoded = Buffer.from(helperContent, 'utf8').toString('base64')
+    const loaded = await import(`data:text/javascript;base64,${encoded}`)
+    expect(loaded.findTrustedCleanReview).toBeTypeOf('function')
+    expect(loaded.authorizeExactHeadPullRequest).toBeTypeOf('function')
+  })
+
   it('accepts the production long review body with a decoded clean ledger', () => {
     expect(findTrustedCleanReview([review()], reviewContext)).toMatchObject({
       commit_id: sha,
@@ -93,6 +212,17 @@ describe('OpenRouter CI authorization contract', () => {
     ['missing review.commit_id', review({ commit_id: undefined })],
   ])('rejects %s', (_case, candidate) => {
     expect(findTrustedCleanReview([candidate], reviewContext)).toBeUndefined()
+  })
+
+  it('ignores a later unrelated bot review that does not reference the authoritative run URL', () => {
+    expect(findTrustedCleanReview([
+      review({ id: 10, submitted_at: '2026-09-04T12:00:00Z' }),
+      review({
+        id: 11,
+        submitted_at: '2026-09-04T12:01:00Z',
+        body: 'Emergency Grok review with no ledger envelope.',
+      }),
+    ], reviewContext)).toMatchObject({ id: 10 })
   })
 
   it('rejects an issues review with later injected clean and commit lines', () => {
@@ -134,13 +264,13 @@ describe('OpenRouter CI authorization contract', () => {
     expect(findTrustedCleanReview([
       review({ id: 10, submitted_at: '2026-09-04T12:00:00Z', body: newerIssuesBody }),
       review({ id: 11, submitted_at: '2026-09-04T12:01:00Z' }),
-    ], { ...reviewContext, workflowRunUrls: [newerWorkflowUrl] })).toBeUndefined()
+    ], { ...reviewContext, workflowRunUrl: newerWorkflowUrl })).toBeUndefined()
   })
 
   it('rejects a latest same-URL malformed bot review instead of falling back to an older clean ledger', () => {
     expect(findTrustedCleanReview([
       review({ id: 10, submitted_at: '2026-09-04T12:00:00Z' }),
-      review({ id: 11, submitted_at: '2026-09-04T12:01:00Z', body: 'malformed' }),
+      review({ id: 11, submitted_at: '2026-09-04T12:01:00Z', body: `malformed\n[Workflow run](${workflowUrl})` }),
     ], reviewContext)).toBeUndefined()
   })
 
@@ -181,28 +311,296 @@ describe('OpenRouter CI authorization contract', () => {
     expect(isDependabotPullRequest(dependabotPr)).toBe(true)
   })
 
-  it('requires a trusted OpenRouter caller run and an unchanged default-branch blob', () => {
-    const run = {
-      name: 'OpenRouter code review', event: 'pull_request', status: 'completed', conclusion: 'success',
-      workflow_id: 341686683,
-      path: '.github/workflows/openrouter-code-review.yml', head_repository: repository,
-      referenced_workflows: [{
-        path: 'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
-        sha: 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
-      }],
-    }
+  it('requires trusted OpenRouter caller runs and an unchanged default-branch blob', () => {
+    const run = trustedRun()
     expect(reviewRunSkipReason(run, repository)).toBeUndefined()
     expect(reviewRunSkipReason({ ...run, workflow_id: 1 }, repository)).toMatch(/id/)
-    expect(reviewRunSkipReason({ ...run, referenced_workflows: [{
-      path: 'other/workflow@f6aa157430509b5f6945b4fc2c9fafeeac4a7294', sha: 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
-    }] }, repository)).toMatch(/reusable/)
-    expect(reviewRunSkipReason({ ...run, referenced_workflows: [{
-      path: 'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294', sha: 'deadbeef',
-    }] }, repository)).toMatch(/reusable/)
-    expect(reviewRunSkipReason({ ...run, head_repository: { full_name: 'fork/repo' } }, repository)).toMatch(/repository/)
+    expect(reviewRunSkipReason({ ...run, event: 'workflow_dispatch' }, repository)).toMatch(/pull_request/)
+    expect(reviewDispatchRunSkipReason({ ...run, event: 'workflow_dispatch' }, repository)).toBeUndefined()
+    expect(reviewDispatchRunSkipReason(run, repository)).toMatch(/workflow_dispatch/)
     const defaultFile = { data: { type: 'file', sha: 'default-blob' } }
     expect(workflowBlobMatchesDefaultBranch({ data: { type: 'file', sha: 'default-blob' } }, defaultFile)).toBe(true)
     expect(workflowBlobMatchesDefaultBranch({ data: { type: 'file', sha: 'head-blob' } }, defaultFile)).toBe(false)
+  })
+
+  it('extracts dispatch run IDs only from exact-head canonical ledgers', () => {
+    const dispatchBody = cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl)
+    expect(ledgerWorkflowRunUrlsFromReview(review({ body: dispatchBody }), {
+      repository,
+      pullNumber,
+      headSha: sha,
+    })).toEqual([dispatchWorkflowUrl])
+    expect(parseWorkflowRunIdFromUrl(dispatchWorkflowUrl)).toBe(456)
+    expect(ledgerWorkflowRunUrlsFromReview(review({ body: 'not a ledger' }), {
+      repository,
+      pullNumber,
+      headSha: sha,
+    })).toEqual([])
+  })
+
+  it('discovers a terminal same-repository dispatch URL before ledger validation', () => {
+    const malformedDispatchBody = `malformed ledger\n[Workflow run](${dispatchWorkflowUrl})`
+    expect(terminalSameRepositoryWorkflowRunUrl(review({ body: malformedDispatchBody }), repository))
+      .toBe(dispatchWorkflowUrl)
+    expect(ledgerWorkflowRunUrlsFromReview(review({ body: malformedDispatchBody }), {
+      repository,
+      pullNumber,
+      headSha: sha,
+    })).toEqual([])
+  })
+
+  it('classifies requested CI and fail-closed authorization outcomes', () => {
+    expect(isCiRequested({ runAttempt: 1, hasRunCiLabel: false })).toBe(false)
+    expect(isCiRequested({ runAttempt: 2, hasRunCiLabel: false })).toBe(true)
+    expect(isCiRequested({ runAttempt: 1, hasRunCiLabel: true })).toBe(true)
+  })
+
+  it('authorizes through the shared helper with bounded head_sha queries and dispatch recovery', async () => {
+    const github = mockGithub()
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden',
+      repo: 'RetireGolden',
+      repository,
+      defaultBranch: 'main',
+      eventPr: {
+        number: pullNumber,
+        head: { sha },
+        labels: [{ name: 'run-ci' }],
+      },
+      runAttempt: 1,
+    })
+    expect(result).toMatchObject({ authorized: true, failJob: false })
+  })
+
+  it('fails the requested path when authorization cannot be proven', async () => {
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) {
+          expect(params.head_sha).toBe(sha)
+          return []
+        }
+        return mockGithub().paginate(request, params)
+      },
+      rest: {
+        actions: {
+          getWorkflowRun: async () => {
+            throw new Error('linked workflow run not found')
+          },
+        },
+      },
+    })
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden',
+      repo: 'RetireGolden',
+      repository,
+      defaultBranch: 'main',
+      eventPr: {
+        number: pullNumber,
+        head: { sha },
+        labels: [{ name: 'run-ci' }],
+      },
+      runAttempt: 2,
+    })
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+  })
+
+  it('lets a newer failed exact-head review run block an older clean run', async () => {
+    const base = mockGithub()
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) {
+          return [
+            trustedRun({ id: 123, created_at: '2026-09-04T12:00:00Z' }),
+            trustedRun({ id: 124, created_at: '2026-09-04T12:01:00Z', status: 'completed', conclusion: 'failure' }),
+          ]
+        }
+        return base.paginate(request, params)
+      },
+    })
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] },
+      runAttempt: 2,
+    })
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+  })
+
+  it('lets a newer provenance-valid dispatch URL with a malformed ledger block an older clean dispatch', async () => {
+    const olderDispatchBody = cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl)
+    const newerDispatchUrl = 'https://github.com/RetireGolden/RetireGolden/actions/runs/457'
+    const malformedNewerDispatchBody = `malformed ledger\n[Workflow run](${newerDispatchUrl})`
+    const base = mockGithub()
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return []
+        if (request.name.includes('listReviews')) {
+          return [
+            review({ id: 10, submitted_at: '2026-09-04T12:00:00Z', body: olderDispatchBody }),
+            review({ id: 11, submitted_at: '2026-09-04T12:01:00Z', body: malformedNewerDispatchBody }),
+          ]
+        }
+        return base.paginate(request, params)
+      },
+      rest: {
+        actions: {
+          getWorkflowRun: async ({ run_id }: GetWorkflowRunRequest) => ({
+            data: trustedRun({
+              id: run_id,
+              event: 'workflow_dispatch',
+              head_sha: 'b'.repeat(40),
+              created_at: run_id === 456 ? '2026-09-04T12:00:00Z' : '2026-09-04T12:01:00Z',
+            }),
+          }),
+        },
+      },
+    })
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] },
+      runAttempt: 2,
+    })
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toMatch(/clean authoritative ledger/)
+  })
+
+  it('fails closed when a newer linked dispatch run cannot be inspected', async () => {
+    const olderDispatchBody = cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl)
+    const newerDispatchUrl = 'https://github.com/RetireGolden/RetireGolden/actions/runs/457'
+    const base = mockGithub()
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) return []
+        if (request.name.includes('listReviews')) {
+          return [
+            review({ id: 10, submitted_at: '2026-09-04T12:00:00Z', body: olderDispatchBody }),
+            review({
+              id: 11,
+              submitted_at: '2026-09-04T12:01:00Z',
+              body: `malformed ledger\n[Workflow run](${newerDispatchUrl})`,
+            }),
+          ]
+        }
+        return base.paginate(request, params)
+      },
+      rest: {
+        actions: {
+          getWorkflowRun: async ({ run_id }: GetWorkflowRunRequest) => {
+            if (run_id === 457) throw Object.assign(new Error('service unavailable'), { status: 503 })
+            return {
+              data: trustedRun({ id: run_id, event: 'workflow_dispatch', head_sha: 'b'.repeat(40) }),
+            }
+          },
+        },
+      },
+    })
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] },
+      runAttempt: 2,
+    })
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toMatch(/cannot inspect a linked OpenRouter workflow run/)
+  })
+
+  it('fails closed when a newer exact-head caller cannot be inspected', async () => {
+    const base = mockGithub()
+    let headCallerReads = 0
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) {
+          return [
+            trustedRun({ id: 123, created_at: '2026-09-04T12:00:00Z' }),
+            trustedRun({ id: 124, created_at: '2026-09-04T12:01:00Z' }),
+          ]
+        }
+        return base.paginate(request, params)
+      },
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (request.ref === 'main') return { data: { type: 'file', sha: 'default-blob' } }
+            headCallerReads += 1
+            if (headCallerReads === 2) {
+              throw Object.assign(new Error('service unavailable'), { status: 503 })
+            }
+            return { data: { type: 'file', sha: 'default-blob' } }
+          },
+        },
+      },
+    })
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] },
+      runAttempt: 2,
+    })
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toMatch(/cannot inspect the exact-head OpenRouter caller/)
+  })
+
+  it('keeps the first unlabeled placeholder path successful without failing authorize', async () => {
+    const github = mockGithub({
+      rest: {
+        pulls: {
+          get: async () => ({
+            data: {
+              state: 'open',
+              number: pullNumber,
+              base: { ref: 'main' },
+              head: { sha, repo: repository },
+              labels: [],
+            },
+          }),
+        },
+      },
+    })
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden',
+      repo: 'RetireGolden',
+      repository,
+      defaultBranch: 'main',
+      eventPr: {
+        number: pullNumber,
+        head: { sha },
+        labels: [],
+      },
+      runAttempt: 1,
+    })
+    expect(result).toMatchObject({ authorized: false, failJob: false })
+  })
+
+  it('collects dispatch runs directly from ledger links without head_sha list filtering', async () => {
+    const dispatchBody = cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl)
+    const listCalls: PaginatedRequestParameters[] = []
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listWorkflowRuns')) {
+          listCalls.push(params)
+          return []
+        }
+        return mockGithub().paginate(request, params)
+      },
+      rest: {
+        actions: {
+          listWorkflowRuns: async function listWorkflowRuns() {},
+          getWorkflowRun: async ({ run_id }: { run_id: number }) => ({
+            data: trustedRun({ id: run_id, event: 'workflow_dispatch', head_sha: 'b'.repeat(40) }),
+          }),
+        },
+      },
+    })
+    const { provenanceReviewRuns } = await collectProvenanceReviewRuns(github, {
+      owner: 'RetireGolden',
+      repo: 'RetireGolden',
+      repository,
+      defaultBranch: 'main',
+      expectedHeadSha: sha,
+      pullNumber,
+      reviews: [review({ body: dispatchBody })],
+      allowDispatch: true,
+    })
+    expect(listCalls).toEqual([expect.objectContaining({ head_sha: sha })])
+    expect(provenanceReviewRuns).toHaveLength(1)
+    expect(provenanceReviewRuns[0]?.event).toBe('workflow_dispatch')
   })
 
   it('classifies only exact expensive Azure display names as real work', () => {
@@ -250,7 +648,9 @@ describe('OpenRouter CI authorization contract', () => {
     expect(brokerWorkflow).toContain('pull-requests: write')
     expect(brokerWorkflow).toContain('group: openrouter-ci-broker-${{ github.event.workflow_run.head_sha }}')
     expect(brokerWorkflow).toContain('github.rest.repos.listPullRequestsAssociatedWithCommit')
-    expect(brokerWorkflow).toContain('helper.workflowBlobMatchesDefaultBranch(headCaller, defaultCaller)')
+    expect(brokerWorkflow).toContain('helper.collectProvenanceReviewRuns')
+    expect(brokerWorkflow).toContain('allowDispatch: false')
+    expect(brokerWorkflow).toContain('head_sha: trigger.head_sha')
     expect(brokerWorkflow).not.toContain('actions/checkout@')
     expect(brokerWorkflow).not.toContain('listWorkflowRunAssociatedPullRequests')
 
@@ -258,13 +658,16 @@ describe('OpenRouter CI authorization contract', () => {
     expect(authorize).toContain('actions: read')
     expect(authorize).toContain('contents: read')
     expect(authorize).toContain('pull-requests: read')
-    expect(authorize).toContain('github.rest.repos.listPullRequestsAssociatedWithCommit')
-    expect(authorize).toContain("github.run_attempt > 1 || github.event.action != 'labeled' || github.event.label.name == 'run-ci'")
-    expect(authorize).not.toContain("candidate.user?.login !== 'dependabot[bot]'")
-    expect(authorize).toContain('run.workflow_id === trustedReviewWorkflowId')
-    expect(authorize).toContain('workflow?.path === trustedReusableReviewWorkflow')
-    expect(authorize).toContain('workflow?.sha === trustedReusableReviewWorkflowSha')
-    expect(authorize).toContain('headCaller.data.sha === defaultCaller.data.sha')
+    expect(authorize).toContain('helper.authorizeExactHeadPullRequest')
+    expect(authorize).toContain('github.rest.git.getBlob')
+    expect(authorize).toContain("core.setFailed(result.reason)")
+    expect(authorize).toContain('context.runAttempt > 1')
+    expect(authorize).toContain("eventPr?.labels?.some((label) => label.name === 'run-ci')")
+    expect(authorize).toContain("if (error?.status !== 404) throw error")
+    expect(authorize).toContain("throw new Error('trusted CI helper response is not a file')")
+    expect(authorize).toContain("throw new Error('trusted CI helper is missing authorization export')")
+    expect(authorize).toContain('return importHelper(blob.data?.content)')
+    expect(authorize).not.toContain('trustedReviewWorkflowId')
     expect(authorize).not.toContain('actions/checkout@')
     expect(authorize).not.toContain('listWorkflowRunAssociatedPullRequests')
     expect(brokerWorkflow).toContain('helper.isDependabotPullRequest(pr)')
@@ -272,7 +675,7 @@ describe('OpenRouter CI authorization contract', () => {
 
   it('keeps push-to-main authorization, independent PR close, and required display names', () => {
     const authorize = swaWorkflow.slice(swaWorkflow.indexOf('  authorize:'), swaWorkflow.indexOf('\n  lint:'))
-    expect(authorize).toMatch(/if:\s+>-\s+github\.event_name == 'push' \|\|\s+\(github\.event_name == 'pull_request' && github\.event\.action != 'closed' &&\s+\(github\.run_attempt > 1 \|\| github\.event\.action != 'labeled' \|\| github\.event\.label\.name == 'run-ci'\)\)/)
+    expect(authorize).toMatch(/if:\s+>-\s+github\.event_name == 'push' \|\|\s+\(github\.event_name == 'pull_request' && github\.event\.action != 'closed'\)/)
     expect(swaWorkflow).toContain("core.info('authorized: push to main')")
     expect(swaWorkflow).toMatch(/close_pull_request:[\s\S]*if: github\.event_name == 'pull_request' && github\.event\.action == 'closed'[\s\S]*runs-on:/)
     const closeJob = swaWorkflow.slice(swaWorkflow.indexOf('  close_pull_request:'))
@@ -284,14 +687,20 @@ describe('OpenRouter CI authorization contract', () => {
     expect(swaWorkflow).toContain('name: ZAP DAST')
   })
 
+  it('starts Azure CI only for PR lifecycle events and cancels every stale PR run', () => {
+    expect(swaWorkflow).toContain('types: [opened, synchronize, reopened, closed]')
+    expect(swaWorkflow).toContain("cancel-in-progress: ${{ github.event_name == 'pull_request' }}")
+  })
+
   it('starts build with the independent gates and keeps test as the fail-closed required context', () => {
     expect(swaWorkflow).toContain('test_engine:')
     expect(swaWorkflow).toContain('test_planner_ui:')
     expect(swaWorkflow).toContain('test_web:')
-    expect(swaWorkflow).toMatch(/test:\s+name: test\s+if: always\(\)/)
+    expect(swaWorkflow).toMatch(/test:\s+name: test\s+if: always\(\) && !cancelled\(\)/)
     expect(swaWorkflow).toMatch(/build:\s+if: needs\.authorize\.outputs\.authorized == 'true'\s+needs: \[authorize\]/)
     expect(swaWorkflow).toMatch(/deploy:[\s\S]*needs: \[authorize, lint, test, e2e, build\]/)
     expect(swaWorkflow).toContain("needs.authorize.outputs.authorized != 'true' || needs.deploy.result == 'success'")
+    expect(swaWorkflow).toContain('actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1')
   })
 
   it('finds a safe rerun before it adds the label, then rechecks the head before rerunning', () => {

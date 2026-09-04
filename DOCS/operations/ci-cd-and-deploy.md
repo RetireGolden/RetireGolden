@@ -10,7 +10,8 @@ no server and no backend — "deploy" means uploading static files to a CDN.
 
 One workflow drives build + deploy:
 [`.github/workflows/azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml).
-It triggers on push to `main` and on every pull-request event targeting `main`. On a same-repository PR,
+It triggers on push to `main` and on `opened`, `synchronize`, `reopened`, and `closed` pull-request
+events targeting `main`. On a same-repository PR,
 the lightweight `authorize` job reads **live** PR state before any checkout: it requires the current head,
 the `run-ci` label, and an exact-head clean OpenRouter review ledger. An unauthorized run therefore stays
 cheap and its expensive jobs report skipped (see [Label-gated PR CI](#label-gated-pr-ci) below).
@@ -26,13 +27,13 @@ authorize ─┬─► lint ─────┐
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `authorize` | push + open PR (except first-attempt unrelated label events) | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, and have the trusted exact-head clean OpenRouter ledger. Forks do not pass; a maintainer may manually label a Dependabot PR. |
+| `authorize` | push + non-closed PR events | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, and have the trusted exact-head clean OpenRouter ledger. Unlabeled first attempts remain cheap placeholders; requested paths fail closed. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
 | `lint` | authorized push/PR | root `pnpm install --frozen-lockfile` then `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
 | `test engine`, `test planner-ui`, `test web` | authorized push/PR, in parallel | Each workspace runs its own `test:coverage`, retaining its own coverage threshold. The fail-closed aggregate check is still named **`test`** for Main Guard. |
 | `e2e` | authorized push/PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
 | `build` | authorized push/PR, in parallel with lint/tests/e2e | root `pnpm build`, then the third-party notices drift and both package pack-smoke checks; uploads `app/dist` as the `dist` artifact |
 | `deploy` | every authorized prerequisite succeeds; skipped on PR close | the all-gates barrier: downloads `dist`, deploys via `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`, `app_location: app/dist`; exposes the deployed URL as `preview_url` |
-| `dast` | PR only; needs `deploy` | OWASP ZAP baseline scan of the freshly deployed PR preview URL — see [security-scanning.md](security-scanning.md). On unauthorized PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
+| `dast` | PR only; needs `authorize` and `deploy` | OWASP ZAP baseline scan of the freshly deployed authorized same-repository PR preview URL — see [security-scanning.md](security-scanning.md). On unauthorized PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
 | `close_pull_request` | PR close | tears down the SWA preview environment |
 
 CI uses **Node 24**, set up by the shared composite `.github/actions/setup-toolchain` (pnpm from the
@@ -73,17 +74,12 @@ never check out or execute PR code.
 - The broker serializes review/Azure completion events for a head, finds the newest eligible skipped Azure
   `pull_request` run before it mutates the PR, rechecks live PR state, adds `run-ci`, rechecks again, then
   reruns that run through the Actions API. It does nothing when live work is queued/running or a
-  current-head Azure run has already performed a non-skipped expensive job. A maintainer may still apply
-  `run-ci` manually when the review workflow needs operational recovery; the live authorization gate
-  remains authoritative.
+  current-head Azure run has already performed a non-skipped expensive job. For manual recovery and
+  same-repository Dependabot, apply `run-ci`, then rerun the existing exact-head Azure workflow; the label
+  alone does not start CI, and the live authorization gate remains authoritative.
 - A rerun deliberately ignores its frozen event labels. `authorize` re-reads the live PR, label, review,
   and head immediately before releasing checkout jobs; a head race fails closed. Fork PRs never authorize
-  or deploy. The broker never auto-reruns Dependabot PRs, but a maintainer's manual `run-ci` label can
-  authorize one. A first-attempt label other than `run-ci` neither cancels a live run nor starts the
-  expensive lane; rerunning that event is allowed for operational recovery.
-- This CI-broker PR itself is the inaugural exception: the broker only exists on the default branch after
-  this PR merges, so after its clean review a maintainer must apply `run-ci` manually. Future PRs use the
-  broker automatically.
+  or deploy. The broker never auto-reruns Dependabot PRs.
 - **Without the label**, the gated jobs report as **skipped**. Skipped checks *satisfy* the Main Guard
   required checks, so always apply `run-ci` (and let CI go green) **before merging** — a merge without
   the label lands on `main` unvalidated (the push-to-`main` run will still catch it, but after the fact).
@@ -96,9 +92,20 @@ never check out or execute PR code.
   (`trustPolicy`, `minimumReleaseAge`, `blockExoticSubdeps`); it also fails when a `trustPolicyExclude`
   entry no longer appears in a fresh resolve, so stale exemptions surface instead of standing as
   silent trust waivers. Like Semgrep, it's a ~1-minute job.
-- Both workflows also **cancel in-progress PR runs** when a newer commit is pushed (concurrency
-  groups), so rapid-fire pushes only pay for the latest commit. Pushes to `main` are never cancelled,
-  and unrelated label events never cancel a live pipeline.
+- The Azure Static Web Apps and Semgrep workflows also **cancel in-progress PR runs** when a newer commit is
+  pushed (concurrency groups), so rapid-fire pushes only pay for the latest commit. Pushes to `main` are never cancelled.
+
+The trust boundary is explicit: GitHub review objects do not expose which workflow created them. The broker
+therefore admits only same-repository PRs and trusts the write-capable repository workflows on the default
+branch, plus the pinned reusable review workflow they invoke. The Markdown workflow URL is an identifying
+link, not cryptographic provenance; a signed central artifact or ledger would be future hardening.
+
+For operational recovery, a maintainer may dispatch the review workflow, apply `run-ci`, then rerun the existing
+exact-head Azure workflow. The dispatch
+run may report `main` as its `head_sha`; authorization accepts it only when an exact-head bot review contains
+the canonical ledger link, the fetched run passes the same workflow/repository/caller-blob checks, and the
+run succeeds. The human label and exact-head Azure rerun remain required after dispatch; the broker never
+auto-labels or reruns a Dependabot PR.
 
 ## Build and SPA routing
 

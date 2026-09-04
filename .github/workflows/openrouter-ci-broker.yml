@@ -29,11 +29,12 @@ jobs:
           script: |
             const trigger = context.payload.workflow_run
             const { owner, repo } = context.repo
+            const defaultBranch = context.payload.repository.default_branch
             const helperFile = await github.rest.repos.getContent({
               owner,
               repo,
               path: '.github/scripts/ci-acceleration.mjs',
-              ref: context.payload.repository.default_branch,
+              ref: defaultBranch,
             })
             if (Array.isArray(helperFile.data) || helperFile.data.type !== 'file') {
               return core.info('skip: trusted CI helper is not a default-branch file')
@@ -65,30 +66,20 @@ jobs:
               return core.info(`skip: broker does not auto-rerun Dependabot PR #${pr.number}`)
             }
 
-            const reviewRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
-              owner, repo, workflow_id: 'openrouter-code-review.yml', per_page: 100,
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner, repo, pull_number: pr.number, per_page: 100,
             })
-            let defaultCaller
-            try {
-              defaultCaller = await github.rest.repos.getContent({
-                owner, repo, path: '.github/workflows/openrouter-code-review.yml',
-                ref: context.payload.repository.default_branch,
-              })
-            } catch {
-              return core.info('skip: cannot read trusted default-branch OpenRouter caller')
-            }
-            const provenanceReviewRuns = []
-            for (const run of reviewRuns) {
-              if (run.head_sha !== trigger.head_sha || helper.reviewRunSkipReason(run, context.payload.repository)) continue
-              try {
-                const headCaller = await github.rest.repos.getContent({
-                  owner, repo, path: '.github/workflows/openrouter-code-review.yml', ref: run.head_sha,
-                })
-                if (helper.workflowBlobMatchesDefaultBranch(headCaller, defaultCaller)) provenanceReviewRuns.push(run)
-              } catch {
-                core.info(`skip: cannot prove trusted caller blob for OpenRouter run ${run.id}`)
-              }
-            }
+            const { provenanceReviewRuns, error } = await helper.collectProvenanceReviewRuns(github, {
+              owner,
+              repo,
+              repository: context.payload.repository,
+              defaultBranch,
+              expectedHeadSha: trigger.head_sha,
+              pullNumber: pr.number,
+              reviews,
+              allowDispatch: false,
+            })
+            if (error) return core.info(`skip: ${error}`)
             if (isReviewTrigger && !provenanceReviewRuns.some((run) => run.id === trigger.id)) {
               return core.info(`skip: triggering OpenRouter run ${trigger.id} lacks trusted caller provenance`)
             }
@@ -97,26 +88,23 @@ jobs:
             if (authoritativeReviewRun.status !== 'completed' || authoritativeReviewRun.conclusion !== 'success') {
               return core.info(`skip: newest provenance-valid OpenRouter run ${authoritativeReviewRun.id} is not successful`)
             }
-            const reviewUrls = [helper.workflowRunUrl(owner, repo, authoritativeReviewRun.id)]
-
-            const reviews = await github.paginate(github.rest.pulls.listReviews, {
-              owner, repo, pull_number: pr.number, per_page: 100,
-            })
+            const authoritativeRunUrl = helper.workflowRunUrl(owner, repo, authoritativeReviewRun.id)
             if (!helper.findTrustedCleanReview(reviews, {
               repository: context.payload.repository,
               pullNumber: pr.number,
               headSha: trigger.head_sha,
-              workflowRunUrls: reviewUrls,
+              workflowRunUrl: authoritativeRunUrl,
             })) {
               return core.info(`skip: latest exact-head OpenRouter bot review is not a clean ledger for the authoritative run on PR #${pr.number}`)
             }
 
-            // Discover a concrete skipped run before mutating the PR.  A label
-            // without a runnable placeholder would strand CI in a labeled but
-            // unstarted state because GITHUB_TOKEN label events do not trigger
-            // this workflow.
             const azureRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
-              owner, repo, workflow_id: 'azure-static-web-apps-retiregolden.yml', event: 'pull_request', per_page: 100,
+              owner,
+              repo,
+              workflow_id: 'azure-static-web-apps-retiregolden.yml',
+              event: 'pull_request',
+              head_sha: trigger.head_sha,
+              per_page: 100,
             })
             const currentHeadRuns = azureRuns.filter((run) =>
               run.head_sha === trigger.head_sha && !helper.azureRunSkipReason(run),
