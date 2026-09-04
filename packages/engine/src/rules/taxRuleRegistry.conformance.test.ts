@@ -355,7 +355,6 @@ const REFUSAL_FIXTURE_BACKLOG: readonly string[] = [
     'cfr-31-363-52-savings-bond-annual-purchase-limit',
     'irc-135-education-savings-bond-interest-exclusion',
     'irc-1400z-2-qof-deferral-and-ten-year-basis-election',
-    'irc-162-l-1-self-employed-health-insurance-not-modeled',
     'irc-170-b-1-C-capital-gain-property-ceiling-not-modeled',
     'irc-171-tips-bond-premium-amortization',
     'irc-199A-a-qualified-business-income-deduction-not-modeled',
