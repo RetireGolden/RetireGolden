@@ -16,7 +16,7 @@ export const decisionsAttestations: Readonly<Record<string, CoverageAttestation>
   'decisions/insightsAdapter.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/objectives.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'bridge filter consumes rmdStartAgeForBirthYear (cohort defect fixed 2026-08-29); registered via irc-401-a-9-C-v-applicable-age naming bridgeYearFilter' }),
   'decisions/ordinaryWithdrawalCandidateAdapter.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'decisions/pensionElection.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Tax-free direct rollover into traditional IRA; no record' }),
+  'decisions/pensionElection.ts': Object.freeze({ status: 'registered', sweptOn: '2026-09-04', note: 'tax-free direct rollover assumption registered via irc-402-c-1-pension-lump-sum-direct-rollover-eligibility; PV and recommendation claims remain rule-free' }),
   'decisions/qcdCandidateAdapter.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/retirementActionCandidateSchedule.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/rothConversionCandidateAdapter.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-29', note: 'same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered' }),

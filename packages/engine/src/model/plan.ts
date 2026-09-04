@@ -1027,8 +1027,8 @@ export const cashAccountSchema = z.object({
  * equity decisions, step 3). `lumpSumOffer` records the offer for the decision
  * view (PV comparison, sensitivity table) and the pension-election insight;
  * it changes nothing in the ledger by itself. `lumpSumElection` commutes the
- * pension: in the election year the offer amount rolls over tax-free into the
- * named traditional account (a direct rollover, so no withholding or income),
+ * pension: under the engine's eligibility assumption, the offer amount rolls
+ * over tax-free into the named traditional account (direct rollover: no withholding or income),
  * and the pension never pays its annuity. Both are additive and optional, so
  * pre-existing plans are byte-identical.
  */
@@ -1041,7 +1041,7 @@ export const pensionLumpSumOfferSchema = z.object({
 export type PensionLumpSumOffer = z.infer<typeof pensionLumpSumOfferSchema>
 
 export const pensionLumpSumElectionSchema = z.object({
-  /** Traditional account (IRA/401k) receiving the tax-free direct rollover. */
+  /** Traditional account (IRA/401k) receiving the engine-assumed eligible tax-free direct rollover. */
   rolloverAccountId: idSchema,
 })
 

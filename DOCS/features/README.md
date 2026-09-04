@@ -71,9 +71,9 @@ generator adds a laddered SPIA option. An **annuitization sweep** ("how much to 
 allocation grid through shared-path Monte Carlo against a sourced SPIA payout-rate table
 ([engine/decisions/spiaQuotes.ts](../../packages/engine/src/decisions/spiaQuotes.ts); user quotes override) and
 reports the success-vs-legacy frontier with allocation-matched glidepath controls (Kitces attribution).
-Pensions can record a **lump-sum offer**; electing commutes the pension into a tax-free rollover in the
-election year, with a decision view comparing the annuity's PV at a curve-anchored discount rate plus a
-discount-rate × longevity sensitivity table
+Pensions can record a **lump-sum offer**; under the engine's assumption that the offer is eligible for a
+direct rollover, electing commutes the pension into a tax-free rollover in the election year, with a
+decision view comparing the annuity's PV at a curve-anchored discount rate plus a discount-rate × longevity sensitivity table
 ([engine/decisions/pensionElection.ts](../../packages/engine/src/decisions/pensionElection.ts)). A primary
 residence can opt into a **HECM line of credit** (buffer asset, Pfau): line sized from a lender quote or the
 published HUD PLF pack, line and loan balance compounding, **coordinated** (draw after a down-market year) or
@@ -87,7 +87,7 @@ published HUD PLF pack, line and loan balance compounding, **coordinated** (draw
 | Roth IRA / Roth 401(k) | Tax-free growth; no RMDs (Roth 401(k) RMD-free since 2024); 5-year/ordering rules surfaced as warnings |
 | HSA | Pre-65 qualified-expense withdrawals tax-free; post-65 non-medical taxed as ordinary (no penalty). HSA coverage and Medicare Part A entitlement/backdating are not plan inputs, and the §4973 excess-contribution excise is not modeled (domain rules §5). |
 | Cash / savings | Interest taxed as ordinary; spending buffer |
-| Pension (DB) | Start age, monthly amount, COLA yes/no/fixed %, survivor %; optional **lump-sum offer + election** (commutes to a tax-free traditional rollover — §19) |
+| Pension (DB) | Start age, monthly amount, COLA yes/no/fixed %, survivor %; optional **lump-sum offer + election** (under the engine's eligible-direct-rollover assumption, commutes to a tax-free traditional rollover — §19) |
 | Annuity (SPIA-style) | Payout, start, COLA, taxable %; **payout forms** (life-only / period certain / joint & survivor — §19); optional mid-plan **purchase** (SPIA/QLAC) funded from another account, taxed by exclusion ratio (non-qualified) or fully (qualified) — §17; ladders of dated purchases |
 | Home / real estate | Net-worth line; optional planned sale year (§121 exclusion); rental as income stream; optional **HECM line of credit** buffer on a primary residence (§19, non-recourse) |
 | Debts / mortgage | Amortizing payment to payoff year; affects expenses, not investable assets |

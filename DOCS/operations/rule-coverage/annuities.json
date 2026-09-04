@@ -4,6 +4,119 @@
   "module": "annuities",
   "rules": [
     {
+      "id": "irc-402-c-1-pension-lump-sum-direct-rollover-eligibility",
+      "title": "Pension lump-sum direct-rollover eligibility is assumed",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. checkAccountCrossFieldRules requires an election to have an offer and an existing non-inherited traditional destination, and pensionTakeLumpSumPatch selects or creates an owned traditional IRA destination, but neither can establish that the source is a qualified trust, that the offer is an eligible rollover distribution, or that a plan may distribute it. pensionLumpSumRollovers then selects every elected offer in its election year at its full amount; simulatePlan credits that amount; and annualPensionAndAnnuityIncome suppresses the pension stream from that year forward. The approximation fixture uses a 300,000 offer for a 60-year-old, deliberately outside the RMD regime: facts the Plan cannot encode hide a genuinely nonqualifying or ineligible offer, for which the statutory reading is a 300,000 currently taxable pension distribution with no rollover credit, while the engine instead credits 300,000 to the traditional destination with zero pension income and MAGI. The RMD-specific sibling remains the only record for a qualifying offer whose required-distribution portion must be carved out.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/decisions/pensionElection.ts",
+        "packages/engine/src/model/planCrossFieldChecks.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+        "packages/engine/src/projection/internal/pensionLumpSumRollovers.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/decisions/pensionElection.ts",
+          "functions": [
+            {
+              "name": "pensionTakeLumpSumPatch",
+              "line": 158
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/planCrossFieldChecks.ts",
+          "functions": [
+            {
+              "name": "checkAccountCrossFieldRules",
+              "line": 820
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 126
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/pensionLumpSumRollovers.ts",
+          "functions": [
+            {
+              "name": "pensionLumpSumRollovers",
+              "line": 153
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 375
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/pensionRolloverEligibility.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/pensionRolloverEligibility.approximation.test.ts",
+          "line": 47,
+          "note": "hidden nonqualifying offer is currently taxable",
+          "tests": [
+            {
+              "title": "credits the entire elected offer to the traditional destination with no current pension income or MAGI",
+              "line": 67
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 402(c)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(c)(4)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(c)(8)(A)-(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(31)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 402(e)(6)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
       "id": "irc-72-b-annuity-exclusion-ratio",
       "title": "Exclusion ratio for a non-qualified annuity, and the cap at unrecovered investment",
       "classification": "settled",

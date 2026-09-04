@@ -7,6 +7,7 @@ import {
   TAX_RULE_RECORD_MODULES,
   TAX_RULE_REGISTRY,
   taxRuleIds,
+  taxRuleDueOn,
   taxRulesDueForVerification,
   type TaxRuleAuthorityKind,
   type TaxRuleId,
@@ -1172,7 +1173,7 @@ describe('tax rule registry conformance', () => {
 
   it('covers every typedRefusal rule with a refusal fixture', () => {
     // The classification with no coverage obligation at all until recently: a
-    // slice of the registry (73 of 416 records, under a fifth) that says "we
+    // slice of the registry (73 of 417 records, under a fifth) that says "we
     // will not answer this". A typedRefusal record claims the engine fails
     // closed at a named site; nothing checked that the refusal existed, still
     // existed, or still had the shape the record describes. That is the same rot
@@ -1842,7 +1843,11 @@ describe('periodic re-verification', () => {
   })
 
   it('eventually brings every rule due', () => {
-    expect(taxRulesDueForVerification('2027-09-01')).toEqual([...taxRuleIds])
+    const latestDueOn = taxRuleIds
+      .map((ruleId) => taxRuleDueOn(ruleId))
+      .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
+    expect(latestDueOn).toBe('2027-09-04')
+    expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 
   it('rejects a malformed as-of date rather than silently reporting nothing', () => {

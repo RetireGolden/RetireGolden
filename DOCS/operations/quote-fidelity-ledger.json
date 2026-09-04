@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-08-30T01:23:40.459Z",
-  "recordCount": 416,
+  "generatedAt": "2026-09-04T17:47:16.011Z",
+  "recordCount": 417,
   "urlCount": 305,
   "fetched": 0,
   "cached": 305,
-  "entryCount": 1066,
+  "entryCount": 1071,
   "counts": {
-    "EXACT": 740,
-    "PUNCTUATION": 36,
+    "EXACT": 742,
+    "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
-    "ELISION-PUNCTUATION": 4,
+    "ELISION-PUNCTUATION": 6,
     "ELISION-EXACT": 64,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
@@ -10707,6 +10707,56 @@
       "quoteSha256": "722fcd615666515b",
       "verdict": "ELISION-EXACT",
       "detail": "4 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402-c-1-pension-lump-sum-direct-rollover-eligibility",
+      "citation": "IRC 402(c)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
+      "quoteSha256": "fecef88bb08cfe0b",
+      "verdict": "ELISION-PUNCTUATION",
+      "detail": "matches only after: dashes",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402-c-1-pension-lump-sum-direct-rollover-eligibility",
+      "citation": "IRC 402(c)(4)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
+      "quoteSha256": "cad88317a17dfac2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402-c-1-pension-lump-sum-direct-rollover-eligibility",
+      "citation": "IRC 402(c)(8)(A)-(B)(i)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
+      "quoteSha256": "e8b376bf85ff8e0c",
+      "verdict": "ELISION-PUNCTUATION",
+      "detail": "matches only after: dashes",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402-c-1-pension-lump-sum-direct-rollover-eligibility",
+      "citation": "IRC 401(a)(31)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim",
+      "quoteSha256": "14e1db908cd7d4aa",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: dashes",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-402-c-1-pension-lump-sum-direct-rollover-eligibility",
+      "citation": "IRC 402(e)(6)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
+      "quoteSha256": "695cbdff00ca7513",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     }
   ],
