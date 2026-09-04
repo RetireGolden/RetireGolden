@@ -12,12 +12,14 @@
  * fixture actually observes a federal tax result instead of a constant: the
  * record's own statement also says "federal tax has no above-the-line
  * self-employed health-insurance line", and a stubbed calculator that ignores
- * its input could not fail if that stopped being true. The income model has
- * no self-employment or earned-income-from-a-trade-or-business fact today
- * (the same absence the record's statement names), so no accepted plan can
- * currently drive a 162(l) figure through this calculator either way; running
- * the real one is the fixture doing what it can given that absence, not a
- * claim that this closes the gap on its own.
+ * its input could not fail if that stopped being true. The notApplicable
+ * control asserts `magiComponents.federalAgi` (and therefore `householdMagi`)
+ * equals the full $40,000 of recurring income, unreduced — the plan carries
+ * exactly one income source and no other above-the-line-eligible fact, so AGI
+ * equalling gross income *is* "no above-the-line reduction was taken", by the
+ * definition of AGI, not a value read off this run. A 162(l) deduction
+ * introduced for this income shape without updating this record would lower
+ * federalAgi below 40,000 and fail this fixture.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -87,6 +89,12 @@ describe('outOfScope refusals reached through simulatePlan', () => {
       expect(aca.supportCodes).not.toContain('self-employed-deduction-unsupported')
       expect(aca.readiness).toBe('actionable')
       expect(aca.modeledAllowablePtc).not.toBeNull()
+      // The plan's only income fact is $40,000 of recurring ordinary income
+      // and nothing else above-the-line-eligible, so federal AGI equal to the
+      // full $40,000 IS "no above-the-line deduction was taken" — including no
+      // 162(l) figure — by definition of AGI, not a number read off this run.
+      expect(aca.magiComponents.federalAgi).toBe(40_000)
+      expect(aca.householdMagi).toBe(40_000)
     })
   })
 })

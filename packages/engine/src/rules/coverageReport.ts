@@ -473,11 +473,21 @@ function lineAt(newlines: readonly number[], position: number): number {
  * literal, then a balanced extent with it() tests inside) is identical for
  * both, so one scan serves either name.
  */
+// Two hardcoded patterns rather than one built from `callName` at runtime: a
+// RegExp built from a variable reads to static analysis (Semgrep's
+// detect-non-literal-regexp) as attacker-controlled input, even though this
+// one is a closed two-member union. Literal patterns sidestep the warning
+// instead of arguing with it.
+const CALL_PATTERNS = {
+  describeRule: /describeRule\(\s*'([^']+)'/gu,
+  describeRefusal: /describeRefusal\(\s*'([^']+)'/gu,
+} as const
+
 function detailsByRule(
   testSources: Readonly<Record<string, string>>,
-  callName: 'describeRule' | 'describeRefusal',
+  callName: keyof typeof CALL_PATTERNS,
 ): ReadonlyMap<string, readonly FixtureDetail[]> {
-  const callPattern = new RegExp(callName.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&') + '\\(\\s*\'([^\']+)\'', 'gu')
+  const callPattern = CALL_PATTERNS[callName]
   const details = new Map<string, FixtureDetail[]>()
   for (const [path, source] of Object.entries(testSources)) {
     if (path.endsWith(CONFORMANCE_SOURCE)) continue

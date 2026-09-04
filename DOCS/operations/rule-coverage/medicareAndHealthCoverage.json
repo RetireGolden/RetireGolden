@@ -127,16 +127,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/projection/simulate.selfEmployedHealthInsuranceRefusal.test.ts",
-          "line": 67,
+          "line": 69,
           "note": null,
           "tests": [
             {
               "title": "fails the credit closed instead of computing a self-employed deduction",
-              "line": 74
+              "line": 76
             },
             {
               "title": "prices the same year once the assertion is notApplicable, so the refusal is the deduction claim",
-              "line": 84
+              "line": 86
             }
           ]
         }
