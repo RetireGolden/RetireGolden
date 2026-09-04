@@ -6,6 +6,9 @@
  * block produces the same dump. These checks drive each settled evidence map,
  * require one post-settlement call, and replace the helper result with distinct
  * arrays so YearResult must publish the helper's own objects.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -14,25 +17,20 @@ import type {
   PublishedEntityFactsInput,
 } from './internal/publishedEntityFacts.js'
 
-interface PhaseEvent {
-  readonly input: PublishedEntityFactsInput
-  readonly derived: PublishedEntityFacts
-  readonly returned: PublishedEntityFacts
-}
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<PublishedEntityFactsInput, PublishedEntityFacts>(),
+)
 
-const seam = vi.hoisted(() => ({ phases: [] as PhaseEvent[] }))
-
-vi.mock('./internal/publishedEntityFacts.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/publishedEntityFacts.js')>()
-  return {
-    ...original,
-    publishedEntityFacts: (
-      input: Parameters<typeof original.publishedEntityFacts>[0],
-    ) => {
-      const derived = original.publishedEntityFacts(input)
-      const ordinal = seam.phases.length + 1
-      const returned: PublishedEntityFacts = {
+vi.mock('./internal/publishedEntityFacts.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/publishedEntityFacts.js')>(),
+    'publishedEntityFacts',
+    (_natural, { ordinal: index }): PublishedEntityFacts => {
+      const ordinal = index + 1
+      return {
         ownedRothIraPoolActivity: [
           {
             ownerPersonId: `mock-owned-${ordinal}-a`,
@@ -74,12 +72,15 @@ vi.mock('./internal/publishedEntityFacts.js', async (importOriginal) => {
           },
         ],
       }
-      seam.phases.push({ input, derived, returned })
-      return returned
     },
-  }
-})
+  ),
+)
 
+import type { SeamCall } from './simulate.seamGuard.test-support.js'
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+} from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
@@ -183,29 +184,34 @@ function traditionalIraEvidencePlan(): Plan {
 }
 
 function runOneYear(value: Plan) {
-  seam.phases.length = 0
+  seam.reset()
   const result = simulatePlan(value, {
     startYear: TAX_YEAR,
     horizonEndYear: TAX_YEAR,
     taxCalculator: createFlatTaxCalculator(0),
   })
   expect(result.years).toHaveLength(1)
-  expect(seam.phases).toHaveLength(1)
-  return { year: result.years[0]!, phase: seam.phases[0]! }
+  return { year: result.years[0]!, phase: expectSeamRan(seam, 1)[0]! }
 }
 
 function expectDelegatedArrays(
   year: ReturnType<typeof runOneYear>['year'],
-  phase: PhaseEvent,
+  phase: SeamCall<PublishedEntityFactsInput, PublishedEntityFacts>,
 ): void {
-  expect(year.ownedRothIraPoolActivity).toBe(
-    phase.returned.ownedRothIraPoolActivity,
+  expectPublishedFromSeam(
+    year.ownedRothIraPoolActivity,
+    phase.injected.ownedRothIraPoolActivity,
+    'the owned-Roth pool activity',
   )
-  expect(year.employerRothAccountActivity).toBe(
-    phase.returned.employerRothAccountActivity,
+  expectPublishedFromSeam(
+    year.employerRothAccountActivity,
+    phase.injected.employerRothAccountActivity,
+    'the employer-Roth account activity',
   )
-  expect(year.ownedTraditionalIraAggregateActivity).toBe(
-    phase.returned.ownedTraditionalIraAggregateActivity,
+  expectPublishedFromSeam(
+    year.ownedTraditionalIraAggregateActivity,
+    phase.injected.ownedTraditionalIraAggregateActivity,
+    'the owned traditional-IRA aggregate activity',
   )
   expect(year.ownedRothIraPoolActivity).toEqual([
     {
@@ -261,7 +267,7 @@ describe('simulatePlan delegates settled per-entity published facts', () => {
     ).toEqual(new Map([['p1', 40_000]]))
     expect(phase.input.employerRothAssumedBasisConsequentialByAccount.size).toBe(0)
     expect(phase.input.form8606ConsequentialByOwner.size).toBe(0)
-    expect(phase.derived.ownedRothIraPoolActivity).toEqual([
+    expect(phase.natural.ownedRothIraPoolActivity).toEqual([
       {
         ownerPersonId: 'p1',
         assumedBasisConsequential: { withdrawal: 40_000 },
@@ -281,7 +287,7 @@ describe('simulatePlan delegates settled per-entity published facts', () => {
       phase.input.employerRothAssumedBasisConsequentialByAccount,
     ).toEqual(new Map([['roth-401k', 30_000]]))
     expect(phase.input.form8606ConsequentialByOwner.size).toBe(0)
-    expect(phase.derived.employerRothAccountActivity).toEqual([
+    expect(phase.natural.employerRothAccountActivity).toEqual([
       {
         accountId: 'roth-401k',
         ownerPersonId: 'p1',
@@ -307,7 +313,7 @@ describe('simulatePlan delegates settled per-entity published facts', () => {
         ],
       ]),
     )
-    expect(phase.derived.ownedTraditionalIraAggregateActivity).toEqual([
+    expect(phase.natural.ownedTraditionalIraAggregateActivity).toEqual([
       {
         ownerPersonId: 'p1',
         assumedBasisConsequential: {

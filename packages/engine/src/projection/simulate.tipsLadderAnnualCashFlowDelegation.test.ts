@@ -56,6 +56,9 @@
  * are any non-empty string). Expected line IDs are built with the exported
  * `cashFlowLineIds` builder, never hand-spliced, so this file cannot drift from
  * the grammar it is checking.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -63,28 +66,33 @@ import type { RecordedTipsLadderCash } from './annualCashFlowYearSites.js'
 import type { TipsLadderYearInput, TipsLadderYearRow } from './internal/tipsLadderAnnualCashFlow.js'
 
 /**
- * One ordered log of both seam events, so a record can be attributed to the
- * phase call it came from without the sink having to know the year. The annual
- * pass is re-entrant and builds a fresh sink per year (simulate.ts), so
- * position in this log — not a year map — is what ties the two together.
+ * The ledger records in emission order, beside the recorder's own call log. A
+ * record still has to be attributed to the phase call it came from without the
+ * sink knowing the year — the annual pass is re-entrant and builds a fresh sink
+ * per year (simulate.ts). Each seam call therefore CAPTURES how many records
+ * had been emitted before it ran, so one call's records are the slice between
+ * its mark and the next call's. Position, not a year map, still ties the two
+ * together.
  */
-type SeamEvent =
-  | { readonly kind: 'phase'; readonly input: TipsLadderYearInput; readonly rows: readonly TipsLadderYearRow[] }
-  | { readonly kind: 'recorded'; readonly row: RecordedTipsLadderCash }
+const hostile = vi.hoisted(() => ({ recorded: [] as RecordedTipsLadderCash[] }))
 
-const seam = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<TipsLadderYearInput, readonly TipsLadderYearRow[], number>(),
+)
 
-vi.mock('./internal/tipsLadderAnnualCashFlow.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/tipsLadderAnnualCashFlow.js')>()
-  return {
-    ...original,
-    tipsLadderAnnualCashFlows: (input: Parameters<typeof original.tipsLadderAnnualCashFlows>[0]) => {
-      const rows = original.tipsLadderAnnualCashFlows(input)
-      seam.events.push({ kind: 'phase', input, rows })
-      return rows
-    },
-  }
-})
+vi.mock('./internal/tipsLadderAnnualCashFlow.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/tipsLadderAnnualCashFlow.js')>(),
+    'tipsLadderAnnualCashFlows',
+    // Nothing is injected here: this guard runs the real phase and observes
+    // what the caller does with the rows and records it hands back.
+    (natural): readonly TipsLadderYearRow[] => natural,
+    { capture: () => hostile.recorded.length },
+  ),
+)
 
 vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./annualCashFlowYearSites.js')>()
@@ -99,7 +107,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, prop) {
           if (prop === 'recordTipsLadderCash') {
             return (row: RecordedTipsLadderCash) => {
-              seam.events.push({ kind: 'recorded', row })
+              hostile.recorded.push(row)
               target.recordTipsLadderCash(row)
             }
           }
@@ -111,6 +119,10 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   }
 })
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { cashFlowLineIds } from './annualCashFlowIds.js'
@@ -192,7 +204,8 @@ function plan(): Plan {
 }
 
 function run(options: { capture?: boolean } = {}) {
-  seam.events.length = 0
+  seam.reset()
+  hostile.recorded.length = 0
   taxInputs.length = 0
   const result = simulatePlan(plan(), {
     startYear: START_YEAR,
@@ -200,11 +213,11 @@ function run(options: { capture?: boolean } = {}) {
     taxCalculator: recordingTaxCalculator(),
     ...(options.capture === true ? { captureAnnualCashFlow: true } : {}),
   })
-  const phases = seam.events.filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase')
+  const phases = seam.calls
   const byYear = new Map<number, readonly TipsLadderYearRow[]>()
   // A year can be evaluated more than once (the annual pass is re-entrant);
   // the last evaluation is the one whose numbers were published.
-  for (const phase of phases) byYear.set(phase.input.year, phase.rows)
+  for (const phase of phases) byYear.set(phase.input.year, phase.injected)
   return { result, phases, byYear }
 }
 
@@ -229,7 +242,7 @@ function soleTaxInput<K extends keyof TaxYearInput>(year: number, key: K): TaxYe
 describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => {
   it('calls the extracted helper for every projected year', () => {
     const { result, byYear } = run()
-    expect(seam.events.some((e) => e.kind === 'phase')).toBe(true)
+    expectSeamRanAtLeastOnce(seam)
     expect(result.years.length).toBe(END_YEAR - START_YEAR + 1)
     expect([...byYear.keys()].sort((a, b) => a - b)).toEqual(result.years.map((y) => y.year))
   })
@@ -349,19 +362,18 @@ describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => 
   it('hands each flow row’s ledger record to the cash-flow capture sites, payload intact', () => {
     const { result, byYear } = run({ capture: true })
 
-    // (a) Seam: walk the interleaved log. The records that follow a phase call,
-    // before the next one, are that call's — no year map needed, so this holds
+    // (a) Seam: walk the call log. The records emitted between one call's mark
+    // and the next call's are that call's — no year map needed, so this holds
     // even when a year is evaluated more than once.
     let recordedRows = 0
-    for (let i = 0; i < seam.events.length; i++) {
-      const event = seam.events[i]!
-      if (event.kind !== 'phase') continue
-      const followed: RecordedTipsLadderCash[] = []
-      for (let j = i + 1; j < seam.events.length && seam.events[j]!.kind === 'recorded'; j++) {
-        followed.push((seam.events[j] as Extract<SeamEvent, { kind: 'recorded' }>).row)
-      }
-      const expected = event.rows.flatMap((row) => (row.kind === 'flow' ? [row.record] : []))
-      const where = `records for ${event.input.year}`
+    const calls = expectSeamRanAtLeastOnce(seam)
+    for (const [i, call] of calls.entries()) {
+      const followed = hostile.recorded.slice(
+        call.captured,
+        calls[i + 1]?.captured ?? hostile.recorded.length,
+      )
+      const expected = call.injected.flatMap((row) => (row.kind === 'flow' ? [row.record] : []))
+      const where = `records for ${call.input.year}`
       // Unfiltered: the caller records EVERY flow row and lets the sink decide
       // what to keep, so an accretion-only row still reaches the ledger.
       expect(followed.length, `${where} count`).toBe(expected.length)
@@ -371,7 +383,7 @@ describe('simulatePlan delegates the TIPS-ladder annual cash-flow phase', () => 
         // straight through. A simulate.ts that called the helper for effect and
         // recorded its own byte-identical rebuild would satisfy every field
         // comparison below, and every other suite in the repo, but not this.
-        expect(got, `${where} [${k}] is not the helper's own record object`).toBe(want)
+        expectPublishedFromSeam(got, want, `${where} [${k}] ledger record`)
         expect(got.ladderId, `${where} [${k}] ladderId`).toBe(want.ladderId)
         expect(got.cash, `${where} [${k}] cash`).toBe(want.cash)
         expect(got.coupons, `${where} [${k}] coupons`).toBe(want.coupons)

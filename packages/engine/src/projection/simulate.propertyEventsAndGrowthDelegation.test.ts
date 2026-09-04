@@ -72,6 +72,9 @@
  * NOT — the surplus deposit fires immediately before this phase and the
  * insurance death benefit immediately after — so nothing here attributes a
  * balance change to this phase by proximity.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -82,55 +85,69 @@ import type {
   PropertyEventYearInput,
 } from './internal/propertyEventsAndGrowth.js'
 
-type PhaseEvent = {
-  readonly input: PropertyEventYearInput
-  readonly rows: readonly PropertyEventRow[]
-  /** `rows.length` read the instant the helper returned. */
-  readonly rowCountAtCall: number
-  readonly accountIdsAtCall: readonly string[]
-  /** Both live maps, snapshotted at call time. */
-  readonly valuesAtCall: readonly (readonly [string, number])[]
-  readonly linesAtCall: readonly (readonly [string, { principalLimit: number; loanBalance: number }])[]
+/** The account list and both live maps, snapshotted at call time. */
+interface PropertyInputSnapshot {
+  readonly accountIds: readonly string[]
+  readonly values: readonly (readonly [string, number])[]
+  readonly lines: readonly (readonly [string, { principalLimit: number; loanBalance: number }])[]
 }
 
-const seam = vi.hoisted(() => ({
-  phases: [] as PhaseEvent[],
-  /** One entry per published year, in year order. See G2a. */
-  published: [] as (readonly LegacyPropertySaleDeposit[])[],
+const hostile = vi.hoisted(() => ({
   /** G2b: when set, the wrapper perturbs the rows before handing them on. */
   tamper: null as null | 'value' | 'hecmGrowth' | 'deposit',
+  /**
+   * `rows.length` read the instant the helper returned, by call ordinal. The
+   * recorder holds the array itself, so a length read at assertion time would
+   * be the grown one — G5 needs the count taken at the seam.
+   */
+  rowCountAtCall: [] as number[],
+  /** One entry per published year, in year order. See G2a. */
+  published: [] as (readonly LegacyPropertySaleDeposit[])[],
 }))
 
-vi.mock('./internal/propertyEventsAndGrowth.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/propertyEventsAndGrowth.js')>()
-  return {
-    ...original,
-    propertyEventsAndGrowth: (input: Parameters<typeof original.propertyEventsAndGrowth>[0]) => {
-      const produced = original.propertyEventsAndGrowth(input)
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      PropertyEventYearInput,
+      readonly PropertyEventRow[],
+      PropertyInputSnapshot
+    >(),
+)
+
+vi.mock('./internal/propertyEventsAndGrowth.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/propertyEventsAndGrowth.js')>(),
+    'propertyEventsAndGrowth',
+    (natural, { ordinal }): readonly PropertyEventRow[] => {
       const rows =
-        seam.tamper === null
-          ? produced
-          : produced.map((row) => {
-              if (seam.tamper === 'value') return { ...row, value: row.value + 1_000 }
-              if (seam.tamper === 'hecmGrowth') {
+        hostile.tamper === null
+          ? natural
+          : natural.map((row) => {
+              if (hostile.tamper === 'value') return { ...row, value: row.value + 1_000 }
+              if (hostile.tamper === 'hecmGrowth') {
                 return row.hecmGrowth === null ? row : { ...row, hecmGrowth: row.hecmGrowth + 0.01 }
               }
               return row.deposit === null ? row : { ...row, deposit: row.deposit + 1_000 }
             })
-      seam.phases.push({
-        input,
-        rows,
-        rowCountAtCall: rows.length,
-        accountIdsAtCall: input.accounts.map((a) => a.id),
-        valuesAtCall: [...input.propertyValues].map(([id, v]) => [id, v] as const),
-        linesAtCall: [...input.hecmStates].map(
-          ([id, l]) => [id, { principalLimit: l.principalLimit, loanBalance: l.loanBalance }] as const,
-        ),
-      })
+      hostile.rowCountAtCall[ordinal] = rows.length
       return rows
     },
-  }
-})
+    {
+      // The helper reads `propertyValues` and `hecmStates` through shadow maps
+      // and never writes to them, so a snapshot taken on the way in is the same
+      // one the old wrapper took on the way out.
+      capture: (input): PropertyInputSnapshot => ({
+        accountIds: input.accounts.map((a) => a.id),
+        values: [...input.propertyValues].map(([id, v]) => [id, v] as const),
+        lines: [...input.hecmStates].map(
+          ([id, l]) => [id, { principalLimit: l.principalLimit, loanBalance: l.loanBalance }] as const,
+        ),
+      }),
+    },
+  ),
+)
 
 vi.mock('./annualCashFlowCapture.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./annualCashFlowCapture.js')>()
@@ -143,12 +160,17 @@ vi.mock('./annualCashFlowCapture.js', async (importOriginal) => {
       // input carries no year field, so entries are paired with `result.years`
       // POSITIONALLY, and G2a asserts the two lengths match rather than
       // assuming one call per year.
-      seam.published.push([...input.passLocals.legacyPropertySaleDeposits])
+      hostile.published.push([...input.passLocals.legacyPropertySaleDeposits])
       return original.assembleYearCashFlow(input)
     },
   }
 })
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import { parsePlan, type Account, type Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { singlePersonPlan, traditionalAccount, validatePlan } from '../testing/planFixtures.js'
@@ -216,13 +238,15 @@ function plan(): Plan {
   return validatePlan(p)
 }
 
-function run(options: { capture?: boolean; tamper?: 'value' | 'hecmGrowth' | 'deposit' } = {}): {
-  result: ProjectionResult
-  phases: readonly PhaseEvent[]
-} {
-  seam.phases.length = 0
-  seam.published.length = 0
-  seam.tamper = options.tamper ?? null
+function resetSeam(): void {
+  seam.reset()
+  hostile.rowCountAtCall.length = 0
+  hostile.published.length = 0
+}
+
+function run(options: { capture?: boolean; tamper?: 'value' | 'hecmGrowth' | 'deposit' } = {}) {
+  resetSeam()
+  hostile.tamper = options.tamper ?? null
   try {
     const result = simulatePlan(plan(), {
       startYear: START_YEAR,
@@ -230,9 +254,9 @@ function run(options: { capture?: boolean; tamper?: 'value' | 'hecmGrowth' | 'de
       taxCalculator: noTax,
       ...(options.capture === true ? { captureAnnualCashFlow: true } : {}),
     })
-    return { result, phases: [...seam.phases] }
+    return { result, phases: [...seam.calls] }
   } finally {
-    seam.tamper = null
+    hostile.tamper = null
   }
 }
 
@@ -304,21 +328,20 @@ describe('simulatePlan delegates property events and growth', () => {
       expect(parsed.ok, parsed.ok ? undefined : parsed.issues.join('\n')).toBe(true)
       if (!parsed.ok) throw new Error(parsed.issues.join('\n'))
 
-      seam.phases.length = 0
-      seam.published.length = 0
+      resetSeam()
       const result = simulatePlan(parsed.plan, {
         startYear: START_YEAR,
         horizonEndYear: START_YEAR + 1,
         taxCalculator: noTax,
       })
-      const firstYear = seam.phases.find((phase) => phase.input.year === START_YEAR)!
-      const nextYear = seam.phases.find((phase) => phase.input.year === START_YEAR + 1)!
-      const carriedLine = new Map(nextYear.linesAtCall).get('shared-home')!
+      const firstYear = seam.calls.find((call) => call.input.year === START_YEAR)!
+      const nextYear = seam.calls.find((call) => call.input.year === START_YEAR + 1)!
+      const carriedLine = new Map(nextYear.captured.lines).get('shared-home')!
       return {
         parseAccepted: parsed.ok,
         principalLimit: carriedLine.principalLimit,
         loanBalance: yearOf(result, START_YEAR).hecmLoanBalance,
-        hecmGrowthRows: firstYear.rows.map((row) => row.hecmGrowth),
+        hecmGrowthRows: firstYear.injected.map((row) => row.hecmGrowth),
       }
     }
 
@@ -341,13 +364,13 @@ describe('simulatePlan delegates property events and growth', () => {
   // plan.accounts)` ran every projected year.
   it('calls the extracted helper exactly once for every projected year', () => {
     const { result, phases } = run()
-    expect(phases.length).toBeGreaterThan(0)
+    expectSeamRanAtLeastOnce(seam)
     expect(result.years.length).toBe(END_YEAR - START_YEAR + 1)
-    expect(phases.length).toBe(result.years.length)
+    expectSeamRan(seam, result.years.length)
     expect(phases.map((p) => p.input.year)).toEqual(result.years.map((y) => y.year))
     for (const phase of phases) {
       // `plan.accounts` whole and in order — not pre-filtered to properties.
-      expect(phase.accountIdsAtCall, `accounts at ${phase.input.year}`).toEqual([
+      expect(phase.captured.accountIds, `accounts at ${phase.input.year}`).toEqual([
         GROW.id,
         SALE.id,
         LINE.id,
@@ -356,18 +379,18 @@ describe('simulatePlan delegates property events and growth', () => {
       ])
       // Four property rows every year, sold ones included: the phase writes a
       // value back for a sold property too.
-      expect(phase.rows.length, `rows at ${phase.input.year}`).toBe(4)
+      expect(phase.injected.length, `rows at ${phase.input.year}`).toBe(4)
     }
     // The maps handed over are the caller's LIVE ones, carrying what earlier
     // years wrote — not a setup-time snapshot. The value the phase is handed in
     // the second year is the value it returned in the first.
     const first = phases[0]!
     const second = phases[1]!
-    expect(new Map(first.valuesAtCall).get(GROW.id)).toBe(GROW.value)
-    expect(new Map(second.valuesAtCall).get(GROW.id)).toBe(first.rows[0]!.value)
+    expect(new Map(first.captured.values).get(GROW.id)).toBe(GROW.value)
+    expect(new Map(second.captured.values).get(GROW.id)).toBe(first.injected[0]!.value)
     // Likewise the open lines: absent before the open phase runs in the start
     // year, present afterwards.
-    expect(new Map(second.linesAtCall).has(LINE.id)).toBe(true)
+    expect(new Map(second.captured.lines).has(LINE.id)).toBe(true)
   })
 
   // G2a — THE OBJECT-IDENTITY ASSERTION (defeats the HALF-ORPHANED duplicate).
@@ -377,30 +400,30 @@ describe('simulatePlan delegates property events and growth', () => {
     const { result } = run({ capture: true })
     // One assembly per published year, in year order: asserted, so the
     // positional pairing below is a check rather than an assumption.
-    expect(seam.published.length, 'the cash flow was not assembled once per year').toBe(result.years.length)
+    expect(hostile.published.length, 'the cash flow was not assembled once per year').toBe(result.years.length)
     const rowsFor = (year: number) =>
-      seam.phases
-        .filter((p) => p.input.year === year)
-        .flatMap((p) => p.rows)
+      seam.calls
+        .filter((call) => call.input.year === year)
+        .flatMap((call) => call.injected)
         .filter((r) => r.record !== null)
     let identityChecks = 0
     for (let y = 0; y < result.years.length; y++) {
       const year = result.years[y]!.year
-      const published = seam.published[y]!
+      const published = hostile.published[y]!
       const want = rowsFor(year)
       expect(published.length, `published rows ${year}`).toBe(want.length)
       for (let i = 0; i < want.length; i++) {
         // THE LOAD-BEARING ONE. A caller that invokes the helper for effect and
         // then pushes its own byte-identical rebuild satisfies every other
         // check in the repository and fails only this.
-        expect(published[i], `${year} [${i}] is not the helper's own payload`).toBe(want[i]!.record)
+        expectPublishedFromSeam(published[i], want[i]!.record, `${year} [${i}] legacy sale payload`)
         identityChecks++
       }
     }
     // WHOLE-LOG ACCOUNTING: this phase is the only producer of that array, so
     // every payload it ever built must be one of the published ones.
-    const builtEverywhere = seam.phases.flatMap((p) => p.rows).filter((r) => r.record !== null).length
-    const publishedEverywhere = seam.published.reduce((total, rows) => total + rows.length, 0)
+    const builtEverywhere = seam.calls.flatMap((call) => call.injected).filter((r) => r.record !== null).length
+    const publishedEverywhere = hostile.published.reduce((total, rows) => total + rows.length, 0)
     expect(publishedEverywhere, 'a legacy sale payload was built and never published').toBe(builtEverywhere)
     expect(identityChecks, 'the fixture no longer publishes a legacy property sale').toBe(2)
     // …and the two sales are the ones the fixture scheduled.
@@ -496,7 +519,7 @@ describe('simulatePlan delegates property events and growth', () => {
   // of the phase that a future change could quietly break.
   it('feeds no accumulator of its own — the rows carry no additive leg', () => {
     const { phases } = run()
-    const rows = phases.flatMap((p) => p.rows)
+    const rows = phases.flatMap((p) => p.injected)
     expect(rows.length).toBeGreaterThan(0)
     // Every field is either a per-row scalar the caller writes or multiplies,
     // or a payload. Nothing is summed across rows anywhere in the call site.
@@ -518,11 +541,13 @@ describe('simulatePlan delegates property events and growth', () => {
   // line is redundant.
   it('returns a materialized array that does not grow after it is returned', () => {
     const { phases } = run()
-    expect(phases.length).toBeGreaterThan(0)
+    expectSeamRanAtLeastOnce(seam)
     for (const phase of phases) {
       const where = `year ${phase.input.year}`
-      expect(Array.isArray(phase.rows), `${where} rows are not a materialized array`).toBe(true)
-      expect(phase.rows.length, `${where} rows grew after the call returned`).toBe(phase.rowCountAtCall)
+      expect(Array.isArray(phase.injected), `${where} rows are not a materialized array`).toBe(true)
+      expect(phase.injected.length, `${where} rows grew after the call returned`).toBe(
+        hostile.rowCountAtCall[phase.ordinal],
+      )
     }
   })
 })

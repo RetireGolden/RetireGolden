@@ -65,6 +65,9 @@
  * line IDs; Plan IDs are any non-empty string). Expected line IDs are built
  * with the exported `cashFlowLineIds` builder, never hand-spliced, so this
  * file cannot drift from the grammar it is checking.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -122,8 +125,8 @@ import type {
 type SeamEvent =
   | {
       readonly kind: 'phase'
-      readonly input: FixedAssetDispositionYearInput
-      readonly rows: readonly FixedAssetDispositionRow[]
+      /** Index into `seam.calls` of the pass this event opened. */
+      readonly ordinal: number
       /**
        * `rows.length` read the instant the helper returned, compared with
        * `rows.length` after the run. Narrower than the `Array.isArray` check
@@ -136,40 +139,55 @@ type SeamEvent =
        * line fires — measured, as `rows grew after the call returned`.
        */
       readonly rowCountAtCall: number
-      /**
-       * `propertyValues` and `hecmStates` cross the seam BY REFERENCE — they
-       * are the simulator's own live maps, which later phases go on mutating
-       * (the property-events block zeroes a sold home's value; the caller
-       * deletes the closed line). Reading them after the run would show final
-       * state, not what this call saw, so the two facts the input test cares
-       * about are snapshotted here, at call time. The real `input` still flows
-       * through to the real helper untouched.
-       */
-      readonly propertyValuesAtCall: ReadonlyMap<string, number>
-      readonly hecmBalancesAtCall: ReadonlyMap<string, number>
     }
   | { readonly kind: 'recorded'; readonly row: RecordedPropertySale }
 
-const seam = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
+/**
+ * `propertyValues` and `hecmStates` cross the seam BY REFERENCE — they are the
+ * simulator's own live maps, which later phases go on mutating (the
+ * property-events block zeroes a sold home's value; the caller deletes the
+ * closed line). Reading them after the run would show final state, not what
+ * this call saw, so the two facts the input test cares about are snapshotted at
+ * call time. The real `input` still flows through to the real helper untouched.
+ */
+interface LiveMapsAtCall {
+  readonly propertyValuesAtCall: ReadonlyMap<string, number>
+  readonly hecmBalancesAtCall: ReadonlyMap<string, number>
+}
 
-vi.mock('./internal/fixedAssetDispositions.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/fixedAssetDispositions.js')>()
-  return {
-    ...original,
-    fixedAssetDispositions: (input: Parameters<typeof original.fixedAssetDispositions>[0]) => {
-      const rows = original.fixedAssetDispositions(input)
-      seam.events.push({
+const hostile = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
+
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      FixedAssetDispositionYearInput,
+      readonly FixedAssetDispositionRow[],
+      LiveMapsAtCall
+    >(),
+)
+
+vi.mock('./internal/fixedAssetDispositions.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/fixedAssetDispositions.js')>(),
+    'fixedAssetDispositions',
+    (rows, { ordinal }): readonly FixedAssetDispositionRow[] => {
+      hostile.events.push({
         kind: 'phase',
-        input,
-        rows,
+        ordinal,
         rowCountAtCall: rows.length,
-        propertyValuesAtCall: new Map(input.propertyValues),
-        hecmBalancesAtCall: new Map([...input.hecmStates].map(([id, line]) => [id, line.loanBalance])),
       })
       return rows
     },
-  }
-})
+    {
+      capture: (input): LiveMapsAtCall => ({
+        propertyValuesAtCall: new Map(input.propertyValues),
+        hecmBalancesAtCall: new Map([...input.hecmStates].map(([id, line]) => [id, line.loanBalance])),
+      }),
+    },
+  ),
+)
 
 vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./annualCashFlowYearSites.js')>()
@@ -184,7 +202,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, prop) {
           if (prop === 'recordPropertySaleProceeds') {
             return (row: RecordedPropertySale) => {
-              seam.events.push({ kind: 'recorded', row })
+              hostile.events.push({ kind: 'recorded', row })
               target.recordPropertySaleProceeds(row)
             }
           }
@@ -196,6 +214,10 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   }
 })
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { productionTaxCalculator } from '../testing/planFixtures.js'
 import { cashFlowLineIds } from './annualCashFlowIds.js'
@@ -397,7 +419,8 @@ function plan(): Plan {
 }
 
 function run(options: { capture?: boolean } = {}) {
-  seam.events.length = 0
+  seam.reset()
+  hostile.events.length = 0
   taxInputs.length = 0
   const result = simulatePlan(plan(), {
     startYear: START_YEAR,
@@ -405,11 +428,11 @@ function run(options: { capture?: boolean } = {}) {
     taxCalculator: recordingTaxCalculator(),
     ...(options.capture === true ? { captureAnnualCashFlow: true } : {}),
   })
-  const phases = seam.events.filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase')
+  const phases = [...seam.calls]
   const byYear = new Map<number, readonly FixedAssetDispositionRow[]>()
   // A year can be evaluated more than once (the annual pass is re-entrant);
   // the last evaluation is the one whose numbers were published.
-  for (const phase of phases) byYear.set(phase.input.year, phase.rows)
+  for (const phase of phases) byYear.set(phase.input.year, phase.injected)
   return { result, phases, byYear }
 }
 
@@ -447,7 +470,7 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
   // differential oracle and every other suite in the repository stay green.
   it('calls the extracted helper for every projected year', () => {
     const { result, byYear } = run()
-    expect(seam.events.some((e) => e.kind === 'phase')).toBe(true)
+    expectSeamRanAtLeastOnce(seam)
     expect(result.years.length).toBe(END_YEAR - START_YEAR + 1)
     expect([...byYear.keys()].sort((a, b) => a - b)).toEqual(result.years.map((y) => y.year))
   })
@@ -471,8 +494,8 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     expect(typeof first.inflRateAt).toBe('function')
     expect(first.pack.federalTax.section121Exclusion.single).toBeGreaterThan(0)
     // The property values are the projected ones, and grow year over year.
-    expect(phases[0]!.propertyValuesAtCall.get(SALE_A)).toBe(480_000)
-    const phaseFor = (year: number): Extract<SeamEvent, { kind: 'phase' }> => {
+    expect(phases[0]!.captured.propertyValuesAtCall.get(SALE_A)).toBe(480_000)
+    const phaseFor = (year: number): (typeof phases)[number] => {
       const phase = phases.find((p) => p.input.year === year)
       if (phase === undefined) throw new Error(`no fixedAssetDispositions call was recorded for ${year}`)
       return phase
@@ -483,9 +506,9 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     // or bigint, received "undefined"`. What the rewrite actually buys is the
     // LOOKUP — `phaseFor` names the year it could not find instead of
     // dereferencing `undefined`, and the same goes for `rowsFor`/`balanceIn`.
-    expect(phaseFor(TWO_SALE_YEAR).propertyValuesAtCall.get(SALE_A)).toBeGreaterThan(480_000)
+    expect(phaseFor(TWO_SALE_YEAR).captured.propertyValuesAtCall.get(SALE_A)).toBeGreaterThan(480_000)
     // The open HECM line is still in the map when its own sale year arrives.
-    expect(phaseFor(HECM_SALE_YEAR).hecmBalancesAtCall.get(HECM_HOME)).toBeGreaterThan(0)
+    expect(phaseFor(HECM_SALE_YEAR).captured.hecmBalancesAtCall.get(HECM_HOME)).toBeGreaterThan(0)
     // The two maps cross the seam BY REFERENCE — the simulator's own, declared
     // once outside the year loop, not a snapshot rebuilt per call. Without this
     // a caller that handed the helper `new Map(propertyValues)` each year
@@ -506,9 +529,10 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     run({ capture: true })
     let recordedRows = 0
     let attributedRecords = 0
-    for (let i = 0; i < seam.events.length; i++) {
-      const event = seam.events[i]!
+    for (let i = 0; i < hostile.events.length; i++) {
+      const event = hostile.events[i]!
       if (event.kind !== 'phase') continue
+      const call = seam.calls[event.ordinal]!
       // PREMISE (1) of the attribution, checked rather than assumed: the helper
       // handed back a materialized array, complete at the moment it returned.
       // A lazy or streaming return is the only structure that could interleave
@@ -516,21 +540,21 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
       // split that job: `Array.isArray` catches the non-array (generator) form,
       // the count catches an array grown after return. A generator PASSES the
       // count — both reads are `undefined` — so neither line is redundant.
-      expect(Array.isArray(event.rows), `year ${event.input.year} rows are not a materialized array`).toBe(true)
-      expect(event.rows.length, `year ${event.input.year} rows grew after the call returned`).toBe(
+      expect(Array.isArray(call.injected), `year ${call.input.year} rows are not a materialized array`).toBe(true)
+      expect(call.injected.length, `year ${call.input.year} rows grew after the call returned`).toBe(
         event.rowCountAtCall,
       )
       // The records that follow this phase call, before the next one, are its.
       const followed: RecordedPropertySale[] = []
-      for (let j = i + 1; j < seam.events.length; j++) {
-        const next = seam.events[j]!
+      for (let j = i + 1; j < hostile.events.length; j++) {
+        const next = hostile.events[j]!
         if (next.kind === 'phase') break
         followed.push(next.row)
       }
       attributedRecords += followed.length
       // Every row is recorded; the sink, not the caller, decides what to keep.
-      const expected = event.rows
-      const where = `year ${event.input.year}`
+      const expected = call.injected
+      const where = `year ${call.input.year}`
       expect(followed.length, `${where} recorded a different number of rows`).toBe(expected.length)
       for (let k = 0; k < expected.length; k++) {
         const want = expected[k]!.record
@@ -541,7 +565,7 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
         // only this. Because both sides are then the SAME object, the field
         // comparisons cannot catch a caller that MUTATED a leg of the helper's
         // record in place — G5 catches that, from the published report.
-        expect(got, `${where} [${k}] is not the helper's own record object`).toBe(want)
+        expectPublishedFromSeam(got, want, `${where} [${k}] recorded property sale`)
         expect(got.propertyAccountId).toBe(want.propertyAccountId)
         expect(got.netProceedsAfterHecm).toBe(want.netProceedsAfterHecm)
         expect(got.ordinaryGain).toBe(want.ordinaryGain)
@@ -554,7 +578,7 @@ describe('simulatePlan delegates the fixed-asset disposition phase', () => {
     // call belongs to no run and would be skipped in silence — the one gap the
     // per-call counts cannot see. Every record must be claimed by exactly one
     // call, so the two totals are equal.
-    const recordEvents = seam.events.filter((e) => e.kind === 'recorded').length
+    const recordEvents = hostile.events.filter((e) => e.kind === 'recorded').length
     expect(attributedRecords, 'a recorded sale fell outside every phase call').toBe(recordEvents)
     // An explicit floor, so the identity check can never silently degrade to a
     // call-count check if the fixture ever stops selling anything.

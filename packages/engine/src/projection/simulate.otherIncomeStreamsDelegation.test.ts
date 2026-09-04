@@ -163,6 +163,9 @@
  * count equals `result.years.length` in all 192 runs). The `byYear` map below
  * is therefore defensive rather than load-bearing — the opposite is true only
  * for in-pass phases, and is not claimed here.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -213,38 +216,53 @@ import type { OtherIncomeStreamRow, OtherIncomeStreamYearInput } from './interna
  * published lines against rows filtered to `amount > 0`. The fixture carries a
  * deliberate zero-amount recurring stream so both rules are exercised rather
  * than assumed.
+ *
+ * The phase event carries only what the shared recorder cannot: its `ordinal`
+ * indexes `seam.calls`, where the input, the returned rows and the snapshotted
+ * stream ids all live.
  */
 type SeamEvent =
   | {
       readonly kind: 'phase'
-      readonly input: OtherIncomeStreamYearInput
-      readonly rows: readonly OtherIncomeStreamRow[]
+      /** Index into `seam.calls` of the pass this event opened. */
+      readonly ordinal: number
       /** `rows.length` read the instant the helper returned. See above. */
       readonly rowCountAtCall: number
-      /** `incomes` is the caller's live `plan.incomes`; the ids are snapshotted at call time. */
-      readonly streamIdsAtCall: readonly string[]
     }
   | { readonly kind: 'recorded'; readonly sink: 'recurring' | 'oneTime'; readonly row: RecordedStreamIncome }
 
-const seam = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
+const hostile = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
 
-vi.mock('./internal/otherIncomeStreams.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/otherIncomeStreams.js')>()
-  return {
-    ...original,
-    otherIncomeStreams: (input: Parameters<typeof original.otherIncomeStreams>[0]) => {
-      const rows = original.otherIncomeStreams(input)
-      seam.events.push({
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      OtherIncomeStreamYearInput,
+      readonly OtherIncomeStreamRow[],
+      readonly string[]
+    >(),
+)
+
+vi.mock('./internal/otherIncomeStreams.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/otherIncomeStreams.js')>(),
+    'otherIncomeStreams',
+    (rows, { ordinal }): readonly OtherIncomeStreamRow[] => {
+      hostile.events.push({
         kind: 'phase',
-        input,
-        rows,
+        ordinal,
         rowCountAtCall: rows.length,
-        streamIdsAtCall: input.incomes.map((s) => s.id),
       })
       return rows
     },
-  }
-})
+    {
+      // `incomes` is the caller's live `plan.incomes`; the ids are snapshotted
+      // at call time.
+      capture: (input): readonly string[] => input.incomes.map((s) => s.id),
+    },
+  ),
+)
 
 vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./annualCashFlowYearSites.js')>()
@@ -260,7 +278,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
           if (prop === 'recordRecurringIncome' || prop === 'recordOneTimeIncome') {
             const sink = prop === 'recordRecurringIncome' ? ('recurring' as const) : ('oneTime' as const)
             return (row: RecordedStreamIncome) => {
-              seam.events.push({ kind: 'recorded', sink, row })
+              hostile.events.push({ kind: 'recorded', sink, row })
               target[prop](row)
             }
           }
@@ -272,6 +290,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   }
 })
 
+import { expectPublishedFromSeam } from './simulate.seamGuard.test-support.js'
 import { createEmptyPlan, parsePlan, type Account, type IncomeStream, type Plan } from '../model/plan.js'
 import { productionTaxCalculator } from '../testing/planFixtures.js'
 import { cashFlowLineIds } from './annualCashFlowIds.js'
@@ -471,7 +490,8 @@ function plan(): Plan {
 }
 
 function run(options: { capture?: boolean; market?: { inflationPct: number[] } } = {}) {
-  seam.events.length = 0
+  seam.reset()
+  hostile.events.length = 0
   taxInputs.length = 0
   const result = simulatePlan(plan(), {
     startYear: START_YEAR,
@@ -480,11 +500,11 @@ function run(options: { capture?: boolean; market?: { inflationPct: number[] } }
     ...(options.capture === true ? { captureAnnualCashFlow: true } : {}),
     ...(options.market !== undefined ? { market: options.market } : {}),
   })
-  const phases = seam.events.filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase')
+  const phases = [...seam.calls]
   const byYear = new Map<number, readonly OtherIncomeStreamRow[]>()
   // Defensive last-wins, not load-bearing: this phase is pre-pass and runs once
   // per year. See the header.
-  for (const phase of phases) byYear.set(phase.input.year, phase.rows)
+  for (const phase of phases) byYear.set(phase.input.year, phase.injected)
   return { result, phases, byYear }
 }
 
@@ -598,7 +618,7 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
       // phase owns or sorting them. Identity is deliberately NOT asserted — a
       // copied array cannot change a number, and pinning it would overstate
       // what the check proves.
-      expect(phase.streamIdsAtCall, `stream list for ${phase.input.year}`).toEqual(planIds)
+      expect(phase.captured, `stream list for ${phase.input.year}`).toEqual(planIds)
     }
     // `anyAlive` tracks the household, and gates the whole phase (G6).
     const aliveAt = (year: number): boolean => {
@@ -656,30 +676,31 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
     run({ capture: true })
     let identityChecks = 0
     let attributedRecords = 0
-    for (let i = 0; i < seam.events.length; i++) {
-      const event = seam.events[i]!
+    for (let i = 0; i < hostile.events.length; i++) {
+      const event = hostile.events[i]!
       if (event.kind !== 'phase') continue
-      const where = `year ${event.input.year}`
+      const call = seam.calls[event.ordinal]!
+      const where = `year ${call.input.year}`
       // PREMISE (1) of the attribution, checked rather than assumed. The two
       // lines catch DIFFERENT shapes: `Array.isArray` catches the non-array
       // (generator) form; the count catches an array grown after return. A
       // generator PASSES the count — both reads are `undefined` — so neither
       // line is redundant.
-      expect(Array.isArray(event.rows), `${where} rows are not a materialized array`).toBe(true)
-      expect(event.rows.length, `${where} rows grew after the call returned`).toBe(event.rowCountAtCall)
+      expect(Array.isArray(call.injected), `${where} rows are not a materialized array`).toBe(true)
+      expect(call.injected.length, `${where} rows grew after the call returned`).toBe(event.rowCountAtCall)
       // The records that follow this phase call, before the next one, are its.
       const followed: Extract<SeamEvent, { kind: 'recorded' }>[] = []
-      for (let j = i + 1; j < seam.events.length; j++) {
-        const next = seam.events[j]!
+      for (let j = i + 1; j < hostile.events.length; j++) {
+        const next = hostile.events[j]!
         if (next.kind === 'phase') break
         followed.push(next)
       }
       attributedRecords += followed.length
       // EVERY row is recorded, unfiltered — the sink, not the caller, drops the
       // non-positive ones, and this log sits in front of the sink.
-      expect(followed.length, `${where} recorded a different number of rows`).toBe(event.rows.length)
-      for (let k = 0; k < event.rows.length; k++) {
-        const want = event.rows[k]!
+      expect(followed.length, `${where} recorded a different number of rows`).toBe(call.injected.length)
+      for (let k = 0; k < call.injected.length; k++) {
+        const want = call.injected[k]!
         const got = followed[k]!
         // Routing: a recurring row must reach the recurring recorder, in row
         // order. This is also what would fail if the caller grouped its calls
@@ -689,7 +710,7 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
         // then records its own byte-identical rebuild satisfies every field
         // comparison below and every other suite in the repository, and fails
         // only this.
-        expect(got.row, `${where} [${k}] is not the helper's own record object`).toBe(want.record)
+        expectPublishedFromSeam(got.row, want.record, `${where} [${k}] recorded stream income`)
         expect(got.row.incomeStreamId).toBe(want.record.incomeStreamId)
         expect(got.row.amount).toBe(want.record.amount)
         expect(got.row.taxTreatment).toBe(want.record.taxTreatment)
@@ -703,7 +724,7 @@ describe('simulatePlan delegates income pass 2 (other non-SS streams)', () => {
     // call belongs to no run and would be skipped in silence — the one gap the
     // per-call counts cannot see. Every record must be claimed by exactly one
     // call, so the two totals are equal.
-    const recordEvents = seam.events.filter((e) => e.kind === 'recorded').length
+    const recordEvents = hostile.events.filter((e) => e.kind === 'recorded').length
     expect(attributedRecords, 'a recorded stream income fell outside every phase call').toBe(recordEvents)
     // An explicit floor, so the identity check can never silently degrade to a
     // call-count check if the fixture ever stops paying anything.

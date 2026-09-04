@@ -62,43 +62,80 @@
  * carries THREE concurrently open lines for that reason, and G4 COUNTS the
  * years in which reversing them lands on a different double rather than
  * assuming any year does.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here. This guard
+ * injects nothing — the real rows are what every assertion reads — so the seam
+ * exists to RECORD the pass.
  */
 import { describe, expect, it, vi } from 'vitest'
 
 import type { HecmLineOpeningRow, HecmLineOpeningYearInput } from './internal/hecmLineOpenings.js'
 
-type PhaseEvent = {
-  readonly input: HecmLineOpeningYearInput
-  readonly rows: readonly HecmLineOpeningRow[]
-  /** `rows.length` read the instant the helper returned. */
-  readonly rowCountAtCall: number
-  readonly accountIdsAtCall: readonly string[]
-  readonly openIdsAtCall: readonly string[]
-  /** A deep copy of each row's state, taken at call time. See G2. */
-  readonly stateAtCall: readonly { readonly principalLimit: number; readonly loanBalance: number }[]
+/** Snapshots of the caller's live input, taken BEFORE the helper runs. */
+interface AtCall {
+  readonly accountIds: readonly string[]
+  readonly openIds: readonly string[]
 }
 
-const seam = vi.hoisted(() => ({ phases: [] as PhaseEvent[] }))
+/** One row's opening state, deep-copied at call time. See G2. */
+interface StateAtCall {
+  readonly principalLimit: number
+  readonly loanBalance: number
+}
 
-vi.mock('./internal/hecmLineOpenings.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/hecmLineOpenings.js')>()
-  return {
-    ...original,
-    hecmLineOpenings: (input: Parameters<typeof original.hecmLineOpenings>[0]) => {
-      const rows = original.hecmLineOpenings(input)
-      seam.phases.push({
-        input,
-        rows,
+/**
+ * The phase event carries only what the shared recorder cannot: its `capture`
+ * runs BEFORE the real helper, and both fields below read what the helper
+ * handed back. `ordinal` indexes `seam.calls`, where the input, the returned
+ * rows and the snapshotted account and open-line ids all live.
+ */
+interface PhaseEvent {
+  readonly ordinal: number
+  /** `rows.length` read the instant the helper returned. */
+  readonly rowCountAtCall: number
+  readonly stateAtCall: readonly StateAtCall[]
+}
+
+const hostile = vi.hoisted(() => ({ events: [] as PhaseEvent[] }))
+
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      HecmLineOpeningYearInput,
+      readonly HecmLineOpeningRow[],
+      AtCall
+    >(),
+)
+
+vi.mock('./internal/hecmLineOpenings.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/hecmLineOpenings.js')>(),
+    'hecmLineOpenings',
+    (rows, { ordinal }): readonly HecmLineOpeningRow[] => {
+      hostile.events.push({
+        ordinal,
         rowCountAtCall: rows.length,
-        accountIdsAtCall: input.accounts.map((a) => a.id),
-        openIdsAtCall: [...input.openHecmLines.keys()],
-        stateAtCall: rows.map((r) => ({ principalLimit: r.state.principalLimit, loanBalance: r.state.loanBalance })),
+        stateAtCall: rows.map((r) => ({
+          principalLimit: r.state.principalLimit,
+          loanBalance: r.state.loanBalance,
+        })),
       })
       return rows
     },
-  }
-})
+    {
+      capture: (input): AtCall => ({
+        accountIds: input.accounts.map((a) => a.id),
+        openIds: [...input.openHecmLines.keys()],
+      }),
+    },
+  ),
+)
 
+import type { SeamCall } from './simulate.seamGuard.test-support.js'
+import { expectSeamRanAtLeastOnce } from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { singlePersonPlan, traditionalAccount, validatePlan } from '../testing/planFixtures.js'
@@ -169,14 +206,17 @@ function mainPlan(): Plan {
   return validatePlan(p)
 }
 
-function run(plan: Plan): { result: ProjectionResult; phases: readonly PhaseEvent[] } {
-  seam.phases.length = 0
+type PhaseCall = SeamCall<HecmLineOpeningYearInput, readonly HecmLineOpeningRow[], AtCall>
+
+function run(plan: Plan): { result: ProjectionResult; phases: readonly PhaseCall[] } {
+  seam.reset()
+  hostile.events.length = 0
   const result = simulatePlan(plan, {
     startYear: START_YEAR,
     horizonEndYear: END_YEAR,
     taxCalculator: noTax,
   })
-  return { result, phases: [...seam.phases] }
+  return { result, phases: [...seam.calls] }
 }
 
 const yearOf = (result: ProjectionResult, year: number): YearResult => {
@@ -212,14 +252,14 @@ describe('simulatePlan delegates the HECM line open', () => {
   // year, including the ones in which no line opens.
   it('calls the extracted helper exactly once for every projected year', () => {
     const { result, phases } = run(mainPlan())
-    expect(phases.length).toBeGreaterThan(0)
+    expectSeamRanAtLeastOnce(seam)
     expect(result.years.length).toBe(END_YEAR - START_YEAR + 1)
     expect(phases.length).toBe(result.years.length)
     expect(phases.map((p) => p.input.year)).toEqual(result.years.map((y) => y.year))
     for (const phase of phases) {
       expect(phase.input.startYear, `startYear at ${phase.input.year}`).toBe(START_YEAR)
       // `plan.accounts` whole and in order — not pre-filtered to properties.
-      expect(phase.accountIdsAtCall, `accounts at ${phase.input.year}`).toEqual([
+      expect(phase.captured.accountIds, `accounts at ${phase.input.year}`).toEqual([
         'home-a',
         'home-b',
         'home-c',
@@ -231,13 +271,13 @@ describe('simulatePlan delegates the HECM line open', () => {
     // The open-line map handed over is the caller's LIVE `hecmStates`, not a
     // setup-time snapshot: it is empty when the first two lines open, holds
     // those two when the third does, and holds all three afterwards.
-    const openIdsAt = (year: number) => phases.find((p) => p.input.year === year)!.openIdsAtCall
+    const openIdsAt = (year: number) => phases.find((p) => p.input.year === year)!.captured.openIds
     expect(openIdsAt(START_YEAR)).toEqual([])
     expect(openIdsAt(START_YEAR + 1)).toEqual(['home-a', 'home-b'])
     expect(openIdsAt(START_YEAR + 2)).toEqual(['home-a', 'home-b'])
     expect(openIdsAt(END_YEAR)).toEqual(['home-a', 'home-b', 'home-c'])
     // Rows appear only in the years the fixture opens a line.
-    expect(phases.map((p) => p.rows.length)).toEqual([2, 0, 1, 0, 0])
+    expect(phases.map((p) => p.injected.length)).toEqual([2, 0, 1, 0, 0])
   })
 
   // G2 — THE OBJECT-IDENTITY ASSERTION (defeats the HALF-ORPHANED duplicate).
@@ -247,9 +287,9 @@ describe('simulatePlan delegates the HECM line open', () => {
     noDrawsHappened(result)
     let mutationsObserved = 0
     for (const phase of phases) {
-      for (let i = 0; i < phase.rows.length; i++) {
-        const row = phase.rows[i]!
-        const atCall = phase.stateAtCall[i]!
+      for (let i = 0; i < phase.injected.length; i++) {
+        const row = phase.injected[i]!
+        const atCall = hostile.events[phase.ordinal]!.stateAtCall[i]!
         // The opening values really were what the helper returned…
         expect(atCall.loanBalance, `${phase.input.year} opening loan balance`).toBeGreaterThan(0)
         // …and by the end of the run THIS object carries the growth the caller
@@ -266,7 +306,7 @@ describe('simulatePlan delegates the HECM line open', () => {
     expect(mutationsObserved, 'the fixture no longer opens any HECM line').toBe(3)
     // No two rows share a state object: a hoisted literal pushed twice would
     // alias two independent lines into one.
-    const states = phases.flatMap((p) => p.rows.map((r) => r.state))
+    const states = phases.flatMap((p) => p.injected.map((r) => r.state))
     expect(new Set(states).size).toBe(states.length)
     // And the object the seam holds really is the one the published total is
     // summed from: the three captured balances add up to the year's published
@@ -348,7 +388,7 @@ describe('simulatePlan delegates the HECM line open', () => {
     ]
     const { result, phases } = run(validatePlan(plan))
     noDrawsHappened(result)
-    expect(phases[0]?.rows.length).toBe(1)
+    expect(phases[0]?.injected.length).toBe(1)
     // FIRST account's upfront percentage, SECOND account's value — and ONE
     // annual growth multiplication on the single line keyed by this id. The
     // second property row is not a second HECM state.
@@ -367,7 +407,7 @@ describe('simulatePlan delegates the HECM line open', () => {
     // the time this assertion runs they hold end-of-horizon numbers rather than
     // each year's.
     const insertionOrder = phases.flatMap((p) =>
-      p.rows.map((r) => {
+      p.injected.map((r) => {
         const home = HOMES.find((h) => h.id === r.propertyAccountId)
         if (home === undefined) throw new Error(`unexpected opened line ${r.propertyAccountId}`)
         return home
@@ -402,11 +442,13 @@ describe('simulatePlan delegates the HECM line open', () => {
   // line is redundant.
   it('returns a materialized array that does not grow after it is returned', () => {
     const { phases } = run(mainPlan())
-    expect(phases.length).toBeGreaterThan(0)
+    expectSeamRanAtLeastOnce(seam)
     for (const phase of phases) {
       const where = `year ${phase.input.year}`
-      expect(Array.isArray(phase.rows), `${where} rows are not a materialized array`).toBe(true)
-      expect(phase.rows.length, `${where} rows grew after the call returned`).toBe(phase.rowCountAtCall)
+      expect(Array.isArray(phase.injected), `${where} rows are not a materialized array`).toBe(true)
+      expect(phase.injected.length, `${where} rows grew after the call returned`).toBe(
+        hostile.events[phase.ordinal]!.rowCountAtCall,
+      )
     }
   })
 })
