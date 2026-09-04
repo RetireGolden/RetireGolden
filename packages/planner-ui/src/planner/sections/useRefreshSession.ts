@@ -35,10 +35,13 @@
  *    means a token answers "did protection go unknown while I was working?"
  *    rather than "is it unknown right now?". Counting the false→true edge
  *    rather than every transition is not observable through this surface today
- *    — a caller only ever takes a token while protection is KNOWN, so the first
- *    transition it can see is false→true either way — but it is the honest
- *    statement of what the counter means, and it stays right if a future caller
- *    is ever allowed to start work inside the window.
+ *    — `beginApply`/`beginRestore` can be called while pending (the caller
+ *    checks `protectionPending` right after and discards the token unused
+ *    without ever acting on it), and `beginRead` refuses to be called at all
+ *    while pending, so no caller ever ACTS on a token taken before the first
+ *    false→true edge — but it is the honest statement of what the counter
+ *    means, and it stays right if a future caller is ever allowed to start
+ *    work inside the window.
  *
  * ## Why the counters advance where they do
  *
@@ -101,7 +104,11 @@ export interface RefreshSessionToken {
   /**
    * Set for an apply, which the preview changing underneath invalidates. `null`
    * for reads (a read IS the newer selection) and for a restore, which reverts
-   * to a stored snapshot and so does not depend on the preview at all.
+   * to a stored snapshot and so does not depend on the preview at all — Cancel,
+   * a re-target, or a release therefore does not abort a suspended restore, only
+   * a suspended apply. This is not new here: the pre-extraction panel's restore
+   * path never checked its equivalent of `panelEpoch` either, only plan identity
+   * and the protection-unknown epoch.
    */
   readonly panelEpoch: number | null
 }

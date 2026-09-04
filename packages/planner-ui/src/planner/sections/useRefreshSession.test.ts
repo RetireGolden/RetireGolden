@@ -179,6 +179,21 @@ describe('useRefreshSession', () => {
     expect(h.session.isCurrent(h.session.beginRead())).toBe(true)
   })
 
+  it('discards a token that outlives both a plan swap and a protection cycle', () => {
+    // The two guards are independent counters checked in the same `isCurrent`;
+    // this pins that a token started before EITHER transition stays discarded
+    // no matter which one lands first, rather than one masking the other.
+    const h = mount({ planId: 'p1', protectionPending: false })
+    const read = h.session.beginRead()
+
+    h.render({ planId: 'p1', protectionPending: true })
+    h.render({ planId: 'p2', protectionPending: false })
+
+    expect(h.session.isCurrent(read)).toBe(false)
+    // Not stuck: work started under the new plan, after the cycle, is current.
+    expect(h.session.isCurrent(h.session.beginRead())).toBe(true)
+  })
+
   it('invalidates a suspended apply, but not a read or a restore', () => {
     // `invalidate` is "what the preview promises has changed" — Cancel, a
     // re-target, a release. An apply must write exactly what the preview showed.

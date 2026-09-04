@@ -1760,9 +1760,13 @@ describe('UpdateBalancesPanel concurrency guards', () => {
   })
 
   it('abandons an apply suspended on its durable write when the plan identity changes', async () => {
-    // The suspended apply's `update` still points at P1, so without the committed
-    // identity guard it refreshes the plan the user navigated away from — and
-    // cloned plans share account ids, so the write would look plausible.
+    // The suspended apply's `update` still points at P1 — the test's own provider
+    // binds `update` to whichever plan object it was built with, so the stale
+    // closure could never reach P2 even with the guard removed. What the identity
+    // guard actually prevents is the write landing on P1 itself after the user has
+    // navigated away from it: without it, the apply still refreshes P1 underneath
+    // the panel now showing P2, and cloned plans share account ids, so a write that
+    // did cross plans would look plausible instead of throwing.
     enableDurableRefreshHistory()
     const p1 = planWithAccounts()
     const el = renderPanel(p1)
@@ -1778,7 +1782,6 @@ describe('UpdateBalancesPanel concurrency guards', () => {
     await advanceBy(20)
 
     expect(accountBalance(p1, 'acct-brokerage')).toBe(1)
-    expect(accountBalance(p2, 'acct-brokerage')).toBe(1)
     expect(await listRefreshSnapshots(p1.id)).toEqual([])
   })
 
