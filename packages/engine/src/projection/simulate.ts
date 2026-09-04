@@ -137,7 +137,7 @@ import {
 } from '../actions/index.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
 import {
-  compareUtf16CodeUnits,
+  compareUtf16CodeUnits, deriveActionStructuralId,
 } from '../actions/structuralId.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import type { SimulatorAnnualPassDeferredFirstRmd, SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
@@ -1933,23 +1933,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         stateResidencySegmentsForYear(plan.household, year),
       ] as const
       return {
-        taxUnitId: `projection-tax-unit:${JSON.stringify([
+        taxUnitId: deriveActionStructuralId('projection-tax-unit', [
           year,
           filingStatusForYear,
           members,
-        ])}`,
-        taxUnitEvidenceId: `projection-tax-unit-evidence:${JSON.stringify([
-          year,
-          filingStatusForYear,
-          members,
-          annualStateFilingInputs,
-        ])}`,
-        stateFilingStatusId: `projection-state-filing-status:${JSON.stringify([
+        ]),
+        taxUnitEvidenceId: deriveActionStructuralId('projection-tax-unit-evidence', [
           year,
           filingStatusForYear,
           members,
           annualStateFilingInputs,
-        ])}`,
+        ]),
+        stateFilingStatusId: deriveActionStructuralId('projection-state-filing-status', [
+          year,
+          filingStatusForYear,
+          members,
+          annualStateFilingInputs,
+        ]),
         federalFilingStatus,
         members,
       }
