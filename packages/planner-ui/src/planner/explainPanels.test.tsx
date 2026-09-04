@@ -117,6 +117,19 @@ describe('WhySuccessPanel', () => {
     expect(container.textContent).toContain('No simulated path depleted')
     unmount()
   })
+
+  it('degrades instead of crashing on a summary where failingPathCount and depletionYearCounts disagree', () => {
+    // The real engine always populates both together (montecarlo/run.ts adds
+    // every failing path's year to the same map that backs failingPathCount),
+    // but the panel's props don't encode that coupling — a host- or
+    // test-built summary can violate it. This should render, not throw.
+    const summary = { ...fakeSummary(), depletionYearCounts: [] }
+    const { container, unmount } = render(
+      <WhySuccessPanel summary={summary} modelLabel="Lognormal returns" seed={1} planId="plan-1" />,
+    )
+    expect(container.textContent).toContain('Which years drive it')
+    unmount()
+  })
 })
 
 /**
