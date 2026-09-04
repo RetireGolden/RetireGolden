@@ -159,7 +159,7 @@ export function expectSeamRan<TInput, TResult, TCaptured>(
   times: number,
 ): readonly SeamCall<TInput, TResult, TCaptured>[] {
   expect(recorder.calls.length, 'passes through the delegation seam').toBe(times)
-  return recorder.calls
+  return [...recorder.calls]
 }
 
 /**
@@ -173,7 +173,7 @@ export function expectSeamRanAtLeastOnce<TInput, TResult, TCaptured>(
     recorder.calls.length,
     'passes through the delegation seam',
   ).toBeGreaterThan(0)
-  return recorder.calls
+  return [...recorder.calls]
 }
 
 /**
@@ -194,11 +194,19 @@ export function expectPublishedFromSeam<TValue>(
 
 /**
  * Assert every pass injected a distinct object, so a caller that computed the
- * first year and cached it cannot pass a multi-year fixture.
+ * first year and cached it cannot pass a multi-year fixture. Requires at
+ * least two recorded calls: a 0- or 1-call recorder satisfies the set-size
+ * check vacuously (0 === 0, or 1 === 1) without ever proving two passes were
+ * distinguishable, which is exactly the caching failure this guard exists to
+ * catch, so the caller must run a fixture spanning more than one year.
  */
 export function expectDistinctInjections<TInput, TResult, TCaptured>(
   recorder: SeamRecorder<TInput, TResult, TCaptured>,
 ): void {
+  expect(
+    recorder.calls.length,
+    'requires at least two passes through the seam to prove distinctness',
+  ).toBeGreaterThan(1)
   expect(
     new Set(recorder.calls.map((call) => call.injected)).size,
     'each pass must inject a distinguishable result',

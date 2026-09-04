@@ -46,7 +46,7 @@
  * of this module is the Pro intake workbench. Importing this module is an
  * explicit act.
  *
- * No call site for this module exists in this repository; what that costs a
+ * No production call site for this module exists in this repository; what that costs a
  * reviewer is recorded in `DOCS/features/published-only-modules.md`.
  */
 

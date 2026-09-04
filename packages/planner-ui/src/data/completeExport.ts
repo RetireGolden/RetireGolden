@@ -11,7 +11,7 @@
  * fields (paths, hashes, counts, references, timestamps, totals, and limits)
  * remain strict.
  *
- * No call site for this module exists in this repository; what that costs a
+ * No production call site for this module exists in this repository; what that costs a
  * reviewer is recorded in `DOCS/features/published-only-modules.md`.
  */
 

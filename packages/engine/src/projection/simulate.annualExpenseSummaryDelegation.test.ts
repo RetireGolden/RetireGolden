@@ -10,8 +10,8 @@
  *
  * Scaffolding and the policy behind it live in
  * `simulate.seamGuard.test-support.ts`; the sentinels stay here. The second
- * mock below (the goal scheduler) is not a delegation seam and keeps its own
- * hand-written factory.
+ * and third mocks below (the goal scheduler and the guardrail multiplier)
+ * are not delegation seams and each keeps its own hand-written factory.
  */
 import { describe, expect, it, vi } from 'vitest'
 

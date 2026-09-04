@@ -32,10 +32,13 @@ trustPolicyExclude:
   - 'semver@6.3.1'
 
 # Root package.json `pnpm.overrides` (react, react-dom, react-is, recharts,
-# highs, es-toolkit, immer, sharp, ejs>jake) are deliberate exact pins: the
-# repo only ever tests the pinned versions, and the published manifests keep
-# main's caret ranges so consumers are not advertised a minimum this repo did
-# not test. Dependabot does not read `pnpm.overrides`; when it bumps an
+# highs, es-toolkit, immer, sharp, ejs>jake) are deliberate: seven hold an
+# exact version, and two (`sharp`, `ejs>jake`) hold a caret range instead, so
+# a fresh resolve can still move those two within it. Either way the repo
+# only ever tests whatever version the committed lockfile resolved, and the
+# published manifests keep main's caret ranges so consumers are not
+# advertised a minimum this repo did not test. Dependabot does not read
+# `pnpm.overrides`; when it bumps an
 # overridden package it rewrites the lockfile's `overrides:` block to the new
 # version while package.json keeps the pin, and every CI job then fails with
 # ERR_PNPM_LOCKFILE_CONFIG_MISMATCH under --frozen-lockfile (PR #593). The fix
@@ -50,7 +53,11 @@ trustPolicyExclude:
 # `.github/workflows/resolve-gate.yml` show what a fresh resolve then picks.
 # Two of the nine change resolution today (`sharp`, `ejs>jake`); the other
 # seven are inert against the committed lockfile and bite only at re-resolve
-# time, where they hold each declared range at its floor.
+# time. Five of those seven (react, react-dom, react-is, recharts, highs)
+# hold their declared range at its floor; es-toolkit and immer do not — both
+# sit above the floor of the range recharts declares for them, so dropping
+# either pin moves resolution further than "floor to latest" implies (see
+# their entries below).
 #
 # sharp: ^0.35.0
 #   Build-time image toolchain, reached only through
