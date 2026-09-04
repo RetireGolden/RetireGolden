@@ -1,5 +1,12 @@
 /**
- * Pins the three annual tax-unit identities `simulatePlan` mints.
+ * Pins the three annual tax-unit identities the projection mints for one
+ * year, read back off a real `simulatePlan` run.
+ *
+ * The minter itself lives in `internal/annualTaxUnitIdentityPhase.ts`; this
+ * file deliberately stays at the projection boundary, because what has to
+ * hold is that these strings are what the ledger publishes, not merely what
+ * one module returns. The phase's own delegation seam is guarded separately
+ * by `simulate.annualTaxUnitIdentityPhaseDelegation.test.ts`.
  *
  * **Characterization, not oracle** ([DOCS/testing.md](../../../../DOCS/testing.md)
  * taxonomy): no expected value here comes from statute or a worksheet. What is

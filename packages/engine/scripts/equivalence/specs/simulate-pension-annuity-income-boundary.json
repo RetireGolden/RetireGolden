@@ -123,28 +123,28 @@
       "label": "annual invocation, scalar selection and ordered caller-owned commits",
       "file": "projection/simulate.ts",
       "lines": [
-        2145,
-        2205
+        1970,
+        2030
       ],
       "anchors": [
         {
-          "line": 2145,
+          "line": 1970,
           "text": "const pensionAndAnnuity = annualPensionAndAnnuityIncome({"
         },
         {
-          "line": 2169,
+          "line": 1994,
           "text": "incomes.annuity = pensionAndAnnuity.annuityIncome"
         },
         {
-          "line": 2175,
+          "line": 2000,
           "text": "for (const row of pensionAndAnnuity.rows) {"
         },
         {
-          "line": 2188,
+          "line": 2013,
           "text": "recordAnnualRetirementRuntimeOccurrence(distribution.occurrence)"
         },
         {
-          "line": 2205,
+          "line": 2030,
           "text": "if (row.record !== null) yearSites?.recordAnnuityPayment(row.record)"
         }
       ]
