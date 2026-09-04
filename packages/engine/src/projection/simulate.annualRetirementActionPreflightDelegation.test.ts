@@ -6,6 +6,9 @@
  * one coordinator-owned decision. The annual result must follow that hostile
  * output; a simulator that merely called the helper and rebuilt the decision
  * inline would retain the production result.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -23,64 +26,58 @@ type PreflightMutation =
   | 'dropLinkedAssessmentRequests'
   | 'refuseLinkedGroups'
 
-interface PreflightCall {
-  readonly input: AnnualRetirementActionPreflightInput
-  readonly original: Readonly<AnnualRetirementActionPreflightResult>
-  readonly output: Readonly<AnnualRetirementActionPreflightResult>
-}
+const hostile = vi.hoisted(() => ({ mutation: 'none' as PreflightMutation }))
 
-const seam = vi.hoisted(() => ({
-  mutation: 'none' as PreflightMutation,
-  calls: [] as PreflightCall[],
-}))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualRetirementActionPreflightInput,
+      Readonly<AnnualRetirementActionPreflightResult>
+    >(),
+)
 
-vi.mock('./internal/annualRetirementActionPreflight.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualRetirementActionPreflight.js')
-  >()
-  return {
-    ...original,
-    annualRetirementActionPreflight: (
-      input: AnnualRetirementActionPreflightInput,
-    ): Readonly<AnnualRetirementActionPreflightResult> => {
-      const production = original.annualRetirementActionPreflight(input)
-      const output = (() => {
-        switch (seam.mutation) {
-          case 'dropOrdinaryExecution':
-            return { ...production, ordinaryExecutionActions: Object.freeze([]) }
-          case 'dropQcdExecution':
-            return { ...production, qcdExecutionActions: Object.freeze([]) }
-          case 'dropCollidingQcdFromOrdinary':
-            return {
-              ...production,
-              ordinaryExecutionActions: Object.freeze(
-                production.ordinaryExecutionActions.filter(
-                  (request) => request.kind !== 'qcd',
-                ),
+vi.mock('./internal/annualRetirementActionPreflight.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualRetirementActionPreflight.js')
+    >(),
+    'annualRetirementActionPreflight',
+    (production): Readonly<AnnualRetirementActionPreflightResult> => {
+      switch (hostile.mutation) {
+        case 'dropOrdinaryExecution':
+          return { ...production, ordinaryExecutionActions: Object.freeze([]) }
+        case 'dropQcdExecution':
+          return { ...production, qcdExecutionActions: Object.freeze([]) }
+        case 'dropCollidingQcdFromOrdinary':
+          return {
+            ...production,
+            ordinaryExecutionActions: Object.freeze(
+              production.ordinaryExecutionActions.filter(
+                (request) => request.kind !== 'qcd',
               ),
-            }
-          case 'unblockMixedSchedule':
-            return { ...production, mixedKindScheduleBlocked: false }
-          case 'dropLinkedAssessmentRequests':
-            return {
-              ...production,
-              linkedGroupAssessmentRequests: Object.freeze([]),
-            }
-          case 'refuseLinkedGroups':
-            return {
-              ...production,
-              conversionLinkedWithdrawalGroups:
-                production.observedConversionLinkedWithdrawalGroups,
-            }
-          case 'none':
-            return production
-        }
-      })()
-      seam.calls.push({ input, original: production, output })
-      return output
+            ),
+          }
+        case 'unblockMixedSchedule':
+          return { ...production, mixedKindScheduleBlocked: false }
+        case 'dropLinkedAssessmentRequests':
+          return {
+            ...production,
+            linkedGroupAssessmentRequests: Object.freeze([]),
+          }
+        case 'refuseLinkedGroups':
+          return {
+            ...production,
+            conversionLinkedWithdrawalGroups:
+              production.observedConversionLinkedWithdrawalGroups,
+          }
+        case 'none':
+          return production
+      }
     },
-  }
-})
+  ),
+)
 
 import { asUsdCents, parseRetirementActionRequest } from '../actions/index.js'
 import type { Account, Plan } from '../model/plan.js'
@@ -360,8 +357,8 @@ function linkedGroupPlan(): Plan {
 }
 
 function run(plan: Plan, mutation: PreflightMutation, flatRatePct = 0) {
-  seam.mutation = mutation
-  seam.calls.length = 0
+  hostile.mutation = mutation
+  seam.reset()
   return simulatePlan(plan, {
     startYear: YEAR,
     horizonEndYear: YEAR,
@@ -370,8 +367,8 @@ function run(plan: Plan, mutation: PreflightMutation, flatRatePct = 0) {
 }
 
 beforeEach(() => {
-  seam.mutation = 'none'
-  seam.calls.length = 0
+  hostile.mutation = 'none'
+  seam.reset()
 })
 
 describe('simulatePlan annual retirement-action preflight delegation', () => {
@@ -386,13 +383,13 @@ describe('simulatePlan annual retirement-action preflight delegation', () => {
       call.input.balances.every(Object.isFrozen)
     )).toBe(true)
     expect(seam.calls.some((call) =>
-      call.original.ordinaryExecutionActions.some(
+      call.natural.ordinaryExecutionActions.some(
         (candidate) => candidate.actionId === ORDINARY_ACTION_ID,
       ))).toBe(true)
 
     const delegated = run(ordinaryPlan(), 'dropOrdinaryExecution')
     expect(seam.calls.every(
-      (call) => call.output.ordinaryExecutionActions.length === 0,
+      (call) => call.injected.ordinaryExecutionActions.length === 0,
     )).toBe(true)
     expect(delegated.retirementActionExecution).toBeUndefined()
     expect(delegated.withdrawals.cash).toBe(0)
@@ -406,7 +403,7 @@ describe('simulatePlan annual retirement-action preflight delegation', () => {
 
     const delegated = run(qcdPlan(), 'dropQcdExecution')
     expect(seam.calls.every((call) =>
-      call.output.qcdExecutionActions.length === 0)).toBe(true)
+      call.injected.qcdExecutionActions.length === 0)).toBe(true)
     expect(delegated.qcd).toBe(0)
     expect(delegated.qcdActionPrerequisites).toBeUndefined()
   })
@@ -414,15 +411,15 @@ describe('simulatePlan annual retirement-action preflight delegation', () => {
   it('consumes cross-executor QCD collision routing from the ordinary batch', () => {
     const production = run(qcdPlan(true), 'none')
     expect(seam.calls.some((call) =>
-      call.original.qcdExecutionActions.length === 0 &&
-      call.original.ordinaryExecutionActions.some(
+      call.natural.qcdExecutionActions.length === 0 &&
+      call.natural.ordinaryExecutionActions.some(
         (candidate) => candidate.kind === 'qcd',
       ))).toBe(true)
     expect(production.withdrawals.cash).toBe(0)
 
     const delegated = run(qcdPlan(true), 'dropCollidingQcdFromOrdinary')
     expect(seam.calls.every((call) =>
-      call.output.ordinaryExecutionActions.every(
+      call.injected.ordinaryExecutionActions.every(
         (candidate) => candidate.kind !== 'qcd',
       ))).toBe(true)
     expect(delegated.withdrawals.cash).toBe(100)
@@ -431,13 +428,13 @@ describe('simulatePlan annual retirement-action preflight delegation', () => {
   it('consumes the mixed-kind block before invoking the conversion executor', () => {
     const production = run(mixedSchedulePlan(), 'none')
     expect(seam.calls.some((call) =>
-      call.original.mixedKindScheduleBlocked)).toBe(true)
+      call.natural.mixedKindScheduleBlocked)).toBe(true)
     expect(production.rothConversionActionExecution).toBeUndefined()
 
     expect(() => run(mixedSchedulePlan(), 'unblockMixedSchedule'))
       .toThrow('Duplicate annual retirement-action request')
     expect(seam.calls.every((call) =>
-      !call.output.mixedKindScheduleBlocked)).toBe(true)
+      !call.injected.mixedKindScheduleBlocked)).toBe(true)
   })
 
   it('uses the linked-group request union during settlement', () => {
@@ -447,11 +444,11 @@ describe('simulatePlan annual retirement-action preflight delegation', () => {
       movement: 'bothLegs',
     })
     expect(seam.calls.some((call) =>
-      call.original.linkedGroupAssessmentRequests.length > 0)).toBe(true)
+      call.natural.linkedGroupAssessmentRequests.length > 0)).toBe(true)
 
     const delegated = run(linkedGroupPlan(), 'dropLinkedAssessmentRequests', 22)
     expect(seam.calls.every((call) =>
-      call.output.linkedGroupAssessmentRequests.length === 0)).toBe(true)
+      call.injected.linkedGroupAssessmentRequests.length === 0)).toBe(true)
     expect(delegated.conversionLinkedWithdrawalGroupExecution).not.toMatchObject({
       status: 'executed',
       movement: 'bothLegs',
@@ -465,15 +462,15 @@ describe('simulatePlan annual retirement-action preflight delegation', () => {
       movement: 'bothLegs',
     })
     expect(seam.calls.some((call) =>
-      call.original.observedConversionLinkedWithdrawalGroups.groups.length > 0 &&
-      call.original.conversionLinkedWithdrawalGroups.groups.some(
+      call.natural.observedConversionLinkedWithdrawalGroups.groups.length > 0 &&
+      call.natural.conversionLinkedWithdrawalGroups.groups.some(
         (group) => group.disposition === 'executedAsAtomicGroup',
       ))).toBe(true)
 
     const delegated = run(linkedGroupPlan(), 'refuseLinkedGroups', 22)
     expect(seam.calls.every((call) =>
-      call.output.conversionLinkedWithdrawalGroups ===
-        call.original.observedConversionLinkedWithdrawalGroups)).toBe(true)
+      call.injected.conversionLinkedWithdrawalGroups ===
+        call.natural.observedConversionLinkedWithdrawalGroups)).toBe(true)
     expect(delegated.conversionLinkedWithdrawalGroupExecution).toMatchObject({
       status: 'refused',
       movement: 'none',

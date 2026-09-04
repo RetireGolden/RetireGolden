@@ -7,6 +7,9 @@
  * skipped basis commit, a skipped allocation-track commit, or a skipped HECM
  * signal commit cannot pass merely because the real helper matches the former
  * inline arithmetic.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -15,48 +18,57 @@ import type {
   AnnualPostSolveAccountGrowthResult,
 } from './internal/annualPostSolveAccountGrowth.js'
 
-interface GrowthCall {
-  readonly input: AnnualPostSolveAccountGrowthInput
+/** Live caller-owned row state, snapshotted before the real helper runs. */
+interface GrowthCapture {
   readonly openingBalances: readonly number[]
   readonly openingCostBases: readonly number[]
   readonly openingWeights: readonly (readonly number[] | null)[]
-  readonly returned: AnnualPostSolveAccountGrowthResult
 }
 
 type CallerGrowthState = AnnualPostSolveAccountGrowthInput['states'][number] & {
   readonly costBasis: number
 }
 
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   inject: false,
-  growthCalls: [] as GrowthCall[],
   hecmPriorReturns: [] as number[],
   sentinelWeights: [0, 0, 0, 1] as number[],
 }))
 
-vi.mock('./internal/annualPostSolveAccountGrowth.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/annualPostSolveAccountGrowth.js')>()
-  return {
-    ...original,
-    annualPostSolveAccountGrowth: (input: AnnualPostSolveAccountGrowthInput) => {
-      const originalResult = original.annualPostSolveAccountGrowth(input)
-      const returned: AnnualPostSolveAccountGrowthResult =
-        seam.inject && seam.growthCalls.length === 0
-          ? {
-              rows: originalResult.rows.map((row, balanceIndex) =>
-                balanceIndex === 0
-                  ? {
-                      kind: 'allocated' as const,
-                      marketClosingBalance: 12_345,
-                      driftedWeights: seam.sentinelWeights,
-                      reinvestedYield: 67,
-                    }
-                  : row),
-              priorYearPortfolioReturnPct: -77,
-            }
-          : originalResult
-      seam.growthCalls.push({
-        input,
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualPostSolveAccountGrowthInput,
+      AnnualPostSolveAccountGrowthResult,
+      GrowthCapture
+    >(),
+)
+
+vi.mock('./internal/annualPostSolveAccountGrowth.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualPostSolveAccountGrowth.js')
+    >(),
+    'annualPostSolveAccountGrowth',
+    (natural, { ordinal }): AnnualPostSolveAccountGrowthResult =>
+      hostile.inject && ordinal === 0
+        ? {
+            rows: natural.rows.map((row, balanceIndex) =>
+              balanceIndex === 0
+                ? {
+                    kind: 'allocated' as const,
+                    marketClosingBalance: 12_345,
+                    driftedWeights: hostile.sentinelWeights,
+                    reinvestedYield: 67,
+                  }
+                : row),
+            priorYearPortfolioReturnPct: -77,
+          }
+        : natural,
+    {
+      capture: (input): GrowthCapture => ({
         openingBalances: input.states.map((state) => state.balance),
         // Cost basis is caller-owned and deliberately absent from the helper's
         // input contract. The hostile seam observes the live caller rows only.
@@ -65,12 +77,10 @@ vi.mock('./internal/annualPostSolveAccountGrowth.js', async (importOriginal) => 
         ),
         openingWeights: input.states.map((_state, balanceIndex) =>
           input.allocationTrack.get(String(balanceIndex))?.weights ?? null),
-        returned,
-      })
-      return returned
+      }),
     },
-  }
-})
+  ),
+)
 
 vi.mock('./internal/annualCoordinatedHecm.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./internal/annualCoordinatedHecm.js')>()
@@ -79,12 +89,16 @@ vi.mock('./internal/annualCoordinatedHecm.js', async (importOriginal) => {
     annualCoordinatedHecmEligibility: (
       input: Parameters<typeof original.annualCoordinatedHecmEligibility>[0],
     ) => {
-      seam.hecmPriorReturns.push(input.priorYearPortfolioReturnPct)
+      hostile.hecmPriorReturns.push(input.priorYearPortfolioReturnPct)
       return original.annualCoordinatedHecmEligibility(input)
     },
   }
 })
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+} from './simulate.seamGuard.test-support.js'
 import type { Plan } from '../model/plan.js'
 import {
   singlePersonPlan,
@@ -131,32 +145,34 @@ function quietAllocatedPlan(): Plan {
 
 describe('simulatePlan annual post-solve account-growth delegation', () => {
   beforeEach(() => {
-    seam.inject = false
-    seam.growthCalls.length = 0
-    seam.hecmPriorReturns.length = 0
-    seam.sentinelWeights = [0, 0, 0, 1]
+    hostile.inject = false
+    hostile.hecmPriorReturns.length = 0
+    hostile.sentinelWeights = [0, 0, 0, 1]
+    seam.reset()
   })
 
   it('commits the helper rows, basis, weight identity, and prior-return signal', () => {
-    seam.inject = true
+    hostile.inject = true
     const result = simulatePlan(quietAllocatedPlan(), {
       startYear: START_YEAR,
       horizonEndYear: START_YEAR + 1,
       taxCalculator: zeroTax,
     })
 
-    expect(seam.growthCalls).toHaveLength(2)
-    expect(seam.growthCalls[0]!.returned.rows).toHaveLength(
-      seam.growthCalls[0]!.input.states.length,
+    const growthCalls = expectSeamRan(seam, 2)
+    expect(growthCalls[0]!.injected.rows).toHaveLength(
+      growthCalls[0]!.input.states.length,
     )
     expect(result.years[0]!.balances.growth).toBe(12_345 + 67)
-    expect(seam.growthCalls[1]!.openingBalances).toEqual([12_345 + 67])
-    expect(seam.growthCalls[1]!.openingCostBases).toEqual([
+    expect(growthCalls[1]!.captured.openingBalances).toEqual([12_345 + 67])
+    expect(growthCalls[1]!.captured.openingCostBases).toEqual([
       OPENING_BASIS + 67,
     ])
-    expect(seam.growthCalls[1]!.openingWeights[0]).toBe(
-      seam.sentinelWeights,
+    expectPublishedFromSeam(
+      growthCalls[1]!.captured.openingWeights[0],
+      hostile.sentinelWeights,
+      'the committed drifted weights',
     )
-    expect(seam.hecmPriorReturns.slice(0, 2)).toEqual([0, -77])
+    expect(hostile.hecmPriorReturns.slice(0, 2)).toEqual([0, -77])
   })
 })

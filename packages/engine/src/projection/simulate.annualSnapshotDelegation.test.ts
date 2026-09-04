@@ -6,6 +6,9 @@
  * real helper so it can record the natural snapshot, then returns deliberately
  * different references and scalars. The published year must consume those
  * injected values, proving both the call and the caller-side wiring.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -14,7 +17,8 @@ import type {
   AnnualSnapshotInput,
 } from './internal/annualSnapshot.js'
 
-interface SnapshotPhase {
+/** Live collection state, snapshotted before the real helper reads it. */
+interface SnapshotCapture {
   readonly accountIdsAtCall: readonly string[]
   readonly accountBalancesAtCall: readonly number[]
   readonly unassignedCashAtCall: number
@@ -22,20 +26,20 @@ interface SnapshotPhase {
   readonly debtBalancesAtCall: readonly (readonly [string, number])[]
   readonly hecmStatesAtCall: readonly (readonly [string, { readonly loanBalance: number }])[]
   readonly insuranceCashValuesAtCall: readonly (readonly [string, number])[]
-  readonly natural: AnnualSnapshot
-  readonly injected: AnnualSnapshot
 }
 
-const seam = vi.hoisted(() => ({ phases: [] as SnapshotPhase[] }))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<AnnualSnapshotInput, AnnualSnapshot, SnapshotCapture>(),
+)
 
-vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualSnapshot.js')>()
-  return {
-    ...original,
-    annualSnapshot: (input: AnnualSnapshotInput): AnnualSnapshot => {
-      const natural = original.annualSnapshot(input)
-      const ordinal = seam.phases.length
+vi.mock('./internal/annualSnapshot.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualSnapshot.js')>(),
+    'annualSnapshot',
+    (_natural, { ordinal }): AnnualSnapshot => {
       const scalarSentinels = [
         {
           investableTotal: 1e16,
@@ -66,29 +70,34 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
       // the distinguishing values so the assertions below report a phase-count
       // mismatch instead of the mock hiding it behind an opaque table bound.
       const scalars = scalarSentinels[ordinal % scalarSentinels.length]!
-      const injected: AnnualSnapshot = {
+      return {
         balanceRecord: { [`delegated-snapshot-${ordinal}`]: 70_000 + ordinal },
         ...scalars,
       }
-      seam.phases.push({
+    },
+    {
+      capture: (input): SnapshotCapture => ({
         accountIdsAtCall: input.balances.map((state) => state.account.id),
         accountBalancesAtCall: input.balances.map((state) => state.balance),
         unassignedCashAtCall: input.unassignedCash,
         propertyValuesAtCall: [...input.propertyValues],
         debtBalancesAtCall: [...input.debtBalances],
-        hecmStatesAtCall: [...input.hecmStates].map(([id, line]) => [
-          id,
-          { ...line },
-        ]),
+        hecmStatesAtCall: [...input.hecmStates].map(
+          ([id, line]): readonly [string, { readonly loanBalance: number }] => [
+            id,
+            { ...line },
+          ],
+        ),
         insuranceCashValuesAtCall: [...input.insuranceCashValues],
-        natural,
-        injected,
-      })
-      return injected
+      }),
     },
-  }
-})
+  ),
+)
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import type { Account, InsurancePolicy, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
@@ -189,14 +198,14 @@ function plan(): Plan {
 }
 
 function run() {
-  seam.phases.length = 0
+  seam.reset()
   const value = plan()
   const result = simulatePlan(value, {
     startYear: START_YEAR,
     horizonEndYear: END_YEAR,
     taxCalculator: createFlatTaxCalculator(0),
   })
-  return { result, phases: [...seam.phases] }
+  return { result, phases: [...seam.calls] }
 }
 
 describe('simulatePlan delegates the annual snapshot', () => {
@@ -205,7 +214,7 @@ describe('simulatePlan delegates the annual snapshot', () => {
 
     expect(result.years.map((year) => year.year)).toEqual([2026, 2027, 2028])
     expect(phases.length).toBe(result.years.length)
-    expect(phases.length).toBeGreaterThan(0)
+    expectSeamRanAtLeastOnce(seam)
 
     for (let ordinal = 0; ordinal < phases.length; ordinal++) {
       const phase = phases[ordinal]!
@@ -216,19 +225,22 @@ describe('simulatePlan delegates the annual snapshot', () => {
       const hecmLoanBalance = grown(HECM_LOAN_BALANCE, ordinal)
       const insuranceCashValue = grown(INSURANCE_CASH_VALUE, ordinal)
 
-      expect(phase.accountIdsAtCall).toEqual(['first-cash', 'second-cash'])
-      expect(phase.accountBalancesAtCall).toEqual([
+      expect(phase.captured.accountIdsAtCall).toEqual([
+        'first-cash',
+        'second-cash',
+      ])
+      expect(phase.captured.accountBalancesAtCall).toEqual([
         firstCashBalance,
         67_890,
       ])
-      expect(phase.unassignedCashAtCall).toBe(0)
-      expect(phase.propertyValuesAtCall).toEqual([
+      expect(phase.captured.unassignedCashAtCall).toBe(0)
+      expect(phase.captured.propertyValuesAtCall).toEqual([
         [PROPERTY_ID, propertyValue],
       ])
-      expect(phase.debtBalancesAtCall).toEqual([
+      expect(phase.captured.debtBalancesAtCall).toEqual([
         [DEBT_ID, debtBalance],
       ])
-      expect(phase.hecmStatesAtCall).toEqual([
+      expect(phase.captured.hecmStatesAtCall).toEqual([
         [
           PROPERTY_ID,
           {
@@ -237,7 +249,7 @@ describe('simulatePlan delegates the annual snapshot', () => {
           },
         ],
       ])
-      expect(phase.insuranceCashValuesAtCall).toEqual([
+      expect(phase.captured.insuranceCashValuesAtCall).toEqual([
         [POLICY_ID, insuranceCashValue],
       ])
       expect(phase.natural).toEqual({
@@ -275,7 +287,11 @@ describe('simulatePlan delegates the annual snapshot', () => {
       const output = phase.injected
 
       // The load-bearing identity check: a field-for-field caller rebuild fails.
-      expect(year.balances).toBe(output.balanceRecord)
+      expectPublishedFromSeam(
+        year.balances,
+        output.balanceRecord,
+        'the year balance record',
+      )
       expect(year.investableTotal).toBe(output.investableTotal)
       expect(year.insuranceCashValue).toBe(output.insuranceCashValueTotal)
       expect(year.hecmLoanBalance).toBe(output.hecmLoanTotal)

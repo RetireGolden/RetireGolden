@@ -9,6 +9,9 @@
  * exact stream through positional balances, runtime occurrence/application
  * order, Form 8606 character, tax, spending cash, reported withdrawals, and
  * shortfall. A second mode isolates retry rollback and next-year cache commit.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -18,12 +21,6 @@ import type {
 } from './internal/annualSeppDistributions.js'
 
 type Mode = 'original' | 'sentinelDistribution' | 'cacheOnly'
-
-interface CallRecord {
-  readonly year: number
-  readonly cacheAtEntry: ReadonlyMap<string, number>
-  readonly result: AnnualSeppDistributionsResult
-}
 
 const BIG_TAKE = 80_000_000_000_000
 const SMALL_TAKE = 0.011
@@ -40,21 +37,28 @@ const POSITIONAL_AFTER = [101, 202, 303] as const
 const CACHE_A = 'sepp:cache-a'
 const CACHE_B = 'sepp:cache-b'
 
-const seam = vi.hoisted(() => ({
-  mode: 'original' as Mode,
-  calls: [] as CallRecord[],
-}))
+const hostile = vi.hoisted(() => ({ mode: 'original' as Mode }))
 
-vi.mock('./internal/annualSeppDistributions.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualSeppDistributions.js')
-  >()
-  return {
-    ...original,
-    annualSeppDistributions: (input: AnnualSeppDistributionsInput) => {
-      let result: AnnualSeppDistributionsResult
-      if (seam.mode === 'sentinelDistribution' && input.year === 2026) {
-        result = {
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualSeppDistributionsInput,
+      AnnualSeppDistributionsResult,
+      ReadonlyMap<string, number>
+    >(),
+)
+
+vi.mock('./internal/annualSeppDistributions.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualSeppDistributions.js')
+    >(),
+    'annualSeppDistributions',
+    (natural, { input }): AnnualSeppDistributionsResult => {
+      if (hostile.mode === 'sentinelDistribution' && input.year === 2026) {
+        return {
           total: SENTINEL_TOTAL,
           operations: [
             {
@@ -105,10 +109,12 @@ vi.mock('./internal/annualSeppDistributions.js', async (importOriginal) => {
             },
           ],
         }
-      } else if (seam.mode === 'sentinelDistribution') {
-        result = { total: 0, operations: [] }
-      } else if (seam.mode === 'cacheOnly') {
-        result = input.year === 2026
+      }
+      if (hostile.mode === 'sentinelDistribution') {
+        return { total: 0, operations: [] }
+      }
+      if (hostile.mode === 'cacheOnly') {
+        return input.year === 2026
           ? {
               total: 0,
               operations: [{
@@ -118,18 +124,12 @@ vi.mock('./internal/annualSeppDistributions.js', async (importOriginal) => {
               }],
             }
           : { total: 0, operations: [] }
-      } else {
-        result = original.annualSeppDistributions(input)
       }
-      seam.calls.push({
-        year: input.year,
-        cacheAtEntry: new Map(input.amortizationAmountByAccountId),
-        result,
-      })
-      return result
+      return natural
     },
-  }
-})
+    { capture: (input) => new Map(input.amortizationAmountByAccountId) },
+  ),
+)
 
 import type { Account, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
@@ -195,7 +195,7 @@ function cacheReentryPlan(): Plan {
 const taxInputs: { readonly year: number; readonly ordinaryIncome: number }[] = []
 
 function runSentinel() {
-  seam.calls.length = 0
+  seam.reset()
   taxInputs.length = 0
   return simulatePlan(sentinelPlan(), {
     startYear: 2026,
@@ -211,7 +211,7 @@ function runSentinel() {
 }
 
 function runCacheReentry() {
-  seam.calls.length = 0
+  seam.reset()
   return simulatePlan(cacheReentryPlan(), {
     startYear: 2026,
     horizonEndYear: 2027,
@@ -222,12 +222,12 @@ function runCacheReentry() {
 
 describe('simulatePlan delegates annual SEPP distributions', () => {
   it('consumes the hostile ordered stream across every downstream channel', () => {
-    seam.mode = 'sentinelDistribution'
+    hostile.mode = 'sentinelDistribution'
     const result = runSentinel()
     const year = result.years[0]!
-    const calls = seam.calls.filter((call) => call.year === 2026)
+    const calls = seam.calls.filter((call) => call.input.year === 2026)
     expect(calls.length).toBeGreaterThan(0)
-    expect(calls.every((call) => call.result.total === SENTINEL_TOTAL)).toBe(true)
+    expect(calls.every((call) => call.injected.total === SENTINEL_TOTAL)).toBe(true)
     expect(SENTINEL_TOTAL).not.toBe(REGROUPED_TOTAL)
     expect(year.sepp).toBe(SENTINEL_TOTAL)
 
@@ -353,10 +353,10 @@ describe('simulatePlan delegates annual SEPP distributions', () => {
     expect(year.shortfall).toBe(0)
     expect(year.requiredShortfall).toBe(0)
 
-    const nextYearCalls = seam.calls.filter((call) => call.year === 2027)
+    const nextYearCalls = seam.calls.filter((call) => call.input.year === 2027)
     expect(nextYearCalls.length).toBeGreaterThan(0)
     expect(nextYearCalls.every((call) => (
-      JSON.stringify([...call.cacheAtEntry]) === JSON.stringify([
+      JSON.stringify([...call.captured]) === JSON.stringify([
         [CACHE_A, 111.25],
         [CACHE_B, 222.5],
       ])
@@ -364,20 +364,20 @@ describe('simulatePlan delegates annual SEPP distributions', () => {
   })
 
   it('applies the cache write on every re-entry and commits it into the next year', () => {
-    seam.mode = 'cacheOnly'
+    hostile.mode = 'cacheOnly'
     runCacheReentry()
-    const firstYearCalls = seam.calls.filter((call) => call.year === 2026)
-    const secondYearCalls = seam.calls.filter((call) => call.year === 2027)
+    const firstYearCalls = seam.calls.filter((call) => call.input.year === 2026)
+    const secondYearCalls = seam.calls.filter((call) => call.input.year === 2027)
     expect(firstYearCalls.length).toBeGreaterThan(1)
     expect(secondYearCalls.length).toBeGreaterThan(0)
     // Each attempt starts from the transaction snapshot; the helper's write is
     // applied after entry, so retries do not leak it into their input.
     expect(firstYearCalls.every(
-      (call) => !call.cacheAtEntry.has(ACCOUNT_ID),
+      (call) => !call.captured.has(ACCOUNT_ID),
     )).toBe(true)
     // The committed attempt does persist the exact returned write to year + 1.
     expect(secondYearCalls.every(
-      (call) => call.cacheAtEntry.get(ACCOUNT_ID) === SENTINEL_CACHE,
+      (call) => call.captured.get(ACCOUNT_ID) === SENTINEL_CACHE,
     )).toBe(true)
   })
 })

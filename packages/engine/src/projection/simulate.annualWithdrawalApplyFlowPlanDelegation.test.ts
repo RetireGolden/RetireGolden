@@ -1,55 +1,69 @@
-/** Hostile delegation and counterfactual re-entry guard for apply flows. */
+/**
+ * Hostile delegation and counterfactual re-entry guard for apply flows.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
   AnnualWithdrawalApplyFlowPlanInput,
   AnnualWithdrawalApplyFlowPlanResult,
 } from './internal/annualWithdrawalApplyFlowPlan.js'
+import type { SeamCall } from './simulate.seamGuard.test-support.js'
 
-interface Phase {
-  readonly year: number
-  readonly openingByAccountId: ReadonlyMap<string, number>
-  readonly natural: AnnualWithdrawalApplyFlowPlanResult
-  readonly output: AnnualWithdrawalApplyFlowPlanResult
-}
+/** The year's opening balances by account id, snapshotted before the helper runs. */
+type ApplyFlowOpenings = ReadonlyMap<string, number>
 
-const seam = vi.hoisted(() => ({
+type ApplyFlowCall = SeamCall<
+  AnnualWithdrawalApplyFlowPlanInput,
+  AnnualWithdrawalApplyFlowPlanResult,
+  ApplyFlowOpenings
+>
+
+const hostile = vi.hoisted(() => ({
   mode: 'dynamic' as
     | 'dynamic'
     | 'wrongBalancePosition'
     | 'wrongSourceBalance'
     | 'wrongEvidencePosition'
     | 'missingTaxableSale',
-  phases: [] as Phase[],
   snapshots: [] as {
-    readonly phase: Phase | undefined
+    readonly phase: ApplyFlowCall | undefined
     readonly balances: ReadonlyMap<string, number>
   }[],
 }))
 
-vi.mock('./internal/annualWithdrawalApplyFlowPlan.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualWithdrawalApplyFlowPlan.js')
-  >()
-  return {
-    ...original,
-    annualWithdrawalApplyFlowPlan: (
-      input: AnnualWithdrawalApplyFlowPlanInput,
-    ) => {
-      const natural = original.annualWithdrawalApplyFlowPlan(input)
-      const ordinal = seam.phases.length
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualWithdrawalApplyFlowPlanInput,
+      AnnualWithdrawalApplyFlowPlanResult,
+      ReadonlyMap<string, number>
+    >(),
+)
+
+vi.mock('./internal/annualWithdrawalApplyFlowPlan.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualWithdrawalApplyFlowPlan.js')
+    >(),
+    'annualWithdrawalApplyFlowPlan',
+    (natural, { ordinal }): AnnualWithdrawalApplyFlowPlanResult => {
       const balanceOperations = natural.balanceOperations.map(
         (operation, operationOrdinal) => {
           const taken = 10 + operationOrdinal * 10 + ordinal / 100
           return {
             ...operation,
-            balanceIndex: seam.mode === 'wrongBalancePosition'
+            balanceIndex: hostile.mode === 'wrongBalancePosition'
               ? 0
               : operation.balanceIndex,
-            sourceBalanceBefore: seam.mode === 'wrongSourceBalance'
+            sourceBalanceBefore: hostile.mode === 'wrongSourceBalance'
               ? operation.sourceBalanceBefore + 1
               : operation.sourceBalanceBefore,
-            taxableSaleMissing: seam.mode === 'missingTaxableSale'
+            taxableSaleMissing: hostile.mode === 'missingTaxableSale'
               ? operationOrdinal === 0
               : operation.taxableSaleMissing,
             taken,
@@ -59,25 +73,20 @@ vi.mock('./internal/annualWithdrawalApplyFlowPlan.js', async (importOriginal) =>
       )
       const evidenceWrites = natural.evidenceWrites.map((write) => ({
         ...write,
-        evidenceIndex: seam.mode === 'wrongEvidencePosition'
+        evidenceIndex: hostile.mode === 'wrongEvidencePosition'
           ? write.evidenceIndex + 1
           : write.evidenceIndex,
         voluntaryAmount: 700 + ordinal,
       }))
-      const output = { evidenceWrites, balanceOperations }
-      const phase = {
-        year: input.year,
-        openingByAccountId: new Map(input.balances.map(
-          (state) => [state.account.id, state.balance] as const,
-        )),
-        natural,
-        output,
-      }
-      seam.phases.push(phase)
-      return output
+      return { evidenceWrites, balanceOperations }
     },
-  }
-})
+    {
+      capture: (input) => new Map(input.balances.map(
+        (state) => [state.account.id, state.balance] as const,
+      )),
+    },
+  ),
+)
 
 vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
   const original = await importOriginal<
@@ -86,8 +95,8 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
   return {
     ...original,
     annualSnapshot: (input: Parameters<typeof original.annualSnapshot>[0]) => {
-      seam.snapshots.push({
-        phase: seam.phases.at(-1),
+      hostile.snapshots.push({
+        phase: seam.calls.at(-1),
         balances: new Map(input.balances.map(
           (state) => [state.account.id, state.balance] as const,
         )),
@@ -221,14 +230,14 @@ function crossBoundaryPlan(): Plan {
   return validatePlan(value)
 }
 
-function phasesFor(year: number): readonly Phase[] {
-  return seam.phases.filter((phase) => phase.year === year)
+function phasesFor(year: number): readonly ApplyFlowCall[] {
+  return seam.calls.filter((phase) => phase.input.year === year)
 }
 
-function run(mode: typeof seam.mode) {
-  seam.mode = mode
-  seam.phases.length = 0
-  seam.snapshots.length = 0
+function run(mode: typeof hostile.mode) {
+  hostile.mode = mode
+  seam.reset()
+  hostile.snapshots.length = 0
   const counterfactualReads: unknown[] = []
   const annualCounterfactual: SimulateAnnualCounterfactualRequest = {
     omitActionIds: [],
@@ -257,24 +266,24 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
 
     for (const year of [START_YEAR, START_YEAR + 1]) {
       const phases = phasesFor(year)
-      const firstOpenings = [...phases[0]!.openingByAccountId]
+      const firstOpenings = [...phases[0]!.captured]
       expect(phases.every(
-        (phase) => JSON.stringify([...phase.openingByAccountId]) ===
+        (phase) => JSON.stringify([...phase.captured]) ===
           JSON.stringify(firstOpenings),
       )).toBe(true)
     }
     const final2026 = phasesFor(START_YEAR).at(-1)!
-    const owned2026 = final2026.output.balanceOperations.find(
+    const owned2026 = final2026.injected.balanceOperations.find(
       (operation) => operation.accountId === 'owned',
     )!
     expect(phasesFor(START_YEAR + 1).every(
-      (phase) => phase.openingByAccountId.get('owned') ===
+      (phase) => phase.captured.get('owned') ===
         owned2026.sourceBalanceAfter,
     )).toBe(true)
 
-    expect(seam.snapshots).toHaveLength(seam.phases.length)
-    for (const snapshot of seam.snapshots) {
-      for (const operation of snapshot.phase!.output.balanceOperations) {
+    expect(hostile.snapshots).toHaveLength(seam.calls.length)
+    for (const snapshot of hostile.snapshots) {
+      for (const operation of snapshot.phase!.injected.balanceOperations) {
         expect(snapshot.balances.get(operation.accountId))
           .toBe(operation.sourceBalanceAfter)
       }
@@ -283,7 +292,7 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
     result.years.forEach((year) => {
       const phase = phasesFor(year.year).at(-1)!
       expect(year.inheritedAccounts?.[0]?.voluntaryAmount).toBe(
-        phase.output.evidenceWrites[0]!.voluntaryAmount,
+        phase.injected.evidenceWrites[0]!.voluntaryAmount,
       )
       const runtime = year.retirementRuntimeSource?.runtimeOccurrences ?? []
       const needBased = runtime.filter(
@@ -293,7 +302,7 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
         accountId: occurrence.sourceAccountId,
         amount: occurrence.grossAmountPlanDollars,
       })).sort((left, right) => left.accountId!.localeCompare(right.accountId!)))
-        .toEqual(phase.output.balanceOperations.map((operation) => ({
+        .toEqual(phase.injected.balanceOperations.map((operation) => ({
           accountId: operation.accountId,
           amount: operation.taken,
         })).sort((left, right) => left.accountId.localeCompare(right.accountId)))
@@ -301,7 +310,7 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
         year.retirementRuntimeApplicationSource?.applications.filter(
           (candidate) => candidate.simulatorPhase === 'legacyNeedBasedWithdrawal',
         ) ?? []
-      const owned = phase.output.balanceOperations.find(
+      const owned = phase.injected.balanceOperations.find(
         (operation) => operation.accountId === 'owned',
       )!
       expect(applications).toHaveLength(1)
@@ -331,9 +340,9 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
   })
 
   it('plans from the live post-ordinary and post-conversion state', () => {
-    seam.mode = 'dynamic'
-    seam.phases.length = 0
-    seam.snapshots.length = 0
+    hostile.mode = 'dynamic'
+    seam.reset()
+    hostile.snapshots.length = 0
     const result = simulatePlan(crossBoundaryPlan(), {
       startYear: START_YEAR,
       horizonEndYear: START_YEAR,
@@ -363,7 +372,7 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
     const cashAfterOrdinary = ledgerCentsToPlanDollars(
       executionCash.closingBalance,
     )
-    expect(phases[0]!.openingByAccountId.get('named-cash'))
+    expect(phases[0]!.captured.get('named-cash'))
       .toBe(cashAfterOrdinary)
 
     const applications =
@@ -410,14 +419,14 @@ describe('simulatePlan delegates voluntary withdrawal apply-flow planning', () =
         AGGREGATE_CONVERSION_PLAN_DOLLARS,
     })
 
-    expect(phases[0]!.openingByAccountId.get('owned'))
+    expect(phases[0]!.captured.get('owned'))
       .toBe(conversionDebit.sourceBalanceAfterPlanDollars)
-    expect(phases[0]!.openingByAccountId.get('roth'))
+    expect(phases[0]!.captured.get('roth'))
       .toBe(conversionCredit.destinationBalanceAfterPlanDollars)
-    const cashOperation = phases[0]!.output.balanceOperations.find(
+    const cashOperation = phases[0]!.injected.balanceOperations.find(
       (operation) => operation.accountId === 'named-cash',
     )
-    const ownedOperation = phases[0]!.output.balanceOperations.find(
+    const ownedOperation = phases[0]!.injected.balanceOperations.find(
       (operation) => operation.accountId === 'owned',
     )
     expect(cashOperation?.sourceBalanceBefore).toBe(cashAfterOrdinary)

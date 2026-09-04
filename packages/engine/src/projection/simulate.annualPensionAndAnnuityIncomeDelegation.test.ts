@@ -1,4 +1,9 @@
-/** Hostile delegation guard for the pension/annuity coordinator seam. */
+/**
+ * Hostile delegation guard for the pension/annuity coordinator seam.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -6,8 +11,8 @@ import type {
   AnnualPensionAndAnnuityIncomeResult,
 } from './internal/annualPensionAndAnnuityIncome.js'
 
-const seam = vi.hoisted(() => ({
-  calls: [] as Array<Readonly<{
+const hostile = vi.hoisted(() => ({
+  observations: [] as Array<Readonly<{
     year: number
     observedPriorExclusionIdentity: boolean
     observedPriorContractValue: number | undefined
@@ -15,23 +20,31 @@ const seam = vi.hoisted(() => ({
   exclusionWrite: { ratio: 0.25, remaining: 900 },
 }))
 
-vi.mock('./internal/annualPensionAndAnnuityIncome.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualPensionAndAnnuityIncome.js')
-  >()
-  return {
-    ...original,
-    annualPensionAndAnnuityIncome: (
-      input: AnnualPensionAndAnnuityIncomeInput,
-    ): AnnualPensionAndAnnuityIncomeResult => {
-      // Execute the real helper first so this guard also catches accidental
-      // input mutation before the injected payload is returned.
-      original.annualPensionAndAnnuityIncome(input)
-      seam.calls.push({
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualPensionAndAnnuityIncomeInput,
+      AnnualPensionAndAnnuityIncomeResult
+    >(),
+)
+
+vi.mock('./internal/annualPensionAndAnnuityIncome.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualPensionAndAnnuityIncome.js')
+    >(),
+    'annualPensionAndAnnuityIncome',
+    // The recorder runs the real helper before this injector, so this guard
+    // also catches accidental input mutation before the injected payload is
+    // returned.
+    (_natural, { input }): AnnualPensionAndAnnuityIncomeResult => {
+      hostile.observations.push({
         year: input.year,
         observedPriorExclusionIdentity:
           input.annuityExclusionState.get('ghost-annuity') ===
-            seam.exclusionWrite,
+            hostile.exclusionWrite,
         observedPriorContractValue:
           input.annuityContractValue.get('ghost-annuity'),
       })
@@ -76,7 +89,7 @@ vi.mock('./internal/annualPensionAndAnnuityIncome.js', async (importOriginal) =>
             },
             exclusionStateWrite: {
               accountId: 'ghost-annuity',
-              value: seam.exclusionWrite,
+              value: hostile.exclusionWrite,
             },
             contractDistribution: {
               annuityAccountId: 'ghost-annuity',
@@ -108,9 +121,10 @@ vi.mock('./internal/annualPensionAndAnnuityIncome.js', async (importOriginal) =>
         ],
       }
     },
-  }
-})
+  ),
+)
 
+import { expectSeamRan } from './simulate.seamGuard.test-support.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { cashAccount, singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
 import type { TaxYearInput } from './types.js'
@@ -118,7 +132,8 @@ import { simulatePlan } from './simulate.js'
 
 describe('simulatePlan delegates annual pension and annuity income', () => {
   it('uses returned folds and commits returned rows in order across years', () => {
-    seam.calls.length = 0
+    seam.reset()
+    hostile.observations.length = 0
     const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 61 })
     plan.accounts = [cashAccount('cash', 0)]
     plan.expenses.baseAnnual = 0
@@ -149,7 +164,8 @@ describe('simulatePlan delegates annual pension and annuity income', () => {
       captureAnnualCashFlow: true,
     })
 
-    expect(seam.calls).toEqual([
+    expectSeamRan(seam, 2)
+    expect(hostile.observations).toEqual([
       {
         year: 2026,
         observedPriorExclusionIdentity: false,
