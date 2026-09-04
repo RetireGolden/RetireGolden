@@ -29,6 +29,7 @@ import {
 import type {
   OwnedNonRothIraSubtype,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+import { deriveActionStructuralId } from './structuralId.js'
 
 const ownerPersonId = asPersonId('owner')
 const sourceAccountId = asAccountId('ira-account')
@@ -396,22 +397,25 @@ describe('owned non-Roth IRA annual SEPP integration', () => {
     if (result.status !== 'annualEvidenceResolved') return
     const evidence = result.annualEvidence
     expect(evidence.finalizationEvidenceId).toBe(
-      `owned-non-roth-ira-annual-withdrawal-finalization:${JSON.stringify([
-        evidence.ownerPersonId,
-        evidence.ownerWideNonRothIraPoolId,
-        evidence.taxYear,
-        evidence.characterization.annualBasisEvidence.basisEvidenceId,
-        evidence.characterization.line7AllocationEvidence
-          .allocationEvidenceId,
-        evidence.characterization.line8AllocationEvidence
-          .allocationEvidenceId,
-        evidence.penaltyPrerequisites.coverage
-          .map((item) => item.evidenceId)
-          .sort(),
-        evidence.penaltyPrerequisites.evaluations
-          .map((item) => item.finalEvidenceId)
-          .sort(),
-      ])}`,
+      deriveActionStructuralId(
+        'owned-non-roth-ira-annual-withdrawal-finalization',
+        [
+          evidence.ownerPersonId,
+          evidence.ownerWideNonRothIraPoolId,
+          evidence.taxYear,
+          evidence.characterization.annualBasisEvidence.basisEvidenceId,
+          evidence.characterization.line7AllocationEvidence
+            .allocationEvidenceId,
+          evidence.characterization.line8AllocationEvidence
+            .allocationEvidenceId,
+          evidence.penaltyPrerequisites.coverage
+            .map((item) => item.evidenceId)
+            .sort(),
+          evidence.penaltyPrerequisites.evaluations
+            .map((item) => item.finalEvidenceId)
+            .sort(),
+        ],
+      ),
     )
 
     const omitted = finalizerFixture()
@@ -545,13 +549,49 @@ describe('owned non-Roth IRA annual SEPP integration', () => {
 
     expect(result.status).toBe('annualEvidenceResolved')
     if (result.status !== 'annualEvidenceResolved') return
-    const json = result.annualEvidence.finalizationEvidenceId
-      .slice(result.annualEvidence.finalizationEvidenceId.indexOf(':') + 1)
-    const parts = JSON.parse(json) as unknown[]
-    const routeBindings = parts.at(-1) as string[][]
-    expect(routeBindings[0]?.[3]).toBe('notReconciled')
-    expect(routeBindings[0]?.[4]).toMatch(
+    const evidence = result.annualEvidence
+    const route = evidence.penaltyPrerequisites
+      .iraSeppScheduleReconciliations[0]!
+    const routeResultDigest = deriveActionStructuralId(
+      'owned-ira-sepp-annual-route-result',
+      [route.reconciliation],
+    )
+
+    expect(route.reconciliation.status).toBe('notReconciled')
+    expect(routeResultDigest).toMatch(
       /^owned-ira-sepp-annual-route-result:[0-9a-f]{64}$/,
+    )
+    // The whole finalization ID is rebuilt here, so this pins that the
+    // non-success route contributes exactly its account/election/schedule
+    // triple, its status, and the fixed-width digest of the reconciliation —
+    // never the reconciliation payload itself.
+    expect(evidence.finalizationEvidenceId).toBe(
+      deriveActionStructuralId(
+        'owned-non-roth-ira-annual-withdrawal-finalization',
+        [
+          evidence.ownerPersonId,
+          evidence.ownerWideNonRothIraPoolId,
+          evidence.taxYear,
+          evidence.characterization.annualBasisEvidence.basisEvidenceId,
+          evidence.characterization.line7AllocationEvidence
+            .allocationEvidenceId,
+          evidence.characterization.line8AllocationEvidence
+            .allocationEvidenceId,
+          evidence.penaltyPrerequisites.coverage
+            .map((item) => item.evidenceId)
+            .sort(),
+          evidence.penaltyPrerequisites.evaluations
+            .map((item) => item.finalEvidenceId)
+            .sort(),
+          [[
+            route.sourceAccountId,
+            route.electionId,
+            route.scheduleId,
+            route.reconciliation.status,
+            routeResultDigest,
+          ]],
+        ],
+      ),
     )
   })
 

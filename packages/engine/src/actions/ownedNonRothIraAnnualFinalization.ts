@@ -124,10 +124,6 @@ export type ResolveOwnedNonRothIraAnnualWithdrawalEvidenceResult =
   | OwnedNonRothIraAnnualEvidenceResolvedResult
   | OwnedNonRothIraPenaltyEvidenceMissingResult
 
-function stableId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
-}
-
 function isFinalPenaltyEvaluation(
   evaluation: Readonly<
     EvaluateOwnedNonRothIraPenaltyPrerequisitesResult['evaluations'][number]
@@ -262,7 +258,7 @@ export function resolveOwnedNonRothIraAnnualWithdrawalEvidence(
   const seppRouteBindings = compactSeppRouteBindings(
     penaltyPrerequisites.iraSeppScheduleReconciliations,
   )
-  const finalizationEvidenceId = stableId(
+  const finalizationEvidenceId = deriveActionStructuralId(
     'owned-non-roth-ira-annual-withdrawal-finalization',
     [
       annualBasisEvidence.ownerPersonId,
