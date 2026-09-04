@@ -856,6 +856,65 @@ function rederiveCanonicalCharacterization(
 }
 
 /**
+ * Builds the owner's age-59½ threshold evidence. Lifted verbatim out of
+ * `evaluateOwnedNonRothIraPenaltyPrerequisites`: it reads only the owner
+ * birth-date evidence and the characterized owner, and produces only the four
+ * values the rest of that function goes on to use.
+ */
+function buildOwnedIraAgeThresholdEvidence(
+  ownerEvidence: Readonly<OwnedNonRothIraPenaltyOwnerEvidence>,
+  ownerPersonId: PersonId,
+): Readonly<{
+  birthDate: string
+  age59HalfDate: string
+  ageThresholdEvidenceId: string
+  ageThresholdEvidence: OwnedNonRothIraPenaltyAgeThresholdEvidence
+}> {
+  const birthDate = validateCivilDate(
+    ownerEvidence.birthDate,
+    'IRA owner birth date',
+  )
+  const birthDateEvidenceId = requireNonblankId(
+    ownerEvidence.evidenceId,
+    'IRA owner birth-date evidence ID',
+  )
+  if (
+    ownerEvidence.predicate !==
+      'ownerBirthDateForIraPenaltyAgeThreshold' ||
+    personIdSchema.parse(ownerEvidence.ownerPersonId) !== ownerPersonId
+  ) {
+    throw new RangeError(
+      'IRA owner birth-date evidence must bind the characterized owner',
+    )
+  }
+  const age59HalfDate = addCalendarMonths(birthDate, 714)
+  if (age59HalfDate === null) {
+    throw new RangeError('IRA owner age-59½ threshold is outside civil-date range')
+  }
+  const ageThresholdEvidenceId = deriveActionStructuralId('owned-ira-age-59-half', [
+    ownerPersonId,
+    birthDate,
+    age59HalfDate,
+    birthDateEvidenceId,
+  ])
+  const ageThresholdEvidence: OwnedNonRothIraPenaltyAgeThresholdEvidence = {
+    predicate: 'ownedNonRothIraOwnerAge59HalfThreshold',
+    ownerPersonId,
+    birthDate,
+    age59HalfDate,
+    birthDateEvidenceId,
+    calculation: 'addCalendarMonths714WithMonthEndClamp',
+    evidenceId: ageThresholdEvidenceId,
+  }
+  return {
+    birthDate,
+    age59HalfDate,
+    ageThresholdEvidenceId,
+    ageThresholdEvidence,
+  }
+}
+
+/**
  * Builds the exact early-distribution-penalty prerequisite boundary for
  * finalized owned traditional, SEP, and SIMPLE IRA line-7 character.
  *
@@ -922,42 +981,12 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
     )
   }
 
-  const birthDate = validateCivilDate(
-    input.ownerEvidence.birthDate,
-    'IRA owner birth date',
-  )
-  const birthDateEvidenceId = requireNonblankId(
-    input.ownerEvidence.evidenceId,
-    'IRA owner birth-date evidence ID',
-  )
-  if (
-    input.ownerEvidence.predicate !==
-      'ownerBirthDateForIraPenaltyAgeThreshold' ||
-    personIdSchema.parse(input.ownerEvidence.ownerPersonId) !== ownerPersonId
-  ) {
-    throw new RangeError(
-      'IRA owner birth-date evidence must bind the characterized owner',
-    )
-  }
-  const age59HalfDate = addCalendarMonths(birthDate, 714)
-  if (age59HalfDate === null) {
-    throw new RangeError('IRA owner age-59½ threshold is outside civil-date range')
-  }
-  const ageThresholdEvidenceId = deriveActionStructuralId('owned-ira-age-59-half', [
-    ownerPersonId,
+  const {
     birthDate,
     age59HalfDate,
-    birthDateEvidenceId,
-  ])
-  const ageThresholdEvidence: OwnedNonRothIraPenaltyAgeThresholdEvidence = {
-    predicate: 'ownedNonRothIraOwnerAge59HalfThreshold',
-    ownerPersonId,
-    birthDate,
-    age59HalfDate,
-    birthDateEvidenceId,
-    calculation: 'addCalendarMonths714WithMonthEndClamp',
-    evidenceId: ageThresholdEvidenceId,
-  }
+    ageThresholdEvidenceId,
+    ageThresholdEvidence,
+  } = buildOwnedIraAgeThresholdEvidence(input.ownerEvidence, ownerPersonId)
 
   const withdrawalByKey = new Map<string, OwnedNonRothIraWithdrawalClassification>()
   let allocationGrossTotal = 0n
