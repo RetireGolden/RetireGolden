@@ -7,8 +7,8 @@
  * vocabulary per-item while the user is still in the wizard.
  *
  * **Stability promise:** this module is published as the
- * `@retiregolden/planner-ui/import-provenance` subpath and, unlike the wildcard
- * deep paths, is a supported API: the envelope `kind`/`version` contract, the
+ * `@retiregolden/planner-ui/import-provenance` subpath and, unlike the unpromised
+ * deep subpaths, is a supported API: the envelope `kind`/`version` contract, the
  * exported names, and their signatures only change with a semver-major release
  * of the package. It is deliberately browser-free — no DOM, no `crypto.subtle`
  * — so a Node process or the Pro/Advisor repo can build and read the envelope

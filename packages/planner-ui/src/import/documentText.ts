@@ -17,8 +17,8 @@
  * editing this file has to hold in mind.
  *
  * **Stability promise:** this module is published as the
- * `@retiregolden/planner-ui/document-text` subpath and, unlike the wildcard
- * deep paths, is a supported API: the exported names, their signatures, the
+ * `@retiregolden/planner-ui/document-text` subpath and, unlike the unpromised
+ * deep subpaths, is a supported API: the exported names, their signatures, the
  * `DocumentTextResult` shape, and the `reason` vocabulary only change with a
  * semver-major release of the package. New `reason` values and new summary
  * fields may be added in a minor, so a consumer must treat an unrecognized

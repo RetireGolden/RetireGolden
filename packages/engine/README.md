@@ -138,7 +138,7 @@ supported runtime API.
 | `actions/` | Typed retirement-action boundaries — QCD, Roth conversion, HSA, SEPP, owned and inherited IRA execution — plus their exact-cent money and structural-identity primitives. Ten of these modules are also published on their own subpath — `actions/annualQcdExecutionPrerequisite`, `actions/civilDate`, `actions/contract`, `actions/execution`, `actions/identity`, `actions/money`, `actions/planBalanceAdapter`, `actions/reasons`, `actions/retirementActionCandidateIdentityAllocator`, `actions/retirementActionManualReview`. Every other module is reachable through the `actions` barrel only; no other `actions/<name>` path resolves |
 | `ladder/` | TIPS ladder math, Social Security bridge, FedInvest CSV parsing |
 | `allocation/`, `spending/` | Asset classes, spending shape presets |
-| `testing/` | Plan fixtures, money matchers, and deterministic tax doubles for consumer test suites |
+| `testing/` | Plan fixtures, decision-candidate fixtures, money matchers, and deterministic tax doubles for consumer test suites |
 | `version` | `ENGINE_VERSION` — this package's version, generated from `package.json` |
 
 ## License

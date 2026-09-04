@@ -8,9 +8,9 @@
  * `@retiregolden/planner-ui/index.css` for the design tokens and base styles.
  *
  * The full published surface is package.json `exports`: it additionally
- * exposes wildcard `./*.ts` subpaths for the upstream repo's own harnesses
- * (cases, owl-parity, docs tests). Those deep paths carry no stability
- * promise — see README "Published API surface".
+ * names 23 unpromised deep subpaths, one by one, for the upstream repo's own
+ * harnesses and for RetireGolden-Pro and RetireGolden-MCP. Those deep paths
+ * carry no stability promise — see README "Published API surface".
  */
 export { App as PlannerApp, type PlannerAppProps } from './App.tsx'
 export type { ReportBranding } from './report/reportHtml'

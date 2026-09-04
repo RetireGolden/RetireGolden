@@ -6,8 +6,8 @@
  * two envelopes.
  *
  * **Stability promise:** this module is published as the
- * `@retiregolden/planner-ui/plan-format` subpath and, unlike the wildcard
- * deep paths, is a supported API: the envelope `kind`/`backupVersion`
+ * `@retiregolden/planner-ui/plan-format` subpath and, unlike the unpromised
+ * deep subpaths, is a supported API: the envelope `kind`/`backupVersion`
  * contract, the exported names, and their signatures only change with a
  * semver-major release of the package. It is deliberately browser-free
  * (no IndexedDB, no DOM) so hosts can run it anywhere — e.g. an Electron

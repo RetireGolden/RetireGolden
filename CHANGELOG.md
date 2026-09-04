@@ -92,10 +92,10 @@ has — rather than the runtime contract a consumer needs on the landing page.
   the difference between a path that exists and a path that merely matches.
   `scripts/pack-smoke.mjs` had called it a hazard in a comment since 0.5.0.
 - **The 23 deep subpaths are now named one at a time.** They are the twelve
-  RetireGolden-Pro imports, the one RetireGolden-MCP imports, the ten `app/`
-  in this repository imports, and `data/planStoreContract`, which the 0.4.4
-  entry below documents as reaching Pro's desktop library store through the
-  wildcard:
+  RetireGolden-Pro imports — including `data/planStoreContract`, which the
+  0.4.4 entry below documents as reaching Pro's desktop library store through
+  the wildcard — the one RetireGolden-MCP import, and the ten `app/` imports
+  in this repository:
 
   ```
   ./data/localStore                        ./planner/examples/buildContext
