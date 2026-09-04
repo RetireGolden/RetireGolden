@@ -10,11 +10,18 @@
  *
  * Extracted from `simulatePlan`'s year loop as a move: the expressions, their
  * order, and the `null` answers below are the caller's, unchanged.
+ *
+ * The one thing here that is not a move is the memo on the three identifiers.
+ * It is module state, so this file is not stateless, but it is not a decision
+ * either: a hit returns the same three strings a miss would have derived,
+ * because its key names every input the derivation reads. See
+ * `taxUnitIdentityMemo`.
  */
 import {
   stateForYear,
   stateResidencySegmentsForYear,
   type Household,
+  type StateResidencySegment,
 } from '../../model/plan.js'
 import { asPersonId, type ActionId, type RetirementActionRequest } from
   '../../actions/index.js'
@@ -62,6 +69,105 @@ export interface AnnualTaxUnitIdentityPhaseResult {
   readonly annualLiabilityNonGroupTaxInputs:
     readonly Readonly<AnnualLiabilityRunTaxInput>[]
   readonly annualLinkedGroupOmissionIds: readonly ActionId[]
+}
+
+/** The three identifiers a year's filing unit is named by, and nothing else. */
+interface AnnualTaxUnitIdentifiers {
+  readonly taxUnitId: string
+  readonly taxUnitEvidenceId: string
+  readonly stateFilingStatusId: string
+}
+
+/**
+ * How many year-identities the memo below holds, and the longest key it will
+ * hold one under.
+ *
+ * The memo is a pure one — a hit returns the identifiers a miss would have
+ * derived — so these two numbers change nothing but memory and speed. They
+ * exist because the engine runs inside a long-lived worker, where an
+ * unbounded map keyed by plan-shaped strings would grow for the life of the
+ * process. The entry cap bounds how many keys are held and the key cap bounds
+ * how large each one is; together they hold the memo under a few megabytes in
+ * the worst case, and under a few kilobytes for the realistic case of one
+ * plan's two dozen years. A key over the cap is derived and not retained.
+ */
+const TAX_UNIT_MEMO_MAX_ENTRIES = 4096
+const TAX_UNIT_MEMO_MAX_KEY_LENGTH = 1024
+
+/**
+ * The year-identity memo, keyed by every fact the three identifiers are
+ * derived from.
+ *
+ * The identifiers are a function of exactly four things: the tax year, the
+ * resolved filing status, the sorted member set, and the year's state-filing
+ * inputs. None of them varies with anything the caller does after the year
+ * opens, and none of them varies from one Monte Carlo path to the next — a
+ * run walks the same plan thousands of times over the same two dozen years,
+ * so it was re-deriving the same handful of identities once per path per
+ * year. On `montecarlo/riskBasedGuardrails.test.ts` that was 460,000
+ * derivations over 49 distinct payloads.
+ *
+ * The memo is module-level rather than run-level because `simulatePlan` is
+ * called once per path with no context threaded between the calls, so the
+ * repetition it removes is exactly the repetition that crosses those calls.
+ * It is safe there because the key names every input the derivation reads:
+ * two calls with the same key had the same year, status, members and state
+ * facts, and would have minted the same three strings.
+ */
+const taxUnitIdentityMemo = new Map<string, AnnualTaxUnitIdentifiers>()
+
+/** A number `deriveActionStructuralId` would accept and `String` names once. */
+function isCanonicalNumber(value: unknown): value is number {
+  return typeof value === 'number' &&
+    Number.isFinite(value) &&
+    !Object.is(value, -0)
+}
+
+/**
+ * Names this year's identity inputs exactly, or answers null when they are
+ * not the plain data the memo can name.
+ *
+ * `JSON.stringify` is injective over what this returns — finite numbers that
+ * are not `-0`, strings, and fixed-shape arrays and records — but it is lossy
+ * over what it refuses here: `undefined`, a function and a symbol all become
+ * `null` inside an array, and `-0` becomes `0`, so two inputs that the
+ * derivation tells apart would share a key. Those inputs are unreachable
+ * through a schema-valid Plan and reach this phase only from a malformed
+ * direct `simulatePlan` call, which is the same case the caller's catch below
+ * fails closed on; refusing to key them keeps the memo out of that path
+ * rather than answering it from a colliding entry.
+ *
+ * The two-own-keys check on each segment is the same refusal in advance: if
+ * `StateResidencySegment` ever grows a third field, the memo turns itself off
+ * here rather than keying on a subset of what the derivation reads.
+ */
+function taxUnitMemoKey(
+  year: number,
+  filingStatusForYear: string,
+  members: readonly string[],
+  stateOfYear: string,
+  segments: readonly StateResidencySegment[],
+): string | null {
+  if (!isCanonicalNumber(year)) return null
+  if (typeof stateOfYear !== 'string') return null
+  for (const member of members) {
+    if (typeof member !== 'string') return null
+  }
+  const segmentKeys: (readonly [string, number])[] = []
+  for (const segment of segments) {
+    if (Object.keys(segment).length !== 2) return null
+    if (typeof segment.state !== 'string') return null
+    if (!isCanonicalNumber(segment.months)) return null
+    segmentKeys.push([segment.state, segment.months])
+  }
+  const key = JSON.stringify([
+    year,
+    filingStatusForYear,
+    members,
+    stateOfYear,
+    segmentKeys,
+  ])
+  return key.length > TAX_UNIT_MEMO_MAX_KEY_LENGTH ? null : key
 }
 
 export function annualTaxUnitIdentityPhase(
@@ -117,12 +223,27 @@ export function annualTaxUnitIdentityPhase(
       ReturnType<typeof asPersonId>,
       ...ReturnType<typeof asPersonId>[],
     ]
+    const stateOfYear = stateForYear(household, year)
+    const stateResidencySegments = stateResidencySegmentsForYear(household, year)
     const annualStateFilingInputs = [
-      stateForYear(household, year),
-      stateResidencySegmentsForYear(household, year),
+      stateOfYear,
+      stateResidencySegments,
     ] as const
+    const memoKey = taxUnitMemoKey(
+      year,
+      filingStatusForYear,
+      members,
+      stateOfYear,
+      stateResidencySegments,
+    )
+    const memoized = memoKey === null
+      ? undefined
+      : taxUnitIdentityMemo.get(memoKey)
+    if (memoized !== undefined) {
+      return { ...memoized, federalFilingStatus, members }
+    }
     try {
-      return {
+      const identifiers: AnnualTaxUnitIdentifiers = {
         taxUnitId: deriveActionStructuralId('projection-tax-unit', [
           year,
           filingStatusForYear,
@@ -140,9 +261,17 @@ export function annualTaxUnitIdentityPhase(
           members,
           annualStateFilingInputs,
         ]),
-        federalFilingStatus,
-        members,
       }
+      if (memoKey !== null) {
+        // Clear rather than evict one entry: the working set is one plan's
+        // couple of dozen years, so a full clear costs one rebuild of that
+        // set and keeps recency bookkeeping off the hot path.
+        if (taxUnitIdentityMemo.size >= TAX_UNIT_MEMO_MAX_ENTRIES) {
+          taxUnitIdentityMemo.clear()
+        }
+        taxUnitIdentityMemo.set(memoKey, identifiers)
+      }
+      return { ...identifiers, federalFilingStatus, members }
     } catch {
       // Same fail-closed omission as the nonblank-identity catch above: a
       // malformed direct simulatePlan call can hand a year, filing status or
