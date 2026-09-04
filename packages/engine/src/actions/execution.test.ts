@@ -1211,7 +1211,8 @@ describe('ordinary-withdrawal execution', () => {
     ])
     expect(evidence.readiness === 'actionable' ? evidence.penaltyCoverage : []).toEqual([
       {
-        coverageEvidenceId: 'cash-penalty-coverage:["one-cent","allocation"]',
+        coverageEvidenceId: 'cash-penalty-coverage:6b604ae40975807b6233' +
+          '12d52bb5715a9b4f544fe16f2a2de826653437db68d6',
         actionId: 'one-cent',
         allocationId: 'allocation',
         sourceAccountId: 'cash',
@@ -1861,5 +1862,80 @@ describeRule('irc-83-a-equity-compensation-execution-character', {
 
     expect(character.amount).toBe(produced)
     expect(character.amount).not.toBe(accepted)
+  })
+
+  it('mints its four evidence IDs with the hardened structural minter', () => {
+    const equity = run(
+      planWith(equityComp('equity')),
+      [withdrawal({
+        actionId: 'final-equity',
+        sequence: 1,
+        allocations: [allocation('equity-allocation', 'equity', 75)],
+      })],
+      balances([['equity', 100]]),
+    )
+    const equityEvidence = equity.evidence[0]!
+    if (equityEvidence.readiness !== 'actionable') {
+      throw new Error('expected actionable equity execution')
+    }
+    const accepted = equityEvidence.acceptedSourceEligibility[0]
+    if (accepted?.sourceClass !== 'equityCompensation') {
+      throw new Error('expected equity-compensation eligibility')
+    }
+
+    expect(accepted.availabilityEvidence.vestingEvidenceId).toBe(
+      'equity-compensation-vesting:0bd5d5ce62e8196ea84ce998a2e4610a' +
+        'cc6d73fe3d2103b5c045ba489b972a85',
+    )
+    expect(accepted.characterEvidence.characterEvidenceId).toBe(
+      'equity-compensation-character:f816dd96bad720faef35e5ff041bef24' +
+        '07eba041c9298788dcedf9932dbf0135',
+    )
+
+    const depletionRequests = [
+      withdrawal({
+        actionId: 'deplete-taxable',
+        sequence: 1,
+        allocations: [allocation('deplete-allocation', 'taxable', 100)],
+      }),
+      withdrawal({
+        actionId: 'mixed-after-depletion',
+        sequence: 2,
+        allocations: [
+          allocation('cash-allocation', 'cash', 50),
+          allocation('taxable-zero-allocation', 'taxable', 50),
+        ],
+      }),
+    ]
+    const depleted = run(
+      planWith(cash('cash'), taxable('taxable')),
+      depletionRequests,
+      balances([['cash', 50], ['taxable', 100]]),
+      aliveEvidence(depletionRequests),
+      [taxableSnapshot('taxable', 40)],
+    )
+    const second = depleted.evidence[1]
+    if (second?.readiness !== 'actionable') {
+      throw new Error('expected mixed partial action')
+    }
+    const zeroArm = second.acceptedSourceEligibility.find(
+      (item) => item.allocationId === 'taxable-zero-allocation',
+    )
+    const cashArm = second.penaltyCoverage.find(
+      (item) => item.allocationId === 'cash-allocation',
+    )
+
+    expect(
+      zeroArm?.sourceClass === 'taxable'
+        ? zeroArm.basisEvidence.basisEvidenceId
+        : undefined,
+    ).toBe(
+      'taxable-basis-zero:e07b0612394a9ab8be0eee979a0beb2c' +
+        '9907e91edc2bca325db590a775b3d18c',
+    )
+    expect(cashArm?.coverageEvidenceId).toBe(
+      'cash-penalty-coverage:ef11650009513afc4aae3f5e87df2fde' +
+        'b20c158e460991b7ee5b02887903699d',
+    )
   })
 })
