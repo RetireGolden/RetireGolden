@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { noTraditionalPlan } from '@retiregolden/engine/decisions/decisionFixtures'
+import { noTraditionalPlan } from '@retiregolden/engine/testing/decisionFixtures'
 import { runSpendingSolveRequest } from './optimize/runSpendingSolve'
 import { runSpendingSolve, type SpendingSolveRequest } from './spendingSolve'
 

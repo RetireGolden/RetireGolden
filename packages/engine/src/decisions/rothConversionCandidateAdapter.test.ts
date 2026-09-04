@@ -18,7 +18,7 @@ import {
   singlePersonPlan,
   traditionalAccount,
 } from '../testing/planFixtures.js'
-import { noTraditionalPlan, simOptions } from './decisionFixtures.js'
+import { noTraditionalPlan, simOptions } from '../testing/decisionFixtures.js'
 import {
   createDecisionContext,
   planForCandidate,

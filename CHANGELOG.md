@@ -140,6 +140,38 @@ has — rather than the runtime contract a consumer needs on the landing page.
   assertions through the barrel for a representative subset of the 29, plus a
   new loop asserting every pruned subpath fails with
   `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+- **One subpath added: `./testing/decisionFixtures`.** `decisionFixtures.ts`
+  moved from `src/decisions/` to `src/testing/`, beside `planFixtures.ts` and
+  `flatTax.ts`. Its own header called it "test-only — not exported from the
+  module index, so it never reaches the app bundle", which was true of the
+  barrel and false of the tarball: the build excludes only `*.test.ts` and
+  `*.test-support.ts`, so it always shipped — as
+  `dist/decisions/decisionFixtures.js` — pulling `parsePlan`,
+  `createFederalTaxCalculator` and `simulate` into its graph. Publishing it
+  is the right answer rather than hiding it — planner-ui's suite already
+  imports these fixture plans across the package boundary, and a consumer
+  writing decision-engine tests needs the same ones — so the directory now
+  says what the packaging did. The old
+  `./decisions/decisionFixtures` path is gone; there is no shim, because the
+  only importers are test suites in this monorepo and neither RetireGolden-Pro
+  nor RetireGolden-MCP imports it. Its coverage attestation moved with it, from
+  `attestations/decisions.ts` to `attestations/testing.ts`, unchanged in
+  substance.
+- **`testIds` became `makeTestIds(scope)` in the same file.** A single
+  module-level `let counter = 0` behind a shared `testIds()` meant a fixture's
+  account and income ids depended on how many other fixtures had been built in
+  that module instance first — so the same builder produced different ids on
+  its second call, and adding a fixture call above another silently renumbered
+  the one below it. Nothing pinned an id, so nothing was wrong; it was a trap
+  waiting for the first test that did. Each builder now opens its own sequence,
+  scoped by name (`dec-tradHeavy-1`), which also keeps `mixedTraditionalPlan`
+  — which composes `inheritedOnlyPlan` and adds an account — from minting an id
+  the composed plan already used. `decisions/assetLocationInvariance.test.ts`
+  was the one importer of the shared counter and now opens its own with
+  `makeTestIds('assetLocationInvariance')`; the two accounts it actually pins
+  were already file-local literals. Ledger output is unaffected: the
+  differential equivalence dump over the `full` corpus (150 members, 600
+  entries) is byte-identical to the branch base.
 - **The planner-ui range moves in the same commit, and it has to** — the same
   `linkWorkspacePackages` reasoning as the 0.2.0 entry below:
   `@retiregolden/planner-ui` now declares `^0.3.0`. Its own version is not

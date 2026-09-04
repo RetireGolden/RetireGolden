@@ -23,7 +23,7 @@ import {
   singlePersonPlan,
   traditionalAccount,
 } from '../testing/planFixtures.js'
-import { simOptions } from './decisionFixtures.js'
+import { simOptions } from '../testing/decisionFixtures.js'
 import {
   createDecisionContext,
   evaluateCandidate,

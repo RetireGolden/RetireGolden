@@ -17,7 +17,7 @@ import { spendingHeadroom } from '@retiregolden/engine/insights/detectors/spendi
 import { assetLocationGenerator, probabilityBandSpendingGuardrailGenerator } from '@retiregolden/engine/decisions/generators'
 import { createDecisionContext, evaluateCandidate } from '@retiregolden/engine/decisions/evaluateCandidate'
 import type { DecisionContext } from '@retiregolden/engine/decisions/types'
-import { assetLocationPlan, noTraditionalPlan, simOptions } from '@retiregolden/engine/decisions/decisionFixtures'
+import { assetLocationPlan, noTraditionalPlan, simOptions } from '@retiregolden/engine/testing/decisionFixtures'
 import { runSpendingSolveRequest } from '../optimize/runSpendingSolve'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { DetectorContext, InsightCard } from '@retiregolden/engine/insights/types'

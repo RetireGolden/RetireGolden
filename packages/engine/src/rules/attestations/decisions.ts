@@ -10,7 +10,6 @@ import type { CoverageAttestation } from '../coverageAttestations.js'
 
 export const decisionsAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
   'decisions/annuitization.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'decisions/decisionFixtures.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-29', note: 'fixture builder with no non-test importer; the 73 is a comment on a date of birth, not an operative threshold - same footing as testing/planFixtures.ts' }),
   'decisions/evaluateCandidate.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/generators.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'QLAC 85 ceiling registered via treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday; SS_GRID_CLAIM_AGES now registered under usc-42-402-worker-claim-window-62-to-70; the bracket-target list is a search-space choice, not a rule claim' }),
   'decisions/index.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

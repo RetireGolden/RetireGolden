@@ -30,7 +30,7 @@ import {
   survivorPlan,
   taxableBridgePlan,
   tradHeavyPlan,
-} from '../decisions/decisionFixtures.js'
+} from '../testing/decisionFixtures.js'
 import {
   couplePlan,
   ownedNonRothIraAnnualFilingSourceRecord,

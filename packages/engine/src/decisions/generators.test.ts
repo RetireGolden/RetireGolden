@@ -12,7 +12,7 @@ import {
   socialSecurityClaimGridGenerator,
   withdrawalOrderGenerator,
 } from './generators.js'
-import { assetLocationPlan, noTraditionalPlan, simOptions } from './decisionFixtures.js'
+import { assetLocationPlan, noTraditionalPlan, simOptions } from '../testing/decisionFixtures.js'
 
 describe('simpleRothConversionGenerator ACA evidence gate', () => {
   it('emits the ACA-cliff candidate only when a baseline year is actionable', () => {

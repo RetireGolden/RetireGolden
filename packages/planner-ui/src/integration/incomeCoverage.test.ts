@@ -20,7 +20,7 @@ import {
   simOptions,
   ssTaxabilityPlan,
   taxableBridgePlan,
-} from '@retiregolden/engine/decisions/decisionFixtures'
+} from '@retiregolden/engine/testing/decisionFixtures'
 import { createDecisionContext, evaluateCandidate } from '@retiregolden/engine/decisions/evaluateCandidate'
 import {
   simpleRothConversionGenerator,

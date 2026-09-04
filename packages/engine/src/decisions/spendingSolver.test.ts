@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { simOptions, noTraditionalPlan } from './decisionFixtures.js'
+import { simOptions, noTraditionalPlan } from '../testing/decisionFixtures.js'
 import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js'
 import { makeMaximizeSustainableSpending } from './objectives.js'
 import { solveMaxSustainableSpending, type SustainableSpendingOptions } from './spendingSolver.js'

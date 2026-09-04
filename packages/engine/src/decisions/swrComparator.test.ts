@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { simOptions, noTraditionalPlan } from './decisionFixtures.js'
+import { simOptions, noTraditionalPlan } from '../testing/decisionFixtures.js'
 import { compareSwrRules, SWR_DEFAULT_CAPE, SWR_RULES } from './swrComparator.js'
 import { startingInvestableOf } from '../montecarlo/riskBasedGuardrails.js'
 

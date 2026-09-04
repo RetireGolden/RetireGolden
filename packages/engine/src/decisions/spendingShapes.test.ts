@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { simOptions, noTraditionalPlan } from './decisionFixtures.js'
+import { simOptions, noTraditionalPlan } from '../testing/decisionFixtures.js'
 import { createDecisionContext } from './evaluateCandidate.js'
 import { solveMaxSustainableSpending } from './spendingSolver.js'
 import { spendingShapePhases } from '../spending/shapePresets.js'

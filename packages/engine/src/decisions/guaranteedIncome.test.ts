@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { simOptions, survivorPlan } from './decisionFixtures.js'
+import { simOptions, survivorPlan } from '../testing/decisionFixtures.js'
 import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js'
 import { annuityPurchaseGenerator } from './generators.js'
 import { makeProtectSurvivorLiquidity, objectivePolicyForPlan, protectSurvivorLiquidity } from './objectives.js'
