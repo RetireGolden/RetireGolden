@@ -94,6 +94,12 @@ interface AnnualTaxUnitIdentifiers {
 const TAX_UNIT_MEMO_MAX_ENTRIES = 4096
 const TAX_UNIT_MEMO_MAX_KEY_LENGTH = 1024
 
+/** @internal The two bounds above, so a test can assert against them. */
+export const TAX_UNIT_MEMO_BOUNDS = Object.freeze({
+  maxEntries: TAX_UNIT_MEMO_MAX_ENTRIES,
+  maxKeyLength: TAX_UNIT_MEMO_MAX_KEY_LENGTH,
+})
+
 /**
  * The year-identity memo, keyed by every fact the three identifiers are
  * derived from.
@@ -115,6 +121,20 @@ const TAX_UNIT_MEMO_MAX_KEY_LENGTH = 1024
  * facts, and would have minted the same three strings.
  */
 const taxUnitIdentityMemo = new Map<string, AnnualTaxUnitIdentifiers>()
+
+/** @internal How many year-identities the memo is holding right now. */
+export function taxUnitIdentityMemoSize(): number {
+  return taxUnitIdentityMemo.size
+}
+
+/**
+ * @internal Empties the memo, so a test can derive the same identifiers both
+ * cold and warm and compare. Callers get the same identifiers either way, so
+ * nothing outside a test has a reason to call this.
+ */
+export function clearTaxUnitIdentityMemo(): void {
+  taxUnitIdentityMemo.clear()
+}
 
 /** A number `deriveActionStructuralId` would accept and `String` names once. */
 function isCanonicalNumber(value: unknown): value is number {
@@ -141,7 +161,8 @@ function isCanonicalNumber(value: unknown): value is number {
  * `StateResidencySegment` ever grows a third field, the memo turns itself off
  * here rather than keying on a subset of what the derivation reads.
  */
-function taxUnitMemoKey(
+/** @internal Exported so a test can drive the refusal branches directly. */
+export function taxUnitMemoKey(
   year: number,
   filingStatusForYear: string,
   members: readonly string[],
