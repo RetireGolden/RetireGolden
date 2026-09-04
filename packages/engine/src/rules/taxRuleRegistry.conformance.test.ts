@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRefusal } from './describeRefusal.js'
 import { describeRule } from './describeRule.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
@@ -77,11 +78,21 @@ const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'd
 // launder coverage for a rule whose actual fixture had been deleted.
 const CONFORMANCE_SOURCE = 'taxRuleRegistry.conformance.test.ts'
 const claimedRuleIds = new Map<string, string[]>()
+// `describeRefusal` is scanned separately rather than folded into the regex
+// above. The two helpers make different claims - a discriminating computed
+// value against a typed refusal - and merging them would let a refusal fixture
+// satisfy the settled/unsettled/approximated coverage tests, which is the one
+// substitution neither classification can afford.
+const claimedRefusalRuleIds = new Map<string, string[]>()
 for (const [path, source] of Object.entries(testSources)) {
   if (path.endsWith(CONFORMANCE_SOURCE)) continue
   for (const match of source.matchAll(/describeRule\(\s*'([^']+)'/gu)) {
     const ruleId = match[1]!
     claimedRuleIds.set(ruleId, [...(claimedRuleIds.get(ruleId) ?? []), path])
+  }
+  for (const match of source.matchAll(/describeRefusal\(\s*'([^']+)'/gu)) {
+    const ruleId = match[1]!
+    claimedRefusalRuleIds.set(ruleId, [...(claimedRefusalRuleIds.get(ruleId) ?? []), path])
   }
 }
 
@@ -91,6 +102,102 @@ for (const [path, source] of Object.entries(testSources)) {
  * admits and the set of names the manifest can anchor are one implementation.
  * The synthetic probes below therefore guard both consumers.
  */
+/**
+ * `outOfScope` rules that do not yet have a refusal fixture.
+ *
+ * A shrinking allowlist, not a permanent exemption. `describeRefusal` and the
+ * coverage test below landed together with three fixtures, against 73 records
+ * that claim the engine fails closed; authoring the rest is a program, not a
+ * commit, and a coverage test that failed on all 70 from the first day would
+ * have been deleted rather than worked off.
+ *
+ * The test asserts EQUALITY against this list rather than containment, so it
+ * ratchets in both directions: authoring a fixture without deleting its id
+ * fails, and deleting an id without authoring a fixture fails. A record
+ * reclassified out of `outOfScope` has to leave here too.
+ *
+ * Not every entry can take a fixture as written. The classification covers two
+ * shapes (see `TaxRuleClassification`): a rule the engine fails closed on, and
+ * a rule whose triggering fact the input model cannot express at all, so no
+ * accepted input ever reaches it. The second kind has no refusal to drive, and
+ * `wa-rcw-82-87-capital-gains-excise` says so in its own statement - the state
+ * tax path emits zero and continues, with no refusal naming the missing levy.
+ * Working the list will therefore mean reclassifying some of these rather than
+ * fixturing them, which is itself the point of looking at all 70.
+ */
+const REFUSAL_FIXTURE_BACKLOG: readonly string[] = [
+    'al-form40-cost-recovery-not-modeled',
+    'al-form40-railroad-retirement-not-modeled',
+    'cfr-20-404-1584-blind-sga-monthly-amount',
+    'cfr-20-404-1592b-expedited-reinstatement',
+    'cfr-20-404-640-application-withdrawal-repayment',
+    'cfr-20-418-1205-1230-irmaa-life-change-redetermination',
+    'cfr-31-363-52-savings-bond-annual-purchase-limit',
+    'irc-135-education-savings-bond-interest-exclusion',
+    'irc-1400z-2-qof-deferral-and-ten-year-basis-election',
+    'irc-162-l-1-self-employed-health-insurance-not-modeled',
+    'irc-170-b-1-C-capital-gain-property-ceiling-not-modeled',
+    'irc-171-tips-bond-premium-amortization',
+    'irc-199A-a-qualified-business-income-deduction-not-modeled',
+    'irc-2010-c-3-basic-exclusion-amount-not-modeled',
+    'irc-2010-c-5-dsue-portability-election-not-modeled',
+    'irc-213-d-10-eligible-ltc-premium-caps-2026',
+    'irc-223-b-7-medicare-part-a-retroactive-entitlement',
+    'irc-223-f-4-B-hsa-death-exception',
+    'irc-2503-b-annual-gift-exclusion-not-modeled',
+    'irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule',
+    'irc-401-k-11-simple-401-k-elective-deferral-limit',
+    'irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled',
+    'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion',
+    'irc-402-g-2-excess-elective-deferral-correction',
+    'irc-402-g-7-403b-15-year-catch-up',
+    'irc-402A-c-4-E-in-plan-roth-transfer-not-modeled',
+    'irc-402A-e-1-A-plesa-optional-designated-roth-subaccount',
+    'irc-402A-e-3-A-plesa-participant-contribution-cap',
+    'irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment',
+    'irc-404-a-3-a-employer-deduction-limit',
+    'irc-408-d-8-A-named-qcd-limit-after-the-pack-year',
+    'irc-408-d-8-F-i-split-interest-direct-payment',
+    'irc-408-d-8-beneficiary-ira-source',
+    'irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election',
+    'irc-411-a-2-vesting-schedule-maximums',
+    'irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion',
+    'irc-454-savings-bond-interest-deferral',
+    'irc-457-b-3-final-three-year-catch-up',
+    'irc-4966-d-donor-advised-fund-vehicle-not-modeled',
+    'irc-529-c-3-E-529-to-roth-rollover-not-modeled',
+    'irc-6433-a-1-savers-match-qualified-retirement-savings-contributions',
+    'irc-6433-f-6-savers-match-early-distribution-recovery-tax',
+    'irc-664-charitable-remainder-trust-payout-and-character-mechanics-not-modeled',
+    'irc-72-t-1-qcd-not-early-distribution-exception',
+    'irc-72-t-1-qualified-retirement-plan-scope',
+    'irc-72-t-10-public-safety-early-age',
+    'irc-72-t-2-J-plesa-withdrawal-early-distribution-exception',
+    'irc-72-t-4-sepp-modification-recapture',
+    'irc-7520-and-2522-split-interest-valuation-not-modeled',
+    'irs-notice-2014-54-employer-plan-after-tax-rollover-allocation',
+    'notice-2022-6-3-02-e-modification-trigger-detection',
+    'notice-2022-6-3-03-a-complete-depletion',
+    'notice-2022-6-3-03-b-one-time-method-change',
+    'pl-118-273-sec-2-3-wep-gpo-repeal',
+    'rev-rul-2008-5-ira-wash-sale-permanent-loss-disallowance',
+    'treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled',
+    'treas-reg-1-1275-7-f-3-tips-acquisition-premium',
+    'treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline',
+    'treas-reg-54-4974-1-c-five-year-deadline-rmd',
+    'usc-42-1395p-enrollment-periods',
+    'usc-42-1395r-b-part-b-late-enrollment-penalty',
+    'usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing',
+    'usc-42-402-d-2-child-survivor-benefit',
+    'usc-42-402-d-2-ssdi-child-auxiliary',
+    'usc-42-402-e-1-a-current-survivor-remarriage-before-60',
+    'usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period',
+    'usc-42-402-i-lump-sum-death-payment',
+    'usc-42-402-r-survivor-deemed-filing-exemption',
+    'usc-42-426-b-disability-trial-work-medicare-continuation',
+    'wa-rcw-82-87-capital-gains-excise',
+]
+
 const declaredSymbolCache = new Map<string, ReadonlyMap<string, DeclaredSymbol>>()
 
 function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string, DeclaredSymbol> {
@@ -865,6 +972,47 @@ describe('tax rule registry conformance', () => {
     expect(uncovered).toEqual([])
   })
 
+  it('covers every outOfScope rule with a refusal fixture', () => {
+    // The classification with no coverage obligation at all until now, and the
+    // half of the registry that says "we will not answer this". An outOfScope
+    // record claims the engine fails closed with a typed refusal; nothing
+    // checked that the refusal existed, still existed, or still had the shape
+    // the record describes. That is the same rot `produced` was invented to
+    // stop on the approximated records, in the direction that reads as the most
+    // responsible: "we refuse this" keeps sounding careful long after the
+    // refusal was replaced by a number, or deleted.
+    //
+    // Equality against the backlog, not containment, so the list can only
+    // shrink deliberately: see REFUSAL_FIXTURE_BACKLOG.
+    const uncovered = taxRuleIds.filter((ruleId) =>
+      TAX_RULE_REGISTRY[ruleId].classification === 'outOfScope' && !claimedRefusalRuleIds.has(ruleId))
+    expect([...uncovered].sort()).toEqual([...REFUSAL_FIXTURE_BACKLOG].sort())
+  })
+
+  it('keeps the refusal backlog to real, still-outOfScope rules', () => {
+    // A backlog entry that is not a registry key, or no longer outOfScope, is
+    // an allowlist that has stopped describing anything - the failure mode of
+    // every hand-kept exemption list. Both are caught here rather than showing
+    // up as a confusing diff in the equality assertion above.
+    const stale = REFUSAL_FIXTURE_BACKLOG.filter(
+      (ruleId) =>
+        !(ruleId in TAX_RULE_REGISTRY) ||
+        TAX_RULE_REGISTRY[ruleId as TaxRuleId].classification !== 'outOfScope',
+    )
+    expect(stale).toEqual([])
+    expect(new Set(REFUSAL_FIXTURE_BACKLOG).size).toBe(REFUSAL_FIXTURE_BACKLOG.length)
+  })
+
+  it('never lets a refusal fixture stand in for a computed-value fixture', () => {
+    // describeRefusal only accepts an outOfScope id, so this can only break by
+    // someone widening the describeRule scan to swallow both call shapes.
+    for (const ruleId of claimedRefusalRuleIds.keys()) {
+      expect(ruleId in TAX_RULE_REGISTRY, ruleId).toBe(true)
+      expect(TAX_RULE_REGISTRY[ruleId as TaxRuleId].classification, ruleId).toBe('outOfScope')
+      expect(claimedRuleIds.has(ruleId), ruleId).toBe(false)
+    }
+  })
+
   it('never counts its own guard calls as coverage', () => {
     // The guard tests below call describeRule with a real rule ID and with an
     // unregistered one. Counting either would be wrong: the first would launder
@@ -876,7 +1024,7 @@ describe('tax rule registry conformance', () => {
     // not something the scan should depend on, hence the explicit skip.
     expect(Object.keys(testSources).some((path) => path.endsWith(CONFORMANCE_SOURCE)))
       .toBe(false)
-    for (const [, paths] of claimedRuleIds) {
+    for (const [, paths] of [...claimedRuleIds, ...claimedRefusalRuleIds]) {
       expect(paths.every((path) => !path.endsWith(CONFORMANCE_SOURCE))).toBe(true)
     }
   })
@@ -1524,5 +1672,55 @@ describe('describeRule guards', () => {
       accepted: 'statute',
       produced: 'rejected',
     } as never, noop)).toThrow(/reclassify it as approximated/u)
+  })
+})
+
+describe('describeRefusal guards', () => {
+  // A refusal fixture is only worth its line count if the harness refuses the
+  // ways it could be written to prove nothing. These assert the refusals rather
+  // than trusting the helper.
+  const noop = (): void => {}
+  const spec = {
+    entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    outOfScopeInput: 'a QCD whose source account is a Roth IRA',
+    refusal: "reason code 'qcd-roth-source-unsupported'",
+  }
+
+  it('refuses to cover an unknown rule', () => {
+    expect(() => describeRefusal('not-a-registered-rule' as TaxRuleId, spec, noop))
+      .toThrow(/Unknown tax rule/u)
+  })
+
+  it('refuses a rule the engine computes an answer for', () => {
+    // The substitution that would matter most: a settled or approximated record
+    // has a figure to get wrong, and a fixture pinning some refusal path near it
+    // would report coverage while leaving the figure unwatched.
+    expect(() => describeRefusal('irc-170-b-1-I-floor-ordering' as TaxRuleId, spec, noop))
+      .toThrow(/cover its computed value with describeRule instead/u)
+    expect(() => describeRefusal('irc-213-a-medical-expense-deduction' as TaxRuleId, spec, noop))
+      .toThrow(/cover its computed value with describeRule instead/u)
+  })
+
+  it('refuses an entry point the record does not claim', () => {
+    // What keeps the fixture and the published record pointing at the same
+    // module. A fixture free to name any symbol would keep passing after the
+    // refusal moved, and the transparency page would keep naming a function
+    // nothing drives.
+    expect(() => describeRefusal('irc-408-d-8-roth-ira-source' as TaxRuleId, {
+      ...spec,
+      entryPoint: 'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    }, noop)).toThrow(/does not name .* in implementedByFunctions/u)
+  })
+
+  it('refuses a blank entry point, input, or refusal', () => {
+    expect(() => describeRefusal('irc-408-d-8-roth-ira-source' as TaxRuleId, {
+      ...spec, entryPoint: '   ',
+    }, noop)).toThrow(/nonblank entryPoint/u)
+    expect(() => describeRefusal('irc-408-d-8-roth-ira-source' as TaxRuleId, {
+      ...spec, outOfScopeInput: '',
+    }, noop)).toThrow(/nonblank outOfScopeInput/u)
+    expect(() => describeRefusal('irc-408-d-8-roth-ira-source' as TaxRuleId, {
+      ...spec, refusal: ' ',
+    }, noop)).toThrow(/nonblank refusal/u)
   })
 })

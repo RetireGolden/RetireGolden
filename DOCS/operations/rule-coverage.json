@@ -476,10 +476,10 @@
     },
     {
       "directory": "rules",
-      "files": 46,
+      "files": 47,
       "byStatus": {
         "registered": 20,
-        "rule-free": 26
+        "rule-free": 27
       }
     },
     {

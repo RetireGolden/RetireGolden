@@ -84,6 +84,43 @@ gap covers. Each fixture still asserts against the real exported engine entry po
 reimplementation, and still fails the moment the gap it names is closed — see `describeRule.ts` for the
 `produced`/`accepted` contract these fixtures fulfill.
 
+### Covering a rule the engine refuses to answer
+
+`describeRule` refuses an `outOfScope` rule id outright, because that classification is a claim that the
+engine produces no figure at all, so there is no computed value for candidate readings to disagree about.
+That left 73 of the registry's 416 records with no coverage obligation of any kind: the half that says
+"we will not answer this", unwatched. An `outOfScope` record asserts the engine fails closed with a typed
+refusal, and nothing checked that the refusal existed, still existed, or still had the shape the record
+describes. It is the same rot the `produced` field was invented to stop on the `approximated` records,
+running in the flattering direction, because "we refuse this" keeps reading as careful long after the
+refusal was quietly replaced by a number.
+
+[`packages/engine/src/rules/describeRefusal.ts`](../packages/engine/src/rules/describeRefusal.ts) is the
+sibling helper for those records. It accepts only an `outOfScope` id, and its spec asks for the three
+things such a record asserts:
+
+| Field | What it names |
+|---|---|
+| `entryPoint` | The refusal site, as one of the record's own `implementedByFunctions` entries. A symbol the record does not claim is rejected, so the fixture and the published record cannot drift apart. |
+| `outOfScopeInput` | What the caller asked for that is out of scope, in one clause. |
+| `refusal` | What comes back instead: the reason code, the issue kind, or the typed refusal record. |
+
+The suite body carries the assertion, and it must drive a real exported engine entry point rather than
+restate the refusal string. `entryPoint` may name a module-private symbol, because that is what the
+registry records; the suite reaches it through whatever public function calls it. Refusal fixtures are
+co-located like every other suite, beside the module whose refusal they assert.
+
+`taxRuleRegistry.conformance.test.ts` then requires a refusal fixture for every `outOfScope` rule, gated
+by `REFUSAL_FIXTURE_BACKLOG`. That allowlist is asserted by equality, not containment, so it ratchets in
+both directions: authoring a fixture without deleting its id fails, and deleting an id without authoring
+a fixture fails. Working it off will mean reclassifying some entries rather than fixturing them, because
+`outOfScope` covers two shapes and only one of them has a refusal to drive. Where the triggering fact
+cannot be expressed in the input model at all, no accepted input reaches the rule and there is nothing to
+call; `wa-rcw-82-87-capital-gains-excise` says exactly that in its own statement.
+
+The two scans are kept separate on purpose. A `describeRefusal` call never counts toward the settled,
+unsettled, or approximated coverage tests, and a `describeRule` call never counts toward this one.
+
 Shared helpers are intentionally thin: [`packages/engine/src/testing/money.ts`](../packages/engine/src/testing/money.ts)
 (money/percent assertions with explicit tolerances) and
 [`packages/engine/src/testing/planFixtures.ts`](../packages/engine/src/testing/planFixtures.ts) (minimal

@@ -32,6 +32,7 @@ export const rulesAttestations: Readonly<Record<string, CoverageAttestation>> = 
   'rules/attestations/topLevel.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-03', note: 'registry/coverage tooling; one slice of the coverage attestation data, split out of coverageAttestations.ts; enforced by coverageAttestations.conformance.test.ts' }),
   'rules/coverageAttestations.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'registry/coverage tooling' }),
   'rules/coverageReport.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'registry/coverage tooling' }),
+  'rules/describeRefusal.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-03', note: 'registry/coverage tooling' }),
   'rules/describeRule.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'registry/coverage tooling' }),
   'rules/index.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'registry/coverage tooling' }),
   'rules/records/annuities.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'one slice of the record store, split out of taxRuleRegistry.ts; enforced by taxRuleRegistry.conformance.test.ts' }),

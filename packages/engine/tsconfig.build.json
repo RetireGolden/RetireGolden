@@ -19,12 +19,13 @@
      (rules-coverage.mjs, via rule-tooling-shared.mjs) only, so it stays out
      of dist like the tests do.
 
-     The three rules/ modules after it are excluded for the same reason, and
+     The four rules/ modules after it are excluded for the same reason, and
      none is reachable through the exports map: `./rules` publishes only the
      taxRuleRegistry barrel, and there is no `./rules/*` wildcard.
-     - describeRule.ts imports `vitest`, so a consumer who did reach it would
-       fault on a bare framework import in a package the README promises is
-       framework-free. Every importer is a `*.test.ts`.
+     - describeRule.ts and its outOfScope sibling describeRefusal.ts import
+       `vitest`, so a consumer who did reach either would fault on a bare
+       framework import in a package the README promises is framework-free.
+       Every importer is a `*.test.ts`.
      - coverageAttestations.ts and its per-directory shards under
        src/rules/attestations/ (formerly one ~116 KB file, now composed from
        the shards the same way taxRuleRegistry.ts composes records/*.ts) and
@@ -35,6 +36,7 @@
     "src/**/*.test.ts",
     "src/**/*.test-support.ts",
     "src/rules/symbolLines.ts",
+    "src/rules/describeRefusal.ts",
     "src/rules/describeRule.ts",
     "src/rules/coverageAttestations.ts",
     "src/rules/attestations/**",
