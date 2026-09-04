@@ -170,8 +170,11 @@ backup restore do not use this gate.
 Vitest unit tests co-located as `*.test.ts(x)` — exhaustive on engine edges (bracket boundaries, IRMAA
 cliffs, RMD cohorts, FRA cohorts), plus property-style checks (ledger conservation, monotonicity) and an
 app-shell smoke test. Owl / PolicyEngine / Open Social Security serve as **offline, dev-time oracles**, not
-runtime dependencies. CI runs lint + tests + a type-checked build on every push/PR, plus Semgrep SAST and
-ZAP DAST (see [operations/](operations/)).
+runtime dependencies. CI runs lint + tests + a type-checked build for authorized same-repository PR
+previews and every push to `main`; Semgrep runs on pushes to `main` and PRs targeting `main`, while ZAP DAST
+runs only after an authorized PR preview deploy. Applying `run-ci` does not trigger Azure CI: its trusted
+broker (or a maintainer during manual recovery) reruns the existing exact-head workflow after the label is present
+(see [operations/](operations/)).
 
 ## Deployment
 

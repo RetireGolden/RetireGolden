@@ -3,10 +3,11 @@
 How RetireGolden's automated application-security scanning works and how it plugs into the
 GitHub Actions / Azure Static Web Apps pipeline described in [ci-cd-and-deploy.md](ci-cd-and-deploy.md).
 
-Two complementary, fully open-source scanners run on every pull request to `main`:
+Two complementary, fully open-source scanners cover the pipeline:
 
 - **Semgrep — SAST** (Static Application Security Testing): analyzes the **source code** without running it.
-- **OWASP ZAP — DAST** (Dynamic Application Security Testing): scans the **running app** at its deployed PR preview URL.
+- **OWASP ZAP — DAST** (Dynamic Application Security Testing): scans the **running app** at an authorized
+  same-repository PR preview URL.
 
 Both **report every finding** but **gate (block) the merge only on high-severity issues**, so low/medium
 noise never breaks the pipeline.
@@ -19,7 +20,7 @@ noise never breaks the pipeline.
 |---|---|---|
 | Workflow | [`.github/workflows/semgrep.yml`](../../.github/workflows/semgrep.yml) | [`.github/workflows/zap.yml`](../../.github/workflows/zap.yml) (reusable) |
 | What it inspects | Source code (static) | The deployed app (dynamic, black-box) |
-| When it runs | `push` + `pull_request` to `main` | After the PR **preview deploy**, via the deploy workflow |
+| When it runs | Every `push` and `pull_request` to `main` | Only an authorized same-repository PR preview, after deploy; never production pushes |
 | Target | The repo checkout | The PR preview/staging URL (read from CI/CD, see below) |
 | Ruleset / scan | `p/default` (OSS, local) | Passive **baseline** scan (non-intrusive) |
 | Reports everything to | `semgrep-sarif` artifact + GitHub **code scanning** (Security tab) | `zap-baseline-report` artifact (HTML/MD/JSON) + job log |
@@ -39,7 +40,7 @@ They catch different classes of problems and are strongest together:
 - **DAST (ZAP)** drives the live, deployed app and observes real responses — missing security headers,
   cookie flags, information disclosure, XSS reflected at runtime. It sees behavior but not source.
 
-Running both on each PR gives coverage from both directions.
+Running both on each authorized same-repository PR gives coverage from both directions.
 
 ---
 
@@ -79,9 +80,9 @@ Running both on each PR gives coverage from both directions.
 **Workflow:** [`.github/workflows/zap.yml`](../../.github/workflows/zap.yml) — a **reusable** workflow
 (`workflow_call`), also runnable manually (`workflow_dispatch`).
 
-- **How it's invoked:** the Azure deploy workflow calls it from a PR-only `dast` job *after* the preview
-  deploy completes (see §4). It can also be run on demand from **Actions → OWASP ZAP DAST → Run workflow**
-  against any URL.
+- **How it's invoked:** the Azure deploy workflow calls it from a PR-only `dast` job *after* an authorized
+  same-repository preview deploy completes (see §4). It can also be run on demand from **Actions → OWASP ZAP
+  DAST → Run workflow** against any URL.
 - **Target — read from CI/CD, never hardcoded:** the `dast` job passes
   `target_url: ${{ needs.deploy.outputs.preview_url }}`, which is wired to the Azure deploy step's
   **`static_web_app_url`** output. Azure creates a fresh per-PR preview environment (e.g.
@@ -113,23 +114,29 @@ Running both on each PR gives coverage from both directions.
 
 The base pipeline is the Azure Static Web Apps workflow
 ([`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml)):
-`lint` + `test` → `build` → `deploy`. The security scanners attach like this:
+`authorize` releases `lint`, three coverage shards (aggregated as required check `test`), `e2e`, and
+`build` in parallel; `deploy` is the all-gates barrier. The security scanners attach like this:
 
-- **Semgrep** is an **independent workflow** that runs in parallel on every push/PR — it needs no
-  deployment.
-- **ZAP** is wired **into** the deploy workflow as the `dast` job, which `needs: [deploy]` and consumes the
+- **Semgrep** is an **independent workflow** that runs in parallel on pushes to `main` and PRs targeting `main` —
+  it needs no deployment.
+- **ZAP** is wired **into** the deploy workflow as the `dast` job, which `needs: [authorize, deploy]` and consumes the
   preview URL. It is **PR-only** (it does not run on push-to-`main`/production) and runs **after** deploy, so
   it can never affect or roll back the deployment.
 
 ```mermaid
 flowchart TD
     PR([Pull request → main]) --> SEM[Semgrep SAST<br/>semgrep.yml]
-    PR --> LINT[lint]
-    PR --> TEST[test]
-    LINT --> BUILD[build]
-    TEST --> BUILD
-    BUILD --> DEPLOY[deploy → PR preview env]
-    DEPLOY -- static_web_app_url --> DAST[ZAP DAST baseline<br/>zap.yml]
+    PR --> AUTH[authorize]
+    AUTH --> LINT[lint]
+    AUTH --> SHARDS[three coverage shards]
+    AUTH --> E2E[e2e]
+    AUTH --> BUILD[build]
+    SHARDS --> TEST[aggregate test]
+    LINT --> DEPLOY[deploy → PR preview env]
+    TEST --> DEPLOY
+    E2E --> DEPLOY
+    BUILD --> DEPLOY
+    DEPLOY --> DAST[ZAP DAST baseline<br/>zap.yml]
 
     SEM --> SGATE{ERROR-severity<br/>finding?}
     DAST --> ZGATE{High-risk<br/>alert?}
@@ -139,7 +146,8 @@ flowchart TD
     ZGATE -- no --> OK
 ```
 
-`lint`, `test`, `build`, and `deploy` are jobs in the Azure workflow; Semgrep is its own workflow.
+`authorize`, `lint`, the three coverage shards, `test`, `e2e`, `build`, `deploy`, and `dast` are jobs in the
+Azure workflow; Semgrep is its own workflow.
 
 ---
 
@@ -147,9 +155,10 @@ flowchart TD
 
 A red check only blocks a merge if it is a **required status check**. After the
 OpenRouter cutover, the repo's **"Main Guard"** ruleset (applies to the default
-branch) requires all three contexts:
+branch) requires all four contexts:
 
 - `Scan (p/default)` (Semgrep job)
+- `authorize` (Azure authorization gate)
 - `ZAP DAST / ZAP Baseline` (the `dast` caller job / reusable ZAP job)
 - `review / openrouter-first-pass-gate` (independent OpenRouter full-PR review)
 
@@ -157,15 +166,17 @@ Configuration: `strict` policy is **off** (PRs don't need to be rebased before m
 low), enforcement is **active**, and the existing PR-review requirement and admin bypass are preserved.
 
 Net effect: a PR is blocked when Semgrep finds an **ERROR** issue, ZAP finds a
-**High-risk** alert, or OpenRouter has not published a usable full-PR first-pass
-review. Low/medium/informational security findings are surfaced but never block.
+**High-risk** alert, OpenRouter has not published a usable full-PR first-pass
+review, or an explicitly requested CI path fails live authorization. Low/medium/informational
+security findings are surfaced but never block.
 
 > [!NOTE]
-> **Label gate.** On PRs, **Semgrep always runs** (cheap scan, real required-check result on every push),
-> but **ZAP** — like the rest of the deploy pipeline — runs only while the PR carries the **`run-ci`
-> label**; see "Label-gated PR CI" in [ci-cd-and-deploy.md](ci-cd-and-deploy.md). Without the label the
-> ZAP check reports **skipped** (via a no-op invocation of `zap.yml`), which *satisfies* the required
-> check, so apply `run-ci` and let the scan finish before merging.
+> **Authorization gate.** For pushes to `main` and PRs targeting `main`, **Semgrep always runs** (cheap scan,
+> real required-check result), while ZAP runs only after live exact-head `run-ci` + trusted-clean-review
+> authorization and a successful preview deploy. Unauthorized runs still call `zap.yml` with an empty URL so the nested check
+> reports **skipped** instead of waiting as Expected. For manual recovery or a same-repository Dependabot PR,
+> apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not start CI. See
+> [Label-gated PR CI](ci-cd-and-deploy.md#label-gated-pr-ci).
 
 > [!WARNING]
 > **Renaming coupling.** The required checks are keyed to **job/display names**. If you rename the Semgrep

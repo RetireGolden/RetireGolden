@@ -158,14 +158,18 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   when in doubt; the live ruleset wins over this text. Which jobs the label
   gates, and which checks are path-triggered, come from the workflow files,
   not the ruleset.
-- `run-ci` is required here. The `lint`, `test`, `e2e`, `build`, and ZAP
-  (`ZAP DAST / ZAP Baseline`) jobs run only with the label and are required
-  checks on `main`. GitHub counts a skipped required check as satisfied,
+- `run-ci` is required here. `authorize` is the required live gate; `lint`,
+  `test`, `e2e`, `build`, and ZAP (`ZAP DAST / ZAP Baseline`) run only after
+  it authorizes the label-gated path and are required checks on `main`. GitHub
+  counts a skipped required check as satisfied,
   which is why the shared rule demands that the gated jobs actually ran:
   an unlabeled ZAP skip is not acceptable evidence here even though the
   ruleset would let it through. Semgrep (`Scan (p/default)`), `CLA`, and
   the first-pass review gate (`review / openrouter-first-pass-gate`) run
-  without the label. The resolve gate is path-triggered (workspace
+  without the label. The broker normally adds `run-ci` after an exact-head
+  clean review and reruns the existing exact-head Azure workflow. For manual
+  recovery and same-repository Dependabot PRs, apply `run-ci`, then rerun that
+  Azure workflow; the label alone does not start CI. The resolve gate is path-triggered (workspace
   manifest, lockfile, or any `package.json`) and is expected only on PRs
   that touch those files.
 - `main` also requires every review thread resolved and a post-push approval

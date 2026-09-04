@@ -5,37 +5,107 @@ name: Azure Static Web Apps CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, labeled, closed]
-    branches: [ main ]
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
 
-# A new push to the same PR cancels the still-running pipeline for the
-# previous commit. Pushes to main are never cancelled, and neither does a
-# `labeled` event for anything other than `run-ci` — its jobs all skip
-# (see the gate below), so it must not kill a live pipeline.
+# Every newer pull-request run cancels stale work. The broker applies `run-ci`
+# and then reruns the existing exact-head placeholder; applying a label alone
+# intentionally does not start another Azure workflow run.
 concurrency:
   group: swa-ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'run-ci') }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Least privilege for every job that checks out PR code and runs pnpm install
-# and the build (third-party lifecycle scripts run there). `deploy` widens to
-# `pull-requests: write` for its own preview-URL comment; `dast` and
-# `close_pull_request` need nothing beyond the Azure token.
 permissions:
   contents: read
 
 jobs:
-  # --- Code Quality Jobs ---
-  # On PRs the full pipeline is gated behind the `run-ci` label so review-bot
-  # rounds don't burn Actions minutes: apply the label once the PR is ready
-  # for CI and it runs immediately (labeled event) and on every later push.
-  # The `action != 'labeled' || label.name == 'run-ci'` clause keeps *other*
-  # label additions from re-running the pipeline on an already-labeled PR.
-  # Skipped required checks report as "skipped", which satisfies the Main
-  # Guard ruleset — apply `run-ci` before merging so real results gate main.
+  # This job does not check out code.  A rerun retains the original event
+  # payload, so it reads the live PR and trusted review ledger from the API.
+  authorize:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    outputs:
+      authorized: ${{ steps.authorization.outputs.authorized }}
+    steps:
+      - id: authorization
+        name: Authorize live exact-head CI
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const repository = context.payload.repository
+            const defaultBranch = repository.default_branch
+            const helperPin = 'a003ccfffe4c6772a0849c52af63b47085fd1044'
+            const importHelper = async (content) => {
+              if (typeof content !== 'string') throw new Error('trusted CI helper has invalid content')
+              const helper = await import(`data:text/javascript;base64,${content.replace(/\s/g, '')}`)
+              if (typeof helper.authorizeExactHeadPullRequest !== 'function') {
+                throw new Error('trusted CI helper is missing authorization export')
+              }
+              return helper
+            }
+            const loadHelper = async () => {
+              let helperFile
+              try {
+                helperFile = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: '.github/scripts/ci-acceleration.mjs',
+                  ref: defaultBranch,
+                })
+              } catch (error) {
+                // The immutable blob is only an inaugural bootstrap fallback:
+                // default-branch helper load failures otherwise fail closed.
+                if (error?.status !== 404) throw error
+                const blob = await github.rest.git.getBlob({ owner, repo, file_sha: helperPin })
+                return importHelper(blob.data?.content)
+              }
+              if (Array.isArray(helperFile.data) || helperFile.data?.type !== 'file') {
+                throw new Error('trusted CI helper response is not a file')
+              }
+              return importHelper(helperFile.data.content)
+            }
+            const eventPr = context.payload.pull_request
+            const requested = context.eventName === 'pull_request' && (
+              context.runAttempt > 1 ||
+              eventPr?.labels?.some((label) => label.name === 'run-ci')
+            )
+            try {
+              if (context.eventName === 'push') {
+                core.setOutput('authorized', 'true')
+                core.info('authorized: push to main')
+                return
+              }
+              const helper = await loadHelper()
+              const result = await helper.authorizeExactHeadPullRequest(github, core, {
+                owner,
+                repo,
+                repository,
+                defaultBranch,
+                eventPr: context.payload.pull_request,
+                runAttempt: context.runAttempt,
+              })
+              core.setOutput('authorized', result.authorized ? 'true' : 'false')
+              core.info(`${result.authorized ? 'authorized' : 'not authorized'}: ${result.reason}`)
+              if (result.failJob) core.setFailed(result.reason)
+            } catch (error) {
+              core.setOutput('authorized', 'false')
+              const message = error instanceof Error ? error.message : String(error)
+              if (requested) core.setFailed(message)
+              else core.info(`not authorized: ${message}`)
+            }
+
   lint:
-    if: github.event_name == 'push' || (github.event.action != 'closed' && (github.event.action != 'labeled' || github.event.label.name == 'run-ci') && contains(github.event.pull_request.labels.*.name, 'run-ci'))
+    if: needs.authorize.outputs.authorized == 'true'
+    needs: [authorize]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,19 +115,67 @@ jobs:
       - name: Lint (packages + app)
         run: pnpm lint
 
-  test:
-    if: github.event_name == 'push' || (github.event.action != 'closed' && (github.event.action != 'labeled' || github.event.label.name == 'run-ci') && contains(github.event.pull_request.labels.*.name, 'run-ci'))
+  test_engine:
+    name: test engine
+    if: needs.authorize.outputs.authorized == 'true'
+    needs: [authorize]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-toolchain
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Test (packages + app, with coverage thresholds)
-        run: pnpm test:coverage
+      - name: Engine coverage thresholds
+        run: pnpm --filter @retiregolden/engine test:coverage
+
+  test_planner_ui:
+    name: test planner-ui
+    if: needs.authorize.outputs.authorized == 'true'
+    needs: [authorize]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-toolchain
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Planner UI coverage thresholds
+        run: pnpm --filter @retiregolden/planner-ui test:coverage
+
+  test_web:
+    name: test web
+    if: needs.authorize.outputs.authorized == 'true'
+    needs: [authorize]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-toolchain
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Web coverage thresholds
+        run: pnpm --filter retiregolden-web test:coverage
+
+  # Keep the existing required check context while making the coverage suites
+  # independent parallel jobs.  `always()` lets this job turn a failed shard
+  # into a real failure rather than a branch-protection-satisfying skip.
+  test:
+    name: test
+    if: always() && !cancelled() && needs.authorize.outputs.authorized == 'true'
+    needs: [authorize, test_engine, test_planner_ui, test_web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every coverage shard
+        env:
+          ENGINE: ${{ needs.test_engine.result }}
+          PLANNER_UI: ${{ needs.test_planner_ui.result }}
+          WEB: ${{ needs.test_web.result }}
+        run: |
+          test "$ENGINE" = success
+          test "$PLANNER_UI" = success
+          test "$WEB" = success
 
   e2e:
-    if: github.event_name == 'push' || (github.event.action != 'closed' && (github.event.action != 'labeled' || github.event.label.name == 'run-ci') && contains(github.event.pull_request.labels.*.name, 'run-ci'))
+    if: needs.authorize.outputs.authorized == 'true'
+    needs: [authorize]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -72,8 +190,9 @@ jobs:
         run: pnpm test:e2e
 
   build:
+    if: needs.authorize.outputs.authorized == 'true'
+    needs: [authorize]
     runs-on: ubuntu-latest
-    needs: [lint, test, e2e]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-toolchain
@@ -81,22 +200,12 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Type check + Build (packages, then app)
         run: pnpm build
-      # THIRD-PARTY-NOTICES.txt is the shipped AGPL attribution surface and is
-      # generated from the lockfile by scripts/generate-third-party-notices.mjs.
-      # Nothing else fails when a dependency change lands without regenerating
-      # it, so regenerate here and fail on drift.
       - name: Third-party notices are current
         run: |
           pnpm --filter retiregolden-web run licenses
           git diff --exit-code -- app/THIRD-PARTY-NOTICES.txt app/public/THIRD-PARTY-NOTICES.txt
-      # The dev/test loop aliases the engine package to its TS source, so this
-      # is the only per-PR check that the published exports map + dist emit
-      # actually resolve for an external consumer.
       - name: Smoke test the packed engine artifact
         run: node packages/engine/scripts/pack-smoke.mjs
-      # Same idea for planner-ui, which ships TypeScript source: a scratch
-      # Vite consumer builds from the packed tarball, proving the exports map
-      # and the dep-internal worker/wasm bundling for external consumers.
       - name: Smoke test the packed planner-ui artifact
         run: node packages/planner-ui/scripts/pack-smoke.mjs
       - name: Upload build output
@@ -106,39 +215,30 @@ jobs:
           path: app/dist
           retention-days: 1
 
-  # --- Deploy jobs ---
   deploy:
-    # Fork PRs never deploy: GitHub withholds secrets from fork-triggered
-    # pull_request runs, so the SWA token would be empty and the job would
-    # fail anyway. Same-repo PRs still get preview environments.
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed' && !github.event.pull_request.head.repo.fork)
+    if: >-
+      always() && needs.authorize.outputs.authorized == 'true' &&
+      needs.lint.result == 'success' && needs.test.result == 'success' &&
+      needs.e2e.result == 'success' && needs.build.result == 'success'
+    needs: [authorize, lint, test, e2e, build]
     runs-on: ubuntu-latest
-    needs: [build]
     permissions:
       contents: read
       pull-requests: write
-    # Expose the deployed URL (production on push, PR preview env on pull_request)
-    # so the DAST job can scan it.
     outputs:
       preview_url: ${{ steps.builddeploy.outputs.static_web_app_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Download build output
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: dist
           path: app/dist
-
-      # Node only: this job deploys the downloaded artifact and never runs pnpm.
       - uses: ./.github/actions/setup-toolchain
         with:
           pnpm: 'false'
-
       - name: Deploy to Azure Static Web Apps
         id: builddeploy
-        # v1 branch tip as of 2024-09-11. The v1 tag is stale, and Azure's docs
-        # cite an even older 2021 SHA (1a947af) — do not "update" to it.
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
@@ -149,25 +249,15 @@ jobs:
           api_location: ''
           output_location: ''
 
-  # --- Security: DAST ---
   dast:
     name: ZAP DAST
-    # Scan the freshly deployed PR preview environment with OWASP ZAP.
-    # PR-only (skips push-to-main / production) and never runs on PR close.
-    # Runs after deploy and cannot affect or roll back the deployment.
-    #
-    # The nested `ZAP DAST / ZAP Baseline` check is required by the Main Guard
-    # ruleset, and GitHub never creates it when this caller job is skipped —
-    # it would sit "Expected" forever and block unlabeled PRs. So on PRs
-    # without `run-ci` this job still invokes the reusable workflow (deploy
-    # was skipped, so target_url is empty) and the scan job inside zap.yml
-    # skips itself, which reports the nested check as "skipped" and satisfies
-    # the ruleset. With `run-ci` present the job runs only after a successful
-    # deploy, so lint/test/e2e/deploy failures still block the merge by
-    # leaving the required check unreported. Fork PRs take the same empty-URL
-    # path (deploy is skipped for forks, so there is no environment to scan).
-    if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.action != 'closed' && (needs.deploy.result == 'success' || !contains(github.event.pull_request.labels.*.name, 'run-ci') || github.event.pull_request.head.repo.fork) }}
-    needs: [deploy]
+    # Unauthorized PRs retain the empty-URL reusable invocation so the nested
+    # required check is skipped, not left Expected.  Authorized PRs reach ZAP
+    # only after every gate and preview deployment succeeds.
+    if: >-
+      !cancelled() && github.event_name == 'pull_request' && github.event.action != 'closed' &&
+      (needs.authorize.outputs.authorized != 'true' || needs.deploy.result == 'success')
+    needs: [authorize, deploy]
     uses: ./.github/workflows/zap.yml
     permissions:
       contents: read
@@ -175,14 +265,10 @@ jobs:
       target_url: ${{ needs.deploy.outputs.preview_url }}
 
   close_pull_request:
-    # Forks never deployed a preview environment, so there is nothing to close
-    # (and the SWA token is unavailable on fork-triggered runs regardless).
     if: github.event_name == 'pull_request' && github.event.action == 'closed' && !github.event.pull_request.head.repo.fork
     runs-on: ubuntu-latest
     steps:
       - name: Close Pull Request
-        # v1 branch tip as of 2024-09-11. The v1 tag is stale, and Azure's docs
-        # cite an even older 2021 SHA (1a947af) — do not "update" to it.
         uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
