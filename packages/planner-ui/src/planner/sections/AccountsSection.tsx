@@ -48,7 +48,7 @@ function makeAccount(type: Account['type'], primaryPersonId: string): Account {
 
 export function AccountsSection() {
   const { plan, update } = usePlan()
-  const primaryPersonId = plan.household.people[0]!.id
+  const primaryPersonId = plan.household.people[0].id
   // A second "Mortgage" or "Home" reads the same as the first; the ordinal
   // keeps sibling cards and their Remove buttons apart (#549).
   const ordinals = ordinalSuffixes(plan.accounts.map((a) => `${a.type} ${a.name}`))

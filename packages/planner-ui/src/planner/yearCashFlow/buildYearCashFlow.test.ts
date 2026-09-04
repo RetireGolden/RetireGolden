@@ -238,7 +238,7 @@ describe('buildYearCashFlowSankey', () => {
   })
 
   it('refuses to graph a year with no cashFlow capture', () => {
-    const model = buildYearCashFlowSankey(twoOwnerPlan(), { year: 2030 } as YearResult)
+    const model = buildYearCashFlowSankey(twoOwnerPlan(), { year: 2030 })
     expect(model).toEqual({
       kind: 'unavailable',
       year: 2030,
@@ -284,8 +284,8 @@ describe('buildYearCashFlowSankey', () => {
 
     const unfundedLinks = model.views.cashFlow.links.filter((link) => link.flag === 'unfunded')
     expect(unfundedLinks).toHaveLength(1)
-    expect(unfundedLinks[0]!.source).toBe(UNFUNDED_ORIGIN_NODE_ID)
-    expect(unfundedLinks[0]!.target).toBe(unfundedNode!.id)
+    expect(unfundedLinks[0].source).toBe(UNFUNDED_ORIGIN_NODE_ID)
+    expect(unfundedLinks[0].target).toBe(unfundedNode!.id)
 
     for (const link of model.views.cashFlow.links) {
       if (link.target === unfundedNode!.id || link.target.startsWith('unfunded:')) {
@@ -474,7 +474,7 @@ describe('buildYearCashFlowSankey', () => {
         }),
       ],
     })
-    const model = ready(plan as Plan, cashFlow)
+    const model = ready(plan, cashFlow)
     const charity = model.views.transfers.nodes.find((n) => n.id === 'charity:cf-1')
     expect(charity?.label).toBe('Community Foundation')
     const row = model.table.find((item) => item.id === 'transfer:qualifiedCharitableDistribution:action:qcd-cf')

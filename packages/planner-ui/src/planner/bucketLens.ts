@@ -52,7 +52,7 @@ export function bucketLens(result: ProjectionResult, spans: number[]): BucketYea
       let bucketNeed = 0
       for (let k = 0; k < span; k++) {
         if (cursor + k >= needs.length) break
-        bucketNeed += needs[cursor + k]!
+        bucketNeed += needs[cursor + k]
       }
       cursor += span
       const claimed = Math.min(remaining, bucketNeed)
@@ -60,7 +60,7 @@ export function bucketLens(result: ProjectionResult, spans: number[]): BucketYea
       remaining -= claimed
     }
     buckets.push(remaining)
-    return { year: y.year, need: needs[i]!, buckets, investableTotal: y.investableTotal }
+    return { year: y.year, need: needs[i], buckets, investableTotal: y.investableTotal }
   })
 }
 

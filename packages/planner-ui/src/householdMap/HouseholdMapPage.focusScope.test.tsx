@@ -55,7 +55,7 @@ const nodeLabels = (el: HTMLElement) =>
   Array.from(el.querySelectorAll('.map-node .map-node-label')).map((n) => n.textContent)
 const attentionLabels = (el: HTMLElement) =>
   Array.from(el.querySelectorAll('.map-attention-list li a')).map((a) => a.textContent)
-const totalsText = (el: HTMLElement) => el.querySelector('.map-totals')!.textContent!
+const totalsText = (el: HTMLElement) => el.querySelector('.map-totals')!.textContent
 
 function selectFocus(el: HTMLElement, value: string) {
   const select = Array.from(el.querySelectorAll('label.map-control'))

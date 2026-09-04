@@ -122,7 +122,7 @@ export function seedPlanFromTenForty(
   // --- Household / filing context -----------------------------------------
   plan.household.filingStatus = inputs.filingStatus
   plan.household.state = inputs.state.toUpperCase()
-  const primary = plan.household.people[0]!
+  const primary = plan.household.people[0]
   primary.dob = inputs.primaryDob
   if (inputs.filingStatus === 'marriedFilingJointly') {
     plan.household.people.push({

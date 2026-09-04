@@ -379,7 +379,7 @@ export function buildQcdAuthoringIntent(
   } else if (donorMatches.length !== 1) {
     issues.push('The selected donor ID is duplicated in this Plan. Choose a unique household member.')
   } else if (year !== null) {
-    const donorIssue = retirementActionManualPersonSupportIssue(donorMatches[0]!, year)
+    const donorIssue = retirementActionManualPersonSupportIssue(donorMatches[0], year)
     if (donorIssue !== null) issues.push(donorIssue)
   }
 
@@ -394,7 +394,7 @@ export function buildQcdAuthoringIntent(
   } else if (sourceMatches.length !== 1) {
     issues.push('The selected source IRA ID is duplicated in this Plan. Choose a unique source account.')
   } else if (year !== null && donorMatches.length === 1) {
-    const exclusion = qcdSourceSupportIssue(plan, sourceMatches[0]!, draft.donorPersonId, year)
+    const exclusion = qcdSourceSupportIssue(plan, sourceMatches[0], draft.donorPersonId, year)
     if (exclusion !== null) issues.push(exclusion.message)
   }
 
@@ -593,7 +593,7 @@ export function projectNamedQcdGifts(
   const horizonEndYear = Math.max(startYear, ...gifts.map((gift) => gift.year))
   let years: ReturnType<typeof simulatePlan>['years']
   try {
-    years = simulatePlan(structuredClone(plan) as Plan, {
+    years = simulatePlan(structuredClone(plan), {
       startYear,
       horizonEndYear,
       taxCalculator,

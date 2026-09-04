@@ -19,7 +19,7 @@ const context = {
 
 function planWithGuaranteedIncome(): Plan {
   const plan = buildExampleCouple()
-  const ownerPersonId = plan.household.people[0]!.id
+  const ownerPersonId = plan.household.people[0].id
   plan.accounts.push(
     {
       type: 'pension',
@@ -161,7 +161,7 @@ describe('scenario lever contract', () => {
 
   it('warns when a lever leaves explicit modeling choices unaffected or replaces them', () => {
     const plan = buildExampleCouple()
-    plan.incomes[0] = { ...plan.incomes[0]!, type: 'wages', endAge: 65 } as Plan['incomes'][number]
+    plan.incomes[0] = { ...plan.incomes[0], type: 'wages', endAge: 65 } as Plan['incomes'][number]
     const taxable = plan.accounts.find((account) => account.type === 'taxable')!
     taxable.allocation = {
       mode: 'linear',
@@ -293,9 +293,9 @@ describe('scenario lever contract', () => {
     )
 
     const single = buildExampleCouple()
-    const retainedPersonId = single.household.people[0]!.id
+    const retainedPersonId = single.household.people[0].id
     single.household.filingStatus = 'single'
-    single.household.people = [single.household.people[0]!]
+    single.household.people = [single.household.people[0]]
     single.incomes = single.incomes.filter(
       (income) => !('personId' in income) || income.personId === retainedPersonId,
     )
@@ -367,7 +367,7 @@ describe('scenario lever contract', () => {
         account.type !== 'property',
     )
     plan.household.filingStatus = 'single'
-    plan.household.people = [plan.household.people[0]!]
+    plan.household.people = [plan.household.people[0]]
 
     const results = [
       buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 67 }, context),
@@ -466,7 +466,7 @@ describe('scenario lever contract', () => {
       plan,
       {
         id: 'care',
-        personId: plan.household.people[0]!.id,
+        personId: plan.household.people[0].id,
         startAge: 40,
         durationYears: 2,
         annualCost: 50_000,
@@ -589,7 +589,7 @@ describe('scenario lever contract', () => {
 
   it('requires post-withholding Social Security benefits for cut and claim-age levers', () => {
     const plan = buildExampleCouple()
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     person.dob = '1964-06-15'
     person.retirementAge = 67
     person.longevity.planningAge = 66
@@ -640,7 +640,7 @@ describe('scenario lever contract', () => {
 
   it('does not expose a Social Security cut while SSDI is suspended by SGA through death', () => {
     const plan = buildExampleCouple()
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     person.dob = '1960-06-15'
     person.retirementAge = 67
     person.longevity.planningAge = 66
@@ -812,7 +812,7 @@ describe('scenario lever contract', () => {
       plan,
       {
         id: 'care',
-        personId: plan.household.people[0]!.id,
+        personId: plan.household.people[0].id,
         startAge: 85,
         durationYears: 2,
         annualCost: 0,
@@ -1146,7 +1146,7 @@ describe('scenario lever contract', () => {
       account.annualContribution = 0
       delete account.contributionSchedule
     }
-    const primary = inactive.household.people[0]!
+    const primary = inactive.household.people[0]
     const primaryAgeAtStart = context.startYear - Number(primary.dob.slice(0, 4))
     const expired = inactive.accounts.find((account) => account.type === 'taxable')!
     expired.contributionSchedule = [
@@ -1202,7 +1202,7 @@ describe('scenario lever contract', () => {
         type: 'roth',
         id: 'empty-roth',
         name: 'Empty Roth',
-        ownerPersonId: plan.household.people[0]!.id,
+        ownerPersonId: plan.household.people[0].id,
         annualReturnPct: null,
         kind: 'ira',
         balance: 0,
@@ -1275,10 +1275,10 @@ describe('scenario lever contract', () => {
     )
     const mixedBenefits = buildExampleCouple()
     const mixedStreams = mixedBenefits.incomes.filter((income) => income.type === 'socialSecurity')
-    const disability = mixedStreams[0]!
+    const disability = mixedStreams[0]
     disability.piaMonthly = 2_000
     disability.disability = { onsetAge: 60 }
-    const emptyRetirement = mixedStreams[1]!
+    const emptyRetirement = mixedStreams[1]
     emptyRetirement.piaMonthly = 0
     emptyRetirement.earnings = null
     delete emptyRetirement.disability
@@ -1400,7 +1400,7 @@ describe('scenario lever contract', () => {
 
   it('uses canonical FRA rules to decide whether disability controls claim age', () => {
     const janFirst = buildExampleCouple()
-    const janFirstPerson = janFirst.household.people[0]!
+    const janFirstPerson = janFirst.household.people[0]
     janFirstPerson.dob = '1960-01-01'
     janFirst.incomes = janFirst.incomes.filter(
       (income) => income.type !== 'socialSecurity' || income.personId === janFirstPerson.id,
@@ -1416,7 +1416,7 @@ describe('scenario lever contract', () => {
     )
 
     const janSecond = structuredClone(janFirst)
-    janSecond.household.people[0]!.dob = '1960-01-02'
+    janSecond.household.people[0].dob = '1960-01-02'
     const disability = buildScenarioLever(
       janSecond,
       { id: 'socialSecurityClaim', claimAge: 70 },
@@ -1548,7 +1548,7 @@ describe('scenario lever contract', () => {
 
   it('does not fall through from an effective but unpayable SSDI window', () => {
     const plan = buildExampleCouple()
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     person.dob = '1964-01-02'
     person.longevity.planningAge = 65
     plan.incomes = plan.incomes.filter(
@@ -1570,8 +1570,8 @@ describe('scenario lever contract', () => {
 
   it('requires overlapping spouse claim windows for auxiliary-only Social Security', () => {
     const plan = buildExampleCouple()
-    const claimant = plan.household.people[0]!
-    const worker = plan.household.people[1]!
+    const claimant = plan.household.people[0]
+    const worker = plan.household.people[1]
     claimant.dob = '1964-01-02'
     claimant.longevity.planningAge = 63
     worker.dob = '1966-01-02'
@@ -1606,8 +1606,8 @@ describe('scenario lever contract', () => {
 
   it('keeps survivor-only Social Security claim and cut windows available', () => {
     const plan = buildExampleCouple()
-    const worker = plan.household.people[0]!
-    const survivor = plan.household.people[1]!
+    const worker = plan.household.people[0]
+    const survivor = plan.household.people[1]
     worker.dob = '1964-01-02'
     worker.longevity.planningAge = 65
     survivor.dob = '1966-01-02'
@@ -1647,7 +1647,7 @@ describe('scenario lever contract', () => {
 
   it('anchors purchased period-certain guarantees to nominal annuity start', () => {
     const plan = buildExampleCouple()
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     owner.dob = '1960-01-02'
     owner.longevity.planningAge = 65
     plan.incomes = []
@@ -1784,10 +1784,10 @@ describe('scenario lever contract', () => {
   it('requires a modeled survivor-only calendar year for survivor spending', () => {
     const sameLastAliveYear = buildExampleCouple()
     const [first, second] = sameLastAliveYear.household.people
-    second!.longevity.planningAge =
-      Number(first!.dob.slice(0, 4)) +
-      first!.longevity.planningAge -
-      Number(second!.dob.slice(0, 4))
+    second.longevity.planningAge =
+      Number(first.dob.slice(0, 4)) +
+      first.longevity.planningAge -
+      Number(second.dob.slice(0, 4))
 
     const unavailable = buildScenarioLever(
       sameLastAliveYear,
@@ -1947,8 +1947,8 @@ describe('scenario lever contract', () => {
   it('rejects projection-equivalent post-FRA current-spouse SSDI claim changes', () => {
     const plan = buildExampleCouple()
     const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
-    const claimant = streams[0]!
-    const spouse = streams[1]!
+    const claimant = streams[0]
+    const spouse = streams[1]
     plan.incomes = streams
     claimant.piaMonthly = 2_000
     claimant.earnings = null
@@ -2243,7 +2243,7 @@ describe('scenario lever contract', () => {
       { id: 'defaultReturn', returnPct: 4 },
       context,
     )
-    policy.cashValueSchedule[1]!.value = 0
+    policy.cashValueSchedule[1].value = 0
     const noScheduledValue = buildScenarioLever(
       plan,
       { id: 'defaultReturn', returnPct: 4 },
@@ -2295,7 +2295,7 @@ describe('scenario lever contract', () => {
       { id: 'defaultReturn', returnPct: 4 },
       context,
     )
-    plan.incomeFloor.ladders[0]!.purchase!.year = context.startYear
+    plan.incomeFloor.ladders[0].purchase!.year = context.startYear
     const needsFunding = buildScenarioLever(
       plan,
       { id: 'defaultReturn', returnPct: 4 },
@@ -2387,8 +2387,8 @@ describe('scenario lever contract', () => {
       context,
     )
 
-    plan.household.people[0]!.retirementAge =
-      context.startYear - Number(plan.household.people[0]!.dob.slice(0, 4))
+    plan.household.people[0].retirementAge =
+      context.startYear - Number(plan.household.people[0].dob.slice(0, 4))
     const active = buildScenarioLever(
       plan,
       { id: 'retirementAge', yearsDelta: 1 },
@@ -2461,7 +2461,7 @@ describe('scenario lever contract', () => {
       { id: 'allocation', stockPct: 60 },
       context,
     )
-    const oneYearEarlier = plan.incomes[0]!
+    const oneYearEarlier = plan.incomes[0]
     if (oneYearEarlier.type === 'oneTime') oneYearEarlier.year = horizon - 1
     const activeReturn = buildScenarioLever(
       plan,
@@ -2489,7 +2489,7 @@ describe('scenario lever contract', () => {
     const contributionTarget = contributionPlan.accounts.find(
       (account) => account.type === 'taxable',
     )!
-    const owner = contributionPlan.household.people[0]!
+    const owner = contributionPlan.household.people[0]
     contributionTarget.balance = 0
     contributionTarget.annualContribution = 0
     contributionTarget.annualReturnPct = null
@@ -2615,8 +2615,8 @@ describe('scenario lever contract', () => {
   it('requires one Social Security stream to both change and affect the projection', () => {
     const plan = buildExampleCouple()
     const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
-    const effective = streams[0]!
-    const inert = streams[1]!
+    const effective = streams[0]
+    const inert = streams[1]
     effective.claimAge = { years: 70, months: 0 }
     effective.piaMonthly = 2_000
     inert.claimAge = { years: 62, months: 0 }
@@ -2873,7 +2873,7 @@ describe('scenario lever contract', () => {
 
   it('recognizes pre-projection SSA-44 retirement relief as a retirement-age effect', () => {
     const plan = buildExampleCouple()
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     plan.household.people = [person]
     plan.household.filingStatus = 'single'
     person.retirementAge = context.startYear - Number(person.dob.slice(0, 4)) - 1
@@ -2901,7 +2901,7 @@ describe('scenario lever contract', () => {
 
   it('recognizes retirement-age-defaulted Social Security earnings projections after the work boundary', () => {
     const plan = buildExampleCouple()
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     plan.household.people = [person]
     plan.household.filingStatus = 'single'
     person.retirementAge = 60
@@ -2932,7 +2932,7 @@ describe('scenario lever contract', () => {
 
   it('recognizes employer-plan Rule-of-55 changes as retirement-age effects', () => {
     const plan = buildExampleCouple()
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     plan.household.people = [person]
     plan.household.filingStatus = 'single'
     person.retirementAge = 55
@@ -2988,7 +2988,7 @@ describe('scenario lever contract', () => {
 
   it('requires former-spouse benefits to exceed unchanged SSDI before claim age is available', () => {
     const plan = buildExampleCouple()
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     const stream = plan.incomes
       .filter((income) => income.type === 'socialSecurity')
       .find((income) => income.personId === person.id)!
@@ -3012,7 +3012,7 @@ describe('scenario lever contract', () => {
       { id: 'socialSecurityClaim', claimAge: 70 },
       context,
     )
-    stream.formerSpouses[0]!.piaMonthly = 8_000
+    stream.formerSpouses[0].piaMonthly = 8_000
     const largerBenefit = buildScenarioLever(
       plan,
       { id: 'socialSecurityClaim', claimAge: 70 },
@@ -3026,8 +3026,8 @@ describe('scenario lever contract', () => {
   it('requires current-spouse auxiliary benefits to exceed unchanged SSDI before claim age is available', () => {
     const plan = buildExampleCouple()
     const streams = plan.incomes.filter((income) => income.type === 'socialSecurity')
-    const claimant = streams[0]!
-    const spouse = streams[1]!
+    const claimant = streams[0]
+    const spouse = streams[1]
     plan.incomes = streams
     claimant.piaMonthly = 3_000
     claimant.claimAge = { years: 62, months: 0 }
@@ -3080,7 +3080,7 @@ describe('scenario lever contract', () => {
 
   it('includes care duration and annual cost in the generated scenario name', () => {
     const plan = buildExampleCouple()
-    const person = plan.household.people[0]!
+    const person = plan.household.people[0]
     const result = buildScenarioLever(
       plan,
       {

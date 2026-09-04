@@ -80,7 +80,7 @@ export function InsightsPage() {
     }
     setDismissedMap(nextMap)
     writeLocal(STORAGE_KEYS.insightsDismissed, JSON.stringify(nextMap))
-    setLiveMessage(`Insight dismissed. ${nextMap[plan.id]!.length} dismissed on this plan.`)
+    setLiveMessage(`Insight dismissed. ${nextMap[plan.id].length} dismissed on this plan.`)
   }
 
   useLayoutEffect(() => {
@@ -227,7 +227,7 @@ export function InsightsPage() {
                     onClick={() => toggleCategory(category)}
                   >
                     <span>
-                      {CATEGORY_LABELS[category]} ({cards!.length})
+                      {CATEGORY_LABELS[category]} ({cards.length})
                     </span>
                     <svg
                     viewBox="0 0 24 24"
@@ -246,7 +246,7 @@ export function InsightsPage() {
                 </h2>
                 {!isCollapsed && (
                   <div className="insight-cards-list">
-                    {cards!.map((card) => (
+                    {cards.map((card) => (
                       <InsightCardView key={insightRenderKey(card)} card={card} onDismiss={() => dismissCard(card, cardsInReadingOrder)} />
                     ))}
                   </div>

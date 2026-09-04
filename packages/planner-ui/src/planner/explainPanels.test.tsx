@@ -94,7 +94,7 @@ describe('WhySuccessPanel', () => {
     const { container, unmount } = render(
       <WhySuccessPanel summary={fakeSummary()} modelLabel="Lognormal returns" seed={42} planId="plan-1" />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('85%')
     expect(text).toContain('850 of the 1,000 simulated markets')
     expect(text).toContain('Lognormal returns')
@@ -167,7 +167,7 @@ describe('WhyRecommendationPanel', () => {
     const { container, unmount } = render(
       <WhyRecommendationPanel tournament={fakeTournament()} objectiveLabel="Maximize after-tax estate" />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('Maximize after-tax estate')
     expect(text).toContain('Fill the 22% bracket (winner)')
     // Margin over the runner-up: 65k − 41k.
@@ -203,7 +203,7 @@ describe('WhyRecommendationPanel', () => {
         objectiveLabel="Maximize after-tax estate"
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('your applied optimizer schedule')
     expect(text).toContain('Your current plan (baseline) (winner)')
     // The best challenger loses by $5,000, so the incumbent's margin is $5,000.
@@ -227,7 +227,7 @@ describe('WhyRecommendationPanel', () => {
         objectiveLabel="Maximize after-tax estate"
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('None cleared the recommendation threshold')
     expect(text).not.toContain('The winner is')
     expect(text).not.toContain('— winner')
@@ -267,7 +267,7 @@ describe('WhyRecommendationPanel', () => {
         objectiveLabel="Minimize lifetime tax with estate floor"
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('calculated winner cleared the selected objective')
     expect(text).toContain('owner, source IRA, and Roth destination')
     expect(text).toContain('Fill the 22% bracket (calculated winner; withheld pending account allocation)')
@@ -308,7 +308,7 @@ describe('WhyRecommendationPanel', () => {
         objectiveLabel="Maximize after-tax estate"
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('owner, source IRA, and Roth destination')
     expect(text).toContain('could not be named from what the plan records')
     unmount()
@@ -341,7 +341,7 @@ describe('WhyRecommendationPanel', () => {
       />,
     )
 
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain(
       `Solver's schedule (post-processed) (${RETIREMENT_ACTION_READINESS_VETO_ROW_NOTE})`,
     )
@@ -366,7 +366,7 @@ describe('WhyRecommendationPanel', () => {
         objectiveLabel="Maximize after-tax estate"
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('ahead of the next-best eligible alternative by $24,000')
     unmount()
   })
@@ -399,7 +399,7 @@ describe('WhyRecommendationPanel', () => {
         objectiveLabel="Maximize after-tax estate"
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('Why nothing qualified.')
     expect(text).toContain('marketplace (ACA) coverage in 2027 and 2028')
     expect(text).toContain('sourced ACA tax parameters for those years are not yet published')
@@ -425,7 +425,7 @@ describe('WhyRecommendationPanel', () => {
         objectiveLabel="Maximize after-tax estate"
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain("The winner is the solver's schedule")
     expect(text).toContain("Solver's schedule (post-processed) (winner)")
     expect(text).toContain('+$72,000')

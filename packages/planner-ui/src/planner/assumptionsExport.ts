@@ -164,7 +164,7 @@ function accountsGroup(plan: Plan, startYear: number): AssumptionGroup {
       id: `account-${i}`,
       label: `${acct.name} (${INVESTABLE_TYPE_LABEL[acct.type]}, ${fmtMoney(acct.balance)})`,
       value,
-      provenance: (allocation || own !== null ? 'user-set' : 'app-default') as AssumptionProvenance,
+      provenance: (allocation || own !== null ? 'user-set' : 'app-default'),
     }
   })
   return { id: 'accounts', label: 'Account returns', rows }
@@ -184,7 +184,7 @@ function assetClassGroup(plan: Plan): AssumptionGroup | null {
         id,
         label: p.label,
         value: `${pct(p.returnPct)}/yr return · ${pct(p.volatilityPct)} volatility · yields ${pct(p.interestYieldPct)} interest / ${pct(p.dividendYieldPct)} dividends (${p.qualifiedRatioPct}% qualified)`,
-        provenance: (overridden ? 'user-set' : 'published-source') as AssumptionProvenance,
+        provenance: (overridden ? 'user-set' : 'published-source'),
       }
     }),
   }
@@ -305,7 +305,7 @@ function taxParametersGroup(): AssumptionGroup {
       id: s.id,
       label: s.label,
       value: s.figures,
-      provenance: 'published-source' as AssumptionProvenance,
+      provenance: 'published-source',
       sourceId: s.id,
     })),
   }

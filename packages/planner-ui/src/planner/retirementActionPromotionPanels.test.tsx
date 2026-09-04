@@ -72,8 +72,8 @@ function traditionalIra(id: string, name: string, ownerPersonId: string): Accoun
 function testPlan(classified: boolean): Plan {
   const built = couplePlan({ p1PlanningAge: 70, p2PlanningAge: 70 })
   built.id = 'plan-under-test'
-  built.household.people[0]!.name = 'Alex'
-  built.household.people[1]!.name = 'Sam'
+  built.household.people[0].name = 'Alex'
+  built.household.people[1].name = 'Sam'
   built.accounts = [
     { ...cashAccount('household-cash', 50_000), ownerPersonId: ALEX },
     traditionalIra('alex-ira', 'Alex rollover IRA', ALEX),
@@ -182,7 +182,7 @@ describe('PromotedSchedulePanel', () => {
     equivalent.unmount()
 
     const repriced = schedulePanel(published('repriced'))
-    const text = repriced.container.textContent!
+    const text = repriced.container.textContent
     expect(text).not.toContain(PROMOTED_SCHEDULE_EQUIVALENT_NOTE)
     // The aggregate stands beside it, labeled as what it is, with the
     // difference stated rather than explained away.
@@ -195,7 +195,7 @@ describe('PromotedSchedulePanel', () => {
 
   it('names each trimmed owner once, and says which boundary trimmed them', () => {
     const { container, unmount } = schedulePanel(published('equivalent'))
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('Sam holds no Roth account in this plan')
     expect(text.match(/Sam holds no Roth account/g)).toHaveLength(1)
     unmount()
@@ -228,7 +228,7 @@ describe('PromotionWithheldPanel', () => {
         })}
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain(PROMOTION_NOT_COMPARABLE_FRAME)
     expect(text).toContain(PROMOTION_ENGINE_EVIDENCE_FRAME)
     expect(text).toContain(diagnostic)
@@ -249,7 +249,7 @@ describe('PromotionWithheldPanel', () => {
         })}
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain(PROMOTION_NOT_PROMOTED_FRAME)
     expect(text).toContain(PROMOTION_ISSUE_FRAME)
     expect(text).toContain(detail)
@@ -269,7 +269,7 @@ describe('PromotionWithheldPanel', () => {
         })}
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain(PROMOTION_REPRICED_NOT_RECOMMENDED_FRAME)
     expect(text).toContain('Sam holds no Roth account in this plan')
     unmount()
@@ -297,7 +297,7 @@ describe('PromotionWithheldPanel', () => {
         })}
       />,
     )
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain("Sam's only Roth account in this plan sits inside an employer plan")
     expect(text).toContain("landing only in the same person's own Roth IRA")
     unmount()

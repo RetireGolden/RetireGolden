@@ -65,7 +65,7 @@ export function BucketLensCard({
             { value: 'off', label: 'Off' },
             ...BUCKET_PRESETS.map((p) => ({ value: p.id, label: p.label })),
           ]}
-          onCommit={(v) => setPresetId(v as 'off' | 'three' | 'two')}
+          onCommit={(v) => setPresetId(v)}
         />
       </div>
       {preset ? (

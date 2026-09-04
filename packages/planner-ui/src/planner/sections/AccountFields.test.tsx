@@ -55,7 +55,7 @@ function renderFields(plan: Plan, accountIndex = 0, onUpdate?: (mutator: (draft:
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  const account = plan.accounts[accountIndex]!
+  const account = plan.accounts[accountIndex]
   const panel: ReactNode = (
     <MemoryRouter>
       <PlanCtx.Provider
@@ -128,7 +128,7 @@ function mountEditable(plan: Plan) {
   document.body.appendChild(container)
   root = createRoot(container)
   const render = () => {
-    const account = current.accounts[0]!
+    const account = current.accounts[0]
     act(() => {
       root!.render(
         <MemoryRouter>
@@ -337,7 +337,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(false)
     if (parsed.ok) throw new Error('expected a contradictory beneficiary fact')
@@ -376,7 +376,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     act(() => {
@@ -385,7 +385,7 @@ describe('AccountFields inherited beneficiary details', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
     expect(inheritedOf(account)?.beneficiary?.election).toBe('remain-beneficiary')
@@ -414,7 +414,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     act(() => {
@@ -426,7 +426,7 @@ describe('AccountFields inherited beneficiary details', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
     expect(inheritedOf(account)?.beneficiary?.edbCategory).toBe('disabled')
@@ -456,7 +456,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     act(() => {
@@ -470,7 +470,7 @@ describe('AccountFields inherited beneficiary details', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(inheritedOf(account)?.beneficiary?.edbCategory).toBe('disabled')
     expect(inheritedOf(account)?.beneficiary?.spouseUnlimitedWithdrawalRight).toBeUndefined()
     expect(inheritedOf(account)?.beneficiary?.election).toBeUndefined()
@@ -493,7 +493,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     act(() => {
@@ -502,7 +502,7 @@ describe('AccountFields inherited beneficiary details', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(inheritedOf(account)?.beneficiary?.soleBeneficiary).toBe(false)
     const parsed = parsePlan(structuredClone(mounted.plan))
     expect(parsed.ok).toBe(true)
@@ -525,7 +525,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     act(() => {
@@ -533,7 +533,7 @@ describe('AccountFields inherited beneficiary details', () => {
       box.click()
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
     expect(inheritedOf(account)?.decedentHadStartedRmds).toBe(false)
@@ -558,7 +558,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     act(() => {
@@ -566,7 +566,7 @@ describe('AccountFields inherited beneficiary details', () => {
       box.click()
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(inheritedOf(account)?.decedentHadStartedRmds).toBe(true)
     expect(inheritedOf(account)?.beneficiary?.election).toBeUndefined()
     const parsed = parsePlan(structuredClone(mounted.plan))
@@ -615,7 +615,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     act(() => {
@@ -624,7 +624,7 @@ describe('AccountFields inherited beneficiary details', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(inheritedOf(account)?.beneficiary?.soleBeneficiary).toBe(false)
     expect(inheritedOf(account)?.beneficiary?.election).toBeUndefined()
     expect(inheritedOf(account)?.beneficiary?.treatAsOwnElectionYear).toBeUndefined()
@@ -675,7 +675,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     act(() => {
@@ -684,7 +684,7 @@ describe('AccountFields inherited beneficiary details', () => {
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const beneficiary = inheritedOf(mounted.plan.accounts[0]!)?.beneficiary
+    const beneficiary = inheritedOf(mounted.plan.accounts[0])?.beneficiary
     expect(beneficiary?.beneficiaryClass).toBe('estate')
     expect(beneficiary?.ownerBirthYear).toBe(1945)
     expect(beneficiary?.ownerBirthMonth).toBe(6)
@@ -730,7 +730,7 @@ describe('AccountFields inherited beneficiary details', () => {
         },
       },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     renderFields(plan)
 
     expect(container?.querySelector('[data-testid="inherited-roth-employer-hint"]')?.textContent).toBe(
@@ -754,7 +754,7 @@ describe('AccountFields inherited beneficiary details', () => {
       box.click()
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(account.type).toBe('roth')
     if (account.type !== 'roth') throw new Error('expected roth')
     expect(account.contributionBasis).toBeUndefined()
@@ -768,7 +768,7 @@ describe('AccountFields inherited beneficiary details', () => {
     const plan = planWithAccount(retirementAccount({
       sepp: { startAge: 55, method: 'rmd' },
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
 
     expect(mounted.container().textContent).toContain('72(t) SEPP')
@@ -778,7 +778,7 @@ describe('AccountFields inherited beneficiary details', () => {
       box.click()
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
     expect(inheritedOf(account)).toBeDefined()
@@ -864,7 +864,7 @@ describe('AccountFields inherited Roth contributions', () => {
       box.click()
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(account.type).toBe('roth')
     if (account.type !== 'roth') throw new Error('expected roth')
     expect(inheritedOf(account)).toBeDefined()
@@ -904,7 +904,7 @@ describe('AccountFields inherited traditional treat-as-own contributions', () =>
       select.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    const account = mounted.plan.accounts[0]!
+    const account = mounted.plan.accounts[0]
     expect(account.type).toBe('traditional')
     if (account.type !== 'traditional') throw new Error('expected traditional')
     expect(inheritedOf(account)?.beneficiary?.election).toBe('treat-as-own')
@@ -1014,7 +1014,7 @@ describe('AccountFields pension and annuity editor boundaries', () => {
       survivorPct: 50,
     }
     const plan = planWithAccount(pension)
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const accepts = (startAge: number) => {
       const candidate = structuredClone(plan)
       const account = candidate.accounts[0]
@@ -1042,7 +1042,7 @@ describe('AccountFields pension and annuity editor boundaries', () => {
       taxablePct: 60,
     }
     const plan = planWithAccount(annuity)
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const accepts = (startAge: number) => {
       const candidate = structuredClone(plan)
       const account = candidate.accounts[0]
@@ -1228,7 +1228,7 @@ describe('AccountFields extracted editor commit wiring', () => {
     }
     act(() => buttonByText('Add Contribution Phase').click())
     changeControl(
-      controlsByLabel<HTMLInputElement>(mounted.container(), 'Amount / year')[1]!,
+      controlsByLabel<HTMLInputElement>(mounted.container(), 'Amount / year')[1],
       '250',
     )
     account = mounted.plan.accounts[0]
@@ -1238,7 +1238,7 @@ describe('AccountFields extracted editor commit wiring', () => {
     let removeButtons = Array.from(mounted.container().querySelectorAll('button')).filter(
       (button) => button.textContent?.trim() === 'Remove Phase',
     )
-    act(() => removeButtons[1]!.click())
+    act(() => removeButtons[1].click())
     account = mounted.plan.accounts[0]
     if (account?.type !== 'taxable') throw new Error('expected taxable')
     expect(account.contributionSchedule?.map((phase) => phase.annualAmount)).toEqual([1_000])
@@ -1246,7 +1246,7 @@ describe('AccountFields extracted editor commit wiring', () => {
     removeButtons = Array.from(mounted.container().querySelectorAll('button')).filter(
       (button) => button.textContent?.trim() === 'Remove Phase',
     )
-    act(() => removeButtons[0]!.click())
+    act(() => removeButtons[0].click())
     account = mounted.plan.accounts[0]
     if (account?.type !== 'taxable') throw new Error('expected taxable')
     expect(account).toHaveProperty('contributionSchedule', undefined)
@@ -1269,7 +1269,7 @@ describe('AccountFields extracted editor commit wiring', () => {
       survivorPct: 50,
     }
     const plan = planWithAccount(pension)
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
     const startAge = controlByLabel<HTMLInputElement>(mounted.container(), 'Start age')
 
@@ -1308,7 +1308,7 @@ describe('AccountFields extracted editor commit wiring', () => {
       taxablePct: 50,
     }
     const plan = planWithAccount(annuity)
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
     const startAge = controlByLabel<HTMLInputElement>(mounted.container(), 'Start age')
 
@@ -1372,9 +1372,9 @@ describe('AccountFields extracted editor commit wiring', () => {
       lumpSumOffer: { amount: 200_000, electionYear: 2020 },
     }
     const plan = planWithAccount(pension)
-    const ownerId = plan.household.people[0]!.id
+    const ownerId = plan.household.people[0].id
     plan.updatedAtIso = '2030-01-02T00:00:00.000Z'
-    plan.accounts[0]!.ownerPersonId = ownerId
+    plan.accounts[0].ownerPersonId = ownerId
     plan.accounts.push(retirementAccount({ id: 'rollover', name: 'Rollover IRA', ownerPersonId: ownerId }))
     const mounted = mountEditable(plan)
     const election = controlByLabel<HTMLSelectElement>(mounted.container(), 'Election')
@@ -1413,12 +1413,12 @@ describe('AccountFields extracted editor commit wiring', () => {
       },
     }
     const plan = planWithAccount(annuity)
-    const olderOwner = plan.household.people[0]!
+    const olderOwner = plan.household.people[0]
     olderOwner.dob = '1930-01-01'
     const youngerOwner = { ...olderOwner, id: 'younger', name: 'Younger owner', dob: '1970-01-01' }
     plan.household.people.push(youngerOwner)
     plan.household.filingStatus = 'marriedFilingJointly'
-    plan.accounts[0]!.ownerPersonId = olderOwner.id
+    plan.accounts[0].ownerPersonId = olderOwner.id
     plan.accounts.push(retirementAccount({ id: 'funding', name: 'Funding IRA', ownerPersonId: olderOwner.id }))
     const mounted = mountEditable(plan)
     const owner = controlByLabel<HTMLSelectElement>(mounted.container(), 'Owner')
@@ -1454,8 +1454,8 @@ describe('AccountFields extracted editor commit wiring', () => {
       },
     }
     const plan = planWithAccount(annuity)
-    const ownerId = plan.household.people[0]!.id
-    plan.accounts[0]!.ownerPersonId = ownerId
+    const ownerId = plan.household.people[0].id
+    plan.accounts[0].ownerPersonId = ownerId
     plan.accounts.push(
       retirementAccount({
         id: 'inherited',
@@ -1531,7 +1531,7 @@ describe('AccountFields HSA editor boundary', () => {
       withdrawalTreatment: 'capByMedicalExpenses',
       reimburseLater: true,
     }))
-    plan.accounts[0]!.ownerPersonId = plan.household.people[0]!.id
+    plan.accounts[0].ownerPersonId = plan.household.people[0].id
     const mounted = mountEditable(plan)
     const select = controlByLabel<HTMLSelectElement>(mounted.container(), 'Withdrawal treatment')
 

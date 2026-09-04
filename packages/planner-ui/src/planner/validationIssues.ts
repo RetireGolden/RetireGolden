@@ -101,7 +101,7 @@ export function sectionOfPath(path: string): IssueSection {
   const segments = path.split('.')
   const root = segments[0] ?? ''
   if (root === 'incomes' && segments[2] !== undefined && SOCIAL_SECURITY_LEAVES.has(segments[2])) return 'social-security'
-  if (root === 'household' && segments.length === 2 && STRATEGY_HOUSEHOLD_LEAVES.has(segments[1]!)) return 'strategy'
+  if (root === 'household' && segments.length === 2 && STRATEGY_HOUSEHOLD_LEAVES.has(segments[1])) return 'strategy'
   return SECTION_BY_ROOT[root] ?? 'unknown'
 }
 
@@ -366,8 +366,8 @@ export function labelOfSegments(segments: readonly string[], plan?: Plan): strin
   const trail: string[] = []
   const leaf = segments[segments.length - 1] ?? ''
   for (let i = 0; i < segments.length - 1; i++) {
-    const seg = segments[i]!
-    const next = segments[i + 1]!
+    const seg = segments[i]
+    const next = segments[i + 1]
     if (isIndex(next)) {
       item = namedItem(seg, Number(next), plan) ?? `${ITEM_NAMES[seg] ?? singular(seg)} ${Number(next) + 1}`
       container = seg
@@ -491,10 +491,10 @@ export function adviceOf(message: string, path?: string): string {
   if (custom) return custom
   const bound = (raw: string) => boundInDisplayUnit(raw, path)
   let m: RegExpMatchArray | null
-  if ((m = message.match(/^Too small: expected .* to be >=(-?[\d.]+)/))) return `Must be at least ${bound(m[1]!)}`
-  if ((m = message.match(/^Too small: expected .* to be >(-?[\d.]+)/))) return `Must be more than ${bound(m[1]!)}`
-  if ((m = message.match(/^Too big: expected .* to be <=(-?[\d.]+)/))) return `Must be at most ${bound(m[1]!)}`
-  if ((m = message.match(/^Too big: expected .* to be <(-?[\d.]+)/))) return `Must be less than ${bound(m[1]!)}`
+  if ((m = message.match(/^Too small: expected .* to be >=(-?[\d.]+)/))) return `Must be at least ${bound(m[1])}`
+  if ((m = message.match(/^Too small: expected .* to be >(-?[\d.]+)/))) return `Must be more than ${bound(m[1])}`
+  if ((m = message.match(/^Too big: expected .* to be <=(-?[\d.]+)/))) return `Must be at most ${bound(m[1])}`
+  if ((m = message.match(/^Too big: expected .* to be <(-?[\d.]+)/))) return `Must be less than ${bound(m[1])}`
   if (/^Too small: expected array /.test(message)) return 'Add at least one entry'
   if (/^Too small: expected string /.test(message)) return 'Enter a value'
   if (/^Invalid input: expected number/.test(message)) return 'Enter a number'
@@ -597,7 +597,7 @@ export function sectionsWithIssues(issues: readonly string[]): IssueSectionLink[
     const segment = routed !== 'unknown' ? routed : key === undefined ? undefined : SECTION_BY_PLAN_KEY[key]
     if (segment !== undefined) segments.add(segment)
   }
-  return RAIL_ORDER.filter((s) => segments.has(s)).map((segment) => ({ segment, title: SECTION_TITLES[segment]! }))
+  return RAIL_ORDER.filter((s) => segments.has(s)).map((segment) => ({ segment, title: SECTION_TITLES[segment] }))
 }
 
 /**

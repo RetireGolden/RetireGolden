@@ -348,8 +348,8 @@ function DeductibleContributionBlock({
   const recordedCount = years.filter(
     (year) => deductibleContributionFor(plan, person.id, year) !== null,
   ).length
-  const firstYear = years[0]!
-  const lastYear = years[years.length - 1]!
+  const firstYear = years[0]
+  const lastYear = years[years.length - 1]
   const yearList = years.join(', ')
   return (
     <details data-eligibility-contributions={person.id}>

@@ -177,10 +177,10 @@ function defaultTarget(candidate: RefreshCandidate): string {
 }
 
 async function sourceIdentity(file: File): Promise<{ sha256: string; bytes: number }> {
-  const arrayBuffer = (file as File & { arrayBuffer?: () => Promise<ArrayBuffer> }).arrayBuffer
-  if (!arrayBuffer) return { sha256: '', bytes: file.size }
+  const withArrayBuffer = file as File & { arrayBuffer?: () => Promise<ArrayBuffer> }
+  if (!withArrayBuffer.arrayBuffer) return { sha256: '', bytes: file.size }
   try {
-    return await digestSource(await arrayBuffer.call(file))
+    return await digestSource(await withArrayBuffer.arrayBuffer())
   } catch {
     return { sha256: '', bytes: file.size }
   }
@@ -902,7 +902,7 @@ function UpdateBalancesPanelBody({
                   {snapshot.appliedAtIso.slice(0, 10)} — {snapshot.sourceLabel} — {snapshot.changes.length} account
                   {snapshot.changes.length === 1 ? '' : 's'}
                 </span>{' '}
-                <button type="button" className="btn btn-secondary btn-small" onClick={() => restoreSnapshot(snapshot)}>
+                <button type="button" className="btn btn-secondary btn-small" onClick={() => void restoreSnapshot(snapshot)}>
                   Restore
                 </button>
               </li>
@@ -1062,7 +1062,7 @@ function UpdateBalancesPanelBody({
             <button
               type="button"
               className="btn btn-primary"
-              onClick={apply}
+              onClick={() => void apply()}
               disabled={blocked || protectionPending}
               // Two distinct causes can disable Apply; name whichever fired so the
               // control never sits greyed out without saying why. Protection-pending

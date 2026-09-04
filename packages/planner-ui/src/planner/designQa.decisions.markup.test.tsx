@@ -199,7 +199,7 @@ describe('D6 (#508): the fill-to-target bracket is chosen, not typed', () => {
     const select = host.querySelector<HTMLSelectElement>('select[data-path="strategies.rothConversion.targetValue"]')
     expect(select, 'the bracket control is a select').not.toBeNull()
     const rates = packForYear(2026).pack.federalTax.brackets.single.map((b) => b.ratePct)
-    const top = rates[rates.length - 1]!
+    const top = rates[rates.length - 1]
     const labels = [...select!.options].filter((o) => !o.disabled).map((o) => o.textContent)
     expect(labels).toEqual(rates.slice(0, -1).map((rate) => `${rate}%`))
     expect(labels).not.toContain(`${top}%`)
@@ -222,9 +222,9 @@ describe('D6 (#508): the fill-to-target bracket is chosen, not typed', () => {
     }
     // And a rate between two offered ones is refused by both sides.
     const between = validPlan(fillToTarget)
-    ;(between.strategies.rothConversion as { targetValue: number }).targetValue = offered[0]! + 0.5
+    ;(between.strategies.rothConversion as { targetValue: number }).targetValue = offered[0] + 0.5
     expect(parsePlan(between).ok).toBe(false)
-    expect(offered).not.toContain(offered[0]! + 0.5)
+    expect(offered).not.toContain(offered[0] + 0.5)
   })
 
   it.each([

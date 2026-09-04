@@ -47,7 +47,7 @@ describe('AssumptionsCardPage', () => {
       </PlanCtx.Provider>,
     )
     const snapshot = buildAssumptionsSnapshot(plan, currentStartYear())
-    const text = el.textContent!
+    const text = el.textContent
     for (const group of snapshot.groups) {
       expect(text).toContain(group.label)
       for (const row of group.rows) expect(text).toContain(row.label)
@@ -74,7 +74,7 @@ describe('AssumptionsCardPage', () => {
 describe('HowTestedPage', () => {
   it('ships real harness names and non-stale counts', () => {
     const el = render(<HowTestedPage />)
-    const text = el.textContent!
+    const text = el.textContent
     // Counts are glob-derived from the source tree; sanity-floor them so the
     // page can never render an empty validation story.
     const externalCount = Number(text.match(/(\d+) external-oracle golden suites/)?.[1])
@@ -90,7 +90,7 @@ describe('HowTestedPage', () => {
   })
 
   it('names no competing planner products', () => {
-    const text = render(<HowTestedPage />).textContent!
+    const text = render(<HowTestedPage />).textContent
     for (const name of ['Boldin', 'Pralana', 'ProjectionLab', 'Owl', 'NewRetirement']) {
       expect(text).not.toContain(name)
     }

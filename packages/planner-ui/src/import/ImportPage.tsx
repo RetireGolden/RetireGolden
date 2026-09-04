@@ -332,7 +332,9 @@ function EnabledImportPage() {
       return
     }
     if (epoch !== importEpoch.current) return
-    if (r.ok) navigate(`/plan/${r.plan.id}`)
+    // Fire-and-forget: this screen is unmounting on a successful save, and
+    // there is nothing useful to do with react-router's own navigation promise.
+    if (r.ok) void navigate(`/plan/${r.plan.id}`)
     else setError(`Could not save the draft plan: ${r.issues.join('; ')}`)
   }
 

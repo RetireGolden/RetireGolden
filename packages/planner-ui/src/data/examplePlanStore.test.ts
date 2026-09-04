@@ -56,23 +56,23 @@ beforeEach(() => {
 describe('example plan isolation', () => {
   it('hides demos from user plan list', async () => {
     await savePlan(newPlan('Mine'))
-    await saveFreshDemo(EXAMPLE_PLANS[0]!)
+    await saveFreshDemo(EXAMPLE_PLANS[0])
 
     const userPlans = await listUserPlanSummaries()
     expect(userPlans).toHaveLength(1)
-    expect(userPlans[0]!.name).toBe('Mine')
+    expect(userPlans[0].name).toBe('Mine')
   })
 
   it('lists only example demos', async () => {
     await savePlan(newPlan('Mine'))
-    await saveFreshDemo(EXAMPLE_PLANS[0]!)
-    await saveFreshDemo(EXAMPLE_PLANS[1]!)
+    await saveFreshDemo(EXAMPLE_PLANS[0])
+    await saveFreshDemo(EXAMPLE_PLANS[1])
 
     const demos = await listExampleSummaries()
     expect(demos).toHaveLength(2)
     expect(demos.every((summary) => summary.origin === 'example')).toBe(true)
     expect(demos.map((summary) => summary.id).sort()).toEqual(
-      [exampleStorageId(EXAMPLE_PLANS[0]!.id), exampleStorageId(EXAMPLE_PLANS[1]!.id)].sort(),
+      [exampleStorageId(EXAMPLE_PLANS[0].id), exampleStorageId(EXAMPLE_PLANS[1].id)].sort(),
     )
   })
 
@@ -102,7 +102,7 @@ describe('example plan isolation', () => {
   })
 
   it('atomic convert removes demo and creates one user plan', async () => {
-    const saved = await saveFreshDemo(EXAMPLE_PLANS[0]!)
+    const saved = await saveFreshDemo(EXAMPLE_PLANS[0])
     expect(saved.ok).toBe(true)
     if (!saved.ok) return
     addCanonicalScenario(saved.plan)
@@ -126,7 +126,7 @@ describe('example plan isolation', () => {
     const demo = newPlan('Example with filing source')
     demo.id = 'example:filing-source'
     demo.origin = 'example'
-    const ownerPersonId = demo.household.people[0]!.id
+    const ownerPersonId = demo.household.people[0].id
     demo.accounts = [traditionalAccount('ira-1', 10_000, ownerPersonId)]
     demo.retirementActionAnnualTaxFacts = {
       ownedNonRothIraAnnualFilingSourceRecords: [
@@ -154,12 +154,12 @@ describe('example plan isolation', () => {
       [structuredClone(demo)],
       ['example:filing-source'],
     )
-    expect(normalized[0]!.id).not.toBe(demo.id)
+    expect(normalized[0].id).not.toBe(demo.id)
     expect(normalized[0]).not.toHaveProperty('retirementActionAnnualTaxFacts')
   })
 
   it('saveExampleToMyPlans stamps updatedAtIso with the current time', async () => {
-    const saved = await saveFreshDemo(EXAMPLE_PLANS[0]!)
+    const saved = await saveFreshDemo(EXAMPLE_PLANS[0])
     expect(saved.ok).toBe(true)
     if (!saved.ok) return
 
@@ -176,7 +176,7 @@ describe('example plan isolation', () => {
   })
 
   it('duplicate always yields a user plan', async () => {
-    const saved = await saveFreshDemo(EXAMPLE_PLANS[1]!)
+    const saved = await saveFreshDemo(EXAMPLE_PLANS[1])
     expect(saved.ok).toBe(true)
     if (!saved.ok) return
 
@@ -186,23 +186,23 @@ describe('example plan isolation', () => {
   })
 
   it('normalizes imported example plans', async () => {
-    const demo = EXAMPLE_PLANS[0]!.build()
+    const demo = EXAMPLE_PLANS[0].build()
     demo.id = exampleStorageId('example-couple')
     demo.origin = 'example'
     addCanonicalScenario(demo)
     const normalized = await normalizePlansForImport([demo])
     expect(normalized).toHaveLength(1)
-    expect(normalized[0]!.origin).toBe('user')
-    expect(normalized[0]!.id).not.toMatch(/^example:/)
-    const scenario = normalized[0]!.scenarios.find(({ id }) => id === 'canonical-scenario')!
-    expect(applyScenarioPatch(normalized[0]!, scenario.patch).ok).toBe(true)
+    expect(normalized[0].origin).toBe('user')
+    expect(normalized[0].id).not.toMatch(/^example:/)
+    const scenario = normalized[0].scenarios.find(({ id }) => id === 'canonical-scenario')!
+    expect(applyScenarioPatch(normalized[0], scenario.patch).ok).toBe(true)
   })
 })
 
 describe('v2 backup export excludes demos', () => {
   it('serialize only includes user plans in practice via picker export path', async () => {
     await savePlan(newPlan('User only'))
-    await saveFreshDemo(EXAMPLE_PLANS[0]!)
+    await saveFreshDemo(EXAMPLE_PLANS[0])
     const userSummaries = await listUserPlanSummaries()
     const loaded: Plan[] = []
     for (const s of userSummaries) {

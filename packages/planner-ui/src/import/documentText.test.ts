@@ -119,6 +119,10 @@ function fakePdfjs(spec: FakePdfjsSpec): Record<string, unknown> {
   const makePage = (page: FakePdfPage) => ({
     ...(page.chunks === undefined ? {} : { streamTextContent: () => fakeTextStream(page.chunks!) }),
     getTextContent: () => {
+      // `failWith` is deliberately `unknown`: every call site here passes a
+      // real Error, but the fixture exists to prove the extractor is honest
+      // about whatever a real pdfjs might reject with, Error or not.
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
       if (page.failWith !== undefined) return Promise.reject(page.failWith)
       // A real `getTextContent` materializes the whole page before it resolves;
       // a chunked page reproduces that so the cost of taking this path is
@@ -144,15 +148,19 @@ function fakePdfjs(spec: FakePdfjsSpec): Record<string, unknown> {
       paintSolidColorImageMask: 92,
     },
     getDocument: () => {
+      // Same rationale as `failWith` above: `unknown` on purpose, to prove
+      // the extractor stays honest about a non-Error throw too.
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       if (spec.getDocumentThrows !== undefined) throw spec.getDocumentThrows
       return {
         promise:
           spec.documentError === undefined
             ? Promise.resolve({
                 numPages: pages.length,
-                getPage: (pageNumber: number) => Promise.resolve(makePage(pages[pageNumber - 1]!)),
+                getPage: (pageNumber: number) => Promise.resolve(makePage(pages[pageNumber - 1])),
               })
-            : Promise.reject(spec.documentError),
+            : // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- same rationale as `failWith` above
+              Promise.reject(spec.documentError),
         destroy: () => Promise.resolve(),
       }
     },
@@ -185,10 +193,10 @@ describe('extractDocumentText — reading the text layer', () => {
     const result = expectOk(await extractDocumentText(pdf))
 
     expect(result.pages).toHaveLength(1)
-    expect(result.pages[0]!.page).toBe(1)
-    expect(result.pages[0]!.text).toBe('Vanguard Brokerage Account 1234')
-    expect(result.pages[0]!.imageOnly).toBe(false)
-    expect(result.pages[0]!.truncated).toBe(false)
+    expect(result.pages[0].page).toBe(1)
+    expect(result.pages[0].text).toBe('Vanguard Brokerage Account 1234')
+    expect(result.pages[0].imageOnly).toBe(false)
+    expect(result.pages[0].truncated).toBe(false)
     expect(result.summary.totalPages).toBe(1)
     expect(result.summary.noTextExtracted).toBe(false)
     expect(result.summary.truncated).toBe(false)
@@ -222,7 +230,7 @@ describe('extractDocumentText — reading the text layer', () => {
     const buffer = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer
 
     const result = expectOk(await extractDocumentText(buffer))
-    expect(result.pages[0]!.text).toBe('Same bytes either way')
+    expect(result.pages[0].text).toBe('Same bytes either way')
     // pdfjs can take ownership of the buffer it is given; the caller's must
     // survive so they can hash it or retry.
     expect(buffer.byteLength).toBe(pdf.byteLength)
@@ -236,10 +244,10 @@ describe('extractDocumentText — pages with no text layer', () => {
     })
     const result = expectOk(await extractDocumentText(pdf))
 
-    expect(result.pages[0]!.imageOnly).toBe(false)
-    expect(result.pages[1]!.page).toBe(2)
-    expect(result.pages[1]!.text).toBe('')
-    expect(result.pages[1]!.imageOnly).toBe(true)
+    expect(result.pages[0].imageOnly).toBe(false)
+    expect(result.pages[1].page).toBe(2)
+    expect(result.pages[1].text).toBe('')
+    expect(result.pages[1].imageOnly).toBe(true)
     expect(result.summary.imageOnlyPages).toBe(1)
     // Some text came out, so this is not a "whole document needs OCR" case.
     expect(result.summary.noTextExtracted).toBe(false)
@@ -252,8 +260,8 @@ describe('extractDocumentText — pages with no text layer', () => {
     const pdf = buildSyntheticPdf({ pages: [{}] })
     const result = expectOk(await extractDocumentText(pdf))
 
-    expect(result.pages[0]!.text).toBe('')
-    expect(result.pages[0]!.imageOnly).toBe(false)
+    expect(result.pages[0].text).toBe('')
+    expect(result.pages[0].imageOnly).toBe(false)
     expect(result.summary.imageOnlyPages).toBe(0)
     // …and the document-level signal makes the same distinction. See the
     // dedicated test below: `noTextExtracted` is the needs-OCR signal, and
@@ -303,17 +311,17 @@ describe('extractDocumentText — pages with no text layer', () => {
     const pdf = buildSyntheticPdf({ pages: [{ text: 'Total account value $128,450.22', image: true }] })
 
     const clipped = expectOk(await extractDocumentText(pdf, { maxPageTextChars: 0 }))
-    expect(clipped.pages[0]!.text).toBe('')
-    expect(clipped.pages[0]!.truncated).toBe(true)
-    expect(clipped.pages[0]!.imageOnly).toBe(false)
+    expect(clipped.pages[0].text).toBe('')
+    expect(clipped.pages[0].truncated).toBe(true)
+    expect(clipped.pages[0].imageOnly).toBe(false)
     expect(clipped.summary.imageOnlyPages).toBe(0)
     expect(clipped.summary.noTextExtracted).toBe(false)
 
     // Uncapped, the same bytes read normally — the page is not image-only
     // either way, so the cap changed nothing but the text.
     const whole = expectOk(await extractDocumentText(pdf))
-    expect(whole.pages[0]!.text).toBe('Total account value $128,450.22')
-    expect(whole.pages[0]!.imageOnly).toBe(false)
+    expect(whole.pages[0].text).toBe('Total account value $128,450.22')
+    expect(whole.pages[0].imageOnly).toBe(false)
     expect(whole.summary.noTextExtracted).toBe(false)
 
     // …and the signal still fires for a page that genuinely has no text layer,
@@ -321,7 +329,7 @@ describe('extractDocumentText — pages with no text layer', () => {
     const scanned = expectOk(
       await extractDocumentText(buildSyntheticPdf({ pages: [{ image: true }] }), { maxPageTextChars: 0 }),
     )
-    expect(scanned.pages[0]!.imageOnly).toBe(true)
+    expect(scanned.pages[0].imageOnly).toBe(true)
     expect(scanned.summary.noTextExtracted).toBe(true)
   })
 
@@ -492,7 +500,7 @@ describe('extractDocumentText — honest failure', () => {
     expect(live.byteLength).toBe(0) // detached out from under the call
 
     const result = expectOk(await pending)
-    expect(result.pages[0]!.text).toBe('Transferred mid-flight')
+    expect(result.pages[0].text).toBe('Transferred mid-flight')
   })
 
   it('never throws on arbitrary bytes — every input comes back as a result', async () => {
@@ -574,16 +582,16 @@ describe('extractDocumentText — which raster operator pdfjs chose', () => {
     const grouped = expectOk(
       await extractWith({ pages: [{ imagePainted: true, paintOp: GROUPED_PAINT_OP }] }),
     )
-    expect(grouped.pages[0]!.imageOnly).toBe(true)
+    expect(grouped.pages[0].imageOnly).toBe(true)
     expect(grouped.summary.imageOnlyPages).toBe(1)
     expect(grouped.summary.noTextExtracted).toBe(true)
 
     // The plain operator still works, and a page with no raster at all is still
     // blank rather than scanned.
     const plain = expectOk(await extractWith({ pages: [{ imagePainted: true }] }))
-    expect(plain.pages[0]!.imageOnly).toBe(true)
+    expect(plain.pages[0].imageOnly).toBe(true)
     const empty = expectOk(await extractWith({ pages: [{ items: () => [] }] }))
-    expect(empty.pages[0]!.imageOnly).toBe(false)
+    expect(empty.pages[0].imageOnly).toBe(false)
     expect(empty.summary.noTextExtracted).toBe(false)
   })
 
@@ -594,7 +602,7 @@ describe('extractDocumentText — which raster operator pdfjs chose', () => {
     const host = fakePdfjs({ pages: [{ imagePainted: true, paintOp: 93 }] })
     ;(host['OPS'] as Record<string, number>)['paintJpegXObject'] = 93
     const result = expectOk(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: host }))
-    expect(result.pages[0]!.imageOnly).toBe(true)
+    expect(result.pages[0].imageOnly).toBe(true)
     expect(result.summary.noTextExtracted).toBe(true)
   })
 
@@ -612,7 +620,7 @@ describe('extractDocumentText — which raster operator pdfjs chose', () => {
       delete ops[op]
     }
     const result = expectOk(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: host }))
-    expect(result.pages[0]!.imageOnly).toBe(true)
+    expect(result.pages[0].imageOnly).toBe(true)
   })
 
 })
@@ -742,7 +750,7 @@ describe('extractDocumentText — the optional pdfjs peer is missing', () => {
     // …and deferring resolution has not broken it: this repo's own run resolves
     // the peer through the same indirect specifier.
     const ok = expectOk(await extractDocumentText(buildSyntheticPdf({ pages: [{ text: 'resolved at run time' }] })))
-    expect(ok.pages[0]!.text).toBe('resolved at run time')
+    expect(ok.pages[0].text).toBe('resolved at run time')
   })
 })
 
@@ -779,8 +787,8 @@ describe('extractDocumentText — the host supplies pdfjs (the browser path)', (
     })
     const result = expectOk(await extract(REAL_PDF_BYTES, { pdfjs: hostPdfjs }))
 
-    expect(result.pages[0]!.text).toBe('read through the host-supplied build')
-    expect(result.pages[1]!.imageOnly).toBe(true)
+    expect(result.pages[0].text).toBe('read through the host-supplied build')
+    expect(result.pages[1].imageOnly).toBe(true)
     expect(result.summary.totalPages).toBe(2)
     expect(importsAttempted).toBe(0)
 
@@ -805,7 +813,7 @@ describe('extractDocumentText — the host supplies pdfjs (the browser path)', (
     expect(result.message).toMatch(/[.!]$/)
 
     // An object with nothing on it at all is the same answer, not an exception.
-    const empty = expectFailed(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: {} as HostPdfjsModule }))
+    const empty = expectFailed(await extractDocumentText(REAL_PDF_BYTES, { pdfjs: {} }))
     expect(empty.reason).toBe('pdfjs_incompatible')
   })
 
@@ -814,7 +822,7 @@ describe('extractDocumentText — the host supplies pdfjs (the browser path)', (
     // process a bare specifier DOES resolve, and this repo's own tests and
     // benchmark depend on it. Injection must not have become mandatory.
     const ok = expectOk(await extractDocumentText(buildSyntheticPdf({ pages: [{ text: 'no injection needed' }] })))
-    expect(ok.pages[0]!.text).toBe('no injection needed')
+    expect(ok.pages[0].text).toBe('no injection needed')
   })
 
   it('drives the REAL pdfjs through the injected path, not only a hand-written fake', async () => {
@@ -834,17 +842,17 @@ describe('extractDocumentText — the host supplies pdfjs (the browser path)', (
     })
     const ok = expectOk(await extractDocumentText(pdf, { pdfjs: realPdfjs }))
 
-    expect(ok.pages[0]!.text).toBe('Injected pdfjs read this line')
-    expect(ok.pages[1]!.imageOnly).toBe(true)
-    expect(ok.pages[2]!.text).toBe('')
-    expect(ok.pages[2]!.imageOnly).toBe(false)
+    expect(ok.pages[0].text).toBe('Injected pdfjs read this line')
+    expect(ok.pages[1].imageOnly).toBe(true)
+    expect(ok.pages[2].text).toBe('')
+    expect(ok.pages[2].imageOnly).toBe(false)
     expect(ok.summary.totalPages).toBe(3)
     expect(ok.summary.unreadablePages).toEqual([])
 
     // …and the caps behave the same way against the real build as against the
     // fake, which is the other thing a fake alone cannot promise.
     const capped = expectOk(await extractDocumentText(pdf, { pdfjs: realPdfjs, maxPageTextChars: 8 }))
-    expect(capped.pages[0]!.text).toBe('Injected')
+    expect(capped.pages[0].text).toBe('Injected')
     expect(capped.summary.truncatedBy).toContain('page_text_cap')
   })
 })
@@ -919,8 +927,8 @@ describe('extractDocumentText — caps', () => {
     const pdf = buildSyntheticPdf({ pages: [{ text: 'Truncate me right here' }] })
     const result = expectOk(await extractDocumentText(pdf, { maxPageTextChars: 8 }))
 
-    expect(result.pages[0]!.text).toBe('Truncate')
-    expect(result.pages[0]!.truncated).toBe(true)
+    expect(result.pages[0].text).toBe('Truncate')
+    expect(result.pages[0].truncated).toBe(true)
     expect(result.summary.truncated).toBe(true)
     expect(result.summary.truncatedBy).toContain('page_text_cap')
     expect(result.summary.totalTextChars).toBe(8)
@@ -933,8 +941,8 @@ describe('extractDocumentText — caps', () => {
     const result = expectOk(await extractDocumentText(pdf, { maxTotalTextChars: 5 }))
 
     expect(result.pages).toHaveLength(1)
-    expect(result.pages[0]!.text).toBe('First')
-    expect(result.pages[0]!.truncated).toBe(true)
+    expect(result.pages[0].text).toBe('First')
+    expect(result.pages[0].truncated).toBe(true)
     // The document still reports its real length, so a caller can see that
     // pages 2 and 3 exist and were not read — silently returning less is the
     // failure mode this guards.
@@ -954,7 +962,7 @@ describe('extractDocumentText — caps', () => {
     // and the flag is still set:
     const pdf = buildSyntheticPdf({ pages: [{ text: 'First page text' }] })
     const clipped = expectOk(await extractDocumentText(pdf, { maxTotalTextChars: 5 }))
-    expect(clipped.pages[0]!.truncated).toBe(true)
+    expect(clipped.pages[0].truncated).toBe(true)
     expect(clipped.summary.truncatedBy).toEqual(['document_text_cap'])
     expect(clipped.summary.truncatedBy).not.toContain('page_text_cap')
 
@@ -992,7 +1000,7 @@ describe('extractDocumentText — caps', () => {
         maxTotalTextChars: MAX_DOCUMENT_TEXT_CHARS * 100,
       }),
     )
-    expect(loosened.pages[0]!.text).toBe('Bounded work is the promise')
+    expect(loosened.pages[0].text).toBe('Bounded work is the promise')
     expect(loosened.summary.truncated).toBe(false)
 
     // Tightening is honoured.
@@ -1119,14 +1127,14 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
 
     // …and the answer is exactly what the concatenating version produced.
     const ok = expectOk(result)
-    expect(ok.pages[0]!.text).toBe('x'.repeat(50))
-    expect(ok.pages[0]!.truncated).toBe(true)
+    expect(ok.pages[0].text).toBe('x'.repeat(50))
+    expect(ok.pages[0].truncated).toBe(true)
     expect(ok.summary.truncatedBy).toContain('page_text_cap')
     expect(ok.summary.totalTextChars).toBe(50)
     // The signals decided from the PRE-truncation text survive the early exit:
     // a page cut short after one item still had a text layer, so it is neither
     // image-only nor evidence that the document needs OCR.
-    expect(ok.pages[0]!.imageOnly).toBe(false)
+    expect(ok.pages[0].imageOnly).toBe(false)
     expect(ok.summary.noTextExtracted).toBe(false)
   })
 
@@ -1153,7 +1161,7 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
           itemsInspected += 1
           return 'x'.repeat(1000)
         },
-      }) as FakeGlyphItem
+      })
     const result = await extractWith(
       {
         pages: [
@@ -1183,13 +1191,13 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     // fake's stream REJECTS on cancel, as pdfjs 6 does, so a result reaching here
     // at all is also the proof that letting go of the stream cannot replace it.
     const ok = expectOk(result)
-    expect(ok.pages[0]!.text).toBe('x'.repeat(50))
-    expect(ok.pages[0]!.truncated).toBe(true)
+    expect(ok.pages[0].text).toBe('x'.repeat(50))
+    expect(ok.pages[0].truncated).toBe(true)
     expect(ok.summary.truncatedBy).toContain('page_text_cap')
     expect(ok.summary.totalTextChars).toBe(50)
     // The signals decided from the PRE-truncation text survive the early exit: a
     // page cut short after one chunk still had a text layer.
-    expect(ok.pages[0]!.imageOnly).toBe(false)
+    expect(ok.pages[0].imageOnly).toBe(false)
     expect(ok.summary.noTextExtracted).toBe(false)
   })
 
@@ -1207,7 +1215,7 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
           itemsInspected += 1
           return 'x'.repeat(1000)
         },
-      }) as FakeGlyphItem
+      })
     const result = await extractWith(
       {
         pages: [
@@ -1234,12 +1242,12 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     // DOCUMENT cap clipped this, and the page cap — which never fired — is not
     // credited with it.
     const ok = expectOk(result)
-    expect(ok.pages[0]!.text).toBe('x'.repeat(10))
-    expect(ok.pages[0]!.truncated).toBe(true)
+    expect(ok.pages[0].text).toBe('x'.repeat(10))
+    expect(ok.pages[0].truncated).toBe(true)
     expect(ok.summary.truncatedBy).toEqual(['document_text_cap'])
     expect(ok.summary.totalTextChars).toBe(10)
     // Decided before truncation, so stopping sooner has not changed it.
-    expect(ok.pages[0]!.imageOnly).toBe(false)
+    expect(ok.pages[0].imageOnly).toBe(false)
     expect(ok.summary.noTextExtracted).toBe(false)
   })
 
@@ -1249,13 +1257,13 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     // budget is still told which one clipped.
     const page = { chunks: () => [[{ str: 'x'.repeat(1000) }]] }
     const pageCapped = expectOk(await extractWith({ pages: [page] }, { maxPageTextChars: 20 }))
-    expect(pageCapped.pages[0]!.text).toBe('x'.repeat(20))
+    expect(pageCapped.pages[0].text).toBe('x'.repeat(20))
     expect(pageCapped.summary.truncatedBy).toEqual(['page_text_cap'])
 
     // Both caps at the same value: the page cap is the one that clipped, and
     // the document cap only stops the run afterwards.
     const both = expectOk(await extractWith({ pages: [page] }, { maxPageTextChars: 20, maxTotalTextChars: 20 }))
-    expect(both.pages[0]!.text).toBe('x'.repeat(20))
+    expect(both.pages[0].text).toBe('x'.repeat(20))
     expect(both.summary.truncatedBy).toEqual(['page_text_cap'])
   })
 
@@ -1271,17 +1279,17 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     ]
     const streamed = expectOk(await extractWith({ pages: [{ chunks: () => batches }] }))
     const flat = expectOk(await extractWith({ pages: [{ items: () => batches.flat() }] }))
-    expect(streamed.pages[0]!.text).toBe('Ledger balance')
-    expect(flat.pages[0]!.text).toBe(streamed.pages[0]!.text)
+    expect(streamed.pages[0].text).toBe('Ledger balance')
+    expect(flat.pages[0].text).toBe(streamed.pages[0].text)
     expect(streamed.summary.truncated).toBe(false)
 
     // Clipped inside the interior gap, both ways: the space is kept, because it is
     // only trailing once nothing follows it.
     const clippedStream = expectOk(await extractWith({ pages: [{ chunks: () => batches }] }, { maxPageTextChars: 7 }))
     const clippedFlat = expectOk(await extractWith({ pages: [{ items: () => batches.flat() }] }, { maxPageTextChars: 7 }))
-    expect(clippedStream.pages[0]!.text).toBe('Ledger ')
-    expect(clippedFlat.pages[0]!.text).toBe(clippedStream.pages[0]!.text)
-    expect(clippedStream.pages[0]!.truncated).toBe(true)
+    expect(clippedStream.pages[0].text).toBe('Ledger ')
+    expect(clippedFlat.pages[0].text).toBe(clippedStream.pages[0].text)
+    expect(clippedStream.pages[0].truncated).toBe(true)
   })
 
   it('reproduces trim() exactly while reading item by item', async () => {
@@ -1297,21 +1305,21 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
       { str: '   ' },
     ]
     const whole = expectOk(await extractWith({ pages: [{ items }] }))
-    expect(whole.pages[0]!.text).toBe('Ledger balance')
-    expect(whole.pages[0]!.truncated).toBe(false)
+    expect(whole.pages[0].text).toBe('Ledger balance')
+    expect(whole.pages[0].truncated).toBe(false)
     expect(whole.summary.totalTextChars).toBe('Ledger balance'.length)
 
     // Clipped inside the interior gap: the space is kept, because it is only
     // trailing once nothing follows it.
     const clipped = expectOk(await extractWith({ pages: [{ items }] }, { maxPageTextChars: 7 }))
-    expect(clipped.pages[0]!.text).toBe('Ledger ')
-    expect(clipped.pages[0]!.truncated).toBe(true)
+    expect(clipped.pages[0].text).toBe('Ledger ')
+    expect(clipped.pages[0].truncated).toBe(true)
 
     // A page of nothing but whitespace is blank, not a page with text — and
     // blank is not scanned, so it is not a document to send to OCR either.
     const blank = expectOk(await extractWith({ pages: [{ items: () => [{ str: '   ' }, { str: '\n' }] }] }))
-    expect(blank.pages[0]!.text).toBe('')
-    expect(blank.pages[0]!.imageOnly).toBe(false)
+    expect(blank.pages[0].text).toBe('')
+    expect(blank.pages[0].imageOnly).toBe(false)
     expect(blank.summary.noTextExtracted).toBe(false)
 
     // The same whitespace page WITH a raster painted on it is the scanned case,
@@ -1319,7 +1327,7 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
     const scanned = expectOk(
       await extractWith({ pages: [{ items: () => [{ str: '   ' }], imagePainted: true }] }),
     )
-    expect(scanned.pages[0]!.imageOnly).toBe(true)
+    expect(scanned.pages[0].imageOnly).toBe(true)
     expect(scanned.summary.noTextExtracted).toBe(true)
   })
 
@@ -1398,8 +1406,8 @@ describe('extractDocumentText — the caps bound the work, not just the answer',
 
     expect(result.summary.unreadablePages).toEqual([1])
     expect(result.summary.pagesExtracted).toBe(1)
-    expect(result.pages[0]!.page).toBe(2)
-    expect(result.pages[0]!.imageOnly).toBe(true)
+    expect(result.pages[0].page).toBe(2)
+    expect(result.pages[0].imageOnly).toBe(true)
     expect(result.summary.imageOnlyPages).toBe(1)
     expect(result.summary.noTextExtracted).toBe(false)
   })
@@ -1598,12 +1606,12 @@ describe('extractDocumentText — a capped page must SETTLE against real pdfjs',
       const ok = expectOk(
         await extractDocumentText(buildSyntheticPdf({ pages: [manyItemPage()] }), { maxTotalTextChars: 10 }),
       )
-      expect(ok.pages[0]!.text).toHaveLength(10)
-      expect(ok.pages[0]!.truncated).toBe(true)
+      expect(ok.pages[0].text).toHaveLength(10)
+      expect(ok.pages[0].truncated).toBe(true)
       expect(ok.summary.truncatedBy).toEqual(['document_text_cap'])
       expect(ok.summary.totalTextChars).toBe(10)
       // Truncation is not a scanned page, however early it happened.
-      expect(ok.pages[0]!.imageOnly).toBe(false)
+      expect(ok.pages[0].imageOnly).toBe(false)
       expect(ok.summary.noTextExtracted).toBe(false)
     },
     SETTLE_TIMEOUT_MS,
@@ -1617,8 +1625,8 @@ describe('extractDocumentText — a capped page must SETTLE against real pdfjs',
       const ok = expectOk(
         await extractDocumentText(buildSyntheticPdf({ pages: [manyItemPage()] }), { maxPageTextChars: 10 }),
       )
-      expect(ok.pages[0]!.text).toHaveLength(10)
-      expect(ok.pages[0]!.truncated).toBe(true)
+      expect(ok.pages[0].text).toHaveLength(10)
+      expect(ok.pages[0].truncated).toBe(true)
       expect(ok.summary.truncatedBy).toEqual(['page_text_cap'])
       expect(ok.summary.totalTextChars).toBe(10)
     },
@@ -1634,15 +1642,15 @@ describe('extractDocumentText — a capped page must SETTLE against real pdfjs',
       // keeps landing mid-page whatever a pdfjs bump does to the spacing.
       const pdf = buildSyntheticPdf({ pages: [manyItemPage(), manyItemPage(), manyItemPage()] })
       const whole = expectOk(await extractDocumentText(pdf))
-      const firstPageChars = whole.pages[0]!.text.length
+      const firstPageChars = whole.pages[0].text.length
       expect(firstPageChars).toBeGreaterThan(100)
       expect(whole.summary.truncated).toBe(false)
 
       const ok = expectOk(await extractDocumentText(pdf, { maxTotalTextChars: firstPageChars + 10 }))
       expect(ok.pages).toHaveLength(2)
-      expect(ok.pages[0]!.truncated).toBe(false)
-      expect(ok.pages[1]!.text).toHaveLength(10)
-      expect(ok.pages[1]!.truncated).toBe(true)
+      expect(ok.pages[0].truncated).toBe(false)
+      expect(ok.pages[1].text).toHaveLength(10)
+      expect(ok.pages[1].truncated).toBe(true)
       expect(ok.summary.truncatedBy).toEqual(['document_text_cap'])
       expect(ok.summary.totalTextChars).toBe(firstPageChars + 10)
     },
@@ -1657,7 +1665,7 @@ describe('extractDocumentText — a capped page must SETTLE against real pdfjs',
       const pdf = buildSyntheticPdf({ pages: [manyItemPage(6)] })
       const whole = expectOk(await extractDocumentText(pdf))
       const capped = expectOk(await extractDocumentText(pdf, { maxPageTextChars: 25 }))
-      expect(capped.pages[0]!.text).toBe(whole.pages[0]!.text.slice(0, 25))
+      expect(capped.pages[0].text).toBe(whole.pages[0].text.slice(0, 25))
     },
     SETTLE_TIMEOUT_MS,
   )
@@ -1674,7 +1682,7 @@ describe('buildSyntheticPdf', () => {
   it('escapes parentheses so a fixture cannot corrupt its own content stream', async () => {
     const pdf = buildSyntheticPdf({ pages: [{ text: 'Roth IRA (rollover)' }] })
     const result = expectOk(await extractDocumentText(pdf))
-    expect(result.pages[0]!.text).toBe('Roth IRA (rollover)')
+    expect(result.pages[0].text).toBe('Roth IRA (rollover)')
   })
 
   it('can emit something that is not a PDF at all', async () => {
@@ -1696,7 +1704,7 @@ describe('buildSyntheticPdf', () => {
     const result = expectOk(await extractDocumentText(pdf))
     // A blank line advances the baseline without drawing anything, so it
     // shapes the page without appearing in the text layer.
-    expect(result.pages[0]!.text).toBe(
+    expect(result.pages[0].text).toBe(
       'Statement of position\nAccount number ****4417\nTotal value $128,450.22',
     )
   })
@@ -1708,11 +1716,11 @@ describe('buildSyntheticPdf', () => {
     const spaced = buildSyntheticPdf({
       pages: [{ fontSize: 10, lines: [[{ x: 72, text: 'Roth IRA' }, { x: 300, text: '****4417' }]] }],
     })
-    expect(expectOk(await extractDocumentText(spaced)).pages[0]!.text).toBe('Roth IRA ****4417')
+    expect(expectOk(await extractDocumentText(spaced)).pages[0].text).toBe('Roth IRA ****4417')
 
     const abutting = buildSyntheticPdf({
       pages: [{ fontSize: 10, lines: [[{ x: 72, text: 'Roth IRA' }, { x: 110, text: '****4417' }]] }],
     })
-    expect(expectOk(await extractDocumentText(abutting)).pages[0]!.text).toBe('Roth IRA****4417')
+    expect(expectOk(await extractDocumentText(abutting)).pages[0].text).toBe('Roth IRA****4417')
   })
 })

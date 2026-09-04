@@ -68,7 +68,7 @@ export function parseCsv(text: string): CsvParseResult {
   }
 
   while (i < src.length) {
-    const ch = src[i]!
+    const ch = src[i]
     if (inQuotes) {
       if (ch === '"') {
         if (src[i + 1] === '"') {

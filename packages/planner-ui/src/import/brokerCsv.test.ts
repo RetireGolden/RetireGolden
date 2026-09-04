@@ -136,7 +136,7 @@ describe('parseBrokerPositionsCsv — Fidelity', () => {
     // an account. What matters is that the checklist says so: an unreported
     // skip here reads as a complete import of a balance that is $4,000 low.
     expect(r.accounts).toHaveLength(1)
-    expect(r.accounts[0]!.totalValue).toBe(19_050)
+    expect(r.accounts[0].totalValue).toBe(19_050)
     const orphan = r.review.find((i) => i.status === 'skipped' && i.source === 'Row 3')
     expect(orphan).toBeDefined()
     expect(orphan!.detail).toContain('$4,000')
@@ -149,7 +149,7 @@ describe('parseBrokerPositionsCsv — Fidelity', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
 
-    expect(r.accounts[0]!.totalValue).toBe(19_050)
+    expect(r.accounts[0].totalValue).toBe(19_050)
     const orphan = r.review.find((i) => i.status === 'skipped' && i.source === 'Row 3')
     expect(orphan?.detail).toContain('$4,000')
   })
@@ -216,7 +216,7 @@ describe('parseBrokerPositionsCsv — hostile and malformed input', () => {
     const r = parseBrokerPositionsCsv(hostile)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.accounts[0]!.totalValue).toBe(1000)
+    expect(r.accounts[0].totalValue).toBe(1000)
     expect(r.review.filter((i) => i.status === 'skipped')).toHaveLength(2)
   })
 
@@ -228,8 +228,8 @@ describe('parseBrokerPositionsCsv — hostile and malformed input', () => {
     const r = parseBrokerPositionsCsv(hostile)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.accounts[0]!.accountLabel).toContain('=HYPERLINK')
-    expect(r.accounts[0]!.totalValue).toBe(500)
+    expect(r.accounts[0].accountLabel).toContain('=HYPERLINK')
+    expect(r.accounts[0].totalValue).toBe(500)
   })
 
   it('handles negative (short/margin) positions via parenthesized values', () => {
@@ -241,7 +241,7 @@ describe('parseBrokerPositionsCsv — hostile and malformed input', () => {
     const r = parseBrokerPositionsCsv(csv)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.accounts[0]!.totalValue).toBe(8000)
+    expect(r.accounts[0].totalValue).toBe(8000)
   })
 })
 

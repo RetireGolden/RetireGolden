@@ -202,11 +202,11 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
     const parsed = parseImportProvenance(serializeImportProvenance(two))
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) throw new Error('expected a parse')
-    expect(parsed.provenance.unresolved[0]!.locator).toMatchObject({ kind: 'none', note: 'page 1', sourceIndex: 1 })
-    expect(describeSourceLocator(parsed.provenance.unresolved[0]!.locator)).toBe('page 1 (source 1)')
+    expect(parsed.provenance.unresolved[0].locator).toMatchObject({ kind: 'none', note: 'page 1', sourceIndex: 1 })
+    expect(describeSourceLocator(parsed.provenance.unresolved[0].locator)).toBe('page 1 (source 1)')
 
     // An index naming no entry is still refused, exactly like a coordinate leaf.
-    const dangling = { ...two, unresolved: [{ ...two.unresolved[0]!, locator: { kind: 'none' as const, note: 'p', sourceIndex: 9 } }] }
+    const dangling = { ...two, unresolved: [{ ...two.unresolved[0], locator: { kind: 'none' as const, note: 'p', sourceIndex: 9 } }] }
     expect(() => serializeImportProvenance(dangling)).toThrow()
   })
 
@@ -229,19 +229,19 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
 
   it('serialize throws — rather than emitting an unreadable file — on relational violations', () => {
     const badIndex = sampleInput()
-    badIndex.mappings[0] = { ...badIndex.mappings[0]!, locator: { kind: 'csvRow', row: 1, sourceIndex: 99 } }
+    badIndex.mappings[0] = { ...badIndex.mappings[0], locator: { kind: 'csvRow', row: 1, sourceIndex: 99 } }
     expect(() => serializeImportProvenance(badIndex)).toThrow(/sourceIndex/)
 
     const misfiled = sampleInput()
-    misfiled.mappings[0] = { ...misfiled.mappings[0]!, confidence: 'unmapped' }
+    misfiled.mappings[0] = { ...misfiled.mappings[0], confidence: 'unmapped' }
     expect(() => serializeImportProvenance(misfiled)).toThrow(/filed under/)
 
     const unresolvedTarget = sampleInput()
-    unresolvedTarget.unresolved[0] = { ...unresolvedTarget.unresolved[0]!, target: 'accounts[0]' }
+    unresolvedTarget.unresolved[0] = { ...unresolvedTarget.unresolved[0], target: 'accounts[0]' }
     expect(() => serializeImportProvenance(unresolvedTarget)).toThrow(/cannot carry a target/)
 
     const oversized = sampleInput()
-    oversized.mappings[0] = { ...oversized.mappings[0]!, detail: 'x'.repeat(MAX_IMPORT_PROVENANCE_JSON_CHARS) }
+    oversized.mappings[0] = { ...oversized.mappings[0], detail: 'x'.repeat(MAX_IMPORT_PROVENANCE_JSON_CHARS) }
     expect(() => serializeImportProvenance(oversized)).toThrow(/exceeds/)
   })
 
@@ -271,15 +271,15 @@ describe('serializeImportProvenance / parseImportProvenance', () => {
   it('round-trips the optional target plan path and multi-source sourceIndex', () => {
     const input = sampleInput()
     input.mappings[0] = {
-      ...input.mappings[0]!,
+      ...input.mappings[0],
       target: 'accounts[3]',
       locator: { kind: 'csvRow', row: 12, column: 'Total Value', sourceIndex: 1 },
     }
     const parsed = parseImportProvenance(serializeImportProvenance(input))
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
-    expect(parsed.provenance.mappings[0]!.target).toBe('accounts[3]')
-    expect(parsed.provenance.mappings[0]!.locator).toEqual({ kind: 'csvRow', row: 12, column: 'Total Value', sourceIndex: 1 })
+    expect(parsed.provenance.mappings[0].target).toBe('accounts[3]')
+    expect(parsed.provenance.mappings[0].locator).toEqual({ kind: 'csvRow', row: 12, column: 'Total Value', sourceIndex: 1 })
   })
 
   it('never embeds raw source-document content — a source carries only identity', () => {

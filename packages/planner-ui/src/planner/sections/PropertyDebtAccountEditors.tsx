@@ -146,7 +146,7 @@ export function PropertyAccountEditor({
               { value: 'lastResort', label: 'Last resort (when portfolio is exhausted)' },
               { value: 'coordinated', label: 'Coordinated (after down market years)' },
             ]}
-            onCommit={(v) => onCommit('hecm', { ...account.hecm!, drawPolicy: v as 'coordinated' | 'lastResort' })}
+            onCommit={(v) => onCommit('hecm', { ...account.hecm!, drawPolicy: v })}
           />
         </>
       ) : null}

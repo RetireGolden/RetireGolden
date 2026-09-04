@@ -329,7 +329,7 @@ export function AnnuityAccountEditor({
               { value: 'qualified', label: 'Qualified (pre-tax IRA/401k)' },
             ]}
             onCommit={(value) => {
-              const taxQualification = value as 'nonQualified' | 'qualified'
+              const taxQualification = value
               const stillEligible = plan.accounts.some(
                 (candidate) =>
                   candidate.id === account.purchase!.fundingAccountId && canFundAnnuityPurchase(candidate, taxQualification),

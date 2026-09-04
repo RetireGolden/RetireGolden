@@ -54,10 +54,10 @@ function rule(selector: string, source = css): string {
     if (at < 0) break
     from = at + selector.length
     let after = from
-    while (after < source.length && /\s/.test(source[after]!)) after++
+    while (after < source.length && /\s/.test(source[after])) after++
     if (source[after] !== '{') continue
     let before = at - 1
-    while (before >= 0 && /\s/.test(source[before]!)) before--
+    while (before >= 0 && /\s/.test(source[before])) before--
     const boundary =
       before < 0 || source[before] === '}' || source[before] === '{' || source.slice(before - 1, before + 1) === '*/'
     if (!boundary) continue

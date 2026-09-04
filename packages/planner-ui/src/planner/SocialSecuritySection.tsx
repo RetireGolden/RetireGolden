@@ -214,7 +214,7 @@ export function FormerSpousesEditor({
                   { value: 'deceased', label: 'Deceased (survivor)' },
                 ]}
                 describedBy={describedBy}
-                onCommit={(v) => updateRecord(r.id, (x) => (x.relationship = v as FormerSpouse['relationship']))}
+                onCommit={(v) => updateRecord(r.id, (x) => (x.relationship = v))}
               />
               <DateField
                 label="Their date of birth"
@@ -362,8 +362,8 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
     earnings.length > 0 ? earnings.reduce((a, b) => (b.year >= a.year ? b : a)).amount : null
   const projYears = (resolved.detail?.indexedYears ?? []).filter((y2) => y2.projected)
   const projectedYears = projYears.length
-  const projectedRange = projectedYears > 0 ? `${projYears[0]!.year}–${projYears[projectedYears - 1]!.year}` : ''
-  const projectedAmount = projectedYears > 0 ? projYears[0]!.rawEarnings : null
+  const projectedRange = projectedYears > 0 ? `${projYears[0].year}–${projYears[projectedYears - 1].year}` : ''
+  const projectedAmount = projectedYears > 0 ? projYears[0].rawEarnings : null
 
   const setStream = (mut: (s: SsStream) => void) =>
     update((d2) => {

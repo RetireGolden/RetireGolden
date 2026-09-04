@@ -26,7 +26,7 @@ describe('digestSource', () => {
     // "abc" preceded by a UTF-8 BOM: text decoding would strip the BOM and
     // produce the plain-"abc" hash; the byte digest must not.
     const bom = new Uint8Array([0xef, 0xbb, 0xbf, 0x61, 0x62, 0x63])
-    const { sha256, bytes } = await digestSource(bom.buffer as ArrayBuffer)
+    const { sha256, bytes } = await digestSource(bom.buffer)
     expect(bytes).toBe(6)
     expect(sha256).not.toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
     expect(sha256).toMatch(/^[0-9a-f]{64}$/)

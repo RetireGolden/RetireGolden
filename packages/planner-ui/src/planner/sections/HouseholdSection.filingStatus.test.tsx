@@ -63,10 +63,10 @@ describe('Household: Single filing status with a partner (#555)', () => {
     expect(box!.classList.contains('callout')).toBe(true)
     expect(box!.textContent).toContain('Two people on a Single-filing plan.')
     expect(box!.textContent).toContain(SINGLE_WITH_PARTNER_NOTE)
-    expect(box!.textContent).toContain(`remove ${plan.household.people[1]!.name}`)
+    expect(box!.textContent).toContain(`remove ${plan.household.people[1].name}`)
     // The partner is still there to edit or remove; nothing was disabled.
     const titles = Array.from(el.querySelectorAll('.item-row-title')).map((t) => t.textContent)
-    expect(titles.some((t) => t?.includes(plan.household.people[1]!.name))).toBe(true)
+    expect(titles.some((t) => t?.includes(plan.household.people[1].name))).toBe(true)
     const removeButtons = Array.from(el.querySelectorAll('button')).filter((b) => b.textContent === 'Remove')
     expect(removeButtons.length).toBeGreaterThan(0)
     expect(removeButtons.every((b) => !b.disabled)).toBe(true)
@@ -104,7 +104,7 @@ describe('Household: Single filing status with a partner (#555)', () => {
   it('a Single plan with one person shows no notice', () => {
     const plan = createSamplePlan()
     plan.household.filingStatus = 'single'
-    plan.household.people = [plan.household.people[0]!]
+    plan.household.people = [plan.household.people[0]]
     expect(notice(mount(plan))).toBeNull()
   })
 })

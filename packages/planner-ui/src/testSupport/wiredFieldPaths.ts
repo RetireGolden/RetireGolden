@@ -13,9 +13,25 @@
  */
 
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
-import { readdirSync, readFileSync } from 'node:fs'
+import * as nodeFsRaw from 'node:fs'
 // @ts-expect-error -- node builtins in a node-env test; the app tsconfig omits node types
-import { fileURLToPath } from 'node:url'
+import * as nodeUrlRaw from 'node:url'
+
+// The app tsconfig carries no @types/node, so the imports above resolve to
+// `any`. Casting the whole namespace once, ahead of any member access, is
+// what stops that `any` from making every call through it unsafe below —
+// these signatures are the only shapes this file calls.
+interface NodeFsLike {
+  readdirSync: (path: string, opts: { withFileTypes: true }) => Array<{ name: string; isDirectory: () => boolean }>
+  readFileSync: (path: string, encoding: string) => string
+}
+interface NodeUrlLike {
+  fileURLToPath: (url: string | URL) => string
+}
+const nodeFs = nodeFsRaw as NodeFsLike
+const nodeUrl = nodeUrlRaw as NodeUrlLike
+const { readdirSync, readFileSync } = nodeFs
+const { fileURLToPath } = nodeUrl
 
 /**
  * What each interpolation in a wired path template stands for. List indexes
@@ -45,7 +61,7 @@ const resolveTemplate = (tpl: string): string =>
 function sourceFiles(from: string): string[] {
   const files: string[] = []
   const walk = (at: string) => {
-    for (const entry of readdirSync(at, { withFileTypes: true }) as Array<{ name: string; isDirectory: () => boolean }>) {
+    for (const entry of readdirSync(at, { withFileTypes: true })) {
       const full = `${at}/${entry.name}`
       if (entry.isDirectory()) walk(full)
       else if (entry.name.endsWith('.tsx') && !entry.name.includes('.test.')) files.push(full)
@@ -67,17 +83,17 @@ export function wiredFieldPaths(dirUrl: string | URL = new URL('../planner/', im
   const found = new Set<string>()
   for (const file of sourceFiles(fileURLToPath(dirUrl))) {
     const src = readFileSync(file, 'utf8')
-    for (const [, quoted] of src.matchAll(/\bpath="([^"]+)"/g)) if (quoted!.includes('.')) found.add(quoted!)
+    for (const [, quoted] of src.matchAll(/\bpath="([^"]+)"/g)) if (quoted.includes('.')) found.add(quoted)
     for (const [, tpl] of src.matchAll(/\bpath=\{`([^`]+)`\}/g)) {
-      const resolved = resolveTemplate(tpl!)
+      const resolved = resolveTemplate(tpl)
       if (!resolved.includes('${')) found.add(resolved)
     }
     // A helper of the form `const NAME = (leaf: string) => (… ? `TEMPLATE` : undefined)`
     // paired with `path={NAME('leaf')}` call sites.
     for (const [, helper, tpl] of src.matchAll(/const (\w+) = \(leaf: string\) =>[^`]*`([^`]+)`/g)) {
-      const template = resolveTemplate(tpl!)
+      const template = resolveTemplate(tpl)
       for (const [, leaf] of src.matchAll(new RegExp(`\\bpath=\\{${helper}\\('([^']+)'\\)\\}`, 'g'))) {
-        const resolved = template.replace('${leaf}', leaf!)
+        const resolved = template.replace('${leaf}', leaf)
         if (!resolved.includes('${')) found.add(resolved)
       }
     }

@@ -86,11 +86,11 @@ export function applyYearCashFlowGrouping(
   const otherById = new Map<string, YearCashFlowSankeyNode>()
 
   for (const members of groups.values()) {
-    const sideTotal = sideTotals.get(members[0]!.side) ?? 0
+    const sideTotal = sideTotals.get(members[0].side) ?? 0
     if (sideTotal <= 0) continue
     const eligible = members.filter((node) => node.amountPlanDollars < threshold * sideTotal)
     if (eligible.length < 2) continue
-    const representative = eligible.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0]!
+    const representative = eligible.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0]
     const id = otherNodeId(representative)
     const underlyingLineIds = uniqueSorted(eligible.flatMap((node) => node.underlyingLineIds))
     let amountPlanDollars = 0

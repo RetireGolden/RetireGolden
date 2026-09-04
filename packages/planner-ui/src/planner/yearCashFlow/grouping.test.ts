@@ -8,7 +8,6 @@ import type {
   YearCashFlowReconciliation,
   YearCashFlowSourceLine,
   YearCashFlowUseLine,
-  YearResult,
 } from '@retiregolden/engine/projection/types'
 import {
   cashAccount,
@@ -146,7 +145,7 @@ function collapseCashFlow(): YearCashFlow {
 function ready(options?: { showAll?: boolean }): YearCashFlowSankeyReady {
   const model = buildYearCashFlowSankey(
     collapsePlan(),
-    { year: 2030, cashFlow: collapseCashFlow() } as YearResult,
+    { year: 2030, cashFlow: collapseCashFlow() },
     options,
   )
   if (model.kind !== 'ready') throw new Error(`expected ready, got ${model.kind}`)

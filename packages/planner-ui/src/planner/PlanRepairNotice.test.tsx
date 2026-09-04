@@ -73,7 +73,7 @@ describe('PlanRepairNotice', () => {
 
   it('names the person the back-filled owner points at', async () => {
     const plan = createSamplePlan()
-    const alex = plan.household.people[0]!
+    const alex = plan.household.people[0]
     await mount(
       [{ kind: 'accountOwnerBackFilled', accountId: 'trad', accountName: 'Old 401(k)', ownerPersonId: alex.id }],
       () => undefined,
@@ -297,7 +297,7 @@ function PlanNameProbe() {
 /** A stored document whose annuity is funded from an inherited account. */
 function storedWithInheritedFundedAnnuity(): Record<string, unknown> {
   const plan = createSamplePlan()
-  const owner = plan.household.people[0]!.id
+  const owner = plan.household.people[0].id
   plan.id = 'p1'
   plan.accounts = [
     { type: 'traditional', id: 'ira', name: 'Rollover IRA', ownerPersonId: owner, annualReturnPct: null, kind: 'ira', balance: 400_000, annualContribution: 0 },

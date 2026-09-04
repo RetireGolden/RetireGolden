@@ -71,7 +71,7 @@ describe('Insights dismissal (#505)', () => {
     // the last of its group — and on Restore only once nothing is left.
     let crossedGroup = false
     while (remaining > 0) {
-      const first = dismissButtons()[0]!
+      const first = dismissButtons()[0]
       const card = first.closest<HTMLElement>('.insight-card')!
       const all = [...container.querySelectorAll<HTMLElement>('.insight-card')]
       const next = all[all.indexOf(card) + 1] ?? null
@@ -106,7 +106,7 @@ describe('Insights dismissal (#505)', () => {
     }
     // Dismiss the first group's cards until it is gone; the last dismissal
     // has a next card in reading order, but it lives in a collapsed group.
-    let first = groups[0]!
+    let first = groups[0]
     while (first.querySelector('.insight-card')) {
       const button = first.querySelector<HTMLButtonElement>('.insight-dismiss')!
       const lastInGroup = first.querySelectorAll('.insight-card').length === 1

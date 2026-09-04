@@ -93,7 +93,7 @@ describe('planStore', () => {
       name: 'IRA',
       type: 'traditional',
       kind: 'ira',
-      ownerPersonId: plan.household.people[0]!.id,
+      ownerPersonId: plan.household.people[0].id,
       annualReturnPct: null,
       balance: 100_000,
       annualContribution: 0,
@@ -113,8 +113,8 @@ describe('planStore', () => {
     expect(duplicated.plan.name).toBe('A/B copy')
     expect(duplicated.plan.createdAtIso).toBe('2026-06-12T12:00:00.000Z')
     expect(duplicated.plan.updatedAtIso).toBe('2026-06-12T12:00:00.000Z')
-    expect(duplicated.plan.accounts[0]!.id).toBe('acct-1')
-    const applied = applyScenarioPatch(duplicated.plan, duplicated.plan.scenarios[0]!.patch)
+    expect(duplicated.plan.accounts[0].id).toBe('acct-1')
+    const applied = applyScenarioPatch(duplicated.plan, duplicated.plan.scenarios[0].patch)
     expect(applied.ok).toBe(true)
     if (applied.ok) expect(applied.plan.expenses.baseAnnual).toBe(12_345)
     expect((await listPlanSummaries()).map((s) => s.name)).toEqual(['A/B copy', 'Original'])
@@ -122,7 +122,7 @@ describe('planStore', () => {
 
   it('discards Plan-id-bound annual tax facts when duplicating', async () => {
     const plan = newPlan('Authoritative source')
-    const ownerPersonId = plan.household.people[0]!.id
+    const ownerPersonId = plan.household.people[0].id
     plan.accounts = [traditionalAccount('ira-1', 10_000, ownerPersonId)]
     plan.retirementActionAnnualTaxFacts = {
       ownedNonRothIraAnnualFilingSourceRecords: [

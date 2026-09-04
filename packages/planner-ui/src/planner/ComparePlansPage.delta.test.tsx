@@ -99,8 +99,8 @@ describe('ComparePlansPage delta column (#499)', () => {
     // One side never depletes: the age difference is undefined, and only then a dash.
     expect(age[2]).toBe('—')
 
-    const deltaCells = [...container.querySelectorAll('.compare-table tbody tr')].map((tr) => tr.querySelectorAll('td')[2]!)
-    const lastsCell = deltaCells[0]!
+    const deltaCells = [...container.querySelectorAll('.compare-table tbody tr')].map((tr) => tr.querySelectorAll('td')[2])
+    const lastsCell = deltaCells[0]
     expect(lastsCell.className).toBe('delta-neg')
 
     const legend = container.querySelector('.compare-delta-legend')!

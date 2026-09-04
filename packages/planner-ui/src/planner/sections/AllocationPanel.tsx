@@ -191,10 +191,10 @@ export function AllocationPanel({ account, plan, onCommit }: { account: Allocata
   const currentWeights = (): AllocationWeights => {
     const w = targetWeightsAt(policy, year)
     return {
-      usStocks: Math.round(w[0]! * 100),
-      intlStocks: Math.round(w[1]! * 100),
-      bonds: Math.round(w[2]! * 100),
-      cash: Math.round(w[3]! * 100),
+      usStocks: Math.round(w[0] * 100),
+      intlStocks: Math.round(w[1] * 100),
+      bonds: Math.round(w[2] * 100),
+      cash: Math.round(w[3] * 100),
     }
   }
   const switchMode = (mode: AssetAllocationPolicy['mode']) => {

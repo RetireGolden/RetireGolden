@@ -198,7 +198,7 @@ export function StrategySection() {
                     onCommit={(v) =>
                       update((d) => {
                         const m = d.strategies.rothConversion
-                        if (m.mode === 'manual') m.conversions[i]!.year = Math.round(v ?? c.year)
+                        if (m.mode === 'manual') m.conversions[i].year = Math.round(v ?? c.year)
                       })
                     }
                   />
@@ -209,7 +209,7 @@ export function StrategySection() {
                     onCommit={(v) =>
                       update((d) => {
                         const m = d.strategies.rothConversion
-                        if (m.mode === 'manual') m.conversions[i]!.amount = v ?? 0
+                        if (m.mode === 'manual') m.conversions[i].amount = v ?? 0
                       })
                     }
                   />

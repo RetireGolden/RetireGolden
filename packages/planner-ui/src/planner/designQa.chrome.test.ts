@@ -52,10 +52,10 @@ function rule(selector: string, source = css): string {
     if (at < 0) break
     from = at + selector.length
     let after = from
-    while (after < source.length && /\s/.test(source[after]!)) after++
+    while (after < source.length && /\s/.test(source[after])) after++
     if (source[after] !== '{') continue
     let before = at - 1
-    while (before >= 0 && /\s/.test(source[before]!)) before--
+    while (before >= 0 && /\s/.test(source[before])) before--
     const boundary = before < 0 || source[before] === '}' || source.slice(before - 1, before + 1) === '*/'
     if (!boundary) continue
     return ruleBodyAt(source, at, selector)
@@ -436,7 +436,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
   it('recurring and one-time income share one Tax treatment order and one Inflation help (#481)', () => {
     const income: string = sheet('./sections/IncomeSection.tsx')
     const orders = [...income.matchAll(/options=\{\[\s*((?:\{ value: '[a-zA-Z]+', label: '[^']+' \},?\s*)+)\]\}/g)].map((m) =>
-      [...m[1]!.matchAll(/value: '([a-zA-Z]+)'/g)].map((v) => v[1]),
+      [...m[1].matchAll(/value: '([a-zA-Z]+)'/g)].map((v) => v[1]),
     )
     const taxOrders = orders.filter((o) => o.includes('ordinary') && o.includes('none'))
     expect(taxOrders).toHaveLength(2)
@@ -511,7 +511,7 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
         const framed = /aria-label=|aria-labelledby=/.test(frame)
         // The chart element inside the frame (the next tag ending in Chart) may
         // carry the name instead; exactly one of the two must.
-        const rest = text.slice(tag.index! + frame.length)
+        const rest = text.slice(tag.index + frame.length)
         const chart = rest.match(/<[A-Za-z]*Chart\b[^<>]*>/)
         const inner = chart ? /aria-label=/.test(chart[0]) : false
         expect(framed !== inner, `${rel}: one name for ${frame.slice(0, 60)}`).toBe(true)

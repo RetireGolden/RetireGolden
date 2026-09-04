@@ -139,9 +139,9 @@ describe('Results year table zero cells (#483)', () => {
       expect(row, `row ${year}`).toBeDefined()
       const tds = [...row.querySelectorAll('td')]
       return {
-        contributions: tds[col('Contrib.')]!.textContent,
-        employerMatch: tds[col('Match')]!.textContent,
-        shortfall: tds[col('Shortfall')]!.textContent,
+        contributions: tds[col('Contrib.')].textContent,
+        employerMatch: tds[col('Match')].textContent,
+        shortfall: tds[col('Shortfall')].textContent,
       }
     }
     // Zero prints as a value, never as an empty cell (the old `> 0.005 ? … : ''`).

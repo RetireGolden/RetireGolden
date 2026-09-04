@@ -36,16 +36,16 @@ import { benefitsOnlyRanking } from './ssAnalysis'
 describe('ORACLE-007: single-person claiming vs Open Social Security', () => {
   it('matches the OpenSS ASAP-claiming result for a high-discount single worker', () => {
     const plan = singlePersonPlan({ dob: '1960-04-15' })
-    plan.household.people[0] = { ...plan.household.people[0]!, sex: 'male' }
+    plan.household.people[0] = { ...plan.household.people[0], sex: 'male' }
     plan.incomes = [socialSecurityIncome('ss-oracle-007', 1_000, 67, 'p1')]
 
     const ranking = benefitsOnlyRanking(validatePlan(plan), 0.09, 2018)
 
     expect(ranking.personIds).toEqual(['p1'])
     expect(ranking.rows).toHaveLength(9)
-    expect(ranking.ranked[0]!.claimByPersonId).toEqual({ p1: 62 })
+    expect(ranking.ranked[0].claimByPersonId).toEqual({ p1: 62 })
     for (const row of ranking.ranked.slice(1)) {
-      expect(row.expectedPv).toBeLessThan(ranking.ranked[0]!.expectedPv)
+      expect(row.expectedPv).toBeLessThan(ranking.ranked[0].expectedPv)
     }
   })
 })
@@ -84,8 +84,8 @@ describe('ORACLE-007: single-person claiming vs Open Social Security', () => {
 describe('ORACLE-008: married-couple claiming vs Open Social Security', () => {
   it('matches the OpenSS high-earner-delay result for a low-discount married couple', () => {
     const plan = couplePlan({ p1Dob: '1964-09-15', p2Dob: '1964-10-11' })
-    plan.household.people[0] = { ...plan.household.people[0]!, name: 'Lower PIA spouse', sex: 'male' }
-    plan.household.people[1] = { ...plan.household.people[1]!, name: 'Higher PIA spouse', sex: 'female' }
+    plan.household.people[0] = { ...plan.household.people[0], name: 'Lower PIA spouse', sex: 'male' }
+    plan.household.people[1] = { ...plan.household.people[1], name: 'Higher PIA spouse', sex: 'female' }
     plan.incomes = [
       socialSecurityIncome('ss-oracle-008-low', 1_200, 67, 'p1'),
       socialSecurityIncome('ss-oracle-008-high', 1_900, 67, 'p2'),
@@ -95,7 +95,7 @@ describe('ORACLE-008: married-couple claiming vs Open Social Security', () => {
 
     expect(ranking.personIds).toEqual(['p1', 'p2'])
     expect(ranking.rows).toHaveLength(81)
-    const best = ranking.ranked[0]!
+    const best = ranking.ranked[0]
     expect(best.claimByPersonId['p2']).toBe(70)
     for (const row of ranking.rows.filter((r) => r.claimByPersonId['p2'] !== 70)) {
       expect(row.expectedPv).toBeLessThan(best.expectedPv)

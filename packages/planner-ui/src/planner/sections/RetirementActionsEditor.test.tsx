@@ -49,7 +49,7 @@ function migratedAction(
 }
 
 function scheduledWithdrawal(plan: Plan, executionDate: string, executionSequence: number) {
-  const owner = plan.household.people[0]!
+  const owner = plan.household.people[0]
   const parsed = parseRetirementActionRequest({
     actionId: 'preserved-withdrawal',
     kind: 'ordinaryWithdrawal',
@@ -72,7 +72,7 @@ function scheduledWithdrawal(plan: Plan, executionDate: string, executionSequenc
 
 function editorPlan(): Plan {
   const plan = createSamplePlan()
-  const owner = plan.household.people[0]!
+  const owner = plan.household.people[0]
   plan.accounts = [
     {
       type: 'cash',
@@ -209,7 +209,7 @@ function row(host: HTMLElement, selector: string): HTMLElement {
 /** A donor whose age-70½ threshold year is seven tax years back from today. */
 function donorPlanWithContributionYears(): { plan: Plan; years: readonly number[] } {
   const plan = editorPlan()
-  plan.household.people[0]!.dob = `${THIS_YEAR - 76}-03-01`
+  plan.household.people[0].dob = `${THIS_YEAR - 76}-03-01`
   const years: number[] = []
   for (let year = THIS_YEAR - 6; year <= THIS_YEAR; year++) years.push(year)
   return { plan, years }
@@ -257,8 +257,8 @@ describe('RetirementActionsEditor', () => {
 
   it('disambiguates household members with duplicate names using stable IDs', async () => {
     const plan = editorPlan()
-    const first = plan.household.people[0]!
-    const second = plan.household.people[1]!
+    const first = plan.household.people[0]
+    const second = plan.household.people[1]
     second.name = first.name
     plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
     const mounted = await mount(plan)
@@ -275,8 +275,8 @@ describe('RetirementActionsEditor', () => {
 
   it('excludes owners after their projection last-alive year and explains the boundary', async () => {
     const plan = editorPlan()
-    const deceasedOwner = plan.household.people[0]!
-    const livingOwner = plan.household.people[1]!
+    const deceasedOwner = plan.household.people[0]
+    const livingOwner = plan.household.people[1]
     deceasedOwner.dob = '1973-01-01'
     deceasedOwner.longevity = { planningAge: 60, source: 'manual' }
     plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
@@ -298,7 +298,7 @@ describe('RetirementActionsEditor', () => {
 
   it('offers only executor-supported ordinary sources at the selected date', async () => {
     const plan = editorPlan()
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     plan.accounts = [
       { type: 'cash', id: 'cash-a', name: 'Cash', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, annualContribution: 0 },
       { type: 'taxable', id: 'taxable-a', name: 'Taxable', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0 },
@@ -330,7 +330,7 @@ describe('RetirementActionsEditor', () => {
 
   it('keeps taxable sources under review for two living Single filers', async () => {
     const plan = editorPlan()
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     plan.household.filingStatus = 'single'
     plan.accounts.push({
       type: 'taxable',
@@ -361,8 +361,8 @@ describe('RetirementActionsEditor', () => {
 
   it('filters cross-owner and joint sources using acting-owner semantics', async () => {
     const plan = editorPlan()
-    const actingPerson = plan.household.people[0]!
-    const otherPerson = plan.household.people[1]!
+    const actingPerson = plan.household.people[0]
+    const otherPerson = plan.household.people[1]
     plan.accounts = [
       {
         type: 'cash', id: 'other-cash', name: 'Other cash', ownerPersonId: otherPerson.id,
@@ -391,7 +391,7 @@ describe('RetirementActionsEditor', () => {
 
   it('filters sources whose execution snapshots exceed the exact-cent boundary', async () => {
     const plan = editorPlan()
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     const boundary = ledgerCentsToPlanDollars(asUsdCents(Number.MAX_SAFE_INTEGER - 1))
     const oneCentOver = boundary + 0.01
     plan.accounts = [
@@ -425,7 +425,7 @@ describe('RetirementActionsEditor', () => {
 
   it('explains zero and unrepresentable prospective closing balances', async () => {
     const plan = editorPlan()
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     const boundary = ledgerCentsToPlanDollars(asUsdCents(Number.MAX_SAFE_INTEGER - 1))
     plan.accounts = [
       {
@@ -463,7 +463,7 @@ describe('RetirementActionsEditor', () => {
     const target = migratedAction('legacyAggregateWithdrawal')
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
     await change(controlByLabel(mounted.container, 'Source account'), 'source-cash')
@@ -480,7 +480,7 @@ describe('RetirementActionsEditor', () => {
     )
     await act(async () => save!.click())
 
-    const replacement = mounted.current().strategies.retirementActions[0]!
+    const replacement = mounted.current().strategies.retirementActions[0]
     expect(replacement).toMatchObject({
       kind: 'ordinaryWithdrawal',
       year: target.year,
@@ -499,7 +499,7 @@ describe('RetirementActionsEditor', () => {
 
   it('keeps a sequentially reviewed row when its same-year total cannot cross the Plan boundary', async () => {
     const plan = editorPlan()
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     plan.accounts = [
       {
         type: 'cash', id: 'cash-large', name: 'Large cash', ownerPersonId: owner.id,
@@ -576,7 +576,7 @@ describe('RetirementActionsEditor', () => {
     const second = migratedAction('legacyAggregateWithdrawal', 'migrated-second')
     plan.strategies.retirementActions = [first, second]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     const secondRow = mounted.container.querySelector<HTMLElement>(
       `[data-retirement-action-id="${second.actionId}"]`,
     )!
@@ -622,7 +622,7 @@ describe('RetirementActionsEditor', () => {
     const preserved = scheduledWithdrawal(plan, '2034-06-15', 3)
     plan.strategies.retirementActions = [target, preserved]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
     await change(controlByLabel(mounted.container, 'Source account'), 'source-cash')
@@ -648,7 +648,7 @@ describe('RetirementActionsEditor', () => {
     const plan = editorPlan()
     plan.strategies.retirementActions = [migratedAction('legacyAggregateRothConversion')]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
     expect(controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').value).toBe('')
@@ -667,7 +667,7 @@ describe('RetirementActionsEditor', () => {
     const target = migratedAction('legacyAggregateRothConversion')
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await completeConversionIdentityReview(mounted.container, owner.id)
     await change(
@@ -701,7 +701,7 @@ describe('RetirementActionsEditor', () => {
     source.name = 'Employer 401(k)'
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
     const sourceOptions = Array.from(
@@ -728,7 +728,7 @@ describe('RetirementActionsEditor', () => {
     plan.retirementActionEligibilityFacts!.iraClassifications = []
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
     expect(Array.from(
@@ -765,7 +765,7 @@ describe('RetirementActionsEditor', () => {
 
   it('disambiguates same-name account choices with type, kind, and stable ID', async () => {
     const plan = editorPlan()
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
     plan.accounts.push(
       {
         type: 'traditional',
@@ -820,7 +820,7 @@ describe('RetirementActionsEditor', () => {
     const target = migratedAction('legacyAggregateRothConversion')
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await change(controlByLabel(mounted.container, 'Person'), owner.id)
     await change(controlByLabel(mounted.container, 'Source account'), 'source-ira')
@@ -845,7 +845,7 @@ describe('RetirementActionsEditor', () => {
 
     const saved = mounted.current().strategies.retirementActions
     expect(saved).toHaveLength(1)
-    const replacement = saved[0]!
+    const replacement = saved[0]
     if (replacement.kind !== 'rothConversion') throw new Error('expected a named conversion')
     expect(replacement.actionId).not.toBe(target.actionId)
     expect(replacement.personId).toBe(owner.id)
@@ -869,7 +869,7 @@ describe('RetirementActionsEditor', () => {
     const target = migratedAction('legacyAggregateRothConversion')
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await completeConversionIdentityReview(mounted.container, owner.id)
     const amount = controlByLabel<HTMLInputElement>(mounted.container, 'Tax-funding amount')
@@ -896,7 +896,7 @@ describe('RetirementActionsEditor', () => {
     const target = migratedAction('legacyAggregateRothConversion')
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await completeConversionIdentityReview(mounted.container, owner.id)
     const amount = controlByLabel<HTMLInputElement>(mounted.container, 'Tax-funding amount')
@@ -918,7 +918,7 @@ describe('RetirementActionsEditor', () => {
     )
     const saved = mounted.current().strategies.retirementActions
     expect(saved).toHaveLength(1)
-    const replacement = saved[0]!
+    const replacement = saved[0]
     if (replacement.kind !== 'rothConversion') throw new Error('expected a named conversion')
     expect(replacement.taxFunding).toEqual({
       kind: 'externalCash',
@@ -933,7 +933,7 @@ describe('RetirementActionsEditor', () => {
     const target = migratedAction('legacyAggregateRothConversion')
     plan.strategies.retirementActions = [target]
     const mounted = await mount(plan)
-    const owner = plan.household.people[0]!
+    const owner = plan.household.people[0]
 
     await completeConversionIdentityReview(mounted.container, owner.id)
     const amount = controlByLabel<HTMLInputElement>(mounted.container, 'Tax-funding amount')
@@ -1162,7 +1162,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
   it('records one zero per named year from the bulk statement', async () => {
     const { plan, years } = donorPlanWithContributionYears()
     const mounted = await mount(plan)
-    const donor = plan.household.people[0]!
+    const donor = plan.household.people[0]
     const host = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
 
     expect(host().textContent).toContain(
@@ -1185,8 +1185,8 @@ describe('RetirementActionsEditor eligibility facts', () => {
 
   it('refuses the whole bulk statement when one year has a colliding ID', async () => {
     const { plan, years } = donorPlanWithContributionYears()
-    const donor = plan.household.people[0]!
-    const collidingYear = years[2]!
+    const donor = plan.household.people[0]
+    const collidingYear = years[2]
     plan.accounts.push({
       type: 'cash',
       id: mintEligibilityEvidenceId({
@@ -1219,9 +1219,9 @@ describe('RetirementActionsEditor eligibility facts', () => {
   it('keeps a removed contribution year blank rather than zero', async () => {
     const { plan, years } = donorPlanWithContributionYears()
     const mounted = await mount(plan)
-    const donor = plan.household.people[0]!
+    const donor = plan.household.people[0]
     const block = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
-    const target = years[3]!
+    const target = years[3]
 
     await act(async () => buttonByText(
       block(),
@@ -1245,8 +1245,8 @@ describe('RetirementActionsEditor eligibility facts', () => {
   it('records an exact stated amount for a single contribution year', async () => {
     const { plan, years } = donorPlanWithContributionYears()
     const mounted = await mount(plan)
-    const donor = plan.household.people[0]!
-    const target = years[2]!
+    const donor = plan.household.people[0]
+    const target = years[2]
     const yearRow = () => row(
       mounted.container,
       `[data-eligibility-contribution="${donor.id}:${target}"]`,
@@ -1282,7 +1282,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
         sourceAccountId: 'source-ira',
       }),
       name: 'Collision',
-      ownerPersonId: plan.household.people[0]!.id,
+      ownerPersonId: plan.household.people[0].id,
       annualReturnPct: null,
       balance: 1,
       annualContribution: 0,
@@ -1342,8 +1342,8 @@ describe('RetirementActionsEditor eligibility facts', () => {
   it('blanks a removed contribution year in the form as well as the plan', async () => {
     const { plan, years } = donorPlanWithContributionYears()
     const mounted = await mount(plan)
-    const donor = plan.household.people[0]!
-    const target = years[1]!
+    const donor = plan.household.people[0]
+    const target = years[1]
     const yearRow = () => row(
       mounted.container,
       `[data-eligibility-contribution="${donor.id}:${target}"]`,

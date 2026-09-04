@@ -49,10 +49,10 @@ function rule(selector: string, source = css): string {
     if (at < 0) break
     from = at + selector.length
     let after = from
-    while (after < source.length && /\s/.test(source[after]!)) after++
+    while (after < source.length && /\s/.test(source[after])) after++
     if (source[after] !== '{') continue
     let before = at - 1
-    while (before >= 0 && /\s/.test(source[before]!)) before--
+    while (before >= 0 && /\s/.test(source[before])) before--
     const boundary = before < 0 || source[before] === '}' || source.slice(before - 1, before + 1) === '*/'
     if (!boundary) continue
     return ruleBodyAt(source, at, selector)
@@ -166,7 +166,7 @@ describe('Design-QA cluster A: stylesheet pins', () => {
     const darkBlock = indexCss.slice(indexCss.indexOf(":root[data-theme='dark'] {"), indexCss.indexOf('@media (prefers-color-scheme: dark)'))
     // Indentation-independent, and cross-checked against the light root so a
     // reformat of index.css fails here loudly rather than vacating the sweep.
-    const darkTokens = [...darkBlock.matchAll(/^\s*(--[a-z0-9-]+):/gm)].map((m) => m[1]!)
+    const darkTokens = [...darkBlock.matchAll(/^\s*(--[a-z0-9-]+):/gm)].map((m) => m[1])
     const lightRoot = indexCss.slice(indexCss.indexOf(':root {'), indexCss.indexOf(":root[data-theme='light']"))
     expect(darkTokens.length).toBeGreaterThan(15)
     expect(darkTokens).toEqual(expect.arrayContaining(['--bg', '--fg', '--accent', '--chart-8', '--select-chevron', '--shadow-card']))
@@ -404,7 +404,7 @@ describe('the two dark mechanisms declare one palette', () => {
    * different hexes is the same defect wearing a disguise.
    */
   const declarations = (block: string): Array<[string, string]> =>
-    [...block.matchAll(/^\s*(--[a-z0-9-]+):\s*([^;]+);/gm)].map(([, token, value]) => [token!, value!.trim()])
+    [...block.matchAll(/^\s*(--[a-z0-9-]+):\s*([^;]+);/gm)].map(([, token, value]) => [token, value.trim()])
 
   const toggled = indexCss.slice(
     indexCss.indexOf(":root[data-theme='dark'] {"),

@@ -36,7 +36,7 @@ export function ExamplePreviewBanner() {
     try {
       discardPendingSave()
       const r = await saveExampleToMyPlans(plan, { store })
-      if (r.ok) navigate(`/plan/${r.plan.id}/results`)
+      if (r.ok) void navigate(`/plan/${r.plan.id}/results`)
       else await alert({ title: 'Save example', body: `Could not save: ${r.issues.join('; ')}` })
     } finally {
       setBusy(false)

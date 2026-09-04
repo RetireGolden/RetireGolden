@@ -54,7 +54,7 @@ function planTree(plan: Plan, child: ReactNode, importEnabled: boolean, importRe
 
 function socialSecurityPlan(): Plan {
   const plan = createEmptyPlan({ newId: () => crypto.randomUUID() })
-  const person = plan.household.people[0]!
+  const person = plan.household.people[0]
   plan.incomes.push({
     type: 'socialSecurity',
     id: 'social-security-test',

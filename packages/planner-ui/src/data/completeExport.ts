@@ -554,7 +554,7 @@ export function parseCompleteExportManifest(json: string): ParseCompleteExportMa
 /** Parse the exact `manifest.sha256` sidecar grammar. */
 export function parseManifestSha256Line(line: string): { ok: true; sha256: string } | { ok: false } {
   const match = /^([0-9a-f]{64}) {2}manifest\.json\n$/.exec(line)
-  return match === null ? { ok: false } : { ok: true, sha256: match[1]! }
+  return match === null ? { ok: false } : { ok: true, sha256: match[1] }
 }
 
 /**

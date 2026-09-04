@@ -276,7 +276,7 @@ const NAME_ALONE = /^[A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){1,3}$/
 function detectNames(lines: readonly string[]): string[] {
   const found: string[] = []
   for (let index = 0; index < lines.length; index++) {
-    const line = lines[index]!
+    const line = lines[index]
     const inline = NAME_INLINE.exec(line)
     if (inline?.[1]) {
       found.push(inline[1])
@@ -418,15 +418,15 @@ function scoreField(
   const matched = new Array<boolean>(expected.length).fill(false)
 
   for (let e = 0; e < expected.length; e++) {
-    const want = normalize(expected[e]!.value)
+    const want = normalize(expected[e].value)
     for (let d = 0; d < detected.length; d++) {
       if (claimed[d]) continue
-      if (normalize(detected[d]!.value) !== want) continue
+      if (normalize(detected[d].value) !== want) continue
       claimed[d] = true
       matched[e] = true
       tally.truePositives += 1
       tally.citationsChecked += 1
-      if (detected[d]!.page === expected[e]!.page) tally.citationsCorrect += 1
+      if (detected[d].page === expected[e].page) tally.citationsCorrect += 1
       break
     }
   }
@@ -435,7 +435,7 @@ function scoreField(
   const looseText = loose(documentText)
   for (let e = 0; e < expected.length; e++) {
     if (matched[e]) continue
-    const entry = expected[e]!
+    const entry = expected[e]
     const textPresent = looseText.includes(loose(entry.value))
     misses.push({ field, value: entry.value, page: entry.page, textPresent })
     tally.falseNegatives += 1

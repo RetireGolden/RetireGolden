@@ -30,7 +30,7 @@ export function PurchasingPowerChart() {
           <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={56} />
           <Tooltip
             formatter={(v: unknown) => [fmtMoney(Number(v)), 'Buying power']}
-            labelFormatter={(l) => `Year ${l}`}
+            labelFormatter={(l) => `Year ${typeof l === 'number' || typeof l === 'string' ? l : ''}`}
             contentStyle={chartTooltipStyle}
           />
           <Line dataKey="value" stroke="var(--chart-1)" dot={false} strokeWidth={2} />

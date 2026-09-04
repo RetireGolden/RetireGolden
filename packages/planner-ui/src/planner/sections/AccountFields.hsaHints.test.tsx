@@ -68,8 +68,8 @@ describe('HSA beneficiary hints (#516)', () => {
     // contradict the untaxed spouse outcome the shorthand can produce.
     const estate = Array.from(el.querySelectorAll('label.field-label')).find((l) => l.textContent?.trim() === 'Estate beneficiary')!
     const select = el.ownerDocument.getElementById(estate.getAttribute('for')!) as HTMLSelectElement
-    expect(select.options[0]!.value).toBe('')
-    expect(select.options[0]!.textContent).toBe('Default (follows Beneficiary above)')
+    expect(select.options[0].value).toBe('')
+    expect(select.options[0].textContent).toBe('Default (follows Beneficiary above)')
   })
 
   it('keeps the by-type hint on accounts without the shorthand', () => {

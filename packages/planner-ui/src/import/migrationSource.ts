@@ -609,7 +609,7 @@ function resolve(found: Map<MigrationVendor, MigrationEvidence[]>): MigrationIde
   }
   if (candidates.length === 0) return null
   if (candidates.length === 1) {
-    const only = candidates[0]!
+    const only = candidates[0]
     return { outcome: 'identified', vendor: only.vendor, adapter: only.adapter, evidence: only.evidence }
   }
   return { outcome: 'ambiguous', candidates }
@@ -748,8 +748,13 @@ export function identifyMigrationDocument(pages: readonly DocumentPage[]): Migra
   // could hide a second vendor mention in the omitted suffix and turn an
   // ambiguous document into a false identification.
   if (!Array.isArray(pages) || pages.length > MAX_DOCUMENT_PAGES) return null
+  // Array.isArray's `arg is any[]` guard narrows the declared `readonly
+  // DocumentPage[]` down to `any[]` for the rest of the function (`T & any[]`
+  // collapses to `any`); re-asserting the known type here is what stops that
+  // `any` from making every `page.*` access below unsafe.
+  const validPages: readonly DocumentPage[] = pages
   let totalTextChars = 0
-  for (const page of pages) {
+  for (const page of validPages) {
     if (
       typeof page !== 'object' ||
       page === null ||
@@ -765,7 +770,7 @@ export function identifyMigrationDocument(pages: readonly DocumentPage[]): Migra
   }
 
   const found = new Map<MigrationVendor, MigrationEvidence[]>()
-  for (const page of pages) {
+  for (const page of validPages) {
     collectNameEvidence(page.text, migrationPageLocator(page.page), found)
   }
   return resolve(found)

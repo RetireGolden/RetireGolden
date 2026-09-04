@@ -66,8 +66,8 @@ describe('mapProjectionLabExport', () => {
     expect(property).toMatchObject({ value: 500000 })
 
     // Household context: birth year and the retirement milestone.
-    expect(r.plan.household.people[0]!.dob).toBe('1970-07-01')
-    expect(r.plan.household.people[0]!.retirementAge).toBe(62)
+    expect(r.plan.household.people[0].dob).toBe('1970-07-01')
+    expect(r.plan.household.people[0].retirementAge).toBe(62)
 
     // Income: wages map, other income lands as recurring, SS is explicitly deferred.
     const wages = r.plan.incomes.find((i) => i.type === 'wages')
@@ -168,7 +168,7 @@ describe('mapProjectionLabExport', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.plan.accounts).toHaveLength(2)
-    expect(r.plan.accounts[1]!.name).toBe('<script>alert(1)</script>') // inert data, never rendered as markup
+    expect(r.plan.accounts[1].name).toBe('<script>alert(1)</script>') // inert data, never rendered as markup
     expect(r.review.filter((i) => i.status === 'skipped')).toHaveLength(3)
   })
 
@@ -317,7 +317,7 @@ describe('projectionLab provenance (WS1)', () => {
     const r = mapProjectionLabExport(json, testIds)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.plan.accounts[0]!.type).toBe('roth')
+    expect(r.plan.accounts[0].type).toBe('roth')
     const item = r.review.find((i) => i.status === 'mapped' && i.source.startsWith('My Roth IRA'))!
     expect(item.confidence).toBe('assumed')
   })

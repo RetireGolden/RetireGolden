@@ -244,9 +244,9 @@ describe('Duplicate prompt and long plan names (#533)', () => {
     const card = container.querySelector('.plan-card')!
     const open = card.querySelector('button.plan-card-open')!
     const name = open.querySelector(':scope > .plan-card-name')!
-    expect(name.textContent).toBe(plans[0]!.name)
+    expect(name.textContent).toBe(plans[0].name)
     // The accessible name is the visible name first, then the verb.
-    expect(open.textContent).toBe(`${plans[0]!.name}, open plan`)
+    expect(open.textContent).toBe(`${plans[0].name}, open plan`)
     expect(open.querySelector('.sr-only')!.textContent).toBe(', open plan')
     expect(open.hasAttribute('aria-label')).toBe(false)
     // Sibling actions stay outside the open control.
@@ -671,7 +671,7 @@ describe('Primary nav on /how-tested and /disclaimer (#537)', () => {
       const links = [...container.querySelectorAll('nav[aria-label="Primary"] a')]
       const current = links.filter((a) => a.hasAttribute('aria-current'))
       expect(current.map((a) => [a.textContent, a.getAttribute('aria-current')])).toEqual([['Disclaimer', token]])
-      expect(current[0]!.className).toContain('nav-link--active')
+      expect(current[0].className).toContain('nav-link--active')
       await unmount()
     }
   })
@@ -681,10 +681,10 @@ describe('Insurance cards (#541, #550)', () => {
   it('groups policies by kind in the add-button order while edits and Remove keep their stored index', async () => {
     const plan = createSamplePlan()
     const perm = (id: string, name: string) =>
-      ({ kind: 'permanentLife', id, name, insured: plan.household.people[0]!.id, beneficiary: 'estate', annualPremium: 0, premiumMode: 'lifetime', deathBenefit: 0, cashValue: 0, cashValueMode: 'flatRate', cashValueGrowthPct: 4 }) as const
+      ({ kind: 'permanentLife', id, name, insured: plan.household.people[0].id, beneficiary: 'estate', annualPremium: 0, premiumMode: 'lifetime', deathBenefit: 0, cashValue: 0, cashValueMode: 'flatRate', cashValueGrowthPct: 4 }) as const
     plan.insurance = [
       perm('perm-a', 'Whole life A'),
-      { kind: 'ltc', id: 'ltc-b', name: 'LTC policy', owner: plan.household.people[0]!.id, annualPremium: 0, premiumMode: 'lifetime', benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
+      { kind: 'ltc', id: 'ltc-b', name: 'LTC policy', owner: plan.household.people[0].id, annualPremium: 0, premiumMode: 'lifetime', benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
       perm('perm-c', 'Whole life C'),
     ]
     const { drafts, mounted } = mountSection(InsuranceSection, plan, '/plan/x/insurance')
@@ -697,7 +697,7 @@ describe('Insurance cards (#541, #550)', () => {
       'Long-term care LTC policy',
     ])
     // Remove on the displayed third card removes the LTC policy, stored second.
-    const remove = [...rows[2]!.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
+    const remove = [...rows[2].querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
     await act(async () => remove.click())
     expect(drafts.at(-1)!.insurance.map((p) => p.id)).toEqual(['perm-a', 'perm-c'])
     await unmount()
@@ -706,8 +706,8 @@ describe('Insurance cards (#541, #550)', () => {
   it('moves focus and view to a card added into a group above the add row', async () => {
     const plan = createSamplePlan()
     plan.insurance = [
-      { kind: 'ltc', id: 'ltc-1', name: 'LTC one', owner: plan.household.people[0]!.id, annualPremium: 0, premiumMode: 'lifetime', benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
-      { kind: 'ltc', id: 'ltc-2', name: 'LTC two', owner: plan.household.people[0]!.id, annualPremium: 0, premiumMode: 'lifetime', benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
+      { kind: 'ltc', id: 'ltc-1', name: 'LTC one', owner: plan.household.people[0].id, annualPremium: 0, premiumMode: 'lifetime', benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
+      { kind: 'ltc', id: 'ltc-2', name: 'LTC two', owner: plan.household.people[0].id, annualPremium: 0, premiumMode: 'lifetime', benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
     ]
     const { container, unmount } = await mount(
       <MemoryRouter initialEntries={['/plan/x/insurance']}>
@@ -721,14 +721,14 @@ describe('Insurance cards (#541, #550)', () => {
     expect(rows.map((r) => r.dataset.insuranceKind)).toEqual(['permanentLife', 'ltc', 'ltc'])
     // ... and it, not the add row, holds focus.
     expect(document.activeElement).not.toBeNull()
-    expect(rows[0]!.contains(document.activeElement)).toBe(true)
+    expect(rows[0].contains(document.activeElement)).toBe(true)
     await unmount()
   })
 
   it('numbers care events that share a person and start age, in the title and the Remove name', async () => {
     const plan = createSamplePlan()
-    const personId = plan.household.people[0]!.id
-    const personName = plan.household.people[0]!.name
+    const personId = plan.household.people[0].id
+    const personName = plan.household.people[0].name
     plan.careEvents = [
       { id: 'care-1', personId, startAge: 85, durationYears: 3, annualCost: 90_000 },
       { id: 'care-2', personId, startAge: 85, durationYears: 2, annualCost: 60_000 },
@@ -781,7 +781,7 @@ describe('Account cards (#549)', () => {
     // The stored names are untouched, and Remove on the second Mortgage removes that one.
     expect(plan.accounts.map((a) => a.name)).toEqual(['Mortgage', 'Home', 'Mortgage'])
     const rows = [...container.querySelectorAll<HTMLElement>('[data-testid="account-row"]')]
-    const remove = [...rows[2]!.querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
+    const remove = [...rows[2].querySelectorAll('button')].find((b) => b.textContent === 'Remove')!
     await act(async () => remove.click())
     expect(drafts.at(-1)!.accounts.map((a) => a.id)).toEqual(['debt-1', 'home-1'])
     await unmount()

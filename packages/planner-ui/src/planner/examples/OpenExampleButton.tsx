@@ -22,12 +22,12 @@ export function OpenExampleButton({ exampleId }: { exampleId: string }) {
     try {
       if (chosen === 'open-existing') {
         const r = await openExampleExisting(exampleId)
-        if (r.ok) navigate(`/plan/${r.planId}/results`)
+        if (r.ok) void navigate(`/plan/${r.planId}/results`)
         return
       }
       if (chosen === 'load-fresh') {
         const r = await openExampleFresh(exampleId)
-        if (r.ok) navigate(`/plan/${r.planId}/results`)
+        if (r.ok) void navigate(`/plan/${r.planId}/results`)
         return
       }
       const prepared = await prepareExampleOpen(exampleId)
@@ -44,7 +44,7 @@ export function OpenExampleButton({ exampleId }: { exampleId: string }) {
         if (picked !== null) await open(picked)
         return
       }
-      navigate(`/plan/${prepared.planId}/results`)
+      void navigate(`/plan/${prepared.planId}/results`)
     } finally {
       setBusy(false)
     }

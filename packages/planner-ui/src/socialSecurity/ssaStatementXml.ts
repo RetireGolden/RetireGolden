@@ -107,7 +107,7 @@ export function parseSsaStatementXml(xmlText: string): SsaStatementXmlResult {
 
   const earningsNodes = root.getElementsByTagNameNS(OSSS_NS, 'Earnings')
   for (let i = 0; i < earningsNodes.length; i++) {
-    const el = earningsNodes[i]!
+    const el = earningsNodes[i]
     const startY = parseNonNegInt(el.getAttribute('startYear'))
     if (startY === null || startY < 1951 || startY > 2100) continue
 
@@ -145,7 +145,7 @@ export function parseSsaStatementXml(xmlText: string): SsaStatementXmlResult {
 /** Latest year with positive FICA earnings; if none, latest year in rows. */
 export function defaultLastEarningsYearFromRows(rows: YearEarning[]): number | null {
   if (rows.length === 0) return null
-  let maxAny = rows[0]!.year
+  let maxAny = rows[0].year
   let maxPositive = -Infinity
   for (const r of rows) {
     if (r.year > maxAny) maxAny = r.year

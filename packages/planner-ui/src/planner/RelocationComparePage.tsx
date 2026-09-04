@@ -244,7 +244,7 @@ export function RelocationComparePage() {
     update((d) => {
       d.scenarios.push({ id: makeScenarioId(), name, patch })
     })
-    navigate(`/plan/${plan.id}/scenarios`)
+    void navigate(`/plan/${plan.id}/scenarios`)
   }
 
   const baseline = result?.rows.find((r) => r.id === 'baseline') ?? null

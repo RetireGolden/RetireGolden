@@ -59,20 +59,20 @@ function winningDeclaration(css: string, className: string, property: string, an
   let bestValue: string | null = null
   const targetClasses = new Set(className.split(/\s+/))
   while ((match = ruleRe.exec(stripped)) !== null) {
-    const selectors = match[1]!.split(',').map((s) => s.trim())
-    const body = match[2]!
+    const selectors = match[1].split(',').map((s) => s.trim())
+    const body = match[2]
     const prop = body.match(new RegExp(`${property}\\s*:\\s*([^;]+)`))
     if (!prop) continue
     for (const sel of selectors) {
       if (sel.includes('@') || sel.includes(':') || sel.includes('[')) continue
       const parts = sel.split(/\s+/).filter(Boolean)
-      const last = parts[parts.length - 1]!
-      const lastClasses = [...last.matchAll(/\.([\w-]+)/g)].map((m) => m[1]!)
+      const last = parts[parts.length - 1]
+      const lastClasses = [...last.matchAll(/\.([\w-]+)/g)].map((m) => m[1])
       if (lastClasses.length === 0) continue
       if (!lastClasses.every((c) => targetClasses.has(c))) continue
       if (parts.length > 1) {
-        const ancestorSel = parts[0]!
-        const ancestorNames = [...ancestorSel.matchAll(/\.([\w-]+)/g)].map((m) => m[1]!)
+        const ancestorSel = parts[0]
+        const ancestorNames = [...ancestorSel.matchAll(/\.([\w-]+)/g)].map((m) => m[1])
         if (!ancestorClass || !ancestorNames.every((c) => c === ancestorClass || ancestorClass.split(/\s+/).includes(c))) {
           continue
         }
@@ -80,7 +80,7 @@ function winningDeclaration(css: string, className: string, property: string, an
       const spec = specificity(sel)
       if (spec >= bestSpec) {
         bestSpec = spec
-        bestValue = prop[1]!.trim()
+        bestValue = prop[1].trim()
       }
     }
   }

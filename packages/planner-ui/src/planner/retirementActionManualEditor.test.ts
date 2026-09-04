@@ -202,11 +202,11 @@ describe('buildRetirementActionManualIntent', () => {
     const target = migrated('legacyAggregateWithdrawal')
     const changedPlan = structuredClone(supportedPlan)
     changedPlan.household.people = [{
-      ...changedPlan.household.people[0]!,
+      ...changedPlan.household.people[0],
       id: 'person-b',
       name: 'Person B',
     }]
-    changedPlan.accounts[0]!.ownerPersonId = 'person-b'
+    changedPlan.accounts[0].ownerPersonId = 'person-b'
 
     expect(buildRetirementActionManualIntent(target, {
       ...emptyRetirementActionManualEditorDraft(),
@@ -325,8 +325,8 @@ describe('buildRetirementActionManualIntent', () => {
     const withDestination = (
       overrides: Partial<Plan['accounts'][number]>,
     ): Plan['accounts'] => [
-      supportedPlan.accounts[1]!,
-      { ...supportedPlan.accounts[2]!, ...overrides } as Plan['accounts'][number],
+      supportedPlan.accounts[1],
+      { ...supportedPlan.accounts[2], ...overrides } as Plan['accounts'][number],
     ]
 
     expect(issuesFor('')).toEqual(['Choose the exact Roth destination account.'])
@@ -334,9 +334,9 @@ describe('buildRetirementActionManualIntent', () => {
       'The selected Roth destination account is no longer available in this Plan. Choose the exact destination account again.',
     ])
     expect(issuesFor('roth-a', [
-      supportedPlan.accounts[1]!,
-      supportedPlan.accounts[2]!,
-      supportedPlan.accounts[2]!,
+      supportedPlan.accounts[1],
+      supportedPlan.accounts[2],
+      supportedPlan.accounts[2],
     ])).toEqual([
       'The selected Roth destination account ID is duplicated in this Plan. Choose a unique destination account.',
     ])
@@ -354,7 +354,7 @@ describe('buildRetirementActionManualIntent', () => {
   })
 
   it('states the destination support matrix the allocator enforces', () => {
-    const roth = supportedPlan.accounts[2]!
+    const roth = supportedPlan.accounts[2]
     expect(retirementActionManualDestinationSupportIssue(roth, 'person-a')).toBeNull()
     expect(retirementActionManualDestinationSupportIssue(
       { ...roth, ownerPersonId: null },
@@ -363,7 +363,7 @@ describe('buildRetirementActionManualIntent', () => {
       'This jointly owned Roth destination does not record the individual owner identity a conversion requires.',
     )
     expect(retirementActionManualDestinationSupportIssue(
-      supportedPlan.accounts[0]!,
+      supportedPlan.accounts[0],
       'person-a',
     )).toBe('A conversion destination must be a Roth account.')
   })
@@ -410,7 +410,7 @@ describe('buildRetirementActionManualIntent', () => {
         kind: 'employer',
         balance: 100_000,
         annualContribution: 0,
-      }, supportedPlan.accounts[2]!],
+      }, supportedPlan.accounts[2]],
       retirementActionEligibilityFacts: undefined,
     }
 
@@ -439,7 +439,7 @@ describe('buildRetirementActionManualIntent', () => {
   it('pins the public manual-review source support matrix', () => {
     const owner = 'person-a'
     const ordinaryAccounts: Plan['accounts'] = [
-      supportedPlan.accounts[0]!,
+      supportedPlan.accounts[0],
       {
         type: 'taxable', id: 'taxable-a', name: 'Taxable', ownerPersonId: owner,
         annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0,
@@ -454,7 +454,7 @@ describe('buildRetirementActionManualIntent', () => {
         annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0,
         vestingMode: 'cliff', vestDate: '2034-09-01',
       },
-      supportedPlan.accounts[1]!,
+      supportedPlan.accounts[1],
       {
         type: 'roth', id: 'roth-a', name: 'Roth IRA', ownerPersonId: owner,
         annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0,
@@ -472,7 +472,7 @@ describe('buildRetirementActionManualIntent', () => {
       ) === null,
     )).toEqual([true, true, true, false, false, false, false])
     expect(retirementActionManualSourceSupportIssue(
-      'legacyAggregateWithdrawal', ordinaryAccounts[3]!, '2034-09-01', 2034,
+      'legacyAggregateWithdrawal', ordinaryAccounts[3], '2034-09-01', 2034,
       DEFAULT_REQUESTED_AMOUNT, 'person-a', ordinaryPlan,
     )).toBeNull()
 
@@ -504,10 +504,10 @@ describe('buildRetirementActionManualIntent', () => {
       accounts: conversionAccounts,
       retirementActionEligibilityFacts: {
         iraClassifications: [
-          { evidenceId: 'c-traditional', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[0]!.id, subtype: 'traditional' },
-          { evidenceId: 'c-sep', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[1]!.id, subtype: 'sep' },
-          { evidenceId: 'c-simple-mature', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[2]!.id, subtype: 'simple', simpleParticipationStartDate: '2030-01-01' },
-          { evidenceId: 'c-simple-open', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[3]!.id, subtype: 'simple', simpleParticipationStartDate: '2033-01-01' },
+          { evidenceId: 'c-traditional', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[0].id, subtype: 'traditional' },
+          { evidenceId: 'c-sep', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[1].id, subtype: 'sep' },
+          { evidenceId: 'c-simple-mature', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[2].id, subtype: 'simple', simpleParticipationStartDate: '2030-01-01' },
+          { evidenceId: 'c-simple-open', provenance: { source: 'manual' }, sourceAccountId: conversionAccounts[3].id, subtype: 'simple', simpleParticipationStartDate: '2033-01-01' },
         ],
         sepSimpleActivities: [],
         deductibleIraContributions: [],
@@ -522,15 +522,15 @@ describe('buildRetirementActionManualIntent', () => {
   })
 
   it('matches the projection last-alive boundary and rejects a deceased owner injection', () => {
-    const livingOwner = supportedPlan.household.people[0]!
+    const livingOwner = supportedPlan.household.people[0]
     expect(retirementActionManualPersonSupportIssue(livingOwner, 2064)).toBeNull()
     expect(retirementActionManualPersonSupportIssue(livingOwner, 2065)).toBe(
       'Person A (ID person-a) is not modeled alive in 2065; their last modeled-alive year is 2064.',
     )
 
     const deceasedPlan = structuredClone(supportedPlan)
-    deceasedPlan.household.people[0]!.dob = '1973-01-01'
-    deceasedPlan.household.people[0]!.longevity.planningAge = 60
+    deceasedPlan.household.people[0].dob = '1973-01-01'
+    deceasedPlan.household.people[0].longevity.planningAge = 60
     const target = migrated('legacyAggregateWithdrawal')
     const result = buildRetirementActionManualIntent(target, {
       ...emptyRetirementActionManualEditorDraft(),
@@ -588,8 +588,8 @@ describe('buildRetirementActionManualIntent', () => {
     )).toBeNull()
 
     const oneLivingSingle = structuredClone(twoLivingSingle)
-    oneLivingSingle.household.people[1]!.dob = '1973-01-01'
-    oneLivingSingle.household.people[1]!.longevity.planningAge = 60
+    oneLivingSingle.household.people[1].dob = '1973-01-01'
+    oneLivingSingle.household.people[1].longevity.planningAge = 60
     expect(retirementActionManualSourceSupportIssue(
       'legacyAggregateWithdrawal', taxableAccount, '2034-06-15', 2034,
       DEFAULT_REQUESTED_AMOUNT, 'person-a', oneLivingSingle,
@@ -805,7 +805,7 @@ describe('buildRetirementActionManualIntent', () => {
       withdrawalPurpose: 'spending' as const,
     }
     const unsupportedAccounts: Plan['accounts'] = [
-      supportedPlan.accounts[1]!,
+      supportedPlan.accounts[1],
       {
         type: 'equityComp', id: 'equity-cliff', name: 'Cliff equity', ownerPersonId: 'person-a',
         annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0,
@@ -1036,8 +1036,8 @@ describe('migrated aggregate conversion replacement', () => {
     expect(replacement.taxFunding).toEqual({ kind: 'noneExpected' })
     expect(replacement.provenance).toEqual({ source: 'manual' })
     expect(replacement.allocations).toHaveLength(1)
-    expect(replacement.allocations[0]!.sourceAccountId).toBe('ira-a')
-    expect(replacement.allocations[0]!.requestedAmount).toBe(DEFAULT_REQUESTED_AMOUNT)
+    expect(replacement.allocations[0].sourceAccountId).toBe('ira-a')
+    expect(replacement.allocations[0].requestedAmount).toBe(DEFAULT_REQUESTED_AMOUNT)
   })
 
   it('moves the exact cents out of the IRA and into the Roth in the projection', () => {

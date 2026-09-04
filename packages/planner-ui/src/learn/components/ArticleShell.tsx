@@ -34,7 +34,9 @@ function formatReviewed(iso: string): string {
  * falls back to the Learning Center home.
  */
 export function BackLink() {
-  const { state } = useLocation()
+  // react-router types `Location.state` as `any` by default; the explicit
+  // `unknown` annotation stops that `any` from propagating into `nav` below.
+  const state: unknown = useLocation().state
   const nav = state as { learnFrom?: unknown; learnFromLabel?: unknown } | null
   const from = nav?.learnFrom
   if (typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')) {

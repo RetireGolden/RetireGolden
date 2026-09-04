@@ -431,7 +431,7 @@ export function RetirementAccountEditor({
             <CheckboxField
               label="Owner had started RMDs"
               help="If the original owner had reached their required beginning date, you must also take an annual RMD in years 1–9 of the window (based on your single life expectancy), not just empty it by year 10."
-              value={account.inherited!.decedentHadStartedRmds}
+              value={account.inherited.decedentHadStartedRmds}
               onCommit={(v) => {
                 // The surrounding guard renders this control only when the
                 // inherited block exists; closures cannot carry the narrowing.
@@ -475,7 +475,7 @@ export function RetirementAccountEditor({
               <BeneficiaryDetails
                 account={account}
                 index={index}
-                inherited={account.inherited!}
+                inherited={account.inherited}
                 planningYear={planningYear}
                 onCommit={(inherited) => {
                   const wasTreatAsOwn = account.inherited!.beneficiary?.election === 'treat-as-own'

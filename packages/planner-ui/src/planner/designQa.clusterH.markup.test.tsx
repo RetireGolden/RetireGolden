@@ -121,7 +121,7 @@ function noteOf(input: HTMLElement): string | null {
 /** The one issue the engine reported, which must be at `path`. */
 function onlyIssueAt(issues: string[], path: string): void {
   expect(issues).toHaveLength(1)
-  expect(issues[0]!.startsWith(`${path}: `), issues[0]).toBe(true)
+  expect(issues[0].startsWith(`${path}: `), issues[0]).toBe(true)
 }
 
 describe('Social Security (#511)', () => {
@@ -202,7 +202,7 @@ describe('Income floor (#512)', () => {
 describe('Household (#523)', () => {
   it('a stored partner retirement age of 999 is refused at the partner field, in words', async () => {
     const { plan, issues } = invalidPlan((p) => {
-      p.household.people[1]!.retirementAge = 999
+      p.household.people[1].retirementAge = 999
     })
     onlyIssueAt(issues, 'household.people.1.retirementAge')
     const host = await mount(plan, <HouseholdSection />, issues)
@@ -221,7 +221,7 @@ describe('Household (#523)', () => {
     await typeInto(age, '999')
     expect(errorOf(age)).toBe('Must be at most 80')
     await leave(age)
-    expect(age.value).toBe(String(plan.household.people[1]!.retirementAge))
+    expect(age.value).toBe(String(plan.household.people[1].retirementAge))
     expect(noteOf(age)).toBe('Not kept: 999 is above the highest allowed, 80')
   })
 
@@ -231,7 +231,7 @@ describe('Household (#523)', () => {
       .filter((l) => l.textContent?.trim() === 'Name')
       .map((l) => host.querySelector<HTMLInputElement>(`#${l.htmlFor}`)!)
     expect(names).toHaveLength(2)
-    await typeInto(names[1]!, '')
+    await typeInto(names[1], '')
     const titles = [...host.querySelectorAll<HTMLElement>('.item-row-title')].map((t) => t.textContent?.trim())
     expect(titles).toContain('Unnamed partner')
     expect(titles.some((t) => /\bPerson\b/.test(t ?? ''))).toBe(false)
@@ -241,7 +241,7 @@ describe('Household (#523)', () => {
 describe('Spending (#526)', () => {
   it('a stored phase multiplier of 99.5 is refused at the phase field, in words', async () => {
     const { plan, issues } = invalidPlan((p) => {
-      p.expenses.phases[0]!.multiplier = 99.5
+      p.expenses.phases[0].multiplier = 99.5
     })
     onlyIssueAt(issues, 'expenses.phases.0.multiplier')
     const host = await mount(plan, <SpendingSection />, issues)
@@ -253,7 +253,7 @@ describe('Spending (#526)', () => {
 
   it('typing 99.5 is flagged while typing and commits nothing; leaving restores the stored multiplier', async () => {
     const plan = validPlan()
-    const stored = plan.expenses.phases[0]!.multiplier
+    const stored = plan.expenses.phases[0].multiplier
     const host = await mount(plan, <SpendingSection />)
     const multiplier = controlAt(host, 'expenses.phases.0.multiplier')
     await typeInto(multiplier, '99.5')
@@ -270,7 +270,7 @@ describe('Spending (#526)', () => {
   it('a long goal label stays in the row title, with Remove its only sibling in the head', async () => {
     const label = 'Replace the roof, the gutters, and the back deck before the grandchildren start visiting every summer'
     const plan = validPlan((p) => {
-      p.expenses.oneTimeGoals[0]!.label = label
+      p.expenses.oneTimeGoals[0].label = label
     })
     const host = await mount(plan, <SpendingSection />)
     const title = [...host.querySelectorAll<HTMLElement>('.item-row-title')].find((t) => t.textContent?.includes(label))

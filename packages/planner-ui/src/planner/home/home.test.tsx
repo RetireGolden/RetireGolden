@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { IDBFactory } from 'fake-indexeddb'
 
 import { _resetPlanStoreForTests, listUserPlanSummaries, savePlan } from '../../data/planStore'
-import { createEmptyPlan, type Account } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan } from '@retiregolden/engine/model/plan'
 import {
   _resetRefreshHistoryForTests,
   listRefreshManualMappings,
@@ -349,7 +349,7 @@ describe('planner home adaptive layout', () => {
     })
     const restored = await listUserPlanSummaries()
     expect(restored).toHaveLength(1)
-    expect(restored[0]!.name).toBe('Doomed plan')
+    expect(restored[0].name).toBe('Doomed plan')
   })
 
   it('keeps refresh history during the delete undo window, then purges it on final dismissal', async () => {
@@ -468,7 +468,7 @@ describe('KPI plan-completeness heuristic', () => {
     expect(
       isPlanIncomplete({
         incomes,
-        accounts: [{ ...base, type: 'debt', balance: 5_000, interestPct: 20, monthlyPayment: 100 } as Account],
+        accounts: [{ ...base, type: 'debt', balance: 5_000, interestPct: 20, monthlyPayment: 100 }],
       }),
     ).toBe(true)
     // Freshly added pension/property rows default to zero amounts.
@@ -476,7 +476,7 @@ describe('KPI plan-completeness heuristic', () => {
       isPlanIncomplete({
         incomes,
         accounts: [
-          { ...base, type: 'pension', startAge: 65, monthlyAmount: 0, colaPct: 0, survivorPct: 0 } as Account,
+          { ...base, type: 'pension', startAge: 65, monthlyAmount: 0, colaPct: 0, survivorPct: 0 },
         ],
       }),
     ).toBe(true)
@@ -484,7 +484,7 @@ describe('KPI plan-completeness heuristic', () => {
       isPlanIncomplete({
         incomes,
         accounts: [
-          { ...base, type: 'property', value: 0, plannedSaleYear: null, expectedNetProceeds: null } as Account,
+          { ...base, type: 'property', value: 0, plannedSaleYear: null, expectedNetProceeds: null },
         ],
       }),
     ).toBe(true)
@@ -495,14 +495,14 @@ describe('KPI plan-completeness heuristic', () => {
     expect(
       isPlanIncomplete({
         incomes,
-        accounts: [{ ...base, type: 'cash', balance: 1_000, annualContribution: 0 } as Account],
+        accounts: [{ ...base, type: 'cash', balance: 1_000, annualContribution: 0 }],
       }),
     ).toBe(false)
     expect(
       isPlanIncomplete({
         incomes,
         accounts: [
-          { ...base, type: 'pension', startAge: 65, monthlyAmount: 500, colaPct: 0, survivorPct: 0 } as Account,
+          { ...base, type: 'pension', startAge: 65, monthlyAmount: 500, colaPct: 0, survivorPct: 0 },
         ],
       }),
     ).toBe(false)
@@ -510,7 +510,7 @@ describe('KPI plan-completeness heuristic', () => {
       isPlanIncomplete({
         incomes,
         accounts: [
-          { ...base, type: 'property', value: 300_000, plannedSaleYear: null, expectedNetProceeds: null } as Account,
+          { ...base, type: 'property', value: 300_000, plannedSaleYear: null, expectedNetProceeds: null },
         ],
       }),
     ).toBe(false)

@@ -145,7 +145,7 @@ describe('example library page', () => {
     expect(levels.filter((l) => l === 2)).toHaveLength(2)
     expect(levels.filter((l) => l === 3)).toHaveLength(EXAMPLE_PLANS.length)
     for (let i = 1; i < levels.length; i++) {
-      expect(levels[i]! - levels[i - 1]!, `heading skip at ${i}: ${levels.join(',')}`).toBeLessThanOrEqual(1)
+      expect(levels[i] - levels[i - 1], `heading skip at ${i}: ${levels.join(',')}`).toBeLessThanOrEqual(1)
     }
   })
 
@@ -232,7 +232,7 @@ function actionNames(cards: Element[]): string[] {
       const name = el.getAttribute('aria-label')
       const clone = el.cloneNode(true) as Element
       for (const hidden of clone.querySelectorAll('[aria-hidden="true"]')) hidden.remove()
-      const visible = clone.textContent!.trim()
+      const visible = clone.textContent.trim()
       expect(name, `${visible} has an accessible name`).toBeTruthy()
       expect(name!.startsWith(visible), `"${name}" starts with its visible label "${visible}"`).toBe(true)
       return name!

@@ -66,7 +66,7 @@ export function LongevityWizard({
 }: LongevityWizardProps) {
   const [answers, setAnswers] = useState<LongevityAnswers>(() => mergeInitial(initialAnswers))
   const [stepIndex, setStepIndex] = useState(0)
-  const step = STEPS[stepIndex]!
+  const step = STEPS[stepIndex]
 
   const canNext = useMemo(() => {
     if (step === 'age') {

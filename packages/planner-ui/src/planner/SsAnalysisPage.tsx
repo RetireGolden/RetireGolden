@@ -122,7 +122,7 @@ export function SsAnalysisPage() {
     update((d) => {
       for (const s of d.incomes) {
         if (s.type === 'socialSecurity' && claim[s.personId] !== undefined) {
-          s.claimAge = { years: claim[s.personId]!, months: 0 }
+          s.claimAge = { years: claim[s.personId], months: 0 }
         }
       }
     })
@@ -498,7 +498,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   const applyMonthly = (claim: Record<string, MonthlyClaim>) =>
     update((d) => {
       for (const s of d.incomes) {
-        if (s.type === 'socialSecurity' && claim[s.personId] !== undefined) s.claimAge = { ...claim[s.personId]! }
+        if (s.type === 'socialSecurity' && claim[s.personId] !== undefined) s.claimAge = { ...claim[s.personId] }
       }
     })
 
@@ -669,7 +669,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
 
       {refined && best ? (
         <div className="callout callout--info" style={{ marginTop: '0.75rem' }}>
-          <strong>To the month: claim at {personIds.map((id) => fmtClaim(refined.claimByPersonId[id]!)).join(' / ')}</strong>
+          <strong>To the month: claim at {personIds.map((id) => fmtClaim(refined.claimByPersonId[id])).join(' / ')}</strong>
           {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}
           {fmtMoneyCompact(refined.summary.endingAfterTaxEstate)}
           {refined.summary.endingAfterTaxEstate > best.summary.endingAfterTaxEstate ? (
@@ -679,10 +679,10 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
               over the whole-year pick).
             </>
           ) : '. The whole-year pick is already optimal to the month.'}
-          {personIds.some((id) => refined.claimByPersonId[id]!.months > 0) ? (
+          {personIds.some((id) => refined.claimByPersonId[id].months > 0) ? (
             <div style={{ marginTop: '0.6rem' }}>
               <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyMonthly(refined.claimByPersonId)}>
-                Apply {personIds.map((id) => fmtClaim(refined.claimByPersonId[id]!)).join(' / ')}
+                Apply {personIds.map((id) => fmtClaim(refined.claimByPersonId[id])).join(' / ')}
               </button>
             </div>
           ) : null}
@@ -702,7 +702,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
               <tr key={keyOf(r)}>
                 <td>{ageLabel(r.claimByPersonId, personIds)}</td>
                 <td>{fmtMoneyCompact(r.summary.endingAfterTaxEstate)}</td>
-                <td>{mc[keyOf(r)] !== undefined ? `${Math.round(mc[keyOf(r)]! * 100)}%` : '—'}</td>
+                <td>{mc[keyOf(r)] !== undefined ? `${Math.round(mc[keyOf(r)] * 100)}%` : '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -782,8 +782,8 @@ function SingleSweepTable({
   applyStrategy: (claim: Record<string, number>) => void
 }) {
   const readOnly = useWorkspaceReadOnly()
-  const id = personIds[0]!
-  const byAge = [...sweep.rows].sort((a, b) => a.claimByPersonId[id]! - b.claimByPersonId[id]!)
+  const id = personIds[0]
+  const byAge = [...sweep.rows].sort((a, b) => a.claimByPersonId[id] - b.claimByPersonId[id])
   const bestKey = sweep.winner?.claimByPersonId[id] ?? null
   return (
     <ScrollRegion label="Claim-age sweep" style={{ border: 'none' }}>
@@ -799,7 +799,7 @@ function SingleSweepTable({
         </thead>
         <tbody>
           {byAge.map((r) => {
-            const age = r.claimByPersonId[id]!
+            const age = r.claimByPersonId[id]
             return (
               <tr key={age} className={(age === bestKey ? 'claim-row--best ' : '') + (age === current[id] ? 'claim-row--current' : '')}>
                 <td>{age}</td>
@@ -844,24 +844,24 @@ function CoupleHeatmap({
   const rowAges = candidateClaimAges(plan.household.people.find((p) => p.id === rowId)!, currentStartYear())
   const colAges = candidateClaimAges(plan.household.people.find((p) => p.id === colId)!, currentStartYear())
   const estate = (ra: number, ca: number) =>
-    sweep.rows.find((r) => r.claimByPersonId[rowId!] === ra && r.claimByPersonId[colId!] === ca)?.summary.endingAfterTaxEstate ?? 0
+    sweep.rows.find((r) => r.claimByPersonId[rowId] === ra && r.claimByPersonId[colId] === ca)?.summary.endingAfterTaxEstate ?? 0
   const values = sweep.rows.map((r) => r.summary.endingAfterTaxEstate)
   const min = Math.min(...values)
   const max = Math.max(...values)
   const norm = (v: number) => (max > min ? (v - min) / (max - min) : 1)
-  const bestKey = sweep.winner ? `${sweep.winner.claimByPersonId[rowId!]}-${sweep.winner.claimByPersonId[colId!]}` : null
+  const bestKey = sweep.winner ? `${sweep.winner.claimByPersonId[rowId]}-${sweep.winner.claimByPersonId[colId]}` : null
 
   return (
     <>
       <p className="card-hint" style={{ marginTop: '0.5rem' }}>
-        After-tax estate by claim age, rows: {personName(rowId!)}, columns: {personName(colId!)}. Greener is better;
+        After-tax estate by claim age, rows: {personName(rowId)}, columns: {personName(colId)}. Greener is better;
         {readOnly ? ' claim-age choices are read-only in this workspace.' : ' use Enter or Space on a cell to apply it.'}
       </p>
       <ScrollRegion label="Claim-age heatmap" style={{ border: 'none' }}>
         <table className="claim-table heatmap">
           <thead>
             <tr>
-              <th scope="col">{personName(rowId!)} ↓ / {personName(colId!)} →</th>
+              <th scope="col">{personName(rowId)} ↓ / {personName(colId)} →</th>
               {colAges.map((ca) => (
                 <th scope="col" key={ca}>{ca}</th>
               ))}
@@ -874,9 +874,9 @@ function CoupleHeatmap({
                 {colAges.map((ca) => {
                   const v = estate(ra, ca)
                   const isBest = `${ra}-${ca}` === bestKey
-                  const isCurrent = current[rowId!] === ra && current[colId!] === ca
-                  const actionLabel = `Apply claim ages: ${personName(rowId!)} at ${ra}, ${personName(colId!)} at ${ca}; after-tax estate ${fmtMoneyCompact(v)}${isCurrent ? ', current plan selection' : ''}${isBest ? ', best strategy' : ''}`
-                  const tooltip = `${personName(rowId!)} ${ra} / ${personName(colId!)} ${ca}: ${fmtMoneyCompact(v)}${isCurrent ? ' (current)' : ''}${isBest ? ' (best)' : ''}`
+                  const isCurrent = current[rowId] === ra && current[colId] === ca
+                  const actionLabel = `Apply claim ages: ${personName(rowId)} at ${ra}, ${personName(colId)} at ${ca}; after-tax estate ${fmtMoneyCompact(v)}${isCurrent ? ', current plan selection' : ''}${isBest ? ', best strategy' : ''}`
+                  const tooltip = `${personName(rowId)} ${ra} / ${personName(colId)} ${ca}: ${fmtMoneyCompact(v)}${isCurrent ? ' (current)' : ''}${isBest ? ' (best)' : ''}`
                   return (
                     <td
                       key={ca}
@@ -889,7 +889,7 @@ function CoupleHeatmap({
                         aria-label={actionLabel}
                         aria-current={isCurrent ? 'true' : undefined}
                         disabled={readOnly}
-                        onClick={() => applyStrategy({ [rowId!]: ra, [colId!]: ca })}
+                        onClick={() => applyStrategy({ [rowId]: ra, [colId]: ca })}
                       >
                         {fmtMoneyCompact(v)}
                       </button>
@@ -914,10 +914,10 @@ function CoupleHeatmap({
 function BreakEvenTab({ personIds, personName }: { personIds: string[]; personName: (id: string) => string }) {
   const { plan } = usePlan()
   const people = claimingPeople(plan)
-  const [selectedId, setSelectedId] = useState(personIds[0]!)
+  const [selectedId, setSelectedId] = useState(personIds[0])
   const [growthPct, setGrowthPct] = useState(0)
 
-  const entry = people.find((p) => p.person.id === selectedId) ?? people[0]!
+  const entry = people.find((p) => p.person.id === selectedId) ?? people[0]
   const { person, pia } = entry
   const { y, m, d } = dobParts(person)
   const fra = fraForBirthYear(effectiveBirthYear(y, m, d))
@@ -1005,7 +1005,7 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis dataKey="age" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
               <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
-              <Tooltip formatter={(v: unknown) => fmtMoney(Number(v))} labelFormatter={(l) => `Age ${l}`} contentStyle={chartTooltipStyle} />
+              <Tooltip formatter={(v: unknown) => fmtMoney(Number(v))} labelFormatter={(l) => `Age ${typeof l === 'number' || typeof l === 'string' ? l : ''}`} contentStyle={chartTooltipStyle} />
               <Legend />
               {claimAges.map((a, i) => (
                 <Line key={a} dataKey={`a${a}`} name={`Claim ${a}`} stroke={BREAKEVEN_COLORS[i % BREAKEVEN_COLORS.length]} dot={false} strokeWidth={2} />
@@ -1201,7 +1201,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
   const { plan } = usePlan()
   const people = claimingPeople(plan)
   if (plan.household.people.length !== 1 || people.length !== 1) return null
-  const { person, pia, stream } = people[0]!
+  const { person, pia, stream } = people[0]
   const eligible = (stream.formerSpouses ?? []).filter(
     (r) => r.relationship === 'deceased' && r.marriageYears >= 0.75 && (r.remarriedAtAge === null || r.remarriedAtAge >= 60),
   )
@@ -1216,7 +1216,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
   const claimantEffYear = effectiveBirthYear(y, m, d)
   const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(claimantEffYear))
   const survivorFraClaimAge = { years: Math.floor(survivorFraMonths / 12), months: survivorFraMonths % 12 }
-  let bestEx = eligible[0]!
+  let bestEx = eligible[0]
   let bestPayable = 0
   for (const r of eligible) {
     const exDobYear = Number(r.dob.slice(0, 4))

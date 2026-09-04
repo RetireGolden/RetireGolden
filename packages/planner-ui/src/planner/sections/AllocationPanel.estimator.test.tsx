@@ -53,7 +53,7 @@ describe('the return estimator reads the plan’s asset-class returns', () => {
     // The modal is a portal-free dialog rendered into document.body's tree.
     renderEstimator()
     const expected = blendedReturnPct(OPENING_WEIGHTS, resolveAssetClassParams(undefined))
-    const hint = document.querySelector('.card-hint')!.textContent!
+    const hint = document.querySelector('.card-hint')!.textContent
     expect(hint).toContain('stocks 7%')
     expect(hint).toContain('bonds 4%')
     expect(hint).toContain('cash 2.5%')
@@ -68,7 +68,7 @@ describe('the return estimator reads the plan’s asset-class returns', () => {
     // override has to move the number, not merely be quoted beside it.
     expect(expected).toBeCloseTo(3.85, 10)
     expect(document.querySelector('.alloc-result strong')!.textContent).toBe('3.9%')
-    const hint = document.querySelector('.card-hint')!.textContent!
+    const hint = document.querySelector('.card-hint')!.textContent
     expect(hint).toContain('stocks 5%')
     expect(hint).toContain('bonds 2%')
     // Cash was not overridden, so it still reads the sourced default.

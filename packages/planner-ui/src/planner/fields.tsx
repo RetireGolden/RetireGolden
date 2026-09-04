@@ -145,7 +145,7 @@ export function HelpTip({ text, hint, learn, source, id }: { text?: string; hint
       onMouseLeave={scheduleClose}
       onFocus={() => setFocused(true)}
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false)
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false)
       }}
     >
       <button
