@@ -1448,49 +1448,24 @@ function blocked(
   })
 }
 
-function validateUnchecked(
-  rawPlan: Plan,
-  projectionStartTaxYear: number,
-  years: readonly Readonly<YearResult>[],
-): Readonly<OwnedNonRothIraRuntimeSourceSeriesComplete> {
-  const parsedPlan = planSchema.safeParse(rawPlan)
-  if (!parsedPlan.success) fail('planInvalid', 'Runtime source replay requires a valid Plan')
-  const plan = parsedPlan.data
-  if (!Number.isSafeInteger(projectionStartTaxYear) || projectionStartTaxYear < 1 ||
-      projectionStartTaxYear > 9999 || years.length === 0 ||
-      years[0]!.year !== projectionStartTaxYear) {
-    fail('yearSeriesInvalid', 'Runtime source series must begin at its authoritative projection start year')
-  }
-  for (let index = 0; index < years.length; index += 1) {
-    if (years[index]!.year !== projectionStartTaxYear + index) {
-      fail('yearSeriesInvalid', 'Runtime source years must be unique, ordered, and exactly contiguous')
-    }
-  }
-
-  const accountById = new Map(plan.accounts.map((account) => [account.id, account]))
-  const accountOrder = new Map<string, number>()
-  for (const [index, account] of plan.accounts.entries()) {
-    if (!accountOrder.has(account.id)) accountOrder.set(account.id, index)
-  }
-  const pools = ownedPools(plan)
-  const ownedAccounts = [...pools.values()].flat()
-  const personIds = new Set(plan.household.people.map((person) => person.id))
-  let openingBalances = new Map<AccountId, UsdCents>(ownedAccounts.map((account) => [
-    asAccountId(account.id), cents(
-      aggregateOwnedOpeningBalance(plan, account.id),
-      'Plan opening IRA balance',
-      { sourceAccountId: account.id },
-    ),
-  ]))
-  let openingRawBalances = new Map<AccountId, number>(ownedAccounts.map((account) => [
-    asAccountId(account.id), aggregateOwnedOpeningBalance(plan, account.id),
-  ]))
-  let openingPhysicalRawBalances = new Map(
-    ownedPhysicalRows(plan).map(({ account, balanceIndex }) => [
-      physicalBalanceKey(account.id, balanceIndex),
-      account.balance,
-    ]),
-  )
+/**
+ * What one year of the replay hands the next, as a single value rather than
+ * four locals reassigned at the bottom of a 1,100-line loop body.
+ *
+ * `stepYear` never writes through a carry it was handed. It copies what it has
+ * to advance and returns the next carry, so no year's own chain can reach back
+ * into the year before it.
+ *
+ * @internal Exported so the carry-immutability suite can drive one step
+ * directly; `stripInternal` keeps it out of the published declarations.
+ */
+export interface YearCarry {
+  /** Each owned account's opening balance, in exact cents. */
+  readonly openingBalances: ReadonlyMap<AccountId, UsdCents>
+  /** The same openings in raw Plan dollars, for the exact-rejoin comparisons. */
+  readonly openingRawBalances: ReadonlyMap<AccountId, number>
+  /** Openings per physical balance row, keyed by `physicalBalanceKey`. */
+  readonly openingPhysicalRawBalances: ReadonlyMap<string, number>
   /**
    * The contract-value channel, carried year to year exactly as the account
    * balances beside it are.
@@ -1517,1164 +1492,1731 @@ function validateUnchecked(
    * projection reconstructed a channel the projection never had.
    * @see iraAnnuityContractValue.ts
    */
-  const stagingContracts = ownedIraFundedAnnuityContracts(plan)
-  const contractOwnerById = new Map<AccountId, PersonId>(
-    stagingContracts.map(({ contract, ownerPersonId }) =>
-      [asAccountId(contract.id), ownerPersonId as PersonId]),
-  )
-  const contractFundingById = new Map<AccountId, AccountId>(
-    stagingContracts.map(({ contract, funding }) =>
-      [asAccountId(contract.id), asAccountId(funding.id)]),
-  )
-  const contractPremiumById = new Map<AccountId, number>(
-    stagingContracts.map(({ contract }) =>
-      [asAccountId(contract.id), contract.purchase!.premium]),
-  )
-  const contractPurchaseYearById = new Map<AccountId, number>(
-    stagingContracts.map(({ contract }) =>
-      [asAccountId(contract.id), contract.purchase!.year]),
-  )
-  let openingContractRawValues: Map<AccountId, number> | null = null
-  const normalizedYears: NormalizedOwnedNonRothIraRuntimeSourceYear[] = []
+  readonly openingContractRawValues: ReadonlyMap<AccountId, number> | null
+}
 
-  for (const yearResult of years) {
-    const taxYear = yearResult.year
-    // S2 accounts become members of their beneficiary's owned-IRA aggregate
-    // in the election year. Reconstruct each tax year's actual pool instead of
-    // holding the projection-start inventory static across that identity flip.
-    const pools = ownedPools(plan, taxYear)
-    const ownedAccounts = [...pools.values()].flat()
-    const physicalOwnedRows = ownedPhysicalRows(plan, taxYear)
-    const occurrenceSource = yearResult.retirementRuntimeSource
-    const applicationSource = yearResult.retirementRuntimeApplicationSource
-    const balanceSource = yearResult.ownedNonRothIraPostGrowthSource
-    const publishedBalancesBeforeGrowth =
-      yearResult.ownedNonRothIraBalancesBeforeGrowth
-    const publishedPhysicalBalancesBeforeGrowth =
-      yearResult.ownedNonRothIraPhysicalBalancesBeforeGrowth
-    const publishedPhysicalOpeningBalances =
-      yearResult.ownedNonRothIraPhysicalOpeningBalances
-    if (!occurrenceSource || !applicationSource || !balanceSource ||
-        !publishedBalancesBeforeGrowth ||
-        typeof publishedBalancesBeforeGrowth !== 'object' ||
-        Array.isArray(publishedBalancesBeforeGrowth)) {
-      fail('sourceMissing', 'Each year requires occurrences, applications, pre-growth balances, and post-growth balances', { taxYear })
+/**
+ * Everything the year loop reads out of the Plan and never changes, read once
+ * before the first year. With the carry beside it, these are the only two
+ * things a year's step depends on.
+ *
+ * @internal Exported for the carry-immutability suite.
+ */
+export interface SeriesFacts {
+  readonly plan: Plan
+  readonly accountById: ReadonlyMap<string, Account>
+  readonly accountOrder: ReadonlyMap<string, number>
+  readonly personIds: ReadonlySet<string>
+  readonly stagingContracts: ReturnType<typeof ownedIraFundedAnnuityContracts>
+  readonly contractOwnerById: ReadonlyMap<AccountId, PersonId>
+  readonly contractFundingById: ReadonlyMap<AccountId, AccountId>
+  readonly contractPremiumById: ReadonlyMap<AccountId, number>
+  readonly contractPurchaseYearById: ReadonlyMap<AccountId, number>
+}
+
+/** @internal Read the Plan once into the facts every year's step reads and none writes. */
+export function seriesFacts(plan: Plan): SeriesFacts {
+  const accountOrder = new Map<string, number>()
+  for (const [index, account] of plan.accounts.entries()) {
+    if (!accountOrder.has(account.id)) accountOrder.set(account.id, index)
+  }
+  const stagingContracts = ownedIraFundedAnnuityContracts(plan)
+  return {
+    plan,
+    accountById: new Map(plan.accounts.map((account) => [account.id, account])),
+    accountOrder,
+    personIds: new Set(plan.household.people.map((person) => person.id)),
+    stagingContracts,
+    contractOwnerById: new Map<AccountId, PersonId>(
+      stagingContracts.map(({ contract, ownerPersonId }) =>
+        [asAccountId(contract.id), ownerPersonId as PersonId]),
+    ),
+    contractFundingById: new Map<AccountId, AccountId>(
+      stagingContracts.map(({ contract, funding }) =>
+        [asAccountId(contract.id), asAccountId(funding.id)]),
+    ),
+    contractPremiumById: new Map<AccountId, number>(
+      stagingContracts.map(({ contract }) =>
+        [asAccountId(contract.id), contract.purchase!.premium]),
+    ),
+    contractPurchaseYearById: new Map<AccountId, number>(
+      stagingContracts.map(({ contract }) =>
+        [asAccountId(contract.id), contract.purchase!.year]),
+    ),
+  }
+}
+
+/**
+ * The carry the first year is handed: the Plan's own opening inventory, and no
+ * contract channel at all, because before the first year no published contract
+ * opening has a prior close to continue.
+ *
+ * @internal
+ */
+export function initialYearCarry(plan: Plan): YearCarry {
+  const ownedAccounts = [...ownedPools(plan).values()].flat()
+  return {
+    openingBalances: new Map<AccountId, UsdCents>(ownedAccounts.map((account) => [
+      asAccountId(account.id), cents(
+        aggregateOwnedOpeningBalance(plan, account.id),
+        'Plan opening IRA balance',
+        { sourceAccountId: account.id },
+      ),
+    ])),
+    openingRawBalances: new Map<AccountId, number>(ownedAccounts.map((account) => [
+      asAccountId(account.id), aggregateOwnedOpeningBalance(plan, account.id),
+    ])),
+    openingPhysicalRawBalances: new Map(
+      ownedPhysicalRows(plan).map(({ account, balanceIndex }) => [
+        physicalBalanceKey(account.id, balanceIndex),
+        account.balance,
+      ]),
+    ),
+    openingContractRawValues: null,
+  }
+}
+
+type OwnedIraAccount = Extract<Account, { type: 'traditional' }>
+type OwnedPhysicalRow = { account: OwnedIraAccount; balanceIndex: number }
+type CapturedOccurrenceSource = NonNullable<YearResult['retirementRuntimeSource']>
+type CapturedApplicationSource =
+  NonNullable<YearResult['retirementRuntimeApplicationSource']>
+type CapturedBalanceSource = NonNullable<YearResult['ownedNonRothIraPostGrowthSource']>
+type PublishedPreGrowthBalances =
+  NonNullable<YearResult['ownedNonRothIraBalancesBeforeGrowth']>
+type NonmovingLegacyQcdOverlay =
+  CapturedOccurrenceSource['nonmovingLegacyQcdOverlay']
+type OccurrenceIndex =
+  ReadonlyMap<string, Readonly<SimulatorAnnualRetirementRuntimeOccurrence>>
+
+/**
+ * The year's own captured sources, taken off the published `YearResult` before
+ * anything is checked against them, beside the tax year's actual owned-IRA
+ * inventory. Nothing here compares two figures; it only refuses a year that did
+ * not publish the evidence the phases below read.
+ */
+function readYearSources(
+  yearResult: Readonly<YearResult>,
+  plan: Plan,
+  taxYear: number,
+) {
+  // S2 accounts become members of their beneficiary's owned-IRA aggregate
+  // in the election year. Reconstruct each tax year's actual pool instead of
+  // holding the projection-start inventory static across that identity flip.
+  const pools = ownedPools(plan, taxYear)
+  const ownedAccounts = [...pools.values()].flat()
+  const physicalOwnedRows = ownedPhysicalRows(plan, taxYear)
+  const occurrenceSource = yearResult.retirementRuntimeSource
+  const applicationSource = yearResult.retirementRuntimeApplicationSource
+  const balanceSource = yearResult.ownedNonRothIraPostGrowthSource
+  const publishedBalancesBeforeGrowth =
+    yearResult.ownedNonRothIraBalancesBeforeGrowth
+  const publishedPhysicalBalancesBeforeGrowth =
+    yearResult.ownedNonRothIraPhysicalBalancesBeforeGrowth
+  const publishedPhysicalOpeningBalances =
+    yearResult.ownedNonRothIraPhysicalOpeningBalances
+  if (!occurrenceSource || !applicationSource || !balanceSource ||
+      !publishedBalancesBeforeGrowth ||
+      typeof publishedBalancesBeforeGrowth !== 'object' ||
+      Array.isArray(publishedBalancesBeforeGrowth)) {
+    fail('sourceMissing', 'Each year requires occurrences, applications, pre-growth balances, and post-growth balances', { taxYear })
+  }
+  return {
+    pools, ownedAccounts, physicalOwnedRows,
+    occurrenceSource, applicationSource, balanceSource,
+    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
+    publishedPhysicalOpeningBalances,
+  }
+}
+
+/**
+ * The per-row half of the opening inventory. Each published physical opening
+ * balance keeps its row identity and continues the prior year's close, and the
+ * carry's per-row openings advance to what this year published.
+ */
+function continuePhysicalOpeningBalances(
+  publishedPhysicalOpeningBalances:
+    YearResult['ownedNonRothIraPhysicalOpeningBalances'],
+  physicalOwnedRows: readonly OwnedPhysicalRow[],
+  ownedAccounts: readonly OwnedIraAccount[],
+  openingPhysicalRawBalances: Map<string, number>,
+  taxYear: number,
+): void {
+  if (publishedPhysicalOpeningBalances !== undefined) {
+    if (publishedPhysicalOpeningBalances.length !== physicalOwnedRows.length) {
+      fail('sourceCoverageInvalid', 'Physical opening balances must contain every owned IRA balance row', { taxYear })
     }
-    if (publishedPhysicalOpeningBalances !== undefined) {
-      if (publishedPhysicalOpeningBalances.length !== physicalOwnedRows.length) {
-        fail('sourceCoverageInvalid', 'Physical opening balances must contain every owned IRA balance row', { taxYear })
-      }
-      for (let index = 0; index < physicalOwnedRows.length; index += 1) {
-        const expected = physicalOwnedRows[index]!
-        const published = publishedPhysicalOpeningBalances[index]!
-        const key = physicalBalanceKey(expected.account.id, expected.balanceIndex)
-        if (published.sourceAccountId !== expected.account.id ||
-            published.balanceIndex !== expected.balanceIndex ||
-            (openingPhysicalRawBalances.has(key) &&
-              openingPhysicalRawBalances.get(key) !== published.balancePlanDollars)) {
-          fail('balanceChainInvalid', 'Physical opening balances must continue row identity and prior close', {
-            taxYear, sourceAccountId: published.sourceAccountId,
-          })
-        }
-        cents(published.balancePlanDollars, 'Physical opening IRA balance', {
+    for (let index = 0; index < physicalOwnedRows.length; index += 1) {
+      const expected = physicalOwnedRows[index]!
+      const published = publishedPhysicalOpeningBalances[index]!
+      const key = physicalBalanceKey(expected.account.id, expected.balanceIndex)
+      if (published.sourceAccountId !== expected.account.id ||
+          published.balanceIndex !== expected.balanceIndex ||
+          (openingPhysicalRawBalances.has(key) &&
+            openingPhysicalRawBalances.get(key) !== published.balancePlanDollars)) {
+        fail('balanceChainInvalid', 'Physical opening balances must continue row identity and prior close', {
           taxYear, sourceAccountId: published.sourceAccountId,
         })
-        openingPhysicalRawBalances.set(key, published.balancePlanDollars)
       }
-    } else if (physicalOwnedRows.length !== ownedAccounts.length) {
-      fail('sourceMissing', 'Duplicate owned IRA rows require physical opening balances', { taxYear })
+      cents(published.balancePlanDollars, 'Physical opening IRA balance', {
+        taxYear, sourceAccountId: published.sourceAccountId,
+      })
+      openingPhysicalRawBalances.set(key, published.balancePlanDollars)
     }
-    if (occurrenceSource.status !== 'runtimeOccurrenceSourcesCaptured' ||
-        occurrenceSource.captureBoundary !== 'legacyAnnualPassCommittedBeforeYearResultPublication' ||
-        occurrenceSource.journalValidation !== 'notRun' ||
-        applicationSource.status !== 'runtimeApplicationSourcesCaptured' ||
-        applicationSource.captureBoundary !== 'atOwnedNonRothIraMutationSitesBeforeAnnualGrowth' ||
-        applicationSource.applicationValidation !== 'notRun' ||
-        balanceSource.status !== 'postGrowthOwnedNonRothIraBalancesCaptured' ||
-        balanceSource.captureBoundary !== 'afterAllAnnualTransactionsAndGrowthBeforeYearResultPublication' ||
-        balanceSource.annualObservationValidation !== 'notRun' ||
-        occurrenceSource.planId !== plan.id || applicationSource.planId !== plan.id ||
-        balanceSource.planId !== plan.id || occurrenceSource.taxYear !== taxYear ||
-        applicationSource.taxYear !== taxYear || balanceSource.taxYear !== taxYear) {
-      fail('sourceContractInvalid', 'Raw sources must retain exact Plan/year/status/boundaries', { taxYear })
-    }
+  } else if (physicalOwnedRows.length !== ownedAccounts.length) {
+    fail('sourceMissing', 'Duplicate owned IRA rows require physical opening balances', { taxYear })
+  }
+}
 
-    const occurrenceByKey = new Map<string, Readonly<SimulatorAnnualRetirementRuntimeOccurrence>>()
-    const occurrenceOrderId = new Map<string, string>()
-    for (let index = 0; index < occurrenceSource.runtimeOccurrences.length; index += 1) {
-      const occurrence = occurrenceSource.runtimeOccurrences[index]!
-      if (index > 0 && compareOccurrences(occurrenceSource.runtimeOccurrences[index - 1]!, occurrence) > 0) {
-        fail('sourceOrderInvalid', 'Runtime occurrences must retain canonical publication order', { taxYear })
-      }
-      if (!occurrence.producerOccurrenceKey.trim() || occurrenceByKey.has(occurrence.producerOccurrenceKey)) {
-        fail('sourceIdentityInvalid', 'Runtime occurrence keys must be nonblank and unique', {
-          taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
-        })
-      }
-      const amount = cents(occurrence.grossAmountPlanDollars, 'Runtime occurrence amount', {
+/**
+ * Every captured source still carries the exact Plan, tax year, status and
+ * capture boundary it was captured under. Raised after the opening rows and
+ * before the occurrence index, exactly where it always ran: a source whose
+ * contract has drifted must not be read as though it had not.
+ */
+function requireCapturedSourceContracts(
+  occurrenceSource: CapturedOccurrenceSource,
+  applicationSource: CapturedApplicationSource,
+  balanceSource: CapturedBalanceSource,
+  plan: Plan,
+  taxYear: number,
+): void {
+  if (occurrenceSource.status !== 'runtimeOccurrenceSourcesCaptured' ||
+      occurrenceSource.captureBoundary !== 'legacyAnnualPassCommittedBeforeYearResultPublication' ||
+      occurrenceSource.journalValidation !== 'notRun' ||
+      applicationSource.status !== 'runtimeApplicationSourcesCaptured' ||
+      applicationSource.captureBoundary !== 'atOwnedNonRothIraMutationSitesBeforeAnnualGrowth' ||
+      applicationSource.applicationValidation !== 'notRun' ||
+      balanceSource.status !== 'postGrowthOwnedNonRothIraBalancesCaptured' ||
+      balanceSource.captureBoundary !== 'afterAllAnnualTransactionsAndGrowthBeforeYearResultPublication' ||
+      balanceSource.annualObservationValidation !== 'notRun' ||
+      occurrenceSource.planId !== plan.id || applicationSource.planId !== plan.id ||
+      balanceSource.planId !== plan.id || occurrenceSource.taxYear !== taxYear ||
+      applicationSource.taxYear !== taxYear || balanceSource.taxYear !== taxYear) {
+    fail('sourceContractInvalid', 'Raw sources must retain exact Plan/year/status/boundaries', { taxYear })
+  }
+}
+
+/**
+ * The year's runtime occurrences, checked for canonical publication order,
+ * unique nonblank keys and exact Plan identity, and indexed by the key every
+ * phase below reaches them through.
+ */
+function indexOccurrences(
+  occurrenceSource: CapturedOccurrenceSource,
+  plan: Plan,
+  accountById: ReadonlyMap<string, Account>,
+  personIds: ReadonlySet<string>,
+  taxYear: number,
+) {
+  const occurrenceByKey = new Map<string, Readonly<SimulatorAnnualRetirementRuntimeOccurrence>>()
+  const occurrenceOrderId = new Map<string, string>()
+  for (let index = 0; index < occurrenceSource.runtimeOccurrences.length; index += 1) {
+    const occurrence = occurrenceSource.runtimeOccurrences[index]!
+    if (index > 0 && compareOccurrences(occurrenceSource.runtimeOccurrences[index - 1]!, occurrence) > 0) {
+      fail('sourceOrderInvalid', 'Runtime occurrences must retain canonical publication order', { taxYear })
+    }
+    if (!occurrence.producerOccurrenceKey.trim() || occurrenceByKey.has(occurrence.producerOccurrenceKey)) {
+      fail('sourceIdentityInvalid', 'Runtime occurrence keys must be nonblank and unique', {
         taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
       })
-      if (amount === 0 || occurrence.executionDate !== null || occurrence.executionSequence !== null ||
-          occurrence.movementAuthorityId !== null || occurrence.ownerPersonId === null ||
-          occurrence.sourceAccountId === null || !personIds.has(occurrence.ownerPersonId)) {
-        fail('sourceContractInvalid', 'Legacy occurrences require positive amount and Plan identity without invented chronology/authority', {
-          taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
-        })
-      }
-      const account = accountById.get(occurrence.sourceAccountId)
-      // The owner an annuity payment reports is the PAYMENT owner the income
-      // block used -- `ownerPersonId ?? primary` -- while the aggregate it
-      // belongs to is the funding IRA's. On a contract naming its owner the two
-      // are the same by Plan validation; on one naming nobody the equality
-      // below would compare against `null` and refuse a well-formed year, so
-      // the contract's own owner field is resolved the same way the simulator
-      // resolved it. Which aggregate the payment lands in is decided by the
-      // funding owner, in the contract chain further down, not here.
-      const expectedOwnerPersonId = account?.type === 'annuity'
-        ? account.ownerPersonId ?? (plan.household.people[0]?.id ?? null)
-        : account?.ownerPersonId
-      if (!account || expectedOwnerPersonId !== occurrence.ownerPersonId ||
-          !sourceCompatible(occurrence, account, plan, taxYear)) {
-        fail('sourceIdentityInvalid', 'Occurrence owner/source/kind must exact-rejoin its Plan account', {
-          taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
-        })
-      }
-      occurrenceOrderId.set(occurrence.producerOccurrenceKey, occurrenceOrderAccountId(plan, occurrence, taxYear))
-      occurrenceByKey.set(occurrence.producerOccurrenceKey, occurrence)
     }
-    for (const pension of plan.accounts) {
-      if (pension.type !== 'pension' ||
-          pension.lumpSumOffer?.electionYear !== taxYear ||
-          pension.lumpSumOffer.amount <= 0 ||
-          pension.lumpSumElection === undefined) continue
-      const target = accountById.get(pension.lumpSumElection.rolloverAccountId)
-      if (!target || !isAggregatedIra(target)) continue
-      const expectedKey = JSON.stringify([
-        'rolloverInflow', pension.id, target.id,
-      ])
-      const occurrence = occurrenceByKey.get(expectedKey)
-      if (occurrence?.kind !== 'rolloverInflow' ||
-          occurrence.grossAmountPlanDollars !== pension.lumpSumOffer.amount) {
-        fail('sourceCoverageInvalid', 'A Plan-declared owned-IRA pension rollover requires its canonical occurrence and exact elected amount', {
-          taxYear, sourceAccountId: target.id,
-          producerOccurrenceKey: expectedKey,
-        })
-      }
-    }
-    reconcilePublishedTotal(
-      occurrenceSource.runtimeOccurrences,
-      ['ownedIraRmd', 'employerPlanRmd'],
-      yearResult.rmd,
-      'RMD',
-      taxYear,
-      accountOrder,
-    )
-    reconcilePublishedTotal(
-      occurrenceSource.runtimeOccurrences,
-      ['automaticSeppDistribution'],
-      yearResult.sepp,
-      'SEPP',
-      taxYear,
-      accountOrder,
-    )
-    reconcilePublishedTotal(
-      occurrenceSource.runtimeOccurrences,
-      ['inheritedIraRmd'],
-      yearResult.inheritedDistribution,
-      'inherited distribution',
-      taxYear,
-      accountOrder,
-    )
-    // The published annual conversion total is now reached by two routes that
-    // are not interchangeable. The aggregate strategy's sweep produces
-    // `legacyRothConversion` occurrences; the exact-cent executor's committed
-    // requests produce `namedRothConversion` ones. Reconciling only the legacy
-    // kind against the published figure would fail every year a named request
-    // moved money, and reconciling the union alone would let one kind absorb
-    // the other's dollars, so the named arm is bound to the executor's own
-    // committed cents first and the union to the published total second.
-    const namedConversionCoverage = requireNamedRothConversionCoverage(
-      yearResult, accountById, occurrenceSource.runtimeOccurrences, taxYear,
-    )
-    reconcilePublishedTotal(
-      occurrenceSource.runtimeOccurrences,
-      ['namedRothConversion'],
-      ledgerCentsToPlanDollars(namedConversionCoverage.totalExecutedAmount),
-      'named Roth conversion',
-      taxYear,
-      accountOrder,
-    )
-    reconcilePublishedTotal(
-      occurrenceSource.runtimeOccurrences,
-      ['legacyRothConversion', 'namedRothConversion'],
-      yearResult.rothConversion,
-      'Roth conversion',
-      taxYear,
-      accountOrder,
-    )
-    if (yearResult.ownedNonRothIraContributions === undefined) {
-      fail('sourceMissing', 'Each year requires the independently published owned-IRA contribution total', {
-        taxYear,
+    const amount = cents(occurrence.grossAmountPlanDollars, 'Runtime occurrence amount', {
+      taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+    })
+    if (amount === 0 || occurrence.executionDate !== null || occurrence.executionSequence !== null ||
+        occurrence.movementAuthorityId !== null || occurrence.ownerPersonId === null ||
+        occurrence.sourceAccountId === null || !personIds.has(occurrence.ownerPersonId)) {
+      fail('sourceContractInvalid', 'Legacy occurrences require positive amount and Plan identity without invented chronology/authority', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
       })
     }
-    reconcilePublishedTotal(
-      occurrenceSource.runtimeOccurrences,
-      ['ownedIraContribution', 'ownedIraEmployerContribution'],
-      yearResult.ownedNonRothIraContributions,
-      'owned non-Roth IRA contribution',
-      taxYear,
-      accountOrder,
-    )
-    const legacyNeedBasedWithdrawalTotal = occurrenceTotalInPlanOrder(
-      occurrenceSource.runtimeOccurrences,
-      ['legacyNeedBasedWithdrawal'],
-      'legacy need-based traditional withdrawal',
-      taxYear,
-      accountOrder,
-    )
-    // Traditional withdrawals carry only the traditional-character forced
-    // inherited share (`inheritedTraditionalDistribution`); Roth forced dollars
-    // join `withdrawals.roth` and must not be double-counted here against the
-    // combined `inheritedDistribution` scalar.
-    if (yearResult.inheritedTraditionalDistribution === undefined) {
-      fail('sourceMissing', 'Each year requires the independently published traditional-character inherited distribution total', {
-        taxYear,
+    const account = accountById.get(occurrence.sourceAccountId)
+    // The owner an annuity payment reports is the PAYMENT owner the income
+    // block used -- `ownerPersonId ?? primary` -- while the aggregate it
+    // belongs to is the funding IRA's. On a contract naming its owner the two
+    // are the same by Plan validation; on one naming nobody the equality
+    // below would compare against `null` and refuse a well-formed year, so
+    // the contract's own owner field is resolved the same way the simulator
+    // resolved it. Which aggregate the payment lands in is decided by the
+    // funding owner, in the contract chain further down, not here.
+    const expectedOwnerPersonId = account?.type === 'annuity'
+      ? account.ownerPersonId ?? (plan.household.people[0]?.id ?? null)
+      : account?.ownerPersonId
+    if (!account || expectedOwnerPersonId !== occurrence.ownerPersonId ||
+        !sourceCompatible(occurrence, account, plan, taxYear)) {
+      fail('sourceIdentityInvalid', 'Occurrence owner/source/kind must exact-rejoin its Plan account', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
       })
     }
-    const reconstructedTraditionalWithdrawal =
-      ((legacyNeedBasedWithdrawalTotal.total + yearResult.rmd) + yearResult.sepp) +
-      yearResult.inheritedTraditionalDistribution
-    if (!Number.isFinite(yearResult.withdrawals.traditional) ||
-        yearResult.withdrawals.traditional < 0 ||
-        Object.is(yearResult.withdrawals.traditional, -0)) {
-      fail('sourceAmountInvalid', 'Published traditional withdrawal total must be finite, nonnegative, and not negative zero', {
-        taxYear,
-      })
-    }
-    if (!rawTotalsReconcile(
-      reconstructedTraditionalWithdrawal,
-      yearResult.withdrawals.traditional,
-      legacyNeedBasedWithdrawalTotal.count + 3,
-    )) {
-      fail('sourceCoverageInvalid', 'Legacy need-based withdrawal occurrences plus RMD, SEPP, and traditional-character inherited totals must exact-rejoin published traditional withdrawals', {
-        taxYear,
-      })
-    }
+    occurrenceOrderId.set(occurrence.producerOccurrenceKey, occurrenceOrderAccountId(plan, occurrence, taxYear))
+    occurrenceByKey.set(occurrence.producerOccurrenceKey, occurrence)
+  }
+  return { occurrenceByKey, occurrenceOrderId }
+}
 
-    requireNoExactActionOwnedIraMovement(
-      plan, yearResult, accountById, taxYear,
-    )
-    // Beside the guard above, and before the application chain rather than
-    // beside the QCD reconciliation below, because these two decide the same
-    // question: which exact actions this replay will let move owned-IRA
-    // dollars. A gift with no committed evidence behind it is refused here, so
-    // no application referring to one ever reaches the balance chain.
-    const namedQcdCoverage = requireNamedQcdCoverage(
-      yearResult, accountById, occurrenceSource.runtimeOccurrences, taxYear,
-    )
-
-    for (const annuity of plan.accounts) {
-      if (annuity.type !== 'annuity' || annuity.purchase?.year !== taxYear ||
-          annuity.purchase.premium <= 0) continue
-      const funding = accountById.get(annuity.purchase.fundingAccountId)
-      if (!funding || !isAggregatedIra(funding)) continue
-      const sourceAccountId = asAccountId(funding.id)
-      if ((openingRawBalances.get(sourceAccountId) ?? 0) <= 0) continue
-      const expectedKey = JSON.stringify([
-        'annuityFundingTransfer', funding.id, annuity.id,
-      ])
-      if (!occurrenceByKey.has(expectedKey)) {
-        fail('annuityStageRequired', 'A funded Plan annuity purchase requires its owned-IRA transfer source', {
-          taxYear, sourceAccountId: funding.id,
-          producerOccurrenceKey: expectedKey,
-        })
-      }
-      // THE REFUSAL THAT REMAINS, and what is left of it. Until this slice, a
-      // premium leaving the captured pool refused the year outright: the
-      // contract it went into was not something the replay carried, so the
-      // Form 8606 aggregate had value leave it and arrive nowhere. It carries
-      // the contract now -- the value channel below is the arrival -- but only
-      // for a contract it can place in ONE owner's aggregate. Section
-      // 408(d)(2)(A) aggregates one individual's plans, and a contract the
-      // engine cannot assign to an individual has no aggregate to enter.
-      //
-      // NO VALID PLAN IS KNOWN TO REACH IT. Which individual the contract
-      // belongs to is read off the FUNDING account, so a contract naming the
-      // other spouse or naming nobody stages like any other; a non-qualified
-      // premium cannot be drawn on a traditional account at all, plan
-      // validation having refused that since before this slice. It is kept as a
-      // fail-closed net rather than deleted, because the alternative to
-      // refusing an unplaceable contract is pricing a section 72 aggregate that
-      // has lost value to nowhere. If it ever fires the year prices on the
-      // legacy ledger, and since the refusal is about this year's inventory
-      // rather than anyone's basis it disqualifies only this year.
-      if (!contractOwnerById.has(asAccountId(annuity.id))) {
-        fail('annuityStageRequired', 'An owned-IRA annuity premium requires a contract this replay can place in one owner’s section 408(d)(2) aggregate', {
-          taxYear, sourceAccountId: funding.id,
-          producerOccurrenceKey: expectedKey,
-        })
-      }
+/**
+ * A Plan-declared pension lump sum rolled into an owned IRA has to appear as
+ * its own canonical occurrence at the exact elected amount, or the aggregate
+ * gained dollars this replay cannot account for.
+ */
+function requirePensionRolloverOccurrences(
+  plan: Plan,
+  accountById: ReadonlyMap<string, Account>,
+  occurrenceByKey: OccurrenceIndex,
+  taxYear: number,
+): void {
+  for (const pension of plan.accounts) {
+    if (pension.type !== 'pension' ||
+        pension.lumpSumOffer?.electionYear !== taxYear ||
+        pension.lumpSumOffer.amount <= 0 ||
+        pension.lumpSumElection === undefined) continue
+    const target = accountById.get(pension.lumpSumElection.rolloverAccountId)
+    if (!target || !isAggregatedIra(target)) continue
+    const expectedKey = JSON.stringify([
+      'rolloverInflow', pension.id, target.id,
+    ])
+    const occurrence = occurrenceByKey.get(expectedKey)
+    if (occurrence?.kind !== 'rolloverInflow' ||
+        occurrence.grossAmountPlanDollars !== pension.lumpSumOffer.amount) {
+      fail('sourceCoverageInvalid', 'A Plan-declared owned-IRA pension rollover requires its canonical occurrence and exact elected amount', {
+        taxYear, sourceAccountId: target.id,
+        producerOccurrenceKey: expectedKey,
+      })
     }
+  }
+}
 
-    const expectedOwners = [...pools.keys()]
-    if (balanceSource.ownerPools.length !== expectedOwners.length) {
-      fail('postGrowthPoolInvalid', 'Post-growth source must contain every and only complete owned-IRA pool', { taxYear })
+/**
+ * Every annual total the year publishes, reached from the occurrences beneath
+ * it in Plan order and in exact cents. Runs on the indexed occurrences and
+ * before the balance chain, so a year whose totals do not add up is refused
+ * before any balance is advanced against them.
+ */
+function reconcilePublishedAnnualTotals(
+  yearResult: Readonly<YearResult>,
+  occurrenceSource: CapturedOccurrenceSource,
+  accountById: ReadonlyMap<string, Account>,
+  accountOrder: ReadonlyMap<string, number>,
+  taxYear: number,
+): NamedRothConversionCoverage {
+  reconcilePublishedTotal(
+    occurrenceSource.runtimeOccurrences,
+    ['ownedIraRmd', 'employerPlanRmd'],
+    yearResult.rmd,
+    'RMD',
+    taxYear,
+    accountOrder,
+  )
+  reconcilePublishedTotal(
+    occurrenceSource.runtimeOccurrences,
+    ['automaticSeppDistribution'],
+    yearResult.sepp,
+    'SEPP',
+    taxYear,
+    accountOrder,
+  )
+  reconcilePublishedTotal(
+    occurrenceSource.runtimeOccurrences,
+    ['inheritedIraRmd'],
+    yearResult.inheritedDistribution,
+    'inherited distribution',
+    taxYear,
+    accountOrder,
+  )
+  // The published annual conversion total is now reached by two routes that
+  // are not interchangeable. The aggregate strategy's sweep produces
+  // `legacyRothConversion` occurrences; the exact-cent executor's committed
+  // requests produce `namedRothConversion` ones. Reconciling only the legacy
+  // kind against the published figure would fail every year a named request
+  // moved money, and reconciling the union alone would let one kind absorb
+  // the other's dollars, so the named arm is bound to the executor's own
+  // committed cents first and the union to the published total second.
+  const namedConversionCoverage = requireNamedRothConversionCoverage(
+    yearResult, accountById, occurrenceSource.runtimeOccurrences, taxYear,
+  )
+  reconcilePublishedTotal(
+    occurrenceSource.runtimeOccurrences,
+    ['namedRothConversion'],
+    ledgerCentsToPlanDollars(namedConversionCoverage.totalExecutedAmount),
+    'named Roth conversion',
+    taxYear,
+    accountOrder,
+  )
+  reconcilePublishedTotal(
+    occurrenceSource.runtimeOccurrences,
+    ['legacyRothConversion', 'namedRothConversion'],
+    yearResult.rothConversion,
+    'Roth conversion',
+    taxYear,
+    accountOrder,
+  )
+  if (yearResult.ownedNonRothIraContributions === undefined) {
+    fail('sourceMissing', 'Each year requires the independently published owned-IRA contribution total', {
+      taxYear,
+    })
+  }
+  reconcilePublishedTotal(
+    occurrenceSource.runtimeOccurrences,
+    ['ownedIraContribution', 'ownedIraEmployerContribution'],
+    yearResult.ownedNonRothIraContributions,
+    'owned non-Roth IRA contribution',
+    taxYear,
+    accountOrder,
+  )
+  const legacyNeedBasedWithdrawalTotal = occurrenceTotalInPlanOrder(
+    occurrenceSource.runtimeOccurrences,
+    ['legacyNeedBasedWithdrawal'],
+    'legacy need-based traditional withdrawal',
+    taxYear,
+    accountOrder,
+  )
+  // Traditional withdrawals carry only the traditional-character forced
+  // inherited share (`inheritedTraditionalDistribution`); Roth forced dollars
+  // join `withdrawals.roth` and must not be double-counted here against the
+  // combined `inheritedDistribution` scalar.
+  if (yearResult.inheritedTraditionalDistribution === undefined) {
+    fail('sourceMissing', 'Each year requires the independently published traditional-character inherited distribution total', {
+      taxYear,
+    })
+  }
+  const reconstructedTraditionalWithdrawal =
+    ((legacyNeedBasedWithdrawalTotal.total + yearResult.rmd) + yearResult.sepp) +
+    yearResult.inheritedTraditionalDistribution
+  if (!Number.isFinite(yearResult.withdrawals.traditional) ||
+      yearResult.withdrawals.traditional < 0 ||
+      Object.is(yearResult.withdrawals.traditional, -0)) {
+    fail('sourceAmountInvalid', 'Published traditional withdrawal total must be finite, nonnegative, and not negative zero', {
+      taxYear,
+    })
+  }
+  if (!rawTotalsReconcile(
+    reconstructedTraditionalWithdrawal,
+    yearResult.withdrawals.traditional,
+    legacyNeedBasedWithdrawalTotal.count + 3,
+  )) {
+    fail('sourceCoverageInvalid', 'Legacy need-based withdrawal occurrences plus RMD, SEPP, and traditional-character inherited totals must exact-rejoin published traditional withdrawals', {
+      taxYear,
+    })
+  }
+  return namedConversionCoverage
+}
+
+/**
+ * Which exact actions this replay will let move owned-IRA dollars. Both halves
+ * decide the same question, which is why they sit together here rather than
+ * beside the QCD reconciliation further down.
+ */
+function requireExactActionEvidence(
+  plan: Plan,
+  yearResult: Readonly<YearResult>,
+  accountById: ReadonlyMap<string, Account>,
+  occurrenceSource: CapturedOccurrenceSource,
+  taxYear: number,
+): NamedQcdCoverage {
+  requireNoExactActionOwnedIraMovement(
+    plan, yearResult, accountById, taxYear,
+  )
+  // Beside the guard above, and before the application chain rather than
+  // beside the QCD reconciliation below, because these two decide the same
+  // question: which exact actions this replay will let move owned-IRA
+  // dollars. A gift with no committed evidence behind it is refused here, so
+  // no application referring to one ever reaches the balance chain.
+  const namedQcdCoverage = requireNamedQcdCoverage(
+    yearResult, accountById, occurrenceSource.runtimeOccurrences, taxYear,
+  )
+  return namedQcdCoverage
+}
+
+/**
+ * A funded Plan annuity purchase drawn on a live owned IRA requires its
+ * transfer source, and a contract this replay can place in one owner's section
+ * 408(d)(2) aggregate. Read against the openings the carry brought in, before
+ * the chain spends them.
+ */
+function requireStagedAnnuityPurchases(
+  plan: Plan,
+  accountById: ReadonlyMap<string, Account>,
+  contractOwnerById: ReadonlyMap<AccountId, PersonId>,
+  occurrenceByKey: OccurrenceIndex,
+  openingRawBalances: ReadonlyMap<AccountId, number>,
+  taxYear: number,
+): void {
+  for (const annuity of plan.accounts) {
+    if (annuity.type !== 'annuity' || annuity.purchase?.year !== taxYear ||
+        annuity.purchase.premium <= 0) continue
+    const funding = accountById.get(annuity.purchase.fundingAccountId)
+    if (!funding || !isAggregatedIra(funding)) continue
+    const sourceAccountId = asAccountId(funding.id)
+    if ((openingRawBalances.get(sourceAccountId) ?? 0) <= 0) continue
+    const expectedKey = JSON.stringify([
+      'annuityFundingTransfer', funding.id, annuity.id,
+    ])
+    if (!occurrenceByKey.has(expectedKey)) {
+      fail('annuityStageRequired', 'A funded Plan annuity purchase requires its owned-IRA transfer source', {
+        taxYear, sourceAccountId: funding.id,
+        producerOccurrenceKey: expectedKey,
+      })
     }
-    const postGrowthBalances = new Map<AccountId, UsdCents>()
-    const postGrowthRawBalances = new Map<AccountId, number>()
-    const postGrowthPhysicalRawBalances = new Map<string, number>()
-    const preGrowthBalances = new Map<AccountId, UsdCents>()
-    const preGrowthRawBalances = new Map<AccountId, number>()
-    const preGrowthPhysicalRawBalances = new Map<string, number>()
-    const ownerBalances = new Map<PersonId, NormalizedOwnedNonRothIraYearEndBalance[]>()
-    const publishedBalances = yearResult.balances
-    if (Object.keys(publishedBalancesBeforeGrowth).length !==
-        ownedAccounts.length) {
+    // THE REFUSAL THAT REMAINS, and what is left of it. Until this slice, a
+    // premium leaving the captured pool refused the year outright: the
+    // contract it went into was not something the replay carried, so the
+    // Form 8606 aggregate had value leave it and arrive nowhere. It carries
+    // the contract now -- the value channel below is the arrival -- but only
+    // for a contract it can place in ONE owner's aggregate. Section
+    // 408(d)(2)(A) aggregates one individual's plans, and a contract the
+    // engine cannot assign to an individual has no aggregate to enter.
+    //
+    // NO VALID PLAN IS KNOWN TO REACH IT. Which individual the contract
+    // belongs to is read off the FUNDING account, so a contract naming the
+    // other spouse or naming nobody stages like any other; a non-qualified
+    // premium cannot be drawn on a traditional account at all, plan
+    // validation having refused that since before this slice. It is kept as a
+    // fail-closed net rather than deleted, because the alternative to
+    // refusing an unplaceable contract is pricing a section 72 aggregate that
+    // has lost value to nowhere. If it ever fires the year prices on the
+    // legacy ledger, and since the refusal is about this year's inventory
+    // rather than anyone's basis it disqualifies only this year.
+    if (!contractOwnerById.has(asAccountId(annuity.id))) {
+      fail('annuityStageRequired', 'An owned-IRA annuity premium requires a contract this replay can place in one owner’s section 408(d)(2) aggregate', {
+        taxYear, sourceAccountId: funding.id,
+        producerOccurrenceKey: expectedKey,
+      })
+    }
+  }
+}
+
+/**
+ * The year's live balance observation, on both ledgers the replay carries: the
+ * published pre-growth figure every application chain has to rejoin, and the
+ * post-growth pools that become the next year's openings. Read before the
+ * chain runs, so the chain has something fixed to arrive at.
+ */
+function observeBalances(
+  yearResult: Readonly<YearResult>,
+  balanceSource: CapturedBalanceSource,
+  pools: ReadonlyMap<PersonId, OwnedIraAccount[]>,
+  ownedAccounts: readonly OwnedIraAccount[],
+  physicalOwnedRows: readonly OwnedPhysicalRow[],
+  publishedBalancesBeforeGrowth: PublishedPreGrowthBalances,
+  publishedPhysicalBalancesBeforeGrowth:
+    YearResult['ownedNonRothIraPhysicalBalancesBeforeGrowth'],
+  taxYear: number,
+) {
+  const expectedOwners = [...pools.keys()]
+  if (balanceSource.ownerPools.length !== expectedOwners.length) {
+    fail('postGrowthPoolInvalid', 'Post-growth source must contain every and only complete owned-IRA pool', { taxYear })
+  }
+  const postGrowthBalances = new Map<AccountId, UsdCents>()
+  const postGrowthRawBalances = new Map<AccountId, number>()
+  const postGrowthPhysicalRawBalances = new Map<string, number>()
+  const preGrowthBalances = new Map<AccountId, UsdCents>()
+  const preGrowthRawBalances = new Map<AccountId, number>()
+  const preGrowthPhysicalRawBalances = new Map<string, number>()
+  const ownerBalances = new Map<PersonId, NormalizedOwnedNonRothIraYearEndBalance[]>()
+  const publishedBalances = yearResult.balances
+  if (Object.keys(publishedBalancesBeforeGrowth).length !==
+      ownedAccounts.length) {
+    fail(
+      'sourceCoverageInvalid',
+      'Published pre-growth balances must contain every and only owned non-Roth IRA account',
+      { taxYear },
+    )
+  }
+  for (const account of ownedAccounts) {
+    if (!Object.hasOwn(publishedBalancesBeforeGrowth, account.id)) {
       fail(
         'sourceCoverageInvalid',
         'Published pre-growth balances must contain every and only owned non-Roth IRA account',
-        { taxYear },
+        {
+          taxYear,
+          ownerPersonId: account.ownerPersonId!,
+          sourceAccountId: account.id,
+        },
       )
     }
-    for (const account of ownedAccounts) {
-      if (!Object.hasOwn(publishedBalancesBeforeGrowth, account.id)) {
-        fail(
-          'sourceCoverageInvalid',
-          'Published pre-growth balances must contain every and only owned non-Roth IRA account',
-          {
-            taxYear,
-            ownerPersonId: account.ownerPersonId!,
-            sourceAccountId: account.id,
-          },
-        )
-      }
-      const sourceAccountId = asAccountId(account.id)
-      const rawBalanceBeforeGrowthPlanDollars =
-        publishedBalancesBeforeGrowth[account.id]
-      preGrowthRawBalances.set(
-        sourceAccountId,
+    const sourceAccountId = asAccountId(account.id)
+    const rawBalanceBeforeGrowthPlanDollars =
+      publishedBalancesBeforeGrowth[account.id]
+    preGrowthRawBalances.set(
+      sourceAccountId,
+      rawBalanceBeforeGrowthPlanDollars,
+    )
+    preGrowthBalances.set(
+      sourceAccountId,
+      cents(
         rawBalanceBeforeGrowthPlanDollars,
-      )
-      preGrowthBalances.set(
-        sourceAccountId,
-        cents(
-          rawBalanceBeforeGrowthPlanDollars,
-          'Published pre-growth IRA balance',
-          {
-            taxYear,
-            ownerPersonId: account.ownerPersonId!,
-            sourceAccountId,
-          },
-        ),
-      )
+        'Published pre-growth IRA balance',
+        {
+          taxYear,
+          ownerPersonId: account.ownerPersonId!,
+          sourceAccountId,
+        },
+      ),
+    )
+  }
+  if (publishedPhysicalBalancesBeforeGrowth !== undefined) {
+    if (publishedPhysicalBalancesBeforeGrowth.length !== physicalOwnedRows.length) {
+      fail('sourceCoverageInvalid', 'Physical pre-growth balances must contain every owned IRA balance row', { taxYear })
     }
-    if (publishedPhysicalBalancesBeforeGrowth !== undefined) {
-      if (publishedPhysicalBalancesBeforeGrowth.length !== physicalOwnedRows.length) {
-        fail('sourceCoverageInvalid', 'Physical pre-growth balances must contain every owned IRA balance row', { taxYear })
-      }
-      for (let index = 0; index < physicalOwnedRows.length; index += 1) {
-        const expected = physicalOwnedRows[index]!
-        const published = publishedPhysicalBalancesBeforeGrowth[index]!
-        if (published.sourceAccountId !== expected.account.id ||
-            published.balanceIndex !== expected.balanceIndex) {
-          fail('sourceCoverageInvalid', 'Physical pre-growth balances must retain balance-row order and identity', {
-            taxYear, sourceAccountId: published.sourceAccountId,
-          })
-        }
-        cents(published.balancePlanDollars, 'Physical pre-growth IRA balance', {
+    for (let index = 0; index < physicalOwnedRows.length; index += 1) {
+      const expected = physicalOwnedRows[index]!
+      const published = publishedPhysicalBalancesBeforeGrowth[index]!
+      if (published.sourceAccountId !== expected.account.id ||
+          published.balanceIndex !== expected.balanceIndex) {
+        fail('sourceCoverageInvalid', 'Physical pre-growth balances must retain balance-row order and identity', {
           taxYear, sourceAccountId: published.sourceAccountId,
         })
-        preGrowthPhysicalRawBalances.set(
-          physicalBalanceKey(published.sourceAccountId, published.balanceIndex),
-          published.balancePlanDollars,
-        )
       }
-    } else if (physicalOwnedRows.length !== ownedAccounts.length) {
-      fail('sourceMissing', 'Duplicate owned IRA rows require physical pre-growth balances', { taxYear })
-    } else {
-      for (const row of physicalOwnedRows) {
-        preGrowthPhysicalRawBalances.set(
-          physicalBalanceKey(row.account.id, row.balanceIndex),
-          publishedBalancesBeforeGrowth[row.account.id]!,
-        )
-      }
+      cents(published.balancePlanDollars, 'Physical pre-growth IRA balance', {
+        taxYear, sourceAccountId: published.sourceAccountId,
+      })
+      preGrowthPhysicalRawBalances.set(
+        physicalBalanceKey(published.sourceAccountId, published.balanceIndex),
+        published.balancePlanDollars,
+      )
     }
-    for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
-      const owner = expectedOwners[ownerIndex]!
-      const rawPool = balanceSource.ownerPools[ownerIndex]!
-      const accounts = pools.get(owner)!
-      const physicalAccounts = physicalOwnedRows
-        .filter((row) => row.account.ownerPersonId === owner)
-        .sort((left, right) =>
-          compareUtf16CodeUnits(left.account.id, right.account.id) ||
-          left.balanceIndex - right.balanceIndex)
-      if (rawPool.ownerPersonId !== owner || rawPool.accountBalances.length !== physicalAccounts.length) {
-        fail('postGrowthPoolInvalid', 'Post-growth pools must retain canonical owner order and membership', { taxYear, ownerPersonId: owner })
+  } else if (physicalOwnedRows.length !== ownedAccounts.length) {
+    fail('sourceMissing', 'Duplicate owned IRA rows require physical pre-growth balances', { taxYear })
+  } else {
+    for (const row of physicalOwnedRows) {
+      preGrowthPhysicalRawBalances.set(
+        physicalBalanceKey(row.account.id, row.balanceIndex),
+        publishedBalancesBeforeGrowth[row.account.id]!,
+      )
+    }
+  }
+  for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
+    const owner = expectedOwners[ownerIndex]!
+    const rawPool = balanceSource.ownerPools[ownerIndex]!
+    const accounts = pools.get(owner)!
+    const physicalAccounts = physicalOwnedRows
+      .filter((row) => row.account.ownerPersonId === owner)
+      .sort((left, right) =>
+        compareUtf16CodeUnits(left.account.id, right.account.id) ||
+        left.balanceIndex - right.balanceIndex)
+    if (rawPool.ownerPersonId !== owner || rawPool.accountBalances.length !== physicalAccounts.length) {
+      fail('postGrowthPoolInvalid', 'Post-growth pools must retain canonical owner order and membership', { taxYear, ownerPersonId: owner })
+    }
+    const aggregateRawById = new Map<string, number>()
+    rawPool.accountBalances.forEach((raw, accountIndex) => {
+      const { account, balanceIndex } = physicalAccounts[accountIndex]!
+      const rawSourceAccountId = raw.sourceAccountId
+      const rawBalancePlanDollars = raw.balancePlanDollars
+      if (rawSourceAccountId !== account.id ||
+          (raw.balanceIndex !== undefined && raw.balanceIndex !== balanceIndex)) {
+        fail('postGrowthPoolInvalid', 'Post-growth balances must retain canonical account order including zero siblings', {
+          taxYear, ownerPersonId: owner, sourceAccountId: rawSourceAccountId,
+        })
       }
-      const aggregateRawById = new Map<string, number>()
-      rawPool.accountBalances.forEach((raw, accountIndex) => {
-        const { account, balanceIndex } = physicalAccounts[accountIndex]!
-        const rawSourceAccountId = raw.sourceAccountId
-        const rawBalancePlanDollars = raw.balancePlanDollars
-        if (rawSourceAccountId !== account.id ||
-            (raw.balanceIndex !== undefined && raw.balanceIndex !== balanceIndex)) {
-          fail('postGrowthPoolInvalid', 'Post-growth balances must retain canonical account order including zero siblings', {
-            taxYear, ownerPersonId: owner, sourceAccountId: rawSourceAccountId,
-          })
-        }
-        cents(rawBalancePlanDollars, 'Post-growth IRA balance', {
+      cents(rawBalancePlanDollars, 'Post-growth IRA balance', {
+        taxYear, ownerPersonId: owner, sourceAccountId: account.id,
+      })
+      postGrowthPhysicalRawBalances.set(
+        physicalBalanceKey(account.id, balanceIndex), rawBalancePlanDollars,
+      )
+      aggregateRawById.set(account.id, (aggregateRawById.get(account.id) ?? 0) + rawBalancePlanDollars)
+    })
+    const normalizedBalances = accounts.map((account) => {
+      const rawBalancePlanDollars = aggregateRawById.get(account.id) ?? 0
+      const publishedBalancePlanDollars = publishedBalances[account.id]
+      if (!Object.hasOwn(publishedBalances, account.id) ||
+          publishedBalancePlanDollars !== rawBalancePlanDollars) {
+        fail('postGrowthPoolInvalid', 'Aggregated post-growth physical balances must exact-rejoin the published account balance', {
           taxYear, ownerPersonId: owner, sourceAccountId: account.id,
         })
-        postGrowthPhysicalRawBalances.set(
-          physicalBalanceKey(account.id, balanceIndex), rawBalancePlanDollars,
-        )
-        aggregateRawById.set(account.id, (aggregateRawById.get(account.id) ?? 0) + rawBalancePlanDollars)
-      })
-      const normalizedBalances = accounts.map((account) => {
-        const rawBalancePlanDollars = aggregateRawById.get(account.id) ?? 0
-        const publishedBalancePlanDollars = publishedBalances[account.id]
-        if (!Object.hasOwn(publishedBalances, account.id) ||
-            publishedBalancePlanDollars !== rawBalancePlanDollars) {
-          fail('postGrowthPoolInvalid', 'Aggregated post-growth physical balances must exact-rejoin the published account balance', {
-            taxYear, ownerPersonId: owner, sourceAccountId: account.id,
-          })
-        }
-        const sourceAccountId = asAccountId(account.id)
-        const balanceAmount = cents(rawBalancePlanDollars, 'Aggregated post-growth IRA balance', {
-          taxYear, ownerPersonId: owner, sourceAccountId,
-        })
-        postGrowthBalances.set(sourceAccountId, balanceAmount)
-        postGrowthRawBalances.set(sourceAccountId, rawBalancePlanDollars)
-        return { sourceAccountId, balancePlanDollars: rawBalancePlanDollars, balanceAmount }
-      })
-      ownerBalances.set(owner, normalizedBalances)
-    }
-
-    // The other half of line 6, read at the same instant and checked before the
-    // chain that moves it. Each owner's staged contracts must be present, in
-    // canonical order, bound to the funding account that put them in this pool,
-    // opening at a figure inside the only bound there is -- the premium that
-    // filled the channel -- and, in a year at or before the purchase, opening at
-    // exactly zero, because nothing could have credited it yet.
-    const publishedContractOpenings = new Map<AccountId, number>()
-    const publishedContractClosings = new Map<AccountId, number>()
-    for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
-      const owner = expectedOwners[ownerIndex]!
-      const rawPool = balanceSource.ownerPools[ownerIndex]!
-      const expected = stagingContracts.filter((entry) =>
-        entry.ownerPersonId === owner)
-      const published = rawPool.annuityContractValues ?? []
-      if (published.length !== expected.length) {
-        fail('postGrowthPoolInvalid', 'Post-growth source must carry every and only this owner’s staged annuity contracts', {
-          taxYear, ownerPersonId: owner,
-        })
       }
-      for (let index = 0; index < expected.length; index += 1) {
-        const { contract, funding } = expected[index]!
-        const entry = published[index]!
-        const contractAccountId = asAccountId(contract.id)
-        const context = {
-          taxYear, ownerPersonId: owner, sourceAccountId: contract.id,
-        }
-        const opening = entry.contractValueOpeningPlanDollars
-        const premium = contractPremiumById.get(contractAccountId)!
-        const purchaseYear = contractPurchaseYearById.get(contractAccountId)!
-        const carried = openingContractRawValues?.get(contractAccountId)
-        if (entry.annuityAccountId !== contract.id ||
-            entry.fundingAccountId !== funding.id ||
-            !Number.isFinite(opening) || opening < 0 ||
-            Object.is(opening, -0) || opening > premium ||
-            (taxYear <= purchaseYear && opening !== 0) ||
-            (carried !== undefined && carried !== opening)) {
-          fail('postGrowthPoolInvalid', 'A published annuity contract value must open inside its premium and continue the prior year’s close', context)
-        }
-        cents(opening, 'Published annuity contract opening value', context)
-        publishedContractOpenings.set(contractAccountId, opening)
-        publishedContractClosings.set(
-          contractAccountId, entry.contractValuePlanDollars,
-        )
-      }
-    }
-
-    const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
-    // An S2 account first joins this replay at its election-year owner-side
-    // RMD. It has no prior owned-pool close to carry, so seed its chain from
-    // that first published mutation (or the unchanged pre-growth observation
-    // if it had no mutation). This is a reconstruction of the ledger's actual
-    // opening, not a Plan-balance reset.
-    for (const account of ownedAccounts) {
       const sourceAccountId = asAccountId(account.id)
-      if (openingRawBalances.has(sourceAccountId)) continue
-      const firstApplication = applicationSource.applications.find(
-        (application) => application.sourceAccountId === account.id,
-      )
-      const opening = firstApplication?.sourceBalanceBeforePlanDollars ??
-        preGrowthRawBalances.get(sourceAccountId)
-      if (opening === undefined) {
-        fail('balanceChainInvalid', 'A newly owned IRA must publish an opening mutation or unchanged pre-growth balance', {
-          taxYear, ownerPersonId: account.ownerPersonId!, sourceAccountId: account.id,
-        })
-      }
-      openingRawBalances.set(sourceAccountId, opening)
-      openingBalances.set(sourceAccountId, cents(
-        opening,
-        'Newly owned IRA opening balance',
-        { taxYear, ownerPersonId: account.ownerPersonId!, sourceAccountId: account.id },
-      ))
+      const balanceAmount = cents(rawBalancePlanDollars, 'Aggregated post-growth IRA balance', {
+        taxYear, ownerPersonId: owner, sourceAccountId,
+      })
+      postGrowthBalances.set(sourceAccountId, balanceAmount)
+      postGrowthRawBalances.set(sourceAccountId, rawBalancePlanDollars)
+      return { sourceAccountId, balancePlanDollars: rawBalancePlanDollars, balanceAmount }
+    })
+    ownerBalances.set(owner, normalizedBalances)
+  }
+  return {
+    expectedOwners,
+    postGrowthBalances, postGrowthRawBalances, postGrowthPhysicalRawBalances,
+    preGrowthBalances, preGrowthRawBalances, preGrowthPhysicalRawBalances,
+    ownerBalances,
+  }
+}
+
+/**
+ * The published annuity contract openings and closings, read at the same
+ * instant as the balances beside them and bounded before the chain that moves
+ * them.
+ */
+function readPublishedContractValues(
+  expectedOwners: readonly PersonId[],
+  balanceSource: CapturedBalanceSource,
+  stagingContracts: SeriesFacts['stagingContracts'],
+  contractPremiumById: ReadonlyMap<AccountId, number>,
+  contractPurchaseYearById: ReadonlyMap<AccountId, number>,
+  openingContractRawValues: ReadonlyMap<AccountId, number> | null,
+  taxYear: number,
+) {
+  // The other half of line 6, read at the same instant and checked before the
+  // chain that moves it. Each owner's staged contracts must be present, in
+  // canonical order, bound to the funding account that put them in this pool,
+  // opening at a figure inside the only bound there is -- the premium that
+  // filled the channel -- and, in a year at or before the purchase, opening at
+  // exactly zero, because nothing could have credited it yet.
+  const publishedContractOpenings = new Map<AccountId, number>()
+  const publishedContractClosings = new Map<AccountId, number>()
+  for (let ownerIndex = 0; ownerIndex < expectedOwners.length; ownerIndex += 1) {
+    const owner = expectedOwners[ownerIndex]!
+    const rawPool = balanceSource.ownerPools[ownerIndex]!
+    const expected = stagingContracts.filter((entry) =>
+      entry.ownerPersonId === owner)
+    const published = rawPool.annuityContractValues ?? []
+    if (published.length !== expected.length) {
+      fail('postGrowthPoolInvalid', 'Post-growth source must carry every and only this owner’s staged annuity contracts', {
+        taxYear, ownerPersonId: owner,
+      })
     }
-    /**
-     * The year's running contract-value channel, chained the same way the
-     * account balances are.
-     *
-     * WHERE THE REFUSAL USED TO BE. A `deferredAnnuityPoolExit` stood here and
-     * refused every year in which a premium left the captured pool, because the
-     * pool it left had a hole in it: value went out of the section 408(d)(2)
-     * aggregate and this replay carried nothing it went into. This channel is
-     * what it went into. The premium is credited here at the same ordinal the
-     * debit was taken at, the contract's payments debit it, and its December 31
-     * total is added to Form 8606 line 6 beside the accounts -- which is what
-     * 408(d)(2)(A) with 7701(a)(37)(B) requires, and what makes the purchase
-     * invisible to the form exactly as the statute makes it.
-     */
-    const contractRawValues = new Map(publishedContractOpenings)
-    const contractValues = new Map(
-      [...publishedContractOpenings].map(([contractId, value]) => [
-        contractId,
-        cents(value, 'Annuity contract opening value', {
-          taxYear, sourceAccountId: contractId,
-        }),
-      ]),
+    for (let index = 0; index < expected.length; index += 1) {
+      const { contract, funding } = expected[index]!
+      const entry = published[index]!
+      const contractAccountId = asAccountId(contract.id)
+      const context = {
+        taxYear, ownerPersonId: owner, sourceAccountId: contract.id,
+      }
+      const opening = entry.contractValueOpeningPlanDollars
+      const premium = contractPremiumById.get(contractAccountId)!
+      const purchaseYear = contractPurchaseYearById.get(contractAccountId)!
+      const carried = openingContractRawValues?.get(contractAccountId)
+      if (entry.annuityAccountId !== contract.id ||
+          entry.fundingAccountId !== funding.id ||
+          !Number.isFinite(opening) || opening < 0 ||
+          Object.is(opening, -0) || opening > premium ||
+          (taxYear <= purchaseYear && opening !== 0) ||
+          (carried !== undefined && carried !== opening)) {
+        fail('postGrowthPoolInvalid', 'A published annuity contract value must open inside its premium and continue the prior year’s close', context)
+      }
+      cents(opening, 'Published annuity contract opening value', context)
+      publishedContractOpenings.set(contractAccountId, opening)
+      publishedContractClosings.set(
+        contractAccountId, entry.contractValuePlanDollars,
+      )
+    }
+  }
+  return { publishedContractOpenings, publishedContractClosings }
+}
+
+/**
+ * The openings of accounts this replay is seeing for the first time. Runs after
+ * the pre-growth observation, because the unchanged-account arm reads it, and
+ * before the application chain, which needs every account it will touch to have
+ * an opening already.
+ */
+function seedNewlyOwnedOpenings(
+  ownedAccounts: readonly OwnedIraAccount[],
+  applicationSource: CapturedApplicationSource,
+  preGrowthRawBalances: ReadonlyMap<AccountId, number>,
+  openingRawBalances: Map<AccountId, number>,
+  openingBalances: Map<AccountId, UsdCents>,
+  taxYear: number,
+): void {
+  // An S2 account first joins this replay at its election-year owner-side
+  // RMD. It has no prior owned-pool close to carry, so seed its chain from
+  // that first published mutation (or the unchanged pre-growth observation
+  // if it had no mutation). This is a reconstruction of the ledger's actual
+  // opening, not a Plan-balance reset.
+  for (const account of ownedAccounts) {
+    const sourceAccountId = asAccountId(account.id)
+    if (openingRawBalances.has(sourceAccountId)) continue
+    const firstApplication = applicationSource.applications.find(
+      (application) => application.sourceAccountId === account.id,
     )
-    const creditedPremiumKeys = new Set<string>()
-    const appliedKeys = new Set<string>()
-    let priorPhase = -1
-    let priorPhaseAccountOrder = -1
-    for (let index = 0; index < applicationSource.applications.length; index += 1) {
-      const application = applicationSource.applications[index]!
-      const currentPhase = phaseRank(application)
-      if (application.mutationOrdinal !== index + 1 || currentPhase < priorPhase) {
-        fail('applicationOrderInvalid', 'Applications must retain contiguous ordinals and annual phase order', { taxYear })
+    const opening = firstApplication?.sourceBalanceBeforePlanDollars ??
+      preGrowthRawBalances.get(sourceAccountId)
+    if (opening === undefined) {
+      fail('balanceChainInvalid', 'A newly owned IRA must publish an opening mutation or unchanged pre-growth balance', {
+        taxYear, ownerPersonId: account.ownerPersonId!, sourceAccountId: account.id,
+      })
+    }
+    openingRawBalances.set(sourceAccountId, opening)
+    openingBalances.set(sourceAccountId, cents(
+      opening,
+      'Newly owned IRA opening balance',
+      { taxYear, ownerPersonId: account.ownerPersonId!, sourceAccountId: account.id },
+    ))
+  }
+}
+
+/**
+ * The application chain: every published owned-IRA mutation of the year, walked
+ * in its published order against two ledgers at once -- the account balances
+ * the carry brought in, and the contract-value channel opened just above.
+ *
+ * This is the phase the ones around it exist to protect. It advances the
+ * opening maps in place, so it must run after every opening they will need is
+ * seeded, and before the rejoin, coverage and arrival refusals that read what
+ * it left behind.
+ */
+function runApplicationChain(
+  applicationSource: CapturedApplicationSource,
+  occurrenceByKey: OccurrenceIndex,
+  occurrenceOrderId: ReadonlyMap<string, string>,
+  accountById: ReadonlyMap<string, Account>,
+  accountOrder: ReadonlyMap<string, number>,
+  contractOwnerById: ReadonlyMap<AccountId, PersonId>,
+  contractFundingById: ReadonlyMap<AccountId, AccountId>,
+  publishedContractOpenings: ReadonlyMap<AccountId, number>,
+  physicalOwnedRows: readonly OwnedPhysicalRow[],
+  openingBalances: Map<AccountId, UsdCents>,
+  openingRawBalances: Map<AccountId, number>,
+  openingPhysicalRawBalances: Map<string, number>,
+  taxYear: number,
+) {
+  const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
+  /**
+   * The year's running contract-value channel, chained the same way the
+   * account balances are.
+   *
+   * WHERE THE REFUSAL USED TO BE. A `deferredAnnuityPoolExit` stood here and
+   * refused every year in which a premium left the captured pool, because the
+   * pool it left had a hole in it: value went out of the section 408(d)(2)
+   * aggregate and this replay carried nothing it went into. This channel is
+   * what it went into. The premium is credited here at the same ordinal the
+   * debit was taken at, the contract's payments debit it, and its December 31
+   * total is added to Form 8606 line 6 beside the accounts -- which is what
+   * 408(d)(2)(A) with 7701(a)(37)(B) requires, and what makes the purchase
+   * invisible to the form exactly as the statute makes it.
+   */
+  const contractRawValues = new Map(publishedContractOpenings)
+  const contractValues = new Map(
+    [...publishedContractOpenings].map(([contractId, value]) => [
+      contractId,
+      cents(value, 'Annuity contract opening value', {
+        taxYear, sourceAccountId: contractId,
+      }),
+    ]),
+  )
+  const creditedPremiumKeys = new Set<string>()
+  const appliedKeys = new Set<string>()
+  let priorPhase = -1
+  let priorPhaseAccountOrder = -1
+  for (let index = 0; index < applicationSource.applications.length; index += 1) {
+    const application = applicationSource.applications[index]!
+    const currentPhase = phaseRank(application)
+    if (application.mutationOrdinal !== index + 1 || currentPhase < priorPhase) {
+      fail('applicationOrderInvalid', 'Applications must retain contiguous ordinals and annual phase order', { taxYear })
+    }
+    if (application.applicationKind === 'annuityContractPremiumCredit') {
+      const contractId = application.destinationAnnuityAccountId
+      const context = {
+        taxYear,
+        ...(contractId === null ? {} : { sourceAccountId: contractId }),
       }
-      if (application.applicationKind === 'annuityContractPremiumCredit') {
-        const contractId = application.destinationAnnuityAccountId
-        const context = {
-          taxYear,
-          ...(contractId === null ? {} : { sourceAccountId: contractId }),
-        }
-        if (application.simulatorPhase !== 'annuityPurchaseContractCredit' ||
-            application.producerOccurrenceKey !== null ||
-            application.ownerPersonId !== null ||
-            application.sourceAccountId !== null ||
-            application.sourceBalanceBeforePlanDollars !== null ||
-            application.sourceBalanceAfterPlanDollars !== null) {
-          fail('sourceContractInvalid', 'An annuity premium credit must not impersonate per-source evidence', context)
-        }
-        const key = application.producerOccurrenceKeys[0]
-        const debit = key === undefined ? undefined : occurrenceByKey.get(key)
-        const owner = contractId === null
-          ? undefined : contractOwnerById.get(asAccountId(contractId))
-        const funding = contractId === null
-          ? undefined : contractFundingById.get(asAccountId(contractId))
-        if (contractId === null || owner === undefined || funding === undefined ||
-            application.producerOccurrenceKeys.length !== 1 ||
-            key === undefined || creditedPremiumKeys.has(key) ||
-            debit?.kind !== 'annuityFundingTransfer' ||
-            debit.sourceAccountId !== funding ||
-            application.destinationOwnerPersonId !== owner ||
-            JSON.stringify(application.sourceOwnerPersonIds) !==
-              JSON.stringify([owner]) ||
-            occurrenceOrderId.get(key) !== contractId) {
-          fail('sourceContractInvalid', 'An annuity premium credit must bind one staged contract and its own owned-IRA debit', context)
-        }
-        creditedPremiumKeys.add(key)
-        const contractAccountId = asAccountId(contractId)
-        const rawBefore = contractRawValues.get(contractAccountId)
-        const before = contractValues.get(contractAccountId)
-        const credited = application.destinationCreditedAmountPlanDollars
-        const rawAfter = application.destinationContractValueAfterPlanDollars
-        const after = cents(rawAfter, 'Annuity contract value after a premium', context)
-        cents(credited, 'Annuity premium credit', context)
-        if (rawBefore === undefined || before === undefined ||
-            application.destinationContractValueBeforePlanDollars !== rawBefore ||
-            credited !== debit.grossAmountPlanDollars ||
-            rawBefore + credited !== rawAfter ||
-            BigInt(after) - (BigInt(before) + BigInt(cents(credited, 'Annuity premium credit', context))) < -2n ||
-            BigInt(after) - (BigInt(before) + BigInt(cents(credited, 'Annuity premium credit', context))) > 2n) {
-          fail('balanceChainInvalid', 'An annuity premium credit must continue the exact contract-value chain at its debit’s gross', context)
-        }
-        contractRawValues.set(contractAccountId, rawAfter)
-        contractValues.set(contractAccountId, after)
-        priorPhase = currentPhase
-        priorPhaseAccountOrder = -1
-        continue
+      if (application.simulatorPhase !== 'annuityPurchaseContractCredit' ||
+          application.producerOccurrenceKey !== null ||
+          application.ownerPersonId !== null ||
+          application.sourceAccountId !== null ||
+          application.sourceBalanceBeforePlanDollars !== null ||
+          application.sourceBalanceAfterPlanDollars !== null) {
+        fail('sourceContractInvalid', 'An annuity premium credit must not impersonate per-source evidence', context)
       }
-      if (application.applicationKind === 'aggregateRothDestinationCredit' ||
-          application.applicationKind === 'namedRothDestinationCredit') {
-        priorPhase = currentPhase
-        priorPhaseAccountOrder = -1
-        continue
+      const key = application.producerOccurrenceKeys[0]
+      const debit = key === undefined ? undefined : occurrenceByKey.get(key)
+      const owner = contractId === null
+        ? undefined : contractOwnerById.get(asAccountId(contractId))
+      const funding = contractId === null
+        ? undefined : contractFundingById.get(asAccountId(contractId))
+      if (contractId === null || owner === undefined || funding === undefined ||
+          application.producerOccurrenceKeys.length !== 1 ||
+          key === undefined || creditedPremiumKeys.has(key) ||
+          debit?.kind !== 'annuityFundingTransfer' ||
+          debit.sourceAccountId !== funding ||
+          application.destinationOwnerPersonId !== owner ||
+          JSON.stringify(application.sourceOwnerPersonIds) !==
+            JSON.stringify([owner]) ||
+          occurrenceOrderId.get(key) !== contractId) {
+        fail('sourceContractInvalid', 'An annuity premium credit must bind one staged contract and its own owned-IRA debit', context)
       }
-      const occurrence = occurrenceByKey.get(application.producerOccurrenceKey)
-      const orderId = occurrenceOrderId.get(application.producerOccurrenceKey)
-      const currentAccountOrder = orderId === undefined ? undefined : accountOrder.get(orderId)
-      if (!occurrence || currentAccountOrder === undefined || appliedKeys.has(application.producerOccurrenceKey)) {
-        fail('sourceCoverageInvalid', 'Each application must rejoin one unique ordered occurrence', {
-          taxYear, producerOccurrenceKey: application.producerOccurrenceKey,
-        })
+      creditedPremiumKeys.add(key)
+      const contractAccountId = asAccountId(contractId)
+      const rawBefore = contractRawValues.get(contractAccountId)
+      const before = contractValues.get(contractAccountId)
+      const credited = application.destinationCreditedAmountPlanDollars
+      const rawAfter = application.destinationContractValueAfterPlanDollars
+      const after = cents(rawAfter, 'Annuity contract value after a premium', context)
+      cents(credited, 'Annuity premium credit', context)
+      if (rawBefore === undefined || before === undefined ||
+          application.destinationContractValueBeforePlanDollars !== rawBefore ||
+          credited !== debit.grossAmountPlanDollars ||
+          rawBefore + credited !== rawAfter ||
+          BigInt(after) - (BigInt(before) + BigInt(cents(credited, 'Annuity premium credit', context))) < -2n ||
+          BigInt(after) - (BigInt(before) + BigInt(cents(credited, 'Annuity premium credit', context))) > 2n) {
+        fail('balanceChainInvalid', 'An annuity premium credit must continue the exact contract-value chain at its debit’s gross', context)
       }
-      if (currentPhase === priorPhase && currentAccountOrder < priorPhaseAccountOrder) {
-        fail('applicationOrderInvalid', 'Applications within a simulator phase must retain controlling Plan account order', { taxYear })
-      }
+      contractRawValues.set(contractAccountId, rawAfter)
+      contractValues.set(contractAccountId, after)
       priorPhase = currentPhase
-      priorPhaseAccountOrder = currentAccountOrder
-      appliedKeys.add(application.producerOccurrenceKey)
-      if (ANNUITY_CONTRACT_CHAIN_PHASES.has(application.simulatorPhase)) {
-        // The contract-value chain, run on the same before/amount/after
-        // discipline the account chain runs on and against a different ledger,
-        // because there is no account balance here to run it against.
-        const contractId = occurrence.sourceAccountId!
-        const contractAccountId = asAccountId(contractId)
-        const poolOwner = contractOwnerById.get(contractAccountId)
-        const context = {
-          taxYear, sourceAccountId: contractId,
-          producerOccurrenceKey: occurrence.producerOccurrenceKey,
-          ...(poolOwner === undefined ? {} : { ownerPersonId: poolOwner }),
-        }
-        const shape = applicationShape(occurrence.kind)
-        if (poolOwner === undefined || !shape ||
-            occurrence.kind !== 'annuityContractDistribution' ||
-            application.applicationKind !== 'debit' ||
-            shape.simulatorPhase !== application.simulatorPhase ||
-            application.ownerPersonId !== occurrence.ownerPersonId ||
-            application.sourceAccountId !== contractId) {
-          fail('sourceCoverageInvalid', 'An annuity contract application must rejoin a staged contract’s own payment occurrence', context)
-        }
-        const rawBefore = contractRawValues.get(contractAccountId)
-        const before = contractValues.get(contractAccountId)
-        const rawApplied = application.appliedAmountPlanDollars
-        const rawAfter = application.sourceBalanceAfterPlanDollars
-        const occurrenceAmount = cents(occurrence.grossAmountPlanDollars, 'Annuity payment amount', context)
-        const applied = cents(rawApplied, 'Annuity contract value debit', context)
-        const after = cents(rawAfter, 'Annuity contract value after a payment', context)
-        // THE TWO FIGURES ARE NOT THE SAME FIGURE, and this is the seam where
-        // that has to be said. `occurrenceAmount` is what the contract PAID,
-        // which is the Form 8606 line-7 gross under 408(d)(2)(B); `applied` is
-        // what the value channel could give up, which is capped by what the
-        // channel still holds because a contract value cannot go negative. They
-        // differ only once a contract has paid out more than its premium, and
-        // there the whole payment still reports while the channel contributes
-        // nothing further to line 6 -- one of the two directions the convention
-        // errs in, and registered as such.
-        if (rawBefore === undefined || before === undefined ||
-            occurrenceAmount === 0 ||
-            application.sourceBalanceBeforePlanDollars !== rawBefore ||
-            rawApplied !== Math.min(occurrence.grossAmountPlanDollars, rawBefore) ||
-            rawBefore - rawApplied !== rawAfter ||
-            BigInt(after) - (BigInt(before) - BigInt(applied)) < -2n ||
-            BigInt(after) - (BigInt(before) - BigInt(applied)) > 2n) {
-          fail('balanceChainInvalid', 'An annuity payment must continue the exact contract-value chain and debit no more than the contract holds', context)
-        }
-        contractRawValues.set(contractAccountId, rawAfter)
-        contractValues.set(contractAccountId, after)
-        normalizedApplications.push({
-          producerOccurrenceKey: occurrence.producerOccurrenceKey,
-          occurrenceKind: 'annuityContractDistribution',
-          applicationKind: 'debit',
-          simulatorPhase: 'annuityContractDistribution',
-          mutationOrdinal: application.mutationOrdinal,
-          // THE POOL OWNER, not the payment owner. Which individual's Form 8606
-          // this payment lands on is decided by whose aggregate the contract is
-          // in, and 408(d)(2)(A) puts it in the aggregate of the person whose
-          // IRA bought it. On a contract that names its owner the two are the
-          // same person, because Plan validation requires it; on one that names
-          // nobody the payment owner is a household fallback and this is the
-          // fact.
-          ownerPersonId: poolOwner,
-          sourceAccountId: contractAccountId,
-          amount: occurrenceAmount,
-          sourceBalanceBefore: before,
-          sourceBalanceAfter: after,
-          sourceBalanceRoundingResidualCents:
-            Number(BigInt(after) - (BigInt(before) - BigInt(applied))) as -2 | -1 | 0 | 1 | 2,
-          form8606Line: 'line7',
-          form8606LineGrossAmount: occurrenceAmount,
-        })
-        continue
+      priorPhaseAccountOrder = -1
+      continue
+    }
+    if (application.applicationKind === 'aggregateRothDestinationCredit' ||
+        application.applicationKind === 'namedRothDestinationCredit') {
+      priorPhase = currentPhase
+      priorPhaseAccountOrder = -1
+      continue
+    }
+    const occurrence = occurrenceByKey.get(application.producerOccurrenceKey)
+    const orderId = occurrenceOrderId.get(application.producerOccurrenceKey)
+    const currentAccountOrder = orderId === undefined ? undefined : accountOrder.get(orderId)
+    if (!occurrence || currentAccountOrder === undefined || appliedKeys.has(application.producerOccurrenceKey)) {
+      fail('sourceCoverageInvalid', 'Each application must rejoin one unique ordered occurrence', {
+        taxYear, producerOccurrenceKey: application.producerOccurrenceKey,
+      })
+    }
+    if (currentPhase === priorPhase && currentAccountOrder < priorPhaseAccountOrder) {
+      fail('applicationOrderInvalid', 'Applications within a simulator phase must retain controlling Plan account order', { taxYear })
+    }
+    priorPhase = currentPhase
+    priorPhaseAccountOrder = currentAccountOrder
+    appliedKeys.add(application.producerOccurrenceKey)
+    if (ANNUITY_CONTRACT_CHAIN_PHASES.has(application.simulatorPhase)) {
+      // The contract-value chain, run on the same before/amount/after
+      // discipline the account chain runs on and against a different ledger,
+      // because there is no account balance here to run it against.
+      const contractId = occurrence.sourceAccountId!
+      const contractAccountId = asAccountId(contractId)
+      const poolOwner = contractOwnerById.get(contractAccountId)
+      const context = {
+        taxYear, sourceAccountId: contractId,
+        producerOccurrenceKey: occurrence.producerOccurrenceKey,
+        ...(poolOwner === undefined ? {} : { ownerPersonId: poolOwner }),
       }
       const shape = applicationShape(occurrence.kind)
-      const account = accountById.get(occurrence.sourceAccountId!)
-      // Only a traditional IRA can be S2-effective; narrow before the
-      // structural helper so the full account union stays out of it.
-      const applicationS2Effective =
-        account !== undefined &&
-        account.type === 'traditional' &&
-        account.kind === 'ira' &&
-        isTreatAsOwnEffective(account, taxYear)
-      if (!shape || !account ||
-          (!isAggregatedIra(account) && !applicationS2Effective) ||
-          shape.applicationKind !== application.applicationKind || shape.simulatorPhase !== application.simulatorPhase ||
-          application.ownerPersonId !== occurrence.ownerPersonId || application.sourceAccountId !== occurrence.sourceAccountId) {
-        fail('sourceCoverageInvalid', 'Application kind/phase/owner/source must exact-rejoin its owned-IRA occurrence', {
-          taxYear, producerOccurrenceKey: application.producerOccurrenceKey,
-        })
+      if (poolOwner === undefined || !shape ||
+          occurrence.kind !== 'annuityContractDistribution' ||
+          application.applicationKind !== 'debit' ||
+          shape.simulatorPhase !== application.simulatorPhase ||
+          application.ownerPersonId !== occurrence.ownerPersonId ||
+          application.sourceAccountId !== contractId) {
+        fail('sourceCoverageInvalid', 'An annuity contract application must rejoin a staged contract’s own payment occurrence', context)
       }
-      const context = {
-        taxYear, ownerPersonId: occurrence.ownerPersonId!, sourceAccountId: occurrence.sourceAccountId!,
-        producerOccurrenceKey: occurrence.producerOccurrenceKey,
-      }
-      const rawAmount = application.applicationKind === 'debit'
-        ? application.appliedAmountPlanDollars : application.creditedAmountPlanDollars
-      cents(rawAmount, 'Application amount', context)
-      const occurrenceAmount = cents(occurrence.grossAmountPlanDollars, 'Occurrence amount', context)
-      const sourceAccountId = asAccountId(occurrence.sourceAccountId!)
-      const positionalContribution =
-        occurrence.kind === 'ownedIraContribution' ||
-        occurrence.kind === 'ownedIraEmployerContribution'
-      const keyTuple = positionalContribution
-        ? parseKey(occurrence.producerOccurrenceKey, taxYear)
-        : null
-      const balanceIndex = positionalContribution ? keyTuple![2] : undefined
-      const physicalKey = typeof balanceIndex === 'number'
-        ? physicalBalanceKey(occurrence.sourceAccountId!, balanceIndex)
-        : null
-      const logicalRawBefore = openingRawBalances.get(sourceAccountId)
-      const logicalRawAfter = logicalRawBefore === undefined
-        ? undefined
-        : application.applicationKind === 'debit'
-          ? logicalRawBefore - rawAmount
-          : logicalRawBefore + rawAmount
-      const normalizedRawBefore = positionalContribution
-        ? logicalRawBefore
-        : application.sourceBalanceBeforePlanDollars
-      const normalizedRawAfter = positionalContribution
-        ? logicalRawAfter
-        : application.sourceBalanceAfterPlanDollars
-      if (normalizedRawBefore === undefined || normalizedRawAfter === undefined) {
-        fail('balanceChainInvalid', 'Application requires a complete logical opening balance', context)
-      }
-      const before = cents(normalizedRawBefore, 'Application opening balance', context)
-      const after = cents(normalizedRawAfter, 'Application closing balance', context)
-      const rawExpectedAfter = application.applicationKind === 'debit'
-        ? application.sourceBalanceBeforePlanDollars - rawAmount
-        : application.sourceBalanceBeforePlanDollars + rawAmount
-      const expectedCentAfter = application.applicationKind === 'debit'
-        ? BigInt(before) - BigInt(occurrenceAmount)
-        : BigInt(before) + BigInt(occurrenceAmount)
-      const sourceBalanceRoundingResidual = BigInt(after) - expectedCentAfter
-      if (rawAmount !== occurrence.grossAmountPlanDollars ||
+      const rawBefore = contractRawValues.get(contractAccountId)
+      const before = contractValues.get(contractAccountId)
+      const rawApplied = application.appliedAmountPlanDollars
+      const rawAfter = application.sourceBalanceAfterPlanDollars
+      const occurrenceAmount = cents(occurrence.grossAmountPlanDollars, 'Annuity payment amount', context)
+      const applied = cents(rawApplied, 'Annuity contract value debit', context)
+      const after = cents(rawAfter, 'Annuity contract value after a payment', context)
+      // THE TWO FIGURES ARE NOT THE SAME FIGURE, and this is the seam where
+      // that has to be said. `occurrenceAmount` is what the contract PAID,
+      // which is the Form 8606 line-7 gross under 408(d)(2)(B); `applied` is
+      // what the value channel could give up, which is capped by what the
+      // channel still holds because a contract value cannot go negative. They
+      // differ only once a contract has paid out more than its premium, and
+      // there the whole payment still reports while the channel contributes
+      // nothing further to line 6 -- one of the two directions the convention
+      // errs in, and registered as such.
+      if (rawBefore === undefined || before === undefined ||
           occurrenceAmount === 0 ||
-          rawExpectedAfter !== application.sourceBalanceAfterPlanDollars ||
-          (positionalContribution
-            ? application.balanceIndex !== balanceIndex || physicalKey === null ||
-              openingPhysicalRawBalances.get(physicalKey) !== application.sourceBalanceBeforePlanDollars
-            : openingRawBalances.get(sourceAccountId) !== application.sourceBalanceBeforePlanDollars) ||
-          openingBalances.get(sourceAccountId) !== before ||
-          sourceBalanceRoundingResidual < -2n ||
-          sourceBalanceRoundingResidual > 2n) {
-        fail('balanceChainInvalid', 'Application must continue the exact per-account before/amount/after chain', context)
+          application.sourceBalanceBeforePlanDollars !== rawBefore ||
+          rawApplied !== Math.min(occurrence.grossAmountPlanDollars, rawBefore) ||
+          rawBefore - rawApplied !== rawAfter ||
+          BigInt(after) - (BigInt(before) - BigInt(applied)) < -2n ||
+          BigInt(after) - (BigInt(before) - BigInt(applied)) > 2n) {
+        fail('balanceChainInvalid', 'An annuity payment must continue the exact contract-value chain and debit no more than the contract holds', context)
       }
-      openingBalances.set(sourceAccountId, after)
-      openingRawBalances.set(
-        sourceAccountId,
-        normalizedRawAfter,
-      )
-      if (physicalKey !== null) {
-        openingPhysicalRawBalances.set(
-          physicalKey,
-          application.sourceBalanceAfterPlanDollars,
-        )
-      } else {
-        applyPhysicalGroupClosing(
-          openingPhysicalRawBalances,
-          physicalOwnedRows,
-          occurrence.sourceAccountId!,
-          normalizedRawAfter,
-        )
-      }
-      if (occurrence.kind === 'annuityFundingTransfer') {
-        // The debit is whole and the balance chain has taken it. It contributes
-        // no normalized application because it contributes nothing to either
-        // Form 8606 line -- 408(d)(1) reaches only what is paid or distributed
-        // OUT, and this was neither -- so the only thing left to check is that
-        // the value it moved arrived somewhere, which the credit above records.
-        // Checked after the loop, where the credit has had its chance to run.
-        continue
-      }
+      contractRawValues.set(contractAccountId, rawAfter)
+      contractValues.set(contractAccountId, after)
       normalizedApplications.push({
         producerOccurrenceKey: occurrence.producerOccurrenceKey,
-        occurrenceKind: occurrence.kind as NormalizedOwnedNonRothIraApplication['occurrenceKind'],
-        applicationKind: application.applicationKind,
-        simulatorPhase: application.simulatorPhase as
-          NormalizedOwnedNonRothIraApplication['simulatorPhase'],
+        occurrenceKind: 'annuityContractDistribution',
+        applicationKind: 'debit',
+        simulatorPhase: 'annuityContractDistribution',
         mutationOrdinal: application.mutationOrdinal,
-        ownerPersonId: occurrence.ownerPersonId as PersonId,
-        sourceAccountId,
+        // THE POOL OWNER, not the payment owner. Which individual's Form 8606
+        // this payment lands on is decided by whose aggregate the contract is
+        // in, and 408(d)(2)(A) puts it in the aggregate of the person whose
+        // IRA bought it. On a contract that names its owner the two are the
+        // same person, because Plan validation requires it; on one that names
+        // nobody the payment owner is a household fallback and this is the
+        // fact.
+        ownerPersonId: poolOwner,
+        sourceAccountId: contractAccountId,
         amount: occurrenceAmount,
         sourceBalanceBefore: before,
         sourceBalanceAfter: after,
         sourceBalanceRoundingResidualCents:
-          Number(sourceBalanceRoundingResidual) as -2 | -1 | 0 | 1 | 2,
-        form8606Line: shape.form8606Line,
-        // Provisional. The routed-gift carve below is the only thing that moves
-        // it, and it cannot run until the whole application chain is normalized.
+          Number(BigInt(after) - (BigInt(before) - BigInt(applied))) as -2 | -1 | 0 | 1 | 2,
+        form8606Line: 'line7',
         form8606LineGrossAmount: occurrenceAmount,
       })
+      continue
     }
-    for (const occurrence of occurrenceSource.runtimeOccurrences) {
-      const account = accountById.get(occurrence.sourceAccountId!)
-      // Only a traditional IRA can be S2-effective; narrow before the
-      // structural helper so the full account union stays out of it.
-      const s2Effective =
-        account !== undefined &&
-        account.type === 'traditional' &&
-        account.kind === 'ira' &&
-        isTreatAsOwnEffective(account, taxYear)
-      if (account &&
-          (isAggregatedIra(account) || s2Effective) &&
-          !appliedKeys.has(occurrence.producerOccurrenceKey)) {
-        fail('sourceCoverageInvalid', 'Every owned-IRA occurrence must have one supported application', {
-          taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+    const shape = applicationShape(occurrence.kind)
+    const account = accountById.get(occurrence.sourceAccountId!)
+    // Only a traditional IRA can be S2-effective; narrow before the
+    // structural helper so the full account union stays out of it.
+    const applicationS2Effective =
+      account !== undefined &&
+      account.type === 'traditional' &&
+      account.kind === 'ira' &&
+      isTreatAsOwnEffective(account, taxYear)
+    if (!shape || !account ||
+        (!isAggregatedIra(account) && !applicationS2Effective) ||
+        shape.applicationKind !== application.applicationKind || shape.simulatorPhase !== application.simulatorPhase ||
+        application.ownerPersonId !== occurrence.ownerPersonId || application.sourceAccountId !== occurrence.sourceAccountId) {
+      fail('sourceCoverageInvalid', 'Application kind/phase/owner/source must exact-rejoin its owned-IRA occurrence', {
+        taxYear, producerOccurrenceKey: application.producerOccurrenceKey,
+      })
+    }
+    const context = {
+      taxYear, ownerPersonId: occurrence.ownerPersonId!, sourceAccountId: occurrence.sourceAccountId!,
+      producerOccurrenceKey: occurrence.producerOccurrenceKey,
+    }
+    const rawAmount = application.applicationKind === 'debit'
+      ? application.appliedAmountPlanDollars : application.creditedAmountPlanDollars
+    cents(rawAmount, 'Application amount', context)
+    const occurrenceAmount = cents(occurrence.grossAmountPlanDollars, 'Occurrence amount', context)
+    const sourceAccountId = asAccountId(occurrence.sourceAccountId!)
+    const positionalContribution =
+      occurrence.kind === 'ownedIraContribution' ||
+      occurrence.kind === 'ownedIraEmployerContribution'
+    const keyTuple = positionalContribution
+      ? parseKey(occurrence.producerOccurrenceKey, taxYear)
+      : null
+    const balanceIndex = positionalContribution ? keyTuple![2] : undefined
+    const physicalKey = typeof balanceIndex === 'number'
+      ? physicalBalanceKey(occurrence.sourceAccountId!, balanceIndex)
+      : null
+    const logicalRawBefore = openingRawBalances.get(sourceAccountId)
+    const logicalRawAfter = logicalRawBefore === undefined
+      ? undefined
+      : application.applicationKind === 'debit'
+        ? logicalRawBefore - rawAmount
+        : logicalRawBefore + rawAmount
+    const normalizedRawBefore = positionalContribution
+      ? logicalRawBefore
+      : application.sourceBalanceBeforePlanDollars
+    const normalizedRawAfter = positionalContribution
+      ? logicalRawAfter
+      : application.sourceBalanceAfterPlanDollars
+    if (normalizedRawBefore === undefined || normalizedRawAfter === undefined) {
+      fail('balanceChainInvalid', 'Application requires a complete logical opening balance', context)
+    }
+    const before = cents(normalizedRawBefore, 'Application opening balance', context)
+    const after = cents(normalizedRawAfter, 'Application closing balance', context)
+    const rawExpectedAfter = application.applicationKind === 'debit'
+      ? application.sourceBalanceBeforePlanDollars - rawAmount
+      : application.sourceBalanceBeforePlanDollars + rawAmount
+    const expectedCentAfter = application.applicationKind === 'debit'
+      ? BigInt(before) - BigInt(occurrenceAmount)
+      : BigInt(before) + BigInt(occurrenceAmount)
+    const sourceBalanceRoundingResidual = BigInt(after) - expectedCentAfter
+    if (rawAmount !== occurrence.grossAmountPlanDollars ||
+        occurrenceAmount === 0 ||
+        rawExpectedAfter !== application.sourceBalanceAfterPlanDollars ||
+        (positionalContribution
+          ? application.balanceIndex !== balanceIndex || physicalKey === null ||
+            openingPhysicalRawBalances.get(physicalKey) !== application.sourceBalanceBeforePlanDollars
+          : openingRawBalances.get(sourceAccountId) !== application.sourceBalanceBeforePlanDollars) ||
+        openingBalances.get(sourceAccountId) !== before ||
+        sourceBalanceRoundingResidual < -2n ||
+        sourceBalanceRoundingResidual > 2n) {
+      fail('balanceChainInvalid', 'Application must continue the exact per-account before/amount/after chain', context)
+    }
+    openingBalances.set(sourceAccountId, after)
+    openingRawBalances.set(
+      sourceAccountId,
+      normalizedRawAfter,
+    )
+    if (physicalKey !== null) {
+      openingPhysicalRawBalances.set(
+        physicalKey,
+        application.sourceBalanceAfterPlanDollars,
+      )
+    } else {
+      applyPhysicalGroupClosing(
+        openingPhysicalRawBalances,
+        physicalOwnedRows,
+        occurrence.sourceAccountId!,
+        normalizedRawAfter,
+      )
+    }
+    if (occurrence.kind === 'annuityFundingTransfer') {
+      // The debit is whole and the balance chain has taken it. It contributes
+      // no normalized application because it contributes nothing to either
+      // Form 8606 line -- 408(d)(1) reaches only what is paid or distributed
+      // OUT, and this was neither -- so the only thing left to check is that
+      // the value it moved arrived somewhere, which the credit above records.
+      // Checked after the loop, where the credit has had its chance to run.
+      continue
+    }
+    normalizedApplications.push({
+      producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      occurrenceKind: occurrence.kind as NormalizedOwnedNonRothIraApplication['occurrenceKind'],
+      applicationKind: application.applicationKind,
+      simulatorPhase: application.simulatorPhase as
+        NormalizedOwnedNonRothIraApplication['simulatorPhase'],
+      mutationOrdinal: application.mutationOrdinal,
+      ownerPersonId: occurrence.ownerPersonId as PersonId,
+      sourceAccountId,
+      amount: occurrenceAmount,
+      sourceBalanceBefore: before,
+      sourceBalanceAfter: after,
+      sourceBalanceRoundingResidualCents:
+        Number(sourceBalanceRoundingResidual) as -2 | -1 | 0 | 1 | 2,
+      form8606Line: shape.form8606Line,
+      // Provisional. The routed-gift carve below is the only thing that moves
+      // it, and it cannot run until the whole application chain is normalized.
+      form8606LineGrossAmount: occurrenceAmount,
+    })
+  }
+  return {
+    normalizedApplications, contractRawValues, contractValues,
+    creditedPremiumKeys, appliedKeys,
+  }
+}
+
+/**
+ * Nothing the year published may sit outside the chain: every owned-IRA
+ * occurrence has to have been applied by exactly one supported application.
+ */
+function requireEveryOwnedOccurrenceApplied(
+  occurrenceSource: CapturedOccurrenceSource,
+  accountById: ReadonlyMap<string, Account>,
+  appliedKeys: ReadonlySet<string>,
+  taxYear: number,
+): void {
+  for (const occurrence of occurrenceSource.runtimeOccurrences) {
+    const account = accountById.get(occurrence.sourceAccountId!)
+    // Only a traditional IRA can be S2-effective; narrow before the
+    // structural helper so the full account union stays out of it.
+    const s2Effective =
+      account !== undefined &&
+      account.type === 'traditional' &&
+      account.kind === 'ira' &&
+      isTreatAsOwnEffective(account, taxYear)
+    if (account &&
+        (isAggregatedIra(account) || s2Effective) &&
+        !appliedKeys.has(occurrence.producerOccurrenceKey)) {
+      fail('sourceCoverageInvalid', 'Every owned-IRA occurrence must have one supported application', {
+        taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
+      })
+    }
+  }
+}
+
+/**
+ * Where the chain has to end up. Having walked every mutation, both ledgers
+ * must arrive exactly at the live pre-growth observation read before it ran --
+ * per balance row where the year published rows, and per account always.
+ */
+function requireChainRejoinsPreGrowth(
+  publishedPhysicalBalancesBeforeGrowth:
+    YearResult['ownedNonRothIraPhysicalBalancesBeforeGrowth'],
+  physicalOwnedRows: readonly OwnedPhysicalRow[],
+  ownedAccounts: readonly OwnedIraAccount[],
+  openingBalances: ReadonlyMap<AccountId, UsdCents>,
+  openingRawBalances: ReadonlyMap<AccountId, number>,
+  openingPhysicalRawBalances: ReadonlyMap<string, number>,
+  preGrowthBalances: ReadonlyMap<AccountId, UsdCents>,
+  preGrowthRawBalances: ReadonlyMap<AccountId, number>,
+  preGrowthPhysicalRawBalances: ReadonlyMap<string, number>,
+  taxYear: number,
+): void {
+  if (publishedPhysicalBalancesBeforeGrowth !== undefined) {
+    for (const { account, balanceIndex } of physicalOwnedRows) {
+      const key = physicalBalanceKey(account.id, balanceIndex)
+      if (openingPhysicalRawBalances.get(key) !== preGrowthPhysicalRawBalances.get(key)) {
+        fail('balanceChainInvalid', 'The completed physical application chain must exact-rejoin its pre-growth balance row', {
+          taxYear,
+          ownerPersonId: account.ownerPersonId!,
+          sourceAccountId: account.id,
         })
       }
     }
-    if (publishedPhysicalBalancesBeforeGrowth !== undefined) {
-      for (const { account, balanceIndex } of physicalOwnedRows) {
-        const key = physicalBalanceKey(account.id, balanceIndex)
-        if (openingPhysicalRawBalances.get(key) !== preGrowthPhysicalRawBalances.get(key)) {
-          fail('balanceChainInvalid', 'The completed physical application chain must exact-rejoin its pre-growth balance row', {
-            taxYear,
-            ownerPersonId: account.ownerPersonId!,
-            sourceAccountId: account.id,
-          })
-        }
-      }
+  }
+  for (const account of ownedAccounts) {
+    const sourceAccountId = asAccountId(account.id)
+    if (
+      openingRawBalances.get(sourceAccountId) !==
+        preGrowthRawBalances.get(sourceAccountId) ||
+      openingBalances.get(sourceAccountId) !==
+        preGrowthBalances.get(sourceAccountId)
+    ) {
+      fail(
+        'balanceChainInvalid',
+        'The completed application chain must exact-rejoin the live pre-growth account observation',
+        {
+          taxYear,
+          ownerPersonId: account.ownerPersonId!,
+          sourceAccountId,
+        },
+      )
     }
-    for (const account of ownedAccounts) {
-      const sourceAccountId = asAccountId(account.id)
-      if (
-        openingRawBalances.get(sourceAccountId) !==
-          preGrowthRawBalances.get(sourceAccountId) ||
-        openingBalances.get(sourceAccountId) !==
-          preGrowthBalances.get(sourceAccountId)
-      ) {
-        fail(
-          'balanceChainInvalid',
-          'The completed application chain must exact-rejoin the live pre-growth account observation',
+  }
+}
+
+/**
+ * The premium arrival refusal, whose position is the whole point of it: it runs
+ * after the rejoin above, never in place inside the chain.
+ */
+function requireEveryPremiumArrived(
+  occurrenceSource: CapturedOccurrenceSource,
+  accountById: ReadonlyMap<string, Account>,
+  creditedPremiumKeys: ReadonlySet<string>,
+  taxYear: number,
+): void {
+  // THE PREMIUM MUST HAVE ARRIVED. Every `annuityFundingTransfer` debit the
+  // chain took has to be matched by the credit that put its dollars into a
+  // contract-value channel, or the year is one in which value left a section
+  // 408(d)(2) aggregate and entered nothing -- which is exactly the defect
+  // this slice closed and exactly what a missing credit would silently
+  // reopen. Deliberately raised AFTER the chain rejoins its live observation,
+  // for the reason the pool-exit refusal was moved there: the annuity
+  // application sorts first, so refusing in place would mask every integrity
+  // failure later in the same year.
+  for (const occurrence of occurrenceSource.runtimeOccurrences) {
+    if (occurrence.kind !== 'annuityFundingTransfer') continue
+    const funding = accountById.get(occurrence.sourceAccountId!)
+    if (!funding || !isAggregatedIra(funding)) continue
+    if (creditedPremiumKeys.has(occurrence.producerOccurrenceKey)) continue
+    fail('annuityStageRequired', 'An owned-IRA annuity premium requires the contract-value credit that received it', {
+      taxYear,
+      ownerPersonId: occurrence.ownerPersonId!,
+      sourceAccountId: occurrence.sourceAccountId!,
+      producerOccurrenceKey: occurrence.producerOccurrenceKey,
+    })
+  }
+}
+
+/**
+ * The contract channel's own close, settled against the value the projection
+ * published for it.
+ */
+function settleContractValues(
+  stagingContracts: SeriesFacts['stagingContracts'],
+  publishedContractClosings: ReadonlyMap<AccountId, number>,
+  contractRawValues: ReadonlyMap<AccountId, number>,
+  contractValues: ReadonlyMap<AccountId, UsdCents>,
+  taxYear: number,
+): Map<AccountId, UsdCents> {
+  // And the December 31 value the projection published must be the one this
+  // chain arrived at, contract by contract, in exact cents. The opening was
+  // taken on trust and bounded; everything that happened to it since was not.
+  const settledContractValues = new Map<AccountId, UsdCents>()
+  for (const { contract, ownerPersonId } of stagingContracts) {
+    const contractAccountId = asAccountId(contract.id)
+    const context = {
+      taxYear, ownerPersonId, sourceAccountId: contract.id,
+    }
+    const closing = publishedContractClosings.get(contractAccountId)
+    const chainRaw = contractRawValues.get(contractAccountId)
+    const chainCents = contractValues.get(contractAccountId)
+    if (closing === undefined || chainRaw === undefined ||
+        chainCents === undefined || closing !== chainRaw ||
+        cents(closing, 'Published annuity contract value', context) !== chainCents) {
+      fail('postGrowthPoolInvalid', 'A published annuity contract value must exact-rejoin the replay’s own contract-value chain', context)
+    }
+    settledContractValues.set(contractAccountId, chainCents)
+  }
+  return settledContractValues
+}
+
+/**
+ * The year's charitable gift, reconciled against the two routes that reach it:
+ * the moving occurrences that physically left an owned IRA, and the nonmoving
+ * overlay that rode out on a required distribution. Returns the overlay,
+ * because the carve below allocates its dollars.
+ */
+function reconcileAnnualQcd(
+  yearResult: Readonly<YearResult>,
+  occurrenceSource: CapturedOccurrenceSource,
+  namedQcdCoverage: NamedQcdCoverage,
+  accountOrder: ReadonlyMap<string, number>,
+  taxYear: number,
+): NonmovingLegacyQcdOverlay {
+  // A charitable gift reaches the published annual total by two routes that
+  // are not interchangeable. Dollars routed out of an RMD move nothing extra
+  // -- the RMD occurrence already explains that debit -- and they keep the
+  // nonmoving overlay. Dollars taken with no RMD behind them physically leave
+  // an owned IRA and must be explained the same way every other owned-IRA
+  // debit is, by a `legacyQcd` occurrence with its own application.
+  if (!Number.isFinite(yearResult.qcd) || yearResult.qcd < 0 ||
+      Object.is(yearResult.qcd, -0)) {
+    fail('sourceAmountInvalid', 'Published annual QCD total must be finite, nonnegative, and not negative zero', { taxYear })
+  }
+  cents(yearResult.qcd, 'Annual QCD total', { taxYear })
+  const overlay = occurrenceSource.nonmovingLegacyQcdOverlay
+  if (overlay !== null && (
+    overlay.status !== 'nonmovingLegacyQcdCaptured' || overlay.kind !== 'legacyQcd' ||
+    overlay.taxYear !== taxYear ||
+    overlay.physicalMovement !== 'notAdditionalMovement' ||
+    overlay.inventoryReplay !==
+      'attributedToOwnedIraRequiredDistributionGrosses' ||
+    !Array.isArray(overlay.ownerAttributions) ||
+    overlay.ownerAttributions.length === 0 ||
+    cents(overlay.grossAmountPlanDollars, 'QCD overlay amount', { taxYear }) <= 0)) {
+    fail('sourceContractInvalid', 'A nonmoving QCD overlay must retain its exact captured contract, a positive amount, and its owner attribution', { taxYear })
+  }
+  // The published annual gift is now reached by two routes that are not
+  // interchangeable, exactly as the conversion total is. The aggregate
+  // strategy's sweep produces `legacyQcd` occurrences; the QCD executor's
+  // committed requests produce `namedQcd` ones. So the named arm is bound to
+  // the executor's own committed cents first, and the union to the published
+  // total second -- reconciling only the union would let one kind absorb the
+  // other's dollars.
+  reconcilePublishedTotal(
+    occurrenceSource.runtimeOccurrences,
+    ['namedQcd'],
+    ledgerCentsToPlanDollars(namedQcdCoverage.totalExecutedAmount),
+    'named QCD',
+    taxYear,
+    accountOrder,
+  )
+  const movingQcd = occurrenceTotalInPlanOrder(
+    occurrenceSource.runtimeOccurrences,
+    ['legacyQcd', 'namedQcd'],
+    'moving QCD',
+    taxYear,
+    accountOrder,
+  )
+  // The overlay is a summed component only when it exists. Counting it
+  // unconditionally would widen the tolerance across the whole pre-RMD
+  // window, which is exactly the case that has no overlay to count.
+  if (!rawTotalsReconcile(
+    (overlay?.grossAmountPlanDollars ?? 0) + movingQcd.total,
+    yearResult.qcd,
+    movingQcd.count + (overlay === null ? 0 : 1),
+  )) {
+    fail('sourceCoverageInvalid', 'The nonmoving QCD overlay plus every moving QCD occurrence must exact-rejoin the published annual QCD total', { taxYear })
+  }
+  return overlay
+}
+
+/**
+ * The moving half's line-7 correction, applied to the normalized applications
+ * after the whole chain is normalized -- which is why it could not run inside
+ * the chain, and why the applications carry a provisional gross until here.
+ */
+function carveNonQualifiedGiftRemainders(
+  normalizedApplications: NormalizedOwnedNonRothIraApplication[],
+  occurrenceSource: CapturedOccurrenceSource,
+  occurrenceByKey: OccurrenceIndex,
+  taxYear: number,
+): void {
+  // THE MOVING HALF IS NOT ALL A GIFT, and treating it as though it were is
+  // how this replay used to overstate the basis it handed forward. IRC
+  // 408(d)(8)(B)'s closing sentence treats a distribution as a qualified
+  // charitable distribution "only to the extent that the distribution would be
+  // includible in gross income", and (D) caps that at the owner's aggregate
+  // includible amount. A draw past the cap never became a QCD, and the Form
+  // 8606 line-7 instructions exclude "Qualified charitable distributions
+  // (QCDs)" by name and nothing else -- so the unqualified part stays on line
+  // 7 and inside the line-9 denominator, exactly as the annual ledger's own
+  // pro-rata arm already treats it.
+  //
+  // Read from the year rather than re-derived. The ledger sized each draw
+  // against the cap when it committed it, and its per-occurrence answer is
+  // published with the year, so the two arms carry the same line-7 gross to
+  // the cent rather than agreeing by reconstruction.
+  const legacyQcdApplications = normalizedApplications
+    .map((application, index) => ({ application, index }))
+    .filter(({ application }) =>
+      application.simulatorPhase === 'legacyQcdDistribution')
+  const characterizations = occurrenceSource.legacyQcdCharacterizations
+  if (!Array.isArray(characterizations) ||
+      characterizations.length !== legacyQcdApplications.length) {
+    fail('qcdStageRequired', 'Every moving QCD occurrence requires exactly one published qualification characterization', { taxYear })
+  }
+  {
+    const characterizationByKey = new Map<string, number>()
+    for (const characterization of characterizations) {
+      const producerOccurrenceKey = characterization.producerOccurrenceKey
+      const context = { taxYear, producerOccurrenceKey }
+      const gross = characterization.grossAmountPlanDollars
+      const nonQualified = characterization.nonQualifiedLine7GrossPlanDollars
+      const occurrence = occurrenceByKey.get(producerOccurrenceKey)
+      if (occurrence?.kind !== 'legacyQcd' ||
+          occurrence.ownerPersonId !== characterization.ownerPersonId ||
+          occurrence.grossAmountPlanDollars !== gross ||
+          characterizationByKey.has(producerOccurrenceKey)) {
+        fail('qcdReconciliationInvalid', 'A moving QCD characterization must bind one distinct legacyQcd occurrence at its exact gross', context)
+      }
+      if (!Number.isFinite(nonQualified) || nonQualified < 0 ||
+          Object.is(nonQualified, -0) || nonQualified > gross) {
+        fail('qcdReconciliationInvalid', 'A moving QCD characterization must keep its non-qualified remainder inside its own gross', context)
+      }
+      cents(nonQualified, 'Non-qualified moving QCD remainder', context)
+      characterizationByKey.set(producerOccurrenceKey, nonQualified)
+    }
+    for (const { application, index } of legacyQcdApplications) {
+      const nonQualified =
+        characterizationByKey.get(application.producerOccurrenceKey)
+      if (nonQualified === undefined) {
+        fail('qcdStageRequired', 'Every moving QCD occurrence requires exactly one published qualification characterization', {
+          taxYear, producerOccurrenceKey: application.producerOccurrenceKey,
+        })
+      }
+      if (nonQualified <= 0) continue
+      normalizedApplications[index] = {
+        ...application,
+        form8606Line: 'line7',
+        form8606LineGrossAmount: cents(
+          nonQualified,
+          'Form 8606 line 7 gross of a non-qualified charitable draw',
           {
             taxYear,
-            ownerPersonId: account.ownerPersonId!,
-            sourceAccountId,
+            ownerPersonId: application.ownerPersonId,
+            sourceAccountId: application.sourceAccountId,
+            producerOccurrenceKey: application.producerOccurrenceKey,
           },
-        )
+        ),
       }
     }
-    // THE PREMIUM MUST HAVE ARRIVED. Every `annuityFundingTransfer` debit the
-    // chain took has to be matched by the credit that put its dollars into a
-    // contract-value channel, or the year is one in which value left a section
-    // 408(d)(2) aggregate and entered nothing -- which is exactly the defect
-    // this slice closed and exactly what a missing credit would silently
-    // reopen. Deliberately raised AFTER the chain rejoins its live observation,
-    // for the reason the pool-exit refusal was moved there: the annuity
-    // application sorts first, so refusing in place would mask every integrity
-    // failure later in the same year.
-    for (const occurrence of occurrenceSource.runtimeOccurrences) {
-      if (occurrence.kind !== 'annuityFundingTransfer') continue
-      const funding = accountById.get(occurrence.sourceAccountId!)
-      if (!funding || !isAggregatedIra(funding)) continue
-      if (creditedPremiumKeys.has(occurrence.producerOccurrenceKey)) continue
-      fail('annuityStageRequired', 'An owned-IRA annuity premium requires the contract-value credit that received it', {
-        taxYear,
-        ownerPersonId: occurrence.ownerPersonId!,
-        sourceAccountId: occurrence.sourceAccountId!,
-        producerOccurrenceKey: occurrence.producerOccurrenceKey,
-      })
-    }
-    // And the December 31 value the projection published must be the one this
-    // chain arrived at, contract by contract, in exact cents. The opening was
-    // taken on trust and bounded; everything that happened to it since was not.
-    const settledContractValues = new Map<AccountId, UsdCents>()
-    for (const { contract, ownerPersonId } of stagingContracts) {
-      const contractAccountId = asAccountId(contract.id)
-      const context = {
-        taxYear, ownerPersonId, sourceAccountId: contract.id,
-      }
-      const closing = publishedContractClosings.get(contractAccountId)
-      const chainRaw = contractRawValues.get(contractAccountId)
-      const chainCents = contractValues.get(contractAccountId)
-      if (closing === undefined || chainRaw === undefined ||
-          chainCents === undefined || closing !== chainRaw ||
-          cents(closing, 'Published annuity contract value', context) !== chainCents) {
-        fail('postGrowthPoolInvalid', 'A published annuity contract value must exact-rejoin the replay’s own contract-value chain', context)
-      }
-      settledContractValues.set(contractAccountId, chainCents)
-    }
+  }
+}
 
-    // A charitable gift reaches the published annual total by two routes that
-    // are not interchangeable. Dollars routed out of an RMD move nothing extra
-    // -- the RMD occurrence already explains that debit -- and they keep the
-    // nonmoving overlay. Dollars taken with no RMD behind them physically leave
-    // an owned IRA and must be explained the same way every other owned-IRA
-    // debit is, by a `legacyQcd` occurrence with its own application.
-    if (!Number.isFinite(yearResult.qcd) || yearResult.qcd < 0 ||
-        Object.is(yearResult.qcd, -0)) {
-      fail('sourceAmountInvalid', 'Published annual QCD total must be finite, nonnegative, and not negative zero', { taxYear })
+/**
+ * The nonmoving overlay's own dollars, carved out of the required distributions
+ * that carried the gift. Runs after the moving half above, on the same
+ * normalized applications, in the mutation order the annual ledger committed
+ * them in.
+ */
+function carveRoutedGiftFromRequiredDistributions(
+  overlay: NonmovingLegacyQcdOverlay,
+  normalizedApplications: NormalizedOwnedNonRothIraApplication[],
+  occurrenceByKey: OccurrenceIndex,
+  pools: ReadonlyMap<PersonId, OwnedIraAccount[]>,
+  personIds: ReadonlySet<string>,
+  taxYear: number,
+): void {
+  // The overlay's own dollars are allocated here. Which owner's required
+  // distribution carried the gift decides whose Form 8606 line-7 gross must
+  // shrink under 408(d)(8)(D), and the annual ledger settles that question
+  // when it sizes the gift, so the overlay states the answer and this replay
+  // reproduces it against the applications rather than re-deriving it. The
+  // moving half above is read per occurrence instead, because it has one.
+  if (overlay !== null) {
+    const carveByOwner = new Map<string, number>()
+    const attributedRouted: number[] = []
+    for (const attribution of overlay.ownerAttributions) {
+      const ownerPersonId = attribution.ownerPersonId
+      const context = { taxYear, ownerPersonId }
+      const routed = attribution.routedGrossPlanDollars
+      const qualified = attribution.qualifiedLine7ExclusionPlanDollars
+      // The owner must be a Plan person who actually holds an owned pool:
+      // an attribution naming anyone else cannot describe a line-7 gross this
+      // replay carries, and reducing nothing is not the same as reducing zero.
+      if (!personIds.has(ownerPersonId) || !pools.has(ownerPersonId as PersonId) ||
+          carveByOwner.has(ownerPersonId)) {
+        fail('qcdStageRequired', 'Each routed-QCD attribution must name one distinct owner of a captured owned-IRA pool', context)
+      }
+      if (!Number.isFinite(routed) || routed <= 0 || !Number.isFinite(qualified) ||
+          qualified < 0 || Object.is(qualified, -0) || qualified > routed) {
+        fail('qcdReconciliationInvalid', 'A routed-QCD attribution must carry a positive routed gross and a qualified exclusion inside it', context)
+      }
+      cents(routed, 'Routed QCD attribution gross', context)
+      cents(qualified, 'Routed QCD qualified exclusion', context)
+      carveByOwner.set(ownerPersonId, qualified)
+      attributedRouted.push(routed)
     }
-    cents(yearResult.qcd, 'Annual QCD total', { taxYear })
-    const overlay = occurrenceSource.nonmovingLegacyQcdOverlay
-    if (overlay !== null && (
-      overlay.status !== 'nonmovingLegacyQcdCaptured' || overlay.kind !== 'legacyQcd' ||
-      overlay.taxYear !== taxYear ||
-      overlay.physicalMovement !== 'notAdditionalMovement' ||
-      overlay.inventoryReplay !==
-        'attributedToOwnedIraRequiredDistributionGrosses' ||
-      !Array.isArray(overlay.ownerAttributions) ||
-      overlay.ownerAttributions.length === 0 ||
-      cents(overlay.grossAmountPlanDollars, 'QCD overlay amount', { taxYear }) <= 0)) {
-      fail('sourceContractInvalid', 'A nonmoving QCD overlay must retain its exact captured contract, a positive amount, and its owner attribution', { taxYear })
-    }
-    // The published annual gift is now reached by two routes that are not
-    // interchangeable, exactly as the conversion total is. The aggregate
-    // strategy's sweep produces `legacyQcd` occurrences; the QCD executor's
-    // committed requests produce `namedQcd` ones. So the named arm is bound to
-    // the executor's own committed cents first, and the union to the published
-    // total second -- reconciling only the union would let one kind absorb the
-    // other's dollars.
-    reconcilePublishedTotal(
-      occurrenceSource.runtimeOccurrences,
-      ['namedQcd'],
-      ledgerCentsToPlanDollars(namedQcdCoverage.totalExecutedAmount),
-      'named QCD',
-      taxYear,
-      accountOrder,
-    )
-    const movingQcd = occurrenceTotalInPlanOrder(
-      occurrenceSource.runtimeOccurrences,
-      ['legacyQcd', 'namedQcd'],
-      'moving QCD',
-      taxYear,
-      accountOrder,
-    )
-    // The overlay is a summed component only when it exists. Counting it
-    // unconditionally would widen the tolerance across the whole pre-RMD
-    // window, which is exactly the case that has no overlay to count.
+    // The attribution is a partition of the overlay, not a commentary on it.
     if (!rawTotalsReconcile(
-      (overlay?.grossAmountPlanDollars ?? 0) + movingQcd.total,
-      yearResult.qcd,
-      movingQcd.count + (overlay === null ? 0 : 1),
+      summedPlanDollars(attributedRouted, 'Routed QCD attribution', { taxYear }),
+      overlay.grossAmountPlanDollars,
+      attributedRouted.length,
     )) {
-      fail('sourceCoverageInvalid', 'The nonmoving QCD overlay plus every moving QCD occurrence must exact-rejoin the published annual QCD total', { taxYear })
+      fail('qcdReconciliationInvalid', 'Routed-QCD owner attributions must exact-rejoin the nonmoving overlay gross', { taxYear })
     }
-    // THE MOVING HALF IS NOT ALL A GIFT, and treating it as though it were is
-    // how this replay used to overstate the basis it handed forward. IRC
-    // 408(d)(8)(B)'s closing sentence treats a distribution as a qualified
-    // charitable distribution "only to the extent that the distribution would be
-    // includible in gross income", and (D) caps that at the owner's aggregate
-    // includible amount. A draw past the cap never became a QCD, and the Form
-    // 8606 line-7 instructions exclude "Qualified charitable distributions
-    // (QCDs)" by name and nothing else -- so the unqualified part stays on line
-    // 7 and inside the line-9 denominator, exactly as the annual ledger's own
-    // pro-rata arm already treats it.
-    //
-    // Read from the year rather than re-derived. The ledger sized each draw
-    // against the cap when it committed it, and its per-occurrence answer is
-    // published with the year, so the two arms carry the same line-7 gross to
-    // the cent rather than agreeing by reconstruction.
-    const legacyQcdApplications = normalizedApplications
-      .map((application, index) => ({ application, index }))
-      .filter(({ application }) =>
-        application.simulatorPhase === 'legacyQcdDistribution')
-    const characterizations = occurrenceSource.legacyQcdCharacterizations
-    if (!Array.isArray(characterizations) ||
-        characterizations.length !== legacyQcdApplications.length) {
-      fail('qcdStageRequired', 'Every moving QCD occurrence requires exactly one published qualification characterization', { taxYear })
-    }
-    {
-      const characterizationByKey = new Map<string, number>()
-      for (const characterization of characterizations) {
-        const producerOccurrenceKey = characterization.producerOccurrenceKey
-        const context = { taxYear, producerOccurrenceKey }
-        const gross = characterization.grossAmountPlanDollars
-        const nonQualified = characterization.nonQualifiedLine7GrossPlanDollars
-        const occurrence = occurrenceByKey.get(producerOccurrenceKey)
-        if (occurrence?.kind !== 'legacyQcd' ||
-            occurrence.ownerPersonId !== characterization.ownerPersonId ||
-            occurrence.grossAmountPlanDollars !== gross ||
-            characterizationByKey.has(producerOccurrenceKey)) {
-          fail('qcdReconciliationInvalid', 'A moving QCD characterization must bind one distinct legacyQcd occurrence at its exact gross', context)
-        }
-        if (!Number.isFinite(nonQualified) || nonQualified < 0 ||
-            Object.is(nonQualified, -0) || nonQualified > gross) {
-          fail('qcdReconciliationInvalid', 'A moving QCD characterization must keep its non-qualified remainder inside its own gross', context)
-        }
-        cents(nonQualified, 'Non-qualified moving QCD remainder', context)
-        characterizationByKey.set(producerOccurrenceKey, nonQualified)
-      }
-      for (const { application, index } of legacyQcdApplications) {
-        const nonQualified =
-          characterizationByKey.get(application.producerOccurrenceKey)
-        if (nonQualified === undefined) {
-          fail('qcdStageRequired', 'Every moving QCD occurrence requires exactly one published qualification characterization', {
-            taxYear, producerOccurrenceKey: application.producerOccurrenceKey,
-          })
-        }
-        if (nonQualified <= 0) continue
-        normalizedApplications[index] = {
-          ...application,
-          form8606Line: 'line7',
-          form8606LineGrossAmount: cents(
-            nonQualified,
-            'Form 8606 line 7 gross of a non-qualified charitable draw',
-            {
-              taxYear,
-              ownerPersonId: application.ownerPersonId,
-              sourceAccountId: application.sourceAccountId,
-              producerOccurrenceKey: application.producerOccurrenceKey,
-            },
-          ),
-        }
-      }
-    }
-    // The overlay's own dollars are allocated here. Which owner's required
-    // distribution carried the gift decides whose Form 8606 line-7 gross must
-    // shrink under 408(d)(8)(D), and the annual ledger settles that question
-    // when it sizes the gift, so the overlay states the answer and this replay
-    // reproduces it against the applications rather than re-deriving it. The
-    // moving half above is read per occurrence instead, because it has one.
-    if (overlay !== null) {
-      const carveByOwner = new Map<string, number>()
-      const attributedRouted: number[] = []
-      for (const attribution of overlay.ownerAttributions) {
-        const ownerPersonId = attribution.ownerPersonId
-        const context = { taxYear, ownerPersonId }
-        const routed = attribution.routedGrossPlanDollars
-        const qualified = attribution.qualifiedLine7ExclusionPlanDollars
-        // The owner must be a Plan person who actually holds an owned pool:
-        // an attribution naming anyone else cannot describe a line-7 gross this
-        // replay carries, and reducing nothing is not the same as reducing zero.
-        if (!personIds.has(ownerPersonId) || !pools.has(ownerPersonId as PersonId) ||
-            carveByOwner.has(ownerPersonId)) {
-          fail('qcdStageRequired', 'Each routed-QCD attribution must name one distinct owner of a captured owned-IRA pool', context)
-        }
-        if (!Number.isFinite(routed) || routed <= 0 || !Number.isFinite(qualified) ||
-            qualified < 0 || Object.is(qualified, -0) || qualified > routed) {
-          fail('qcdReconciliationInvalid', 'A routed-QCD attribution must carry a positive routed gross and a qualified exclusion inside it', context)
-        }
-        cents(routed, 'Routed QCD attribution gross', context)
-        cents(qualified, 'Routed QCD qualified exclusion', context)
-        carveByOwner.set(ownerPersonId, qualified)
-        attributedRouted.push(routed)
-      }
-      // The attribution is a partition of the overlay, not a commentary on it.
-      if (!rawTotalsReconcile(
-        summedPlanDollars(attributedRouted, 'Routed QCD attribution', { taxYear }),
-        overlay.grossAmountPlanDollars,
-        attributedRouted.length,
-      )) {
-        fail('qcdReconciliationInvalid', 'Routed-QCD owner attributions must exact-rejoin the nonmoving overlay gross', { taxYear })
-      }
-      // Carved greedily across the owner's required distributions in mutation
-      // order, which is the order the annual ledger commits them in. The order
-      // is what makes this reproduction rather than invention: the settlement
-      // matches an effect only when its gross agrees to the cent, so a carve
-      // spread differently would settle nothing even though the owner's total
-      // basis recovery would be the same either way.
-      for (let index = 0; index < normalizedApplications.length; index += 1) {
-        const application = normalizedApplications[index]!
-        if (application.simulatorPhase !== 'ownerRmdDistribution') continue
-        const remainingCarve = carveByOwner.get(application.ownerPersonId) ?? 0
-        if (remainingCarve <= 0) continue
-        const context = {
-          taxYear,
-          ownerPersonId: application.ownerPersonId,
-          sourceAccountId: application.sourceAccountId,
-          producerOccurrenceKey: application.producerOccurrenceKey,
-        }
-        const grossPlanDollars = occurrenceByKey
-          .get(application.producerOccurrenceKey)!.grossAmountPlanDollars
-        const carve = Math.min(remainingCarve, grossPlanDollars)
-        carveByOwner.set(application.ownerPersonId, remainingCarve - carve)
-        const line7GrossPlanDollars = grossPlanDollars - carve
-        normalizedApplications[index] = {
-          ...application,
-          form8606Line: line7GrossPlanDollars > 0 ? 'line7' : null,
-          form8606LineGrossAmount: line7GrossPlanDollars > 0
-            ? cents(line7GrossPlanDollars, 'Form 8606 line 7 gross net of the routed gift', context)
-            : asUsdCents(0),
-        }
-      }
-      // Nothing may be left over. 408(d)(8)(B) reaches only a distribution from
-      // an individual retirement plan and Treas. Reg. 1.408-8(e)(2)(i)
-      // aggregates only one individual's own IRAs, so a carve the owner's own
-      // required distributions cannot absorb describes a gift that could not
-      // have been routed. The tolerance is the same raw one the published
-      // totals reconcile under, and nothing wider: a material residue is a
-      // disagreement between the ledger and this replay, not a rounding artefact.
-      for (const [ownerPersonId, remainingCarve] of carveByOwner) {
-        if (remainingCarve <= MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS) continue
-        fail('qcdReconciliationInvalid', 'A routed-QCD carve must be absorbed by the owner’s own required distributions', {
-          taxYear, ownerPersonId,
-        })
-      }
-    }
-
-    const aggregate = aggregateRothCredits(
-      plan, taxYear, occurrenceSource.runtimeOccurrences,
-      applicationSource.applications, normalizedApplications, accountOrder,
-    )
-    const namedCredits = namedRothDestinationCredits(
-      plan, taxYear, occurrenceSource.runtimeOccurrences,
-      applicationSource.applications, normalizedApplications,
-      namedConversionCoverage, accountOrder,
-    )
-    const ownerSources = expectedOwners.map((owner) => {
-      const applications = normalizedApplications.filter((entry) => entry.ownerPersonId === owner)
-      const yearEndBalances = ownerBalances.get(owner)!
-      const annuityContractValues = stagingContracts
-        .filter((entry) => entry.ownerPersonId === owner)
-        .map(({ contract, funding }) => {
-          const contractAccountId = asAccountId(contract.id)
-          return {
-            annuityAccountId: contractAccountId,
-            fundingAccountId: asAccountId(funding.id),
-            contractValuePlanDollars: contractRawValues.get(contractAccountId)!,
-            contractValueAmount: settledContractValues.get(contractAccountId)!,
-          }
-        })
-      const annuityContractValueAmount = asUsdCents(
-        annuityContractValues.reduce(
-          (sum, entry) => sum + entry.contractValueAmount, 0,
-        ),
-      )
-      const withoutId = {
-        ownerPersonId: owner,
+    // Carved greedily across the owner's required distributions in mutation
+    // order, which is the order the annual ledger commits them in. The order
+    // is what makes this reproduction rather than invention: the settlement
+    // matches an effect only when its gross agrees to the cent, so a carve
+    // spread differently would settle nothing even though the owner's total
+    // basis recovery would be the same either way.
+    for (let index = 0; index < normalizedApplications.length; index += 1) {
+      const application = normalizedApplications[index]!
+      if (application.simulatorPhase !== 'ownerRmdDistribution') continue
+      const remainingCarve = carveByOwner.get(application.ownerPersonId) ?? 0
+      if (remainingCarve <= 0) continue
+      const context = {
         taxYear,
-        applications,
-        yearEndBalances,
-        annuityContractValues,
-        annuityContractValueAmount,
+        ownerPersonId: application.ownerPersonId,
+        sourceAccountId: application.sourceAccountId,
+        producerOccurrenceKey: application.producerOccurrenceKey,
       }
-      return deepFreeze({
-        ...withoutId,
-        sourceChainEvidenceId: deriveActionStructuralId(
-          'projection-owned-ira-runtime-source-chain',
-          [plan.id, withoutId],
-        ),
-      })
-    })
-    const withoutId = {
-      taxYear,
-      ownerSources,
-      aggregateRothDestinationCredits: aggregate,
-      namedRothDestinationCredits: namedCredits,
+      const grossPlanDollars = occurrenceByKey
+        .get(application.producerOccurrenceKey)!.grossAmountPlanDollars
+      const carve = Math.min(remainingCarve, grossPlanDollars)
+      carveByOwner.set(application.ownerPersonId, remainingCarve - carve)
+      const line7GrossPlanDollars = grossPlanDollars - carve
+      normalizedApplications[index] = {
+        ...application,
+        form8606Line: line7GrossPlanDollars > 0 ? 'line7' : null,
+        form8606LineGrossAmount: line7GrossPlanDollars > 0
+          ? cents(line7GrossPlanDollars, 'Form 8606 line 7 gross net of the routed gift', context)
+          : asUsdCents(0),
+      }
     }
-    normalizedYears.push(deepFreeze({
+    // Nothing may be left over. 408(d)(8)(B) reaches only a distribution from
+    // an individual retirement plan and Treas. Reg. 1.408-8(e)(2)(i)
+    // aggregates only one individual's own IRAs, so a carve the owner's own
+    // required distributions cannot absorb describes a gift that could not
+    // have been routed. The tolerance is the same raw one the published
+    // totals reconcile under, and nothing wider: a material residue is a
+    // disagreement between the ledger and this replay, not a rounding artefact.
+    for (const [ownerPersonId, remainingCarve] of carveByOwner) {
+      if (remainingCarve <= MAX_RAW_RECONCILIATION_TOLERANCE_DOLLARS) continue
+      fail('qcdReconciliationInvalid', 'A routed-QCD carve must be absorbed by the owner’s own required distributions', {
+        taxYear, ownerPersonId,
+      })
+    }
+  }
+}
+
+/**
+ * The year's record, assembled once every refusal above has passed: the Roth
+ * destination credits, each owner's own source chain, and the structural
+ * evidence id derived from them.
+ */
+function publishYearRecord(
+  plan: Plan,
+  taxYear: number,
+  occurrenceSource: CapturedOccurrenceSource,
+  applicationSource: CapturedApplicationSource,
+  normalizedApplications: readonly NormalizedOwnedNonRothIraApplication[],
+  namedConversionCoverage: NamedRothConversionCoverage,
+  accountOrder: ReadonlyMap<string, number>,
+  expectedOwners: readonly PersonId[],
+  ownerBalances: ReadonlyMap<PersonId, NormalizedOwnedNonRothIraYearEndBalance[]>,
+  stagingContracts: SeriesFacts['stagingContracts'],
+  contractRawValues: ReadonlyMap<AccountId, number>,
+  settledContractValues: ReadonlyMap<AccountId, UsdCents>,
+): NormalizedOwnedNonRothIraRuntimeSourceYear {
+  const aggregate = aggregateRothCredits(
+    plan, taxYear, occurrenceSource.runtimeOccurrences,
+    applicationSource.applications, normalizedApplications, accountOrder,
+  )
+  const namedCredits = namedRothDestinationCredits(
+    plan, taxYear, occurrenceSource.runtimeOccurrences,
+    applicationSource.applications, normalizedApplications,
+    namedConversionCoverage, accountOrder,
+  )
+  const ownerSources = expectedOwners.map((owner) => {
+    const applications = normalizedApplications.filter((entry) => entry.ownerPersonId === owner)
+    const yearEndBalances = ownerBalances.get(owner)!
+    const annuityContractValues = stagingContracts
+      .filter((entry) => entry.ownerPersonId === owner)
+      .map(({ contract, funding }) => {
+        const contractAccountId = asAccountId(contract.id)
+        return {
+          annuityAccountId: contractAccountId,
+          fundingAccountId: asAccountId(funding.id),
+          contractValuePlanDollars: contractRawValues.get(contractAccountId)!,
+          contractValueAmount: settledContractValues.get(contractAccountId)!,
+        }
+      })
+    const annuityContractValueAmount = asUsdCents(
+      annuityContractValues.reduce(
+        (sum, entry) => sum + entry.contractValueAmount, 0,
+      ),
+    )
+    const withoutId = {
+      ownerPersonId: owner,
+      taxYear,
+      applications,
+      yearEndBalances,
+      annuityContractValues,
+      annuityContractValueAmount,
+    }
+    return deepFreeze({
       ...withoutId,
-      evidenceId: deriveActionStructuralId('projection-owned-ira-runtime-source-year', [plan.id, withoutId]),
-    }))
-    openingBalances = postGrowthBalances
-    openingRawBalances = postGrowthRawBalances
-    openingPhysicalRawBalances = postGrowthPhysicalRawBalances
-    openingContractRawValues = contractRawValues
+      sourceChainEvidenceId: deriveActionStructuralId(
+        'projection-owned-ira-runtime-source-chain',
+        [plan.id, withoutId],
+      ),
+    })
+  })
+  const withoutId = {
+    taxYear,
+    ownerSources,
+    aggregateRothDestinationCredits: aggregate,
+    namedRothDestinationCredits: namedCredits,
+  }
+  const normalizedYear = deepFreeze({
+    ...withoutId,
+    evidenceId: deriveActionStructuralId('projection-owned-ira-runtime-source-year', [plan.id, withoutId]),
+  })
+  return normalizedYear
+}
+
+/** @internal What one year's step produces: the next carry, and that year's normalized record. */
+export interface YearStep {
+  readonly carry: YearCarry
+  readonly year: NormalizedOwnedNonRothIraRuntimeSourceYear
+}
+
+/**
+ * One tax year of the replay: every check that year needs, in the order it
+ * needs them, against the carry the year before it returned.
+ *
+ * This is the per-year step alone. It does not check that `yearResult` is the
+ * year that follows the carry it was handed, that `facts` matches the plan
+ * the carry came from, or anything else about the series `facts` and `carry`
+ * belong to -- year contiguity and every other series-level guarantee are
+ * `validateUnchecked`'s job, enforced once before it starts calling this in a
+ * loop. A caller stepping years by hand can skip or reorder them, or combine
+ * a carry and `facts` from different plans, and get no error from here.
+ *
+ * @internal
+ */
+export function stepYear(
+  carry: YearCarry,
+  yearResult: Readonly<YearResult>,
+  facts: SeriesFacts,
+): YearStep {
+  const {
+    plan, accountById, accountOrder, personIds, stagingContracts,
+    contractOwnerById, contractFundingById, contractPremiumById,
+    contractPurchaseYearById,
+  } = facts
+  // Copy-on-write at the boundary. The chains below advance these maps in
+  // place, exactly as they did when they were the loop's own locals, and the
+  // carry this step was handed has to survive the year untouched.
+  const openingBalances = new Map(carry.openingBalances)
+  const openingRawBalances = new Map(carry.openingRawBalances)
+  const openingPhysicalRawBalances = new Map(carry.openingPhysicalRawBalances)
+  const openingContractRawValues = carry.openingContractRawValues === null
+    ? null
+    : new Map(carry.openingContractRawValues)
+
+  const taxYear = yearResult.year
+  const {
+    pools, ownedAccounts, physicalOwnedRows,
+    occurrenceSource, applicationSource, balanceSource,
+    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
+    publishedPhysicalOpeningBalances,
+  } = readYearSources(yearResult, plan, taxYear)
+  continuePhysicalOpeningBalances(
+    publishedPhysicalOpeningBalances, physicalOwnedRows, ownedAccounts,
+    openingPhysicalRawBalances, taxYear,
+  )
+  requireCapturedSourceContracts(
+    occurrenceSource, applicationSource, balanceSource, plan, taxYear,
+  )
+  const { occurrenceByKey, occurrenceOrderId } = indexOccurrences(
+    occurrenceSource, plan, accountById, personIds, taxYear,
+  )
+  requirePensionRolloverOccurrences(plan, accountById, occurrenceByKey, taxYear)
+  const namedConversionCoverage = reconcilePublishedAnnualTotals(
+    yearResult, occurrenceSource, accountById, accountOrder, taxYear,
+  )
+  const namedQcdCoverage = requireExactActionEvidence(
+    plan, yearResult, accountById, occurrenceSource, taxYear,
+  )
+  requireStagedAnnuityPurchases(
+    plan, accountById, contractOwnerById, occurrenceByKey, openingRawBalances,
+    taxYear,
+  )
+
+  const {
+    expectedOwners,
+    postGrowthBalances, postGrowthRawBalances, postGrowthPhysicalRawBalances,
+    preGrowthBalances, preGrowthRawBalances, preGrowthPhysicalRawBalances,
+    ownerBalances,
+  } = observeBalances(
+    yearResult, balanceSource, pools, ownedAccounts, physicalOwnedRows,
+    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
+    taxYear,
+  )
+  const { publishedContractOpenings, publishedContractClosings } =
+    readPublishedContractValues(
+      expectedOwners, balanceSource, stagingContracts, contractPremiumById,
+      contractPurchaseYearById, openingContractRawValues, taxYear,
+    )
+
+  seedNewlyOwnedOpenings(
+    ownedAccounts, applicationSource, preGrowthRawBalances, openingRawBalances,
+    openingBalances, taxYear,
+  )
+  const {
+    normalizedApplications, contractRawValues, contractValues,
+    creditedPremiumKeys, appliedKeys,
+  } = runApplicationChain(
+    applicationSource, occurrenceByKey, occurrenceOrderId, accountById,
+    accountOrder, contractOwnerById, contractFundingById,
+    publishedContractOpenings, physicalOwnedRows, openingBalances,
+    openingRawBalances, openingPhysicalRawBalances, taxYear,
+  )
+  requireEveryOwnedOccurrenceApplied(
+    occurrenceSource, accountById, appliedKeys, taxYear,
+  )
+  requireChainRejoinsPreGrowth(
+    publishedPhysicalBalancesBeforeGrowth, physicalOwnedRows, ownedAccounts,
+    openingBalances, openingRawBalances, openingPhysicalRawBalances,
+    preGrowthBalances, preGrowthRawBalances, preGrowthPhysicalRawBalances,
+    taxYear,
+  )
+  requireEveryPremiumArrived(
+    occurrenceSource, accountById, creditedPremiumKeys, taxYear,
+  )
+  const settledContractValues = settleContractValues(
+    stagingContracts, publishedContractClosings, contractRawValues,
+    contractValues, taxYear,
+  )
+
+  const overlay = reconcileAnnualQcd(
+    yearResult, occurrenceSource, namedQcdCoverage, accountOrder, taxYear,
+  )
+  carveNonQualifiedGiftRemainders(
+    normalizedApplications, occurrenceSource, occurrenceByKey, taxYear,
+  )
+  carveRoutedGiftFromRequiredDistributions(
+    overlay, normalizedApplications, occurrenceByKey, pools, personIds, taxYear,
+  )
+  const normalizedYear = publishYearRecord(
+    plan, taxYear, occurrenceSource, applicationSource, normalizedApplications,
+    namedConversionCoverage, accountOrder, expectedOwners, ownerBalances,
+    stagingContracts, contractRawValues, settledContractValues,
+  )
+  return {
+    carry: {
+      openingBalances: postGrowthBalances,
+      openingRawBalances: postGrowthRawBalances,
+      openingPhysicalRawBalances: postGrowthPhysicalRawBalances,
+      openingContractRawValues: contractRawValues,
+    },
+    year: normalizedYear,
+  }
+}
+
+function validateUnchecked(
+  rawPlan: Plan,
+  projectionStartTaxYear: number,
+  years: readonly Readonly<YearResult>[],
+): Readonly<OwnedNonRothIraRuntimeSourceSeriesComplete> {
+  const parsedPlan = planSchema.safeParse(rawPlan)
+  if (!parsedPlan.success) fail('planInvalid', 'Runtime source replay requires a valid Plan')
+  const plan = parsedPlan.data
+  if (!Number.isSafeInteger(projectionStartTaxYear) || projectionStartTaxYear < 1 ||
+      projectionStartTaxYear > 9999 || years.length === 0 ||
+      years[0]!.year !== projectionStartTaxYear) {
+    fail('yearSeriesInvalid', 'Runtime source series must begin at its authoritative projection start year')
+  }
+  for (let index = 0; index < years.length; index += 1) {
+    if (years[index]!.year !== projectionStartTaxYear + index) {
+      fail('yearSeriesInvalid', 'Runtime source years must be unique, ordered, and exactly contiguous')
+    }
+  }
+
+  let carry = initialYearCarry(plan)
+  const facts = seriesFacts(plan)
+  const normalizedYears: NormalizedOwnedNonRothIraRuntimeSourceYear[] = []
+  for (const yearResult of years) {
+    const step = stepYear(carry, yearResult, facts)
+    normalizedYears.push(step.year)
+    carry = step.carry
   }
 
   const withoutId = {
