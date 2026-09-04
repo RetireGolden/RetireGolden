@@ -3061,6 +3061,14 @@ export interface YearStep {
  * One tax year of the replay: every check that year needs, in the order it
  * needs them, against the carry the year before it returned.
  *
+ * This is the per-year step alone. It does not check that `yearResult` is the
+ * year that follows the carry it was handed, that `facts` matches the plan
+ * the carry came from, or anything else about the series `facts` and `carry`
+ * belong to -- year contiguity and every other series-level guarantee are
+ * `validateUnchecked`'s job, enforced once before it starts calling this in a
+ * loop. A caller stepping years by hand can skip or reorder them, or combine
+ * a carry and `facts` from different plans, and get no error from here.
+ *
  * @internal
  */
 export function stepYear(
@@ -3079,7 +3087,9 @@ export function stepYear(
   const openingBalances = new Map(carry.openingBalances)
   const openingRawBalances = new Map(carry.openingRawBalances)
   const openingPhysicalRawBalances = new Map(carry.openingPhysicalRawBalances)
-  const openingContractRawValues = carry.openingContractRawValues
+  const openingContractRawValues = carry.openingContractRawValues === null
+    ? null
+    : new Map(carry.openingContractRawValues)
 
   const taxYear = yearResult.year
   const {
