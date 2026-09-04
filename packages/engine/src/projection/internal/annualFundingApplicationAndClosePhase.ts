@@ -46,7 +46,6 @@ import {
   type RothBasisState,
 } from '../../strategies/rothBasis.js'
 import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from '../../tax/federalTax.js'
-import { compareUtf16CodeUnits } from '../../actions/structuralId.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
 import type { PhaseLedgerScalarBindings } from './phaseLedgerScalars.js'
 import { readPhaseLedgerScalars, writePhaseLedgerScalars } from './phaseLedgerScalars.js'
@@ -68,6 +67,7 @@ import {
   annualWithdrawalStrategy,
 } from './annualWithdrawalPlanning.js'
 import { annualPostGrowthCapturePhase } from './annualPostGrowthCapturePhase.js'
+import { annualRuntimeJournalCapturePhase } from './annualRuntimeJournalCapturePhase.js'
 import { annualRetirementActionSettlementPublication } from './annualRetirementActionSettlementPublication.js'
 import { annualYearResultAssembly } from './annualYearResultAssembly.js'
 import {
@@ -1898,88 +1898,27 @@ export function annualFundingApplicationAndClosePhase(
     const targetShortfall = shortfallAttribution.targetShortfall + skippedTargetNominal + skippedRequiredNominal
     const idealShortfall = shortfallAttribution.idealShortfall + skippedIdealNominal
     const excessShortfall = shortfallAttribution.excessShortfall + skippedExcessNominal
-    const retirementRuntimeSource = Object.freeze({
-      status: 'runtimeOccurrenceSourcesCaptured' as const,
-      captureBoundary:
-        'legacyAnnualPassCommittedBeforeYearResultPublication' as const,
-      journalValidation: 'notRun' as const,
+    // --- retirement runtime journal capture --------------------------------
+    // Two frozen records that read nine values and write nothing. The
+    // sub-phase lives in `internal/annualRuntimeJournalCapturePhase.ts` and
+    // takes those nine as its own input rather than reading this phase
+    // 91-field `Facts` destructure. Both orderings travel with it: occurrences
+    // sorted into the canonical order, applications deliberately unsorted
+    // because mutation order is itself the evidence.
+    const runtimeJournalCapture = annualRuntimeJournalCapturePhase({
       planId: plan.id,
-      taxYear: year,
-      runtimeOccurrences: Object.freeze(
-        [...annualRetirementRuntimeOccurrences]
-          .sort(canonicalRuntimeOccurrenceOrder)
-          .map((occurrence) => Object.freeze({ ...occurrence })),
-      ),
-      // Only the routed share belongs in the nonmoving overlay. The rest of the
-      // annual total left an owned IRA under its own occurrences above, and
-      // publishing it here as well would double-count the gift.
-      //
-      // The attribution travels with it, which is what lets the owned-IRA
-      // runtime source series characterize a gift year instead of refusing it.
-      // Both figures are the ones the 408(d)(8)(D) block settled above:
-      // `qcdFromRmdByOwner` is the routed gross the published annual total is
-      // made of, and `qcdQualifiedFromRmdByOwner` is the carve the deferred
-      // forced distributions were committed against, so the replay reproduces
-      // the ledger's own line-7 grosses rather than deriving rival ones.
-      nonmovingLegacyQcdOverlay: qcdFromRmd > 0
-        ? Object.freeze({
-          status: 'nonmovingLegacyQcdCaptured' as const,
-          kind: 'legacyQcd' as const,
-          taxYear: year,
-          grossAmountPlanDollars: qcdFromRmd,
-          ownerAttributions: Object.freeze(
-            [...qcdFromRmdByOwner.entries()]
-              .filter(([, routed]) => routed > 0)
-              .sort(([left], [right]) => compareUtf16CodeUnits(left, right))
-              .map(([ownerPersonId, routedGrossPlanDollars]) => Object.freeze({
-                ownerPersonId,
-                routedGrossPlanDollars,
-                qualifiedLine7ExclusionPlanDollars: Math.min(
-                  routedGrossPlanDollars,
-                  qcdQualifiedFromRmdByOwner.get(ownerPersonId) ?? 0,
-                ),
-              })),
-          ),
-          physicalMovement: 'notAdditionalMovement' as const,
-          inventoryReplay:
-            'attributedToOwnedIraRequiredDistributionGrosses' as const,
-        })
-        : null,
-      // The moving half's characterization, in the order the draws moved. The
-      // 408(d)(8)(D) block sized each one against the owner's aggregate
-      // includible amount, so the replay reads which part of each draw was a
-      // gift and which part was an ordinary distribution rather than assuming
-      // the whole of it was the former.
-      legacyQcdCharacterizations: Object.freeze(
-        legacyQcdCharacterizations.map((entry) => Object.freeze({ ...entry })),
-      ),
+      year,
+      annualRetirementRuntimeOccurrences,
+      canonicalRuntimeOccurrenceOrder,
+      annualRetirementRuntimeApplications,
+      qcdFromRmd,
+      qcdFromRmdByOwner,
+      qcdQualifiedFromRmdByOwner,
+      legacyQcdCharacterizations,
     })
-    const retirementRuntimeApplicationSource = Object.freeze({
-      status: 'runtimeApplicationSourcesCaptured' as const,
-      captureBoundary:
-        'atOwnedNonRothIraMutationSitesBeforeAnnualGrowth' as const,
-      applicationValidation: 'notRun' as const,
-      planId: plan.id,
-      taxYear: year,
-      // Mutation order is evidence. Do not sort this array: account-order
-      // dependent legacy commits must remain visible to later replay.
-      applications: Object.freeze(
-        annualRetirementRuntimeApplications.map((application) =>
-          application.applicationKind === 'aggregateRothDestinationCredit' ||
-            application.applicationKind === 'namedRothDestinationCredit'
-            ? Object.freeze({
-              ...application,
-              producerOccurrenceKeys: Object.freeze([
-                ...application.producerOccurrenceKeys,
-              ]),
-              sourceOwnerPersonIds: Object.freeze([
-                ...application.sourceOwnerPersonIds,
-              ]),
-            })
-            : Object.freeze({ ...application }),
-        ),
-      ),
-    })
+    const retirementRuntimeSource = runtimeJournalCapture.retirementRuntimeSource
+    const retirementRuntimeApplicationSource =
+      runtimeJournalCapture.retirementRuntimeApplicationSource
     // This publication depends on settled tax, penalties, and committed
     // executor evidence, so it remains ordered after every annual movement and
     // before per-entity fact publication and `YearResult` assembly. The
