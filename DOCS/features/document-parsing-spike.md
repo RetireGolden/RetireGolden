@@ -10,6 +10,10 @@ you stay in control of what is entered", and that remains true. The extractor sh
 optional `pdfjs-dist` peer that a host must install deliberately. See
 [imports-and-migration.md](imports-and-migration.md) for what the wizard does do.
 
+The extractor's own design record is
+[document-text-extraction.md](document-text-extraction.md): the optional `pdfjs-dist` peer, the
+worker-free construction, what the caps bound, and how local-only is enforced.
+
 Code: [`packages/planner-ui/src/import/documentText.ts`](../../packages/planner-ui/src/import/documentText.ts)
 (the extractor), [`documentCorpus.ts`](../../packages/planner-ui/src/import/documentCorpus.ts) (the corpus
 and its oracle), [`documentBenchmark.ts`](../../packages/planner-ui/src/import/documentBenchmark.ts)

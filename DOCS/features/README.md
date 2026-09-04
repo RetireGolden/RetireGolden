@@ -11,7 +11,8 @@ Financial rules and current-year numbers are in
 [optimizer.md](optimizer.md) · [learning-center.md](learning-center.md) · [longevity.md](longevity.md) ·
 [plan-file-format.md](plan-file-format.md) · [planning-record.md](planning-record.md) ·
 [imports-and-migration.md](imports-and-migration.md) ·
-[household-map.md](household-map.md) · [year-cash-flow.md](year-cash-flow.md)
+[household-map.md](household-map.md) · [year-cash-flow.md](year-cash-flow.md) ·
+[document-text-extraction.md](document-text-extraction.md)
 
 **Code:** pure engine in `packages/engine/src/` (model/params/tax/rmd/strategies/projection/montecarlo/
 scenarios/decisions/spending/ladder/insights); Social Security math in `packages/planner-ui/src/socialSecurity/`; planner UI

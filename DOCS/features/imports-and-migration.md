@@ -173,7 +173,9 @@ plan data afterward.
 reachable from `/import` — the wizard still takes no PDF upload, and the 1040 path above is still
 guided entry. Its intended consumer is the Pro intake workbench. What it recovers was measured rather
 than assumed, per field, against a hand-built synthetic corpus; the numbers and the "do not scope OCR
-yet" recommendation are in [document-parsing-spike.md](document-parsing-spike.md).
+yet" recommendation are in [document-parsing-spike.md](document-parsing-spike.md); how the extractor
+itself is built (the optional peer, the worker-free path, what the caps bound, and the local-only
+enforcement) is in [document-text-extraction.md](document-text-extraction.md).
 
 ## Migration from other planning tools
 
