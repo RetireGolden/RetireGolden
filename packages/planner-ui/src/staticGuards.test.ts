@@ -74,3 +74,17 @@ describe('CSS custom properties resolve', () => {
     expect(missing).toEqual([])
   })
 })
+
+describe('noUncheckedIndexedAccess stays on', () => {
+  it('tsconfig.src.json and tsconfig.node.json both enable it', () => {
+    // Deleting the flag from either tsconfig would still let `tsc -b` pass —
+    // it only shows up as newly-unchecked indexed reads, not a build failure.
+    // Pin it here so removing it fails a test instead of silently reopening
+    // the ~1,250-site backlog this flag closed.
+    const packageRoot: string = fileURLToPath(new URL('..', import.meta.url))
+    for (const name of ['tsconfig.src.json', 'tsconfig.node.json']) {
+      const text: string = readFileSync(join(packageRoot, name), 'utf8')
+      expect(text, name).toMatch(/"noUncheckedIndexedAccess"\s*:\s*true/)
+    }
+  })
+})

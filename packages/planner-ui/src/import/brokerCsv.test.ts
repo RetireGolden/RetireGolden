@@ -153,6 +153,22 @@ describe('parseBrokerPositionsCsv — Fidelity', () => {
     const orphan = r.review.find((i) => i.status === 'skipped' && i.source === 'Row 3')
     expect(orphan?.detail).toContain('$4,000')
   })
+
+  it('reads a named-month "Date downloaded" line the same as a numeric one', () => {
+    const namedMonth = FIDELITY_FIXTURE.replace('Date downloaded 07/07/2026 9:12 PM ET', 'Date downloaded January 7, 2026 9:12 PM ET')
+    const r = parseBrokerPositionsCsv(namedMonth)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.accounts.every((account) => account.asOfIso === '2026-01-07')).toBe(true)
+  })
+
+  it('reads an abbreviated named-month "Date downloaded" line', () => {
+    const abbreviated = FIDELITY_FIXTURE.replace('Date downloaded 07/07/2026 9:12 PM ET', 'Date downloaded Sept. 7, 2026 9:12 PM ET')
+    const r = parseBrokerPositionsCsv(abbreviated)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.accounts.every((account) => account.asOfIso === '2026-09-07')).toBe(true)
+  })
 })
 
 describe('parseBrokerPositionsCsv — Vanguard', () => {

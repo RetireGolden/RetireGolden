@@ -788,7 +788,7 @@ function proposedStaticAllocation(
   let usShare = 0.75
   if (account.allocation !== undefined) {
     // targetWeightsAt always returns one entry per ASSET_CLASS_IDS (currently
-    // led by us-stocks, intl-stocks), so indices 0 and 1 are always present —
+    // led by usStocks, intlStocks), so indices 0 and 1 are always present —
     // the engine's own weightsToVector/lerpVectors rely on the same guarantee.
     const currentWeights = targetWeightsAt(account.allocation, startYear)
     const currentStockWeight = currentWeights[0]! + currentWeights[1]!
