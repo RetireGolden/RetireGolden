@@ -78,6 +78,78 @@ has — rather than the runtime contract a consumer needs on the landing page.
 ## 2026-09
 
 **2026-09-04**
+- Prepared **`@retiregolden/planner-ui` 0.10.0** — a **minor** bump, and like
+  the engine entry below it is minor because the published surface got
+  smaller. **Not yet published.**
+- **The `"./*": "./src/*.ts"` wildcard export is gone.** This is the breaking
+  change. The wildcard resolved *any* deep path under the package, which meant
+  it also resolved the paths `files` deliberately excludes from the tarball:
+  `@retiregolden/planner-ui/testSupport/samplePlan`,
+  `/import/documentBenchmark`, `/import/documentCorpus`, `/import/pdfFixtures`
+  and `/report/goldens/*` all resolved cleanly and then failed inside the
+  host's own build as a module-not-found on the host's own line. The exports
+  map could not say "that is not published", because a wildcard cannot tell
+  the difference between a path that exists and a path that merely matches.
+  `scripts/pack-smoke.mjs` had called it a hazard in a comment since 0.5.0.
+- **The 23 deep subpaths are now named one at a time.** They are the twelve
+  RetireGolden-Pro imports, the one RetireGolden-MCP imports, the ten `app/`
+  in this repository imports, and `data/planStoreContract`, which the 0.4.4
+  entry below documents as reaching Pro's desktop library store through the
+  wildcard:
+
+  ```
+  ./data/localStore                        ./planner/examples/buildContext
+  ./data/planStoreContract                 ./planner/examples/buildExampleCouple
+  ./data/v2Backup                          ./planner/examples/buildUnderSavedSingle
+  ./householdMap/householdGraph            ./planner/examples/registry
+  ./householdMap/mapViewModel              ./planner/format
+  ./import/brokerCsv                       ./planner/planContextCore
+  ./import/genericCsv                      ./planner/refreshProtectionContext
+  ./import/projectionLab                   ./planner/useProjection
+  ./import/reviewChecklist                 ./report/reportHtml
+  ./import/tenForty                        ./routes/LearnRoutes
+  ./learn/learningRegistry                 ./routes/groups
+  ./optimize/runOptimize
+  ```
+
+  They carry **no stability promise** and may move in any release, patch
+  included — the same terms the README gave the wildcard paths. What changes is
+  that the set is now finite and written down. `./routes/LearnRoutes` and
+  `./routes/groups` are `.tsx` modules published **without** the extension,
+  like every other key; a consumer reading the first one's source text asks for
+  `@retiregolden/planner-ui/routes/LearnRoutes?raw` and the bundler applies the
+  exports map to the specifier and `?raw` to what it finds (this repo's
+  `app/scripts/sitemapRoutes.test.mjs` is that consumer, and its import
+  dropped the `.tsx`).
+- **Null guards for the excluded paths.** `./testSupport/*`,
+  `./report/goldens/*`, `./import/documentBenchmark`,
+  `./import/documentCorpus` and `./import/pdfFixtures` map to `null`, behind a
+  closing `./*: null`, mirroring `@retiregolden/engine`'s map. With no wildcard
+  left these are strictly redundant — an unlisted path is already refused — and
+  that is the point: they are what keeps those paths refused if a wildcard is
+  ever reintroduced, and they name the excluded directories in the one file a
+  packaging change is made in.
+- **The pack smoke proves the map instead of trusting it.** A sweep now runs
+  before the scratch consumer's Vite build, reading the **packed** manifest
+  rather than a list kept in the script, so a new key cannot escape it: every
+  non-null key must resolve *and* land on a file the tarball actually contains
+  (the wildcard's failure, moved from the consumer's build to here), eight
+  formerly-wildcard paths must fail with `ERR_PACKAGE_PATH_NOT_EXPORTED`, and
+  the null blockers must still be declared. It uses `import.meta.resolve`,
+  which applies the map without loading the module — necessary, because this
+  package ships TypeScript that node cannot parse. Output:
+  `pack smoke: exports map -> 37 subpaths resolve from the tarball, 8
+  formerly-wildcard paths refused`.
+- **The engine range is `^0.3.0`**, moved by the engine entry below rather than
+  by this one. planner-ui gains no new engine export here; its own suite
+  follows `decisionFixtures` to `@retiregolden/engine/testing/decisionFixtures`
+  in four test files, which is a test-only import and reaches no consumer.
+- **Downstream to coordinate:** a host importing a deep path that is not in the
+  list above now gets `ERR_PACKAGE_PATH_NOT_EXPORTED` at resolve time instead
+  of a module-not-found later in its build. If the path is a real module the
+  tarball ships, open an upstream issue and it can be added; if it is under
+  `testSupport/`, `report/goldens/` or one of the three import fixtures, it was
+  never in the tarball and the old error was a lie about that.
 - Prepared **`@retiregolden/engine` 0.3.0** — a **minor** bump, because the
   published module surface got smaller. **Not yet published**; the owner tags
   `engine-v0.3.0` and approves the `npm-publish` environment, and npm serves
