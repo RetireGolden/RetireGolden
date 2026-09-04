@@ -1,4 +1,9 @@
-/** Hostile delegation, materialization, and annual-pass rollback guards. */
+/**
+ * Hostile delegation, materialization, and annual-pass rollback guards.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -8,6 +13,7 @@ import type {
   LegacyQcdCashFlowWrite,
 } from './internal/annualLegacyQcdOwnerCharacterPlan.js'
 import type { IraProRataYear } from '../strategies/iraBasis.js'
+import type { SeamCall } from './simulate.seamGuard.test-support.js'
 
 type FailureMode =
   | 'rowGetter'
@@ -18,14 +24,21 @@ type FailureMode =
 type ShapeMode = 'empty' | 'truncated' | 'reordered' | 'duplicate' | 'extra'
 type Mode = 'normal' | 'warning' | 'fp' | 'proRataSecondRead' | FailureMode | ShapeMode
 
-interface Phase {
+/** Offset and balance state as it stood before the real planner ran. */
+interface CharacterCapture {
   readonly year: number
   readonly offsetAtCall: readonly (readonly [string, number])[]
   readonly inputOwnerBalances: readonly (readonly [string, number])[]
-  readonly injectedRows: object
-  readonly injectedRow: object
+}
+
+/**
+ * Per-pass sentinels the injected row keeps behind read-once getters. Reading
+ * them back off the published row would trip the very single-read guard under
+ * test, so the seam records them here instead, indexed by its own ordinal.
+ */
+interface CharacterSentinels {
   readonly injectedWrites: object
-  readonly exactProRataWrite: IraProRataYear | null
+  readonly exactProRataWrite: IraProRataYear
   readonly readCounts: ReadonlyMap<string, number>
   readonly values: Readonly<{
     qualifiedFromRmd: number
@@ -40,15 +53,32 @@ interface Phase {
   }>
 }
 
-const seam = vi.hoisted(() => ({
+type CharacterPhase = SeamCall<
+  AnnualLegacyQcdOwnerCharacterPlanInput,
+  AnnualLegacyQcdOwnerCharacterPlanResult,
+  CharacterCapture
+>
+
+const hostile = vi.hoisted(() => ({
   mode: 'normal' as Mode,
-  phases: [] as Phase[],
+  sentinels: [] as (CharacterSentinels | undefined)[],
   splitProRataInputs: [] as IraProRataYear[],
   partialStateObservations: [] as (readonly (readonly [string, number])[])[],
   secondReadProRataIdentity: null as IraProRataYear | null,
   secondReadProRataCounts: { basis: 0, nontaxableFraction: 0 },
   armPublicationObserver: null as (() => void) | null,
 }))
+
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualLegacyQcdOwnerCharacterPlanInput,
+      AnnualLegacyQcdOwnerCharacterPlanResult,
+      CharacterCapture
+    >(),
+)
 
 vi.mock('../strategies/iraBasis.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('../strategies/iraBasis.js')>()
@@ -59,19 +89,15 @@ vi.mock('../strategies/iraBasis.js', async (importOriginal) => {
       amount: number,
       readState?: IraProRataYear,
     ) => {
-      seam.splitProRataInputs.push(state)
+      hostile.splitProRataInputs.push(state)
       return original.splitIraDistribution(state, amount, readState)
     },
   }
 })
 
 vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualLegacyQcdOwnerCharacterPlan.js')
-  >()
-
   function observe(input: AnnualLegacyQcdOwnerCharacterPlanInput): void {
-    seam.partialStateObservations.push([...input.qcdOffsetConsumedByDonor])
+    hostile.partialStateObservations.push([...input.qcdOffsetConsumedByDonor])
   }
 
   function shapeRow(
@@ -81,18 +107,21 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
     return { ...row, ownerId, qcdOffsetConsumedWrite: 12_345 }
   }
 
-  return {
-    ...original,
-    annualLegacyQcdOwnerCharacterPlan: (
-      input: AnnualLegacyQcdOwnerCharacterPlanInput,
+  return seam.through(
+    await importOriginal<
+      typeof import('./internal/annualLegacyQcdOwnerCharacterPlan.js')
+    >(),
+    'annualLegacyQcdOwnerCharacterPlan',
+    (
+      natural,
+      { input, ordinal: pass },
     ): AnnualLegacyQcdOwnerCharacterPlanResult => {
-      const natural = original.annualLegacyQcdOwnerCharacterPlan(input)
       const first = natural.rows[0]
-      if (first === undefined && seam.mode !== 'empty') {
+      if (first === undefined && hostile.mode !== 'empty') {
         throw new Error('expected at least one QCD owner row')
       }
 
-      if (seam.mode === 'fp') {
+      if (hostile.mode === 'fp') {
         if (natural.rows.length !== 3) {
           throw new Error(`expected three FP owner rows, got ${natural.rows.length}`)
         }
@@ -111,17 +140,17 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
         }
       }
 
-      if (seam.mode === 'empty') return { rows: [] }
-      if (seam.mode === 'truncated') return { rows: [natural.rows[0]!] }
-      if (seam.mode === 'reordered') {
+      if (hostile.mode === 'empty') return { rows: [] }
+      if (hostile.mode === 'truncated') return { rows: [natural.rows[0]!] }
+      if (hostile.mode === 'reordered') {
         return { rows: [natural.rows[1]!, natural.rows[0]!] }
       }
-      if (seam.mode === 'duplicate') {
+      if (hostile.mode === 'duplicate') {
         return {
           rows: [natural.rows[0]!, shapeRow(natural.rows[1]!, natural.rows[0]!.ownerId)],
         }
       }
-      if (seam.mode === 'extra') {
+      if (hostile.mode === 'extra') {
         return {
           rows: [...natural.rows, shapeRow(natural.rows[0]!, 'extra-owner')],
         }
@@ -144,9 +173,9 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
         nontaxableFraction: 0,
       }
 
-      if (seam.mode === 'rowsIterator') {
+      if (hostile.mode === 'rowsIterator') {
         const row = { ...first!, qcdOffsetConsumedWrite: 12_345 }
-        seam.armPublicationObserver?.()
+        hostile.armPublicationObserver?.()
         return {
           rows: {
             *[Symbol.iterator]() {
@@ -158,7 +187,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
         }
       }
 
-      if (seam.mode === 'writesIterator') {
+      if (hostile.mode === 'writesIterator') {
         const row = {
           ...first!,
           qcdOffsetConsumedWrite: 12_345,
@@ -174,11 +203,11 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
             },
           },
         } as unknown as AnnualLegacyQcdOwnerCharacterRow
-        seam.armPublicationObserver?.()
+        hostile.armPublicationObserver?.()
         return { rows: [row] }
       }
 
-      if (seam.mode === 'rowGetter') {
+      if (hostile.mode === 'rowGetter') {
         const row = {
           ...first!,
           qcdOffsetConsumedWrite: 12_345,
@@ -187,11 +216,11 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
             throw new Error('hostile row getter')
           },
         }
-        seam.armPublicationObserver?.()
+        hostile.armPublicationObserver?.()
         return { rows: [row] }
       }
 
-      if (seam.mode === 'proRataGetter') {
+      if (hostile.mode === 'proRataGetter') {
         const row = {
           ...first!,
           qcdOffsetConsumedWrite: 12_345,
@@ -203,30 +232,30 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
             nontaxableFraction: 0,
           },
         }
-        seam.armPublicationObserver?.()
+        hostile.armPublicationObserver?.()
         return { rows: [row] }
       }
 
-      if (seam.mode === 'proRataSecondRead') {
+      if (hostile.mode === 'proRataSecondRead') {
         const hostileProRata: IraProRataYear = {
           get basis(): number {
-            seam.secondReadProRataCounts.basis += 1
-            if (seam.secondReadProRataCounts.basis > 1) {
+            hostile.secondReadProRataCounts.basis += 1
+            if (hostile.secondReadProRataCounts.basis > 1) {
               observe(input)
               throw new Error('hostile second pro-rata basis read')
             }
             return 0
           },
           get nontaxableFraction(): number {
-            seam.secondReadProRataCounts.nontaxableFraction += 1
-            if (seam.secondReadProRataCounts.nontaxableFraction > 1) {
+            hostile.secondReadProRataCounts.nontaxableFraction += 1
+            if (hostile.secondReadProRataCounts.nontaxableFraction > 1) {
               observe(input)
               throw new Error('hostile second pro-rata fraction read')
             }
             return 0
           },
         }
-        seam.secondReadProRataIdentity = hostileProRata
+        hostile.secondReadProRataIdentity = hostileProRata
         return {
           rows: [{
             ...first!,
@@ -237,7 +266,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
         }
       }
 
-      if (seam.mode === 'unknownTarget') {
+      if (hostile.mode === 'unknownTarget') {
         const row = {
           ...first!,
           qcdOffsetConsumedWrite: 12_345,
@@ -250,7 +279,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
             value: 1,
           }],
         } as unknown as AnnualLegacyQcdOwnerCharacterRow
-        seam.armPublicationObserver?.()
+        hostile.armPublicationObserver?.()
         return { rows: [row] }
       }
 
@@ -279,7 +308,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
       const injectedRow = {
         get ownerId() { return once('row.ownerId', 'p1') },
         get contradictoryOffsetLedger() {
-          return once('row.contradictoryOffsetLedger', seam.mode === 'warning')
+          return once('row.contradictoryOffsetLedger', hostile.mode === 'warning')
         },
         get qualifiedFromRmd() {
           return once('row.qualifiedFromRmd', values.qualifiedFromRmd)
@@ -306,21 +335,22 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
           return once('row.cashFlowWrites', injectedWrites)
         },
       } as AnnualLegacyQcdOwnerCharacterRow
-      const injectedRows = [injectedRow]
-      seam.phases.push({
-        year: 2026 + ordinal,
-        offsetAtCall: [...input.qcdOffsetConsumedByDonor],
-        inputOwnerBalances: [...input.preDistributionAggregateIraBalance],
-        injectedRows,
-        injectedRow,
+      hostile.sentinels[pass] = {
         injectedWrites,
         exactProRataWrite,
         readCounts,
         values,
-      })
-      return { rows: injectedRows }
+      }
+      return { rows: [injectedRow] }
     },
-  }
+    {
+      capture: (input): CharacterCapture => ({
+        year: input.qcdOffsetConsumedByDonor.has('p1') ? 2027 : 2026,
+        offsetAtCall: [...input.qcdOffsetConsumedByDonor],
+        inputOwnerBalances: [...input.preDistributionAggregateIraBalance],
+      }),
+    },
+  )
 })
 
 import type { Account, Plan } from '../model/plan.js'
@@ -359,14 +389,24 @@ function normalPlan() {
 }
 
 function reset(mode: Mode): void {
-  seam.mode = mode
-  seam.phases.length = 0
-  seam.splitProRataInputs.length = 0
-  seam.partialStateObservations.length = 0
-  seam.secondReadProRataIdentity = null
-  seam.secondReadProRataCounts.basis = 0
-  seam.secondReadProRataCounts.nontaxableFraction = 0
-  seam.armPublicationObserver = null
+  hostile.mode = mode
+  seam.reset()
+  hostile.sentinels.length = 0
+  hostile.splitProRataInputs.length = 0
+  hostile.partialStateObservations.length = 0
+  hostile.secondReadProRataIdentity = null
+  hostile.secondReadProRataCounts.basis = 0
+  hostile.secondReadProRataCounts.nontaxableFraction = 0
+  hostile.armPublicationObserver = null
+}
+
+/** The sentinels the seam stashed for one recorded pass. */
+function sentinelsOf(phase: CharacterPhase): CharacterSentinels {
+  const sentinels = hostile.sentinels[phase.ordinal]
+  if (sentinels === undefined) {
+    throw new Error(`no sentinels recorded for seam pass ${phase.ordinal}`)
+  }
+  return sentinels
 }
 
 function runNormal() {
@@ -388,7 +428,7 @@ function runNormal() {
     captureAnnualCashFlow: true,
     annualCounterfactual,
   })
-  return { result, phases: [...seam.phases], counterfactualReads }
+  return { result, phases: [...seam.calls], counterfactualReads }
 }
 
 function cashTransfer(
@@ -403,41 +443,41 @@ function cashTransfer(
 describe('simulatePlan delegates grouped legacy QCD owner character', () => {
   it('applies every hostile channel across retries and rolls offset state back on re-entry', () => {
     const { result, phases, counterfactualReads } = runNormal()
-    const calls2026 = phases.filter((phase) => phase.year === 2026)
-    const calls2027 = phases.filter((phase) => phase.year === 2027)
+    const calls2026 = phases.filter((phase) => phase.captured.year === 2026)
+    const calls2027 = phases.filter((phase) => phase.captured.year === 2027)
 
     expect(calls2026.length).toBeGreaterThan(1)
     expect(calls2027.length).toBeGreaterThan(1)
     expect(counterfactualReads).toHaveLength(2)
     for (const phase of calls2026) {
-      expect(phase.offsetAtCall).toEqual([])
-      expect(phase.inputOwnerBalances).toEqual([['p1', 318_000]])
+      expect(phase.captured.offsetAtCall).toEqual([])
+      expect(phase.captured.inputOwnerBalances).toEqual([['p1', 318_000]])
     }
     for (const phase of calls2027) {
-      expect(phase.offsetAtCall).toEqual([['p1', 12_345]])
+      expect(phase.captured.offsetAtCall).toEqual([['p1', 12_345]])
     }
-    expect(new Set(phases.map((phase) => phase.injectedRows))).toHaveLength(
+    expect(new Set(phases.map((phase) => phase.injected.rows))).toHaveLength(
       phases.length,
     )
-    expect(new Set(phases.map((phase) => phase.injectedRow))).toHaveLength(
+    expect(new Set(phases.map((phase) => phase.injected.rows[0]))).toHaveLength(
       phases.length,
     )
-    expect(new Set(phases.map((phase) => phase.injectedWrites))).toHaveLength(
-      phases.length,
-    )
+    expect(new Set(phases.map((phase) => sentinelsOf(phase).injectedWrites)))
+      .toHaveLength(phases.length)
     for (const phase of phases) {
-      expect([...phase.readCounts.values()].every((count) => count === 1)).toBe(true)
+      expect([...sentinelsOf(phase).readCounts.values()]
+        .every((count) => count === 1)).toBe(true)
     }
 
     for (const year of result.years) {
       const committed = phases.find((phase) =>
-        phase.year === year.year &&
-        seam.splitProRataInputs.includes(phase.exactProRataWrite!),
+        phase.captured.year === year.year &&
+        hostile.splitProRataInputs.includes(sentinelsOf(phase).exactProRataWrite),
       )
       if (committed === undefined) {
         throw new Error(`no committed helper identity observed for ${year.year}`)
       }
-      const values = committed.values
+      const values = sentinelsOf(committed).values
       const fromRmd = cashTransfer(
         year,
         'transfer:qualifiedCharitableDistribution:rmd:p1',
@@ -513,13 +553,13 @@ describe('simulatePlan delegates grouped legacy QCD owner character', () => {
     })
 
     expect(result.years).toHaveLength(1)
-    expect(seam.secondReadProRataCounts).toEqual({
+    expect(hostile.secondReadProRataCounts).toEqual({
       basis: 1,
       nontaxableFraction: 1,
     })
-    expect(seam.partialStateObservations).toEqual([])
-    expect(seam.splitProRataInputs.some(
-      (state) => state === seam.secondReadProRataIdentity,
+    expect(hostile.partialStateObservations).toEqual([])
+    expect(hostile.splitProRataInputs.some(
+      (state) => state === hostile.secondReadProRataIdentity,
     )).toBe(true)
   })
 
@@ -546,7 +586,7 @@ describe('simulatePlan delegates grouped legacy QCD owner character', () => {
   ])('fully reads hostile %s results before any QCD character mutation', (mode) => {
     reset(mode)
     const mapSetSpy = vi.spyOn(Map.prototype, 'set')
-    seam.armPublicationObserver = () => mapSetSpy.mockClear()
+    hostile.armPublicationObserver = () => mapSetSpy.mockClear()
     try {
       expect(() => simulatePlan(normalPlan(), {
         startYear: 2026,
@@ -554,13 +594,13 @@ describe('simulatePlan delegates grouped legacy QCD owner character', () => {
         taxCalculator: createFlatTaxCalculator(0),
         captureAnnualCashFlow: true,
       })).toThrow(/hostile|Unknown legacy QCD/u)
-      expect(seam.partialStateObservations.length).toBeGreaterThan(0)
-      expect(seam.partialStateObservations).toEqual(
-        seam.partialStateObservations.map(() => []),
+      expect(hostile.partialStateObservations.length).toBeGreaterThan(0)
+      expect(hostile.partialStateObservations).toEqual(
+        hostile.partialStateObservations.map(() => []),
       )
       expect(mapSetSpy).not.toHaveBeenCalled()
     } finally {
-      seam.armPublicationObserver = null
+      hostile.armPublicationObserver = null
       mapSetSpy.mockRestore()
     }
   })

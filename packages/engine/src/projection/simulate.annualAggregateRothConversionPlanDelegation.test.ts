@@ -7,6 +7,9 @@
  * allocation row observable. The counterfactual fixture separately proves
  * that reservation replay and the caller-owned conversion mutations roll back
  * before the committed annual pass re-enters the helper.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -24,94 +27,84 @@ type PlannerOutput = AnnualAggregateRothConversionPlan<
 >
 type Mode = 'original' | 'snapshot' | 'draw' | 'reservation' | 'refusal'
 
-interface PlannerEvent {
-  readonly input: PlannerInput
-  readonly original: PlannerOutput
-  readonly output: PlannerOutput
-  readonly balancesAtCall: readonly number[]
-}
-
 const SENTINEL_DRAW = 1_234.56
-const seam = vi.hoisted(() => ({
-  mode: 'original' as Mode,
-  events: [] as PlannerEvent[],
-}))
+const hostile = vi.hoisted(() => ({ mode: 'original' as Mode }))
 
-vi.mock('./internal/annualAggregateRothConversionPlan.js', async (
-  importOriginal,
-) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualAggregateRothConversionPlan.js')
-  >()
-  return {
-    ...original,
-    annualAggregateRothConversionPlan: (
-      input: Parameters<
-        typeof original.annualAggregateRothConversionPlan
-      >[0],
-    ) => {
-      const production = original.annualAggregateRothConversionPlan(input)
-      let output = production
-      if (
-        seam.mode === 'refusal' &&
-        production.allocation.status === 'refused' &&
-        production.reservations.length > 0
-      ) {
-        const [first, ...rest] = production.reservations
-        output = {
-          ...production,
-          allocationBalances: Object.freeze({
-            'delegated-refusal-snapshot': 9_876.54,
-          }),
-          reservations: [{
-            ...first!,
-            amountPlanDollars: first!.state.balance / 10,
-          }, ...rest],
-        }
-      } else if (seam.mode === 'snapshot') {
-        output = {
-          ...production,
-          allocationBalances: Object.freeze({
-            'delegated-snapshot': 9_876.54,
-          }),
-        }
-      } else if (
-        seam.mode === 'draw' &&
-        production.allocation.status === 'allocated' &&
-        production.allocation.draws.length > 0
-      ) {
-        const [first, ...rest] = production.allocation.draws
-        output = {
-          ...production,
-          allocation: {
-            ...production.allocation,
-            draws: [{ ...first!, amountPlanDollars: SENTINEL_DRAW }, ...rest],
-          },
-        }
-      } else if (
-        seam.mode === 'reservation' &&
-        production.reservations.length > 0
-      ) {
-        const [first, ...rest] = production.reservations
-        output = {
-          ...production,
-          reservations: [{
-            ...first!,
-            amountPlanDollars: first!.state.balance / 10,
-          }, ...rest],
-        }
-      }
-      seam.events.push({
-        input,
-        original: production,
-        output,
-        balancesAtCall: input.balances.map((state) => state.balance),
-      })
-      return output
-    },
-  }
-})
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<PlannerInput, PlannerOutput, readonly number[]>(),
+)
 
+vi.mock(
+  './internal/annualAggregateRothConversionPlan.js',
+  async (importOriginal) =>
+    seam.through(
+      await importOriginal<
+        typeof import('./internal/annualAggregateRothConversionPlan.js')
+      >(),
+      'annualAggregateRothConversionPlan',
+      (natural): PlannerOutput => {
+        if (
+          hostile.mode === 'refusal' &&
+          natural.allocation.status === 'refused' &&
+          natural.reservations.length > 0
+        ) {
+          const [first, ...rest] = natural.reservations
+          return {
+            ...natural,
+            allocationBalances: Object.freeze({
+              'delegated-refusal-snapshot': 9_876.54,
+            }),
+            reservations: [{
+              ...first!,
+              amountPlanDollars: first!.state.balance / 10,
+            }, ...rest],
+          }
+        }
+        if (hostile.mode === 'snapshot') {
+          return {
+            ...natural,
+            allocationBalances: Object.freeze({
+              'delegated-snapshot': 9_876.54,
+            }),
+          }
+        }
+        if (
+          hostile.mode === 'draw' &&
+          natural.allocation.status === 'allocated' &&
+          natural.allocation.draws.length > 0
+        ) {
+          const [first, ...rest] = natural.allocation.draws
+          return {
+            ...natural,
+            allocation: {
+              ...natural.allocation,
+              draws: [{ ...first!, amountPlanDollars: SENTINEL_DRAW }, ...rest],
+            },
+          }
+        }
+        if (hostile.mode === 'reservation' && natural.reservations.length > 0) {
+          const [first, ...rest] = natural.reservations
+          return {
+            ...natural,
+            reservations: [{
+              ...first!,
+              amountPlanDollars: first!.state.balance / 10,
+            }, ...rest],
+          }
+        }
+        return natural
+      },
+      { capture: (input) => input.balances.map((state) => state.balance) },
+    ),
+)
+
+import {
+  expectPublishedFromSeam,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import type { RmdApplicablePlan } from '../rmd/rmdShortfallExcise.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
@@ -183,8 +176,8 @@ function run(
   plan = conversionPlan(),
   options: Partial<SimulateOptions> = {},
 ) {
-  seam.mode = mode
-  seam.events.length = 0
+  hostile.mode = mode
+  seam.reset()
   const result = simulatePlan(plan, {
     startYear: YEAR,
     horizonEndYear: YEAR,
@@ -196,7 +189,7 @@ function run(
     }],
     ...options,
   })
-  return { plan, result, events: [...seam.events] }
+  return { plan, result, events: [...seam.calls] }
 }
 
 function transfer(result: ReturnType<typeof simulatePlan>) {
@@ -208,14 +201,14 @@ function transfer(result: ReturnType<typeof simulatePlan>) {
 }
 
 beforeEach(() => {
-  seam.mode = 'original'
-  seam.events.length = 0
+  hostile.mode = 'original'
+  seam.reset()
 })
 
 describe('simulatePlan delegates aggregate Roth-conversion planning', () => {
   it('passes live state and the deferred-RMD reserve, then publishes the returned snapshot by identity', () => {
     const { plan, result, events } = run('snapshot')
-    expect(events.length).toBeGreaterThan(0)
+    expectSeamRanAtLeastOnce(seam)
     const committed = events.at(-1)!
 
     expect(committed.input.desiredPlanDollars).toBe(OPENING)
@@ -225,14 +218,17 @@ describe('simulatePlan delegates aggregate Roth-conversion planning', () => {
     expect(committed.input.balances.map((state) => state.account))
       .toEqual(plan.accounts)
     expect(committed.input.balances[0]!.account).toBe(plan.accounts[0])
-    expect(committed.balancesAtCall).toEqual([100_000, OPENING, 0])
-    expect(committed.original.reservations).toHaveLength(1)
-    expect(committed.original.reservations[0]!.state)
+    expect(committed.captured).toEqual([100_000, OPENING, 0])
+    expect(committed.natural.reservations).toHaveLength(1)
+    expect(committed.natural.reservations[0]!.state)
       .toBe(committed.input.balances[1])
-    expect(committed.original.reservations[0]!.amountPlanDollars)
+    expect(committed.natural.reservations[0]!.amountPlanDollars)
       .toBe(FIRST_RMD)
-    expect(result.years[0]!.aggregateRothConversionAllocationBalances)
-      .toBe(committed.output.allocationBalances)
+    expectPublishedFromSeam(
+      result.years[0]!.aggregateRothConversionAllocationBalances,
+      committed.injected.allocationBalances,
+      'the aggregate conversion allocation snapshot',
+    )
     expect(result.years[0]!.aggregateRothConversionAllocationBalances)
       .toEqual({ 'delegated-snapshot': 9_876.54 })
   })
@@ -241,13 +237,13 @@ describe('simulatePlan delegates aggregate Roth-conversion planning', () => {
     const { result, events } = run('draw')
     const year = result.years[0]!
     const committed = events.at(-1)!
-    if (committed.output.allocation.status !== 'allocated') {
+    if (committed.injected.allocation.status !== 'allocated') {
       throw new Error('expected an allocated hostile output')
     }
 
-    expect(committed.output.allocation.draws[0]!.sourceState)
+    expect(committed.injected.allocation.draws[0]!.sourceState)
       .toBe(committed.input.balances[1])
-    expect(committed.output.allocation.draws[0]!.destination.destinationState)
+    expect(committed.injected.allocation.draws[0]!.destination.destinationState)
       .toBe(committed.input.balances[2])
     expect(year.rothConversion).toBe(SENTINEL_DRAW)
     expect(year.balances.ira).toBe(OPENING - SENTINEL_DRAW)
@@ -285,9 +281,9 @@ describe('simulatePlan delegates aggregate Roth-conversion planning', () => {
     const year = result.years[0]!
     const committed = events.at(-1)!
 
-    expect(committed.original.reservations[0]!.amountPlanDollars)
+    expect(committed.natural.reservations[0]!.amountPlanDollars)
       .toBe(firstRmd)
-    expect(committed.output.reservations[0]!.amountPlanDollars)
+    expect(committed.injected.reservations[0]!.amountPlanDollars)
       .toBe(delegatedReservation)
     expect(originalRoundTrip).not.toBe(opening)
     expect(delegatedRoundTrip).not.toBe(originalRoundTrip)
@@ -312,16 +308,19 @@ describe('simulatePlan delegates aggregate Roth-conversion planning', () => {
     const year = result.years[0]!
     const committed = events.at(-1)!
 
-    expect(committed.original.allocation).toEqual({
+    expect(committed.natural.allocation).toEqual({
       status: 'refused',
       reason: 'householdHoldsNoRothAccount',
     })
-    expect(committed.original.reservations[0]!.amountPlanDollars)
+    expect(committed.natural.reservations[0]!.amountPlanDollars)
       .toBe(firstRmd)
-    expect(committed.output.reservations[0]!.amountPlanDollars)
+    expect(committed.injected.reservations[0]!.amountPlanDollars)
       .toBe(delegatedReservation)
-    expect(year.aggregateRothConversionAllocationBalances)
-      .toBe(committed.output.allocationBalances)
+    expectPublishedFromSeam(
+      year.aggregateRothConversionAllocationBalances,
+      committed.injected.allocationBalances,
+      'the aggregate conversion allocation snapshot',
+    )
     expect(year.aggregateRothConversionAllocationBalances).toEqual({
       'delegated-refusal-snapshot': 9_876.54,
     })
@@ -351,11 +350,11 @@ describe('simulatePlan delegates aggregate Roth-conversion planning', () => {
     expect(captured[0]?.status).toBe('counterfactualAnnualLiabilityRead')
     expect(prePassed.events.length).toBeGreaterThan(control.events.length)
     for (const event of prePassed.events) {
-      expect(event.balancesAtCall).toEqual([100_000, opening, 0])
+      expect(event.captured).toEqual([100_000, opening, 0])
       expect([...event.input.iraRmdUnsatisfiedByOwner]).toEqual([
         ['p1', firstRmd],
       ])
-      expect(event.original.reservations.map((reservation) =>
+      expect(event.natural.reservations.map((reservation) =>
         reservation.amountPlanDollars)).toEqual([firstRmd])
     }
     expect(prePassed.result.years[0]!.balances.ira).toBe(oneReplayClosing)

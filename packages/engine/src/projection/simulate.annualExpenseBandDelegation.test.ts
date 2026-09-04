@@ -1,3 +1,15 @@
+/**
+ * Hostile delegation guard for the remaining annual expense band.
+ *
+ * Each planner seam returns non-economic sentinels that shift with the call
+ * ordinal, so a caller that recomputes any band member locally, or that reuses
+ * the first year's answer, cannot reproduce the published ledger. The
+ * settlement mock beside them is not a delegation seam: it replaces the attempt
+ * runner outright to force one rolled-back annual pass.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -8,21 +20,57 @@ import type {
 type DebtInput = Parameters<
   typeof import('./internal/annualDebtAndLongTermCare.js').annualDebtServiceRows
 >[0]
+type DebtResult = ReturnType<
+  typeof import('./internal/annualDebtAndLongTermCare.js').annualDebtServiceRows
+>
 type LtcInput = Parameters<
   typeof import('./internal/annualDebtAndLongTermCare.js').annualLongTermCarePlan
 >[0]
+type LtcResult = ReturnType<
+  typeof import('./internal/annualDebtAndLongTermCare.js').annualLongTermCarePlan
+>
 type GuardrailInput = Parameters<
   typeof import('./internal/annualGuardrailFunding.js').annualGuardrailFundingPlan
 >[0]
+type GuardrailResult = ReturnType<
+  typeof import('./internal/annualGuardrailFunding.js').annualGuardrailFundingPlan
+>
 
-const seam = vi.hoisted(() => ({
-  debt: [] as Array<{ input: DebtInput; opening: number | undefined }>,
-  ltc: [] as Array<{ input: LtcInput; opening: number | undefined }>,
-  healthcare: [] as AnnualHealthcareExpensesInput[],
+const hostile = vi.hoisted(() => ({
   returnIncompleteMarketplaceMonths: false,
-  guardrail: [] as GuardrailInput[],
   rollbacks: 0,
 }))
+
+const debtSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<DebtInput, DebtResult, number | undefined>(),
+)
+
+const ltcSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<LtcInput, LtcResult, number | undefined>(),
+)
+
+const healthcareSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualHealthcareExpensesInput,
+      AnnualHealthcareExpensesResult
+    >(),
+)
+
+const guardrailSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<GuardrailInput, GuardrailResult>(),
+)
 
 vi.mock('../internal/ownedNonRothIraAnnualAttemptSettlement.js', async (
   importOriginal,
@@ -53,7 +101,7 @@ vi.mock('../internal/ownedNonRothIraAnnualAttemptSettlement.js', async (
       input.state.expenses.healthcare = -9_999
       input.state.healthcare.write(-9_999)
       transaction.rollback()
-      seam.rollbacks += 1
+      hostile.rollbacks += 1
       return Object.freeze({
         status: 'rolledBack' as const,
         reason: 'assumptionCycle' as const,
@@ -66,90 +114,69 @@ vi.mock('../internal/ownedNonRothIraAnnualAttemptSettlement.js', async (
   }
 })
 
-vi.mock('./internal/annualDebtAndLongTermCare.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualDebtAndLongTermCare.js')
-  >()
-  return {
-    ...original,
-    annualDebtServiceRows: (input: DebtInput) => {
-      seam.debt.push({
-        input,
-        opening: input.balances.get('delegation-debt'),
-      })
-      const ordinal = seam.debt.length - 1
-      return [{
+vi.mock('./internal/annualDebtAndLongTermCare.js', async (importOriginal) =>
+  ltcSeam.through(
+    debtSeam.through(
+      await importOriginal<
+        typeof import('./internal/annualDebtAndLongTermCare.js')
+      >(),
+      'annualDebtServiceRows',
+      (_natural, { ordinal }): DebtResult => [{
         accountId: 'delegation-debt',
         ownerPersonId: 'p1',
         amount: 11 + ordinal,
         nextBalance: 101 + ordinal,
-      }]
-    },
-    annualLongTermCarePlan: (input: LtcInput) => {
-      seam.ltc.push({
-        input,
-        opening: input.benefitYearsUsed.get('delegation-policy'),
-      })
-      const ordinal = seam.ltc.length - 1
-      return {
-        careCost: 13 + ordinal,
-        ltcBenefit: 5 + ordinal,
-        benefitYearWrites: [{
-          policyId: 'delegation-policy',
-          yearsUsed: 41 + ordinal,
-        }],
-        personRows: [],
-      }
-    },
-  }
-})
+      }],
+      { capture: (input) => input.balances.get('delegation-debt') },
+    ),
+    'annualLongTermCarePlan',
+    (_natural, { ordinal }): LtcResult => ({
+      careCost: 13 + ordinal,
+      ltcBenefit: 5 + ordinal,
+      benefitYearWrites: [{
+        policyId: 'delegation-policy',
+        yearsUsed: 41 + ordinal,
+      }],
+      personRows: [],
+    }),
+    { capture: (input) => input.benefitYearsUsed.get('delegation-policy') },
+  ),
+)
 
-vi.mock('./internal/annualHealthcareExpenses.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualHealthcareExpenses.js')
-  >()
-  return {
-    ...original,
-    annualHealthcareExpenses: (
-      input: AnnualHealthcareExpensesInput,
-    ): AnnualHealthcareExpensesResult => {
-      seam.healthcare.push(input)
-      const natural = original.annualHealthcareExpenses(input)
-      const healthcare = 17 + seam.healthcare.length - 1
+vi.mock('./internal/annualHealthcareExpenses.js', async (importOriginal) =>
+  healthcareSeam.through(
+    await importOriginal<typeof import('./internal/annualHealthcareExpenses.js')>(),
+    'annualHealthcareExpenses',
+    (natural, { ordinal }): AnnualHealthcareExpensesResult => {
+      const healthcare = 17 + ordinal
       const result = {
         ...natural,
         healthcare,
         healthcareExcludingAcaEnrollment: healthcare,
         healthcareExcludingMarketplacePremium: healthcare,
       }
-      return seam.returnIncompleteMarketplaceMonths
+      return hostile.returnIncompleteMarketplaceMonths
         ? { ...result, marketplaceMonthsByPersonPosition: [] }
         : result
     },
-  }
-})
+  ),
+)
 
-vi.mock('./internal/annualGuardrailFunding.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualGuardrailFunding.js')
-  >()
-  return {
-    ...original,
-    annualGuardrailFundingPlan: (input: GuardrailInput) => {
-      seam.guardrail.push(input)
-      const natural = original.annualGuardrailFundingPlan(input)
-      const ordinal = seam.guardrail.length - 1
-      return {
-        ...natural,
-        discretionaryMultiplier: 2 + ordinal,
-        startingWithdrawalRate: 0.02 + ordinal,
-        startingRealPortfolio: 300 + ordinal,
-        targetLifestyleFunded: 19 + ordinal,
-      }
-    },
-  }
-})
+vi.mock('./internal/annualGuardrailFunding.js', async (importOriginal) =>
+  guardrailSeam.through(
+    await importOriginal<typeof import('./internal/annualGuardrailFunding.js')>(),
+    'annualGuardrailFundingPlan',
+    (natural, { ordinal }): GuardrailResult => ({
+      ...natural,
+      discretionaryMultiplier: 2 + ordinal,
+      startingWithdrawalRate: 0.02 + ordinal,
+      startingRealPortfolio: 300 + ordinal,
+      targetLifestyleFunded: 19 + ordinal,
+    }),
+  ),
+)
 
+import { expectSeamRan } from './simulate.seamGuard.test-support.js'
 import type { Account } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
@@ -161,7 +188,7 @@ import {
 import { simulatePlan } from './simulate.js'
 
 afterEach(() => {
-  seam.returnIncompleteMarketplaceMonths = false
+  hostile.returnIncompleteMarketplaceMonths = false
 })
 
 function debt(): Extract<Account, { type: 'debt' }> {
@@ -179,12 +206,12 @@ function debt(): Extract<Account, { type: 'debt' }> {
 
 describe('simulatePlan delegates the remaining annual expense band', () => {
   it('consumes every injected planner result once per year, outside probes', () => {
-    seam.debt.length = 0
-    seam.ltc.length = 0
-    seam.healthcare.length = 0
-    seam.returnIncompleteMarketplaceMonths = false
-    seam.guardrail.length = 0
-    seam.rollbacks = 0
+    debtSeam.reset()
+    ltcSeam.reset()
+    healthcareSeam.reset()
+    hostile.returnIncompleteMarketplaceMonths = false
+    guardrailSeam.reset()
+    hostile.rollbacks = 0
     const plan = singlePersonPlan({ planningAge: 90 })
     plan.expenses.baseAnnual = 23
     const ira = traditionalAccount('ira', 1_000, 'p1', 'ira')
@@ -199,26 +226,26 @@ describe('simulatePlan delegates the remaining annual expense band', () => {
     })
 
     expect(result.years).toHaveLength(2)
-    expect(seam.debt).toHaveLength(2)
-    expect(seam.ltc).toHaveLength(2)
-    expect(seam.healthcare).toHaveLength(2)
-    expect(seam.guardrail).toHaveLength(2)
-    expect(seam.rollbacks).toBe(1)
-    expect(seam.debt[0]!.input.balances).toBe(
-      seam.debt[1]!.input.balances,
+    const debtCalls = expectSeamRan(debtSeam, 2)
+    const ltcCalls = expectSeamRan(ltcSeam, 2)
+    expectSeamRan(healthcareSeam, 2)
+    const guardrailCalls = expectSeamRan(guardrailSeam, 2)
+    expect(hostile.rollbacks).toBe(1)
+    expect(debtCalls[0]!.input.balances).toBe(
+      debtCalls[1]!.input.balances,
     )
-    expect(seam.debt.map((call) => call.opening)).toStrictEqual([100, 101])
-    expect(seam.ltc[0]!.input.benefitYearsUsed).toBe(
-      seam.ltc[1]!.input.benefitYearsUsed,
+    expect(debtCalls.map((call) => call.captured)).toStrictEqual([100, 101])
+    expect(ltcCalls[0]!.input.benefitYearsUsed).toBe(
+      ltcCalls[1]!.input.benefitYearsUsed,
     )
-    expect(seam.ltc.map((call) => call.opening)).toStrictEqual([
+    expect(ltcCalls.map((call) => call.captured)).toStrictEqual([
       undefined,
       41,
     ])
-    expect(seam.guardrail.map(({ discretionaryMultiplier,
+    expect(guardrailCalls.map(({ input: { discretionaryMultiplier,
       startingWithdrawalRate,
       startingRealPortfolio,
-    }) => ({
+    } }) => ({
       discretionaryMultiplier,
       startingWithdrawalRate,
       startingRealPortfolio,
@@ -248,7 +275,7 @@ describe('simulatePlan delegates the remaining annual expense band', () => {
   })
 
   it('fails loudly when the healthcare planner breaks positional Marketplace alignment', () => {
-    seam.returnIncompleteMarketplaceMonths = true
+    hostile.returnIncompleteMarketplaceMonths = true
     const plan = singlePersonPlan({ planningAge: 61 })
     plan.expenses.healthcare.pre65MonthlyPremiumPerPerson = 100
 

@@ -28,34 +28,34 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Plan } from '../../model/plan.js'
 import type {
-  AnnualForcedDistributionQcdRetirementActionsInput,
-  AnnualForcedDistributionQcdRetirementActionsResult,
-} from './annualForcedDistributionQcdAndRetirementActions.js'
+  AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
+  AnnualForcedDistributionQcdAndRetirementActionsPhaseResult,
+} from './annualForcedDistributionQcdAndRetirementActionsPhase.js'
 
 interface ForcedCall {
-  readonly input: AnnualForcedDistributionQcdRetirementActionsInput
-  readonly result: AnnualForcedDistributionQcdRetirementActionsResult
+  readonly input: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput
+  readonly result: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult
 }
 
 const seam = vi.hoisted(() => ({ calls: [] as ForcedCall[] }))
 
-vi.mock('./annualForcedDistributionQcdAndRetirementActions.js', async (importOriginal) => {
+vi.mock('./annualForcedDistributionQcdAndRetirementActionsPhase.js', async (importOriginal) => {
   const original = await importOriginal<
-    typeof import('./annualForcedDistributionQcdAndRetirementActions.js')
+    typeof import('./annualForcedDistributionQcdAndRetirementActionsPhase.js')
   >()
   return {
     ...original,
-    annualForcedDistributionQcdAndRetirementActions: (
-      input: AnnualForcedDistributionQcdRetirementActionsInput,
-    ): AnnualForcedDistributionQcdRetirementActionsResult => {
-      const result = original.annualForcedDistributionQcdAndRetirementActions(input)
+    annualForcedDistributionQcdAndRetirementActionsPhase: (
+      input: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
+    ): AnnualForcedDistributionQcdAndRetirementActionsPhaseResult => {
+      const result = original.annualForcedDistributionQcdAndRetirementActionsPhase(input)
       seam.calls.push({ input, result })
       return result
     },
   }
 })
 
-import { annualForcedDistributionQcdAndRetirementActions } from './annualForcedDistributionQcdAndRetirementActions.js'
+import { annualForcedDistributionQcdAndRetirementActionsPhase } from './annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import { createFlatTaxCalculator } from '../../testing/flatTax.js'
 import {
   cashAccount,
@@ -80,7 +80,7 @@ function run(plan: Plan, horizonEndYear = START_YEAR): void {
 
 /** Every forced-distribution channel is idle. */
 function expectNothingForced(
-  result: AnnualForcedDistributionQcdRetirementActionsResult,
+  result: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult,
 ): void {
   expect(result.rmdTotal).toBe(0)
   expect(result.rmdNontaxable).toBe(0)
@@ -109,7 +109,7 @@ function expectNothingForced(
 
 /** No retirement action of any kind executed this year. */
 function expectNoRetirementActions(
-  result: AnnualForcedDistributionQcdRetirementActionsResult,
+  result: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult,
 ): void {
   expect(result.retirementActionExecution).toBeUndefined()
   expect(result.rothConversionActionExecution).toBeUndefined()
@@ -135,8 +135,8 @@ function expectNoRetirementActions(
 /** A copy whose mutable ledger containers are fresh, so a re-invocation cannot
  *  write into the finished run's state. */
 function withClonedLedger(
-  captured: AnnualForcedDistributionQcdRetirementActionsInput,
-): AnnualForcedDistributionQcdRetirementActionsInput {
+  captured: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
+): AnnualForcedDistributionQcdAndRetirementActionsPhaseInput {
   return {
     ...captured,
     ledger: {
@@ -165,7 +165,7 @@ beforeEach(() => {
   seam.calls.length = 0
 })
 
-describe('annualForcedDistributionQcdAndRetirementActions boundaries', () => {
+describe('annualForcedDistributionQcdAndRetirementActionsPhase boundaries', () => {
   it('publishes nothing for a household with no accounts and no scheduled actions', () => {
     const plan = singlePersonPlan({ dob: RMD_AGE_DOB, planningAge: 90 })
     plan.expenses.baseAnnual = 0
@@ -287,7 +287,7 @@ describe('annualForcedDistributionQcdAndRetirementActions boundaries', () => {
   })
 })
 
-describe('annualForcedDistributionQcdAndRetirementActions re-invoked directly', () => {
+describe('annualForcedDistributionQcdAndRetirementActionsPhase re-invoked directly', () => {
   it('repeats its idle verdict for an account-free household against a cloned ledger', () => {
     const plan = singlePersonPlan({ dob: RMD_AGE_DOB, planningAge: 90 })
     plan.expenses.baseAnnual = 0
@@ -295,7 +295,7 @@ describe('annualForcedDistributionQcdAndRetirementActions re-invoked directly', 
     run(plan)
 
     const input = withClonedLedger(seam.calls[0]!.input)
-    const result = annualForcedDistributionQcdAndRetirementActions(input)
+    const result = annualForcedDistributionQcdAndRetirementActionsPhase(input)
 
     expectNothingForced(result)
     expectNoRetirementActions(result)
@@ -309,7 +309,7 @@ describe('annualForcedDistributionQcdAndRetirementActions re-invoked directly', 
     run(plan)
 
     const input = withClonedLedger(seam.calls[0]!.input)
-    const result = annualForcedDistributionQcdAndRetirementActions(input)
+    const result = annualForcedDistributionQcdAndRetirementActionsPhase(input)
 
     expectNothingForced(result)
     expect(input.ledger.balances.every((state) => state.balance === 0)).toBe(true)
@@ -328,7 +328,7 @@ describe('annualForcedDistributionQcdAndRetirementActions re-invoked directly', 
     const input = withClonedLedger(captured.input)
     const openingBalances = input.ledger.balances.map((state) => state.balance)
 
-    const result = annualForcedDistributionQcdAndRetirementActions(input)
+    const result = annualForcedDistributionQcdAndRetirementActionsPhase(input)
 
     expectNothingForced(result)
     expect(input.ledger.balances.map((state) => state.balance)).toEqual(openingBalances)

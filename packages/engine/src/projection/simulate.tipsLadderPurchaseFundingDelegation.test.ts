@@ -8,6 +8,9 @@
  * the next phase sees balance/basis, the ladder-flow phase sees scale, the
  * optimizer probe sees the debit, and the cash-flow recorder receives the
  * helper's own `record` object (`toBe`, not merely field equality).
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -24,30 +27,29 @@ interface BalanceSnapshot {
   readonly costBasis: number
 }
 
-interface PurchasePhase {
-  readonly input: TipsLadderPurchaseFundingInput
-  readonly rows: readonly TipsLadderPurchaseFundingRow[]
-  readonly originalRows: readonly TipsLadderPurchaseFundingRow[]
-  readonly inputBalancesAtCall: readonly BalanceSnapshot[]
-}
-
-const seam = vi.hoisted(() => ({
-  phases: [] as PurchasePhase[],
+const hostile = vi.hoisted(() => ({
   postPurchaseBalances: [] as (readonly BalanceSnapshot[])[],
   annualFlowScales: [] as (readonly number[])[],
   recorded: [] as RecordedTipsPurchase[],
 }))
 
-vi.mock('./internal/tipsLadderPurchaseFunding.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/tipsLadderPurchaseFunding.js')>()
-  return {
-    ...original,
-    tipsLadderPurchaseFunding: (
-      input: Parameters<typeof original.tipsLadderPurchaseFunding>[0],
-    ) => {
-      const originalRows = original.tipsLadderPurchaseFunding(input)
-      const rows = originalRows.map((row) => {
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      TipsLadderPurchaseFundingInput,
+      readonly TipsLadderPurchaseFundingRow[],
+      readonly BalanceSnapshot[]
+    >(),
+)
+
+vi.mock('./internal/tipsLadderPurchaseFunding.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/tipsLadderPurchaseFunding.js')>(),
+    'tipsLadderPurchaseFunding',
+    (originalRows): readonly TipsLadderPurchaseFundingRow[] =>
+      originalRows.map((row) => {
         if (row.kind !== 'purchase') return row
         if (row.debit === null) {
           throw new Error('the delegation fixture must fund all three ladders')
@@ -75,21 +77,16 @@ vi.mock('./internal/tipsLadderPurchaseFunding.js', async (importOriginal) => {
               row.debit.amountPlanDollars + injectedDebitDelta,
           },
         }
-      })
-      seam.phases.push({
-        input,
-        rows,
-        originalRows,
-        inputBalancesAtCall: input.balances.map((state) => ({
-          accountId: state.account.id,
-          balance: state.balance,
-          costBasis: state.costBasis,
-        })),
-      })
-      return rows
+      }),
+    {
+      capture: (input) => input.balances.map((state) => ({
+        accountId: state.account.id,
+        balance: state.balance,
+        costBasis: state.costBasis,
+      })),
     },
-  }
-})
+  ),
+)
 
 // This is the first helper called after purchase funding that receives the
 // balance array. Snapshot immediately: its state objects keep mutating later.
@@ -101,7 +98,7 @@ vi.mock('./internal/distributedTaxableYieldRows.js', async (importOriginal) => {
     distributedTaxableYieldRows: (
       input: Parameters<typeof original.distributedTaxableYieldRows>[0],
     ) => {
-      seam.postPurchaseBalances.push(input.states.map((state) => ({
+      hostile.postPurchaseBalances.push(input.states.map((state) => ({
         accountId: state.account.id,
         balance: state.balance,
         costBasis: 'costBasis' in state ? Number(state.costBasis) : 0,
@@ -119,7 +116,7 @@ vi.mock('./internal/tipsLadderAnnualCashFlow.js', async (importOriginal) => {
     tipsLadderAnnualCashFlows: (
       input: Parameters<typeof original.tipsLadderAnnualCashFlows>[0],
     ) => {
-      seam.annualFlowScales.push(input.ladderStates.map((state) => state.scale))
+      hostile.annualFlowScales.push(input.ladderStates.map((state) => state.scale))
       return original.tipsLadderAnnualCashFlows(input)
     },
   }
@@ -136,7 +133,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, prop) {
           if (prop === 'recordTipsLadderPurchase') {
             return (row: RecordedTipsPurchase) => {
-              seam.recorded.push(row)
+              hostile.recorded.push(row)
               target.recordTipsLadderPurchase(row)
             }
           }
@@ -150,6 +147,10 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   }
 })
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+} from './simulate.seamGuard.test-support.js'
 import {
   planDollarsToLedgerCents,
   signedLedgerCentTotalToPlanDollars,
@@ -263,10 +264,10 @@ function plan(): Plan {
 }
 
 function run() {
-  seam.phases.length = 0
-  seam.postPurchaseBalances.length = 0
-  seam.annualFlowScales.length = 0
-  seam.recorded.length = 0
+  seam.reset()
+  hostile.postPurchaseBalances.length = 0
+  hostile.annualFlowScales.length = 0
+  hostile.recorded.length = 0
   const probes: OptimizerYearProbe[] = []
   const result = simulatePlan(plan(), {
     startYear: YEAR,
@@ -291,15 +292,14 @@ describe('simulatePlan delegates TIPS-ladder purchase funding', () => {
   it('applies positional balance, basis, scale, warning, and gain from the returned rows', () => {
     const { result } = run()
 
-    expect(seam.phases).toHaveLength(1)
-    const phase = seam.phases[0]!
+    const phase = expectSeamRan(seam, 1)[0]!
     expect(phase.input.year).toBe(YEAR)
     expect(phase.input.ladderStates.map((state) => state.id)).toEqual([
       'first',
       'second',
       'third',
     ])
-    expect(phase.inputBalancesAtCall).toEqual([
+    expect(phase.captured).toEqual([
       { accountId: 'reserve', balance: 1_000, costBasis: 0 },
       {
         accountId: FUNDING_ID,
@@ -317,19 +317,19 @@ describe('simulatePlan delegates TIPS-ladder purchase funding', () => {
 
     // Fixture-derived underproduction guard: all three ladder positions must
     // yield purchase rows, resolving to balance position 1 in ladder order.
-    const rows = purchaseRows(phase.rows)
+    const rows = purchaseRows(phase.injected)
     expect(rows).toHaveLength(3)
     expect(rows.map((row) => row.ladderIndex)).toEqual([0, 1, 2])
     expect(rows.map((row) => row.fundingIndex)).toEqual([1, 1, 1])
-    expect(phase.originalRows).toHaveLength(3)
+    expect(phase.natural).toHaveLength(3)
     expect(rows[2]!.closingBalance).not.toBe(
-      phase.originalRows[2]!.kind === 'purchase'
-        ? phase.originalRows[2]!.closingBalance
+      phase.natural[2]!.kind === 'purchase'
+        ? phase.natural[2]!.closingBalance
         : Number.NaN,
     )
 
-    expect(seam.postPurchaseBalances).toHaveLength(1)
-    expect(seam.postPurchaseBalances[0]).toEqual([
+    expect(hostile.postPurchaseBalances).toHaveLength(1)
+    expect(hostile.postPurchaseBalances[0]).toEqual([
       { accountId: 'reserve', balance: 1_000, costBasis: 0 },
       {
         accountId: FUNDING_ID,
@@ -345,15 +345,15 @@ describe('simulatePlan delegates TIPS-ladder purchase funding', () => {
       },
     ])
 
-    expect(seam.annualFlowScales).toHaveLength(1)
-    expect(seam.annualFlowScales[0]).toEqual([
+    expect(hostile.annualFlowScales).toHaveLength(1)
+    expect(hostile.annualFlowScales[0]).toEqual([
       rows[0]!.scale ?? 1,
       rows[1]!.scale ?? 1,
       rows[2]!.scale ?? 1,
     ])
     expect(rows.map((row) => row.scale)).toEqual([0.625, 0.375, 0.125])
 
-    const originalRows = purchaseRows(phase.originalRows)
+    const originalRows = purchaseRows(phase.natural)
     expect(originalRows[2]!.warning).toBeNull()
     expect(rows[2]!.warning).toBe(TIPS_LADDER_PURCHASE_SHORTFALL_WARNING)
     expect(result.warnings).toContain(
@@ -382,11 +382,15 @@ describe('simulatePlan delegates TIPS-ladder purchase funding', () => {
 
   it('passes each row record by identity and books each injected debit', () => {
     const { probes } = run()
-    const rows = purchaseRows(seam.phases[0]!.rows)
+    const rows = purchaseRows(seam.calls[0]!.injected)
 
-    expect(seam.recorded).toHaveLength(3)
+    expect(hostile.recorded).toHaveLength(3)
     for (const [index, row] of rows.entries()) {
-      expect(seam.recorded[index]).toBe(row.record)
+      expectPublishedFromSeam(
+        hostile.recorded[index],
+        row.record,
+        `the recorded TIPS purchase row ${index}`,
+      )
     }
 
     expect(probes).toHaveLength(1)

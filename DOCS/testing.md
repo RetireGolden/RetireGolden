@@ -226,20 +226,29 @@ looks clean while some of the numbers came from different bytes.
 - **Object identity.** A caller that publishes a field-for-field rebuild of a helper's payload dumps
   identically to one that publishes the helper's own object — and a byte-identical dump passes a helper that
   is never called at all. That is a delegation test's `toBe`, not this tool's job. The
-  `packages/engine/src/projection/simulate.*Delegation.test.ts` family is that guard: each spec mocks one
-  extracted annual phase and asserts `toBe` identity against what the mock returned, so an orphaned helper or
-  a rebuilt payload fails. Five specs are migrated onto one concrete shape for that mock: run the real helper
-  first so the natural result is on record, then return deliberately different references and scalars that
-  the published year must consume. Their shared scaffolding is
+  `packages/engine/src/projection/simulate.*Delegation.test.ts` family is that guard: each one mocks the
+  module an extracted annual phase is delegated through — most mock one module, but a phase that fans out
+  over several helpers mocks each of them (`simulate.annualExpenseBandDelegation.test.ts` mocks four seam
+  exports plus a non-seam settlement runner; `simulate.annualDistributionAndRothPhaseDelegation.test.ts` and
+  `simulate.annualFundingAndSettlementPhaseDelegation.test.ts` mock two) — and runs the real helper so the
+  natural result is on record. Most guards then return deliberately different references and scalars and
+  require the published year to consume them; a record-only guard needs no injection because its only claim
+  is call identity, so it returns `natural` untouched instead —
+  `simulate.hecmLineOpeningsDelegation.test.ts`, `simulate.annualRebalanceDelegation.test.ts`,
+  `simulate.tipsLadderAnnualCashFlowDelegation.test.ts`, `simulate.pensionLumpSumRolloversDelegation.test.ts`,
+  `simulate.otherIncomeStreamsDelegation.test.ts`, `simulate.wageIncomeStreamsDelegation.test.ts`, and
+  `simulate.fixedAssetDispositionsDelegation.test.ts` are that shape. Their shared scaffolding is
   [`packages/engine/src/projection/simulate.seamGuard.test-support.ts`](../packages/engine/src/projection/simulate.seamGuard.test-support.ts):
   a typed recorder, a `through(original, exportName, inject)` wrapper for the mock factory, and the standard
-  assertions, so a migrated spec keeps its module specifier and its sentinels and nothing else. The specifier
-  stays a literal in the spec because Vitest hoists `vi.mock` above the file's imports and resolves it
-  relative to that file; the helper's own header records what is and is not shareable under that constraint.
-  Migration is incremental: the remaining specs prove the same identity with a hand-written factory, and not
-  all use the migrated shape's mechanism — some mutate the real result in place instead of injecting a
-  different one, some mock more than one module, and some return production output unchanged unless a test
-  opts into injection.
+  assertions, so a spec keeps its module specifier and its sentinels and nothing else. The specifier stays a
+  literal in the spec because Vitest hoists `vi.mock` above the file's imports and resolves it relative to
+  that file; the helper's own header records what is and is not shareable under that constraint. All 49
+  specs in the family now build their recorder through that helper, so a new guard starts from
+  `createSeamRecorder` rather than a hand-written factory. Two options cover the shapes that are not simply
+  "return a different result": `capture` snapshots live mutable input before the real helper runs, and
+  `wrapInput` substitutes the argument the real helper receives — for a guard whose proof is that a
+  caller-supplied callback fired — while the recorded `input` stays the caller's own object. A module with
+  two seam exports takes one recorder each and nests the `through` calls.
 - **Branches the corpus never runs.** `reach` is what closes that, using V8 precise coverage over named line
   ranges. It fails on an unreached entry and on a cold line inside a reached one; it reports, but does not
   fail, an untaken sub-line branch, because an untaken defensive `?? 0` arm is a legitimate steady state. So a

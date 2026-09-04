@@ -1,3 +1,9 @@
+/**
+ * Hostile delegation guard for annual annuity-purchase funding.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -9,21 +15,15 @@ import type {
   AnnualAnnuityPurchaseFundingRow,
 } from './internal/annualAnnuityPurchaseFunding.js'
 
-interface Phase {
-  readonly input: AnnualAnnuityPurchaseFundingInput
-  readonly inputBalances: readonly Readonly<{
-    accountId: string
-    balance: number
-    costBasis: number
-  }>[]
-  readonly natural: readonly AnnualAnnuityPurchaseFundingRow[]
-  readonly injected: readonly AnnualAnnuityPurchaseFundingRow[]
-}
+type BalanceSnapshot = readonly Readonly<{
+  accountId: string
+  balance: number
+  costBasis: number
+}>[]
 
 const INJECTED_GAINS = [10_000_000_000_000_000, -10_000_000_000_000_000, 1] as const
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   mode: 'normal' as 'normal' | 'wrong-position' | 'missing-row' | 'wrong-funding',
-  phases: [] as Phase[],
   postPurchaseBalances: [] as (readonly Readonly<{
     accountId: string
     balance: number
@@ -33,22 +33,33 @@ const seam = vi.hoisted(() => ({
   payments: [] as RecordedAnnuityPayment[],
 }))
 
-vi.mock('./internal/annualAnnuityPurchaseFunding.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualAnnuityPurchaseFunding.js')
-  >()
-  return {
-    ...original,
-    annualAnnuityPurchaseFunding: (
-      input: AnnualAnnuityPurchaseFundingInput,
-    ) => {
-      const natural = original.annualAnnuityPurchaseFunding(input)
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualAnnuityPurchaseFundingInput,
+      readonly AnnualAnnuityPurchaseFundingRow[],
+      BalanceSnapshot
+    >(),
+)
+
+vi.mock('./internal/annualAnnuityPurchaseFunding.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualAnnuityPurchaseFunding.js')
+    >(),
+    'annualAnnuityPurchaseFunding',
+    (
+      natural,
+      { input },
+    ): readonly AnnualAnnuityPurchaseFundingRow[] => {
       const injected = natural.map((row) => {
         if (row.kind !== 'purchase') return row
-        if (seam.mode === 'wrong-position') {
+        if (hostile.mode === 'wrong-position') {
           return { ...row, accountIndex: row.accountIndex + 1 }
         }
-        if (seam.mode === 'wrong-funding') {
+        if (hostile.mode === 'wrong-funding') {
           return { ...row, fundingIndex: (row.fundingIndex + 1) % input.balances.length }
         }
         const ordinal = row.record.annuityAccountId.startsWith('tax-annuity-')
@@ -81,20 +92,17 @@ vi.mock('./internal/annualAnnuityPurchaseFunding.js', async (importOriginal) => 
               },
         }
       })
-      seam.phases.push({
-        input,
-        inputBalances: input.balances.map((state) => ({
-          accountId: state.account.id,
-          balance: state.balance,
-          costBasis: state.costBasis,
-        })),
-        natural,
-        injected,
-      })
-      return seam.mode === 'missing-row' ? injected.slice(1) : injected
+      return hostile.mode === 'missing-row' ? injected.slice(1) : injected
     },
-  }
-})
+    {
+      capture: (input) => input.balances.map((state) => ({
+        accountId: state.account.id,
+        balance: state.balance,
+        costBasis: state.costBasis,
+      })),
+    },
+  ),
+)
 
 vi.mock('./internal/distributedTaxableYieldRows.js', async (importOriginal) => {
   const original = await importOriginal<
@@ -105,7 +113,7 @@ vi.mock('./internal/distributedTaxableYieldRows.js', async (importOriginal) => {
     distributedTaxableYieldRows: (
       input: Parameters<typeof original.distributedTaxableYieldRows>[0],
     ) => {
-      seam.postPurchaseBalances.push(input.states.map((state) => ({
+      hostile.postPurchaseBalances.push(input.states.map((state) => ({
         accountId: state.account.id,
         balance: state.balance,
         costBasis: 'costBasis' in state ? Number(state.costBasis) : 0,
@@ -127,13 +135,13 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, property) {
           if (property === 'recordAnnuityPurchase') {
             return (record: RecordedAnnuityPurchase) => {
-              seam.recorded.push(record)
+              hostile.recorded.push(record)
               target.recordAnnuityPurchase(record)
             }
           }
           if (property === 'recordAnnuityPayment') {
             return (record: RecordedAnnuityPayment) => {
-              seam.payments.push(record)
+              hostile.payments.push(record)
               target.recordAnnuityPayment(record)
             }
           }
@@ -147,6 +155,10 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   }
 })
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+} from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import { packForYear } from '../params/index.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
@@ -241,11 +253,11 @@ function plan(): Plan {
 }
 
 function run(value = plan()) {
-  seam.phases.length = 0
-  seam.postPurchaseBalances.length = 0
-  seam.recorded.length = 0
-  seam.payments.length = 0
-  seam.mode = 'normal'
+  seam.reset()
+  hostile.postPurchaseBalances.length = 0
+  hostile.recorded.length = 0
+  hostile.payments.length = 0
+  hostile.mode = 'normal'
   const probes: OptimizerYearProbe[] = []
   const counterfactualReads: unknown[] = []
   const annualCounterfactual: SimulateAnnualCounterfactualRequest = {
@@ -282,28 +294,28 @@ describe('simulatePlan delegates annual annuity-purchase funding', () => {
     const { result, probes, counterfactualReads } = run(originalPlan)
 
     expect(originalPlan).toEqual(before)
-    expect(seam.phases).toHaveLength(1)
+    const phase = expectSeamRan(seam, 1)[0]!
     expect(counterfactualReads).toHaveLength(1)
-    expect(seam.phases[0]!.input.accounts).toBe(originalPlan.accounts)
-    expect(seam.phases[0]!.input.primaryPerson).toBe(
+    expect(phase.input.accounts).toBe(originalPlan.accounts)
+    expect(phase.input.primaryPerson).toBe(
       originalPlan.household.people[0],
     )
-    expect([...seam.phases[0]!.input.peopleById.entries()]).toEqual([
+    expect([...phase.input.peopleById.entries()]).toEqual([
       ['p1', originalPlan.household.people[0]],
     ])
-    expect(seam.phases[0]!.input.year).toBe(YEAR)
-    expect(seam.phases[0]!.input.qlacPremiumCap).toBe(
+    expect(phase.input.year).toBe(YEAR)
+    expect(phase.input.qlacPremiumCap).toBe(
       packForYear(YEAR).pack.annuities.qlacPremiumCap,
     )
-    expect(seam.phases[0]!.input.limitGrowth).toBe(1)
-    expect(seam.phases[0]!.input.balances.map(({ account }) => account)).toEqual([
+    expect(phase.input.limitGrowth).toBe(1)
+    expect(phase.input.balances.map(({ account }) => account)).toEqual([
       originalPlan.accounts[0],
       originalPlan.accounts[1],
       originalPlan.accounts[2],
       originalPlan.accounts[3],
       originalPlan.accounts[8],
     ])
-    expect(seam.phases[0]!.inputBalances.map(({ balance, costBasis }) => ({
+    expect(phase.captured.map(({ balance, costBasis }) => ({
       balance,
       costBasis,
     }))).toEqual([
@@ -313,21 +325,25 @@ describe('simulatePlan delegates annual annuity-purchase funding', () => {
       { balance: 100, costBasis: 0 },
       { balance: 100, costBasis: 0 },
     ])
-    const rows = purchases(seam.phases[0]!.injected)
+    const rows = purchases(phase.injected)
     expect(rows).toHaveLength(5)
     expect(rows.map((row) => row.accountIndex)).toEqual([4, 5, 6, 7, 9])
     expect(rows.map((row) => row.fundingIndex)).toEqual([0, 1, 2, 3, 4])
 
-    expect(seam.postPurchaseBalances).toHaveLength(1)
-    expect(seam.postPurchaseBalances[0]).toEqual([
+    expect(hostile.postPurchaseBalances).toHaveLength(1)
+    expect(hostile.postPurchaseBalances[0]).toEqual([
       { accountId: 'tax-source-0', balance: 71, costBasis: 31 },
       { accountId: 'tax-source-1', balance: 62, costBasis: 22 },
       { accountId: 'tax-source-2', balance: 53, costBasis: 13 },
       { accountId: 'ira-source', balance: 87, costBasis: 0 },
       { accountId: 'ira-source-2', balance: 81, costBasis: 0 },
     ])
-    expect(seam.recorded).toHaveLength(5)
-    rows.forEach((row, index) => expect(seam.recorded[index]).toBe(row.record))
+    expect(hostile.recorded).toHaveLength(5)
+    rows.forEach((row, index) => expectPublishedFromSeam(
+      hostile.recorded[index],
+      row.record,
+      'the recorded annuity purchase',
+    ))
 
     const leftAssociated = ((0 + INJECTED_GAINS[0]) + INJECTED_GAINS[1]) + INJECTED_GAINS[2]
     const regrouped = INJECTED_GAINS[0] + (INJECTED_GAINS[1] + INJECTED_GAINS[2])
@@ -343,7 +359,7 @@ describe('simulatePlan delegates annual annuity-purchase funding', () => {
       { accountId: 'tax-source-1', amount: -10.2 },
       { accountId: 'tax-source-2', amount: -17.3 },
     ])
-    const paymentRows = seam.payments.filter(
+    const paymentRows = hostile.payments.filter(
       ({ accountId }) => accountId === 'tax-annuity-2',
     )
     expect(paymentRows).toHaveLength(1)
@@ -415,8 +431,8 @@ describe('simulatePlan delegates annual annuity-purchase funding', () => {
   })
 
   it('rejects same-cardinality rows that lose their Plan position', () => {
-    seam.mode = 'wrong-position'
-    seam.phases.length = 0
+    hostile.mode = 'wrong-position'
+    seam.reset()
     expect(() => simulatePlan(plan(), {
       startYear: YEAR,
       horizonEndYear: YEAR,
@@ -428,8 +444,8 @@ describe('simulatePlan delegates annual annuity-purchase funding', () => {
     ['missing-row', 'Annuity-purchase funding row count does not match Plan accounts'],
     ['wrong-funding', 'Annuity-purchase funding row does not resolve its funding account'],
   ] as const)('rejects %s helper output', (mode, message) => {
-    seam.mode = mode
-    seam.phases.length = 0
+    hostile.mode = mode
+    seam.reset()
     expect(() => simulatePlan(plan(), {
       startYear: YEAR,
       horizonEndYear: YEAR,
@@ -440,12 +456,11 @@ describe('simulatePlan delegates annual annuity-purchase funding', () => {
   it('re-enters from fresh plan state after a complete hostile run', () => {
     const value = plan()
     const first = run(value)
-    const firstPhase = structuredClone(seam.phases[0]!.inputBalances)
+    const firstPhase = structuredClone(seam.calls[0]!.captured)
     const firstYear = structuredClone(first.result.years[0])
     const second = run(value)
 
-    expect(seam.phases).toHaveLength(1)
-    expect(seam.phases[0]!.inputBalances).toEqual(firstPhase)
+    expect(expectSeamRan(seam, 1)[0]!.captured).toEqual(firstPhase)
     expect(second.result.years[0]).toEqual(firstYear)
     expect(second.counterfactualReads).toEqual(first.counterfactualReads)
   })

@@ -7,6 +7,9 @@
  * record object. The replacement-row case is intentionally impossible for an
  * inlined duplicate to reproduce, so an orphaned helper cannot pass by merely
  * agreeing with the production implementation.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -24,20 +27,21 @@ import type {
   DistributedTaxableYieldResultRow,
 } from './internal/distributedTaxableYieldRows.js'
 
-type PhaseEvent = {
-  readonly kind: 'phase'
-  readonly input: DistributedTaxableYieldInput
-  readonly rows: readonly DistributedTaxableYieldResultRow[]
-  readonly stateIdsAtCall: readonly string[]
-  readonly stateBalancesAtCall: readonly number[]
-  readonly startBalancesAtCall: readonly number[]
-}
-type SeamEvent = PhaseEvent | { readonly kind: 'recorded'; readonly row: RecordedDistributedYield }
-
 type SyntheticYieldScalars = Omit<
   Extract<DistributedTaxableYieldResultRow, { kind: 'yield' }>,
   'kind' | 'record'
 >
+
+/**
+ * The live positional state read at each pass, plus the recorded-row watermark
+ * that separates one year's ledger publications from the next year's.
+ */
+interface YieldPhaseCapture {
+  readonly stateIds: readonly string[]
+  readonly stateBalances: readonly number[]
+  readonly startBalances: readonly number[]
+  readonly recordedCount: number
+}
 
 // Every numeric channel is independently non-zero. For each folded channel,
 // the two middle values are half-ULP ties at a load-bearing large operand's
@@ -95,49 +99,57 @@ const SYNTHETIC_ROWS: readonly SyntheticYieldScalars[] = [
   },
 ]
 
-const seam = vi.hoisted(() => ({
-  events: [] as SeamEvent[],
+function syntheticRow(scalars: SyntheticYieldScalars): DistributedTaxableYieldResultRow {
+  const record: RecordedDistributedYield = {
+    accountId: scalars.accountId,
+    taxableGross: scalars.taxableGross,
+    interest: scalars.interest,
+    ordinaryDividends: scalars.ordinaryDividends,
+    qualified: scalars.qualified,
+    exempt: scalars.exempt,
+    reinvest: scalars.reinvest,
+  }
+  return {
+    kind: 'yield',
+    ...scalars,
+    record,
+  }
+}
+
+const hostile = vi.hoisted(() => ({
   replaceRows: false,
+  recorded: [] as RecordedDistributedYield[],
 }))
 
-vi.mock('./internal/distributedTaxableYieldRows.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/distributedTaxableYieldRows.js')>()
-  return {
-    ...original,
-    distributedTaxableYieldRows: (input: Parameters<typeof original.distributedTaxableYieldRows>[0]) => {
-      const productionRows = original.distributedTaxableYieldRows(input)
-      const rows: readonly DistributedTaxableYieldResultRow[] = seam.replaceRows
-        ? SYNTHETIC_ROWS.map(syntheticRow)
-        : productionRows
-      seam.events.push({
-        kind: 'phase',
-        input,
-        rows,
-        stateIdsAtCall: input.states.map((state) => state.account.id),
-        stateBalancesAtCall: input.states.map((state) => state.balance),
-        startBalancesAtCall: [...input.startOfYearBalances],
-      })
-      return rows
-    },
-  }
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      DistributedTaxableYieldInput,
+      readonly DistributedTaxableYieldResultRow[],
+      YieldPhaseCapture
+    >(),
+)
 
-  function syntheticRow(scalars: SyntheticYieldScalars): DistributedTaxableYieldResultRow {
-    const record: RecordedDistributedYield = {
-      accountId: scalars.accountId,
-      taxableGross: scalars.taxableGross,
-      interest: scalars.interest,
-      ordinaryDividends: scalars.ordinaryDividends,
-      qualified: scalars.qualified,
-      exempt: scalars.exempt,
-      reinvest: scalars.reinvest,
-    }
-    return {
-      kind: 'yield',
-      ...scalars,
-      record,
-    }
-  }
-})
+vi.mock('./internal/distributedTaxableYieldRows.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/distributedTaxableYieldRows.js')
+    >(),
+    'distributedTaxableYieldRows',
+    (natural): readonly DistributedTaxableYieldResultRow[] =>
+      hostile.replaceRows ? SYNTHETIC_ROWS.map(syntheticRow) : natural,
+    {
+      capture: (input): YieldPhaseCapture => ({
+        stateIds: input.states.map((state) => state.account.id),
+        stateBalances: input.states.map((state) => state.balance),
+        startBalances: [...input.startOfYearBalances],
+        recordedCount: hostile.recorded.length,
+      }),
+    },
+  ),
+)
 
 vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./annualCashFlowYearSites.js')>()
@@ -149,7 +161,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, prop) {
           if (prop === 'recordDistributedYield') {
             return (row: RecordedDistributedYield) => {
-              seam.events.push({ kind: 'recorded', row })
+              hostile.recorded.push(row)
               target.recordDistributedYield(row)
             }
           }
@@ -163,6 +175,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   }
 })
 
+import { expectPublishedFromSeam } from './simulate.seamGuard.test-support.js'
 import { simulatePlan } from './simulate.js'
 import type { OptimizerYearProbe, TaxCalculator } from './types.js'
 
@@ -219,8 +232,9 @@ function plan(): Plan {
 }
 
 function run(options: { replaceRows?: boolean } = {}) {
-  seam.events.length = 0
-  seam.replaceRows = options.replaceRows === true
+  seam.reset()
+  hostile.recorded.length = 0
+  hostile.replaceRows = options.replaceRows === true
   const probes: OptimizerYearProbe[] = []
   const result = simulatePlan(plan(), {
     startYear: START_YEAR,
@@ -229,8 +243,7 @@ function run(options: { replaceRows?: boolean } = {}) {
     captureAnnualCashFlow: true,
     captureOptimizerInputs: (probe) => probes.push(probe),
   })
-  const phases = seam.events.filter((event): event is PhaseEvent => event.kind === 'phase')
-  return { result, phases, probes }
+  return { result, phases: seam.calls, probes }
 }
 
 function foldRows(
@@ -249,9 +262,9 @@ describe('simulatePlan delegates distributed taxable yields', () => {
     expect(phases).toHaveLength(result.years.length)
     expect(phases).toHaveLength(END_YEAR - START_YEAR + 1)
     for (const phase of phases) {
-      expect(phase.stateIdsAtCall).toEqual(['cash', 'tax-a', 'tax-b', 'tax-c'])
-      expect(phase.rows).toHaveLength(phase.stateIdsAtCall.length)
-      expect(phase.startBalancesAtCall).toEqual(phase.stateBalancesAtCall)
+      expect(phase.captured.stateIds).toEqual(['cash', 'tax-a', 'tax-b', 'tax-c'])
+      expect(phase.injected).toHaveLength(phase.captured.stateIds.length)
+      expect(phase.captured.startBalances).toEqual(phase.captured.stateBalances)
       expect(phase.input.allocationTrack.has('1')).toBe(true)
     }
 
@@ -260,7 +273,7 @@ describe('simulatePlan delegates distributed taxable yields', () => {
     expect(phases.every((phase) => phase.input.states === phases[0]!.input.states)).toBe(true)
     expect(phases.every((phase) => phase.input.allocationTrack === phases[0]!.input.allocationTrack)).toBe(true)
     expect(new Set(phases.map((phase) => phase.input.startOfYearBalances)).size).toBe(phases.length)
-    expect(phases[1]!.stateBalancesAtCall).not.toEqual(phases[0]!.stateBalancesAtCall)
+    expect(phases[1]!.captured.stateBalances).not.toEqual(phases[0]!.captured.stateBalances)
   })
 
   it('retains fixture-derived first-year totals, guarding against under-production', () => {
@@ -288,7 +301,7 @@ describe('simulatePlan delegates distributed taxable yields', () => {
       const year = result.years[i]!
       if (year.advisoryFederalTax === undefined) throw new Error(`missing advisory federal-tax detail for ${year.year}`)
       if (year.cashFlow === undefined) throw new Error(`missing annual cash-flow detail for ${year.year}`)
-      const yieldRows = phase.rows.filter(
+      const yieldRows = phase.injected.filter(
         (row): row is Extract<DistributedTaxableYieldResultRow, { kind: 'yield' }> => row.kind === 'yield',
       )
       expect(yieldRows.map((row) => row.accountId)).toEqual(['tax-a', 'tax-b', 'tax-c', 'tax-a'])
@@ -366,7 +379,7 @@ describe('simulatePlan delegates distributed taxable yields', () => {
       // index. The mocked account ID is deliberately unrelated, so an ID join
       // would apply the final tax-a row here instead.
       const physicalTaxA = yieldRows[1]!
-      const taxAStart = phase.stateBalancesAtCall[1]!
+      const taxAStart = phase.captured.stateBalances[1]!
       const usStockReturnPct = phase.input.classParams.usStocks.returnPct
       const expectedTaxABalance = taxAStart * Math.max(
         0,
@@ -398,14 +411,18 @@ describe('simulatePlan delegates distributed taxable yields', () => {
         ['taxableAccountYield', 'tax-a', yieldRows[0]!.taxableGross],
       ])
 
-      const phasePosition = seam.events.indexOf(phase)
-      const recorded: RecordedDistributedYield[] = []
-      for (let j = phasePosition + 1; j < seam.events.length && seam.events[j]!.kind !== 'phase'; j++) {
-        recorded.push((seam.events[j] as Extract<SeamEvent, { kind: 'recorded' }>).row)
-      }
+      // Rows published between this pass through the seam and the next one.
+      const recorded = hostile.recorded.slice(
+        phase.captured.recordedCount,
+        phases[i + 1]?.captured.recordedCount ?? hostile.recorded.length,
+      )
       expect(recorded).toHaveLength(yieldRows.length)
       for (let j = 0; j < yieldRows.length; j++) {
-        expect(recorded[j], `${year.year} record ${j}`).toBe(yieldRows[j]!.record)
+        expectPublishedFromSeam(
+          recorded[j],
+          yieldRows[j]!.record,
+          `${year.year} record ${j}`,
+        )
         expect(recorded[j]).toEqual(yieldRows[j]!.record)
         identityChecks++
       }

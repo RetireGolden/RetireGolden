@@ -6,6 +6,9 @@
  * Those values are observed at independent ledger and warning boundaries, so an
  * orphaned coordinator or caller-side root recomputation cannot pass merely
  * because the production coordinator matches the former inline control flow.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -20,33 +23,32 @@ type SimulatorEvaluation = AnnualFundingFixedPointEvaluation & Readonly<{
   penalties: number
 }>
 
-interface FundingCall {
-  readonly input: AnnualFundingFixedPointInput<SimulatorEvaluation>
-  readonly original: AnnualFundingFixedPointResult<SimulatorEvaluation>
-  readonly output: AnnualFundingFixedPointResult<SimulatorEvaluation>
-}
-
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   inject: false,
   acaFixedPointFailed: true,
   acaConflictingCliffBasins: true,
-  calls: [] as FundingCall[],
 }))
 
-vi.mock('./internal/annualFundingFixedPoint.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualFundingFixedPoint.js')>()
-  return {
-    ...original,
-    annualFundingFixedPoint: (
-      input: AnnualFundingFixedPointInput<SimulatorEvaluation>,
-    ) => {
-      const production = original.annualFundingFixedPoint(input)
-      const output = seam.inject
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualFundingFixedPointInput<SimulatorEvaluation>,
+      AnnualFundingFixedPointResult<SimulatorEvaluation>
+    >(),
+)
+
+vi.mock('./internal/annualFundingFixedPoint.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualFundingFixedPoint.js')>(),
+    'annualFundingFixedPoint',
+    (natural): AnnualFundingFixedPointResult<SimulatorEvaluation> =>
+      hostile.inject
         ? {
-            ...production,
+            ...natural,
             evaluation: {
-              ...production.evaluation,
+              ...natural.evaluation,
               tax: 321,
               penalties: 123,
             },
@@ -54,16 +56,14 @@ vi.mock('./internal/annualFundingFixedPoint.js', async (importOriginal) => {
             closestResidual: 7.89,
             acceptedCoordinatedHecmDraw: 777,
             acceptedCashInflows: 999,
-            acaFixedPointFailed: seam.acaFixedPointFailed,
-            acaConflictingCliffBasins: seam.acaConflictingCliffBasins,
+            acaFixedPointFailed: hostile.acaFixedPointFailed,
+            acaConflictingCliffBasins: hostile.acaConflictingCliffBasins,
           }
-        : production
-      seam.calls.push({ input, original: production, output })
-      return output
-    },
-  }
-})
+        : natural,
+  ),
+)
 
+import { expectSeamRanAtLeastOnce } from './simulate.seamGuard.test-support.js'
 import { cashAccount, singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
 import type { TaxCalculator } from './types.js'
@@ -72,10 +72,10 @@ const START_YEAR = 2026
 const zeroTax: TaxCalculator = { compute: () => 0 }
 
 beforeEach(() => {
-  seam.inject = false
-  seam.acaFixedPointFailed = true
-  seam.acaConflictingCliffBasins = true
-  seam.calls.length = 0
+  hostile.inject = false
+  hostile.acaFixedPointFailed = true
+  hostile.acaConflictingCliffBasins = true
+  seam.reset()
 })
 
 const runInjectedProjection = () => {
@@ -97,7 +97,7 @@ const runInjectedProjection = () => {
   plan.assumptions.inflationPct = 0
   plan.assumptions.defaultReturnPct = 0
 
-  seam.inject = true
+  hostile.inject = true
   return simulatePlan(validatePlan(plan), {
     startYear: START_YEAR,
     horizonEndYear: START_YEAR,
@@ -110,8 +110,8 @@ describe('simulatePlan annual funding fixed-point delegation', () => {
     const result = runInjectedProjection()
     const year = result.years[0]!
 
-    expect(seam.calls.length).toBeGreaterThan(0)
-    expect(seam.calls.every((call) => call.output !== call.original)).toBe(true)
+    const calls = expectSeamRanAtLeastOnce(seam)
+    expect(calls.every((call) => call.injected !== call.natural)).toBe(true)
     expect(year.tax).toBe(321)
     expect(year.penalties).toBe(123)
     expect(year.balances.cash).toBe(999 - 321 - 123)
@@ -123,8 +123,8 @@ describe('simulatePlan annual funding fixed-point delegation', () => {
       'ACA funding has conflicting subsidized and gross-premium fixed points for 2026; gross enrollment premium was funded.',
     )
 
-    seam.acaFixedPointFailed = false
-    seam.acaConflictingCliffBasins = false
+    hostile.acaFixedPointFailed = false
+    hostile.acaConflictingCliffBasins = false
     const nonconverged = runInjectedProjection()
     expect(nonconverged.warnings).toContain(
       'Tax and withdrawal funding could not reconcile within half a cent for 2026; the closest result differs by $7.89.',

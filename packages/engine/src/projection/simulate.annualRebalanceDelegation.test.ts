@@ -108,15 +108,34 @@ type SeamEvent =
     }
   | { readonly kind: 'recorded'; readonly row: RecordedRebalancingGain }
 
-const seam = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
+const hostile = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
 
-vi.mock('./internal/annualRebalanceToTarget.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/annualRebalanceToTarget.js')>()
-  return {
-    ...original,
-    annualRebalanceToTarget: (input: Parameters<typeof original.annualRebalanceToTarget>[0]) => {
-      const rows = original.annualRebalanceToTarget(input)
-      seam.events.push({
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualRebalanceYearInput,
+      readonly AnnualRebalanceRow[]
+    >(),
+)
+
+// Scaffolding and the policy behind it live in
+// `simulate.seamGuard.test-support.ts`; the sentinels stay here. The recorder
+// owns the call, but the ORDERED log above is the one the sink below also
+// appends to, and position in that single log is what G2's attribution and
+// G3's whole-log accounting rest on -- so the injector keeps doing the
+// pushing rather than the assertions reading two separate arrays. It returns
+// `natural` untouched, because this guard injects nothing: what it pins is the
+// fact of the call, the identity of the rows, and the association of the fold.
+// Its post-return timing is exactly where the hand-written wrapper sat, so
+// every "at call" snapshot below is taken at the same moment as before.
+vi.mock('./internal/annualRebalanceToTarget.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualRebalanceToTarget.js')>(),
+    'annualRebalanceToTarget',
+    (rows, { input }): readonly AnnualRebalanceRow[] => {
+      hostile.events.push({
         kind: 'phase',
         input,
         rows,
@@ -126,8 +145,8 @@ vi.mock('./internal/annualRebalanceToTarget.js', async (importOriginal) => {
       })
       return rows
     },
-  }
-})
+  ),
+)
 
 vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./annualCashFlowYearSites.js')>()
@@ -142,7 +161,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, prop) {
           if (prop === 'recordRebalancingGain') {
             return (row: RecordedRebalancingGain) => {
-              seam.events.push({ kind: 'recorded', row })
+              hostile.events.push({ kind: 'recorded', row })
               target.recordRebalancingGain(row)
             }
           }
@@ -242,13 +261,14 @@ function mainPlan(): Plan {
 }
 
 function run(plan: Plan, options: { capture?: boolean } = {}) {
-  seam.events.length = 0
+  hostile.events.length = 0
+  seam.reset()
   const result = simulatePlan(plan, {
     startYear: START_YEAR,
     taxCalculator: zeroTax,
     ...(options.capture === true ? { captureAnnualCashFlow: true } : {}),
   })
-  const phases = seam.events.filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase')
+  const phases = hostile.events.filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase')
   const byYear = new Map<number, readonly AnnualRebalanceRow[]>()
   for (const phase of phases) byYear.set(phase.input.year, phase.rows)
   return { result, phases, byYear }
@@ -320,13 +340,13 @@ describe('simulatePlan delegates the annual rebalance to target', () => {
     const { result } = run(mainPlan(), { capture: true })
     let identityChecks = 0
     let attributedRecords = 0
-    for (let i = 0; i < seam.events.length; i++) {
-      const event = seam.events[i]!
+    for (let i = 0; i < hostile.events.length; i++) {
+      const event = hostile.events[i]!
       if (event.kind !== 'phase') continue
       const where = `year ${event.input.year}`
       const followed: Extract<SeamEvent, { kind: 'recorded' }>[] = []
-      for (let j = i + 1; j < seam.events.length; j++) {
-        const next = seam.events[j]!
+      for (let j = i + 1; j < hostile.events.length; j++) {
+        const next = hostile.events[j]!
         if (next.kind === 'phase') break
         followed.push(next)
       }
@@ -351,14 +371,14 @@ describe('simulatePlan delegates the annual rebalance to target', () => {
     // WHOLE-LOG ACCOUNTING. The loop above claims the records that FOLLOW each
     // phase call, so a record emitted before the first call would belong to no
     // run and be skipped in silence. Every record must be claimed exactly once.
-    const recordEvents = seam.events.filter((e) => e.kind === 'recorded').length
+    const recordEvents = hostile.events.filter((e) => e.kind === 'recorded').length
     expect(attributedRecords, 'a recorded rebalancing gain fell outside every phase call').toBe(recordEvents)
     expect(identityChecks, 'the fixture no longer records any rebalancing gain').toBeGreaterThan(10)
     // AND THE PUBLISHED LEDGER, filtered: the sink and the capture pass both
     // drop an exactly-zero gain, so the published set is the sale rows with a
     // non-zero gain, in row order.
     for (const year of result.years) {
-      const rows = seam.events
+      const rows = hostile.events
         .filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase' && e.input.year === year.year)
         .flatMap((e) => e.rows)
       const want = rows

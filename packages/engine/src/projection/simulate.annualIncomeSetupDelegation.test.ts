@@ -2,6 +2,9 @@
  * Delegation and live-identity guards for the annual income-setup boundary.
  * The child producer suites own selection details. This file proves their
  * combined result is the one the caller mutates, records, and passes onward.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -21,59 +24,69 @@ import type {
   AnnualIncomeSetupResult,
 } from './internal/annualIncomeSetup.js'
 
-interface PhaseCall {
-  readonly input: AnnualIncomeSetupInput
-  readonly inputBalances: readonly Readonly<{
-    accountId: string
-    balance: number
-  }>[]
-  readonly natural: AnnualIncomeSetupResult
-  readonly returned: AnnualIncomeSetupResult
-  readonly distributedYieldRecords: RecordedDistributedYield[]
-  readonly wageRecords: RecordedWage[]
-  socialSecurityWagesByPerson?: ReadonlyMap<string, number>
-  assembledDistributedYieldByAccountId?: AnnualIncomeSetupResult['distributedYieldByAccountId']
-  assembledTaxableYieldReinvested?: number
-}
+/** Account balances as the extracted setup received them, before it ran. */
+type OpeningBalances = readonly Readonly<{
+  accountId: string
+  balance: number
+}>[]
 
-const seam = vi.hoisted(() => ({
-  calls: [] as PhaseCall[],
+const hostile = vi.hoisted(() => ({
   injectCounterfactual: false,
   activeDistributedYieldRecords: [] as RecordedDistributedYield[],
   activeWageRecords: [] as RecordedWage[],
+  /** Per-pass observations, indexed by the seam's own ordinal. */
+  distributedYieldRecords: [] as RecordedDistributedYield[][],
+  wageRecords: [] as RecordedWage[][],
+  socialSecurityWagesByPerson: [] as (ReadonlyMap<string, number> | undefined)[],
+  assembledDistributedYieldByAccountId: [] as (
+    | AnnualIncomeSetupResult['distributedYieldByAccountId']
+    | undefined
+  )[],
+  assembledTaxableYieldReinvested: [] as (number | undefined)[],
 }))
 
-vi.mock('./internal/annualIncomeSetup.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualIncomeSetup.js')>()
-  return {
-    ...original,
-    annualIncomeSetup: (input: AnnualIncomeSetupInput) => {
-      seam.activeDistributedYieldRecords.length = 0
-      seam.activeWageRecords.length = 0
-      const natural = original.annualIncomeSetup(input)
-      const returned: AnnualIncomeSetupResult = seam.injectCounterfactual
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualIncomeSetupInput,
+      AnnualIncomeSetupResult,
+      OpeningBalances
+    >(),
+)
+
+vi.mock('./internal/annualIncomeSetup.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualIncomeSetup.js')>(),
+    'annualIncomeSetup',
+    (natural, { ordinal }): AnnualIncomeSetupResult => {
+      hostile.distributedYieldRecords[ordinal] = [
+        ...hostile.activeDistributedYieldRecords,
+      ]
+      hostile.wageRecords[ordinal] = [...hostile.activeWageRecords]
+      return hostile.injectCounterfactual
         ? {
             ...natural,
             incomes: { ...natural.incomes },
             ordinaryIncome: natural.ordinaryIncome + 19,
           }
         : natural
-      seam.calls.push({
-        input,
-        inputBalances: input.distributedYield.states.map((state) => ({
+    },
+    {
+      // Runs before the real setup: the balances are live and the year's
+      // cash-flow record buffers have to be empty when it starts recording.
+      capture: (input): OpeningBalances => {
+        hostile.activeDistributedYieldRecords.length = 0
+        hostile.activeWageRecords.length = 0
+        return input.distributedYield.states.map((state) => ({
           accountId: state.account.id,
           balance: state.balance,
-        })),
-        natural,
-        returned,
-        distributedYieldRecords: [...seam.activeDistributedYieldRecords],
-        wageRecords: [...seam.activeWageRecords],
-      })
-      return returned
+        }))
+      },
     },
-  }
-})
+  ),
+)
 
 vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   const original =
@@ -86,13 +99,13 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, prop) {
           if (prop === 'recordDistributedYield') {
             return (record: RecordedDistributedYield) => {
-              seam.activeDistributedYieldRecords.push(record)
+              hostile.activeDistributedYieldRecords.push(record)
               target.recordDistributedYield(record)
             }
           }
           if (prop === 'recordWages') {
             return (record: RecordedWage) => {
-              seam.activeWageRecords.push(record)
+              hostile.activeWageRecords.push(record)
               target.recordWages(record)
             }
           }
@@ -114,9 +127,9 @@ vi.mock('./internal/annualSocialSecurity.js', async (importOriginal) => {
     annualSocialSecurity: (
       input: Parameters<typeof original.annualSocialSecurity>[0],
     ) => {
-      const call = seam.calls.at(-1)
-      if (call !== undefined) {
-        call.socialSecurityWagesByPerson = input.wagesByPerson
+      const ordinal = seam.calls.at(-1)?.ordinal
+      if (ordinal !== undefined) {
+        hostile.socialSecurityWagesByPerson[ordinal] = input.wagesByPerson
       }
       return original.annualSocialSecurity(input)
     },
@@ -131,17 +144,19 @@ vi.mock('./annualCashFlowCapture.js', async (importOriginal) => {
     assembleYearCashFlow: (
       input: Parameters<typeof original.assembleYearCashFlow>[0],
     ) => {
-      const call = seam.calls.at(-1)
-      if (call !== undefined) {
-        call.assembledDistributedYieldByAccountId =
+      const ordinal = seam.calls.at(-1)?.ordinal
+      if (ordinal !== undefined) {
+        hostile.assembledDistributedYieldByAccountId[ordinal] =
           input.distributedYieldByAccountId
-        call.assembledTaxableYieldReinvested = input.taxableYieldReinvested
+        hostile.assembledTaxableYieldReinvested[ordinal] =
+          input.taxableYieldReinvested
       }
       return original.assembleYearCashFlow(input)
     },
   }
 })
 
+import { expectPublishedFromSeam } from './simulate.seamGuard.test-support.js'
 import type {
   CounterfactualAnnualLiabilityResult,
   SimulateAnnualCounterfactualRequest,
@@ -258,8 +273,13 @@ function run(
   options: { inject?: boolean; reenter?: boolean } = {},
   target = plan(),
 ) {
-  seam.calls.length = 0
-  seam.injectCounterfactual = options.inject === true
+  seam.reset()
+  hostile.distributedYieldRecords.length = 0
+  hostile.wageRecords.length = 0
+  hostile.socialSecurityWagesByPerson.length = 0
+  hostile.assembledDistributedYieldByAccountId.length = 0
+  hostile.assembledTaxableYieldReinvested.length = 0
+  hostile.injectCounterfactual = options.inject === true
   const captured: CounterfactualAnnualLiabilityResult[] = []
   const result = simulatePlan(target, {
     startYear: START_YEAR,
@@ -270,7 +290,20 @@ function run(
       ? { annualCounterfactual: counterfactual(captured) }
       : {}),
   })
-  return { target, result, captured, calls: [...seam.calls] }
+  // The companion mocks observe boundaries the recorder cannot see, so their
+  // per-ordinal tallies are stitched back onto the recorded passes here.
+  const calls = seam.calls.map((call) => ({
+    ...call,
+    distributedYieldRecords: hostile.distributedYieldRecords[call.ordinal]!,
+    wageRecords: hostile.wageRecords[call.ordinal]!,
+    socialSecurityWagesByPerson:
+      hostile.socialSecurityWagesByPerson[call.ordinal],
+    assembledDistributedYieldByAccountId:
+      hostile.assembledDistributedYieldByAccountId[call.ordinal],
+    assembledTaxableYieldReinvested:
+      hostile.assembledTaxableYieldReinvested[call.ordinal],
+  }))
+  return { target, result, captured, calls }
 }
 
 describe('simulatePlan delegates annual income setup', () => {
@@ -287,27 +320,31 @@ describe('simulatePlan delegates annual income setup', () => {
         calls[0]!.input.distributedYield.states,
       )
       expect(call.input.wages.year).toBe(year.year)
-      expect(year.incomes).toBe(call.returned.incomes)
+      expectPublishedFromSeam(
+        year.incomes,
+        call.injected.incomes,
+        'the published annual incomes',
+      )
       expect(call.socialSecurityWagesByPerson).toBe(
-        call.returned.wagesByPerson,
+        call.injected.wagesByPerson,
       )
       expect(call.assembledDistributedYieldByAccountId).toBe(
-        call.returned.distributedYieldByAccountId,
+        call.injected.distributedYieldByAccountId,
       )
       expect(call.assembledTaxableYieldReinvested).toBe(
-        call.returned.taxableYieldReinvested,
+        call.injected.taxableYieldReinvested,
       )
 
-      const yieldRows = call.returned.distributedYieldRows.filter(
+      const yieldRows = call.injected.distributedYieldRows.filter(
         (row) => row.kind === 'yield',
       )
       expect(call.distributedYieldRecords).toHaveLength(yieldRows.length)
       for (let row = 0; row < yieldRows.length; row++) {
         expect(call.distributedYieldRecords[row]).toBe(yieldRows[row]!.record)
       }
-      expect(call.wageRecords).toHaveLength(call.returned.wageRows.length)
-      for (let row = 0; row < call.returned.wageRows.length; row++) {
-        expect(call.wageRecords[row]).toBe(call.returned.wageRows[row]!.record)
+      expect(call.wageRecords).toHaveLength(call.injected.wageRows.length)
+      for (let row = 0; row < call.injected.wageRows.length; row++) {
+        expect(call.wageRecords[row]).toBe(call.injected.wageRows[row]!.record)
       }
     }
   })
@@ -328,7 +365,7 @@ describe('simulatePlan delegates annual income setup', () => {
   it('runs annuity funding before setup while retaining opening-balance yield', () => {
     const { result, calls } = run({}, annuityFundedYieldPlan())
     const first = calls[0]!
-    const taxableAtSetup = first.inputBalances.find(
+    const taxableAtSetup = first.captured.find(
       ({ accountId }) => accountId === 'annuity-yield-source',
     )
 
@@ -340,7 +377,7 @@ describe('simulatePlan delegates annual income setup', () => {
       accountId: 'annuity-yield-source',
       balance: 60_000,
     })
-    const taxableBalanceIndex = first.inputBalances.findIndex(
+    const taxableBalanceIndex = first.captured.findIndex(
       ({ accountId }) => accountId === 'annuity-yield-source',
     )
     expect(
@@ -360,8 +397,12 @@ describe('simulatePlan delegates annual income setup', () => {
       const call = injected.calls[index]!
       const year = injected.result.years[index]!
       const baselineYear = baseline.result.years[index]!
-      expect(call.returned.incomes).not.toBe(call.natural.incomes)
-      expect(year.incomes).toBe(call.returned.incomes)
+      expect(call.injected.incomes).not.toBe(call.natural.incomes)
+      expectPublishedFromSeam(
+        year.incomes,
+        call.injected.incomes,
+        'the published annual incomes',
+      )
       expect(year.incomes).not.toBe(call.natural.incomes)
       expect(year.magi - baselineYear.magi).toBe(19)
     }
@@ -374,14 +415,14 @@ describe('simulatePlan delegates annual income setup', () => {
 
     expect(first.result).toEqual(second.result)
     for (let index = 0; index < first.calls.length; index++) {
-      expect(first.calls[index]!.returned.incomes).not.toBe(
-        second.calls[index]!.returned.incomes,
+      expect(first.calls[index]!.injected.incomes).not.toBe(
+        second.calls[index]!.injected.incomes,
       )
-      expect(first.calls[index]!.returned.wagesByPerson).not.toBe(
-        second.calls[index]!.returned.wagesByPerson,
+      expect(first.calls[index]!.injected.wagesByPerson).not.toBe(
+        second.calls[index]!.injected.wagesByPerson,
       )
-      expect(first.calls[index]!.returned.distributedYieldByAccountId).not.toBe(
-        second.calls[index]!.returned.distributedYieldByAccountId,
+      expect(first.calls[index]!.injected.distributedYieldByAccountId).not.toBe(
+        second.calls[index]!.injected.distributedYieldByAccountId,
       )
     }
   })

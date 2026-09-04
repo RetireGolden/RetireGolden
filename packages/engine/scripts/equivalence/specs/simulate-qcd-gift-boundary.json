@@ -89,7 +89,7 @@
     {
       "id": "Q.callsite.invoke",
       "label": "logical live-state snapshot and exact map handoff",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [926, 957],
       "anchors": [
         { "line": 926, "text": "const qcdGiftPlan = annualLegacyQcdGiftPlan({" },
@@ -104,7 +104,7 @@
     {
       "id": "Q.callsite.validate",
       "label": "whole-plan logical IRA identity normalization, sequential balance and amount validation",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [962, 995],
       "anchors": [
         { "line": 962, "text": "const validatedQcdGiftDebitIntents: Array<{" },
@@ -126,7 +126,7 @@
     {
       "id": "Q.callsite.validateSequentialCommit",
       "label": "sequential shadow-balance advance and immutable scalar record cache",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1001, 1015],
       "anchors": [
         { "line": 1001, "text": "const sourceBalanceAfter = remainingBalance - amount" },
@@ -139,7 +139,7 @@
     {
       "id": "Q.callsite.validateHistory",
       "label": "caller-owned history snapshot and donor identity validation",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1016, 1023],
       "anchors": [
         { "line": 1016, "text": "const qcdGiftOffsetHistoryUnprovableDonorIds = [" },
@@ -153,7 +153,7 @@
     {
       "id": "Q.callsite.apply",
       "label": "logical pro-rata debit, single runtime identity, deferred character and history writes",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1029, 1071],
       "anchors": [
         { "line": 1029, "text": "for (const debit of validatedQcdGiftDebitIntents) {" },

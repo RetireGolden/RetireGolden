@@ -79,6 +79,11 @@
  * Filtering published applications on that field is therefore still exact: the
  * classifier can only ever tag a record whose `kind` this phase already
  * selected. "Exclusive to this phase" was simply the wrong word for it.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here. This guard
+ * injects nothing — every assertion reads the real rows — so the seam exists to
+ * RECORD the pass.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -88,38 +93,59 @@ import type {
   PensionLumpSumRolloverYearInput,
 } from './internal/pensionLumpSumRollovers.js'
 
+/** Snapshots of the caller's live input, taken BEFORE the helper runs. */
+interface AtCall {
+  readonly accountIds: readonly string[]
+  readonly balanceIds: readonly string[]
+}
+
+/**
+ * One ordered log of both seam events, so a ledger record can be attributed to
+ * the phase call it came from by POSITION — see the header.
+ *
+ * The phase event carries only what the shared recorder cannot: its `ordinal`
+ * indexes `seam.calls`, where the input, the returned rows and the snapshotted
+ * account and balance ids all live.
+ */
 type SeamEvent =
   | {
       readonly kind: 'phase'
-      readonly input: PensionLumpSumRolloverYearInput
-      readonly rows: readonly PensionLumpSumRolloverRow[]
+      /** Index into `seam.calls` of the pass this event opened. */
+      readonly ordinal: number
       /** `rows.length` read the instant the helper returned. */
       readonly rowCountAtCall: number
-      readonly accountIdsAtCall: readonly string[]
-      readonly balanceIdsAtCall: readonly string[]
     }
   | { readonly kind: 'recorded'; readonly row: RecordedPensionRollover }
 
-const seam = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
+const hostile = vi.hoisted(() => ({ events: [] as SeamEvent[] }))
 
-vi.mock('./internal/pensionLumpSumRollovers.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./internal/pensionLumpSumRollovers.js')>()
-  return {
-    ...original,
-    pensionLumpSumRollovers: (input: Parameters<typeof original.pensionLumpSumRollovers>[0]) => {
-      const rows = original.pensionLumpSumRollovers(input)
-      seam.events.push({
-        kind: 'phase',
-        input,
-        rows,
-        rowCountAtCall: rows.length,
-        accountIdsAtCall: input.accounts.map((a) => a.id),
-        balanceIdsAtCall: input.balances.map((b) => b.account.id),
-      })
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      PensionLumpSumRolloverYearInput,
+      readonly PensionLumpSumRolloverRow[],
+      AtCall
+    >(),
+)
+
+vi.mock('./internal/pensionLumpSumRollovers.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/pensionLumpSumRollovers.js')>(),
+    'pensionLumpSumRollovers',
+    (rows, { ordinal }): readonly PensionLumpSumRolloverRow[] => {
+      hostile.events.push({ kind: 'phase', ordinal, rowCountAtCall: rows.length })
       return rows
     },
-  }
-})
+    {
+      capture: (input): AtCall => ({
+        accountIds: input.accounts.map((a) => a.id),
+        balanceIds: input.balances.map((b) => b.account.id),
+      }),
+    },
+  ),
+)
 
 vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('./annualCashFlowYearSites.js')>()
@@ -134,7 +160,7 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, prop) {
           if (prop === 'recordPensionRollover') {
             return (row: RecordedPensionRollover) => {
-              seam.events.push({ kind: 'recorded', row })
+              hostile.events.push({ kind: 'recorded', row })
               target.recordPensionRollover(row)
             }
           }
@@ -146,6 +172,11 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
   }
 })
 
+import type { SeamCall } from './simulate.seamGuard.test-support.js'
+import {
+  expectPublishedFromSeam,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
@@ -224,17 +255,24 @@ function plan(): Plan {
   return validatePlan(p)
 }
 
+type PhaseCall = SeamCall<
+  PensionLumpSumRolloverYearInput,
+  readonly PensionLumpSumRolloverRow[],
+  AtCall
+>
+
 function run(options: { capture?: boolean } = {}) {
-  seam.events.length = 0
+  seam.reset()
+  hostile.events.length = 0
   const result = simulatePlan(plan(), {
     startYear: START_YEAR,
     horizonEndYear: END_YEAR,
     taxCalculator: noTax,
     ...(options.capture === true ? { captureAnnualCashFlow: true } : {}),
   })
-  const phases = seam.events.filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase')
+  const phases: readonly PhaseCall[] = [...seam.calls]
   const byYear = new Map<number, readonly PensionLumpSumRolloverRow[]>()
-  for (const phase of phases) byYear.set(phase.input.year, phase.rows)
+  for (const phase of phases) byYear.set(phase.input.year, phase.injected)
   return { result, phases, byYear }
 }
 
@@ -296,7 +334,7 @@ describe('simulatePlan delegates the pension lump-sum rollover', () => {
   // year, including the four in which no offer elects.
   it('calls the extracted helper exactly once for every projected year', () => {
     const { result, phases, byYear } = run()
-    expect(phases.length).toBeGreaterThan(0)
+    expectSeamRanAtLeastOnce(seam)
     expect(result.years.length).toBe(END_YEAR - START_YEAR + 1)
     expect(phases.length).toBe(result.years.length)
     expect(phases.map((p) => p.input.year)).toEqual(result.years.map((y) => y.year))
@@ -305,7 +343,7 @@ describe('simulatePlan delegates the pension lump-sum rollover', () => {
     expect(rowsFor(byYear, END_YEAR)).toEqual([])
     for (const phase of phases) {
       // `plan.accounts` whole and in order — not pre-filtered to pensions.
-      expect(phase.accountIdsAtCall, `accounts at ${phase.input.year}`).toEqual([
+      expect(phase.captured.accountIds, `accounts at ${phase.input.year}`).toEqual([
         'shared-target',
         'employer-dest',
         'pen-1',
@@ -315,7 +353,7 @@ describe('simulatePlan delegates the pension lump-sum rollover', () => {
       ])
       // The balance view is the caller's live `balances`, which holds only the
       // account types that carry one — the two pensions are absent.
-      expect(phase.balanceIdsAtCall, `balances at ${phase.input.year}`).toEqual(['shared-target', 'employer-dest'])
+      expect(phase.captured.balanceIds, `balances at ${phase.input.year}`).toEqual(['shared-target', 'employer-dest'])
     }
   })
 
@@ -325,13 +363,14 @@ describe('simulatePlan delegates the pension lump-sum rollover', () => {
     const { result } = run({ capture: true })
     let identityChecks = 0
     let attributedRecords = 0
-    for (let i = 0; i < seam.events.length; i++) {
-      const event = seam.events[i]!
+    for (let i = 0; i < hostile.events.length; i++) {
+      const event = hostile.events[i]!
       if (event.kind !== 'phase') continue
-      const where = `year ${event.input.year}`
+      const call = seam.calls[event.ordinal]!
+      const where = `year ${call.input.year}`
       const followed: Extract<SeamEvent, { kind: 'recorded' }>[] = []
-      for (let j = i + 1; j < seam.events.length; j++) {
-        const next = seam.events[j]!
+      for (let j = i + 1; j < hostile.events.length; j++) {
+        const next = hostile.events[j]!
         if (next.kind === 'phase') break
         followed.push(next)
       }
@@ -339,36 +378,36 @@ describe('simulatePlan delegates the pension lump-sum rollover', () => {
       // EVERY row is recorded, unfiltered — the sink, not the caller, applies
       // the non-positive drop, and this log sits in front of the sink. The
       // fixture's zero offer is what makes that rule load-bearing.
-      expect(followed.length, `${where} recorded a different number of rows`).toBe(event.rows.length)
-      for (let k = 0; k < event.rows.length; k++) {
-        const want = event.rows[k]!
+      expect(followed.length, `${where} recorded a different number of rows`).toBe(call.injected.length)
+      for (let k = 0; k < call.injected.length; k++) {
+        const want = call.injected[k]!
         // THE LOAD-BEARING ONE. A caller that invokes the helper for effect and
         // then records its own byte-identical rebuild satisfies every field
         // comparison below and every other suite in the repository, and fails
         // only this.
-        expect(followed[k]!.row, `${where} [${k}] is not the helper's own record object`).toBe(want.record)
+        expectPublishedFromSeam(followed[k]!.row, want.record, `${where} [${k}] recorded pension rollover`)
         expect(followed[k]!.row.amount).toBe(want.amount)
         expect(followed[k]!.row.destinationAccountId).toBe(want.destinationAccountId)
         identityChecks++
       }
       // The index the helper hands back must name the account it named.
-      for (const row of event.rows) {
-        expect(event.input.balances[row.destinationIndex]?.account.id, `${where} destinationIndex`).toBe(
+      for (const row of call.injected) {
+        expect(call.input.balances[row.destinationIndex]?.account.id, `${where} destinationIndex`).toBe(
           row.destinationAccountId,
         )
       }
     }
     // WHOLE-LOG ACCOUNTING. `recordPensionRollover` has exactly one call site,
     // so a record that fell outside every phase run would be skipped in silence.
-    const recordEvents = seam.events.filter((e) => e.kind === 'recorded').length
+    const recordEvents = hostile.events.filter((e) => e.kind === 'recorded').length
     expect(attributedRecords, 'a recorded pension rollover fell outside every phase call').toBe(recordEvents)
     expect(identityChecks, 'the fixture no longer records any pension rollover').toBe(4)
     // AND THE PUBLISHED LEDGER, filtered: the sink drops a non-positive amount,
     // so the published set is the rows with `amount > 0`, in row order.
     for (const year of result.years) {
-      const rows = seam.events
-        .filter((e): e is Extract<SeamEvent, { kind: 'phase' }> => e.kind === 'phase' && e.input.year === year.year)
-        .flatMap((e) => e.rows)
+      const rows = seam.calls
+        .filter((e) => e.input.year === year.year)
+        .flatMap((e) => e.injected)
       expect(rolloverLineIds(year), `published rollover lines ${year.year}`).toEqual(
         rows
           .filter((r) => r.amount > 0)
@@ -470,14 +509,16 @@ describe('simulatePlan delegates the pension lump-sum rollover', () => {
   // appended to after it was returned. A generator PASSES the count check
   // (both reads are `undefined`), so neither line is redundant.
   it('returns a materialized array that does not grow after it is returned', () => {
-    const { phases } = run()
-    expect(phases.length).toBeGreaterThan(0)
+    run()
+    expectSeamRanAtLeastOnce(seam)
     let rowsSeen = 0
-    for (const phase of phases) {
-      const where = `year ${phase.input.year}`
-      expect(Array.isArray(phase.rows), `${where} rows are not a materialized array`).toBe(true)
-      expect(phase.rows.length, `${where} rows grew after the call returned`).toBe(phase.rowCountAtCall)
-      rowsSeen += phase.rows.length
+    for (const event of hostile.events) {
+      if (event.kind !== 'phase') continue
+      const call = seam.calls[event.ordinal]!
+      const where = `year ${call.input.year}`
+      expect(Array.isArray(call.injected), `${where} rows are not a materialized array`).toBe(true)
+      expect(call.injected.length, `${where} rows grew after the call returned`).toBe(event.rowCountAtCall)
+      rowsSeen += call.injected.length
     }
     expect(rowsSeen, 'the fixture no longer elects any lump sum').toBe(4)
   })

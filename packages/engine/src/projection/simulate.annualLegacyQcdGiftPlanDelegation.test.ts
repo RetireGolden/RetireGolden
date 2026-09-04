@@ -1,4 +1,10 @@
-/** Hostile delegation, downstream-application, and rollback guard for scalar QCD planning. */
+/**
+ * Hostile delegation, downstream-application, and rollback guard for scalar QCD
+ * planning.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -6,17 +12,13 @@ import type {
   AnnualLegacyQcdGiftPlanResult,
 } from './internal/annualLegacyQcdGiftPlan.js'
 
-interface GiftPhase {
-  readonly input: AnnualLegacyQcdGiftPlanInput
-  readonly balancesAtCall: readonly Readonly<{
-    accountId: string
-    balance: number
-  }>[]
-  readonly natural: AnnualLegacyQcdGiftPlanResult
-  readonly injected: AnnualLegacyQcdGiftPlanResult
-}
+/** Source balances as they stood before the real gift planner ran. */
+type BalancesAtCall = readonly Readonly<{
+  accountId: string
+  balance: number
+}>[]
 
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   mode: 'normal' as
     | 'normal'
     | 'naturalGrouped'
@@ -41,7 +43,6 @@ const seam = vi.hoisted(() => ({
   logicalWrites: [] as Readonly<{ accountId: string; balance: number }>[],
   historyPropertyReads: 0,
   historyIterations: 0,
-  giftPhases: [] as GiftPhase[],
   characterInputs: [] as Readonly<{
     grossIdentity: ReadonlyMap<string, number>
     fromRmdIdentity: ReadonlyMap<string, number>
@@ -54,27 +55,26 @@ const seam = vi.hoisted(() => ({
   }>[],
 }))
 
-vi.mock('./internal/annualLegacyQcdGiftPlan.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualLegacyQcdGiftPlan.js')
-  >()
-  return {
-    ...original,
-    annualLegacyQcdGiftPlan: (input: AnnualLegacyQcdGiftPlanInput) => {
-      const natural = original.annualLegacyQcdGiftPlan(input)
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualLegacyQcdGiftPlanInput,
+      AnnualLegacyQcdGiftPlanResult,
+      BalancesAtCall
+    >(),
+)
+
+vi.mock('./internal/annualLegacyQcdGiftPlan.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualLegacyQcdGiftPlan.js')
+    >(),
+    'annualLegacyQcdGiftPlan',
+    (natural, { input }): AnnualLegacyQcdGiftPlanResult => {
       if (input.hasNamedQcdRequest || input.qcdAnnual <= 0) return natural
-      if (seam.mode === 'naturalGrouped') {
-        seam.giftPhases.push({
-          input,
-          balancesAtCall: input.balances.map(({ accountId, balance }) => ({
-            accountId,
-            balance,
-          })),
-          natural,
-          injected: natural,
-        })
-        return natural
-      }
+      if (hostile.mode === 'naturalGrouped') return natural
       const firstIndex = input.balances.find(
         (state) => state.accountId === 'ira-a',
       )?.balanceIndex
@@ -102,74 +102,74 @@ vi.mock('./internal/annualLegacyQcdGiftPlan.js', async (importOriginal) => {
       )!.balance
       let secondSourceAccountIdReads = 0
       const firstIntent = {
-        balanceIndex: seam.mode === 'wrongPosition'
+        balanceIndex: hostile.mode === 'wrongPosition'
           ? firstIndex
-          : seam.mode === 'nonIra'
+          : hostile.mode === 'nonIra'
             ? cashIndex
             : secondIndex,
-        sourceAccountId: seam.mode === 'nonIra' ? 'cash' : 'ira-b',
-        ownerId: seam.mode === 'wrongOwner' ? 'p2' : 'p1',
-        sourceBalanceBefore: seam.mode === 'staleBalance'
+        sourceAccountId: hostile.mode === 'nonIra' ? 'cash' : 'ira-b',
+        ownerId: hostile.mode === 'wrongOwner' ? 'p2' : 'p1',
+        sourceBalanceBefore: hostile.mode === 'staleBalance'
           ? secondBalance + 1
-          : seam.mode === 'nonIra'
+          : hostile.mode === 'nonIra'
             ? cashBalance
             : secondBalance,
         get amount() {
-          seam.amountReads.push('ira-b')
-          return seam.mode === 'duplicateSourceOverdraw' ? 1_200 : 222.22
+          hostile.amountReads.push('ira-b')
+          return hostile.mode === 'duplicateSourceOverdraw' ? 1_200 : 222.22
         },
       }
       const secondIntent = {
-        balanceIndex: seam.mode === 'wrongSecondPosition'
+        balanceIndex: hostile.mode === 'wrongSecondPosition'
           ? secondIndex
-          : seam.mode === 'duplicateSourceOverdraw'
+          : hostile.mode === 'duplicateSourceOverdraw'
             ? secondIndex
             : firstIndex,
         get sourceAccountId() {
-          seam.identityReads.push(
-            seam.mode === 'duplicateSourceOverdraw' ? 'ira-b' : 'ira-a',
+          hostile.identityReads.push(
+            hostile.mode === 'duplicateSourceOverdraw' ? 'ira-b' : 'ira-a',
           )
           secondSourceAccountIdReads += 1
           if (
-            seam.mode === 'laterIdentityReadFailure' ||
-            (seam.mode === 'identityFlipAfterValidation' &&
+            hostile.mode === 'laterIdentityReadFailure' ||
+            (hostile.mode === 'identityFlipAfterValidation' &&
               secondSourceAccountIdReads > 1)
           ) {
             throw new Error('hostile later identity read')
           }
-          return seam.mode === 'duplicateSourceOverdraw' ? 'ira-b' : 'ira-a'
+          return hostile.mode === 'duplicateSourceOverdraw' ? 'ira-b' : 'ira-a'
         },
         ownerId: 'p1',
-        sourceBalanceBefore: seam.mode === 'duplicateSourceOverdraw'
+        sourceBalanceBefore: hostile.mode === 'duplicateSourceOverdraw'
           ? secondBalance - 1_200
           : firstBalance,
         get amount() {
-          seam.amountReads.push(
-            seam.mode === 'duplicateSourceOverdraw' ? 'ira-b' : 'ira-a',
+          hostile.amountReads.push(
+            hostile.mode === 'duplicateSourceOverdraw' ? 'ira-b' : 'ira-a',
           )
-          if (seam.mode === 'laterAmountReadFailure') {
+          if (hostile.mode === 'laterAmountReadFailure') {
             throw new Error('hostile later amount read')
           }
-          return seam.mode === 'zeroAmount'
+          return hostile.mode === 'zeroAmount'
             ? 0
-            : seam.mode === 'subCentAmount'
+            : hostile.mode === 'subCentAmount'
               ? 0.004
-            : seam.mode === 'overdraw'
+            : hostile.mode === 'overdraw'
               ? firstBalance + 0.01
-              : seam.mode === 'duplicateSourceOverdraw'
+              : hostile.mode === 'duplicateSourceOverdraw'
                 ? 900
                 : 111.11
         },
       }
-      const offsetHistoryUnprovableDonorIds = seam.mode === 'historyWrite'
+      const offsetHistoryUnprovableDonorIds = hostile.mode === 'historyWrite'
         ? ['p1']
         : []
       const historyIterator = offsetHistoryUnprovableDonorIds[Symbol.iterator]
         .bind(offsetHistoryUnprovableDonorIds)
       Object.defineProperty(offsetHistoryUnprovableDonorIds, Symbol.iterator, {
         value: () => {
-          seam.historyIterations += 1
-          if (seam.mode === 'historyIteratorReadFailure') {
+          hostile.historyIterations += 1
+          if (hostile.mode === 'historyIteratorReadFailure') {
             throw new Error('hostile history iterator read')
           }
           return historyIterator()
@@ -189,27 +189,25 @@ vi.mock('./internal/annualLegacyQcdGiftPlan.js', async (importOriginal) => {
       } satisfies AnnualLegacyQcdGiftPlanResult
       Object.defineProperty(injected, 'offsetHistoryUnprovableDonorIds', {
         get: () => {
-          seam.historyPropertyReads += 1
-          if (seam.mode === 'historyPropertyReadFailure') {
+          hostile.historyPropertyReads += 1
+          if (hostile.mode === 'historyPropertyReadFailure') {
             throw new Error('hostile history property read')
           }
           return offsetHistoryUnprovableDonorIds
         },
       })
-      seam.giftPhases.push({
-        input,
-        balancesAtCall: input.balances.map(({ accountId, balance }) => ({
+      hostile.captureLogicalWrites = true
+      return injected
+    },
+    {
+      capture: (input): BalancesAtCall =>
+        input.balances.map(({ accountId, balance }) => ({
           accountId,
           balance,
         })),
-        natural,
-        injected,
-      })
-      seam.captureLogicalWrites = true
-      return injected
     },
-  }
-})
+  ),
+)
 
 vi.mock('./internal/annualLogicalBalanceLedger.js', async (importOriginal) => {
   const original = await importOriginal<
@@ -220,8 +218,8 @@ vi.mock('./internal/annualLogicalBalanceLedger.js', async (importOriginal) => {
   original.AnnualLogicalBalanceGroup.prototype.applyClosingSnapshot = function (
     closing,
   ) {
-    if (seam.captureLogicalWrites) {
-      seam.logicalWrites.push({ accountId: this.id, balance: closing.balance })
+    if (hostile.captureLogicalWrites) {
+      hostile.logicalWrites.push({ accountId: this.id, balance: closing.balance })
     }
     return applyClosingSnapshot.call(this, closing)
   }
@@ -237,7 +235,7 @@ vi.mock('./internal/annualLegacyQcdOwnerCharacterPlan.js', async (importOriginal
     annualLegacyQcdOwnerCharacterPlan: (
       input: Parameters<typeof original.annualLegacyQcdOwnerCharacterPlan>[0],
     ) => {
-      seam.characterInputs.push({
+      hostile.characterInputs.push({
         grossIdentity: input.qcdGrossByOwner,
         fromRmdIdentity: input.qcdFromRmdByOwner,
         gross: [...input.qcdGrossByOwner],
@@ -255,7 +253,7 @@ vi.mock('../actions/index.js', async (importOriginal) => {
     evaluateAnnualQcdExecutionPrerequisites: (
       input: Parameters<typeof original.evaluateAnnualQcdExecutionPrerequisites>[0],
     ) => {
-      seam.prerequisitePriorOffsets.push({
+      hostile.prerequisitePriorOffsets.push({
         taxYear: input.taxYear,
         actionIds: (input.runtimeEvidence?.priorQcdOffsetEvidence ?? [])
           .map((evidence) => String(evidence.actionId)),
@@ -368,17 +366,17 @@ function plan(grouped = false): Plan {
   return value
 }
 
-function run(mode: typeof seam.mode = 'normal') {
-  seam.mode = mode
-  seam.giftPhases.length = 0
-  seam.amountReads.length = 0
-  seam.identityReads.length = 0
-  seam.captureLogicalWrites = false
-  seam.logicalWrites.length = 0
-  seam.historyPropertyReads = 0
-  seam.historyIterations = 0
-  seam.characterInputs.length = 0
-  seam.prerequisitePriorOffsets.length = 0
+function run(mode: typeof hostile.mode = 'normal') {
+  hostile.mode = mode
+  seam.reset()
+  hostile.amountReads.length = 0
+  hostile.identityReads.length = 0
+  hostile.captureLogicalWrites = false
+  hostile.logicalWrites.length = 0
+  hostile.historyPropertyReads = 0
+  hostile.historyIterations = 0
+  hostile.characterInputs.length = 0
+  hostile.prerequisitePriorOffsets.length = 0
   const counterfactualReads: unknown[] = []
   const annualCounterfactual: SimulateAnnualCounterfactualRequest = {
     omitActionIds: [],
@@ -402,12 +400,12 @@ function run(mode: typeof seam.mode = 'normal') {
 describe('simulatePlan delegates scalar QCD gift planning', () => {
   it('plans and journals one logical debit across compatible duplicate physical rows', () => {
     const { result } = run('naturalGrouped')
-    const calls = seam.giftPhases.filter((phase) =>
+    const calls = seam.calls.filter((phase) =>
       phase.input.people[0]?.ageAttained === 70)
 
     expect(calls.length).toBeGreaterThan(1)
     for (const phase of calls) {
-      expect(phase.balancesAtCall).toEqual([
+      expect(phase.captured).toEqual([
         { accountId: 'cash', balance: 100_000 },
         { accountId: 'grouped-ira', balance: 1_200 },
       ])
@@ -445,7 +443,7 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
 
   it('passes exact snapshots, applies hostile intents in order, and rolls back re-entry', () => {
     const { result, counterfactualReads } = run()
-    const calls2026 = seam.giftPhases.filter((phase) =>
+    const calls2026 = seam.calls.filter((phase) =>
       phase.input.people[0]?.ageAttained === 71)
 
     expect(calls2026.length).toBeGreaterThan(1)
@@ -462,7 +460,7 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
         ownedIraRmdTotal: 0,
       })
       expect([...phase.input.ownedIraRmdGrossByOwner]).toEqual([])
-      expect(phase.balancesAtCall).toEqual([
+      expect(phase.captured).toEqual([
         { accountId: 'cash', balance: 100_000 },
         { accountId: 'ira-a', balance: 1_000 },
         { accountId: 'ira-b', balance: 2_000 },
@@ -507,13 +505,13 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
         mutationOrdinal: 2,
       },
     ])
-    expect(seam.characterInputs.some((input) =>
+    expect(hostile.characterInputs.some((input) =>
       JSON.stringify({ gross: input.gross, fromRmd: input.fromRmd }) ===
       JSON.stringify({
         gross: [['p1', 333.33]],
         fromRmd: [],
       }))).toBe(true)
-    const committedCharacterInput = seam.characterInputs.find((input) =>
+    const committedCharacterInput = hostile.characterInputs.find((input) =>
       input.grossIdentity === calls2026.at(-1)!.injected.qcdGrossByOwner)
     expect(committedCharacterInput?.fromRmdIdentity).toBe(
       calls2026.at(-1)!.injected.qcdFromRmdByOwner,
@@ -529,7 +527,7 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
 
   it('uses the helper history-write list rather than retaining inline donor marking', () => {
     run()
-    const named2027CallsWithEmptyWriteList = seam.prerequisitePriorOffsets.filter((call) =>
+    const named2027CallsWithEmptyWriteList = hostile.prerequisitePriorOffsets.filter((call) =>
       call.taxYear === 2027)
     expect(named2027CallsWithEmptyWriteList.length).toBeGreaterThan(1)
     for (const call of named2027CallsWithEmptyWriteList) {
@@ -537,7 +535,7 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
     }
 
     run('historyWrite')
-    const named2027CallsWithP1Write = seam.prerequisitePriorOffsets.filter((call) =>
+    const named2027CallsWithP1Write = hostile.prerequisitePriorOffsets.filter((call) =>
       call.taxYear === 2027)
     expect(named2027CallsWithP1Write).toHaveLength(
       named2027CallsWithEmptyWriteList.length,
@@ -571,10 +569,10 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
     expect(() => run('duplicateSourceOverdraw')).toThrow(
       'Legacy scalar QCD debit intent lost its live source identity',
     )
-    expect(seam.amountReads.length).toBeGreaterThan(0)
-    expect(seam.amountReads.length % 2).toBe(0)
-    for (let index = 0; index < seam.amountReads.length; index += 2) {
-      expect(seam.amountReads.slice(index, index + 2))
+    expect(hostile.amountReads.length).toBeGreaterThan(0)
+    expect(hostile.amountReads.length % 2).toBe(0)
+    for (let index = 0; index < hostile.amountReads.length; index += 2) {
+      expect(hostile.amountReads.slice(index, index + 2))
         .toEqual(['ira-b', 'ira-b'])
     }
   })
@@ -588,10 +586,10 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
     // evaluation retries the annual pass, so prove the invariant independently
     // for each attempt: every read pair reaches the later intent before any
     // first-intent re-read can begin a mutation.
-    expect(seam.amountReads.length).toBeGreaterThan(0)
-    expect(seam.amountReads.length % 2).toBe(0)
-    for (let index = 0; index < seam.amountReads.length; index += 2) {
-      expect(seam.amountReads.slice(index, index + 2)).toEqual(['ira-b', 'ira-a'])
+    expect(hostile.amountReads.length).toBeGreaterThan(0)
+    expect(hostile.amountReads.length % 2).toBe(0)
+    for (let index = 0; index < hostile.amountReads.length; index += 2) {
+      expect(hostile.amountReads.slice(index, index + 2)).toEqual(['ira-b', 'ira-a'])
     }
   })
 
@@ -599,25 +597,25 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
     expect(() => run('laterIdentityReadFailure')).toThrow(
       'hostile later identity read',
     )
-    expect(seam.identityReads.length).toBeGreaterThan(0)
-    expect(seam.identityReads).toEqual(
-      seam.identityReads.map(() => 'ira-a'),
+    expect(hostile.identityReads.length).toBeGreaterThan(0)
+    expect(hostile.identityReads).toEqual(
+      hostile.identityReads.map(() => 'ira-a'),
     )
-    expect(seam.amountReads).toEqual(
-      seam.identityReads.map(() => 'ira-b'),
+    expect(hostile.amountReads).toEqual(
+      hostile.identityReads.map(() => 'ira-b'),
     )
-    expect(seam.logicalWrites).toEqual([])
-    expect(seam.historyIterations).toBe(0)
-    expect(seam.characterInputs).toEqual([])
+    expect(hostile.logicalWrites).toEqual([])
+    expect(hostile.historyIterations).toBe(0)
+    expect(hostile.characterInputs).toEqual([])
   })
 
   it('never re-reads a normalized later identity during apply', () => {
     const { result } = run('identityFlipAfterValidation')
-    const calls2026 = seam.giftPhases.filter((phase) =>
+    const calls2026 = seam.calls.filter((phase) =>
       phase.input.people[0]?.ageAttained === 71)
 
     expect(calls2026.length).toBeGreaterThan(1)
-    expect(seam.identityReads).toEqual(
+    expect(hostile.identityReads).toEqual(
       calls2026.map(() => 'ira-a'),
     )
     expect(result.years[0]!.balances).toMatchObject({
@@ -635,21 +633,21 @@ describe('simulatePlan delegates scalar QCD gift planning', () => {
     expect(() => run('historyPropertyReadFailure')).toThrow(
       'hostile history property read',
     )
-    expect(seam.historyPropertyReads).toBeGreaterThan(0)
-    expect(seam.historyIterations).toBe(0)
+    expect(hostile.historyPropertyReads).toBeGreaterThan(0)
+    expect(hostile.historyIterations).toBe(0)
     // The logical setter is the first apply operation and strictly precedes
     // runtime, deferred-character and history publication at this seam.
-    expect(seam.logicalWrites).toEqual([])
-    expect(seam.characterInputs).toEqual([])
-    expect(seam.prerequisitePriorOffsets).toEqual([])
+    expect(hostile.logicalWrites).toEqual([])
+    expect(hostile.characterInputs).toEqual([])
+    expect(hostile.prerequisitePriorOffsets).toEqual([])
 
     expect(() => run('historyIteratorReadFailure')).toThrow(
       'hostile history iterator read',
     )
-    expect(seam.historyPropertyReads).toBeGreaterThan(0)
-    expect(seam.historyIterations).toBe(seam.historyPropertyReads)
-    expect(seam.logicalWrites).toEqual([])
-    expect(seam.characterInputs).toEqual([])
-    expect(seam.prerequisitePriorOffsets).toEqual([])
+    expect(hostile.historyPropertyReads).toBeGreaterThan(0)
+    expect(hostile.historyIterations).toBe(hostile.historyPropertyReads)
+    expect(hostile.logicalWrites).toEqual([])
+    expect(hostile.characterInputs).toEqual([])
+    expect(hostile.prerequisitePriorOffsets).toEqual([])
   })
 })

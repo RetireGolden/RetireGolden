@@ -6,6 +6,9 @@
  * ledger fields, so an orphaned helper or a caller that recomputes either
  * result fails. An annual counterfactual run additionally proves that the pure
  * helpers retain no state and that caller-owned line mutation rolls back.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -23,19 +26,13 @@ type Mode =
   | 'insertExcluded'
   | 'inflateAllocation'
 
-interface EligibilityEvent {
-  readonly input: AnnualCoordinatedHecmEligibilityInput
-  readonly original: AnnualCoordinatedHecmEligibility
-  readonly output: AnnualCoordinatedHecmEligibility
-  readonly lineBalancesAtCall: Readonly<Record<string, number>>
-}
-
-interface AllocationEvent {
+/**
+ * Read off the live line map before the real allocator runs, because the map is
+ * caller-owned and the projection keeps moving after the seam returns.
+ */
+interface AllocationCapture {
+  /** Year of the eligibility pass that produced this allocation's live map. */
   readonly year: number
-  readonly input: AnnualCoordinatedHecmAllocationInput
-  readonly original: readonly AnnualCoordinatedHecmAllocationRow[]
-  readonly output: readonly AnnualCoordinatedHecmAllocationRow[]
-  readonly eligibility: EligibilityEvent
   readonly lineBalancesAtCall: Readonly<Record<string, number>>
   /** Shallow copy: values retain the caller-owned line object identities. */
   readonly lineReferencesAtCall: ReadonlyMap<
@@ -44,11 +41,28 @@ interface AllocationEvent {
   >
 }
 
-const seam = vi.hoisted(() => ({
-  mode: 'original' as Mode,
-  eligibility: [] as EligibilityEvent[],
-  allocations: [] as AllocationEvent[],
-}))
+const hostile = vi.hoisted(() => ({ mode: 'original' as Mode }))
+
+const eligibilitySeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualCoordinatedHecmEligibilityInput,
+      AnnualCoordinatedHecmEligibility
+    >(),
+)
+
+const allocationSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualCoordinatedHecmAllocationInput,
+      readonly AnnualCoordinatedHecmAllocationRow[],
+      AllocationCapture
+    >(),
+)
 
 vi.mock('./internal/annualCoordinatedHecm.js', async (importOriginal) => {
   const original =
@@ -58,63 +72,53 @@ vi.mock('./internal/annualCoordinatedHecm.js', async (importOriginal) => {
   ): Readonly<Record<string, number>> => Object.fromEntries(
     [...states].map(([id, line]) => [id, line.loanBalance]),
   )
-  return {
-    ...original,
-    annualCoordinatedHecmEligibility: (
-      input: Parameters<typeof original.annualCoordinatedHecmEligibility>[0],
-    ) => {
-      const production = original.annualCoordinatedHecmEligibility(input)
+  return eligibilitySeam.through(
+    allocationSeam.through(
+      original,
+      'annualCoordinatedHecmAllocations',
+      (natural): readonly AnnualCoordinatedHecmAllocationRow[] =>
+        hostile.mode === 'inflateAllocation' && natural.length > 0
+          ? natural.map((row, index) => index === 0
+            ? { ...row, amount: row.amount + 7_000 }
+            : row)
+          : natural,
+      {
+        capture: (input): AllocationCapture => {
+          const eligibility = [...eligibilitySeam.calls].reverse().find(
+            (call) => call.input.hecmStates === input.hecmStates,
+          )
+          if (eligibility === undefined) {
+            throw new Error('allocation did not follow an eligibility call on its live map')
+          }
+          return {
+            year: eligibility.input.year,
+            lineBalancesAtCall: balances(input.hecmStates),
+            lineReferencesAtCall: new Map(input.hecmStates),
+          }
+        },
+      },
+    ),
+    'annualCoordinatedHecmEligibility',
+    (natural, { input }): AnnualCoordinatedHecmEligibility => {
       const afterStartYear = input.year > input.startYear
-      const output = seam.mode === 'capacity30' && afterStartYear
-        ? { propertyAccountIds: production.propertyAccountIds, capacity: 30_000 }
-        : seam.mode === 'reverseIds' && afterStartYear
+      return hostile.mode === 'capacity30' && afterStartYear
+        ? { propertyAccountIds: natural.propertyAccountIds, capacity: 30_000 }
+        : hostile.mode === 'reverseIds' && afterStartYear
           ? {
-              propertyAccountIds: [...production.propertyAccountIds].reverse(),
+              propertyAccountIds: [...natural.propertyAccountIds].reverse(),
               capacity: 30_000,
             }
-          : seam.mode === 'insertExcluded' && afterStartYear
+          : hostile.mode === 'insertExcluded' && afterStartYear
             ? {
-                propertyAccountIds: [...production.propertyAccountIds, 'excluded'],
-                capacity: production.capacity + 15_000,
+                propertyAccountIds: [...natural.propertyAccountIds, 'excluded'],
+                capacity: natural.capacity + 15_000,
               }
-          : production
-      seam.eligibility.push({
-        input,
-        original: production,
-        output,
-        lineBalancesAtCall: balances(input.hecmStates),
-      })
-      return output
+          : natural
     },
-    annualCoordinatedHecmAllocations: (
-      input: Parameters<typeof original.annualCoordinatedHecmAllocations>[0],
-    ) => {
-      const production = original.annualCoordinatedHecmAllocations(input)
-      const output = seam.mode === 'inflateAllocation' && production.length > 0
-        ? production.map((row, index) => index === 0
-          ? { ...row, amount: row.amount + 7_000 }
-          : row)
-        : production
-      const eligibility = [...seam.eligibility].reverse().find(
-        (event) => event.input.hecmStates === input.hecmStates,
-      )
-      if (eligibility === undefined) {
-        throw new Error('allocation did not follow an eligibility call on its live map')
-      }
-      seam.allocations.push({
-        year: eligibility.input.year,
-        input,
-        original: production,
-        output,
-        eligibility,
-        lineBalancesAtCall: balances(input.hecmStates),
-        lineReferencesAtCall: new Map(input.hecmStates),
-      })
-      return output
-    },
-  }
+  )
 })
 
+import { expectPublishedFromSeam } from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
@@ -196,9 +200,9 @@ function run(
   plan = coordinatedPlan(),
   options: Partial<SimulateOptions> = {},
 ): { readonly plan: Plan; readonly result: ProjectionResult } {
-  seam.mode = mode
-  seam.eligibility.length = 0
-  seam.allocations.length = 0
+  hostile.mode = mode
+  eligibilitySeam.reset()
+  allocationSeam.reset()
   return {
     plan,
     result: simulatePlan(plan, {
@@ -225,40 +229,44 @@ function coordinatedSources(value: YearResult) {
 }
 
 beforeEach(() => {
-  seam.mode = 'original'
-  seam.eligibility.length = 0
-  seam.allocations.length = 0
+  hostile.mode = 'original'
+  eligibilitySeam.reset()
+  allocationSeam.reset()
 })
 
 describe('simulatePlan delegates annual coordinated HECM work', () => {
   it('passes live identity-bearing state through both helpers and consumes their rows', () => {
     const { plan, result } = run('original')
-    expect(seam.eligibility.map((event) => event.input.year)).toEqual([2026, 2027])
-    expect(seam.allocations.map((event) => event.year)).toEqual([2026, 2027])
-    for (const event of seam.eligibility) {
-      expect(event.input.accounts).toBe(plan.accounts)
-      expect(Array.isArray(event.output.propertyAccountIds)).toBe(true)
+    expect(eligibilitySeam.calls.map((call) => call.input.year)).toEqual([2026, 2027])
+    expect(allocationSeam.calls.map((call) => call.captured.year)).toEqual([2026, 2027])
+    for (const call of eligibilitySeam.calls) {
+      expect(call.input.accounts).toBe(plan.accounts)
+      expect(Array.isArray(call.injected.propertyAccountIds)).toBe(true)
     }
 
-    const eligible = seam.eligibility.find((event) => event.input.year === 2027)!
-    const allocation = seam.allocations.find((event) => event.year === 2027)!
-    expect(eligible.output).toBe(eligible.original)
-    expect(eligible.output).toEqual({
+    const eligible = eligibilitySeam.calls.find((call) => call.input.year === 2027)!
+    const allocation = allocationSeam.calls.find(
+      (call) => call.captured.year === 2027,
+    )!
+    expect(eligible.injected).toBe(eligible.natural)
+    expect(eligible.injected).toEqual({
       propertyAccountIds: ['home1', 'home2'],
       capacity: 50_000,
     })
     expect(allocation.input.hecmStates).toBe(eligible.input.hecmStates)
-    expect(allocation.input.propertyAccountIds).toBe(
-      eligible.output.propertyAccountIds,
+    expectPublishedFromSeam(
+      allocation.input.propertyAccountIds,
+      eligible.injected.propertyAccountIds,
+      'the allocation input property-id list',
     )
     expect(allocation.input.acceptedDraw).toBe(50_000)
-    expect(allocation.output).toBe(allocation.original)
-    expect(allocation.output).toEqual([
+    expect(allocation.injected).toBe(allocation.natural)
+    expect(allocation.injected).toEqual([
       { propertyAccountId: 'home1', amount: 40_000 },
       { propertyAccountId: 'home2', amount: 10_000 },
     ])
-    const home1AtCommit = allocation.lineReferencesAtCall.get('home1')!
-    const home2AtCommit = allocation.lineReferencesAtCall.get('home2')!
+    const home1AtCommit = allocation.captured.lineReferencesAtCall.get('home1')!
+    const home2AtCommit = allocation.captured.lineReferencesAtCall.get('home2')!
     expect(allocation.input.hecmStates.get('home1')).toBe(home1AtCommit)
     expect(allocation.input.hecmStates.get('home2')).toBe(home2AtCommit)
     expect(home1AtCommit.loanBalance).toBe(40_000)
@@ -307,9 +315,9 @@ describe('simulatePlan delegates annual coordinated HECM work', () => {
     const inserted = year(run('insertExcluded').result, 2027)
     expect(inserted.hecmDraw).toBe(65_000)
     expect(inserted.hecmLoanBalance).toBe(65_000)
-    expect(seam.allocations.find(
-      (event) => event.year === 2027 && event.input.acceptedDraw > 0,
-    )!.output).toContainEqual({
+    expect(allocationSeam.calls.find(
+      (call) => call.captured.year === 2027 && call.input.acceptedDraw > 0,
+    )!.injected).toContainEqual({
       propertyAccountId: 'excluded',
       amount: 15_000,
     })
@@ -359,12 +367,12 @@ describe('simulatePlan delegates annual coordinated HECM work', () => {
       market: { returnShockPct: [-10, 0] },
       captureAnnualCashFlow: false,
     })
-    const accepted = seam.allocations.filter(
-      (event) => event.year === 2026 && event.input.acceptedDraw > 0,
+    const accepted = allocationSeam.calls.filter(
+      (call) => call.captured.year === 2026 && call.input.acceptedDraw > 0,
     )
     expect(taxCalls.filter((input) => input.year === 2026).length).toBeGreaterThan(2)
     expect(accepted).toHaveLength(1)
-    expect(accepted[0]!.lineBalancesAtCall.home1).toBe(0)
+    expect(accepted[0]!.captured.lineBalancesAtCall.home1).toBe(0)
     expect(accepted[0]!.input.acceptedDraw).toBeGreaterThan(10_000)
   })
 
@@ -383,23 +391,23 @@ describe('simulatePlan delegates annual coordinated HECM work', () => {
 
     expect(replay).toEqual(baseline)
     expect(captures).toHaveLength(2)
-    const accepted = seam.allocations.filter(
-      (event) => event.year === 2027 && event.input.acceptedDraw > 0,
+    const accepted = allocationSeam.calls.filter(
+      (call) => call.captured.year === 2027 && call.input.acceptedDraw > 0,
     )
     expect(accepted.length).toBeGreaterThan(1)
-    for (const event of accepted) {
-      expect(event.input.acceptedDraw).toBe(50_000)
-      expect(event.lineBalancesAtCall).toMatchObject({
+    for (const call of accepted) {
+      expect(call.input.acceptedDraw).toBe(50_000)
+      expect(call.captured.lineBalancesAtCall).toMatchObject({
         excluded: 0,
         home1: 0,
         home2: 0,
       })
-      expect(event.output).toEqual([
+      expect(call.injected).toEqual([
         { propertyAccountId: 'home1', amount: 40_000 },
         { propertyAccountId: 'home2', amount: 10_000 },
       ])
     }
-    expect(new Set(accepted.map((event) => event.output)).size).toBe(
+    expect(new Set(accepted.map((call) => call.injected)).size).toBe(
       accepted.length,
     )
   })

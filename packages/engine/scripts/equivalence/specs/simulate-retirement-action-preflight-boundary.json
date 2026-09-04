@@ -267,7 +267,7 @@
     {
       "id": "AI.callsite.contract",
       "label": "annual action, balance snapshot, baseline and release contract",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
         1520,
         1531
@@ -298,7 +298,7 @@
     {
       "id": "AI.callsite.outputs",
       "label": "all executor-routing and linked-group output handoffs",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
         1532,
         1546

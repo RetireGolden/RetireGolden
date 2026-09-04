@@ -1,4 +1,9 @@
-/** Hostile delegation proof for annual ACA result publication. */
+/**
+ * Hostile delegation proof for annual ACA result publication.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -6,50 +11,50 @@ import type {
   AnnualAcaResultPublicationResult,
 } from './internal/annualAcaResultPublication.js'
 
-interface PublicationCall {
-  readonly input: AnnualAcaResultPublicationInput
-  readonly original: AnnualAcaResultPublicationResult
-  readonly output: AnnualAcaResultPublicationResult
-}
-
 const INJECTED_WARNING = 'Injected ACA publication warning.'
 const INJECTED_MAGI = 11_111
 const INJECTED_FPL = 99_999
 const INJECTED_PTC = 321
 
-const seam = vi.hoisted(() => ({
-  inject: false,
-  calls: [] as PublicationCall[],
-}))
+const hostile = vi.hoisted(() => ({ inject: false }))
 
-vi.mock('./internal/annualAcaResultPublication.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualAcaResultPublication.js')
-  >()
-  return {
-    ...original,
-    annualAcaResultPublication: (input: AnnualAcaResultPublicationInput) => {
-      const production = original.annualAcaResultPublication(input)
-      const output: AnnualAcaResultPublicationResult =
-        seam.inject && production.yearAcaResult !== undefined
-          ? {
-              yearAcaResult: {
-                ...production.yearAcaResult,
-                readiness: 'actionable',
-                householdMagi: INJECTED_MAGI,
-                federalPovertyLine: INJECTED_FPL,
-                modeledAllowablePtc: INJECTED_PTC,
-                cliffState: 'at-cliff',
-              },
-              warnings: [...production.warnings, INJECTED_WARNING],
-            }
-          : production
-      seam.calls.push({ input, original: production, output })
-      return output
-    },
-  }
-})
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualAcaResultPublicationInput,
+      AnnualAcaResultPublicationResult
+    >(),
+)
 
+vi.mock('./internal/annualAcaResultPublication.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualAcaResultPublication.js')
+    >(),
+    'annualAcaResultPublication',
+    (natural): AnnualAcaResultPublicationResult =>
+      hostile.inject && natural.yearAcaResult !== undefined
+        ? {
+            yearAcaResult: {
+              ...natural.yearAcaResult,
+              readiness: 'actionable',
+              householdMagi: INJECTED_MAGI,
+              federalPovertyLine: INJECTED_FPL,
+              modeledAllowablePtc: INJECTED_PTC,
+              cliffState: 'at-cliff',
+            },
+            warnings: [...natural.warnings, INJECTED_WARNING],
+          }
+        : natural,
+  ),
+)
+
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+} from './simulate.seamGuard.test-support.js'
 import {
   cashAccount,
   setAcaYearContract,
@@ -73,7 +78,7 @@ function acaPlan() {
 }
 
 function run(inject: boolean) {
-  seam.inject = inject
+  hostile.inject = inject
   const plan = acaPlan()
   const probes: OptimizerYearProbe[] = []
   const result = simulatePlan(plan, {
@@ -86,8 +91,8 @@ function run(inject: boolean) {
 }
 
 beforeEach(() => {
-  seam.inject = false
-  seam.calls.length = 0
+  hostile.inject = false
+  seam.reset()
 })
 
 describe('simulatePlan delegates annual ACA result publication', () => {
@@ -107,8 +112,7 @@ describe('simulatePlan delegates annual ACA result publication', () => {
   it('passes detached frozen annual evidence and publishes the original result by identity', () => {
     const { plan, year } = run(false)
 
-    expect(seam.calls).toHaveLength(1)
-    const call = seam.calls[0]!
+    const call = expectSeamRan(seam, 1)[0]!
     expect(Object.isFrozen(call.input)).toBe(true)
     expect(Object.isFrozen(call.input.evaluation)).toBe(true)
     expect(Object.isFrozen(call.input.evaluation.acaSupportCodes)).toBe(true)
@@ -138,17 +142,16 @@ describe('simulatePlan delegates annual ACA result publication', () => {
       .not.toBe(sourceContract?.coveredMembers[0]?.enrollmentPremiumByMonth)
     expect(call.input.contract?.coveredMembers[0]?.slcspBenchmarkPremiumByMonth)
       .not.toBe(sourceContract?.coveredMembers[0]?.slcspBenchmarkPremiumByMonth)
-    expect(call.output).toBe(call.original)
-    expect(year.aca).toBe(call.original.yearAcaResult)
+    expect(call.injected).toBe(call.natural)
+    expectPublishedFromSeam(year.aca, call.natural.yearAcaResult, 'the ACA year result')
   })
 
   it('publishes hostile ACA output and forwards its exact fields to the optimizer probe', () => {
     const { result, year, probes } = run(true)
 
-    expect(seam.calls).toHaveLength(1)
-    const call = seam.calls[0]!
-    expect(call.output).not.toBe(call.original)
-    expect(year.aca).toBe(call.output.yearAcaResult)
+    const call = expectSeamRan(seam, 1)[0]!
+    expect(call.injected).not.toBe(call.natural)
+    expectPublishedFromSeam(year.aca, call.injected.yearAcaResult, 'the ACA year result')
     expect(result.warnings).toContain(INJECTED_WARNING)
     expect(probes).toHaveLength(1)
     expect(probes[0]).toMatchObject({

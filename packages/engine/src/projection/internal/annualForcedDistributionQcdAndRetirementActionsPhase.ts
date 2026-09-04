@@ -73,7 +73,7 @@ interface DeferredLegacyQcdDistribution {
   readonly mutationOrdinal: number
 }
 
-interface AnnualForcedDistributionQcdRetirementActionsFacts {
+interface AnnualForcedDistributionQcdAndRetirementActionsPhaseFacts {
   readonly year: number
   readonly startYear: number
   readonly pack: Readonly<ParameterPack>
@@ -96,7 +96,7 @@ interface AnnualForcedDistributionQcdRetirementActionsFacts {
   readonly preProjectionQcdOffsetUnprovable: ReadonlySet<string>
 }
 
-interface AnnualForcedDistributionQcdRetirementActionsLedger {
+interface AnnualForcedDistributionQcdAndRetirementActionsPhaseLedger {
   readonly balances: PhysicalBalanceState[]
   readonly annualIdKeyedBalances: PhysicalBalanceState[]
   readonly ownersWithOmittedNondeductibleBasis: Set<string>
@@ -120,7 +120,7 @@ interface AnnualForcedDistributionQcdRetirementActionsLedger {
   readonly initialSeppNontaxable: number
 }
 
-interface AnnualForcedDistributionQcdRetirementActionsCallbacks {
+interface AnnualForcedDistributionQcdAndRetirementActionsPhaseCallbacks {
   readonly stateOf: (personId: string) => Readonly<PersonYearState>
   readonly isTreatAsOwnEffective: (
     account: Readonly<TreatAsOwnAccount>,
@@ -199,7 +199,7 @@ interface AnnualForcedDistributionQcdRetirementActionsCallbacks {
   Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null
 }
 
-interface AnnualForcedDistributionQcdRetirementActionsCapture {
+interface AnnualForcedDistributionQcdAndRetirementActionsPhaseCapture {
   seppByAccountId: Map<string, { ownerPersonId: string | null; take: number }>
   rmdNontaxableByOwner: Map<string, number>
   seppNontaxableByAccountId: Map<string, number>
@@ -217,14 +217,14 @@ interface AnnualForcedDistributionQcdRetirementActionsCapture {
   annuityBasisReturnByAccountId: Map<string, number>
 }
 
-export interface AnnualForcedDistributionQcdRetirementActionsInput {
-  readonly facts: AnnualForcedDistributionQcdRetirementActionsFacts
-  readonly ledger: AnnualForcedDistributionQcdRetirementActionsLedger
-  readonly callbacks: AnnualForcedDistributionQcdRetirementActionsCallbacks
-  readonly capture: AnnualForcedDistributionQcdRetirementActionsCapture | null
+export interface AnnualForcedDistributionQcdAndRetirementActionsPhaseInput {
+  readonly facts: AnnualForcedDistributionQcdAndRetirementActionsPhaseFacts
+  readonly ledger: AnnualForcedDistributionQcdAndRetirementActionsPhaseLedger
+  readonly callbacks: AnnualForcedDistributionQcdAndRetirementActionsPhaseCallbacks
+  readonly capture: AnnualForcedDistributionQcdAndRetirementActionsPhaseCapture | null
 }
 
-export interface AnnualForcedDistributionQcdRetirementActionsResult {
+export interface AnnualForcedDistributionQcdAndRetirementActionsPhaseResult {
   readonly rmdTotal: number
   readonly rmdNontaxable: number
   readonly ownedIraRmdTotal: number
@@ -307,9 +307,9 @@ function immutablePlainSnapshot<T>(value: T): T {
   return snapshot
 }
 
-export function annualForcedDistributionQcdAndRetirementActions(
-  input: AnnualForcedDistributionQcdRetirementActionsInput,
-): AnnualForcedDistributionQcdRetirementActionsResult {
+export function annualForcedDistributionQcdAndRetirementActionsPhase(
+  input: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
+): AnnualForcedDistributionQcdAndRetirementActionsPhaseResult {
   const { facts, ledger, callbacks, capture } = input
   const {
     year,

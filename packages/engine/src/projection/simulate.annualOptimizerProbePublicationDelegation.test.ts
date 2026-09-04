@@ -1,16 +1,15 @@
-/** Hostile delegation proof for annual optimizer-probe publication. */
+/**
+ * Hostile delegation proof for annual optimizer-probe publication.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   AnnualOptimizerProbeInput,
 } from './internal/annualOptimizerProbePublication.js'
 import type { OptimizerYearProbe } from './types.js'
-
-interface ProbeCall {
-  readonly input: AnnualOptimizerProbeInput
-  readonly original: OptimizerYearProbe
-  readonly output: OptimizerYearProbe
-}
 
 const INJECTED_ORDINARY_BASE = 12_345
 const INJECTED_COMMITTED_MOVEMENT = Object.freeze([
@@ -20,22 +19,25 @@ const INJECTED_STRATEGY_MOVEMENT = Object.freeze([
   Object.freeze({ accountId: 'injected-strategy', amount: 54.32 }),
 ])
 
-const seam = vi.hoisted(() => ({
-  inject: false,
-  calls: [] as ProbeCall[],
-}))
+const hostile = vi.hoisted(() => ({ inject: false }))
 
-vi.mock('./internal/annualOptimizerProbePublication.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualOptimizerProbePublication.js')
-  >()
-  return {
-    ...original,
-    annualOptimizerProbePublication: (input: AnnualOptimizerProbeInput) => {
-      const production = original.annualOptimizerProbePublication(input)
-      const output: OptimizerYearProbe = seam.inject
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<AnnualOptimizerProbeInput, OptimizerYearProbe>(),
+)
+
+vi.mock('./internal/annualOptimizerProbePublication.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualOptimizerProbePublication.js')
+    >(),
+    'annualOptimizerProbePublication',
+    (natural): OptimizerYearProbe =>
+      hostile.inject
         ? {
-            ...production,
+            ...natural,
             committedActionAccountMovement: INJECTED_COMMITTED_MOVEMENT,
             exogenousStrategyAccountMovement: INJECTED_STRATEGY_MOVEMENT,
             ordinaryIncomeBase: INJECTED_ORDINARY_BASE,
@@ -44,13 +46,11 @@ vi.mock('./internal/annualOptimizerProbePublication.js', async (importOriginal) 
             traditionalWithdrawalTaxableFraction: 0.37,
             rothConversionTaxableFraction: 0.73,
           }
-        : production
-      seam.calls.push({ input, original: production, output })
-      return output
-    },
-  }
-})
+        : natural,
+  ),
+)
 
+import { expectSeamRan } from './simulate.seamGuard.test-support.js'
 import {
   setAcaYearContract,
   singlePersonPlan,
@@ -76,7 +76,7 @@ function probePlan() {
 }
 
 function run(inject: boolean) {
-  seam.inject = inject
+  hostile.inject = inject
   const plan = probePlan()
   const probes: OptimizerYearProbe[] = []
   simulatePlan(plan, {
@@ -89,8 +89,8 @@ function run(inject: boolean) {
 }
 
 beforeEach(() => {
-  seam.inject = false
-  seam.calls.length = 0
+  hostile.inject = false
+  seam.reset()
 })
 
 describe('simulatePlan delegates annual optimizer-probe publication', () => {
@@ -107,9 +107,8 @@ describe('simulatePlan delegates annual optimizer-probe publication', () => {
   it('passes detached recursively frozen annual publication snapshots', () => {
     const { plan, probes } = run(false)
 
-    expect(seam.calls).toHaveLength(1)
     expect(probes).toHaveLength(1)
-    const call = seam.calls[0]!
+    const call = expectSeamRan(seam, 1)[0]!
     expect(Object.isFrozen(call.input)).toBe(true)
     expect(Object.isFrozen(call.input.traditionalAccounts)).toBe(true)
     expect(Object.isFrozen(call.input.traditionalAccounts[0])).toBe(true)
@@ -121,17 +120,16 @@ describe('simulatePlan delegates annual optimizer-probe publication', () => {
       inheritedOpeningBucket: false,
     })
     expect(call.input.traditionalAccounts[0]).not.toBe(plan.accounts[0])
-    expect(call.output).toBe(call.original)
-    expect(probes[0]).toMatchObject(call.original)
+    expect(call.injected).toBe(call.natural)
+    expect(probes[0]).toMatchObject(call.natural)
   })
 
   it('forwards hostile movement/scalar output to the final capture sink', () => {
     const { probes } = run(true)
 
-    expect(seam.calls).toHaveLength(1)
     expect(probes).toHaveLength(1)
-    const call = seam.calls[0]!
-    expect(call.output).not.toBe(call.original)
+    const call = expectSeamRan(seam, 1)[0]!
+    expect(call.injected).not.toBe(call.natural)
     expect(probes[0]).toMatchObject({
       ordinaryIncomeBase: INJECTED_ORDINARY_BASE,
       traditionalWithdrawalTaxableFraction: 0.37,

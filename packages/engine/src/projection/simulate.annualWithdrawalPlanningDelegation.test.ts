@@ -1,4 +1,11 @@
-/** Hostile delegation proof for annual withdrawal strategy and drain planning. */
+/**
+ * Hostile delegation proof for annual withdrawal strategy and drain planning.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here. This module
+ * carries two seams, so it wires one recorder per exported coordinator and
+ * threads the second `through` around the first.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -10,49 +17,49 @@ import type {
 
 type Mode = 'production' | 'strategy' | 'plan'
 
-interface StrategyCall {
-  readonly input: AnnualWithdrawalStrategyInput
-  readonly production: AnnualWithdrawalStrategyResult
-  readonly output: AnnualWithdrawalStrategyResult
-}
-
-interface PlanCall {
-  readonly input: AnnualWithdrawalPlanInput
-  readonly production: AnnualWithdrawalPlanResult
-  readonly output: AnnualWithdrawalPlanResult
-}
-
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   mode: 'production' as Mode,
-  strategyCalls: [] as StrategyCall[],
-  planCalls: [] as PlanCall[],
   sentinelWarning: 'delegated annual withdrawal-planning warning',
 }))
 
-vi.mock('./internal/annualWithdrawalPlanning.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualWithdrawalPlanning.js')
-  >()
-  return {
-    ...original,
-    annualWithdrawalStrategy: (
-      input: AnnualWithdrawalStrategyInput,
-    ): AnnualWithdrawalStrategyResult => {
-      const production = original.annualWithdrawalStrategy(input)
-      const output = seam.mode === 'strategy'
-        ? {
-            strategy: { mode: 'proportional' as const },
-            warning: seam.sentinelWarning,
-          }
-        : production
-      seam.strategyCalls.push({ input, production, output })
-      return output
-    },
-    annualWithdrawalPlan: (
-      input: AnnualWithdrawalPlanInput,
-    ): AnnualWithdrawalPlanResult => {
-      const production = original.annualWithdrawalPlan(input)
-      const output = seam.mode === 'plan'
+const strategySeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualWithdrawalStrategyInput,
+      AnnualWithdrawalStrategyResult
+    >(),
+)
+
+const planSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualWithdrawalPlanInput,
+      AnnualWithdrawalPlanResult
+    >(),
+)
+
+vi.mock('./internal/annualWithdrawalPlanning.js', async (importOriginal) =>
+  planSeam.through(
+    strategySeam.through(
+      await importOriginal<
+        typeof import('./internal/annualWithdrawalPlanning.js')
+      >(),
+      'annualWithdrawalStrategy',
+      (natural): AnnualWithdrawalStrategyResult =>
+        hostile.mode === 'strategy'
+          ? {
+              strategy: { mode: 'proportional' as const },
+              warning: hostile.sentinelWarning,
+            }
+          : natural,
+    ),
+    'annualWithdrawalPlan',
+    (natural, { input }): AnnualWithdrawalPlanResult =>
+      hostile.mode === 'plan'
         ? {
             byCategory: {
               cash: 0,
@@ -70,13 +77,11 @@ vi.mock('./internal/annualWithdrawalPlanning.js', async (importOriginal) => {
             shortfall: 0,
             reserveUsed: 0,
           }
-        : production
-      seam.planCalls.push({ input, production, output })
-      return output
-    },
-  }
-})
+        : natural,
+  ),
+)
 
+import { expectSeamRanAtLeastOnce } from './simulate.seamGuard.test-support.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   cashAccount,
@@ -90,9 +95,9 @@ const YEAR = 2026
 const noTax = createFlatTaxCalculator(0)
 
 function run(mode: Mode) {
-  seam.mode = mode
-  seam.strategyCalls.length = 0
-  seam.planCalls.length = 0
+  hostile.mode = mode
+  strategySeam.reset()
+  planSeam.reset()
   const plan = singlePersonPlan({
     dob: '1964-01-01',
     planningAge: 62,
@@ -111,22 +116,21 @@ function run(mode: Mode) {
 }
 
 beforeEach(() => {
-  seam.mode = 'production'
-  seam.strategyCalls.length = 0
-  seam.planCalls.length = 0
+  hostile.mode = 'production'
+  strategySeam.reset()
+  planSeam.reset()
 })
 
 describe('simulatePlan annual withdrawal-planning delegation', () => {
   it('passes immutable annual inputs and commits the delegated strategy', () => {
     const result = run('strategy')
-    const strategyCall = seam.strategyCalls.at(-1)
+    const strategyCall = strategySeam.calls.at(-1)
     if (strategyCall === undefined) throw new Error('strategy coordinator was not called')
 
     expect(Object.isFrozen(strategyCall.input)).toBe(true)
     expect(strategyCall.input.withdrawalOrder).toEqual({ mode: 'sequential' })
-    expect(strategyCall.output).not.toBe(strategyCall.production)
-    expect(seam.planCalls.length).toBeGreaterThan(0)
-    expect(seam.planCalls.every((call) =>
+    expect(strategyCall.injected).not.toBe(strategyCall.natural)
+    expect(expectSeamRanAtLeastOnce(planSeam).every((call) =>
       Object.isFrozen(call.input) &&
       Object.isFrozen(call.input.states) &&
       call.input.strategy.mode === 'proportional'
@@ -140,16 +144,16 @@ describe('simulatePlan annual withdrawal-planning delegation', () => {
       cash: 50,
       traditional: 150,
     })
-    expect(result.warnings).toContain(seam.sentinelWarning)
+    expect(result.warnings).toContain(hostile.sentinelWarning)
   })
 
   it('uses the delegated plan for accepted ledger debits and publication', () => {
     const result = run('plan')
-    const finalPlan = seam.planCalls.at(-1)
+    const finalPlan = planSeam.calls.at(-1)
     if (finalPlan === undefined) throw new Error('withdrawal planner was not called')
 
-    expect(finalPlan.output).not.toBe(finalPlan.production)
-    expect(finalPlan.output.byAccountId.get('traditional')).toBe(200)
+    expect(finalPlan.injected).not.toBe(finalPlan.natural)
+    expect(finalPlan.injected.byAccountId.get('traditional')).toBe(200)
     expect(result.years[0]!.withdrawals).toMatchObject({
       cash: 0,
       traditional: 200,

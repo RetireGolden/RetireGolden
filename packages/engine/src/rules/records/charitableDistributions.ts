@@ -638,12 +638,12 @@ export const charitableDistributionRecords = {
       'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts',
       // The user-visible consequence, including the warning that says the
       // recurring amount stood down as well.
-      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
       'packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts#annualLegacyQcdGiftPlan',
-      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts#annualForcedDistributionQcdAndRetirementActions',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase',
     ],
   },
 

@@ -7,9 +7,11 @@
  * engine against itself and passes either way, and so does a caller that
  * rebuilds a helper's payload field for field. Each seam guard therefore mocks
  * one extracted helper, runs the REAL implementation first so the natural
- * result is on record, and then returns deliberately different references and
- * scalars. The published year has to consume those injected values, which
- * proves both that the call happens and that the caller-side wiring is real.
+ * result is on record, and then either returns deliberately different
+ * references and scalars that the published year has to consume — proving
+ * both that the call happens and that the caller-side wiring is real — or,
+ * for a guard whose only claim is call identity, returns that natural result
+ * untouched and pins that the real helper ran with the caller's own input.
  * The load-bearing assertion is `toBe` (identity), never `toEqual`.
  *
  * **What is shared and what cannot be.** Vitest hoists every `vi.mock` call
@@ -48,7 +50,12 @@
  * shape every extracted annual phase has. A seam that takes more arguments, or
  * that needs a `vi.fn` wrapper around a function the result carries, keeps its
  * hand-written factory; there is no benefit in bending this helper around
- * those.
+ * those. Two options cover the shapes that are not simply "return something
+ * else": `capture` snapshots live mutable input before the real helper runs,
+ * and `wrapInput` substitutes the argument the real helper receives — for the
+ * seams that prove a caller-supplied callback fired — while the recorded
+ * `input` stays the caller's own object. A module with two seam exports takes
+ * one recorder each and nests the `through` calls.
  *
  * Excluded from `dist` by `tsconfig.build.json`'s `*.test-support.ts` rule, so
  * the `vitest` import below never reaches a consumer.
@@ -91,6 +98,16 @@ export type SeamInjector<TInput, TResult> = (
 export interface SeamThroughOptions<TInput, TCaptured> {
   /** Snapshot of live input state, taken before the real helper runs. */
   readonly capture?: (input: TInput) => TCaptured
+  /**
+   * Substitute the argument the REAL helper receives, without changing the
+   * argument this recorder reports. It exists for the seams whose proof is
+   * about a callback the caller passes IN: wrapping that callback is the only
+   * way to watch it fire, and the recorded `input` has to stay the caller's own
+   * object or the frozen/identity assertions stop meaning anything. It runs
+   * after `capture` and is handed that snapshot, so a spec can give the wrapper
+   * the very collection it will later read back off `call.captured`.
+   */
+  readonly wrapInput?: (input: TInput, captured: TCaptured) => TInput
 }
 
 export interface SeamRecorder<TInput, TResult, TCaptured = undefined> {
@@ -139,7 +156,11 @@ export function createSeamRecorder<
       const wrapped = (input: TInput): TResult => {
         const ordinal = calls.length
         const captured = options.capture?.(input) as TCaptured
-        const natural = call(input)
+        const natural = call(
+          options.wrapInput === undefined
+            ? input
+            : options.wrapInput(input, captured),
+        )
         const injected = inject(natural, { input, ordinal })
         calls.push({ ordinal, input, natural, injected, captured })
         return injected

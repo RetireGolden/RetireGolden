@@ -4,6 +4,9 @@
  * Each mutation changes one coordinator-owned output channel without changing
  * the Plan. The annual ledger must follow the hostile output rather than
  * rebuilding opening capacity or eligibility evidence inline.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -22,82 +25,80 @@ type InputMutation =
   | 'dropRmd'
   | 'revokeLinkedGroup'
 
-interface InputCall {
-  readonly input: Readonly<AnnualRothConversionExecutionInput>
-  readonly original: Readonly<AnnualRothConversionExecutionInputResult>
-  readonly output: Readonly<AnnualRothConversionExecutionInputResult>
-}
-
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   mutation: 'none' as InputMutation,
-  calls: [] as InputCall[],
   settlementCalls: [] as AnnualRetirementActionSettlementPublicationInput[],
 }))
 
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      Readonly<AnnualRothConversionExecutionInput>,
+      Readonly<AnnualRothConversionExecutionInputResult>
+    >(),
+)
+
 vi.mock(
   './internal/annualRothConversionExecutionInput.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualRothConversionExecutionInput.js')
-    >()
-    return {
-      ...original,
-      annualRothConversionExecutionInput: (
-        input: Readonly<AnnualRothConversionExecutionInput>,
+  async (importOriginal) =>
+    seam.through(
+      await importOriginal<
+        typeof import('./internal/annualRothConversionExecutionInput.js')
+      >(),
+      'annualRothConversionExecutionInput',
+      (
+        production,
+        { input },
       ): Readonly<AnnualRothConversionExecutionInputResult> => {
-        const production = original.annualRothConversionExecutionInput(input)
-        const output: Readonly<AnnualRothConversionExecutionInputResult> = (() => {
-          if (production.status !== 'ready') return production
-          switch (seam.mutation) {
-            case 'withholdExecution':
-              return Object.freeze({
-                status: 'notRequested' as const,
-                executorInput: null,
-                effectiveLinkedWithdrawalGroups:
-                  production.effectiveLinkedWithdrawalGroups,
-              })
-            case 'zeroSource':
-              return Object.freeze({
-                ...production,
-                executorInput: Object.freeze({
-                  ...production.executorInput,
-                  openingBalances: Object.freeze(
-                    production.executorInput.openingBalances.map((balance) =>
-                      Object.freeze({
-                        ...balance,
-                        openingBalance: balance.accountId === 'ira-a'
-                          ? 0 as typeof balance.openingBalance
-                          : balance.openingBalance,
-                      })),
-                  ),
+        if (production.status !== 'ready') return production
+        switch (hostile.mutation) {
+          case 'withholdExecution':
+            return Object.freeze({
+              status: 'notRequested' as const,
+              executorInput: null,
+              effectiveLinkedWithdrawalGroups:
+                production.effectiveLinkedWithdrawalGroups,
+            })
+          case 'zeroSource':
+            return Object.freeze({
+              ...production,
+              executorInput: Object.freeze({
+                ...production.executorInput,
+                openingBalances: Object.freeze(
+                  production.executorInput.openingBalances.map((balance) =>
+                    Object.freeze({
+                      ...balance,
+                      openingBalance: balance.accountId === 'ira-a'
+                        ? 0 as typeof balance.openingBalance
+                        : balance.openingBalance,
+                    })),
+                ),
+              }),
+            })
+          case 'dropRmd':
+            return Object.freeze({
+              ...production,
+              executorInput: Object.freeze({
+                ...production.executorInput,
+                runtimeEvidence: Object.freeze({
+                  ...production.executorInput.runtimeEvidence,
+                  ownerIraRmdSatisfactionEvidence: Object.freeze([]),
                 }),
-              })
-            case 'dropRmd':
-              return Object.freeze({
-                ...production,
-                executorInput: Object.freeze({
-                  ...production.executorInput,
-                  runtimeEvidence: Object.freeze({
-                    ...production.executorInput.runtimeEvidence,
-                    ownerIraRmdSatisfactionEvidence: Object.freeze([]),
-                  }),
-                }),
-              })
-            case 'revokeLinkedGroup':
-              return Object.freeze({
-                ...production,
-                effectiveLinkedWithdrawalGroups:
-                  input.observedLinkedWithdrawalGroups,
-              })
-            case 'none':
-              return production
-          }
-        })()
-        seam.calls.push({ input, original: production, output })
-        return output
+              }),
+            })
+          case 'revokeLinkedGroup':
+            return Object.freeze({
+              ...production,
+              effectiveLinkedWithdrawalGroups:
+                input.observedLinkedWithdrawalGroups,
+            })
+          case 'none':
+            return production
+        }
       },
-    }
-  },
+    ),
 )
 
 vi.mock(
@@ -111,7 +112,7 @@ vi.mock(
       annualRetirementActionSettlementPublication: (
         input: AnnualRetirementActionSettlementPublicationInput,
       ) => {
-        seam.settlementCalls.push(input)
+        hostile.settlementCalls.push(input)
         return original.annualRetirementActionSettlementPublication(input)
       },
     }
@@ -320,9 +321,9 @@ function run(target = plan(), flatTaxRatePct = 0) {
 
 describe('simulatePlan delegates named Roth-conversion execution input', () => {
   beforeEach(() => {
-    seam.mutation = 'none'
-    seam.calls.length = 0
-    seam.settlementCalls.length = 0
+    hostile.mutation = 'none'
+    seam.reset()
+    hostile.settlementCalls.length = 0
   })
 
   it('hands the coordinator post-withdrawal balances and owner facts', () => {
@@ -360,35 +361,35 @@ describe('simulatePlan delegates named Roth-conversion execution input', () => {
     ['zeroSource', 'the prepared source-capacity snapshot'],
     ['dropRmd', 'the prepared owner-RMD evidence'],
   ] as const)('consumes %s rather than rebuilding %s inline', (mutation, label) => {
-    seam.mutation = mutation
+    hostile.mutation = mutation
 
     const year = run()
 
     expect(seam.calls.length, label).toBeGreaterThan(0)
-    expect(seam.calls.every((call) => call.original.status === 'ready')).toBe(true)
+    expect(seam.calls.every((call) => call.natural.status === 'ready')).toBe(true)
     expect(year.rothConversionActionExecution?.committed ?? false).toBe(false)
     expect(year.balances['ira-a']).toBeCloseTo(100_000, 6)
     expect(year.balances['roth-a']).toBeCloseTo(0, 6)
   })
 
   it('hands the coordinator-owned linked-group verdict to settlement', () => {
-    seam.mutation = 'revokeLinkedGroup'
+    hostile.mutation = 'revokeLinkedGroup'
 
     run(linkedPlan(), 22)
 
     const revoked = seam.calls.find((call) =>
-      call.original.status === 'ready' &&
-      call.original.effectiveLinkedWithdrawalGroups !==
-        call.output.effectiveLinkedWithdrawalGroups)
-    expect(revoked?.original.effectiveLinkedWithdrawalGroups.groups[0])
+      call.natural.status === 'ready' &&
+      call.natural.effectiveLinkedWithdrawalGroups !==
+        call.injected.effectiveLinkedWithdrawalGroups)
+    expect(revoked?.natural.effectiveLinkedWithdrawalGroups.groups[0])
       .toMatchObject({ disposition: 'executedAsAtomicGroup' })
-    expect(revoked?.output.effectiveLinkedWithdrawalGroups)
+    expect(revoked?.injected.effectiveLinkedWithdrawalGroups)
       .toBe(revoked?.input.observedLinkedWithdrawalGroups)
     expect(Object.isFrozen(revoked?.input.ownerBasis[0])).toBe(true)
     expect(Object.isFrozen(revoked?.input.ordinaryWithdrawalEvidence[0]))
       .toBe(true)
-    expect(seam.settlementCalls.some((call) =>
+    expect(hostile.settlementCalls.some((call) =>
       call.linkedWithdrawalGroups ===
-        revoked?.output.effectiveLinkedWithdrawalGroups)).toBe(true)
+        revoked?.injected.effectiveLinkedWithdrawalGroups)).toBe(true)
   })
 })

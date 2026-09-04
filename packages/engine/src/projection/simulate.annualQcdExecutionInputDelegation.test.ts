@@ -4,6 +4,9 @@
  * Each seam mutation leaves the Plan unchanged and alters one coordinator-owned
  * input channel. The annual result must follow the hostile output; a simulator
  * that rebuilt source capacity or Form 8606 pool input inline would not.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -14,72 +17,65 @@ import type {
 
 type InputMutation = 'none' | 'withholdExecution' | 'zeroSource' | 'dropPool'
 
-interface InputCall {
-  readonly input: Readonly<AnnualQcdExecutionInput>
-  readonly original: Readonly<AnnualQcdExecutionInputResult>
-  readonly output: Readonly<AnnualQcdExecutionInputResult>
-}
+const hostile = vi.hoisted(() => ({ mutation: 'none' as InputMutation }))
 
-const seam = vi.hoisted(() => ({
-  mutation: 'none' as InputMutation,
-  calls: [] as InputCall[],
-}))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      Readonly<AnnualQcdExecutionInput>,
+      Readonly<AnnualQcdExecutionInputResult>
+    >(),
+)
 
-vi.mock('./internal/annualQcdExecutionInput.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualQcdExecutionInput.js')
-  >()
-  return {
-    ...original,
-    annualQcdExecutionInput: (
-      input: Readonly<AnnualQcdExecutionInput>,
-    ): Readonly<AnnualQcdExecutionInputResult> => {
-      const production = original.annualQcdExecutionInput(input)
-      const output: Readonly<AnnualQcdExecutionInputResult> = (() => {
-        if (production.status !== 'ready') return production
-        switch (seam.mutation) {
-          case 'withholdExecution':
-            return Object.freeze({
-              status: 'notRequested' as const,
-              prerequisite: undefined,
-              executorInput: null,
-            })
-          case 'zeroSource':
-            return Object.freeze({
-              ...production,
-              executorInput: Object.freeze({
-                ...production.executorInput,
-                physicalInput: Object.freeze({
-                  ...production.executorInput.physicalInput,
-                  openingBalances: Object.freeze(
-                    production.executorInput.physicalInput.openingBalances.map(
-                      (balance) => Object.freeze({
-                        ...balance,
-                        openingBalance: 0 as typeof balance.openingBalance,
-                      }),
-                    ),
+vi.mock('./internal/annualQcdExecutionInput.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualQcdExecutionInput.js')>(),
+    'annualQcdExecutionInput',
+    (production): Readonly<AnnualQcdExecutionInputResult> => {
+      if (production.status !== 'ready') return production
+      switch (hostile.mutation) {
+        case 'withholdExecution':
+          return Object.freeze({
+            status: 'notRequested' as const,
+            prerequisite: undefined,
+            executorInput: null,
+          })
+        case 'zeroSource':
+          return Object.freeze({
+            ...production,
+            executorInput: Object.freeze({
+              ...production.executorInput,
+              physicalInput: Object.freeze({
+                ...production.executorInput.physicalInput,
+                openingBalances: Object.freeze(
+                  production.executorInput.physicalInput.openingBalances.map(
+                    (balance) => Object.freeze({
+                      ...balance,
+                      openingBalance: 0 as typeof balance.openingBalance,
+                    }),
                   ),
-                }),
+                ),
               }),
-            })
-          case 'dropPool':
-            return Object.freeze({
-              ...production,
-              executorInput: Object.freeze({
-                ...production.executorInput,
-                poolCapacityInputs: Object.freeze([]),
-              }),
-            })
-          case 'none':
-            return production
-        }
-      })()
-      seam.calls.push({ input, original: production, output })
-      return output
+            }),
+          })
+        case 'dropPool':
+          return Object.freeze({
+            ...production,
+            executorInput: Object.freeze({
+              ...production.executorInput,
+              poolCapacityInputs: Object.freeze([]),
+            }),
+          })
+        case 'none':
+          return production
+      }
     },
-  }
-})
+  ),
+)
 
+import { expectSeamRan } from './simulate.seamGuard.test-support.js'
 import {
   asAccountId,
   asActionId,
@@ -185,13 +181,12 @@ function run() {
 
 describe('simulatePlan delegates named-QCD execution input', () => {
   beforeEach(() => {
-    seam.mutation = 'none'
-    seam.calls.length = 0
+    hostile.mutation = 'none'
+    seam.reset()
   })
 
   it('hands the coordinator the live post-RMD balance and complete owner seeds', () => {
     const year = run()
-    const call = seam.calls.at(-1)
     // Uniform Lifetime Table age-76 divisor: 23.7. With no growth, the forced
     // distribution is $500,000 / 23.7 and this QCD seam must see the remainder,
     // not the $500,000 pre-distribution snapshot it separately carries.
@@ -200,7 +195,7 @@ describe('simulatePlan delegates named-QCD execution input', () => {
 
     expect(year.qcd).toBe(GIFT_DOLLARS)
     // One discarded settlement counterfactual pass, then the committed pass.
-    expect(seam.calls).toHaveLength(2)
+    const call = expectSeamRan(seam, 2).at(-1)
     expect(call?.input.requests.map((request) => request.actionId))
       .toEqual(['delegated-qcd'])
     expect(call?.input.balances.find((balance) => balance.accountId === 'ira'))
@@ -226,12 +221,12 @@ describe('simulatePlan delegates named-QCD execution input', () => {
     ['zeroSource', 'the prepared source-capacity snapshot'],
     ['dropPool', 'the prepared complete-pool capacity'],
   ] as const)('consumes %s rather than rebuilding %s inline', (mutation, label) => {
-    seam.mutation = mutation
+    hostile.mutation = mutation
 
     const year = run()
 
-    expect(seam.calls, label).toHaveLength(2)
-    expect(seam.calls.every((call) => call.original.status === 'ready')).toBe(true)
+    const calls = expectSeamRan(seam, 2)
+    expect(calls.every((call) => call.natural.status === 'ready'), label).toBe(true)
     expect(year.qcd).toBe(0)
     expect(year.balances.ira).toBeGreaterThan(0)
   })

@@ -7,6 +7,9 @@
  * balance-operation underproduction. A linked conversion group forces
  * transactional re-entry, so the same guard also observes rollback and the
  * following year's committed balance/basis carry.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -15,120 +18,115 @@ import type {
   AnnualOrdinaryWithdrawalBoundaryInput,
   AnnualOrdinaryWithdrawalBoundaryResult,
 } from './internal/annualOrdinaryWithdrawalBoundary.js'
+import type { SeamCall } from './simulate.seamGuard.test-support.js'
 
-interface BoundaryPhase {
-  readonly year: number
-  readonly ordinal: number
-  readonly input: AnnualOrdinaryWithdrawalBoundaryInput
-  readonly original: AnnualOrdinaryWithdrawalBoundaryResult
-  readonly output: AnnualOrdinaryWithdrawalBoundaryResult
+/**
+ * The taxable line's opening state, snapshotted before the real helper runs so
+ * a later mutation of the live balance array cannot rewrite what this pass saw.
+ */
+interface BoundaryOpening {
   readonly openingTaxableBalance: number | null
   readonly openingTaxableCostBasis: number | null
-  readonly injectedTraditionalBalance: number | null
-  readonly injectedTaxableBalance: number | null
-  readonly injectedTaxableCostBasis: number | null
 }
 
-const seam = vi.hoisted(() => ({
+type BoundaryPhase = SeamCall<
+  AnnualOrdinaryWithdrawalBoundaryInput,
+  AnnualOrdinaryWithdrawalBoundaryResult,
+  BoundaryOpening
+>
+
+const hostile = vi.hoisted(() => ({
   mode: 'original' as 'original' | 'dynamic' | 'truncate' | 'wrongPosition',
-  phases: [] as BoundaryPhase[],
   conversionInputs: [] as {
     readonly input: unknown
     readonly precedingPhase: BoundaryPhase | undefined
   }[],
 }))
 
-vi.mock('./internal/annualOrdinaryWithdrawalBoundary.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualOrdinaryWithdrawalBoundary.js')>()
-  return {
-    ...original,
-    annualOrdinaryWithdrawalBoundary: (
-      input: Parameters<typeof original.annualOrdinaryWithdrawalBoundary>[0],
-    ) => {
-      const production = original.annualOrdinaryWithdrawalBoundary(input)
-      const ordinal = seam.phases.length
-      const taxableState = input.balances.find(
-        (state) => state.account.id === 'taxable',
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualOrdinaryWithdrawalBoundaryInput,
+      AnnualOrdinaryWithdrawalBoundaryResult,
+      BoundaryOpening
+    >(),
+)
+
+vi.mock('./internal/annualOrdinaryWithdrawalBoundary.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualOrdinaryWithdrawalBoundary.js')
+    >(),
+    'annualOrdinaryWithdrawalBoundary',
+    (
+      production,
+      { input, ordinal },
+    ): AnnualOrdinaryWithdrawalBoundaryResult => {
+      if (hostile.mode === 'original') return production
+      const operations = production.balanceOperations.map(
+        (operation, index): AnnualOrdinaryWithdrawalBalanceOperation => {
+          const accountId = input.balances[index]?.account.id
+          if (accountId === 'traditional') {
+            return {
+              kind: 'write',
+              accountId: 'traditional',
+              closingBalance: 10_000 + (input.year - 2025) * 100 + ordinal,
+              closingCostBasis: null,
+            }
+          }
+          if (accountId === 'taxable') {
+            return {
+              kind: 'write',
+              accountId: 'taxable',
+              closingBalance: 20_000 + (input.year - 2025) * 100 + ordinal,
+              closingCostBasis: 7_000 + (input.year - 2025) * 100 + ordinal,
+            }
+          }
+          return operation
+        },
       )
-      const openingTaxableBalance = taxableState?.balance ?? null
-      const openingTaxableCostBasis = taxableState?.costBasis ?? null
-      let injectedTraditionalBalance: number | null = null
-      let injectedTaxableBalance: number | null = null
-      let injectedTaxableCostBasis: number | null = null
-      let output = production
-      if (seam.mode !== 'original') {
-        const operations = production.balanceOperations.map(
-          (operation, index): AnnualOrdinaryWithdrawalBalanceOperation => {
-            const accountId = input.balances[index]?.account.id
-            if (accountId === 'traditional') {
-              injectedTraditionalBalance =
-                10_000 + (input.year - 2025) * 100 + ordinal
-              return {
-                kind: 'write',
-                accountId: 'traditional',
-                closingBalance: injectedTraditionalBalance,
-                closingCostBasis: null,
-              }
-            }
-            if (accountId === 'taxable') {
-              injectedTaxableBalance =
-                20_000 + (input.year - 2025) * 100 + ordinal
-              injectedTaxableCostBasis =
-                7_000 + (input.year - 2025) * 100 + ordinal
-              return {
-                kind: 'write',
-                accountId: 'taxable',
-                closingBalance: injectedTaxableBalance,
-                closingCostBasis: injectedTaxableCostBasis,
-              }
-            }
-            return operation
-          },
-        )
-        const balanceOperations =
-          seam.mode === 'truncate'
-            ? operations.slice(0, -1)
-            : seam.mode === 'wrongPosition'
-              ? operations.map((operation, index) =>
-                  index === 0
-                    ? {
-                        kind: 'write' as const,
-                        accountId: 'not-the-first-balance',
-                        closingBalance: 12_345,
-                        closingCostBasis: null,
-                      }
-                    : operation)
-              : operations
-        const base = (input.year - 2025) * 100 + ordinal * 10
-        output = {
-          execution: production.execution,
-          totals: {
-            cash: base + 1,
-            equityCompensation: base + 2,
-            taxableProceeds: base + 4,
-            proceeds: base + 8,
-            capitalGainOrLoss: base + 16,
-          },
-          balanceOperations,
-        }
+      const balanceOperations =
+        hostile.mode === 'truncate'
+          ? operations.slice(0, -1)
+          : hostile.mode === 'wrongPosition'
+            ? operations.map((operation, index) =>
+                index === 0
+                  ? {
+                      kind: 'write' as const,
+                      accountId: 'not-the-first-balance',
+                      closingBalance: 12_345,
+                      closingCostBasis: null,
+                    }
+                  : operation)
+            : operations
+      const base = (input.year - 2025) * 100 + ordinal * 10
+      return {
+        execution: production.execution,
+        totals: {
+          cash: base + 1,
+          equityCompensation: base + 2,
+          taxableProceeds: base + 4,
+          proceeds: base + 8,
+          capitalGainOrLoss: base + 16,
+        },
+        balanceOperations,
       }
-      seam.phases.push({
-        year: input.year,
-        ordinal,
-        input,
-        original: production,
-        output,
-        openingTaxableBalance,
-        openingTaxableCostBasis,
-        injectedTraditionalBalance,
-        injectedTaxableBalance,
-        injectedTaxableCostBasis,
-      })
-      return output
     },
-  }
-})
+    {
+      capture: (input): BoundaryOpening => {
+        const taxableState = input.balances.find(
+          (state) => state.account.id === 'taxable',
+        )
+        return {
+          openingTaxableBalance: taxableState?.balance ?? null,
+          openingTaxableCostBasis: taxableState?.costBasis ?? null,
+        }
+      },
+    },
+  ),
+)
 
 vi.mock('../actions/index.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('../actions/index.js')>()
@@ -137,15 +135,16 @@ vi.mock('../actions/index.js', async (importOriginal) => {
     executeRothConversions: (
       input: Parameters<typeof original.executeRothConversions>[0],
     ) => {
-      seam.conversionInputs.push({
+      hostile.conversionInputs.push({
         input,
-        precedingPhase: seam.phases.at(-1),
+        precedingPhase: seam.calls.at(-1),
       })
       return original.executeRothConversions(input)
     },
   }
 })
 
+import { expectPublishedFromSeam } from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import { parseRetirementActionRequest } from '../actions/index.js'
 import { singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
@@ -277,7 +276,7 @@ function plan(): Plan {
 }
 
 function phasesFor(year: number): readonly BoundaryPhase[] {
-  return seam.phases.filter((phase) => phase.year === year)
+  return seam.calls.filter((phase) => phase.input.year === year)
 }
 
 function finalPhase(year: number): BoundaryPhase {
@@ -286,10 +285,28 @@ function finalPhase(year: number): BoundaryPhase {
   return phase
 }
 
-function run(mode: typeof seam.mode) {
-  seam.mode = mode
-  seam.phases.length = 0
-  seam.conversionInputs.length = 0
+/**
+ * The closing write this pass injected for one account, read back off the
+ * object the seam returned. `undefined` when the seam left the pass untouched.
+ */
+function injectedWrite(
+  phase: BoundaryPhase,
+  accountId: string,
+): Extract<AnnualOrdinaryWithdrawalBalanceOperation, { kind: 'write' }> | undefined {
+  return phase.injected.balanceOperations.find(
+    (
+      operation,
+    ): operation is Extract<
+      AnnualOrdinaryWithdrawalBalanceOperation,
+      { kind: 'write' }
+    > => operation.kind === 'write' && operation.accountId === accountId,
+  )
+}
+
+function run(mode: typeof hostile.mode) {
+  hostile.mode = mode
+  seam.reset()
+  hostile.conversionInputs.length = 0
   const taxInputs: {
     readonly input: TaxYearInput
     readonly precedingPhase: BoundaryPhase | undefined
@@ -301,7 +318,7 @@ function run(mode: typeof seam.mode) {
     horizonEndYear: START_YEAR + 1,
     taxCalculator: {
       compute(input) {
-        taxInputs.push({ input, precedingPhase: seam.phases.at(-1) })
+        taxInputs.push({ input, precedingPhase: seam.calls.at(-1) })
         return 0
       },
     },
@@ -312,9 +329,9 @@ function run(mode: typeof seam.mode) {
 
 describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () => {
   it('retains the dominant no-action fast path outside the helper', () => {
-    seam.mode = 'dynamic'
-    seam.phases.length = 0
-    seam.conversionInputs.length = 0
+    hostile.mode = 'dynamic'
+    seam.reset()
+    hostile.conversionInputs.length = 0
     const probes: OptimizerYearProbe[] = []
 
     const result = simulatePlan(
@@ -327,7 +344,7 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
       },
     )
 
-    expect(seam.phases).toEqual([])
+    expect(seam.calls).toEqual([])
     for (const year of result.years) {
       expect(year.retirementActionExecution).toBeUndefined()
       expect(year.withdrawals.cash).toBe(0)
@@ -343,28 +360,31 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
 
     expect(phasesFor(START_YEAR).length).toBeGreaterThan(1)
     expect(phasesFor(START_YEAR + 1).length).toBeGreaterThan(1)
-    expect(seam.conversionInputs.length).toBeGreaterThan(1)
+    expect(hostile.conversionInputs.length).toBeGreaterThan(1)
 
-    for (const phase of seam.phases) {
+    for (const phase of seam.calls) {
       const actionIds = phase.input.executionRequests.map(
         (request) => request.actionId,
       )
       expect(actionIds).toEqual(
-        actionIds.length === 0 ? [] : [`withdraw-${phase.year}`],
+        actionIds.length === 0 ? [] : [`withdraw-${phase.input.year}`],
       )
       if (actionIds.length > 0) {
         expect(phase.input.ordinaryActions[0]).toBe(
           phase.input.executionRequests[0],
         )
       }
-      expect(phase.output.execution).toBe(phase.original.execution)
-      expect(phase.output.balanceOperations).toHaveLength(phase.input.balances.length)
+      expect(phase.injected.execution).toBe(phase.natural.execution)
+      expect(phase.injected.balanceOperations).toHaveLength(phase.input.balances.length)
     }
 
-    for (const conversion of seam.conversionInputs) {
+    for (const conversion of hostile.conversionInputs) {
       const phase = conversion.precedingPhase
       expect(phase).toBeDefined()
-      const injectedTraditionalBalance = phase?.injectedTraditionalBalance
+      const injectedTraditionalBalance =
+        phase === undefined
+          ? undefined
+          : injectedWrite(phase, 'traditional')?.closingBalance
       expect(injectedTraditionalBalance).toBeTypeOf('number')
       if (phase === undefined || typeof injectedTraditionalBalance !== 'number') {
         throw new Error('missing injected traditional balance for conversion')
@@ -373,7 +393,7 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
         year: number
         openingBalances: readonly { accountId: string; openingBalance: number }[]
       }
-      expect(conversionInput.year).toBe(phase!.year)
+      expect(conversionInput.year).toBe(phase.input.year)
       expect(
         conversionInput.openingBalances.find(
           (snapshot) => snapshot.accountId === 'traditional',
@@ -382,23 +402,28 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
     }
 
     const firstYearFinal = finalPhase(START_YEAR)
+    const firstYearTaxableWrite = injectedWrite(firstYearFinal, 'taxable')
     expect(phasesFor(START_YEAR).every(
-      (phase) => phase.openingTaxableBalance === 50_000 &&
-        phase.openingTaxableCostBasis === 25_000,
+      (phase) => phase.captured.openingTaxableBalance === 50_000 &&
+        phase.captured.openingTaxableCostBasis === 25_000,
     )).toBe(true)
     for (const phase of phasesFor(START_YEAR + 1)) {
-      expect(phase.openingTaxableBalance).toBe(
-        firstYearFinal.injectedTaxableBalance,
+      expect(phase.captured.openingTaxableBalance).toBe(
+        firstYearTaxableWrite?.closingBalance,
       )
-      expect(phase.openingTaxableCostBasis).toBe(
-        firstYearFinal.injectedTaxableCostBasis,
+      expect(phase.captured.openingTaxableCostBasis).toBe(
+        firstYearTaxableWrite?.closingCostBasis,
       )
     }
 
     for (const yearResult of result.years) {
       const phase = finalPhase(yearResult.year)
-      const totals = phase.output.totals
-      expect(yearResult.retirementActionExecution).toBe(phase.output.execution)
+      const totals = phase.injected.totals
+      expectPublishedFromSeam(
+        yearResult.retirementActionExecution,
+        phase.injected.execution,
+        `the ${yearResult.year} retirement-action execution`,
+      )
       expect(yearResult.withdrawals.cash).toBe(totals.cash)
       expect(yearResult.withdrawals.taxable).toBe(
         totals.equityCompensation + totals.taxableProceeds,
@@ -417,12 +442,12 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
       const boundaryTaxInputs = finalTaxInputs.filter(
         (taxInput): taxInput is typeof taxInput & {
           readonly precedingPhase: BoundaryPhase
-        } => taxInput.precedingPhase?.year === yearResult.year,
+        } => taxInput.precedingPhase?.input.year === yearResult.year,
       )
       expect(boundaryTaxInputs.length).toBeGreaterThan(0)
       for (const taxInput of boundaryTaxInputs) {
         const phaseEquityCompensation =
-          taxInput.precedingPhase.output.totals.equityCompensation
+          taxInput.precedingPhase.injected.totals.equityCompensation
         // The released linked conversion contributes one separate dollar of
         // ordinary income; counterfactual and refused passes contribute none.
         expect([
@@ -430,7 +455,7 @@ describe('simulatePlan delegates the annual ordinary-withdrawal boundary', () =>
           phaseEquityCompensation + 1,
         ]).toContain(taxInput.input.ordinaryIncome)
         expect(taxInput.input.capitalGains).toBe(
-          taxInput.precedingPhase.output.totals.capitalGainOrLoss,
+          taxInput.precedingPhase.injected.totals.capitalGainOrLoss,
         )
       }
     }

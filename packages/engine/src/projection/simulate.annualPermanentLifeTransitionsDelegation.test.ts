@@ -13,6 +13,9 @@
  * deliberately not claimed here. The injected values are the load-bearing
  * guard: an orphaned helper, a half-orphaned inline payout, or a caller that
  * ignores either returned field changes a named assertion below.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -22,25 +25,38 @@ import type {
   AnnualPermanentLifeTransitionsResult,
 } from './internal/annualPermanentLifeTransitions.js'
 
+/**
+ * Ordered marker log across the two instrumented phases. The insurance marker
+ * is pushed from the injector, which the recorder runs after the real helper,
+ * so it lands exactly where the hand-written wrapper used to push it. The
+ * insurance call's own input, result, and cash-value snapshot live on the
+ * recorder.
+ */
 type PassEvent =
   | { readonly kind: 'propertyPhase'; readonly year: number }
-  | {
-      readonly kind: 'insurancePhase'
-      readonly input: AnnualPermanentLifeTransitionsInput
-      readonly output: AnnualPermanentLifeTransitionsResult
-      readonly cashValuesAtCall: ReadonlyMap<string, number>
-    }
+  | { readonly kind: 'insurancePhase' }
 
 interface SentinelResult {
   readonly transitions: readonly AnnualPermanentLifeTransition[]
   readonly deathBenefitPaid: number
 }
 
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   events: [] as PassEvent[],
   sentinel: null as SentinelResult | null,
   snapshotCashValues: [] as ReadonlyMap<string, number>[],
 }))
+
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualPermanentLifeTransitionsInput,
+      AnnualPermanentLifeTransitionsResult,
+      ReadonlyMap<string, number>
+    >(),
+)
 
 // `propertyEventsAndGrowth` gives this test a stable observable phase marker
 // without assuming that one projected year is evaluated only once; owned-IRA
@@ -55,43 +71,30 @@ vi.mock('./internal/propertyEventsAndGrowth.js', async (importOriginal) => {
       input: Parameters<typeof original.propertyEventsAndGrowth>[0],
     ) => {
       const rows = original.propertyEventsAndGrowth(input)
-      seam.events.push({ kind: 'propertyPhase', year: input.year })
+      hostile.events.push({ kind: 'propertyPhase', year: input.year })
       return rows
     },
   }
 })
 
-vi.mock(
-  './internal/annualPermanentLifeTransitions.js',
-  async (importOriginal) => {
-    const original =
-      await importOriginal<
-        typeof import('./internal/annualPermanentLifeTransitions.js')
-      >()
-    return {
-      ...original,
-      annualPermanentLifeTransitions: (
-        input: Parameters<
-          typeof original.annualPermanentLifeTransitions
-        >[0],
-      ) => {
-        const configured = seam.sentinel
-        const output = configured === null
-          ? original.annualPermanentLifeTransitions(input)
-          : {
-              transitions: configured.transitions,
-              deathBenefitPaid: configured.deathBenefitPaid,
-            }
-        seam.events.push({
-          kind: 'insurancePhase',
-          input,
-          output,
-          cashValuesAtCall: new Map(input.insuranceCashValues),
-        })
-        return output
-      },
-    }
-  },
+vi.mock('./internal/annualPermanentLifeTransitions.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<
+      typeof import('./internal/annualPermanentLifeTransitions.js')
+    >(),
+    'annualPermanentLifeTransitions',
+    (natural): AnnualPermanentLifeTransitionsResult => {
+      const configured = hostile.sentinel
+      hostile.events.push({ kind: 'insurancePhase' })
+      return configured === null
+        ? natural
+        : {
+            transitions: configured.transitions,
+            deathBenefitPaid: configured.deathBenefitPaid,
+          }
+    },
+    { capture: (input) => new Map(input.insuranceCashValues) },
+  ),
 )
 
 // Snapshotting is the next observable consumer of the insurance cash-value
@@ -103,7 +106,7 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
   return {
     ...original,
     annualSnapshot: (input: Parameters<typeof original.annualSnapshot>[0]) => {
-      seam.snapshotCashValues.push(new Map(input.insuranceCashValues))
+      hostile.snapshotCashValues.push(new Map(input.insuranceCashValues))
       return original.annualSnapshot(input)
     },
   }
@@ -170,9 +173,10 @@ function run(options: {
   readonly capture?: boolean
   readonly insurance?: readonly InsurancePolicy[]
 } = {}) {
-  seam.events.length = 0
-  seam.snapshotCashValues.length = 0
-  seam.sentinel = options.sentinel ?? null
+  hostile.events.length = 0
+  hostile.snapshotCashValues.length = 0
+  seam.reset()
+  hostile.sentinel = options.sentinel ?? null
   const input = plan(options.insurance)
   const result = simulatePlan(input, {
     startYear: YEAR,
@@ -180,15 +184,11 @@ function run(options: {
     taxCalculator: noTax,
     ...(options.capture === true ? { captureAnnualCashFlow: true } : {}),
   })
-  const propertyPhases = seam.events.filter(
+  const propertyPhases = hostile.events.filter(
     (event): event is Extract<PassEvent, { kind: 'propertyPhase' }> =>
       event.kind === 'propertyPhase',
   )
-  const insurancePhases = seam.events.filter(
-    (event): event is Extract<PassEvent, { kind: 'insurancePhase' }> =>
-      event.kind === 'insurancePhase',
-  )
-  return { input, result, propertyPhases, insurancePhases }
+  return { input, result, propertyPhases, insurancePhases: [...seam.calls] }
 }
 
 describe('simulatePlan delegates permanent-life annual transitions', () => {
@@ -203,10 +203,10 @@ describe('simulatePlan delegates permanent-life annual transitions', () => {
     // Among the two instrumented functions, calls alternate property then
     // insurance with a one-to-one count. Uninstrumented work may occur between
     // them, so this deliberately makes no claim of literal adjacency.
-    expect(seam.events).toHaveLength(propertyPhases.length * 2)
-    for (let index = 0; index < seam.events.length; index += 2) {
-      expect(seam.events[index]).toEqual({ kind: 'propertyPhase', year: YEAR })
-      expect(seam.events[index + 1]?.kind).toBe('insurancePhase')
+    expect(hostile.events).toHaveLength(propertyPhases.length * 2)
+    for (let index = 0; index < hostile.events.length; index += 2) {
+      expect(hostile.events[index]).toEqual({ kind: 'propertyPhase', year: YEAR })
+      expect(hostile.events[index + 1]?.kind).toBe('insurancePhase')
     }
 
     for (const phase of insurancePhases) {
@@ -214,8 +214,8 @@ describe('simulatePlan delegates permanent-life annual transitions', () => {
       expect(phase.input.policies.map((policy) => policy.id)).toEqual([
         POLICY_ID,
       ])
-      expect(phase.cashValuesAtCall.get(POLICY_ID)).toBe(OPENING_CASH_VALUE)
-      expect(phase.output.deathBenefitPaid).toBe(ORIGINAL_PAYOUT)
+      expect(phase.captured.get(POLICY_ID)).toBe(OPENING_CASH_VALUE)
+      expect(phase.injected.deathBenefitPaid).toBe(ORIGINAL_PAYOUT)
     }
   })
 
@@ -250,8 +250,8 @@ describe('simulatePlan delegates permanent-life annual transitions', () => {
 
     // Every pass reaches the snapshot with both writes applied in transition
     // order; re-entered attempts are later rolled back by the simulator.
-    expect(seam.snapshotCashValues).toHaveLength(insurancePhases.length)
-    for (const cashValues of seam.snapshotCashValues) {
+    expect(hostile.snapshotCashValues).toHaveLength(insurancePhases.length)
+    for (const cashValues of hostile.snapshotCashValues) {
       expect([...cashValues.entries()].slice(-2)).toEqual([
         ['sentinel-life-a', sentinel.transitions[0]!.cashValue],
         ['sentinel-life-b', sentinel.transitions[1]!.cashValue],
@@ -305,18 +305,18 @@ describe('simulatePlan delegates permanent-life annual transitions', () => {
     const year = result.years[0]!
     const finalPhase = insurancePhases.at(-1)!
 
-    expect(finalPhase.output.transitions.map((row) => row.policyId)).toEqual([
+    expect(finalPhase.injected.transitions.map((row) => row.policyId)).toEqual([
       POLICY_ID,
       secondPolicy.id,
     ])
-    expect(finalPhase.output.transitions.map((row) => row.payout)).toEqual([
+    expect(finalPhase.injected.transitions.map((row) => row.payout)).toEqual([
       ORIGINAL_PAYOUT,
       secondPolicy.deathBenefit,
     ])
-    expect(finalPhase.output.deathBenefitPaid).toBe(
+    expect(finalPhase.injected.deathBenefitPaid).toBe(
       ORIGINAL_PAYOUT + secondPolicy.deathBenefit,
     )
-    expect(year.deathBenefit).toBe(finalPhase.output.deathBenefitPaid)
+    expect(year.deathBenefit).toBe(finalPhase.injected.deathBenefitPaid)
     expect(year.balances[CASH_ACCOUNT_ID]).toBe(
       ORIGINAL_PAYOUT + secondPolicy.deathBenefit,
     )
@@ -334,12 +334,12 @@ describe('simulatePlan delegates permanent-life annual transitions', () => {
     const { result, insurancePhases } = run({ capture: true })
     const year = result.years[0]!
     const finalPhase = insurancePhases.at(-1)!
-    const transition = finalPhase.output.transitions[0]!
+    const transition = finalPhase.injected.transitions[0]!
 
     expect(transition.payout).toBe(ORIGINAL_PAYOUT)
     expect(transition.cashValue).toBe(0)
-    expect(finalPhase.output.deathBenefitPaid).toBe(ORIGINAL_PAYOUT)
-    expect(year.deathBenefit).toBe(finalPhase.output.deathBenefitPaid)
+    expect(finalPhase.injected.deathBenefitPaid).toBe(ORIGINAL_PAYOUT)
+    expect(year.deathBenefit).toBe(finalPhase.injected.deathBenefitPaid)
     expect(year.insuranceCashValue).toBe(transition.cashValue)
     expect(year.balances[CASH_ACCOUNT_ID]).toBe(transition.payout)
 
