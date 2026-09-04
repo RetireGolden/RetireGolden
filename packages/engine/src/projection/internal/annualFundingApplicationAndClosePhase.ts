@@ -67,7 +67,7 @@ import {
   annualWithdrawalPlan,
   annualWithdrawalStrategy,
 } from './annualWithdrawalPlanning.js'
-import { annualPostSolveAccountGrowth } from './annualPostSolveAccountGrowth.js'
+import { annualPostGrowthCapturePhase } from './annualPostGrowthCapturePhase.js'
 import { annualRetirementActionSettlementPublication } from './annualRetirementActionSettlementPublication.js'
 import { annualYearResultAssembly } from './annualYearResultAssembly.js'
 import {
@@ -1855,154 +1855,39 @@ export function annualFundingApplicationAndClosePhase(
       insuranceCashValues.set(transition.policyId, transition.cashValue)
     }
 
-    const ownedNonRothIraBalancesBeforeGrowth = Object.freeze(
-      Object.fromEntries(
-        annualIdKeyedBalances
-          .filter((state) => isAggregatedIraThisYear(state.account))
-          .map((state) => [state.account.id, state.balance]),
-      ),
-    )
-    const ownedNonRothIraPhysicalBalancesBeforeGrowth = Object.freeze(
-      balances.flatMap((state, balanceIndex) =>
-        isAggregatedIraThisYear(state.account)
-          ? [Object.freeze({
-              sourceAccountId: state.account.id,
-              balanceIndex,
-              balancePlanDollars: state.balance,
-            })]
-          : []),
-    )
-    const ownedNonRothIraPhysicalOpeningBalances = Object.freeze(
-      balances.flatMap((state, balanceIndex) =>
-        isAggregatedIraThisYear(state.account)
-          ? [Object.freeze({
-              sourceAccountId: state.account.id,
-              balanceIndex,
-              balancePlanDollars: startOfYearPositionalBalances[balanceIndex]!,
-            })]
-          : []),
-    )
-
-    const accountGrowth = annualPostSolveAccountGrowth({
-      states: balances,
+    // --- post-solve growth + owned-non-Roth-IRA capture ---------------------
+    // The sub-phase lives in `internal/annualPostGrowthCapturePhase.ts`. It is
+    // the first block in this file to take its OWN input record instead of
+    // reading the 91-field `Facts` destructure: fifteen values, named, and
+    // nothing else. It captures the pre-growth owned-IRA positions, commits
+    // market growth and then reinvested yield in that order over the
+    // positional rows, and captures the post-growth owner pools.
+    const postGrowth = annualPostGrowthCapturePhase({
+      planId: plan.id,
+      year,
+      balances,
+      annualIdKeyedBalances,
+      startOfYearPositionalBalances,
+      isAggregatedIraThisYear,
       allocationTrack,
       distributedYieldByBalanceIndex,
       classParams,
       defaultReturnPct: plan.assumptions.defaultReturnPct,
-      shockPct: returnShockAt(year),
-      year,
+      returnShockAt,
       classShockAt,
+      annuityStagingCandidates,
+      annuityContractValue,
+      startOfYearAnnuityContractValue,
     })
-    // Wealth-weighted total return the ledger actually applies this year
-    // (including distributed yield — interest, dividends, and tax-exempt
-    // interest; a distribution, not a loss). Next year's coordinated HECM
-    // check reads it, so the down-market signal is the realized portfolio
-    // return, not the raw additive shock. The coordinator returns exactly one
-    // positional row per physical balance; the caller commits every market
-    // balance and drifted weight before publishing that signal, then commits
-    // reinvestment in the original second pass below.
-    for (let balanceIndex = 0; balanceIndex < balances.length; balanceIndex++) {
-      const row = accountGrowth.rows[balanceIndex]!
-      const state = balances[balanceIndex]!
-      state.balance = row.marketClosingBalance
-      if (row.kind === 'allocated') {
-        allocationTrack.get(String(balanceIndex))!.weights = row.driftedWeights
-      }
-    }
-    priorYearPortfolioReturnPct = accountGrowth.priorYearPortfolioReturnPct
-
-    // Distributed yield is credited only after every account's market growth.
-    // Reinvestment is not growth and adds basis only to the taxable physical
-    // row whose earlier yield calculation produced it.
-    for (let balanceIndex = 0; balanceIndex < balances.length; balanceIndex++) {
-      const row = accountGrowth.rows[balanceIndex]!
-      if (row.reinvestedYield <= 0) continue
-      const state = balances[balanceIndex]!
-      state.balance += row.reinvestedYield
-      if (state.account.type === 'taxable') state.costBasis += row.reinvestedYield
-    }
-
-    const ownedNonRothIraBalancesByOwner = new Map<
-      string | null,
-      Array<{ sourceAccountId: string; balanceIndex: number; balancePlanDollars: number }>
-    >()
-    for (const [balanceIndex, state] of balances.entries()) {
-      if (!isAggregatedIraThisYear(state.account)) continue
-      // A validated Plan always supplies an owner here. Preserve null on a
-      // malformed direct simulatePlan call so this raw, not-yet-validated
-      // source never invents ownership that later replay could mistake as fact.
-      const ownerPersonId = state.account.ownerPersonId
-      const accountBalances = ownedNonRothIraBalancesByOwner.get(ownerPersonId) ?? []
-      accountBalances.push({
-        sourceAccountId: state.account.id,
-        balanceIndex,
-        balancePlanDollars: state.balance,
-      })
-      ownedNonRothIraBalancesByOwner.set(ownerPersonId, accountBalances)
-    }
-    // The contract values that belong on line 6 beside those balances, read at
-    // the same instant. Annuity accounts take no growth -- they hold no balance
-    // the ledger could grow -- so reading the channel here rather than before
-    // the growth loop changes no figure; it is read here so the two halves of
-    // line 6 are captured at one boundary and the replay can say so.
-    const annuityContractValuesByOwner = new Map<
-      string | null,
-      Array<{
-        annuityAccountId: string
-        fundingAccountId: string
-        contractValueOpeningPlanDollars: number
-        contractValuePlanDollars: number
-      }>
-    >()
-    for (const { contract, funding, ownerPersonId } of annuityStagingCandidates) {
-      const contractValuePlanDollars = annuityContractValue.get(contract.id)
-      if (contractValuePlanDollars === undefined) continue
-      const entries = annuityContractValuesByOwner.get(ownerPersonId) ?? []
-      entries.push({
-        annuityAccountId: contract.id,
-        fundingAccountId: funding.id,
-        contractValueOpeningPlanDollars:
-          startOfYearAnnuityContractValue.get(contract.id) ?? 0,
-        contractValuePlanDollars,
-      })
-      annuityContractValuesByOwner.set(ownerPersonId, entries)
-    }
-    const ownedNonRothIraPostGrowthSource = Object.freeze({
-      status: 'postGrowthOwnedNonRothIraBalancesCaptured' as const,
-      captureBoundary:
-        'afterAllAnnualTransactionsAndGrowthBeforeYearResultPublication' as const,
-      annualObservationValidation: 'notRun' as const,
-      planId: plan.id,
-      taxYear: year,
-      ownerPools: Object.freeze(
-        [...ownedNonRothIraBalancesByOwner]
-          .sort(([leftOwner], [rightOwner]) => {
-            if (leftOwner === null) return rightOwner === null ? 0 : -1
-            if (rightOwner === null) return 1
-            return compareUtf16CodeUnits(leftOwner, rightOwner)
-          })
-          .map(([ownerPersonId, accountBalances]) => Object.freeze({
-            ownerPersonId,
-            accountBalances: Object.freeze(
-              accountBalances
-                .sort((left, right) =>
-                  compareUtf16CodeUnits(
-                    left.sourceAccountId,
-                    right.sourceAccountId,
-                  ) || left.balanceIndex - right.balanceIndex,
-                )
-                .map((balance) => Object.freeze({ ...balance })),
-            ),
-            annuityContractValues: Object.freeze(
-              (annuityContractValuesByOwner.get(ownerPersonId) ?? [])
-                .sort((left, right) => compareUtf16CodeUnits(
-                  left.annuityAccountId, right.annuityAccountId,
-                ))
-                .map((value) => Object.freeze({ ...value })),
-            ),
-          })),
-      ),
-    })
+    const ownedNonRothIraBalancesBeforeGrowth =
+      postGrowth.ownedNonRothIraBalancesBeforeGrowth
+    const ownedNonRothIraPhysicalBalancesBeforeGrowth =
+      postGrowth.ownedNonRothIraPhysicalBalancesBeforeGrowth
+    const ownedNonRothIraPhysicalOpeningBalances =
+      postGrowth.ownedNonRothIraPhysicalOpeningBalances
+    priorYearPortfolioReturnPct = postGrowth.priorYearPortfolioReturnPct
+    const ownedNonRothIraPostGrowthSource =
+      postGrowth.ownedNonRothIraPostGrowthSource
 
     // --- snapshot ------------------------------------------------------------
     const snapshot = annualSnapshot({

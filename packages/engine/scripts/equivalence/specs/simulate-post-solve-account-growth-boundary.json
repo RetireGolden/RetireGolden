@@ -94,26 +94,27 @@
     {
       "id": "AA.callsite",
       "label": "annual invocation and ordered caller-owned two-pass commits",
-      "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
+      "file": "projection/internal/annualPostGrowthCapturePhase.ts",
+      "note": "The caller of this coordinator moved verbatim out of annualFundingApplicationAndClosePhase into its own sub-phase, so the range names the new file. One anchor's text changed with it and only in that way: the portfolio-return signal is now declared where it was previously assigned to the funding phase's own let binding, which the funding phase now writes from this sub-phase's result.",
       "lines": [
-        1886,
-        1923
+        149,
+        186
       ],
       "anchors": [
         {
-          "line": 1886,
+          "line": 149,
           "text": "const accountGrowth = annualPostSolveAccountGrowth({"
         },
         {
-          "line": 1907,
+          "line": 170,
           "text": "state.balance = row.marketClosingBalance"
         },
         {
-          "line": 1912,
-          "text": "priorYearPortfolioReturnPct = accountGrowth.priorYearPortfolioReturnPct"
+          "line": 175,
+          "text": "const priorYearPortfolioReturnPct = accountGrowth.priorYearPortfolioReturnPct"
         },
         {
-          "line": 1922,
+          "line": 185,
           "text": "if (state.account.type === 'taxable') state.costBasis += row.reinvestedYield"
         }
       ]
