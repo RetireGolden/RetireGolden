@@ -107,7 +107,7 @@
     {
       "id": "AK.callsite.contract",
       "label": "post-RMD and post-withdrawal conversion preparation snapshot",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1836, 1871],
       "anchors": [
         { "line": 1836, "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({" },
@@ -120,7 +120,7 @@
     {
       "id": "AK.callsite.effectiveGroups",
       "label": "shared narrowed linked-group verdict",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1878, 1879],
       "anchors": [
         { "line": 1878, "text": "const effectiveLinkedWithdrawalGroups =" },
@@ -130,7 +130,7 @@
     {
       "id": "AK.callsite.execute",
       "label": "caller-owned named-conversion executor call",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1880, 1882],
       "anchors": [
         { "line": 1880, "text": "if (rothConversionExecutionInput.status === 'ready') {" },

@@ -154,7 +154,7 @@
     {
       "id": "AJ.callsite.contract",
       "label": "post-forced-distribution QCD preparation snapshot",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1569, 1611],
       "anchors": [
         { "line": 1569, "text": "const qcdExecutionInput = annualQcdExecutionInput(Object.freeze({" },
@@ -167,7 +167,7 @@
     {
       "id": "AJ.callsite.outputs",
       "label": "prerequisite publication and retained executor handoff",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1612, 1612],
       "anchors": [
         { "line": 1612, "text": "const qcdActionPrerequisiteResult = qcdExecutionInput.prerequisite" }
@@ -176,7 +176,7 @@
     {
       "id": "AJ.callsite.execute",
       "label": "caller-owned named-QCD executor call",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1653, 1654],
       "anchors": [
         { "line": 1653, "text": "if (qcdExecutionInput.status === 'ready') {" },

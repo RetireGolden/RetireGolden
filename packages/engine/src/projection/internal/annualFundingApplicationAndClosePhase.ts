@@ -92,8 +92,8 @@ import {
 } from './annualLogicalBalanceLedger.js'
 import type { FilingStatus } from '../../params/types.js'
 import type {
-  AnnualForcedDistributionQcdRetirementActionsResult,
-} from './annualForcedDistributionQcdAndRetirementActions.js'
+  AnnualForcedDistributionQcdAndRetirementActionsPhaseResult,
+} from './annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import type {
   AnnualAggregateRothConversionPhaseResult,
 } from './annualAggregateRothConversionPhase.js'
@@ -395,7 +395,7 @@ interface AnnualFundingApplicationAndClosePhaseCapture {
 }
 
 interface AnnualFundingApplicationAndClosePhasePrior {
-  readonly forcedDistribution: AnnualForcedDistributionQcdRetirementActionsResult
+  readonly forcedDistribution: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult
   readonly aggregateRoth: AnnualAggregateRothConversionPhaseResult
 }
 

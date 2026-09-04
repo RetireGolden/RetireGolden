@@ -3,18 +3,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Account, Plan } from '../model/plan.js'
 import type {
-  AnnualForcedDistributionQcdRetirementActionsInput,
-  AnnualForcedDistributionQcdRetirementActionsResult,
-} from './internal/annualForcedDistributionQcdAndRetirementActions.js'
+  AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
+  AnnualForcedDistributionQcdAndRetirementActionsPhaseResult,
+} from './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import type {
   AnnualAggregateRothConversionPhaseInput,
   AnnualAggregateRothConversionPhaseResult,
 } from './internal/annualAggregateRothConversionPhase.js'
 
 interface ForcedCall {
-  readonly input: AnnualForcedDistributionQcdRetirementActionsInput
-  readonly natural: AnnualForcedDistributionQcdRetirementActionsResult
-  readonly returned: AnnualForcedDistributionQcdRetirementActionsResult
+  readonly input: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput
+  readonly natural: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult
+  readonly returned: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult
   readonly downstreamIsAggregatedIraThisYear: ReturnType<typeof vi.fn>
 }
 
@@ -34,18 +34,18 @@ const seam = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  './internal/annualForcedDistributionQcdAndRetirementActions.js',
+  './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js',
   async (importOriginal) => {
     const original = await importOriginal<
-      typeof import('./internal/annualForcedDistributionQcdAndRetirementActions.js')
+      typeof import('./internal/annualForcedDistributionQcdAndRetirementActionsPhase.js')
     >()
     return {
       ...original,
-      annualForcedDistributionQcdAndRetirementActions: (
-        input: AnnualForcedDistributionQcdRetirementActionsInput,
-      ): AnnualForcedDistributionQcdRetirementActionsResult => {
+      annualForcedDistributionQcdAndRetirementActionsPhase: (
+        input: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
+      ): AnnualForcedDistributionQcdAndRetirementActionsPhaseResult => {
         const natural =
-          original.annualForcedDistributionQcdAndRetirementActions(input)
+          original.annualForcedDistributionQcdAndRetirementActionsPhase(input)
         const downstreamIsAggregatedIraThisYear = vi.fn(
           natural.isAggregatedIraThisYear,
         )

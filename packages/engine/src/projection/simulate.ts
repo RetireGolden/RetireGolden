@@ -77,8 +77,8 @@ import {
   type AnnualContributionAndMatchOperationIdentity,
   type AnnualContributionsAndEmployerMatchResult,
 } from './internal/annualContributionsAndEmployerMatch.js'
-import { annualForcedDistributionQcdAndRetirementActions } from
-  './internal/annualForcedDistributionQcdAndRetirementActions.js'
+import { annualForcedDistributionQcdAndRetirementActionsPhase } from
+  './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import { annualAggregateRothConversionPhase } from './internal/annualAggregateRothConversionPhase.js'
 import { annualRothBasisPoolKey } from './internal/annualRothBasisPoolKey.js'
 import {
@@ -3278,7 +3278,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     const forcedDistributionPhase =
-      annualForcedDistributionQcdAndRetirementActions(Object.freeze({
+      annualForcedDistributionQcdAndRetirementActionsPhase(Object.freeze({
         facts: Object.freeze({
           year,
           startYear,

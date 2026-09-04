@@ -206,7 +206,7 @@
     {
       "id": "M.callsite.invoke",
       "label": "no-action defaults, guarded boundary invocation, and scalar consumption",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
         1791,
         1818
@@ -234,7 +234,7 @@
     {
       "id": "M.callsite.selectOperation",
       "label": "ordinary-withdrawal positional operation selection",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
         1821,
         1825
@@ -258,7 +258,7 @@
     {
       "id": "M.callsite.apply",
       "label": "ordinary-withdrawal basis and balance mutation",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
         1828,
         1831

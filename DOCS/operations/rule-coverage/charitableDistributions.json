@@ -145,7 +145,7 @@
       "dueOn": "2026-12-03",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts",
-        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
         "packages/engine/src/projection/internal/annualLegacyQcdGiftPlan.ts"
       ],
       "implementations": [
@@ -159,10 +159,10 @@
           ]
         },
         {
-          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
           "functions": [
             {
-              "name": "annualForcedDistributionQcdAndRetirementActions",
+              "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
               "line": 310
             }
           ]

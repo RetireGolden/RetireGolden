@@ -36,8 +36,8 @@ import type { OwnedNonRothIraAnnualSettlementEffect } from '../../internal/owned
 import { ledgerCentsToPlanDollars } from '../../actions/index.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
 import type { FilingStatus } from '../../params/types.js'
-import type { AnnualForcedDistributionQcdRetirementActionsResult }
-  from './annualForcedDistributionQcdAndRetirementActions.js'
+import type { AnnualForcedDistributionQcdAndRetirementActionsPhaseResult }
+  from './annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import { annualRothBasisPoolKey } from './annualRothBasisPoolKey.js'
 
 type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
@@ -160,7 +160,7 @@ interface AnnualAggregateRothConversionPhaseCapture {
 
 export interface AnnualAggregateRothConversionPhaseInput {
   readonly facts: AnnualAggregateRothConversionPhaseFacts
-  readonly prior: AnnualForcedDistributionQcdRetirementActionsResult
+  readonly prior: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult
   readonly ledger: AnnualAggregateRothConversionPhaseLedger
   readonly callbacks: AnnualAggregateRothConversionPhaseCallbacks
   readonly capture: AnnualAggregateRothConversionPhaseCapture | null

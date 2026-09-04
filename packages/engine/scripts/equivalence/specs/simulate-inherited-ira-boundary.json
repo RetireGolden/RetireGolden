@@ -177,7 +177,7 @@
     {
       "id": "I.snapshot-helper",
       "label": "caller-owned plain immutable snapshot materialization before annual writes",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [293, 307],
       "anchors": [
         { "line": 293, "text": "function immutablePlainSnapshot<T>(value: T): T {" },
@@ -191,7 +191,7 @@
     {
       "id": "I.delegate",
       "label": "grouped logical input, pure planning, immutable channel capture, and complete prevalidation setup",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [776, 798],
       "anchors": [
         { "line": 776, "text": "const inheritedPlan = immutablePlainSnapshot(" },
@@ -208,7 +208,7 @@
     {
       "id": "J.consume",
       "label": "cached one-logical-setter write and runtime occurrence per operation plus obligation and excise handoff",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [827, 852],
       "anchors": [
         { "line": 827, "text": "for (const operation of inheritedOperations) {" },

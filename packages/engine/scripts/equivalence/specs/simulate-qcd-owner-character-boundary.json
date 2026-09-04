@@ -171,7 +171,7 @@
     {
       "id": "Y.callsite.invoke",
       "label": "owner-character invocation with grouped annual state snapshots",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1127, 1146],
       "anchors": [
         { "line": 1127, "text": "const qcdQualifiedFromRmdByOwner = new Map<string, number>()" },
@@ -186,7 +186,7 @@
     {
       "id": "Y.callsite.applyRows",
       "label": "ordered owner-row iteration and contradiction selection",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1147, 1148],
       "anchors": [
         { "line": 1147, "text": "for (const row of qcdOwnerCharacterPlan.rows) {" },
@@ -197,7 +197,7 @@
     {
       "id": "Y.callsite.applyCharacterRows",
       "label": "ordered owner offset, character and income folds",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1154, 1169],
       "anchors": [
         { "line": 1154, "text": "if (row.qcdOffsetConsumedWrite !== null) {" },
@@ -213,7 +213,7 @@
     {
       "id": "Y.callsite.cashFlowWrites",
       "label": "all four closed-union cash-flow publications",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1170, 1183],
       "anchors": [
         { "line": 1170, "text": "for (const write of row.cashFlowWrites) {" },
@@ -229,7 +229,7 @@
     {
       "id": "Y.callsite.proRataApply",
       "label": "exact helper-owned pro-rata object publication",
-      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActions.ts",
+      "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [1190, 1198],
       "anchors": [
         { "line": 1190, "text": "if (row.iraProRataWrite !== null) {" },
