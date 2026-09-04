@@ -1,6 +1,7 @@
 /**
  * Annuity records: the section 72 exclusion ratio, the expected-return and
- * refund-feature adjustments, and the employer-plan basis recovery rules.
+ * refund-feature adjustments, the employer-plan basis recovery rules, and
+ * pension direct-rollover eligibility.
  *
  * One slice of the tax rule registry. `../taxRuleRegistry.ts` composes every
  * slice into `TAX_RULE_REGISTRY`; read it for what a record must carry and why.

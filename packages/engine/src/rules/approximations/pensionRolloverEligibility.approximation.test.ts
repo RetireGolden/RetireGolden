@@ -5,7 +5,7 @@
  * destination, but cannot express whether the source is a qualified trust or
  * whether its distribution is eligible for rollover. This fixture therefore
  * uses those unavailable facts to hide a genuinely nonqualifying or ineligible
- * offer, drives the real projection entry point with the smallest pension
+ * offer, drives the real projection entry point with a round $300,000 pension
  * offer, and records the two readings the hidden facts separate. It
  * deliberately uses a 60-year-old, outside the RMD regime: the §402(c)(4)(B)
  * carve-out is the distinct sibling defect
@@ -33,8 +33,8 @@ function hiddenNonqualifyingOfferPensionPlan(): Plan {
       name: 'Pension with hidden nonqualifying rollover offer',
       ownerPersonId: 'p1',
       annualReturnPct: null,
-      startAge: 65,
-      monthlyAmount: 0,
+      startAge: 60,
+      monthlyAmount: 1000,
       colaPct: 0,
       survivorPct: 0,
       lumpSumOffer: { amount: OFFER, electionYear: ELECTION_YEAR },
