@@ -388,4 +388,42 @@ describe('validation cluster F', () => {
     expect(issues).toContain('incomes.1.endYear: a recurring income must end in or after the year it starts')
     expectInvalid(labelledControl('End year'), 'a recurring income must end in or after the year it starts')
   })
+
+  it('LTC Benefit period (years) commits a typed fraction as entered, not rounded to 0 (review r1-1, r2-1)', async () => {
+    // `insurance.N.benefitPeriodYears` is `z.number().positive()` with no
+    // `.int()` (plan.ts), so 0.4 is schema-legal on its own. The field used to
+    // round to the nearest integer on commit, which turned an accepted 0.4
+    // into an invalid 0 because the round ran after the field's own range
+    // check (against the typed value, not the rounded one).
+    const plan = createSamplePlan()
+    plan.careEvents = []
+    plan.insurance = [
+      {
+        kind: 'ltc',
+        id: 'ltc-1',
+        name: 'LTC policy',
+        owner: plan.household.people[0]!.id,
+        annualPremium: 3000,
+        premiumMode: 'lifetime',
+        benefitMonthly: 6000,
+        benefitPeriodYears: 3,
+        eliminationPeriodDays: 90,
+      },
+    ]
+    expect(parsePlan(plan).ok).toBe(true)
+    const update = vi.fn()
+    await render(
+      <PlanCtx.Provider value={contextFor(plan, [], update)}>
+        <InsuranceSection />
+      </PlanCtx.Provider>,
+    )
+    const benefitPeriod = labelledControl('Benefit period (years)')
+    await typeInto(benefitPeriod, '0.4')
+    expect(update).toHaveBeenCalledTimes(1)
+    const draft = structuredClone(plan)
+    update.mock.calls[0]![0](draft)
+    expect(draft.insurance[0]).toMatchObject({ benefitPeriodYears: 0.4 })
+    // 0.4 itself is schema-legal (positive, no minimum), so nothing is flagged.
+    expect(benefitPeriod.hasAttribute('aria-invalid')).toBe(false)
+  })
 })
