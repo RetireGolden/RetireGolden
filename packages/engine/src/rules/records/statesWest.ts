@@ -970,6 +970,15 @@ export const westStateRecords = {
     statement:
       'RCW 82.87.040 imposes a separate excise on an individual’s Washington capital gains from sales or exchanges of long-term capital assets, with a further tier above $1,000,000, and RCW 82.87.050 excepts retirement-savings vehicles. Typed absence: `model/plan.ts` and `params/types.ts` do not carry the holding-period, Washington allocation, adjusted-capital-gain, exemption, deduction, or $1,000,000 tier facts needed to price that levy, and `tax/stateTax.ts` has no refusal naming the missing excise — with `hasIncomeTax: false` a capital-gain input emits zero state tax and continues, so the ordinary path never surfaces the levy.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the holding period that makes a capital asset long-term',
+      'the Washington allocation of the gain',
+      'adjusted capital gain after the statutory exemptions and deductions',
+      'the 1,000,000-dollar tier boundary in the ParameterPack',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,

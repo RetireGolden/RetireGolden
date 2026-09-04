@@ -328,6 +328,15 @@ export const investmentIncomeAndBasisRecords = {
     statement:
       'When an individual sells stock at a loss and causes that individual\'s traditional or Roth IRA to buy substantially identical stock within the section 1091 window, the loss is disallowed and the IRA\'s basis is not increased. The loss therefore has no replacement-basis adjustment inside the IRA. Not modelled: the plan has no security or lot identities, trade dates, taxable-to-IRA ownership linkage, or IRA purchase event to reach this ruling.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'security and lot identities: taxableAccountSchema carries one aggregate cost basis and no lots',
+      'trade dates for the section 1091 window',
+      'an ownership linkage between a taxable account and the individual\'s IRA',
+      'an IRA purchase event',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -400,6 +409,16 @@ export const investmentIncomeAndBasisRecords = {
     statement:
       'For elections on sales or exchanges on or before December 31, 2026 (the legacy limb), a taxpayer may elect to exclude eligible gain to the amount invested in a qualified opportunity fund within 180 days, no new election may be made after that date, and deferred gain is included at the earlier of disposition or December 31, 2026. Pub. L. 119-21 (OBBBA sec. 70421) amended section 1400Z-2 for amounts invested after December 31, 2026 into a permanent regime: the amended (a)(2) carries no December 31, 2026 bar (only the prior-election-in-effect limit), deferred gain is included at the earlier of disposition or five years after the QOF investment, and a qualifying investment held at least 10 years can still elect fair-market-value basis (with the amended (c) limbs). Not modelled: the plan has no qualified-opportunity-fund account or election, eligible-sale or unrelated-person facts, investment amount or date, deferred-gain basis, or ten-year holding-period fact.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a qualified-opportunity-fund account or election',
+      'the eligible sale or exchange and the unrelated-person condition',
+      'the amount invested and the investment date the 180-day window runs from',
+      'the deferred gain\'s basis',
+      'the ten-year holding-period fact the fair-market-value basis election needs',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -816,6 +835,13 @@ export const investmentIncomeAndBasisRecords = {
     statement:
       'Book-entry Series EE and Series I savings-bond purchases are subject to a $10,000 annual principal limit per series for an individual owner. RetireGolden has no savings-bond account or annual purchase ledger, so no accepted plan input reaches a purchase-cap result.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a book-entry Series EE or Series I savings-bond holding',
+      'an annual purchase ledger per series per owner to test the 10,000-dollar limit against',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -843,6 +869,14 @@ export const investmentIncomeAndBasisRecords = {
     statement:
       'IRC 454(a) permits a cash-method holder of a discount savings obligation to elect current inclusion of the increase in redemption price, but absent that election section 454(c) includes the increase in redemption value (to the extent not previously includible) in gross income in the taxable year of final redemption or final maturity, whichever is earlier. RetireGolden has no savings-bond instrument, redemption or maturity date, or section 454 election and therefore produces no savings-bond deferral or default-inclusion result.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a savings-bond instrument and its redemption price increases',
+      'the final redemption or final maturity date',
+      'a section 454(a) election to include the increase currently',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -882,6 +916,15 @@ export const investmentIncomeAndBasisRecords = {
     statement:
       'IRC 135 excludes interest on a qualified United States savings bond redeemed to pay qualified higher-education expenses, subject to the redemption-proceeds expense ratio and the modified-AGI phaseout. RetireGolden has no savings-bond redemption, qualified education-expense, dependent, or section 135 exclusion input, so it produces no education-bond exclusion amount.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a qualified savings-bond redemption and its proceeds',
+      'qualified higher-education expenses to ratio those proceeds against',
+      'the dependent the expenses are paid for',
+      'the section 135 exclusion itself, which computeFederalTax has no line for',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1016,6 +1059,13 @@ export const investmentIncomeAndBasisRecords = {
     statement:
       'A holder\'s adjusted basis in an inflation-indexed debt instrument is decreased by the amount of any deflation adjustment taken into account to reduce interest otherwise includible in income or treated as an ordinary loss. The engine does not track per-rung holder basis or apply deflation basis decreases.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'per-rung holder basis: LadderRung carries no adjusted basis to decrease',
+      'a deflation adjustment taken into account to reduce interest or as an ordinary loss',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1051,6 +1101,14 @@ export const investmentIncomeAndBasisRecords = {
     statement:
       'Acquisition premium on an inflation-indexed debt instrument reduces OID under the acquisition-premium rules, with the premium measured by reference to adjusted issue price on the acquisition date and taken into account over the remaining term as if there were no further inflation or deflation. The engine has no acquisition-premium or OID-offset facts.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'an acquisition date and the adjusted issue price on that date',
+      'acquisition premium on a rung',
+      'an OID offset for that premium to reduce over the remaining term',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1084,6 +1142,15 @@ export const investmentIncomeAndBasisRecords = {
     statement:
       'Section 171 bond premium amortization offsets qualified stated interest and OID for a taxable inflation-indexed bond. RetireGolden has no bond issue price, principal, acquisition date, holder basis, call or maturity schedule, or premium election, so no accepted input reaches a bond-premium amortization result.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the bond\'s issue price and stated principal',
+      'the acquisition date and the holder\'s basis',
+      'the call and maturity schedule',
+      'the section 171(c) premium-amortization election',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:

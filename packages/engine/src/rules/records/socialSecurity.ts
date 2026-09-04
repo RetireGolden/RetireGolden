@@ -425,6 +425,14 @@ export const socialSecurityRecords = {
     statement:
       'Public Law 118-273 repealed the Government Pension Offset by striking section 202(k)(5) and repealed the Windfall Elimination Provisions by striking section 215(a)(7), (d)(3), and (f)(9). Its applicability rule makes those amendments apply to monthly insurance benefits payable under title II for months after December 2023. The Plan has no non-covered-pension fact, WEP/GPO flag, or covered-service fact that would trigger those adjustments, so no accepted input reaches the repealed rule for any projection year and the engine produces no figure from it rather than an approximation.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a non-covered pension on socialSecurityIncomeSchema',
+      'a WEP or GPO flag',
+      'covered-service facts that would have triggered either adjustment',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -466,6 +474,13 @@ export const socialSecurityRecords = {
     statement:
       'Section 402(r) addresses only old-age and wife’s or husband’s insurance benefits, not survivor benefits. SSA confirms that deemed filing does not apply to survivor benefits: a widow(er) entitled to survivor benefits is not deemed to file for retirement insurance benefits and may restrict the widow(er) application while delaying retirement insurance benefits. A survivor↔own claim-age sequence is therefore legally available, but the Plan has only one `claimAge` on each Social Security stream (clamped to ages 62–70) and no separate survivor claim age, so a survivor-only claim at 60 is independently unrepresentable. The whole-plan ledger consequently cannot price the sequence and produces no figure from it.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a survivor claim age separate from the stream\'s single claimAge, which is clamped to ages 62 through 70',
+      'a restricted widow(er) application that delays retirement insurance benefits',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -656,6 +671,15 @@ export const socialSecurityRecords = {
     statement:
       'The engine emits no Social Security lump-sum death payment. Section 402(i) and 20 CFR 404.390 permit a payment of up to $255 only for a fully or currently insured deceased worker and condition the normal widow(er) payment on living in the same household at death, with alternative payees and application rules if that condition is absent. A married couple where one dies is expressible as a same-household fact, but no accepted Plan input supplies fully or currently insured status as such, an application within two years, or the statutory alternative payee facts, and the engine has no death-payment surface, so no accepted Plan reaches this rule.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'fully or currently insured status as such',
+      'an application filed within two years of death',
+      'the statutory alternative-payee facts when the same-household condition is absent',
+      'a death-payment surface for the engine to pay it out of',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -695,6 +719,13 @@ export const socialSecurityRecords = {
     statement:
       'The current-couple survivor step-up has no accepted fact for a survivor’s remarriage after the worker dies, so it cannot apply the rule that remarriage before 60 ends widow(er) eligibility while remarriage after 60 is disregarded. The narrower former-spouse path does carry `remarriedAtAge` and rejects a deceased former-spouse survivor claim below 60; this out-of-scope record is limited to the unrepresentable current-spouse transition.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a remarriage of the surviving member of the current couple after the worker\'s death: only formerSpouseSchema carries remarriedAtAge',
+      'the age at that remarriage, which decides whether widow(er) eligibility ends',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -744,6 +775,16 @@ export const socialSecurityRecords = {
     statement:
       'The engine does not create a child survivor benefit. A deceased worker’s eligible child receives three-fourths of the worker’s primary insurance amount under section 402(d)(2), and section 403(a) can reduce benefits on that worker’s record to the family maximum; the Plan has no child person, dependency, age/student/disability eligibility, or child Social Security stream through which either amount can be reached.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a child person in the household',
+      'the child\'s dependency on the worker',
+      'the age, student, or disability eligibility the benefit turns on',
+      'a child Social Security stream to pay three-fourths of the PIA into',
+      'the section 403(a) family maximum applied across one worker\'s record',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1063,6 +1104,15 @@ export const socialSecurityRecords = {
     statement:
       'A timely approved withdrawal with repayment treats the benefit application as never filed. The Plan represents one claim age per Social Security stream and has no application, withdrawal request, approval, repayment, claim reset, or replacement-claim action. No accepted Plan can therefore trigger this rule; changing a scalar claim age is not evidence that an already-filed application was withdrawn and repaid.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a benefit application distinct from the stream\'s scalar claimAge',
+      'a withdrawal request and its approval',
+      'the repayment of benefits already received',
+      'a claim reset or replacement-claim action',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1205,6 +1255,15 @@ export const socialSecurityRecords = {
     statement:
       'A widow(er) may be entitled from age 50 rather than age 60 only while disabled and only when the disability began within the prescribed seven-year period. The Plan cannot make that claim: its Social Security stream has a single retirement `claimAge` clamped to 62–70, a worker-SSDI `disability.onsetAge` that is not linked to a deceased-worker record, and no DWB disability determination, death/last-entitlement date, prescribed-period, waiting-period, SSI, or application facts. No accepted Plan therefore reaches the disabled-widow(er) branch or produces a DWB amount.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a survivor claim age below 62: claimAge is clamped to ages 62 through 70',
+      'a disabled-widow(er) disability determination linked to a deceased worker\'s record, rather than the worker\'s own disability.onsetAge',
+      'the death or last-entitlement date the prescribed seven-year period runs from',
+      'the waiting period, SSI, and application facts the branch also turns on',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1329,6 +1388,16 @@ export const socialSecurityRecords = {
     statement:
       'The engine does not create a child SSDI auxiliary. A living disabled worker\'s eligible child receives one-half of the worker\'s primary insurance amount under section 402(d)(2), and section 403(a) can reduce benefits on that worker\'s record to the family maximum; the Plan has no child person, dependency, age/student/disability eligibility, or child Social Security stream through which either amount can be reached.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a child person in householdSchema',
+      'the child\'s dependency on the disabled worker',
+      'the age, student, or disability eligibility the benefit turns on',
+      'a child Social Security stream to pay one-half of the PIA into',
+      'the section 403(a) family maximum applied across one worker\'s record',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1356,6 +1425,13 @@ export const socialSecurityRecords = {
     statement:
       'For 2026, the statutorily blind SGA amount is 2,830 dollars per month, distinct from the 1,690-dollar non-blind amount in the parameter pack. The regulation supplies a separate blindness rule whose post-1995 increases depend on the national average wage index. The Plan has no statutory-blindness fact and the parameter pack has only `sgaMonthlyNonBlind`, so no accepted input can select the blind amount or route it to the SSDI gate; the engine does not produce a blind-SGA figure.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a statutory-blindness fact on socialSecurityIncomeSchema',
+      'a blind SGA monthly amount in the parameter pack, which carries only sgaMonthlyNonBlind',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1483,6 +1559,15 @@ export const socialSecurityRecords = {
     statement:
       'A former disability beneficiary whose entitlement terminated because of work may request reinstatement if substantial gainful activity stops within 60 months, the current impairment is the same as or related to the prior impairment, and the person is disabled. The Plan has no prior termination, termination date, request, current/prior-impairment relationship, or reinstatement state, so no accepted input reaches expedited reinstatement and the engine produces no EXR figure.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a prior disability entitlement that terminated because of work, and its termination date',
+      'a reinstatement request',
+      'the relationship between the current impairment and the prior one',
+      'a reinstatement state for the projection to carry',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -1682,6 +1767,16 @@ export const socialSecurityRecords = {
     statement:
       'For a disabled worker whose trial-work period has ended and whose entitlement later terminates, section 426(b) deems the worker still entitled for qualifying consecutive months, capped at 78 months; it also substitutes 15 months for the 36-month termination rule when fixing that end point. The staged statute does not state the queue row\'s standalone 93-month continuation, so the registry does not assert that number. The Plan has only an integer SSDI onset age: it cannot represent trial-work timing, termination, continuing impairment, the substantial-gainful-activity counterfactual, or a Medicare Part A entitlement interval, and the engine produces no coverage result from those facts.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'trial-work-period timing: the stream carries only an integer disability.onsetAge',
+      'the later termination of entitlement',
+      'continuing impairment after that termination',
+      'the substantial-gainful-activity counterfactual the deeming rule turns on',
+      'a Medicare Part A entitlement interval to extend',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:

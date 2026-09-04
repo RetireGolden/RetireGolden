@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRefusal } from '../rules/describeRefusal.js'
 import { describeRule } from '../rules/describeRule.js'
 import {
   inheritedAccountSchema,
@@ -1008,5 +1009,146 @@ describe('WS3 fixtures F12 and F13', () => {
       spouseWasUnderTenYearRule: true,
       priorYearEndBalancesByYear: {},
     })).toThrow('cannot settle')
+  })
+})
+
+/**
+ * Refusal fixtures for the `outOfScope` records this classifier implements.
+ *
+ * Each record claims `classifyInheritedRegime` refuses a beneficiary fact set
+ * rather than producing a schedule for it. The fixtures drive the classifier
+ * directly, pin the matrix row and refusal key the record names, and pair each
+ * refusal with the neighbouring fact set that does classify — so the day a
+ * refused row starts returning a regime, the fixture fails and names the record
+ * that has to be reclassified.
+ */
+describe('outOfScope refusals reached through classifyInheritedRegime', () => {
+  function classify(account: InheritedAccount) {
+    return classifyInheritedRegime({
+      accountType: 'traditional',
+      accountKind: 'ira',
+      inherited: account,
+    })
+  }
+
+  describeRefusal('irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule', {
+    entryPoint: 'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+    outOfScopeInput:
+      'an inherited IRA whose beneficiary is an estate, trust, or entity after a death before the required beginning date',
+    refusal:
+      "matrix row X3 with refusal key 'unsupported', so no five-year schedule and no annual required amount are produced",
+    note: 'the non-designated-beneficiary classification itself',
+  }, () => {
+    const NON_DESIGNATED_CLASSES = ['estate', 'trust', 'entity'] as const
+
+    it.each(NON_DESIGNATED_CLASSES)(
+      'refuses a %s beneficiary rather than running the five-year rule',
+      (beneficiaryClass) => {
+        const result = classify(inherited(2024, false, beneficiary({
+          beneficiaryClass,
+          edbCategory: 'none',
+          beneficiaryBirthYear: undefined,
+          soleBeneficiary: undefined,
+        })))
+        expect(result.kind).toBe('refusal')
+        if (result.kind !== 'refusal') throw new Error('expected a refusal')
+        expect(result.row).toBe('X3')
+        expect(result.refusal).toBe('unsupported')
+        expect(result.reason).toContain(`beneficiaryClass '${beneficiaryClass}'`)
+      },
+    )
+
+    it('refuses a see-through trust alike, because the regime and not the trust test is unimplemented', () => {
+      // Treas. Reg. 1.401(a)(9)-4(f) would let a qualifying trust look through
+      // to its individual beneficiaries. The record says the classifier does
+      // not try: the five-year/non-designated regime itself is absent, so every
+      // trust lands on X3 no matter how it is drafted.
+      const result = classify(inherited(2024, false, beneficiary({
+        beneficiaryClass: 'trust',
+        edbCategory: 'none',
+        beneficiaryBirthYear: 1995,
+        soleBeneficiary: true,
+      })))
+      expect(result.kind).toBe('refusal')
+      if (result.kind !== 'refusal') throw new Error('expected a refusal')
+      expect(result.row).toBe('X3')
+    })
+
+    it('classifies the same death for a designated individual, so the refusal is the beneficiary class', () => {
+      const result = classify(inherited(2024, false, beneficiary()))
+      expect(result.kind).toBe('regime')
+      if (result.kind !== 'regime') throw new Error(result.reason)
+      expect(result.regime).toBe('ten-year-no-annual')
+    })
+  })
+
+  describeRefusal('treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline', {
+    entryPoint: 'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+    outOfScopeInput:
+      'an inherited IRA with multiple beneficiaries and no separate-account facts, where the separate-account deadline would decide the regime',
+    refusal:
+      "matrix row X4 with refusal key 'unsupported', so no deadline is inferred to have been met or missed",
+  }, () => {
+    it('refuses multiple beneficiaries rather than inferring a timely separate account', () => {
+      const result = classify(inherited(2024, false, beneficiary({ soleBeneficiary: false })))
+      expect(result.kind).toBe('refusal')
+      if (result.kind !== 'refusal') throw new Error('expected a refusal')
+      expect(result.row).toBe('X4')
+      expect(result.refusal).toBe('unsupported')
+      expect(result.reason).toContain('soleBeneficiary is false')
+    })
+
+    it('refuses the post-deadline case the quoted rule governs the same way as any other', () => {
+      // (a)(1)(ii)(A) governs accounts established after the year following
+      // death, and a never-established account is a different failure. Neither
+      // is separable here: with no separate-account facts at all, both are one
+      // X4, which is what "no deadline is inferred" means.
+      const lateDeath = classify(inherited(2020, true, beneficiary({ soleBeneficiary: false })))
+      expect(lateDeath.kind).toBe('refusal')
+      if (lateDeath.kind !== 'refusal') throw new Error('expected a refusal')
+      expect(lateDeath.row).toBe('X4')
+    })
+
+    it('classifies the same account for a sole beneficiary, so the refusal is the missing separate-account fact', () => {
+      const result = classify(inherited(2024, false, beneficiary({ soleBeneficiary: true })))
+      expect(result.kind).toBe('regime')
+      if (result.kind !== 'regime') throw new Error(result.reason)
+      expect(result.regime).toBe('ten-year-no-annual')
+    })
+  })
+
+  describeRefusal('treas-reg-54-4974-1-c-five-year-deadline-rmd', {
+    entryPoint: 'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+    outOfScopeInput:
+      'the fifth-anniversary year of a five-year-rule account, whose required amount would be the entire remaining interest',
+    refusal:
+      "matrix row X3 with refusal key 'unsupported' on the only beneficiary classes the five-year rule reaches, so no fifth-year entire-interest amount is ever produced",
+    note: 'the five-year deadline amount, not the modeled ten-year sweep',
+  }, () => {
+    it('never reaches a five-year deadline, because the classes that would use it are refused', () => {
+      const result = classify(inherited(2024, false, beneficiary({
+        beneficiaryClass: 'entity',
+        edbCategory: 'none',
+        beneficiaryBirthYear: undefined,
+        soleBeneficiary: undefined,
+      })))
+      expect(result.kind).toBe('refusal')
+      if (result.kind !== 'refusal') throw new Error('expected a refusal')
+      expect(result.row).toBe('X3')
+      // A refusal carries no finalDeadlineYear at all, so nothing downstream can
+      // read a fifth-anniversary sweep off it.
+      expect(result).not.toHaveProperty('finalDeadlineYear')
+    })
+
+    it('produces the ten-year deadline, and only the ten-year deadline, for the class it does model', () => {
+      // The tenth-year entire-interest emptying is modeled and registered
+      // elsewhere; this pins that the deadline the engine does produce is
+      // deathYear+10 and never deathYear+5.
+      const result = classify(inherited(2024, false, beneficiary()))
+      expect(result.kind).toBe('regime')
+      if (result.kind !== 'regime') throw new Error(result.reason)
+      expect(result.finalDeadlineYear).toBe(2034)
+      expect(result.finalDeadlineYear).not.toBe(2029)
+    })
   })
 })

@@ -51,6 +51,16 @@ export const medicareAndHealthCoverageRecords = {
     statement:
       'The Part D late-enrollment penalty is the greater of an actuarially sound amount for each uncovered month or 1 percent of the base beneficiary premium for each such month; an uncovered month depends on the timing of enrollment and creditable coverage. The Inflation Reduction Act sets the annual out-of-pocket threshold at $2,000 for 2025 and then increases it annually, but the staged enactment contains no published 2026 annual percentage, so this record does not assert the queue row\'s $2,100 figure. For 2026 and later, the insulin-product copayment ceiling is the lesser of $35, 25 percent of the maximum fair price, or 25 percent of the negotiated price. The Plan has no Part D enrollment, creditable-coverage history, base-premium, drug-claim, product, negotiated-price, maximum-fair-price, or cost-sharing inputs, so it produces none of these rule-derived figures.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'Part D enrollment and its timing',
+      'creditable-coverage history and the uncovered months it leaves',
+      'the base beneficiary premium',
+      'drug claims, the products behind them, negotiated prices, and maximum fair prices',
+      'any cost-sharing input the out-of-pocket threshold and insulin ceiling would apply to',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -116,6 +126,14 @@ export const medicareAndHealthCoverageRecords = {
     statement:
       'When Part B coverage begins from an enrollment after the initial enrollment period and not from a qualifying special enrollment period, the monthly premium under subsection (a) (without IRMAA) is increased by 10 percent of that premium for each full 12 months in the same continuous period of eligibility in which the individual could have been but was not enrolled. The Plan and the Medicare premium path have no delayed-enrollment, uncovered-month, continuous-period, or late-enrollment-increase input, and medicare.ts / the parameter pack emit only the standard Part B premium scaled by IRMAA, so the engine produces no Part B late-enrollment penalty.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a delayed Part B enrollment and the enrollment period it fell in',
+      'the uncovered months within a continuous period of eligibility',
+      'a late-enrollment increase input on the Medicare premium path, which emits only the standard Part B premium scaled by IRMAA',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -153,6 +171,14 @@ export const medicareAndHealthCoverageRecords = {
     statement:
       'Section 1395p fixes the initial enrollment period as the seven months centered on first eligibility, a general enrollment period from January 1 through March 31 each year, and special enrollment periods when group-health or other qualifying coverage ends. The Plan carries no enrollment-month, enrollment-period, deemed-enrollment, or coverage-period facts, so the engine produces no enrollment-timing result from those rules.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the enrollment month and the enrollment period it belongs to',
+      'deemed enrollment',
+      'coverage-period facts, including the group-health coverage whose end opens a special enrollment period',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -198,6 +224,14 @@ export const medicareAndHealthCoverageRecords = {
     statement:
       'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and annualHealthcareExpenses\' min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-redetermination-request surface: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates under 418.1230(a).',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'the full qualifying-event category set: healthcareConfigSchema.ssa44 carries only survivorYears and retirementYears',
+      'the documentation the regulation requires for a qualifying event',
+      'a redetermination request for SSA to adjudicate under 418.1230(a)',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -502,6 +536,12 @@ export const medicareAndHealthCoverageRecords = {
     statement:
       'For taxable years beginning in 2026, Rev. Proc. 2025-32 section 4.27 restates the section 213(d)(10) attained-age limitations on eligible long-term care premiums includible as medical care. The engine has no LTC-premium tax input, so those caps never run; they remain disclosed here on the annually indexed cadence.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'an eligible long-term-care premium line on itemizedDeductionsSchema for the attained-age caps to limit',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -535,6 +575,7 @@ export const medicareAndHealthCoverageRecords = {
     statement:
       'A taxpayer who is an employee within the meaning of section 401(c)(1) may deduct amounts paid during the year for insurance that constitutes medical care for the taxpayer, a spouse, dependents, and children who have not attained age 27, limited to earned income from the trade or business with respect to which the coverage is established. Not modelled: the income model has wages, Social Security, and unlabeled recurring or one-time streams, but no self-employment, 401(c)(1) employee, or earned-income-from-a-trade-or-business fact, and federal tax has no above-the-line self-employed health-insurance line. The ACA year-contract assertion selfEmployedHealthInsuranceDeduction is a typed refusal for premium-tax-credit MAGI (notApplicable or unsupported); unsupported fails that credit closed and never computes a 162(l) figure. No accepted input reaches this deduction.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,

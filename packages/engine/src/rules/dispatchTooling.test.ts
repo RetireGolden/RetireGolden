@@ -205,8 +205,12 @@ describe('dispatch tooling', () => {
       ).toThrow(/Unknown rule id/)
     })
 
-    it('renders the outOfScope typed-refusal fixture note', () => {
+    it('renders missingInputFacts for an outOfScope inexpressibleInput rule, not a refusal note', () => {
       const ruleId = 'irc-223-f-4-B-hsa-death-exception'
+      const rule = TAX_RULE_REGISTRY[ruleId]
+      if (rule.classification !== 'outOfScope' || rule.outOfScope.shape !== 'inexpressibleInput') {
+        throw new Error(ruleId + ' must stay outOfScope/inexpressibleInput for this test to mean anything')
+      }
       const markdown = buildDispatchPrompt({
         asOf: '2026-12-01',
         ruleIds: [ruleId],
@@ -214,8 +218,52 @@ describe('dispatch tooling', () => {
         manifestRules: report.rules,
       })
       expect(markdown).toContain(
-        'No discriminating fixtures: this rule is outOfScope and is enforced as a typed refusal',
+        '- No fixture: this rule is outOfScope with shape `inexpressibleInput`',
       )
+      for (const fact of rule.outOfScope.missingInputFacts) {
+        expect(markdown).toContain('  - ' + fact)
+      }
+      expect(markdown).not.toContain('enforced as a typed refusal')
+    })
+
+    it('points a typedRefusal rule with no fixture at the backlog, not a discriminating-fixture message', () => {
+      // Still in REFUSAL_FIXTURE_BACKLOG as of this PR: shaped typedRefusal,
+      // but the engine has not been changed to actually refuse yet.
+      const ruleId = 'irc-199A-a-qualified-business-income-deduction-not-modeled'
+      const rule = TAX_RULE_REGISTRY[ruleId]
+      if (rule.classification !== 'outOfScope' || rule.outOfScope.shape !== 'typedRefusal') {
+        throw new Error(ruleId + ' must stay outOfScope/typedRefusal for this test to mean anything')
+      }
+      const markdown = buildDispatchPrompt({
+        asOf: '2026-12-01',
+        ruleIds: [ruleId],
+        registry: TAX_RULE_REGISTRY,
+        manifestRules: report.rules,
+      })
+      expect(markdown).toContain('REFUSAL_FIXTURE_BACKLOG')
+      expect(markdown).not.toContain('inexpressibleInput')
+      expect(markdown).not.toContain('No discriminating fixtures')
+    })
+
+    it('lists the describeRefusal fixture files for a typedRefusal rule that has one', () => {
+      const ruleId = 'irc-408-d-3-C-i-inherited-ira-rollover-bar'
+      const rule = TAX_RULE_REGISTRY[ruleId]
+      if (rule.classification !== 'outOfScope' || rule.outOfScope.shape !== 'typedRefusal') {
+        throw new Error(ruleId + ' must stay outOfScope/typedRefusal for this test to mean anything')
+      }
+      const manifestRule = report.rules.find((candidate) => candidate.id === ruleId)
+      if (manifestRule === undefined) throw new Error(ruleId + ' missing from the coverage report')
+      expect(manifestRule.refusalFixtureFiles.length).toBeGreaterThan(0)
+      const markdown = buildDispatchPrompt({
+        asOf: '2026-12-01',
+        ruleIds: [ruleId],
+        registry: TAX_RULE_REGISTRY,
+        manifestRules: report.rules,
+      })
+      expect(markdown).toContain('Covered by `describeRefusal`, not `describeRule`')
+      for (const path of manifestRule.refusalFixtureFiles) {
+        expect(markdown).toContain('  - ' + path)
+      }
     })
 
     it('escapes backticks in quotedText', () => {

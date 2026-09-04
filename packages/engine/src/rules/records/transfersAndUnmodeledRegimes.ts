@@ -20,6 +20,7 @@ export const transferAndUnmodeledRegimeRecords = {
     statement:
       'A taxpayer other than a corporation is allowed a deduction equal to the lesser of the combined qualified business income amount or 20 percent of taxable income reduced by net capital gain, with taxable income for that limitation computed without regard to section 68 and without regard to the section 199A deduction itself. Not modelled: the Plan has no qualified trade or business, qualified business income, W-2 wages allocable to QBI, unadjusted basis of qualified property, specified-service, REIT-dividend, or publicly-traded-partnership-income fact. Recurring and one-time ordinary streams are unlabeled dollars, and wages are Form W-2 compensation, not pass-through QBI. federalTax.ts therefore subtracts a genuine zero for QBI when assembling the section 68 base. The subsection (i) $400 minimum for an applicable taxpayer with at least $1,000 of QBI is folded here: it turns on the same absent qualified-trade-or-business facts. No accepted input reaches this deduction.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -102,6 +103,15 @@ export const transferAndUnmodeledRegimeRecords = {
     statement:
       'A distribution from a qualified tuition program of a designated beneficiary that has been maintained for the 15-year period ending on the distribution date is not includible under section 529(c)(3)(A) to the extent it is paid in a direct trustee-to-trustee transfer to a Roth IRA of that beneficiary, does not exceed contributions (and earnings) made before the 5-year period ending on that date, does not exceed the beneficiary\'s remaining section 408A(c)(2) Roth contribution room for the year, and does not cause lifetime such distributions for that beneficiary to exceed $35,000. The Plan has no qualified-tuition-program account type, no 15-year account-age or lifetime 529-to-Roth tally, and no retirement-action vocabulary for a 529-to-Roth transfer, so no accepted input reaches this rule.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a qualified-tuition-program account type in accountUnionSchema',
+      'the 15-year account age and the 5-year contribution window the exclusion turns on',
+      'a lifetime 529-to-Roth tally to test the 35,000-dollar cap against',
+      '529-to-Roth vocabulary in persistedRetirementActionRequestSchema',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -159,6 +169,14 @@ export const transferAndUnmodeledRegimeRecords = {
     statement:
       'Section 2503(b) excludes the first $10,000 of present-interest gifts to each donee from the donor\'s total gifts for the calendar year, and that dollar amount is increased for inflation for gifts made after 1998, rounded down to the next lowest multiple of $1,000. The engine computes no gift tax under chapter 12. The Plan has no taxable-gifts, donee, or annual-exclusion facts, and the parameter pack has no gift-tax exclusion figure, so no accepted input produces an annual-exclusion or gift-tax result.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'taxable gifts and the donees they were made to',
+      'whether a gift is a present interest',
+      'an annual-exclusion figure in the ParameterPack',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -196,6 +214,14 @@ export const transferAndUnmodeledRegimeRecords = {
     statement:
       'Section 2010(a) allows a credit against the section 2001 estate tax equal to the tentative tax on the applicable exclusion amount. For decedents dying and gifts made after December 31, 2025, the basic exclusion amount under section 2010(c)(3)(A) is $15,000,000; that dollar amount is increased for inflation only for decedents dying in a calendar year after 2026. The applicable exclusion amount is the sum of that basic exclusion and, for a surviving spouse, any deceased spousal unused exclusion. The engine computes no estate tax. The Plan and parameter pack have no basic-exclusion or taxable-estate facts, so no accepted input produces an estate-tax exclusion result.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a taxable estate for the section 2001 tax to apply to',
+      'a basic-exclusion amount in the ParameterPack',
+      'adjusted taxable gifts that share the applicable exclusion',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
@@ -257,6 +283,14 @@ export const transferAndUnmodeledRegimeRecords = {
     statement:
       'A surviving spouse may take a deceased spousal unused exclusion amount into account only if the executor of the deceased spouse\'s estate files an estate tax return on which that amount is computed and elects on that return that it may be so taken into account. The election is irrevocable and may not be made on a return filed after the time prescribed by law, including extensions. Treas. Reg. 20.2010-2(a) requires the election on a timely filed Form 706. The Plan has no estate-tax-return, Form 706, DSUE, or portability-election facts, and the engine computes no chapter 11 tax, so no accepted input reaches this rule.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'an estate tax return for a deceased spouse, timely filed or otherwise',
+      'a computed deceased spousal unused exclusion amount',
+      'the portability election made on that return',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:

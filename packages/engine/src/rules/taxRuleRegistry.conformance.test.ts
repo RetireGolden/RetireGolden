@@ -11,6 +11,7 @@ import {
   type TaxRuleAuthorityKind,
   type TaxRuleId,
   type TaxRuleJurisdiction,
+  type TaxRuleRecord,
   type TaxRuleVolatility,
   type UsStateCode,
 } from './taxRuleRegistry.js'
@@ -323,7 +324,8 @@ for (const [path, rawSource] of Object.entries(testSources)) {
 }
 
 /**
- * `outOfScope` rules that do not yet have a refusal fixture.
+ * `outOfScope` rules whose declared shape is `typedRefusal` and that do not yet
+ * have a refusal fixture.
  *
  * A shrinking allowlist, not a permanent exemption. `describeRefusal` and the
  * coverage test below landed together with three fixtures, against 73 records
@@ -334,88 +336,32 @@ for (const [path, rawSource] of Object.entries(testSources)) {
  * The test asserts EQUALITY against this list rather than containment, so it
  * ratchets in both directions: authoring a fixture without deleting its id
  * fails, and deleting an id without authoring a fixture fails. A record
- * reclassified out of `outOfScope` has to leave here too.
+ * reclassified out of `outOfScope`, or redeclared `inexpressibleInput`, has to
+ * leave here too.
  *
- * Not every entry can take a fixture as written. The classification covers two
- * shapes (see `TaxRuleClassification`): a rule the engine fails closed on, and
- * a rule whose triggering fact the input model cannot express at all, so no
- * accepted input ever reaches it. The second kind has no refusal to drive, and
- * `wa-rcw-82-87-capital-gains-excise` says so in its own statement - the state
- * tax path emits zero and continues, with no refusal naming the missing levy.
- * Working the list will therefore mean reclassifying some of these rather than
- * fixturing them, which is itself the point of looking at all 70.
+ * Of the original 70 entries, 57 left by declaration rather than by fixture:
+ * `outOfScope` covers two shapes (see `TaxRuleOutOfScope`) and only one of them
+ * has a refusal to drive, so those 57 name, in `missingInputFacts`, the plan or
+ * parameter facts that keep any accepted input from reaching them and are
+ * exempt here because a fixture would have nothing to call. The other 11 left
+ * by a real `describeRefusal` fixture. What is left is the honest remainder:
+ * records that claim a typed refusal the engine does not actually make yet.
  */
 const REFUSAL_FIXTURE_BACKLOG: readonly string[] = [
-    'al-form40-cost-recovery-not-modeled',
-    'al-form40-railroad-retirement-not-modeled',
-    'cfr-20-404-1584-blind-sga-monthly-amount',
-    'cfr-20-404-1592b-expedited-reinstatement',
-    'cfr-20-404-640-application-withdrawal-repayment',
-    'cfr-20-418-1205-1230-irmaa-life-change-redetermination',
-    'cfr-31-363-52-savings-bond-annual-purchase-limit',
-    'irc-135-education-savings-bond-interest-exclusion',
-    'irc-1400z-2-qof-deferral-and-ten-year-basis-election',
-    'irc-162-l-1-self-employed-health-insurance-not-modeled',
-    'irc-170-b-1-C-capital-gain-property-ceiling-not-modeled',
-    'irc-171-tips-bond-premium-amortization',
+    // why: the record is shaped `typedRefusal`, but federalTax.ts subtracts a
+    // genuine zero for QBI when assembling the section 68 base rather than
+    // refusing. There is no refusal to drive and no missing input fact to name
+    // either - the plan simply carries unlabeled ordinary streams - so the
+    // fixture cannot be written until the engine emits a refusal instead of a
+    // zero, which is a product decision and not one to make from a test file.
     'irc-199A-a-qualified-business-income-deduction-not-modeled',
-    'irc-2010-c-3-basic-exclusion-amount-not-modeled',
-    'irc-2010-c-5-dsue-portability-election-not-modeled',
-    'irc-213-d-10-eligible-ltc-premium-caps-2026',
-    'irc-223-b-7-medicare-part-a-retroactive-entitlement',
-    'irc-223-f-4-B-hsa-death-exception',
-    'irc-2503-b-annual-gift-exclusion-not-modeled',
-    'irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule',
-    'irc-401-k-11-simple-401-k-elective-deferral-limit',
-    'irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled',
-    'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion',
-    'irc-402-g-2-excess-elective-deferral-correction',
-    'irc-402-g-7-403b-15-year-catch-up',
-    'irc-402A-c-4-E-in-plan-roth-transfer-not-modeled',
-    'irc-402A-e-1-A-plesa-optional-designated-roth-subaccount',
-    'irc-402A-e-3-A-plesa-participant-contribution-cap',
-    'irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment',
-    'irc-404-a-3-a-employer-deduction-limit',
-    'irc-408-d-8-A-named-qcd-limit-after-the-pack-year',
-    'irc-408-d-8-F-i-split-interest-direct-payment',
-    'irc-408-d-8-beneficiary-ira-source',
-    'irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election',
-    'irc-411-a-2-vesting-schedule-maximums',
-    'irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion',
-    'irc-454-savings-bond-interest-deferral',
-    'irc-457-b-3-final-three-year-catch-up',
-    'irc-4966-d-donor-advised-fund-vehicle-not-modeled',
-    'irc-529-c-3-E-529-to-roth-rollover-not-modeled',
-    'irc-6433-a-1-savers-match-qualified-retirement-savings-contributions',
-    'irc-6433-f-6-savers-match-early-distribution-recovery-tax',
-    'irc-664-charitable-remainder-trust-payout-and-character-mechanics-not-modeled',
-    'irc-72-t-1-qcd-not-early-distribution-exception',
-    'irc-72-t-1-qualified-retirement-plan-scope',
-    'irc-72-t-10-public-safety-early-age',
-    'irc-72-t-2-J-plesa-withdrawal-early-distribution-exception',
-    'irc-72-t-4-sepp-modification-recapture',
-    'irc-7520-and-2522-split-interest-valuation-not-modeled',
-    'irs-notice-2014-54-employer-plan-after-tax-rollover-allocation',
+    // why: same shape, same reason. The annual SEPP reconciliation consumes a
+    // caller-supplied attestation that no disqualifying modification occurred
+    // and derives nothing from the account history, so an attestation given for
+    // a series that in fact took a contribution, a partial transfer out, or a
+    // rollover yields a zero penalty rather than a refusal. Writing the fixture
+    // means changing the engine first, which is a product decision.
     'notice-2022-6-3-02-e-modification-trigger-detection',
-    'notice-2022-6-3-03-a-complete-depletion',
-    'notice-2022-6-3-03-b-one-time-method-change',
-    'pl-118-273-sec-2-3-wep-gpo-repeal',
-    'rev-rul-2008-5-ira-wash-sale-permanent-loss-disallowance',
-    'treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled',
-    'treas-reg-1-1275-7-f-3-tips-acquisition-premium',
-    'treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline',
-    'treas-reg-54-4974-1-c-five-year-deadline-rmd',
-    'usc-42-1395p-enrollment-periods',
-    'usc-42-1395r-b-part-b-late-enrollment-penalty',
-    'usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing',
-    'usc-42-402-d-2-child-survivor-benefit',
-    'usc-42-402-d-2-ssdi-child-auxiliary',
-    'usc-42-402-e-1-a-current-survivor-remarriage-before-60',
-    'usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period',
-    'usc-42-402-i-lump-sum-death-payment',
-    'usc-42-402-r-survivor-deemed-filing-exemption',
-    'usc-42-426-b-disability-trial-work-medicare-continuation',
-    'wa-rcw-82-87-capital-gains-excise',
 ]
 
 /**
@@ -1198,34 +1144,109 @@ describe('tax rule registry conformance', () => {
     expect(uncovered).toEqual([])
   })
 
-  it('covers every outOfScope rule with a refusal fixture', () => {
-    // The classification with no coverage obligation at all until now: a slice
-    // of the registry (73 of 416 records, under a fifth) that says "we will
-    // not answer this". An outOfScope
-    // record claims the engine fails closed with a typed refusal; nothing
-    // checked that the refusal existed, still existed, or still had the shape
-    // the record describes. That is the same rot `produced` was invented to
-    // stop on the approximated records, in the direction that reads as the most
-    // responsible: "we refuse this" keeps sounding careful long after the
-    // refusal was replaced by a number, or deleted.
+  it('declares one of the two shapes on every outOfScope rule', () => {
+    // The type already refuses an outOfScope record with no `outOfScope` field,
+    // and refuses the field on any other classification. This asserts the same
+    // thing at runtime because the registry is also read by tooling that does
+    // not go through the compiler - the coverage generator and the app's
+    // reference test both walk records as plain data - and a shape that only
+    // exists in a type is not a shape a consumer can rely on.
+    const shapeless: string[] = []
+    const spurious: string[] = []
+    for (const ruleId of taxRuleIds) {
+      // Read through the declared record type rather than the literal type of
+      // the frozen registry. The literal type has already discarded the field on
+      // every record that does not carry one, so `rule.outOfScope` would not
+      // even compile there - which is the compile-time half of this assertion,
+      // and the reason this loop can only ever be about the runtime half.
+      const rule: TaxRuleRecord = TAX_RULE_REGISTRY[ruleId]
+      if (rule.classification === 'outOfScope') {
+        if (rule.outOfScope === undefined) shapeless.push(ruleId)
+      } else if (rule.outOfScope !== undefined) {
+        spurious.push(ruleId)
+      }
+    }
+    expect(shapeless).toEqual([])
+    expect(spurious).toEqual([])
+  })
+
+  it('covers every typedRefusal rule with a refusal fixture', () => {
+    // The classification with no coverage obligation at all until recently: a
+    // slice of the registry (73 of 416 records, under a fifth) that says "we
+    // will not answer this". A typedRefusal record claims the engine fails
+    // closed at a named site; nothing checked that the refusal existed, still
+    // existed, or still had the shape the record describes. That is the same rot
+    // `produced` was invented to stop on the approximated records, in the
+    // direction that reads as the most responsible: "we refuse this" keeps
+    // sounding careful long after the refusal was replaced by a number, or
+    // deleted.
+    //
+    // Scoped to `typedRefusal` because the other shape has nothing to drive.
+    // That is not a loosening: an `inexpressibleInput` record trades the fixture
+    // for `missingInputFacts` and for the two assertions below, and redeclaring
+    // a record to buy its way out of a fixture is exactly what those catch.
     //
     // Equality against the backlog, not containment, so the list can only
     // shrink deliberately: see REFUSAL_FIXTURE_BACKLOG.
-    const uncovered = taxRuleIds.filter((ruleId) =>
-      TAX_RULE_REGISTRY[ruleId].classification === 'outOfScope' && !claimedRefusalRuleIds.has(ruleId))
+    const uncovered = taxRuleIds.filter((ruleId) => {
+      const rule = TAX_RULE_REGISTRY[ruleId]
+      return rule.classification === 'outOfScope'
+        && rule.outOfScope.shape === 'typedRefusal'
+        && !claimedRefusalRuleIds.has(ruleId)
+    })
     expect([...uncovered].sort()).toEqual([...REFUSAL_FIXTURE_BACKLOG].sort())
   })
 
-  it('keeps the refusal backlog to real, still-outOfScope rules', () => {
-    // A backlog entry that is not a registry key, or no longer outOfScope, is
-    // an allowlist that has stopped describing anything - the failure mode of
-    // every hand-kept exemption list. Both are caught here rather than showing
-    // up as a confusing diff in the equality assertion above.
-    const stale = REFUSAL_FIXTURE_BACKLOG.filter(
-      (ruleId) =>
-        !(ruleId in TAX_RULE_REGISTRY) ||
-        TAX_RULE_REGISTRY[ruleId as TaxRuleId].classification !== 'outOfScope',
-    )
+  it('requires an inexpressibleInput rule to name the facts the model lacks', () => {
+    // The whole content of the second shape. "No accepted input reaches this
+    // rule" is a claim a reader can check only if the record says which fact is
+    // missing, and a record that cannot say is a record nobody has worked out -
+    // it belongs in the backlog as a typedRefusal, not here.
+    const vague: string[] = []
+    for (const ruleId of taxRuleIds) {
+      const rule = TAX_RULE_REGISTRY[ruleId]
+      if (rule.classification !== 'outOfScope') continue
+      if (rule.outOfScope.shape !== 'inexpressibleInput') continue
+      // Widened before the emptiness check: the declared type is a non-empty
+      // tuple, so comparing its length against zero on the literal type is a
+      // comparison the checker rejects as impossible. It is still worth
+      // asserting, because the consumers that read this field read JSON.
+      const facts: readonly string[] = rule.outOfScope.missingInputFacts
+      if (facts.length === 0) vague.push(ruleId)
+      for (const fact of facts) {
+        if (fact.trim().length < 10) vague.push(`${ruleId}:${fact}`)
+      }
+    }
+    expect(vague).toEqual([])
+  })
+
+  it('never lets an inexpressibleInput rule carry a refusal fixture', () => {
+    // A fixture on such a record means one of the two is wrong, and either way
+    // it must be looked at: the record claims no accepted input reaches the
+    // rule, while the fixture claims it reached a refusal. `describeRefusal`
+    // throws on the call, so this is the belt to that braces - it also catches a
+    // record redeclared `inexpressibleInput` while its fixture stayed behind.
+    const contradictory: string[] = []
+    for (const ruleId of claimedRefusalRuleIds.keys()) {
+      if (!(ruleId in TAX_RULE_REGISTRY)) continue
+      const rule = TAX_RULE_REGISTRY[ruleId as TaxRuleId]
+      if (rule.classification !== 'outOfScope') continue
+      if (rule.outOfScope.shape === 'inexpressibleInput') contradictory.push(ruleId)
+    }
+    expect(contradictory).toEqual([])
+  })
+
+  it('keeps the refusal backlog to real, still-typedRefusal rules', () => {
+    // A backlog entry that is not a registry key, no longer outOfScope, or no
+    // longer shaped typedRefusal, is an allowlist that has stopped describing
+    // anything - the failure mode of every hand-kept exemption list. All three
+    // are caught here rather than showing up as a confusing diff in the equality
+    // assertion above.
+    const stale = REFUSAL_FIXTURE_BACKLOG.filter((ruleId) => {
+      if (!(ruleId in TAX_RULE_REGISTRY)) return true
+      const rule = TAX_RULE_REGISTRY[ruleId as TaxRuleId]
+      return rule.classification !== 'outOfScope' || rule.outOfScope.shape !== 'typedRefusal'
+    })
     expect(stale).toEqual([])
     expect(new Set(REFUSAL_FIXTURE_BACKLOG).size).toBe(REFUSAL_FIXTURE_BACKLOG.length)
   })
@@ -1926,6 +1947,22 @@ describe('describeRefusal guards', () => {
       .toThrow(/cover its computed value with describeRule instead/u)
     expect(() => describeRefusal('irc-213-a-medical-expense-deduction' as TaxRuleId, spec, noop))
       .toThrow(/cover its computed value with describeRule instead/u)
+  })
+
+  it('refuses a rule whose triggering fact the input model cannot express', () => {
+    // The second outOfScope shape has no refusal to drive, so the helper says
+    // that in the message rather than registering a suite whose assertions would
+    // necessarily be about some neighbouring path. The message names the facts
+    // the record lists, so the author can see at a glance whether the record is
+    // wrong or the fixture is aimed at the wrong rule.
+    expect(() => describeRefusal('wa-rcw-82-87-capital-gains-excise' as TaxRuleId, {
+      ...spec,
+      entryPoint: 'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    }, noop)).toThrow(/shape 'inexpressibleInput', so there is no refusal to drive/u)
+    expect(() => describeRefusal('wa-rcw-82-87-capital-gains-excise' as TaxRuleId, {
+      ...spec,
+      entryPoint: 'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    }, noop)).toThrow(/Washington allocation of the gain/u)
   })
 
   it('refuses an entry point the record does not claim', () => {

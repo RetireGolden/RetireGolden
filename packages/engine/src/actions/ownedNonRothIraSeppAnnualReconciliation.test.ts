@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRefusal } from '../rules/describeRefusal.js'
 import { describeRule } from '../rules/describeRule.js'
 
 import {
@@ -1548,5 +1549,57 @@ describe('72(t) SEPP registry conformance', () => {
       expect(reconcileOwnedNonRothIraSeppAnnualSchedule(base).status)
         .toBe('reconciled')
     })
+  })
+})
+
+/**
+ * Refusal fixture for the `outOfScope` record this reconciliation implements.
+ *
+ * Notice 2022-6 section 3.03(a) says exhausting the account is not a
+ * modification: the reduced final payment and the cessation that follows keep
+ * the series intact. The record says the reconciliation cannot honour that,
+ * because it qualifies a year only on an exact total and receives no fact
+ * distinguishing an exhausted account from an underpayment. The fixture pins
+ * both halves — the refusal, and the indistinguishability that causes it.
+ */
+describeRefusal('notice-2022-6-3-03-a-complete-depletion', {
+  entryPoint:
+    'packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.ts#reconcileOwnedNonRothIraSeppAnnualSchedule',
+  outOfScopeInput:
+    'a final SEPP year whose payments fall short of the annual scheduled amount because the account was exhausted',
+  refusal:
+    "status 'reconciliationIncomplete' with issue kinds 'terminalScheduledGrossIncomplete' and 'terminalActualGrossIncomplete', the same refusal a plain underpayment gets",
+}, () => {
+  // 40 dollars paid against a 100-dollar annual schedule: the shape of a
+  // series whose account ran dry mid-year.
+  const depleted = () => buildInput({ amounts: [40], annualAmount: 100 })
+
+  it('refuses the depleted year rather than preserving the series', () => {
+    const result = reconcileOwnedNonRothIraSeppAnnualSchedule(depleted())
+
+    expect(result.status).toBe('reconciliationIncomplete')
+    expect(issueKinds(result)).toEqual(expect.arrayContaining([
+      'terminalScheduledGrossIncomplete',
+      'terminalActualGrossIncomplete',
+    ]))
+  })
+
+  it('gives depletion and underpayment the identical refusal, which is why the notice cannot be applied', () => {
+    // Same 40-of-100 shortfall, no fact anywhere saying which caused it. If
+    // the engine ever gained a depletion fact, these two would have to stop
+    // being the same result.
+    expect(issueKinds(reconcileOwnedNonRothIraSeppAnnualSchedule(depleted())))
+      .toEqual(issueKinds(reconcileOwnedNonRothIraSeppAnnualSchedule(
+        buildInput({ amounts: [100], annualAmount: 160 }),
+      )))
+  })
+
+  it('reconciles only when the caller restates the schedule as the reduced payment', () => {
+    // The record names this as the caller's sole workaround, so it is pinned
+    // here: the reduced final payment reconciles when it IS the year's
+    // scheduled amount, not when it falls short of one.
+    expect(reconcileOwnedNonRothIraSeppAnnualSchedule(
+      buildInput({ amounts: [40], annualAmount: 40 }),
+    ).status).toBe('reconciled')
   })
 })

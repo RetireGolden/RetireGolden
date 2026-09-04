@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRefusal } from '../rules/describeRefusal.js'
 import { describeRule } from '../rules/describeRule.js'
 import { parsePlan, type Plan } from '../model/plan.js'
 import { couplePlan, singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
@@ -644,5 +645,43 @@ describe('stageAnnualQcdTaxCharacterPostPass', () => {
     // against $300 of §219 is unprovable, not "offset exhausted".
     expect(irc408d8APriorReductionsAreProvable(300, 400)).toBe(false)
     expect(irc408d8APriorReductionsAreProvable(300, 300)).toBe(true)
+  })
+})
+
+/**
+ * Refusal fixture for the `outOfScope` record this post-pass implements.
+ *
+ * The record claims a named QCD scheduled for a year the parameter pack does
+ * not publish is refused rather than extrapolated, so the fixture drives the
+ * post-pass with the same batch in a sourced year and an unsourced one and
+ * pins that only the sourced year produces a personal limit.
+ */
+describeRefusal('irc-408-d-8-A-named-qcd-limit-after-the-pack-year', {
+  entryPoint: 'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
+  outOfScopeInput: 'a named QCD whose tax year is past the last parameter pack, so no sourced exclusion limit exists',
+  refusal: "issue kind 'taxParameterUnavailable' on a blocked post-pass, with no pools, no applications, and nothing committed",
+}, () => {
+  it('refuses the unsourced year instead of inflating the pack limit into it', () => {
+    const result = stageAnnualQcdTaxCharacterPostPass(fixture(undefined, { year: 2027 }))
+
+    expect(result).toMatchObject({
+      status: 'annualQcdTaxCharacterPostPassBlocked',
+      committed: false,
+      movement: 'notCommitted',
+      issues: [{ kind: 'taxParameterUnavailable' }],
+      applications: [],
+      pools: [],
+    })
+    expect(result.personalLimitEvidence).toBeNull()
+  })
+
+  it('produces the sourced limit for the pack year, so the refusal is the missing source and not the batch', () => {
+    const result = staged(fixture())
+
+    expect(result.personalLimitEvidence).toMatchObject({
+      taxYear: 2026,
+      parameterPackYear: 2026,
+      parameterSource: { id: 'rmd-qcd' },
+    })
   })
 })

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRefusal } from '../rules/describeRefusal.js'
 import { describeRule } from '../rules/describeRule.js'
 
 import {
@@ -1122,5 +1123,73 @@ describe('traditional employer-plan penalty prerequisite', () => {
     )
     expect(second.evidence.evidenceId).toBe(first.evidence.evidenceId)
     expect(later.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
+  })
+})
+
+/**
+ * Refusal fixture for the `outOfScope` record this prerequisite implements.
+ *
+ * The record says a qualified public safety employee's age-50 distribution
+ * "must fail closed through the other-exception attestation rather than be
+ * assessed against the age-55 threshold", because the engine holds no
+ * public-safety or years-of-service fact. The fixture drives exactly that
+ * path and pins what comes back.
+ */
+describeRefusal('irc-72-t-10-public-safety-early-age', {
+  entryPoint:
+    'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
+  outOfScopeInput:
+    'a governmental-plan distribution to a qualified public safety employee who separated at age 50, claimable only as an unmodeled other-statutory-exception attestation',
+  refusal:
+    "status 'unsupported' with missingEvidence 'otherExceptionAdjudication' and reason code 'withdrawal-penalty-evidence-missing', never an age-50 substitution for the Rule of 55",
+}, () => {
+  // Born 1980-06-15 and evaluated on the fiftieth birthday: the calendar year
+  // in which this participant attains 55 is 2035, so the Rule of 55 cannot
+  // reach a 2030 separation and 72(t)(10) is the only rule that would.
+  function publicSafetyInput(): EvaluateTraditionalEmployerPlanPenaltyPrerequisiteInput {
+    const value = input({ birthDate: '1980-06-15' })
+    value.otherExceptionAttestation = {
+      predicate: 'otherEmployerPlanPenaltyExceptionAttestation',
+      ...ids,
+      evaluationDate: '2030-06-15',
+      otherExceptionClaimed: true,
+      exceptionDescription:
+        'qualified public safety employee, governmental plan, separation in the year of attaining age 50 (IRC 72(t)(10))',
+      evidenceScope: 'planningEvidenceNotFilingGradeLegalAdjudication',
+      attestationEvidenceId: 'other-exception-attestation',
+    }
+    return value
+  }
+
+  it('refuses the age-50 claim rather than adjudicating it', () => {
+    expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(publicSafetyInput())).toMatchObject({
+      status: 'unsupported',
+      reasons: [{ code: 'withdrawal-penalty-evidence-missing' }],
+      evidence: {
+        missingEvidence: 'otherExceptionAdjudication',
+        otherExceptionAttestation: { otherExceptionClaimed: true },
+      },
+    })
+  })
+
+  it('does not quietly substitute age 50 into the Rule of 55 assessment', () => {
+    // The engine still measures this separation against the age-55 calendar
+    // year and refuses it there. If 72(t)(10) were ever implemented, this
+    // assessment would have to stop being the refused one.
+    const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite(publicSafetyInput())
+
+    expect(result.evidence.ruleOf55Assessment).toMatchObject({
+      disposition: 'refused',
+      separationYear: 2030,
+      calendarYearParticipantAttains55: 2035,
+    })
+    expect(result.evidence.ruleOf55Assessment?.calendarYearParticipantAttains55).not.toBe(2030)
+  })
+
+  it('accepts the age-55 separation it does model, so the refusal is the age-50 substitution', () => {
+    expect(evaluateTraditionalEmployerPlanPenaltyPrerequisite(input())).toMatchObject({
+      status: 'accepted',
+      evidence: { outcome: 'ruleOf55Qualified', finalPenaltyAmount: 0 },
+    })
   })
 })

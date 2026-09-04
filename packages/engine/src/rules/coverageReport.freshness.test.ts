@@ -585,6 +585,8 @@ describe('manifest rule projection contract', () => {
       'implementations',
       'implementedBy',
       'jurisdiction',
+      'refusalFixtureFiles',
+      'refusalFixtures',
       'title',
       'verifiedOn',
       'volatility',

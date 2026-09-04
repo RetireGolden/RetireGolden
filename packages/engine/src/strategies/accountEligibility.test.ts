@@ -1595,12 +1595,20 @@ describeRule('irc-72-t-2-A-ii-death-beneficiary-exception', {
  * record that has to be reclassified.
  */
 describe('outOfScope refusals reached through evaluateRetirementActionEligibilityFromPlan', () => {
-  function refusalPlan(accounts: Account[]): Plan {
+  // The default donor turned 70½ on 2025-02-28, so every fixture below is
+  // age-eligible for a QCD unless it deliberately says otherwise; the age-70½
+  // fixture passes a later birth date rather than reaching past this helper.
+  const AGE_ELIGIBLE_DONOR_BIRTH_DATE = '1954-08-31'
+
+  function refusalPlan(
+    accounts: Account[],
+    donorBirthDate = AGE_ELIGIBLE_DONOR_BIRTH_DATE,
+  ): Plan {
     const plan = createEmptyPlan({
       newId: () => 'generated',
       now: () => new Date('2026-01-01T00:00:00.000Z'),
     })
-    plan.household.people[0] = person('p1', '1954-08-31')
+    plan.household.people[0] = person('p1', donorBirthDate)
     plan.accounts = accounts
     // Classify id 'ira' as a traditional IRA only when the fixture actually put
     // a traditional account there. The Roth-source fixture below reuses this id
@@ -1623,15 +1631,17 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
               },
             ],
       sepSimpleActivities: [],
-      deductibleIraContributions: [
-        {
-          evidenceId: 'contribution-2026',
-          provenance: { source: 'manual' },
-          donorPersonId: 'p1',
-          taxYear: 2026,
-          amountCents: asUsdCents(0),
-        },
-      ],
+      // Post-70½ deductible-contribution history has to be complete from the
+      // donor's threshold year through the action year, or every QCD comes
+      // back qcd-contribution-history-unknown and the fixtures below would be
+      // pinning that code instead of the refusal they name.
+      deductibleIraContributions: [2025, 2026].map((taxYear) => ({
+        evidenceId: `contribution-${taxYear}`,
+        provenance: { source: 'manual' as const },
+        donorPersonId: 'p1',
+        taxYear,
+        amountCents: asUsdCents(0),
+      })),
     }
     return plan
   }
@@ -1670,10 +1680,11 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
   function refuse(
     request: QualifiedCharitableDistributionRequest | RothConversionRequest,
     accounts: Account[],
+    donorBirthDate = AGE_ELIGIBLE_DONOR_BIRTH_DATE,
   ): { status: string; codes: string[] } {
     const outcome = evaluateRetirementActionEligibilityFromPlan(
       request,
-      refusalPlan(accounts),
+      refusalPlan(accounts, donorBirthDate),
       aliveRuntime(request),
     )
     return { status: outcome.status, codes: outcome.reasons.map((reason) => reason.code) }
@@ -1760,6 +1771,97 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
 
     it('stays quiet on an ordinary public charity with the attestation given', () => {
       expect(refuse(qcdRequest(), [ownedIra()]).codes).not.toContain('qcd-split-interest-unsupported')
+    })
+  })
+
+  describeRefusal('irc-408-d-8-F-i-split-interest-direct-payment', {
+    entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    outOfScopeInput:
+      'a QCD the request routes to a charitable remainder trust or gift annuity even when the donor attests the transfer is direct from the custodian',
+    refusal: "reason code 'qcd-split-interest-unsupported', so no QCD executes and no tax result is produced",
+    note: 'the direct-payment limb, not the missing attestation',
+  }, () => {
+    function splitInterestRequest(): QualifiedCharitableDistributionRequest {
+      return qcdRequest({
+        charity: {
+          designationId: 'charity-1',
+          name: 'Charitable remainder unitrust',
+          designationKind: 'splitInterestEntity',
+          // Every condition 408(d)(8)(F)(i) attaches to the transfer itself is
+          // asserted here, including the not-a-split-interest attestation the
+          // sibling sublimit fixture withholds. The refusal must therefore be
+          // the entity class, not a missing attestation.
+          directFromCustodianAttested: true,
+          eligibleOrganizationAttested: true,
+          notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+          notSplitInterestEntityAttested: true,
+          entireDistributionOtherwiseDeductibleAttested: true,
+        },
+      })
+    }
+
+    it('refuses a direct trustee payment to a split-interest entity', () => {
+      const outcome = refuse(splitInterestRequest(), [ownedIra()])
+      expect(outcome.codes).toContain('qcd-split-interest-unsupported')
+      expect(outcome.status).not.toBe('accepted')
+    })
+
+    it('does not let the direct-payment attestation buy the entity class back', () => {
+      // The attested direct transfer is exactly the fact 408(d)(8)(F)(i)
+      // requires; the engine still refuses, which is what "not modelled" means
+      // here and what would break if a split-interest QCD were ever priced.
+      expect(refuse(splitInterestRequest(), [ownedIra()]).codes)
+        .toContain('qcd-split-interest-unsupported')
+    })
+
+    it('accepts the same transfer to an ordinary public charity, so the refusal is the entity class', () => {
+      expect(refuse(qcdRequest(), [ownedIra()])).toEqual({ status: 'accepted', codes: [] })
+    })
+  })
+
+  describeRefusal('irc-408-d-8-beneficiary-ira-source', {
+    entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    outOfScopeInput: 'a QCD whose source IRA is an inherited (beneficiary) IRA',
+    refusal:
+      "reason code 'qcd-inherited-basis-unsupported', so the inherited source stays classification-only and non-actionable",
+  }, () => {
+    it('refuses an inherited source rather than borrowing the donor own-IRA basis pool', () => {
+      const outcome = refuse(qcdRequest(), [inheritedIra()])
+      expect(outcome.codes).toContain('qcd-inherited-basis-unsupported')
+      expect(outcome.status).not.toBe('accepted')
+    })
+
+    it('does not mistake the inherited IRA for a non-IRA source', () => {
+      // An inherited IRA is still an IRA; the missing thing is separate
+      // beneficiary basis history. Collapsing this into qcd-source-not-ira
+      // would hide which statute is unimplemented.
+      expect(refuse(qcdRequest(), [inheritedIra()]).codes).not.toContain('qcd-source-not-ira')
+    })
+
+    it('accepts the same request from the donor own IRA, so the refusal is the inherited fact', () => {
+      expect(refuse(qcdRequest(), [ownedIra()])).toEqual({ status: 'accepted', codes: [] })
+    })
+  })
+
+  describeRefusal('irc-72-t-1-qcd-not-early-distribution-exception', {
+    entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    outOfScopeInput:
+      'a QCD by a donor who has not attained age 70½ — the only shape in which a QCD could ever need a §72(t) exception',
+    refusal: "reason code 'qcd-before-age-70-half', so no QCD is ever accepted below the age-59½ threshold",
+  }, () => {
+    // Born 1975: age 51 in the 2026 action year, so under 59½ as well as under
+    // 70½. If this request were ever accepted, the engine would be holding an
+    // early distribution that no 72(t)(2)(A)(i) exception covers.
+    const UNDER_59_HALF_DONOR_BIRTH_DATE = '1975-01-01'
+
+    it('refuses a QCD below age 70½ instead of pricing an early distribution', () => {
+      const outcome = refuse(qcdRequest(), [ownedIra()], UNDER_59_HALF_DONOR_BIRTH_DATE)
+      expect(outcome.codes).toContain('qcd-before-age-70-half')
+      expect(outcome.status).not.toBe('accepted')
+    })
+
+    it('accepts the same request once the donor is past 70½, which is also past 59½', () => {
+      expect(refuse(qcdRequest(), [ownedIra()])).toEqual({ status: 'accepted', codes: [] })
     })
   })
 })

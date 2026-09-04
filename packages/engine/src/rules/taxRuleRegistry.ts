@@ -138,8 +138,66 @@ export type TaxRuleVolatility = (typeof TAX_RULE_VOLATILITIES)[number]
  * the split, `outOfScope` was carrying both refusals and approximations, and a
  * reader who trusted the doc comment would have believed 24 records refused
  * when in fact they returned a number.
+ *
+ * Which of the two shapes an `outOfScope` record is, is no longer left to the
+ * prose of its `statement`: the record declares it in `outOfScope`, and the
+ * coverage obligation follows from that declaration. See `TaxRuleOutOfScope`.
  */
 export type TaxRuleClassification = 'settled' | 'unsettled' | 'approximated' | 'outOfScope'
+
+/**
+ * Which of the two `outOfScope` shapes a record is, and what that shape obliges
+ * it to carry.
+ *
+ * The classification comment above names both shapes; this type is what makes a
+ * reader able to tell them apart without reading 73 statements and guessing.
+ *
+ * - `typedRefusal` — the engine fails closed at a named site: a typed refusal,
+ *   an `unsupported` outcome, or a `notEstablished` reconciliation naming the
+ *   missing rule. Obligation: a `describeRefusal` fixture that drives that site
+ *   and asserts the refusal still has the shape the record describes.
+ * - `inexpressibleInput` — the fact the rule turns on cannot be expressed in
+ *   `model/plan.ts` or `params/types.ts` at all, so no accepted input ever
+ *   reaches the rule and there is no refusal to drive. Obligation: name the
+ *   missing facts in `missingInputFacts`, and say so in the `statement` as
+ *   `wa-rcw-82-87-capital-gains-excise` already does. Exempt from a fixture,
+ *   because a fixture would have nothing to call; a `describeRefusal` fixture
+ *   on such a record is itself the evidence that the shape is wrong.
+ *
+ * The shapes are exclusive by construction: `missingInputFacts` exists only on
+ * the second, so a `typedRefusal` record cannot list missing facts in place of
+ * writing the fixture, and an `inexpressibleInput` record cannot claim a
+ * refusal site it has no way to reach.
+ *
+ * A record whose shape cannot be stated concretely — where no one can say which
+ * plan or parameter fact is missing — stays `typedRefusal` and stays in
+ * `REFUSAL_FIXTURE_BACKLOG`, which is the honest place for "we have not worked
+ * this one out yet".
+ *
+ * Two backlog records are `typedRefusal` in this narrower sense rather than in
+ * the sense the shape's own name promises: `irc-199A-a-qualified-business-income-deduction-not-modeled`
+ * and `notice-2022-6-3-02-e-modification-trigger-detection` each describe, in
+ * their own `statement`, a scenario where the engine computes a genuine zero
+ * instead of refusing — `approximated` territory, not a refusal that exists
+ * yet. `typedRefusal` is still the more honest of the two shapes for them: the
+ * fact they turn on IS expressible in the input model (unlabeled ordinary
+ * income, a caller attestation), so `inexpressibleInput` would be false, and
+ * there is no refusal to name a missing fact around. Each backlog entry's
+ * `// why:` comment says so, and fixing it is a product decision — whether the
+ * engine should start refusing — not a fixture this test suite can write.
+ */
+export type TaxRuleOutOfScope =
+  | { readonly shape: 'typedRefusal' }
+  | {
+      readonly shape: 'inexpressibleInput'
+      /**
+       * The concrete plan or parameter facts the input model lacks, each stated
+       * so a reader can look for it in `model/plan.ts` or `params/types.ts` and
+       * find it absent. Non-empty: "the input model cannot express it" with no
+       * fact named is the prose this field exists to replace.
+       */
+      readonly missingInputFacts: readonly [string, ...string[]]
+    }
 
 /**
  * Which way an `approximated` rule's computed figure departs from the figure
@@ -207,11 +265,15 @@ export const US_STATE_CODES = Object.freeze([
 
 export type UsStateCode = (typeof US_STATE_CODES)[number]
 
-export interface TaxRuleRecord {
+/**
+ * Everything a record carries whatever its classification. Kept separate from
+ * `TaxRuleRecord` only so the classification-dependent half below can be a
+ * discriminated union; a record is still written as one flat object literal.
+ */
+interface TaxRuleRecordCommonFields {
   readonly title: string
   /** The rule in one sentence, stated so a fixture can be written from it. */
   readonly statement: string
-  readonly classification: TaxRuleClassification
   /** Required when `classification` is `unsettled`: the reading we rejected. */
   readonly contraryReading: string | null
   /**
@@ -273,6 +335,35 @@ export interface TaxRuleRecord {
    */
   readonly implementedByFunctions: readonly [string, ...string[]]
 }
+
+/**
+ * A registry record: the common fields above, plus the classification and the
+ * one field that classification gates.
+ *
+ * Written as a discriminated union rather than as an optional field on the
+ * interface so the compiler, not a conformance test, is what stops the two
+ * mistakes that matter. An `outOfScope` record that omits `outOfScope` does not
+ * compile, so the shape can never be left to prose; and a `settled`,
+ * `unsettled`, or `approximated` record that carries `outOfScope` does not
+ * compile either, so the field cannot spread to records whose engine behaviour
+ * it says nothing about. `errorDirection` and `contraryReading` are gated the
+ * older way — a nullable field on every record plus a conformance guard — and
+ * that gate is kept for them; it is not extended here, because a fourth
+ * `null` on 343 records that can never carry a value buys nothing the type
+ * system was already willing to enforce.
+ */
+export type TaxRuleRecord = TaxRuleRecordCommonFields &
+  (
+    | {
+        readonly classification: 'outOfScope'
+        /** Which of the two `outOfScope` shapes this is. See `TaxRuleOutOfScope`. */
+        readonly outOfScope: TaxRuleOutOfScope
+      }
+    | {
+        readonly classification: Exclude<TaxRuleClassification, 'outOfScope'>
+        readonly outOfScope?: never
+      }
+  )
 
 /**
  * The registry, composed from the per-domain record modules in `./records/`.

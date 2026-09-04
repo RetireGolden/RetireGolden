@@ -172,6 +172,13 @@ export const healthSavingsAccountRecords = {
     statement:
       'The 20 percent additional tax does not apply to a distribution made after the account beneficiary becomes disabled or dies. Not modelled: the engine carries disability evidence but holds no death fact, and death also ends the account HSA status under 223(f)(8), so treating it as merely waiving the 20 percent would understate the event.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a death fact in the HSA distribution facts: evaluateAnnualHsaPenalty carries disability evidence and nothing for death',
+      'the section 223(f)(8) loss of HSA account status at death, without which waiving the 20 percent alone would understate the event',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
@@ -600,6 +607,14 @@ export const healthSavingsAccountRecords = {
     statement:
       'Section 223(b)(7) reduces the HSA limitation to zero from the first month an individual is entitled to title XVIII benefits. Publication 969 says that rule applies to retroactive Medicare coverage, so a delayed enrollment that is backdated makes contributions during the retroactive period excess. Not modelled: the Plan has no Medicare Part A enrollment, entitlement start date, retroactive period, or HSA-coverage-by-month fact; the projection uses age 65 only to price healthcare premiums and does not feed Medicare entitlement into HSA eligibility.',
     classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'Medicare Part A enrollment on hsaAccountSchema or healthcareConfigSchema',
+      'the entitlement start date and any retroactive period',
+      'HSA coverage stated by month rather than by year',
+      ],
+    },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:

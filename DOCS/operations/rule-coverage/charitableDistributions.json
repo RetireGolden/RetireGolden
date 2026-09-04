@@ -56,6 +56,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -112,16 +114,18 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 338,
+          "line": 339,
           "note": null,
           "tests": [
             {
               "title": "excludes only the indexed annual limit",
-              "line": 342
+              "line": 343
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -179,6 +183,26 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
+          "line": 659,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses the unsourced year instead of inflating the pack limit into it",
+              "line": 664
+            },
+            {
+              "title": "produces the sourced limit for the pack year, so the refusal is the missing source and not the batch",
+              "line": 678
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "statute",
@@ -250,16 +274,18 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 259,
+          "line": 260,
           "note": null,
           "tests": [
             {
               "title": "nets the prior reductions off the aggregate deductions",
-              "line": 263
+              "line": 264
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -366,6 +392,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -502,6 +530,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -563,39 +593,41 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 412,
+          "line": 413,
           "note": "The 408(d)(8)(B) taxable trim runs before the annual limit, not after it.",
           "tests": [
             {
               "title": "limits what survives the taxable trim, not the gross distribution",
-              "line": 420
+              "line": 421
             },
             {
               "title": "reproduces the contract's $100,000-pool worked example",
-              "line": 433
+              "line": 434
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 461,
+          "line": 462,
           "note": "The post-70.5 offset reduces the already-limited amount, not the amount going into the limit.",
           "tests": [
             {
               "title": "subtracts the deduction offset after the annual limit has bound",
-              "line": 469
+              "line": 470
             },
             {
               "title": "floors the reduction at zero rather than going negative",
-              "line": 482
+              "line": 483
             },
             {
               "title": "reproduces the contract's fully-taxable worked example",
-              "line": 494
+              "line": 495
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -677,6 +709,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -773,6 +807,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -870,6 +906,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -961,6 +999,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1052,6 +1092,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1145,6 +1187,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1211,16 +1255,18 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 350,
+          "line": 351,
           "note": null,
           "tests": [
             {
               "title": "caps the QCD at aggregate pre-tax dollars and leaves the rest to basis",
-              "line": 358
+              "line": 359
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1306,6 +1352,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1368,6 +1416,30 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 1777,
+          "note": "the direct-payment limb, not the missing attestation",
+          "tests": [
+            {
+              "title": "refuses a direct trustee payment to a split-interest entity",
+              "line": 1803
+            },
+            {
+              "title": "does not let the direct-payment attestation buy the entity class back",
+              "line": 1809
+            },
+            {
+              "title": "accepts the same transfer to an ordinary public charity, so the refusal is the entity class",
+              "line": 1817
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "statute",
@@ -1435,6 +1507,30 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 1732,
+          "note": null,
+          "tests": [
+            {
+              "title": "requires the affirmative not-a-split-interest attestation the record describes",
+              "line": 1738
+            },
+            {
+              "title": "refuses a destination the request itself names as a split-interest entity",
+              "line": 1756
+            },
+            {
+              "title": "stays quiet on an ordinary public charity with the attestation given",
+              "line": 1772
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1507,6 +1603,30 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 1822,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses an inherited source rather than borrowing the donor own-IRA basis pool",
+              "line": 1828
+            },
+            {
+              "title": "does not mistake the inherited IRA for a non-IRA source",
+              "line": 1834
+            },
+            {
+              "title": "accepts the same request from the donor own IRA, so the refusal is the inherited fact",
+              "line": 1841
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1553,16 +1673,18 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdTaxCharacterPostPass.test.ts",
-          "line": 367,
+          "line": 368,
           "note": null,
           "tests": [
             {
               "title": "keeps the includible excess inside the QCD and discloses the reading",
-              "line": 375
+              "line": 376
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1635,6 +1757,26 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 1712,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses a Roth source instead of proving how much would otherwise be includible",
+              "line": 1717
+            },
+            {
+              "title": "does not confuse the Roth source with the generic not-an-IRA refusal",
+              "line": 1723
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1692,6 +1834,26 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 1846,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses a QCD below age 70½ instead of pricing an early distribution",
+              "line": 1857
+            },
+            {
+              "title": "accepts the same request once the donor is past 70½, which is also past 59½",
+              "line": 1863
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "statute",
@@ -1768,6 +1930,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "regulation",

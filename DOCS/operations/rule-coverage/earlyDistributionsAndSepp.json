@@ -46,6 +46,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -75,14 +77,34 @@
           "path": "packages/engine/src/actions/execution.ts",
           "functions": [
             {
-              "name": "evaluateRetirementActionSchedule",
-              "line": 1005
+              "name": "executeOrdinaryWithdrawals",
+              "line": 2134
             }
           ]
         }
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/actions/execution.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/actions/execution.test.ts",
+          "line": 1953,
+          "note": null,
+          "tests": [
+            {
+              "title": "answers a non-retirement source with notApplicable rather than a penalty figure",
+              "line": 1958
+            },
+            {
+              "title": "does not extend that answer to a retirement source",
+              "line": 1997
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "statute",
@@ -125,6 +147,30 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
+          "line": 1138,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses the age-50 claim rather than adjudicating it",
+              "line": 1164
+            },
+            {
+              "title": "does not quietly substitute age 50 into the Rule of 55 assessment",
+              "line": 1175
+            },
+            {
+              "title": "accepts the age-55 separation it does model, so the refusal is the age-50 substitution",
+              "line": 1189
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "statute",
@@ -186,6 +232,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -277,6 +325,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -379,6 +429,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -445,6 +497,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -501,20 +555,22 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1338,
+          "line": 1339,
           "note": null,
           "tests": [
             {
               "title": "excepts nothing in a year that never completed the annual payment",
-              "line": 1358
+              "line": 1359
             },
             {
               "title": "reports the year incomplete rather than partly qualified",
-              "line": 1364
+              "line": 1365
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -561,16 +617,18 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
-          "line": 245,
+          "line": 246,
           "note": null,
           "tests": [
             {
               "title": "accepts separation before the birthday in the qualifying year",
-              "line": 258
+              "line": 259
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -663,6 +721,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -719,6 +779,8 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -769,16 +831,18 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
-          "line": 578,
+          "line": 579,
           "note": null,
           "tests": [
             {
               "title": "does not qualify a SEPP election that starts before separation",
-              "line": 587
+              "line": 588
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -865,6 +929,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -916,24 +982,26 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1516,
+          "line": 1517,
           "note": null,
           "tests": [
             {
               "title": "refuses a payment its no-modification proof does not reach",
-              "line": 1536
+              "line": 1537
             },
             {
               "title": "names the insufficient modification evidence on the payment",
-              "line": 1542
+              "line": 1543
             },
             {
               "title": "reconciles once the proof reaches the payment date",
-              "line": 1547
+              "line": 1548
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -971,6 +1039,8 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1022,20 +1092,22 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1373,
+          "line": 1374,
           "note": null,
           "tests": [
             {
               "title": "scores the series for the participant it belongs to, not the household",
-              "line": 1392
+              "line": 1393
             },
             {
               "title": "names the inventory member as foreign to this participant",
-              "line": 1398
+              "line": 1399
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1096,6 +1168,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "statute",
@@ -1142,20 +1216,22 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1450,
+          "line": 1451,
           "note": null,
           "tests": [
             {
               "title": "measures the year by the total of every scheduled distribution",
-              "line": 1469
+              "line": 1470
             },
             {
               "title": "keeps all three distributions in the one reconciled series",
-              "line": 1476
+              "line": 1477
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1252,6 +1328,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1308,24 +1386,26 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1404,
+          "line": 1405,
           "note": null,
           "tests": [
             {
               "title": "accepts the fixed annuitization method on the same footing as the others",
-              "line": 1424
+              "line": 1425
             },
             {
               "title": "accepts the required minimum distribution and fixed amortization methods",
-              "line": 1430
+              "line": 1431
             },
             {
               "title": "refuses a fourth method by name rather than reconciling it",
-              "line": 1435
+              "line": 1436
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1433,6 +1513,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1497,6 +1579,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1568,6 +1652,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1637,6 +1723,8 @@
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1689,6 +1777,8 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1740,20 +1830,22 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1481,
+          "line": 1482,
           "note": null,
           "tests": [
             {
               "title": "excepts nothing when the account made a distribution outside the series",
-              "line": 1504
+              "line": 1505
             },
             {
               "title": "names the inventory member that no scheduled payment answers",
-              "line": 1510
+              "line": 1511
             }
           ]
         }
       ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1796,6 +1888,30 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
+          "line": 1565,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses the depleted year rather than preserving the series",
+              "line": 1577
+            },
+            {
+              "title": "gives depletion and underpayment the identical refusal, which is why the notice cannot be applied",
+              "line": 1587
+            },
+            {
+              "title": "reconciles only when the caller restates the schedule as the reduced payment",
+              "line": 1597
+            }
+          ]
+        }
+      ],
       "authorities": [
         {
           "kind": "irsNotice",
@@ -1853,6 +1969,8 @@
       ],
       "fixtureFiles": [],
       "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
       "authorities": [
         {
           "kind": "irsNotice",

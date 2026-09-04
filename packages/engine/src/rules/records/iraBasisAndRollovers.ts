@@ -207,6 +207,7 @@ export const iraBasisAndRolloverRecords = {
     statement:
       'A nonspouse account acquired by reason of death is an inherited IRA. Section 408(d)(3) does not apply to an amount received from it, and a transfer from it is not excluded from gross income as a rollover. Because a Roth conversion from an IRA must be a qualified rollover contribution that meets section 408(d)(3), the engine has no conversion calculation for this source: it refuses the action with conversion-inherited-source, moves no dollars, and leaves both source and destination balances unchanged.',
     classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale: null,
