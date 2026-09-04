@@ -1,4 +1,9 @@
-/** Hostile delegation and annual-pass rollback guard for owner RMD planning. */
+/**
+ * Hostile delegation and annual-pass rollback guard for owner RMD planning.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import { rmdApplicablePlanKey, rmdShortfallObligationId } from '../rmd/rmdShortfallExcise.js'
@@ -7,15 +12,7 @@ import type {
   AnnualOwnerRmdPlanResult,
 } from './internal/annualOwnerRmdPlan.js'
 
-interface Phase {
-  readonly year: number
-  readonly deferredAtCall: readonly (readonly [string, unknown])[]
-  readonly natural: AnnualOwnerRmdPlanResult
-  readonly injected: AnnualOwnerRmdPlanResult
-}
-
-const seam = vi.hoisted(() => ({
-  phases: [] as Phase[],
+const hostile = vi.hoisted(() => ({
   downstreamOperationChecks: [] as Array<Readonly<{
     year: number
     applicablePlanKey: string
@@ -24,13 +21,22 @@ const seam = vi.hoisted(() => ({
   }>>,
 }))
 
-vi.mock('./internal/annualOwnerRmdPlan.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualOwnerRmdPlan.js')>()
-  return {
-    ...original,
-    annualOwnerRmdPlan: (input: AnnualOwnerRmdPlanInput) => {
-      const natural = original.annualOwnerRmdPlan(input)
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualOwnerRmdPlanInput,
+      AnnualOwnerRmdPlanResult,
+      readonly (readonly [string, unknown])[]
+    >(),
+)
+
+vi.mock('./internal/annualOwnerRmdPlan.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualOwnerRmdPlan.js')>(),
+    'annualOwnerRmdPlan',
+    (_natural, { input }): AnnualOwnerRmdPlanResult => {
       const ordinal = input.year - 2026
       const applicablePlan = { kind: 'employerPlan' as const, accountId: 'employer-rmd' }
       const applicablePlanKey = rmdApplicablePlanKey(applicablePlan)
@@ -51,7 +57,7 @@ vi.mock('./internal/annualOwnerRmdPlan.js', async (importOriginal) => {
             observedExactSetValue: observed === deferredValue,
             observedDeletedValue: observed === undefined,
           }
-          seam.downstreamOperationChecks.push(operationCheck)
+          hostile.downstreamOperationChecks.push(operationCheck)
           if (
             (input.year === 2026 && !operationCheck.observedExactSetValue) ||
             (input.year === 2027 && !operationCheck.observedDeletedValue)
@@ -85,16 +91,13 @@ vi.mock('./internal/annualOwnerRmdPlan.js', async (importOriginal) => {
             ]
           : [{ kind: 'delete', applicablePlanKey }],
       }
-      seam.phases.push({
-        year: input.year,
-        deferredAtCall: [...input.deferredFirstRmdByApplicablePlan],
-        natural,
-        injected,
-      })
       return injected
     },
-  }
-})
+    {
+      capture: (input) => [...input.deferredFirstRmdByApplicablePlan],
+    },
+  ),
+)
 
 import type { Account } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
@@ -115,8 +118,8 @@ function employerAccount(): Account {
 }
 
 function run() {
-  seam.phases.length = 0
-  seam.downstreamOperationChecks.length = 0
+  seam.reset()
+  hostile.downstreamOperationChecks.length = 0
   const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 100 })
   plan.accounts = [employerAccount(), cashAccount('cash', 100_000)]
   const counterfactualReads: unknown[] = []
@@ -140,8 +143,8 @@ function run() {
   })
   return {
     result,
-    phases: [...seam.phases],
-    downstreamOperationChecks: [...seam.downstreamOperationChecks],
+    phases: [...seam.calls],
+    downstreamOperationChecks: [...hostile.downstreamOperationChecks],
     counterfactualReads,
   }
 }
@@ -150,8 +153,8 @@ describe('simulatePlan delegates annual owner-RMD planning', () => {
   it('consumes hostile rows downstream and rolls deferral effects back between retries', () => {
     const { result, phases, downstreamOperationChecks, counterfactualReads } = run()
     const key = rmdApplicablePlanKey({ kind: 'employerPlan', accountId: 'employer-rmd' })
-    const calls2026 = phases.filter((phase) => phase.year === 2026)
-    const calls2027 = phases.filter((phase) => phase.year === 2027)
+    const calls2026 = phases.filter((phase) => phase.input.year === 2026)
+    const calls2027 = phases.filter((phase) => phase.input.year === 2027)
 
     expect(calls2026.length).toBeGreaterThan(1)
     expect(calls2027.length).toBeGreaterThan(1)
@@ -169,9 +172,9 @@ describe('simulatePlan delegates annual owner-RMD planning', () => {
         observedDeletedValue: true,
       })]))
     expect(counterfactualReads).toHaveLength(2)
-    for (const phase of calls2026) expect(phase.deferredAtCall).toEqual([])
+    for (const phase of calls2026) expect(phase.captured).toEqual([])
     for (const phase of calls2027) {
-      expect(phase.deferredAtCall).toEqual([[key, {
+      expect(phase.captured).toEqual([[key, {
         applicablePlan: { kind: 'employerPlan', accountId: 'employer-rmd' },
         distributionCalendarYear: 2026,
         dueYear: 2027,

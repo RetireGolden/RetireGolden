@@ -1,22 +1,30 @@
-/** Hostile call-site guard for the annual inherited-account planner. */
+/**
+ * Hostile call-site guard for the annual inherited-account planner.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
   AnnualInheritedIraDistributionsInput,
   AnnualInheritedIraDistributionsResult,
 } from './internal/annualInheritedIraDistributions.js'
+import type { SeamCall } from './simulate.seamGuard.test-support.js'
 
-interface Phase {
-  readonly year: number
-  readonly input: AnnualInheritedIraDistributionsInput
-  readonly original: AnnualInheritedIraDistributionsResult
-  readonly output: AnnualInheritedIraDistributionsResult
+/** Inherited balances as they stood before the real planner ran. */
+interface OpeningInheritedBalances {
   readonly openingTraditional: number
   readonly openingRoth: number
-  readonly getterReads: ReadonlyMap<string, number>
 }
 
-const seam = vi.hoisted(() => ({
+type Phase = SeamCall<
+  AnnualInheritedIraDistributionsInput,
+  AnnualInheritedIraDistributionsResult,
+  OpeningInheritedBalances
+>
+
+const hostile = vi.hoisted(() => ({
   mode: 'original' as
     | 'original'
     | 'dynamic'
@@ -26,7 +34,8 @@ const seam = vi.hoisted(() => ({
     | 'subCent'
     | 'singleRead'
     | 'throwDuringMaterialization',
-  phases: [] as Phase[],
+  /** Per-pass property-read tallies, indexed by the seam's own ordinal. */
+  getterReads: [] as Map<string, number>[],
   snapshots: [] as {
     readonly phase: Phase | undefined
     readonly traditional: number | undefined
@@ -38,150 +47,157 @@ const seam = vi.hoisted(() => ({
   }[],
 }))
 
-vi.mock('./internal/annualInheritedIraDistributions.js', async (importOriginal) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualInheritedIraDistributions.js')
-  >()
-  return {
-    ...original,
-    annualInheritedIraDistributions: (
-      input: AnnualInheritedIraDistributionsInput,
-    ) => {
-      const production = original.annualInheritedIraDistributions(input)
-      const ordinal = seam.phases.length
-      const traditionalState = input.balances.find(
-        (state) => state.account.id === 'inherited-traditional',
-      )!
-      const rothState = input.balances.find(
-        (state) => state.account.id === 'inherited-roth',
-      )!
-      let output = production
-      if (
-        seam.mode !== 'original' &&
-        seam.mode !== 'singleRead' &&
-        seam.mode !== 'throwDuringMaterialization'
-      ) {
-        const traditionalExecuted = 10 + (input.year - 2025) + ordinal / 100
-        const rothExecuted = 20 + (input.year - 2025) + ordinal / 100
-        const rows = production.rows.map((row) => {
-          const state = input.balances[row.balanceIndex]!
-          const executed = seam.mode === 'subCent' &&
-              row.accountId === 'inherited-roth'
-            ? 0.004
-            : row.accountId === 'inherited-traditional'
-              ? traditionalExecuted
-              : rothExecuted
-          return {
-            ...row,
-            distribution: {
-              balanceIndex: seam.mode === 'wrongPosition'
-                ? 0
-                : row.balanceIndex,
-              accountId: row.accountId,
-              ownerPersonId: seam.mode === 'wrongOwner' &&
-                  row.accountId === 'inherited-roth'
-                ? 'wrong-owner'
-                : state.account.ownerPersonId,
-              sourceBalanceBefore: state.balance,
-              sourceBalanceAfter:
-                state.balance - executed +
-                (seam.mode === 'invalidSecond' &&
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualInheritedIraDistributionsInput,
+      AnnualInheritedIraDistributionsResult,
+      OpeningInheritedBalances
+    >(),
+)
+
+vi.mock(
+  './internal/annualInheritedIraDistributions.js',
+  async (importOriginal) =>
+    seam.through(
+      await importOriginal<
+        typeof import('./internal/annualInheritedIraDistributions.js')
+      >(),
+      'annualInheritedIraDistributions',
+      (
+        production,
+        { input, ordinal },
+      ): AnnualInheritedIraDistributionsResult => {
+        let output = production
+        if (
+          hostile.mode !== 'original' &&
+          hostile.mode !== 'singleRead' &&
+          hostile.mode !== 'throwDuringMaterialization'
+        ) {
+          const traditionalExecuted = 10 + (input.year - 2025) + ordinal / 100
+          const rothExecuted = 20 + (input.year - 2025) + ordinal / 100
+          const rows = production.rows.map((row) => {
+            const state = input.balances[row.balanceIndex]!
+            const executed = hostile.mode === 'subCent' &&
+                row.accountId === 'inherited-roth'
+              ? 0.004
+              : row.accountId === 'inherited-traditional'
+                ? traditionalExecuted
+                : rothExecuted
+            return {
+              ...row,
+              distribution: {
+                balanceIndex: hostile.mode === 'wrongPosition'
+                  ? 0
+                  : row.balanceIndex,
+                accountId: row.accountId,
+                ownerPersonId: hostile.mode === 'wrongOwner' &&
                     row.accountId === 'inherited-roth'
-                  ? 1
-                  : 0),
-              executed,
-            },
-            evidence: {
-              ...row.evidence,
-              requiredAmount: executed + 400,
-              executedRequiredAmount: executed,
-            },
-          }
-        })
-        const base = (input.year - 2025) * 100 + ordinal
-        output = {
-          totals: {
-            inherited: traditionalExecuted + rothExecuted,
-            ordinaryIncome: traditionalExecuted,
-            rothForced: rothExecuted,
-          },
-          rows,
-          rmdShortfallObligations: [{
-            obligationId:
-              `rmd-shortfall:["inherited-iras","p1","sentinel-${base}","traditional"]:${input.year}:tax-${input.year}`,
-            distributionCalendarYear: input.year,
-            taxYear: input.year,
-            taxImposedOn: `${input.year}-12-31`,
-            applicablePlan: {
-              kind: 'inheritedIras',
-              payeePersonId: 'p1',
-              decedentId: `sentinel-${base}`,
-              iraType: 'traditional',
-            },
-            requirementKind: 'inheritedAnnualLifeExpectancy',
-            requiredAmount: 400,
-            distributedByDeadline: 0,
-          }],
-        }
-      }
-      const getterReads = new Map<string, number>()
-      if (
-        seam.mode === 'singleRead' ||
-        seam.mode === 'throwDuringMaterialization'
-      ) {
-        const guarded = (value: unknown, path: string): unknown => {
-          if (Array.isArray(value)) {
-            return value.map((child, index) => guarded(child, `${path}[${index}]`))
-          }
-          if (value === null || typeof value !== 'object') return value
-          const result: Record<string, unknown> = {}
-          for (const [key, child] of Object.entries(value)) {
-            const childPath = `${path}.${key}`
-            const guardedChild = guarded(child, childPath)
-            Object.defineProperty(result, key, {
-              enumerable: true,
-              configurable: true,
-              get() {
-                const reads = (getterReads.get(childPath) ?? 0) + 1
-                getterReads.set(childPath, reads)
-                if (
-                  seam.mode === 'throwDuringMaterialization' &&
-                  childPath === 'result.rows[0].distribution.executed'
-                ) {
-                  throw new Error(
-                    'hostile inherited result threw during materialization',
-                  )
-                }
-                if (reads > 1) {
-                  throw new Error(
-                    `hostile inherited result property reread: ${childPath}`,
-                  )
-                }
-                return guardedChild
+                  ? 'wrong-owner'
+                  : state.account.ownerPersonId,
+                sourceBalanceBefore: state.balance,
+                sourceBalanceAfter:
+                  state.balance - executed +
+                  (hostile.mode === 'invalidSecond' &&
+                      row.accountId === 'inherited-roth'
+                    ? 1
+                    : 0),
+                executed,
               },
-            })
+              evidence: {
+                ...row.evidence,
+                requiredAmount: executed + 400,
+                executedRequiredAmount: executed,
+              },
+            }
+          })
+          const base = (input.year - 2025) * 100 + ordinal
+          output = {
+            totals: {
+              inherited: traditionalExecuted + rothExecuted,
+              ordinaryIncome: traditionalExecuted,
+              rothForced: rothExecuted,
+            },
+            rows,
+            rmdShortfallObligations: [{
+              obligationId:
+                `rmd-shortfall:["inherited-iras","p1","sentinel-${base}","traditional"]:${input.year}:tax-${input.year}`,
+              distributionCalendarYear: input.year,
+              taxYear: input.year,
+              taxImposedOn: `${input.year}-12-31`,
+              applicablePlan: {
+                kind: 'inheritedIras',
+                payeePersonId: 'p1',
+                decedentId: `sentinel-${base}`,
+                iraType: 'traditional',
+              },
+              requirementKind: 'inheritedAnnualLifeExpectancy',
+              requiredAmount: 400,
+              distributedByDeadline: 0,
+            }],
           }
-          return result
         }
-        output = guarded(
-          production,
-          'result',
-        ) as AnnualInheritedIraDistributionsResult
-      }
-      const phase = {
-        year: input.year,
-        input,
-        original: production,
-        output,
-        openingTraditional: traditionalState.balance,
-        openingRoth: rothState.balance,
-        getterReads,
-      }
-      seam.phases.push(phase)
-      return output
-    },
-  }
-})
+        const getterReads = new Map<string, number>()
+        hostile.getterReads[ordinal] = getterReads
+        if (
+          hostile.mode === 'singleRead' ||
+          hostile.mode === 'throwDuringMaterialization'
+        ) {
+          const guarded = (value: unknown, path: string): unknown => {
+            if (Array.isArray(value)) {
+              return value.map((child, index) => guarded(child, `${path}[${index}]`))
+            }
+            if (value === null || typeof value !== 'object') return value
+            const result: Record<string, unknown> = {}
+            for (const [key, child] of Object.entries(value)) {
+              const childPath = `${path}.${key}`
+              const guardedChild = guarded(child, childPath)
+              Object.defineProperty(result, key, {
+                enumerable: true,
+                configurable: true,
+                get() {
+                  const reads = (getterReads.get(childPath) ?? 0) + 1
+                  getterReads.set(childPath, reads)
+                  if (
+                    hostile.mode === 'throwDuringMaterialization' &&
+                    childPath === 'result.rows[0].distribution.executed'
+                  ) {
+                    throw new Error(
+                      'hostile inherited result threw during materialization',
+                    )
+                  }
+                  if (reads > 1) {
+                    throw new Error(
+                      `hostile inherited result property reread: ${childPath}`,
+                    )
+                  }
+                  return guardedChild
+                },
+              })
+            }
+            return result
+          }
+          output = guarded(
+            production,
+            'result',
+          ) as AnnualInheritedIraDistributionsResult
+        }
+        return output
+      },
+      {
+        capture: (input): OpeningInheritedBalances => ({
+          openingTraditional: input.balances.find(
+            (state) => state.account.id === 'inherited-traditional',
+          )!.balance,
+          openingRoth: input.balances.find(
+            (state) => state.account.id === 'inherited-roth',
+          )!.balance,
+        }),
+      },
+    ),
+)
 
 vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
   const original = await importOriginal<
@@ -192,8 +208,8 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
     annualSnapshot: (
       input: Parameters<typeof original.annualSnapshot>[0],
     ) => {
-      seam.snapshots.push({
-        phase: seam.phases.at(-1),
+      hostile.snapshots.push({
+        phase: seam.calls.at(-1),
         traditional: input.balances.find(
           (state) => state.account.id === 'inherited-traditional',
         )?.balance,
@@ -206,6 +222,10 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) => {
   }
 })
 
+import {
+  expectDistinctInjections,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import { parseRetirementActionRequest } from '../actions/index.js'
 import { singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
@@ -326,22 +346,23 @@ function plan(): Plan {
 }
 
 function phasesFor(year: number) {
-  return seam.phases.filter((phase) => phase.year === year)
+  return seam.calls.filter((phase) => phase.input.year === year)
 }
 
-function run(mode: typeof seam.mode) {
-  seam.mode = mode
-  seam.phases.length = 0
-  seam.snapshots.length = 0
-  seam.taxInputs.length = 0
+function run(mode: typeof hostile.mode) {
+  hostile.mode = mode
+  seam.reset()
+  hostile.getterReads.length = 0
+  hostile.snapshots.length = 0
+  hostile.taxInputs.length = 0
   const probes: { readonly year: number; readonly inheritedDistribution: number }[] = []
   const result = simulatePlan(plan(), {
     startYear: START_YEAR,
     horizonEndYear: START_YEAR + 1,
     taxCalculator: {
       compute(input) {
-        seam.taxInputs.push({
-          phase: seam.phases.at(-1),
+        hostile.taxInputs.push({
+          phase: seam.calls.at(-1),
           ordinaryIncome: input.ordinaryIncome,
         })
         return 0
@@ -361,40 +382,39 @@ describe('simulatePlan delegates inherited-account annual planning', () => {
     const { result, probes } = run('dynamic')
     expect(phasesFor(START_YEAR).length).toBeGreaterThan(1)
     expect(phasesFor(START_YEAR + 1).length).toBeGreaterThan(1)
-    expect(new Set(seam.phases.map((phase) => phase.output)).size)
-      .toBe(seam.phases.length)
-    expect(new Set(seam.phases.map((phase) => phase.output.rows)).size)
-      .toBe(seam.phases.length)
-    expect(new Set(seam.phases.flatMap(
-      (phase) => phase.output.rows.map((row) => row.evidence),
-    )).size).toBe(seam.phases.length * 2)
+    expectDistinctInjections(seam)
+    expect(new Set(seam.calls.map((phase) => phase.injected.rows)).size)
+      .toBe(seam.calls.length)
+    expect(new Set(seam.calls.flatMap(
+      (phase) => phase.injected.rows.map((row) => row.evidence),
+    )).size).toBe(seam.calls.length * 2)
 
     expect(phasesFor(START_YEAR).every(
-      (phase) => phase.openingTraditional === 300_000 &&
-        phase.openingRoth === 200_000,
+      (phase) => phase.captured.openingTraditional === 300_000 &&
+        phase.captured.openingRoth === 200_000,
     )).toBe(true)
     const firstYearFinal = phasesFor(START_YEAR).at(-1)!
-    const firstTraditional = firstYearFinal.output.rows.find(
+    const firstTraditional = firstYearFinal.injected.rows.find(
       (row) => row.accountId === 'inherited-traditional',
     )!.distribution!.sourceBalanceAfter
-    const firstRoth = firstYearFinal.output.rows.find(
+    const firstRoth = firstYearFinal.injected.rows.find(
       (row) => row.accountId === 'inherited-roth',
     )!.distribution!.sourceBalanceAfter
     expect(phasesFor(START_YEAR + 1).every(
-      (phase) => phase.openingTraditional === firstTraditional &&
-        phase.openingRoth === firstRoth,
+      (phase) => phase.captured.openingTraditional === firstTraditional &&
+        phase.captured.openingRoth === firstRoth,
     )).toBe(true)
 
-    expect(seam.snapshots).toHaveLength(seam.phases.length)
-    for (const snapshot of seam.snapshots) {
+    expect(hostile.snapshots).toHaveLength(seam.calls.length)
+    for (const snapshot of hostile.snapshots) {
       const phase = snapshot.phase!
       expect(snapshot.traditional).toBe(
-        phase.output.rows.find(
+        phase.injected.rows.find(
           (row) => row.accountId === 'inherited-traditional',
         )!.distribution!.sourceBalanceAfter,
       )
       expect(snapshot.roth).toBe(
-        phase.output.rows.find(
+        phase.injected.rows.find(
           (row) => row.accountId === 'inherited-roth',
         )!.distribution!.sourceBalanceAfter,
       )
@@ -402,30 +422,30 @@ describe('simulatePlan delegates inherited-account annual planning', () => {
 
     for (const year of result.years) {
       const phase = phasesFor(year.year).at(-1)!
-      expect(year.inheritedDistribution).toBe(phase.output.totals.inherited)
+      expect(year.inheritedDistribution).toBe(phase.injected.totals.inherited)
       expect(year.inheritedTraditionalDistribution)
-        .toBe(phase.output.totals.ordinaryIncome)
+        .toBe(phase.injected.totals.ordinaryIncome)
       expect(year.withdrawals.roth).toBeGreaterThanOrEqual(
-        phase.output.totals.rothForced,
+        phase.injected.totals.rothForced,
       )
       expect(year.rmdShortfallExciseTax).toBe(100)
       expect(year.rmdShortfallExciseDetails).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             obligationId:
-              phase.output.rmdShortfallObligations[0]!.obligationId,
+              phase.injected.rmdShortfallObligations[0]!.obligationId,
             tax: 100,
           }),
         ]),
       )
       expect(year.inheritedAccounts).toEqual(
-        phase.output.rows.map((row) => row.evidence),
+        phase.injected.rows.map((row) => row.evidence),
       )
       expect(year.inheritedAccounts?.[0]).not.toBe(
-        phase.output.rows[0]!.evidence,
+        phase.injected.rows[0]!.evidence,
       )
       expect(year.inheritedAccounts?.[0]).toEqual(
-        phase.output.rows[0]!.evidence,
+        phase.injected.rows[0]!.evidence,
       )
       expect(Object.isFrozen(year.inheritedAccounts?.[0])).toBe(true)
       const runtimeOccurrences =
@@ -437,19 +457,19 @@ describe('simulatePlan delegates inherited-account annual planning', () => {
         accountId: occurrence.sourceAccountId,
         amount: occurrence.grossAmountPlanDollars,
       })).sort((left, right) => left.accountId!.localeCompare(right.accountId!)))
-        .toEqual(phase.output.rows.map((row) => ({
+        .toEqual(phase.injected.rows.map((row) => ({
         accountId: row.accountId,
         amount: row.distribution!.executed,
       })).sort((left, right) => left.accountId.localeCompare(right.accountId)))
       expect(probes.find((probe) => probe.year === year.year)
-        ?.inheritedDistribution).toBe(phase.output.totals.ordinaryIncome)
+        ?.inheritedDistribution).toBe(phase.injected.totals.ordinaryIncome)
     }
-    for (const taxInput of seam.taxInputs) {
+    for (const taxInput of hostile.taxInputs) {
       const phase = taxInput.phase!
       expect(phase).toBeDefined()
       expect([
-        phase.output.totals.ordinaryIncome,
-        phase.output.totals.ordinaryIncome + 1,
+        phase.injected.totals.ordinaryIncome,
+        phase.injected.totals.ordinaryIncome + 1,
       ]).toContain(taxInput.ordinaryIncome)
     }
     expect(result.warnings).toContain(
@@ -483,49 +503,49 @@ describe('simulatePlan delegates inherited-account annual planning', () => {
     expect(() => run('invalidSecond')).toThrow(
       'invalid annual inherited-IRA distribution operation',
     )
-    const phase = seam.phases.at(-1)!
+    const phase = seam.calls.at(-1)!
     expect(phase.input.balances.find(
       (state) => state.account.id === 'inherited-traditional',
-    )?.balance).toBe(phase.openingTraditional)
+    )?.balance).toBe(phase.captured.openingTraditional)
     expect(phase.input.balances.find(
       (state) => state.account.id === 'inherited-roth',
-    )?.balance).toBe(phase.openingRoth)
+    )?.balance).toBe(phase.captured.openingRoth)
   })
 
   it('rejects an operation whose selected owner was changed', () => {
     expect(() => run('wrongOwner')).toThrow(
       'invalid annual inherited-IRA distribution operation',
     )
-    const phase = seam.phases.at(-1)!
+    const phase = seam.calls.at(-1)!
     expect(phase.input.balances.find(
       (state) => state.account.id === 'inherited-traditional',
-    )?.balance).toBe(phase.openingTraditional)
+    )?.balance).toBe(phase.captured.openingTraditional)
     expect(phase.input.balances.find(
       (state) => state.account.id === 'inherited-roth',
-    )?.balance).toBe(phase.openingRoth)
+    )?.balance).toBe(phase.captured.openingRoth)
   })
 
   it('rejects a positive operation that cannot move a ledger cent', () => {
     expect(() => run('subCent')).toThrow(
       'invalid annual inherited-IRA distribution operation',
     )
-    const phase = seam.phases.at(-1)!
+    const phase = seam.calls.at(-1)!
     expect(phase.input.balances.find(
       (state) => state.account.id === 'inherited-traditional',
-    )?.balance).toBe(phase.openingTraditional)
+    )?.balance).toBe(phase.captured.openingTraditional)
     expect(phase.input.balances.find(
       (state) => state.account.id === 'inherited-roth',
-    )?.balance).toBe(phase.openingRoth)
+    )?.balance).toBe(phase.captured.openingRoth)
   })
 
   it('materializes every helper-owned result property exactly once', () => {
-    const hostile = run('singleRead')
-    const hostilePhases = [...seam.phases]
-    expect(hostilePhases.length).toBeGreaterThan(0)
+    const hostileRun = run('singleRead')
+    const hostilePhases = [...expectSeamRanAtLeastOnce(seam)]
     for (const phase of hostilePhases) {
-      expect([...phase.getterReads.values()].every((reads) => reads === 1))
+      const getterReads = hostile.getterReads[phase.ordinal]!
+      expect([...getterReads.values()].every((reads) => reads === 1))
         .toBe(true)
-      const paths = [...phase.getterReads.keys()]
+      const paths = [...getterReads.keys()]
       expect(paths).toEqual(expect.arrayContaining([
         'result.rows',
         'result.totals',
@@ -545,20 +565,20 @@ describe('simulatePlan delegates inherited-account annual planning', () => {
         path.startsWith('result.rmdShortfallObligations[0].'))).toBe(true)
     }
     const control = run('original')
-    expect(hostile.result).toEqual(control.result)
-    expect(hostile.probes).toEqual(control.probes)
+    expect(hostileRun.result).toEqual(control.result)
+    expect(hostileRun.probes).toEqual(control.probes)
   })
 
   it('does not write a balance when a getter throws during materialization', () => {
     expect(() => run('throwDuringMaterialization')).toThrow(
       'hostile inherited result threw during materialization',
     )
-    const phase = seam.phases.at(-1)!
+    const phase = seam.calls.at(-1)!
     expect(phase.input.balances.find(
       (state) => state.account.id === 'inherited-traditional',
-    )?.balance).toBe(phase.openingTraditional)
+    )?.balance).toBe(phase.captured.openingTraditional)
     expect(phase.input.balances.find(
       (state) => state.account.id === 'inherited-roth',
-    )?.balance).toBe(phase.openingRoth)
+    )?.balance).toBe(phase.captured.openingRoth)
   })
 })

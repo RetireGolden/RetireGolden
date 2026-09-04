@@ -5,6 +5,9 @@
  * HSA, and Roth tax/penalty effects. Independent tax, annual-ledger, balance,
  * cash-flow, and warning observations fail if simulatePlan merely calls the
  * coordinator but recomputes any of those effects locally.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -13,34 +16,34 @@ import type {
   AnnualFundingWithdrawalEffectsResult,
 } from './internal/annualFundingWithdrawalEffects.js'
 
-interface WithdrawalEffectsCall {
-  readonly input: AnnualFundingWithdrawalEffectsInput
-  readonly original: AnnualFundingWithdrawalEffectsResult
-  readonly output: AnnualFundingWithdrawalEffectsResult
-}
-
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   inject: false,
-  calls: [] as WithdrawalEffectsCall[],
   rothNext: {
     contributionBasis: 777,
     conversionLayers: [{ year: 2026, amount: 33, taxableAmount: 22 }],
   },
 }))
 
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualFundingWithdrawalEffectsInput,
+      AnnualFundingWithdrawalEffectsResult
+    >(),
+)
+
 vi.mock(
   './internal/annualFundingWithdrawalEffects.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualFundingWithdrawalEffects.js')
-    >()
-    return {
-      ...original,
-      annualFundingWithdrawalEffects: (
-        input: AnnualFundingWithdrawalEffectsInput,
-      ) => {
-        const production = original.annualFundingWithdrawalEffects(input)
-        const output: AnnualFundingWithdrawalEffectsResult = seam.inject
+  async (importOriginal) =>
+    seam.through(
+      await importOriginal<
+        typeof import('./internal/annualFundingWithdrawalEffects.js')
+      >(),
+      'annualFundingWithdrawalEffects',
+      (natural): AnnualFundingWithdrawalEffectsResult =>
+        hostile.inject
           ? {
               traditional: {
                 rows: [{ sourceAccountId: 'traditional', amount: 50 }],
@@ -73,7 +76,7 @@ vi.mock(
                     earnings: 0,
                     penalty: 53,
                     taxableOrdinary: 29,
-                    next: seam.rothNext,
+                    next: hostile.rothNext,
                   },
                 }],
                 taxableOrdinary: 29,
@@ -81,14 +84,11 @@ vi.mock(
               },
               penaltyExcludingRmdShortfallExcise: 123,
             }
-          : production
-        seam.calls.push({ input, original: production, output })
-        return output
-      },
-    }
-  },
+          : natural,
+    ),
 )
 
+import { expectSeamRanAtLeastOnce } from './simulate.seamGuard.test-support.js'
 import type { Account } from '../model/plan.js'
 import {
   cashAccount,
@@ -101,8 +101,8 @@ import type { TaxCalculator, TaxYearInput } from './types.js'
 const START_YEAR = 2026
 
 beforeEach(() => {
-  seam.inject = false
-  seam.calls.length = 0
+  hostile.inject = false
+  seam.reset()
 })
 
 describe('simulatePlan annual funding-withdrawal-effects delegation', () => {
@@ -173,7 +173,7 @@ describe('simulatePlan annual funding-withdrawal-effects delegation', () => {
         return input.ordinaryIncome
       },
     }
-    seam.inject = true
+    hostile.inject = true
 
     const result = simulatePlan(validatePlan(plan), {
       startYear: START_YEAR,
@@ -183,12 +183,12 @@ describe('simulatePlan annual funding-withdrawal-effects delegation', () => {
     })
     const year = result.years[0]!
 
-    expect(seam.calls.length).toBeGreaterThan(0)
-    expect(seam.calls.every((call) => call.output !== call.original)).toBe(true)
-    expect(seam.calls.some((call) =>
+    const calls = expectSeamRanAtLeastOnce(seam)
+    expect(calls.every((call) => call.injected !== call.natural)).toBe(true)
+    expect(calls.some((call) =>
       call.input.year === START_YEAR + 1 &&
       call.input.rothBasisByPool.get('rothira:p1')?.contributionBasis ===
-        seam.rothNext.contributionBasis &&
+        hostile.rothNext.contributionBasis &&
       call.input.hsaQualifiedCap === 70
     )).toBe(true)
     expect(taxInputs.some((input) => input.ordinaryIncome === 46)).toBe(true)

@@ -6,6 +6,9 @@
  * Independent year, debt, depletion, and cash-flow fields observe those exact
  * replacements, so an orphaned helper or caller-side recomputation cannot pass
  * because production matches the former inline loop.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -14,47 +17,38 @@ import type {
   AnnualHecmBackstopPlan,
 } from './internal/annualHecmBackstop.js'
 
-interface BackstopCall {
-  readonly input: AnnualHecmBackstopInput
-  readonly original: AnnualHecmBackstopPlan
-  readonly output: AnnualHecmBackstopPlan
-  readonly lineBalanceAtCall: number
-}
+const hostile = vi.hoisted(() => ({ inject: false }))
 
-const seam = vi.hoisted(() => ({
-  inject: false,
-  calls: [] as BackstopCall[],
-}))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<AnnualHecmBackstopInput, AnnualHecmBackstopPlan, number>(),
+)
 
-vi.mock('./internal/annualHecmBackstop.js', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('./internal/annualHecmBackstop.js')>()
-  return {
-    ...original,
-    annualHecmBackstopPlan: (input: AnnualHecmBackstopInput) => {
-      const production = original.annualHecmBackstopPlan(input)
-      const output: AnnualHecmBackstopPlan =
-        seam.inject && production.allocations.length > 0
-          ? {
-              allocations: production.allocations.map((row, index) =>
-                index === 0 ? { ...row, amount: row.amount - 3_000 } : row),
-              // Deliberately differs from both the allocation sum and the
-              // amount implied by the independently injected residual.
-              draw: production.draw - 4_000,
-              shortfallAfterHecm: production.shortfallAfterHecm + 3_000,
-            }
-          : production
-      seam.calls.push({
-        input,
-        original: production,
-        output,
-        lineBalanceAtCall: input.hecmStates.get('home1')?.loanBalance ?? Number.NaN,
-      })
-      return output
+vi.mock('./internal/annualHecmBackstop.js', async (importOriginal) =>
+  seam.through(
+    await importOriginal<typeof import('./internal/annualHecmBackstop.js')>(),
+    'annualHecmBackstopPlan',
+    (natural): AnnualHecmBackstopPlan =>
+      hostile.inject && natural.allocations.length > 0
+        ? {
+            allocations: natural.allocations.map((row, index) =>
+              index === 0 ? { ...row, amount: row.amount - 3_000 } : row),
+            // Deliberately differs from both the allocation sum and the
+            // amount implied by the independently injected residual.
+            draw: natural.draw - 4_000,
+            shortfallAfterHecm: natural.shortfallAfterHecm + 3_000,
+          }
+        : natural,
+    {
+      capture: (input) =>
+        input.hecmStates.get('home1')?.loanBalance ?? Number.NaN,
     },
-  }
-})
+  ),
+)
 
+import { expectSeamRan } from './simulate.seamGuard.test-support.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
@@ -119,7 +113,7 @@ function backstopPlan(): Plan {
 }
 
 function run(inject: boolean) {
-  seam.inject = inject
+  hostile.inject = inject
   const plan = backstopPlan()
   const result = simulatePlan(plan, {
     startYear: START_YEAR,
@@ -131,20 +125,19 @@ function run(inject: boolean) {
 }
 
 beforeEach(() => {
-  seam.inject = false
-  seam.calls.length = 0
+  hostile.inject = false
+  seam.reset()
 })
 
 describe('simulatePlan delegates annual HECM backstop planning', () => {
   it('passes live post-coordinated state and commits the returned plan exactly once', () => {
     const { plan, year } = run(false)
-    expect(seam.calls).toHaveLength(1)
-    const call = seam.calls[0]!
+    const call = expectSeamRan(seam, 1)[0]!
     expect(Object.isFrozen(call.input)).toBe(true)
     expect(call.input.accounts).toBe(plan.accounts)
-    expect(call.lineBalanceAtCall).toBe(0)
-    expect(call.output).toBe(call.original)
-    expect(call.original).toEqual({
+    expect(call.captured).toBe(0)
+    expect(call.injected).toBe(call.natural)
+    expect(call.natural).toEqual({
       allocations: [{ propertyAccountId: 'home1', amount: 10_000 }],
       draw: 10_000,
       shortfallAfterHecm: 29_000,
@@ -160,8 +153,7 @@ describe('simulatePlan delegates annual HECM backstop planning', () => {
 
   it('uses independently hostile allocations, draw, and residual without recomputing', () => {
     const { year } = run(true)
-    expect(seam.calls).toHaveLength(1)
-    expect(seam.calls[0]!.output).toEqual({
+    expect(expectSeamRan(seam, 1)[0]!.injected).toEqual({
       allocations: [{ propertyAccountId: 'home1', amount: 7_000 }],
       draw: 6_000,
       shortfallAfterHecm: 32_000,
