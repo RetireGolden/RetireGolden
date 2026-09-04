@@ -9,6 +9,7 @@
 import type { CoverageAttestation } from '../coverageAttestations.js'
 
 export const actionsAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
+  'actions/actionResult.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-03', note: null }),
   'actions/aggregateRothConversionOwnerAllocation.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-29', note: 'same-owner pro-rata allocation long registered under irc-408-d-3-A-i; the RMD-before-conversion ordering it relies on is enforced upstream (resolveOwnerIraRmdSatisfaction), and this file consumes the post-RMD snapshot as a contract rather than enforcing it - that contract stays the residual' }),
   'actions/annualHsaOpeningAuthority.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'actions/annualHsaPenaltyEvaluation.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),

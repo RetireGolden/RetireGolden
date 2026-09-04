@@ -26,6 +26,11 @@ import {
 import type { ActionId, AllocationId } from './identity.js'
 import { compareUtf16CodeUnits, deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
+import {
+  blockedActionResult,
+  type ActionResult,
+  type BlockedActionArm,
+} from './actionResult.js'
 import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot } from './plainData.js'
 
 export interface HsaAllocationReimbursementClaims {
@@ -92,21 +97,24 @@ export type AnnualHsaTreatmentBindingPrepared = Readonly<Boundaries & {
   issues: readonly []
 }>
 
-export type AnnualHsaTreatmentBindingBlocked = Readonly<Boundaries & {
-  status: 'annualHsaTreatmentBindingBlocked'
-  candidate: Readonly<AnnualHsaPhysicalMovementCandidate> | null
-  characterInput: Readonly<EvaluateAnnualHsaReimbursementLedgerInput> | null
-  ledger: Readonly<ReturnType<typeof evaluateAnnualHsaReimbursementLedger>> | null
-  character: Readonly<ClassifyAnnualHsaWithdrawalCharacterResult> | null
-  penalty: Readonly<EvaluateAnnualHsaPenaltyResult> | null
-  applications: readonly []
-  treatmentBindingId: null
-  issues: readonly [Readonly<AnnualHsaTreatmentBindingIssue>]
-}>
+export type AnnualHsaTreatmentBindingBlocked = BlockedActionArm<
+  'annualHsaTreatmentBindingBlocked',
+  AnnualHsaTreatmentBindingIssue
+> &
+  Readonly<Boundaries & {
+    candidate: Readonly<AnnualHsaPhysicalMovementCandidate> | null
+    characterInput: Readonly<EvaluateAnnualHsaReimbursementLedgerInput> | null
+    ledger: Readonly<ReturnType<typeof evaluateAnnualHsaReimbursementLedger>> | null
+    character: Readonly<ClassifyAnnualHsaWithdrawalCharacterResult> | null
+    penalty: Readonly<EvaluateAnnualHsaPenaltyResult> | null
+    applications: readonly []
+    treatmentBindingId: null
+  }>
 
-export type CoordinateAnnualHsaTreatmentBindingResult =
-  | AnnualHsaTreatmentBindingPrepared
-  | AnnualHsaTreatmentBindingBlocked
+export type CoordinateAnnualHsaTreatmentBindingResult = ActionResult<
+  AnnualHsaTreatmentBindingPrepared,
+  AnnualHsaTreatmentBindingBlocked
+>
 
 const INPUT_KEYS = ['physicalInput', 'reimbursementScope', 'reimbursementClaimInventoryComplete', 'reimbursementClaims', 'ownerBirthEvidenceComplete', 'ownerBirthEvidence', 'disabilityStatusEvidenceComplete', 'disabilityStatusEvidence']
 const CLAIM_RECORD_KEYS = ['actionId', 'allocationId', 'reimbursementClaims']
@@ -137,7 +145,7 @@ function blocked(
   kind: AnnualHsaTreatmentBindingIssueKind,
   detail: string,
 ): AnnualHsaTreatmentBindingBlocked {
-  return deepFreeze({ status: 'annualHsaTreatmentBindingBlocked', ...BOUNDARIES, candidate: diagnostics.candidate ?? null, characterInput: diagnostics.characterInput ?? null, ledger: diagnostics.ledger ?? null, character: diagnostics.character ?? null, penalty: diagnostics.penalty ?? null, applications: [], treatmentBindingId: null, issues: [{ stage, kind, detail }] }) as AnnualHsaTreatmentBindingBlocked
+  return blockedActionResult('annualHsaTreatmentBindingBlocked', { ...BOUNDARIES, candidate: diagnostics.candidate ?? null, characterInput: diagnostics.characterInput ?? null, ledger: diagnostics.ledger ?? null, character: diagnostics.character ?? null, penalty: diagnostics.penalty ?? null, applications: [], treatmentBindingId: null }, { stage, kind, detail })
 }
 
 function same(left: unknown, right: unknown): boolean {

@@ -18,6 +18,11 @@ import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { addUsdCents, asUsdCents, type UsdCents } from './money.js'
 import { deriveActionStructuralId } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
+import {
+  blockedActionResult,
+  type ActionResult,
+  type BlockedActionArm,
+} from './actionResult.js'
 import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot, requireNonblankId } from './plainData.js'
 
 export interface HsaPenaltyOwnerBirthEvidence {
@@ -191,21 +196,21 @@ export type AnnualHsaPenaltyEvaluated = Readonly<{
   issues: readonly []
 }>
 
-export type AnnualHsaPenaltyBlocked = Readonly<{
-  status: 'blocked'
-  committed: false
-  movement: 'notEstablished'
-  actionability: 'notEstablished'
-  publication: 'notEstablished'
-  character: Readonly<ClassifyAnnualHsaWithdrawalCharacterResult> | null
-  allocations: readonly []
-  aggregatePenaltyAmount: 0
-  issues: readonly [Readonly<AnnualHsaPenaltyIssue>]
-}>
+export type AnnualHsaPenaltyBlocked = BlockedActionArm<'blocked', AnnualHsaPenaltyIssue> &
+  Readonly<{
+    committed: false
+    movement: 'notEstablished'
+    actionability: 'notEstablished'
+    publication: 'notEstablished'
+    character: Readonly<ClassifyAnnualHsaWithdrawalCharacterResult> | null
+    allocations: readonly []
+    aggregatePenaltyAmount: 0
+  }>
 
-export type EvaluateAnnualHsaPenaltyResult =
-  | AnnualHsaPenaltyEvaluated
-  | AnnualHsaPenaltyBlocked
+export type EvaluateAnnualHsaPenaltyResult = ActionResult<
+  AnnualHsaPenaltyEvaluated,
+  AnnualHsaPenaltyBlocked
+>
 
 const INPUT_KEYS = ['characterInput', 'ownerBirthEvidenceComplete', 'ownerBirthEvidence', 'disabilityStatusEvidenceComplete', 'disabilityStatusEvidence']
 const BIRTH_KEYS = ['predicate', 'ownerPersonId', 'birthDate', 'birthDateEvidenceId', 'authoritative']
@@ -216,7 +221,7 @@ function blocked(
   kind: AnnualHsaPenaltyIssue['kind'],
   detail: string,
 ): AnnualHsaPenaltyBlocked {
-  return deepFreeze({ status: 'blocked', committed: false, movement: 'notEstablished', actionability: 'notEstablished', publication: 'notEstablished', character, allocations: [], aggregatePenaltyAmount: 0, issues: [{ kind, detail }] }) as AnnualHsaPenaltyBlocked
+  return blockedActionResult('blocked', { committed: false, movement: 'notEstablished', actionability: 'notEstablished', publication: 'notEstablished', character, allocations: [], aggregatePenaltyAmount: 0 }, { kind, detail })
 }
 
 function canonicalDate(value: unknown): string {
