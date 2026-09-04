@@ -1,8 +1,11 @@
 /**
  * Amortized spending (ABW / VPW): the fields the Spending card shows when that
  * policy mode is selected, and the explanatory callout below the grid.
- * Extracted from `SpendingSection.tsx` unchanged (one of the four mode
- * branches the card dispatches to).
+ * Extracted from `SpendingSection.tsx` (one of the four mode branches the card
+ * dispatches to); the JSX and behavior are unchanged except that its five
+ * numeric controls gained `path` props and dropped their hand-written
+ * `min`/`max` in the same PR (#611), the schema-bound-fields pass applied
+ * everywhere else in this section.
  */
 
 import type { SpendingPolicy } from '@retiregolden/engine/model/plan'

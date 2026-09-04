@@ -443,11 +443,16 @@ export function SpendingSection() {
                       step={5}
                       path={`expenses.oneTimeGoals.${i}.minFundingPct`}
                       value={g.minFundingPct ?? 50}
-                      // No clamp: the engine's own 0-100 range flags an entry
-                      // outside it while typing and hands back the plan's value
-                      // on blur (D5), so the percent only reaches here once it
-                      // is already one the schema accepts. The old Math.min(95)
-                      // was a bound this file invented; the schema has none.
+                      // No clamp: the engine's own 0-100 range (oneTimeGoalSchema,
+                      // plan.ts) flags an entry outside it while typing and hands
+                      // back the plan's value on blur (D5), so the percent only
+                      // reaches here once it is already one the schema accepts.
+                      // The old Math.min(95, ...) was a tighter ceiling this file
+                      // invented on top of the schema's 0-100: 96-99 are schema-
+                      // legal and now reach the plan. A 100 with partial funding
+                      // on is refused separately, by planCrossFieldChecks.ts
+                      // ("partial funding requires a minimum funding percent
+                      // below 100"), which useFieldIssue surfaces on this field.
                       onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.minFundingPct = v ?? 50))}
                     />
                   ) : null}

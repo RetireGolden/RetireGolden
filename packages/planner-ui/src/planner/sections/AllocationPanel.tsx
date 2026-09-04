@@ -149,9 +149,11 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
             key={id}
             label={DEFAULT_ASSET_CLASS_PARAMS[id].label}
             value={weights[id]}
-            // Intentionally pathless, and the one control in this package that
-            // is pathless while editing a real plan field. The weights DO have
-            // schema paths (`accounts.N.allocation.weights.usStocks`, and the
+            // Intentionally pathless, and not the only plan-editing control in
+            // this package that is (goal `priority`, pension lump-sum
+            // `electionYear`, and annuity `startAge` are pathless too, for
+            // their own reasons). The weights DO have schema paths
+            // (`accounts.N.allocation.weights.usStocks`, and the
             // same leaves under `.from`, `.to`, `.stages.M.weights`, and
             // `.targets.M.weights`), but this one grid renders all six of those
             // locations. `testSupport/wiredFieldPaths.ts` reads wired paths out

@@ -264,7 +264,13 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
               learn={LEARN.ltcInsurance}
               path={`insurance.${index}.benefitPeriodYears`}
               value={policy.benefitPeriodYears}
-              onCommit={(v) => set('benefitPeriodYears', Math.round(v ?? 3))}
+              // Not rounded (review r1-1): the schema is `z.number().positive()`
+              // with no `.int()`, so a typed 0.4 is schema-legal on its own. The
+              // old `Math.round` forced a whole year, and because it ran after
+              // the field's own range check (which validates the typed value,
+              // not the rounded one) it could turn a value the control had just
+              // accepted into 0, which `.positive()` then refuses.
+              onCommit={(v) => set('benefitPeriodYears', v ?? 3)}
             />
           ) : null}
           <NumberField

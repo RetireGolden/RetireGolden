@@ -248,3 +248,44 @@ describe('a flexible goal’s funding window is kept and explained, not reordere
     expect(field(host, 'Year').input.value).toBe('2028')
   })
 })
+
+describe('a goal’s minimum funding percent is kept and explained, not clamped to 95 (review r1-2)', () => {
+  // `Math.min(95, Math.max(0, v ?? 50))` used to rewrite whatever was typed
+  // before it reached the plan. The field now reads the schema's own 0-100
+  // (oneTimeGoalSchema, plan.ts) and stores what was entered; 100 with
+  // partial funding on is the engine's own refusal
+  // (planCrossFieldChecks.ts: "partial funding requires a minimum funding
+  // percent below 100"), surfaced here rather than silently rewritten.
+  const goalWithMinFunding = (minFundingPct: number) => ({
+    id: 'goal-1',
+    label: 'Trip',
+    year: 2040,
+    amount: 10_000,
+    flexibility: 'movable' as const,
+    earliestYear: 2035,
+    latestYear: 2045,
+    allowPartialFunding: true,
+    minFundingPct,
+  })
+
+  it('shows the engine’s refusal on Minimum funding at 100, and keeps the 100 entered', () => {
+    const host = mount((plan) => {
+      plan.expenses.oneTimeGoals = [goalWithMinFunding(100)]
+    })
+    const { input, box } = field(host, 'Minimum funding')
+    expect(input.value).toBe('100')
+    const error = box.querySelector('.field-error')
+    expect(error?.textContent).toContain('minimum funding percent below 100')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('keeps 96–99, schema-legal but above the old invented 95 ceiling, with no error', () => {
+    const host = mount((plan) => {
+      plan.expenses.oneTimeGoals = [goalWithMinFunding(97)]
+    })
+    const { input, box } = field(host, 'Minimum funding')
+    expect(input.value).toBe('97')
+    expect(box.querySelector('.field-error')).toBeNull()
+    expect(input.getAttribute('aria-invalid')).toBeNull()
+  })
+})
