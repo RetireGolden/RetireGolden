@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { describeRefusal } from './describeRefusal.js'
 import { describeRule } from './describeRule.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
@@ -76,14 +77,346 @@ const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'd
 // would both trip the unknown-rule assertion and let a guard-only reference
 // launder coverage for a rule whose actual fixture had been deleted.
 const CONFORMANCE_SOURCE = 'taxRuleRegistry.conformance.test.ts'
+
+/**
+ * Keywords after which `/` starts a regex rather than division, checked in
+ * addition to the punctuation set below. Not exhaustive of every keyword a
+ * full parser would accept — `else`, `do`, and the rest of the statement
+ * keywords never precede a regex literal directly in practice — but wide
+ * enough to cover how a regex literal is actually written in this repo's test
+ * sources.
+ */
+const REGEX_LITERAL_PRECEDING_KEYWORDS = new Set([
+  'return',
+  'typeof',
+  'instanceof',
+  'in',
+  'of',
+  'new',
+  'delete',
+  'void',
+  'throw',
+  'yield',
+  'case',
+])
+
+/**
+ * Whether a regex literal can begin at `index`: true at the start of the
+ * source, after `( , = : ; ! & | ? { [` (skipping whitespace), or after one of
+ * `REGEX_LITERAL_PRECEDING_KEYWORDS` — the same heuristic a parser uses to
+ * decide `/` opens a regex rather than division, plus the keyword-preceded
+ * case a punctuation-only check misses. Needed so a quote inside a regex
+ * literal — such as the `'` in this very file's own `(['"\`]?)` character
+ * class — is never mistaken by `stripComments` for a string opener, which
+ * would make it skip forward to some unrelated later quote and silently fail
+ * to blank a comment (or a commented-out fixture call) hiding inside that
+ * misread span.
+ *
+ * Deliberately still returns false after `)` and `]`: a full parser resolves
+ * those by tracking whether the matching open punctuation started an
+ * expression or a control-flow head, which this character scanner does not
+ * do. `coverageReport.ts`'s `regexCanFollow` — the accepted, shipped sibling
+ * of this heuristic — has the identical limitation; extending past it here
+ * would mean guessing at disambiguation this repo's own precedent does not
+ * attempt either.
+ */
+function regexLiteralCanOpenAt(source: string, index: number): boolean {
+  let cursor = index - 1
+  while (cursor >= 0 && /\s/u.test(source[cursor]!)) cursor -= 1
+  if (cursor < 0) return true
+  if ('(,=:;!&|?{['.includes(source[cursor]!)) return true
+  if (!/[a-zA-Z0-9_$]/u.test(source[cursor]!)) return false
+  let wordStart = cursor
+  while (wordStart >= 0 && /[a-zA-Z0-9_$]/u.test(source[wordStart]!)) wordStart -= 1
+  const word = source.slice(wordStart + 1, cursor + 1)
+  return REGEX_LITERAL_PRECEDING_KEYWORDS.has(word)
+}
+
+/**
+ * Blanks out `//` and `/* *\/` comments in `source`, replacing each with
+ * whitespace of the same length so a commented-out `describeRule(` or
+ * `describeRefusal(` call can never satisfy the coverage scans below —
+ * without this, deleting a real fixture but leaving it commented out would
+ * still count as coverage under a plain regex scan. String, template, and
+ * regex literal contents are walked past but left intact, since the id
+ * argument the scans capture lives inside a string, and a quote or `//`-
+ * shaped sequence inside a regex literal must never be mistaken for a string
+ * opener or a comment.
+ */
+function stripComments(source: string): string {
+  let out = ''
+  let i = 0
+  while (i < source.length) {
+    const c = source[i]!
+    const next = source[i + 1]
+    if (c === '/' && next === '/') {
+      const eol = source.indexOf('\n', i)
+      const end = eol === -1 ? source.length : eol
+      out += ' '.repeat(end - i)
+      i = end
+      continue
+    }
+    if (c === '/' && next === '*') {
+      const close = source.indexOf('*/', i + 2)
+      const end = close === -1 ? source.length : close + 2
+      out += source.slice(i, end).replace(/[^\n]/gu, ' ')
+      i = end
+      continue
+    }
+    if (c === "'" || c === '"') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== c) {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      cursor = Math.min(cursor + 1, source.length)
+      out += source.slice(i, cursor)
+      i = cursor
+      continue
+    }
+    if (c === '`') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== '`') {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      cursor = Math.min(cursor + 1, source.length)
+      out += source.slice(i, cursor)
+      i = cursor
+      continue
+    }
+    if (c === '/' && regexLiteralCanOpenAt(source, i)) {
+      let cursor = i + 1
+      let inClass = false
+      let closed = false
+      while (cursor < source.length) {
+        const cc = source[cursor]!
+        if (cc === '\\') {
+          cursor += 2
+          continue
+        }
+        if (cc === '[') {
+          inClass = true
+        } else if (cc === ']') {
+          inClass = false
+        } else if (cc === '/' && !inClass) {
+          cursor += 1
+          closed = true
+          break
+        } else if (cc === '\n') {
+          break // not a regex after all; bail at EOL and fall through to plain '/'
+        }
+        cursor += 1
+      }
+      if (closed) {
+        while (cursor < source.length && /[a-z]/iu.test(source[cursor]!)) cursor += 1
+        out += source.slice(i, cursor)
+        i = cursor
+        continue
+      }
+    }
+    out += c
+    i += 1
+  }
+  return out
+}
+
+/**
+ * Index just past the closing parenthesis of the call whose first `(` is at
+ * or after `start`, skipping parens that appear inside string or template
+ * literals so quoted content cannot misalign the depth count. `source` is
+ * assumed to already have comments stripped (see `stripComments`).
+ */
+function callEnd(source: string, start: number): number {
+  const open = source.indexOf('(', start)
+  if (open === -1) return source.length
+  let depth = 0
+  let i = open
+  while (i < source.length) {
+    const c = source[i]!
+    if (c === "'" || c === '"') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== c) {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      i = Math.min(cursor + 1, source.length)
+      continue
+    }
+    if (c === '`') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== '`') {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      i = Math.min(cursor + 1, source.length)
+      continue
+    }
+    if (c === '(') depth += 1
+    if (c === ')') {
+      depth -= 1
+      if (depth === 0) return i + 1
+    }
+    i += 1
+  }
+  return source.length
+}
+
+/**
+ * Whether `expect(...)` at `matchStart` (the index of its `e`) within `body`
+ * is chained into an actual matcher — `.toBe(`, `.not.toContain(`, and so on
+ * — immediately after its balanced close, rather than standing alone as the
+ * no-op `expect(value)` is in Vitest with nothing chained onto it.
+ */
+function isChainedExpect(body: string, matchStart: number): boolean {
+  const close = callEnd(body, matchStart)
+  let cursor = close
+  while (cursor < body.length && /\s/u.test(body[cursor]!)) cursor += 1
+  return body[cursor] === '.'
+}
+
+/**
+ * Whether the balanced `describeRefusal(...)` call body registers at least
+ * one `it(` test that itself calls a chained `expect(...).<matcher>(...)`.
+ * `describeRefusal` validates the rule id, its classification, and the
+ * fixture's prose fields, but nothing about the helper itself forces the
+ * suite callback to assert anything — `describeRefusal(id, spec, () => {})`
+ * would otherwise satisfy the backlog-equality ratchet below while driving no
+ * refusal at all, and so would `describeRefusal(id, spec, () => { it('todo',
+ * () => {}) })` (an `it` that registers but asserts nothing) or
+ * `describeRefusal(id, spec, () => { it('x', () => { expect(plan) }) })` (an
+ * `expect(...)` with no matcher chained on, a no-op in Vitest). Requiring a
+ * real `it(` AND an `expect(...)` immediately followed by `.` closes all
+ * three: an empty suite, a suite whose only `it` is a no-op, and a suite
+ * whose only `expect` carries no matcher, are none of them counted as
+ * coverage, so the rule id stays "uncovered" and must stay in
+ * `REFUSAL_FIXTURE_BACKLOG` until a real fixture is written.
+ */
+function registersATest(source: string, start: number, end: number): boolean {
+  const body = source.slice(start, end)
+  if (!/\bit\(\s*['"`]/u.test(body)) return false
+  for (const match of body.matchAll(/\bexpect\(/gu)) {
+    if (isChainedExpect(body, match.index)) return true
+  }
+  return false
+}
+
 const claimedRuleIds = new Map<string, string[]>()
-for (const [path, source] of Object.entries(testSources)) {
+// `describeRefusal` is scanned separately rather than folded into the regex
+// above. The two helpers make different claims - a discriminating computed
+// value against a typed refusal - and merging them would let a refusal fixture
+// satisfy the settled/unsettled/approximated coverage tests, which is the one
+// substitution neither classification can afford.
+const claimedRefusalRuleIds = new Map<string, string[]>()
+for (const [path, rawSource] of Object.entries(testSources)) {
   if (path.endsWith(CONFORMANCE_SOURCE)) continue
+  const source = stripComments(rawSource as string)
   for (const match of source.matchAll(/describeRule\(\s*'([^']+)'/gu)) {
     const ruleId = match[1]!
     claimedRuleIds.set(ruleId, [...(claimedRuleIds.get(ruleId) ?? []), path])
   }
+  for (const match of source.matchAll(/describeRefusal\(\s*'([^']+)'/gu)) {
+    const ruleId = match[1]!
+    const start = match.index ?? 0
+    const end = callEnd(source, start)
+    // A call whose suite body registers no `it(` test is not coverage: leave
+    // it out of claimedRefusalRuleIds so the id stays "uncovered" below.
+    if (!registersATest(source, start, end)) continue
+    claimedRefusalRuleIds.set(ruleId, [...(claimedRefusalRuleIds.get(ruleId) ?? []), path])
+  }
 }
+
+/**
+ * `outOfScope` rules that do not yet have a refusal fixture.
+ *
+ * A shrinking allowlist, not a permanent exemption. `describeRefusal` and the
+ * coverage test below landed together with three fixtures, against 73 records
+ * that claim the engine fails closed; authoring the rest is a program, not a
+ * commit, and a coverage test that failed on all 70 from the first day would
+ * have been deleted rather than worked off.
+ *
+ * The test asserts EQUALITY against this list rather than containment, so it
+ * ratchets in both directions: authoring a fixture without deleting its id
+ * fails, and deleting an id without authoring a fixture fails. A record
+ * reclassified out of `outOfScope` has to leave here too.
+ *
+ * Not every entry can take a fixture as written. The classification covers two
+ * shapes (see `TaxRuleClassification`): a rule the engine fails closed on, and
+ * a rule whose triggering fact the input model cannot express at all, so no
+ * accepted input ever reaches it. The second kind has no refusal to drive, and
+ * `wa-rcw-82-87-capital-gains-excise` says so in its own statement - the state
+ * tax path emits zero and continues, with no refusal naming the missing levy.
+ * Working the list will therefore mean reclassifying some of these rather than
+ * fixturing them, which is itself the point of looking at all 70.
+ */
+const REFUSAL_FIXTURE_BACKLOG: readonly string[] = [
+    'al-form40-cost-recovery-not-modeled',
+    'al-form40-railroad-retirement-not-modeled',
+    'cfr-20-404-1584-blind-sga-monthly-amount',
+    'cfr-20-404-1592b-expedited-reinstatement',
+    'cfr-20-404-640-application-withdrawal-repayment',
+    'cfr-20-418-1205-1230-irmaa-life-change-redetermination',
+    'cfr-31-363-52-savings-bond-annual-purchase-limit',
+    'irc-135-education-savings-bond-interest-exclusion',
+    'irc-1400z-2-qof-deferral-and-ten-year-basis-election',
+    'irc-162-l-1-self-employed-health-insurance-not-modeled',
+    'irc-170-b-1-C-capital-gain-property-ceiling-not-modeled',
+    'irc-171-tips-bond-premium-amortization',
+    'irc-199A-a-qualified-business-income-deduction-not-modeled',
+    'irc-2010-c-3-basic-exclusion-amount-not-modeled',
+    'irc-2010-c-5-dsue-portability-election-not-modeled',
+    'irc-213-d-10-eligible-ltc-premium-caps-2026',
+    'irc-223-b-7-medicare-part-a-retroactive-entitlement',
+    'irc-223-f-4-B-hsa-death-exception',
+    'irc-2503-b-annual-gift-exclusion-not-modeled',
+    'irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule',
+    'irc-401-k-11-simple-401-k-elective-deferral-limit',
+    'irc-401-m-employee-contribution-mega-backdoor-roth-not-modeled',
+    'irc-402-e-4-B-lump-sum-employer-securities-nua-exclusion',
+    'irc-402-g-2-excess-elective-deferral-correction',
+    'irc-402-g-7-403b-15-year-catch-up',
+    'irc-402A-c-4-E-in-plan-roth-transfer-not-modeled',
+    'irc-402A-e-1-A-plesa-optional-designated-roth-subaccount',
+    'irc-402A-e-3-A-plesa-participant-contribution-cap',
+    'irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment',
+    'irc-404-a-3-a-employer-deduction-limit',
+    'irc-408-d-8-A-named-qcd-limit-after-the-pack-year',
+    'irc-408-d-8-F-i-split-interest-direct-payment',
+    'irc-408-d-8-beneficiary-ira-source',
+    'irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election',
+    'irc-411-a-2-vesting-schedule-maximums',
+    'irc-414-v-7-402-g-7-403b-15-year-catch-up-exclusion',
+    'irc-454-savings-bond-interest-deferral',
+    'irc-457-b-3-final-three-year-catch-up',
+    'irc-4966-d-donor-advised-fund-vehicle-not-modeled',
+    'irc-529-c-3-E-529-to-roth-rollover-not-modeled',
+    'irc-6433-a-1-savers-match-qualified-retirement-savings-contributions',
+    'irc-6433-f-6-savers-match-early-distribution-recovery-tax',
+    'irc-664-charitable-remainder-trust-payout-and-character-mechanics-not-modeled',
+    'irc-72-t-1-qcd-not-early-distribution-exception',
+    'irc-72-t-1-qualified-retirement-plan-scope',
+    'irc-72-t-10-public-safety-early-age',
+    'irc-72-t-2-J-plesa-withdrawal-early-distribution-exception',
+    'irc-72-t-4-sepp-modification-recapture',
+    'irc-7520-and-2522-split-interest-valuation-not-modeled',
+    'irs-notice-2014-54-employer-plan-after-tax-rollover-allocation',
+    'notice-2022-6-3-02-e-modification-trigger-detection',
+    'notice-2022-6-3-03-a-complete-depletion',
+    'notice-2022-6-3-03-b-one-time-method-change',
+    'pl-118-273-sec-2-3-wep-gpo-repeal',
+    'rev-rul-2008-5-ira-wash-sale-permanent-loss-disallowance',
+    'treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled',
+    'treas-reg-1-1275-7-f-3-tips-acquisition-premium',
+    'treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline',
+    'treas-reg-54-4974-1-c-five-year-deadline-rmd',
+    'usc-42-1395p-enrollment-periods',
+    'usc-42-1395r-b-part-b-late-enrollment-penalty',
+    'usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing',
+    'usc-42-402-d-2-child-survivor-benefit',
+    'usc-42-402-d-2-ssdi-child-auxiliary',
+    'usc-42-402-e-1-a-current-survivor-remarriage-before-60',
+    'usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period',
+    'usc-42-402-i-lump-sum-death-payment',
+    'usc-42-402-r-survivor-deemed-filing-exemption',
+    'usc-42-426-b-disability-trial-work-medicare-continuation',
+    'wa-rcw-82-87-capital-gains-excise',
+]
 
 /**
  * Structural symbol table per file, shared with the coverage manifest's
@@ -865,6 +1198,48 @@ describe('tax rule registry conformance', () => {
     expect(uncovered).toEqual([])
   })
 
+  it('covers every outOfScope rule with a refusal fixture', () => {
+    // The classification with no coverage obligation at all until now: a slice
+    // of the registry (73 of 416 records, under a fifth) that says "we will
+    // not answer this". An outOfScope
+    // record claims the engine fails closed with a typed refusal; nothing
+    // checked that the refusal existed, still existed, or still had the shape
+    // the record describes. That is the same rot `produced` was invented to
+    // stop on the approximated records, in the direction that reads as the most
+    // responsible: "we refuse this" keeps sounding careful long after the
+    // refusal was replaced by a number, or deleted.
+    //
+    // Equality against the backlog, not containment, so the list can only
+    // shrink deliberately: see REFUSAL_FIXTURE_BACKLOG.
+    const uncovered = taxRuleIds.filter((ruleId) =>
+      TAX_RULE_REGISTRY[ruleId].classification === 'outOfScope' && !claimedRefusalRuleIds.has(ruleId))
+    expect([...uncovered].sort()).toEqual([...REFUSAL_FIXTURE_BACKLOG].sort())
+  })
+
+  it('keeps the refusal backlog to real, still-outOfScope rules', () => {
+    // A backlog entry that is not a registry key, or no longer outOfScope, is
+    // an allowlist that has stopped describing anything - the failure mode of
+    // every hand-kept exemption list. Both are caught here rather than showing
+    // up as a confusing diff in the equality assertion above.
+    const stale = REFUSAL_FIXTURE_BACKLOG.filter(
+      (ruleId) =>
+        !(ruleId in TAX_RULE_REGISTRY) ||
+        TAX_RULE_REGISTRY[ruleId as TaxRuleId].classification !== 'outOfScope',
+    )
+    expect(stale).toEqual([])
+    expect(new Set(REFUSAL_FIXTURE_BACKLOG).size).toBe(REFUSAL_FIXTURE_BACKLOG.length)
+  })
+
+  it('never lets a refusal fixture stand in for a computed-value fixture', () => {
+    // describeRefusal only accepts an outOfScope id, so this can only break by
+    // someone widening the describeRule scan to swallow both call shapes.
+    for (const ruleId of claimedRefusalRuleIds.keys()) {
+      expect(ruleId in TAX_RULE_REGISTRY, ruleId).toBe(true)
+      expect(TAX_RULE_REGISTRY[ruleId as TaxRuleId].classification, ruleId).toBe('outOfScope')
+      expect(claimedRuleIds.has(ruleId), ruleId).toBe(false)
+    }
+  })
+
   it('never counts its own guard calls as coverage', () => {
     // The guard tests below call describeRule with a real rule ID and with an
     // unregistered one. Counting either would be wrong: the first would launder
@@ -876,7 +1251,7 @@ describe('tax rule registry conformance', () => {
     // not something the scan should depend on, hence the explicit skip.
     expect(Object.keys(testSources).some((path) => path.endsWith(CONFORMANCE_SOURCE)))
       .toBe(false)
-    for (const [, paths] of claimedRuleIds) {
+    for (const [, paths] of [...claimedRuleIds, ...claimedRefusalRuleIds]) {
       expect(paths.every((path) => !path.endsWith(CONFORMANCE_SOURCE))).toBe(true)
     }
   })
@@ -1524,5 +1899,55 @@ describe('describeRule guards', () => {
       accepted: 'statute',
       produced: 'rejected',
     } as never, noop)).toThrow(/reclassify it as approximated/u)
+  })
+})
+
+describe('describeRefusal guards', () => {
+  // A refusal fixture is only worth its line count if the harness refuses the
+  // ways it could be written to prove nothing. These assert the refusals rather
+  // than trusting the helper.
+  const noop = (): void => {}
+  const spec = {
+    entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    outOfScopeInput: 'a QCD whose source account is a Roth IRA',
+    refusal: "reason code 'qcd-roth-source-unsupported'",
+  }
+
+  it('refuses to cover an unknown rule', () => {
+    expect(() => describeRefusal('not-a-registered-rule' as TaxRuleId, spec, noop))
+      .toThrow(/Unknown tax rule/u)
+  })
+
+  it('refuses a rule the engine computes an answer for', () => {
+    // The substitution that would matter most: a settled or approximated record
+    // has a figure to get wrong, and a fixture pinning some refusal path near it
+    // would report coverage while leaving the figure unwatched.
+    expect(() => describeRefusal('irc-170-b-1-I-floor-ordering' as TaxRuleId, spec, noop))
+      .toThrow(/cover its computed value with describeRule instead/u)
+    expect(() => describeRefusal('irc-213-a-medical-expense-deduction' as TaxRuleId, spec, noop))
+      .toThrow(/cover its computed value with describeRule instead/u)
+  })
+
+  it('refuses an entry point the record does not claim', () => {
+    // What keeps the fixture and the published record pointing at the same
+    // module. A fixture free to name any symbol would keep passing after the
+    // refusal moved, and the transparency page would keep naming a function
+    // nothing drives.
+    expect(() => describeRefusal('irc-408-d-8-roth-ira-source' as TaxRuleId, {
+      ...spec,
+      entryPoint: 'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+    }, noop)).toThrow(/does not name .* in implementedByFunctions/u)
+  })
+
+  it('refuses a blank entry point, input, or refusal', () => {
+    expect(() => describeRefusal('irc-408-d-8-roth-ira-source' as TaxRuleId, {
+      ...spec, entryPoint: '   ',
+    }, noop)).toThrow(/nonblank entryPoint/u)
+    expect(() => describeRefusal('irc-408-d-8-roth-ira-source' as TaxRuleId, {
+      ...spec, outOfScopeInput: '',
+    }, noop)).toThrow(/nonblank outOfScopeInput/u)
+    expect(() => describeRefusal('irc-408-d-8-roth-ira-source' as TaxRuleId, {
+      ...spec, refusal: ' ',
+    }, noop)).toThrow(/nonblank refusal/u)
   })
 })

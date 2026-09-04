@@ -122,6 +122,27 @@ describe('detector framework scoring and ranking', () => {
 })
 
 describe('detector governance', () => {
+  it('gives every detector module its own sibling test file', () => {
+    // The insights/** coverage floor in vitest.config.ts has headroom (it is
+    // set a few points under what the suite measures) precisely so that
+    // unrelated edits do not trip it. That same headroom means deleting one
+    // small detector's dedicated test file is not guaranteed to move the
+    // aggregate below the floor - the consumer integration suites
+    // (src/integration/insightsDetectors.test.ts and friends) still exercise
+    // the detector somewhat. This test closes that gap directly, independent
+    // of the aggregate percentage: every non-test module under
+    // insights/detectors/ must have a `<name>.test.ts` sibling, so deleting a
+    // detector's fixtures fails here even when it would not move the floor.
+    const implementations = import.meta.glob('./detectors/*.ts', { query: '?raw', import: 'default', eager: true })
+    const tests = import.meta.glob('./detectors/*.test.ts', { query: '?raw', import: 'default', eager: true })
+    const implementationPaths = Object.keys(implementations).filter((path) => !path.endsWith('.test.ts'))
+    expect(implementationPaths.length).toBeGreaterThan(0)
+    const missingTests = implementationPaths.filter(
+      (path) => !(path.replace(/\.ts$/u, '.test.ts') in tests),
+    )
+    expect(missingTests).toEqual([])
+  })
+
   it('registers unique kebab-case IDs', () => {
     const ids = registry.map((detector) => detector.id)
     expect(new Set(ids).size).toBe(ids.length)

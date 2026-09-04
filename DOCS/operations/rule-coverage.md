@@ -81,12 +81,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 356 |
+| Engine source files | 357 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 56 |
 | registered | 103 |
-| rule-free | 197 |
+| rule-free | 198 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -106,7 +106,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | params | 9 | 0 | 7 | 2 | 0 |
 | projection | 91 | 20 | 15 | 56 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
-| rules | 46 | 0 | 20 | 26 | 0 |
+| rules | 47 | 0 | 20 | 27 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
 | schema | 9 | 0 | 0 | 9 | 0 |
 | socialSecurity | 10 | 2 | 7 | 1 | 0 |

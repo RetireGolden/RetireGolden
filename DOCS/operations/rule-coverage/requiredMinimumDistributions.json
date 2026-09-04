@@ -678,20 +678,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1515,
+          "line": 1516,
           "note": null,
           "tests": [
             {
               "title": "keeps an inherited account off the owner RMD schedule entirely",
-              "line": 1533
+              "line": 1534
             },
             {
               "title": "sweeps the balance in the tenth year after the death and not the fifth",
-              "line": 1538
+              "line": 1539
             },
             {
               "title": "forces nothing in the interim years when the decedent had not begun distributions",
-              "line": 1544
+              "line": 1545
             }
           ]
         }
@@ -2531,7 +2531,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdPhysicalExecution",
-              "line": 505
+              "line": 513
             }
           ]
         }

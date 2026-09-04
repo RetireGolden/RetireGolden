@@ -17,6 +17,7 @@ import {
 } from '../actions/index.js'
 import { createEmptyPlan, type Account, type Person, type Plan } from '../model/plan.js'
 import { packForYear } from '../params/index.js'
+import { describeRefusal } from '../rules/describeRefusal.js'
 import { describeRule } from '../rules/describeRule.js'
 import {
   addCalendarMonths,
@@ -1579,5 +1580,186 @@ describeRule('irc-72-t-2-A-ii-death-beneficiary-exception', {
         ownerRetirementAge: 40,
       }),
     ).toBe(accepted)
+  })
+})
+
+/**
+ * Refusal fixtures for the `outOfScope` records this module implements.
+ *
+ * `describeRule` refuses an `outOfScope` id, because there is no computed value
+ * to discriminate readings of; `describeRefusal` is its sibling for the half of
+ * the registry that says "we will not answer this". Each fixture names the
+ * refusal site the record itself publishes, the input that is out of scope, and
+ * the reason code that comes back, then drives the real exported entry point so
+ * the day a refusal quietly turns into an answer the fixture fails and names the
+ * record that has to be reclassified.
+ */
+describe('outOfScope refusals reached through evaluateRetirementActionEligibilityFromPlan', () => {
+  function refusalPlan(accounts: Account[]): Plan {
+    const plan = createEmptyPlan({
+      newId: () => 'generated',
+      now: () => new Date('2026-01-01T00:00:00.000Z'),
+    })
+    plan.household.people[0] = person('p1', '1954-08-31')
+    plan.accounts = accounts
+    // Classify id 'ira' as a traditional IRA only when the fixture actually put
+    // a traditional account there. The Roth-source fixture below reuses this id
+    // for a Roth IRA (the QCD source account id the request expects), and a
+    // classification fact contradicting the account's own type would make the
+    // plan describe two incompatible things about the same account.
+    const traditionalIra = accounts.find(
+      (account): account is TraditionalAccount => account.id === 'ira' && account.type === 'traditional',
+    )
+    plan.retirementActionEligibilityFacts = {
+      iraClassifications:
+        traditionalIra === undefined
+          ? []
+          : [
+              {
+                evidenceId: 'classification-1',
+                provenance: { source: 'manual' },
+                sourceAccountId: 'ira',
+                subtype: 'traditional',
+              },
+            ],
+      sepSimpleActivities: [],
+      deductibleIraContributions: [
+        {
+          evidenceId: 'contribution-2026',
+          provenance: { source: 'manual' },
+          donorPersonId: 'p1',
+          taxYear: 2026,
+          amountCents: asUsdCents(0),
+        },
+      ],
+    }
+    return plan
+  }
+
+  function aliveRuntime(
+    request: QualifiedCharitableDistributionRequest | RothConversionRequest,
+  ): RetirementActionEligibilityRuntimeEvidence {
+    const personId = request.kind === 'qcd' ? request.donorPersonId : request.personId
+    return {
+      personAliveEvidence: [
+        {
+          evidenceId: 'alive-1',
+          actionId: request.actionId,
+          personId,
+          actionYear: request.year,
+          actionDate: request.executionDate ?? null,
+          alive: true,
+        },
+      ],
+      priorQcdOffsetEvidence:
+        request.kind === 'qcd'
+          ? [
+              {
+                evidenceId: 'offset-1',
+                actionId: request.actionId,
+                donorPersonId: request.donorPersonId,
+                actionYear: request.year,
+                actionDate: request.executionDate ?? null,
+                priorOffsetApplied: asUsdCents(0),
+              },
+            ]
+          : [],
+    }
+  }
+
+  function refuse(
+    request: QualifiedCharitableDistributionRequest | RothConversionRequest,
+    accounts: Account[],
+  ): { status: string; codes: string[] } {
+    const outcome = evaluateRetirementActionEligibilityFromPlan(
+      request,
+      refusalPlan(accounts),
+      aliveRuntime(request),
+    )
+    return { status: outcome.status, codes: outcome.reasons.map((reason) => reason.code) }
+  }
+
+  describeRefusal('irc-408-d-3-C-i-inherited-ira-rollover-bar', {
+    entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
+    outOfScopeInput: 'a Roth conversion whose only source allocation is a nonspouse inherited IRA',
+    refusal: "reason code 'conversion-inherited-source', so nothing is accepted and no dollars move",
+  }, () => {
+    it('refuses an inherited source instead of computing a conversion', () => {
+      const outcome = refuse(conversionRequest(), [inheritedIra(), rothIra()])
+      expect(outcome.codes).toContain('conversion-inherited-source')
+      expect(outcome.status).not.toBe('accepted')
+    })
+
+    it('accepts the same request from an owned IRA, so the refusal is the inherited fact and not the shape of the fixture', () => {
+      expect(refuse(conversionRequest(), [ownedIra(), rothIra()])).toEqual({
+        status: 'accepted',
+        codes: [],
+      })
+    })
+  })
+
+  describeRefusal('irc-408-d-8-roth-ira-source', {
+    entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    outOfScopeInput: 'a QCD whose source account is a Roth IRA',
+    refusal: "reason code 'qcd-roth-source-unsupported' rather than a partly excludable distribution",
+  }, () => {
+    it('refuses a Roth source instead of proving how much would otherwise be includible', () => {
+      const outcome = refuse(qcdRequest(), [rothIra('ira')])
+      expect(outcome.codes).toContain('qcd-roth-source-unsupported')
+      expect(outcome.status).not.toBe('accepted')
+    })
+
+    it('does not confuse the Roth source with the generic not-an-IRA refusal', () => {
+      // A Roth IRA has its own code; a Roth designated employer subaccount and
+      // every other non-IRA source fall to qcd-source-not-ira. Losing the
+      // distinction would hide which statute is unimplemented.
+      const outcome = refuse(qcdRequest(), [rothIra('ira')])
+      expect(outcome.codes).not.toContain('qcd-source-not-ira')
+    })
+  })
+
+  describeRefusal('irc-408-d-8-F-split-interest-sublimit', {
+    entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+    outOfScopeInput:
+      'a QCD to a destination the donor will not attest is outside the split-interest entity class',
+    refusal: "reason code 'qcd-split-interest-unsupported', with no one-time sublimit computed",
+  }, () => {
+    it('requires the affirmative not-a-split-interest attestation the record describes', () => {
+      const request = qcdRequest({
+        charity: {
+          designationId: 'charity-1',
+          name: 'Public charity',
+          designationKind: 'eligiblePublicCharity',
+          directFromCustodianAttested: true,
+          eligibleOrganizationAttested: true,
+          notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+          notSplitInterestEntityAttested: false,
+          entireDistributionOtherwiseDeductibleAttested: true,
+        },
+      })
+      const outcome = refuse(request, [ownedIra()])
+      expect(outcome.codes).toContain('qcd-split-interest-unsupported')
+      expect(outcome.status).not.toBe('accepted')
+    })
+
+    it('refuses a destination the request itself names as a split-interest entity', () => {
+      const request = qcdRequest({
+        charity: {
+          designationId: 'charity-1',
+          name: 'Charitable remainder unitrust',
+          designationKind: 'splitInterestEntity',
+          directFromCustodianAttested: true,
+          eligibleOrganizationAttested: true,
+          notDonorAdvisedFundOrSupportingOrganizationAttested: true,
+          notSplitInterestEntityAttested: false,
+          entireDistributionOtherwiseDeductibleAttested: true,
+        },
+      })
+      expect(refuse(request, [ownedIra()]).codes).toContain('qcd-split-interest-unsupported')
+    })
+
+    it('stays quiet on an ordinary public charity with the attestation given', () => {
+      expect(refuse(qcdRequest(), [ownedIra()]).codes).not.toContain('qcd-split-interest-unsupported')
+    })
   })
 })

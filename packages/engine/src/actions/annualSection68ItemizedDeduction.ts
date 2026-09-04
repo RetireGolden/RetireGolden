@@ -137,7 +137,16 @@ class Section68InputError extends Error {
     this.path = path
   }
 }
-function nonblank(value: unknown, path: string): string {
+/** Returns `value` when it is a nonblank string, and throws this module's
+ * typed Section68InputError otherwise. Distinct from the shared `nonblank`
+ * predicate, which is a boolean type guard and never throws, and from
+ * `requireNonblankId`, which throws a plain `TypeError`. Named for this
+ * module rather than `requireNonblankField`, because
+ * `annualQcdPhysicalExecution.ts` and `describeRefusal.ts` each have their
+ * own nonblank-field helper with its own throw contract; a shared name across
+ * three incompatible signatures is the same drift the shared-guard lint rule
+ * exists to prevent, one level down. */
+function requireNonblankSection68Field(value: unknown, path: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Section68InputError('invalidInput', path, `${path} must be a nonblank identifier`)
   }
@@ -209,7 +218,7 @@ function validate(input: Readonly<BuildAnnualSection68ItemizedDeductionEvidenceI
     throw new Section68InputError('invalidInput', 'liabilityRun', 'liabilityRun is required')
   }
   if (run.liabilityRunKind === 'candidateT1') {
-    nonblank(run.candidateFundingVectorEvidenceId, 'candidateFundingVectorEvidenceId')
+    requireNonblankSection68Field(run.candidateFundingVectorEvidenceId, 'candidateFundingVectorEvidenceId')
   } else if (
     (run.liabilityRunKind !== 'committedAnnual' && run.liabilityRunKind !== 'baselineT0') ||
     run.candidateFundingVectorEvidenceId !== null
@@ -226,7 +235,7 @@ function validate(input: Readonly<BuildAnnualSection68ItemizedDeductionEvidenceI
     if (action.actionKind !== 'qcd') {
       throw new Section68InputError('invalidInput', `${path}.actionKind`, 'Only QCD actions are supported')
     }
-    const actionId = nonblank(action.actionId, `${path}.actionId`)
+    const actionId = requireNonblankSection68Field(action.actionId, `${path}.actionId`)
     if (actionIds.has(actionId)) {
       throw new Section68InputError('duplicateActionId', `${path}.actionId`, 'actionId must be unique')
     }
@@ -257,13 +266,13 @@ function validate(input: Readonly<BuildAnnualSection68ItemizedDeductionEvidenceI
     left.scheduledSequence - right.scheduledSequence ||
     compareUtf16CodeUnits(left.actionId, right.actionId))
   return {
-    taxUnitId: nonblank(input.taxUnitId, 'taxUnitId'),
-    annualTaxLiabilityEvidenceId: nonblank(
+    taxUnitId: requireNonblankSection68Field(input.taxUnitId, 'taxUnitId'),
+    annualTaxLiabilityEvidenceId: requireNonblankSection68Field(
       input.annualTaxLiabilityEvidenceId, 'annualTaxLiabilityEvidenceId',
     ),
-    taxInputSnapshotId: nonblank(input.taxInputSnapshotId, 'taxInputSnapshotId'),
+    taxInputSnapshotId: requireNonblankSection68Field(input.taxInputSnapshotId, 'taxInputSnapshotId'),
     liabilityRun: run.liabilityRunKind === 'candidateT1'
-      ? { liabilityRunKind: 'candidateT1', candidateFundingVectorEvidenceId: nonblank(run.candidateFundingVectorEvidenceId, 'candidateFundingVectorEvidenceId') }
+      ? { liabilityRunKind: 'candidateT1', candidateFundingVectorEvidenceId: requireNonblankSection68Field(run.candidateFundingVectorEvidenceId, 'candidateFundingVectorEvidenceId') }
       : { liabilityRunKind: run.liabilityRunKind, candidateFundingVectorEvidenceId: null }, filingStatus: input.filingStatus,
     agi: safeCents(input.adjustedGrossIncomeBeforeItemizedDeductionCents, 'adjustedGrossIncomeBeforeItemizedDeductionCents', true),
     qbi: safeCents(input.qualifiedBusinessIncomeDeductionCents, 'qualifiedBusinessIncomeDeductionCents'),
