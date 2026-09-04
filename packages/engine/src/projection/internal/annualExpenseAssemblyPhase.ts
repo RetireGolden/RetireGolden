@@ -26,7 +26,7 @@
  * debt-balance write before the next row, the LTC benefit-year writes before
  * the person rows, the healthcare warnings before the insurance fold.
  *
- * Four of the results are deliberately still MUTABLE at the caller, and the
+ * Five of the results are deliberately still MUTABLE at the caller, and the
  * year says so with `let`: the ACA fixed point adds its converged healthcare
  * delta to `healthcare`, `requiredSpendingBase` and `targetSpendingBase`, and
  * the annual pass moves `qualifiedMedicalThisYear` and `hsaQualifiedCap`. This

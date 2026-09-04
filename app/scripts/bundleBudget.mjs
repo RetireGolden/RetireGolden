@@ -111,7 +111,7 @@ export const LANDING_PATH_KIB = 700
  *
  * That +18.4 KiB is nine explicit phase seams, each emitted TWICE — a worker
  * entry cannot share a chunk with the app graph — at ~1.0 KiB per seam per
- * graph, plus 0.8 KiB of new test-file paths in HowTestedPage's
+ * graph, plus 0.7 KiB of eight new test-file paths in HowTestedPage's
  * `import.meta.glob` keys. No chunk-level fix touches it: the precache totals
  * every emitted file, so regrouping moves bytes between the per-chunk rows and
  * changes this one by zero. Measured, twice — see

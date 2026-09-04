@@ -121,26 +121,36 @@ export function annualTaxUnitIdentityPhase(
       stateForYear(household, year),
       stateResidencySegmentsForYear(household, year),
     ] as const
-    return {
-      taxUnitId: deriveActionStructuralId('projection-tax-unit', [
-        year,
-        filingStatusForYear,
+    try {
+      return {
+        taxUnitId: deriveActionStructuralId('projection-tax-unit', [
+          year,
+          filingStatusForYear,
+          members,
+        ]),
+        taxUnitEvidenceId: deriveActionStructuralId('projection-tax-unit-evidence', [
+          year,
+          filingStatusForYear,
+          members,
+          annualStateFilingInputs,
+        ]),
+        stateFilingStatusId: deriveActionStructuralId('projection-state-filing-status', [
+          year,
+          filingStatusForYear,
+          members,
+          annualStateFilingInputs,
+        ]),
+        federalFilingStatus,
         members,
-      ]),
-      taxUnitEvidenceId: deriveActionStructuralId('projection-tax-unit-evidence', [
-        year,
-        filingStatusForYear,
-        members,
-        annualStateFilingInputs,
-      ]),
-      stateFilingStatusId: deriveActionStructuralId('projection-state-filing-status', [
-        year,
-        filingStatusForYear,
-        members,
-        annualStateFilingInputs,
-      ]),
-      federalFilingStatus,
-      members,
+      }
+    } catch {
+      // Same fail-closed omission as the nonblank-identity catch above: a
+      // malformed direct simulatePlan call can hand a year, filing status or
+      // household state that satisfies the Plan's legacy type but not
+      // `deriveActionStructuralId`'s stricter JSON-serializable contract.
+      // Omit tax-unit evidence rather than letting unrelated cash/equity
+      // action execution fail with a validation exception.
+      return null
     }
   })()
 

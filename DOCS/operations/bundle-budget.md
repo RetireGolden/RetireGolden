@@ -186,14 +186,17 @@ work spent 306 of that before this branch existed, leaving 14.4 KiB on `main` �
 not blow a generous budget, it arrived at an almost-full one. Read the raise as paying for the drift
 *and* the extraction, and read the drift as the thing that should have been noticed at 4400.
 
-**Where the +18.4 KiB is.** Nine annual phases moved out of `simulatePlan`'s year loop into explicit
-`Input`/`Result` seams, and `simulate.ts` shrank by roughly what they gained. What is left over is the
-seam itself: an object literal built at the call site and destructured inside the phase, for contracts
-that run to 42 fields. A `chunk.modules` dump attributes 18.1 KiB of the 18.4 to those nine modules,
-0.7 KiB to `HowTestedPage` — whose harness counts are `import.meta.glob` keys, so nine new seam-guard
-test files are nine more literal paths in the bundle — and the rest to noise. That is ~1.0 KiB per seam
-per graph, and there are two graphs: **the worker entry cannot share a chunk with the app graph**, so
-every engine module ships twice, and so does every seam. The migration of 18 evidence-ID minters to
+**Where the +18.4 KiB is.** Nine annual-phase modules landed on this branch: six moved out of
+`simulatePlan`'s year loop into explicit `Input`/`Result` seams, and `simulate.ts` shrank by roughly
+what those six gained; the other three moved the same way out of the already-separate
+`annualFundingApplicationAndClosePhase` funding module. What is left over is the seam itself: an object
+literal built at the call site and destructured inside the phase, for contracts that run to 42 fields.
+A `chunk.modules` dump attributes 18.1 KiB of the 18.4 to those nine modules, 0.7 KiB to
+`HowTestedPage` — whose harness counts are `import.meta.glob` keys, so eight new test files (six of
+them delegation seam guards) are eight more literal paths in the bundle — and the rest to noise. That
+is ~1.0 KiB per seam per graph, and there are two graphs: **the worker entry cannot share a chunk with
+the app graph**, so every engine module ships twice, and so does every seam. The migration of 18
+evidence-ID minters to
 `deriveActionStructuralId`, which travelled on the same branch, cost 120 bytes per graph and pulled in
 no new dependency — `structuralId.ts` and its SHA-256 were already in both graphs.
 
@@ -211,8 +214,10 @@ and leaves the sum alone.
   bytes, and the seam is the point of the refactor.
 
 **What the 46 KiB of new headroom is for.** The extraction, and the rest of it: at ~2 KiB per seam
-across both graphs, this covers roughly twenty more annual phases coming out of the year loop. It is not
-feature headroom. A feature that lands in the precache still has to justify its own bytes against 4550,
+across both graphs, this covers roughly twenty more phase-sized extractions like these nine — out of
+the year loop, or out of an already-separate module the way the funding phase's three sub-phases came
+out this time. It is not feature headroom. A feature that lands in the precache still has to justify
+its own bytes against 4550,
 the same as it would have against 4500.
 
 **If you would rather not spend it.** The honest alternative is not trimming somewhere else — nothing in

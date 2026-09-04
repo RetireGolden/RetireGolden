@@ -1369,7 +1369,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       allocationTrack.get(String(i))!.weights = row.targetWeights
     }
 
-    /** Contract-value credits, held back so the phase runs contiguously. */
+    // Contract-value credits are held inside the phase below, not here.
     // --- annuity purchase funding (guaranteed-income-and-estate-depth) -------
     // The phase lives in `internal/annualAnnuityPurchaseApplicationPhase.ts`:
     // the positional refusals, the funding-account mutation, the realized-gain

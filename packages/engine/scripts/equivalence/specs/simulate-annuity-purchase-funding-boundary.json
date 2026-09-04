@@ -207,7 +207,7 @@
           "text": "})"
         }
       ],
-      "note": "The cardinality-guard body on lines 1927-1928 is excluded because the helper emits exactly one row for every supplied Plan account; focused delegation tests inject a missing row and pin the throw. RELOCATED on 2026-09-04: the annuity-purchase application moved out of the simulatePlan year loop into `internal/annualAnnuityPurchaseApplicationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place."
+      "note": "The cardinality-guard body, now on lines 146-148 of this same relocated file (lines 1927-1928 of simulate.ts before the move), is excluded because the helper emits exactly one row for every supplied Plan account; focused delegation tests inject a missing row and pin the throw. RELOCATED on 2026-09-04: the annuity-purchase application moved out of the simulatePlan year loop into `internal/annualAnnuityPurchaseApplicationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place."
     },
     {
       "id": "V.callsite.selectPosition",
@@ -259,7 +259,7 @@
           "text": ") {"
         }
       ],
-      "note": "The funding-mismatch throw body on lines 1938-1944 is excluded: the helper resolves the same funding id the caller validates. Focused delegation tests inject the defect. V8 may report the multiline guard's untaken operands as cold sub-line regions rather than cold whole lines. RELOCATED on 2026-09-04: the annuity-purchase application moved out of the simulatePlan year loop into `internal/annualAnnuityPurchaseApplicationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place."
+      "note": "The funding-mismatch throw body, now on lines 157-164 of this same relocated file (lines 1938-1944 of simulate.ts before the move), is excluded: the helper resolves the same funding id the caller validates. Focused delegation tests inject the defect. V8 may report the multiline guard's untaken operands as cold sub-line regions rather than cold whole lines. RELOCATED on 2026-09-04: the annuity-purchase application moved out of the simulatePlan year loop into `internal/annualAnnuityPurchaseApplicationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place."
     },
     {
       "id": "V.callsite.effects",
