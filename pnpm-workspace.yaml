@@ -53,11 +53,13 @@ trustPolicyExclude:
 # `.github/workflows/resolve-gate.yml` show what a fresh resolve then picks.
 # Two of the nine change resolution today (`sharp`, `ejs>jake`); the other
 # seven are inert against the committed lockfile and bite only at re-resolve
-# time. Five of those seven (react, react-dom, react-is, recharts, highs)
-# hold their declared range at its floor; es-toolkit and immer do not — both
-# sit above the floor of the range recharts declares for them, so dropping
-# either pin moves resolution further than "floor to latest" implies (see
-# their entries below).
+# time. Four of those seven (react, react-dom, recharts, highs) hold their
+# own declared range at its floor; es-toolkit and immer do not — both sit
+# above the floor of the range recharts declares for them, so dropping
+# either pin moves resolution further than "floor to latest" implies. The
+# seventh, react-is, is not declared by any first-party package and has no
+# range of its own to hold a floor of; its entry below explains what it
+# tracks instead.
 #
 # sharp: ^0.35.0
 #   Build-time image toolchain, reached only through
