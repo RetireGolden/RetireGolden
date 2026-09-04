@@ -266,11 +266,47 @@ The supported product API is:
   added in minors;
 - `./index.css`.
 
-The exports map also exposes wildcard `./*.ts` subpaths
-(e.g. `./report/reportHtml`) — these exist for the upstream repo's own test
-and case-runner harnesses, are not covered by any stability promise, and may
-move or change in any release. If a host needs one of them long-term, open an
-upstream issue so it can be promoted to a real export instead.
+### Unpromised deep subpaths
+
+Beside the supported API above, the exports map names 23 deep subpaths one by
+one. They exist for the upstream repo's own harnesses and for RetireGolden-Pro
+and RetireGolden-MCP, are covered by **no stability promise**, and may move or
+change in **any** release, including a patch. If a host needs one of them
+long-term, open an upstream issue so it can be promoted to a real export
+instead.
+
+```
+./data/localStore                        ./planner/examples/buildContext
+./data/planStoreContract                 ./planner/examples/buildExampleCouple
+./data/v2Backup                          ./planner/examples/buildUnderSavedSingle
+./householdMap/householdGraph            ./planner/examples/registry
+./householdMap/mapViewModel              ./planner/format
+./import/brokerCsv                       ./planner/planContextCore
+./import/genericCsv                      ./planner/refreshProtectionContext
+./import/projectionLab                   ./planner/useProjection
+./import/reviewChecklist                 ./report/reportHtml
+./import/tenForty                        ./routes/LearnRoutes
+./learn/learningRegistry                 ./routes/groups
+./optimize/runOptimize
+```
+
+Through 0.9.0 these reached consumers through a `"./*": "./src/*.ts"` wildcard,
+which resolved **any** deep path — including the ones `files` excludes from the
+tarball, so `@retiregolden/planner-ui/testSupport/samplePlan` resolved and then
+failed inside the host's own build with a module-not-found. 0.10.0 removes the
+wildcard: a path that is not listed anywhere in this README is refused by name
+with `ERR_PACKAGE_PATH_NOT_EXPORTED`. The excluded directories additionally
+carry explicit `null` entries (`./testSupport/*`, `./report/goldens/*`,
+`./import/documentBenchmark`, `./import/documentCorpus`,
+`./import/pdfFixtures`, and a closing `./*`), so they stay refused even if a
+wildcard is ever reintroduced. `scripts/pack-smoke.mjs` walks the packed
+manifest on every pack and fails if any listed subpath does not resolve to a
+file the tarball contains, or if any of those paths resolves again.
+
+`./routes/LearnRoutes` is a `.tsx` module and is published **without** the
+extension, like every other key. A consumer reading its source text asks for
+`@retiregolden/planner-ui/routes/LearnRoutes?raw`; the bundler applies the
+exports map to the specifier and the `?raw` suffix to what it finds.
 
 ## Hosting the workspace
 

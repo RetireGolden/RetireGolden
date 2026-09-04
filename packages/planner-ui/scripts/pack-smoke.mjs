@@ -157,9 +157,11 @@ import {
 // pdfjs specifier in the shipped source would fail THIS build — which is the
 // regression that reached a release once already.
 import { MAX_DOCUMENT_BYTES, extractDocumentText } from '@retiregolden/planner-ui/document-text'
-// Every published subpath must be named here EXPLICITLY — the exports map's
-// wildcard would happily resolve a deep path this list forgot, so a subpath
-// that is not imported below is not covered by this smoke test at all.
+// Every stability-promised subpath is named here EXPLICITLY, and this build is
+// what proves each one COMPILES from the tarball. It is not what proves the
+// exports map is complete: the exports sweep run before this build walks every
+// key in the packed manifest, including the deep subpaths that used to reach
+// consumers through the "./*" wildcard 0.10.0 removed.
 import { MIGRATION_ADAPTERS, identifyMigrationExport } from '@retiregolden/planner-ui/migration-source'
 import {
   applyIntakeRefresh,
@@ -283,6 +285,107 @@ const documentTextSmoke = [
   '',
 ].join('\n')
 
+// The exports map itself, swept from the PACKED manifest rather than from a
+// list kept in this file. 0.10.0 replaced `"./*": "./src/*.ts"` with one
+// explicit key per published path, which moves two failures here:
+//   - a key whose target the tarball does not contain. That was the wildcard's
+//     defect — `@retiregolden/planner-ui/testSupport/samplePlan` resolved
+//     happily and then failed in the CONSUMER's build, because `files`
+//     excludes it. Now every key is checked against the packed files.
+//   - a path that used to resolve through the wildcard and must now be
+//     refused with `ERR_PACKAGE_PATH_NOT_EXPORTED`, the clear "not published"
+//     answer the wildcard could never give.
+// Node's own resolver answers both. `import.meta.resolve` applies the exports
+// map WITHOUT loading the module, which is what makes this possible at all:
+// the package ships TypeScript, so nothing here could be imported by node.
+// Written without template literals so it survives being one.
+const exportsSmoke = [
+  "import { existsSync, readFileSync } from 'node:fs'",
+  "import { fileURLToPath } from 'node:url'",
+  '',
+  'const fail = (why) => {',
+  "  throw new Error('pack smoke FAILED: ' + why)",
+  '}',
+  '',
+  "const manifestPath = fileURLToPath(import.meta.resolve('@retiregolden/planner-ui/package.json'))",
+  "const exported = JSON.parse(readFileSync(manifestPath, 'utf8')).exports",
+  '',
+  '// Every non-null key resolves, and lands on a file the tarball contains.',
+  'const problems = []',
+  'let resolvedCount = 0',
+  'for (const [key, target] of Object.entries(exported)) {',
+  "  if (key === './package.json') continue",
+  '  if (target === null) continue',
+  "  if (typeof target !== 'string') {",
+  "    problems.push(key + ' has a conditional target this sweep does not understand')",
+  '    continue',
+  '  }',
+  "  if (key.includes('*')) {",
+  "    problems.push(key + ' is a wildcard again: 0.10.0 publishes explicit subpaths only')",
+  '    continue',
+  '  }',
+  "  const specifier = '@retiregolden/planner-ui' + key.slice(1)",
+  '  let resolved',
+  '  try {',
+  '    resolved = import.meta.resolve(specifier)',
+  '  } catch (error) {',
+  "    problems.push(key + ' -> ' + target + ' does not resolve (' + String(error && error.code) + ')')",
+  '    continue',
+  '  }',
+  '  if (!existsSync(fileURLToPath(resolved))) {',
+  "    problems.push(key + ' resolves to ' + target + ', which the tarball does not contain')",
+  '    continue',
+  '  }',
+  '  resolvedCount += 1',
+  '}',
+  "if (problems.length > 0) fail('exports map: ' + problems.join('; '))",
+  '',
+  '// The paths `files` excludes, plus one ordinary module that was never a',
+  '// published subpath. Each resolved through the old wildcard; each must now',
+  '// be refused by name rather than reaching a consumer and failing there.',
+  'const mustNotResolve = [',
+  "  './testSupport/samplePlan',",
+  "  './testSupport/settle',",
+  "  './import/documentBenchmark',",
+  "  './import/documentCorpus',",
+  "  './import/pdfFixtures',",
+  "  './report/goldens/example-couple.report-model.json',",
+  "  './data/planStore',",
+  "  './planner/format.ts',",
+  ']',
+  'for (const key of mustNotResolve) {',
+  "  const specifier = '@retiregolden/planner-ui' + key.slice(1)",
+  '  let resolved',
+  '  try {',
+  '    resolved = import.meta.resolve(specifier)',
+  '  } catch (error) {',
+  "    if (error && error.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED') continue",
+  "    fail(key + ' must be refused as not exported, got ' + String(error && error.code))",
+  '  }',
+  "  fail(key + ' still resolves (' + resolved + '); the wildcard must stay gone')",
+  '}',
+  '',
+  '// The null blockers are belt-and-braces — with no wildcard left, an unlisted',
+  '// path is already refused — so they only earn their place by being HERE when',
+  "// someone reaches for a wildcard again. Assert they are still declared.",
+  'const blockers = [',
+  "  './import/documentBenchmark',",
+  "  './import/documentCorpus',",
+  "  './import/pdfFixtures',",
+  "  './report/goldens/*',",
+  "  './testSupport/*',",
+  "  './*',",
+  ']',
+  'const missingBlockers = blockers.filter((key) => exported[key] !== null)',
+  'if (missingBlockers.length > 0) {',
+  "  fail('exports map lost its null blockers: ' + missingBlockers.join(', '))",
+  '}',
+  '',
+  "console.log('pack smoke: exports map -> ' + resolvedCount + ' subpaths resolve from the tarball, ' +",
+  "  mustNotResolve.length + ' formerly-wildcard paths refused')",
+  '',
+].join('\n')
+
 const scratchDir = mkdtempSync(join(tmpdir(), 'planner-ui-pack-smoke-'))
 try {
   console.log(`pack smoke: packing ${pkgDir} ...`)
@@ -382,6 +485,7 @@ try {
   mkdirSync(join(scratchDir, 'src'))
   writeFileSync(join(scratchDir, 'src', 'main.tsx'), mainTsx)
   writeFileSync(join(scratchDir, 'src', 'documentTextSmoke.ts'), documentTextSmoke)
+  writeFileSync(join(scratchDir, 'exportsSmoke.mjs'), exportsSmoke)
 
   console.log(`pack smoke: installing the scratch consumer (${engineSource}, tarball planner-ui) ...`)
   execFileSync('pnpm', ['install', '--ignore-scripts'], {
@@ -399,6 +503,18 @@ try {
         `${String(installedEngine.version)}`,
     )
   }
+
+  // Before the build, because a missing or over-wide exports map is a
+  // packaging fault this script can name precisely, while the same fault
+  // reaches a consumer's build as a module-not-found on someone else's line.
+  console.log('pack smoke: exports map from the packed tarball ...')
+  process.stdout.write(
+    execFileSync('node', ['exportsSmoke.mjs'], {
+      cwd: scratchDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'inherit'],
+    }),
+  )
 
   console.log('pack smoke: vite build ...')
   execFileSync('pnpm', ['exec', 'vite', 'build'], { cwd: scratchDir, stdio: 'inherit', shell })
