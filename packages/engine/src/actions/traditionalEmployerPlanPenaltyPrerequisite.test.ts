@@ -1104,4 +1104,23 @@ describe('traditional employer-plan penalty prerequisite', () => {
     expect(Object.isFrozen(first.evidence)).toBe(true)
     expect(first.evidence.evidenceId).toMatch(/^employer-penalty-final:/)
   })
+
+  it('mints employer penalty evidence IDs with the hardened structural minter', () => {
+    const first = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
+      input({ separationDate: '2029-12-31' }),
+    )
+    const second = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
+      input({ separationDate: '2029-12-31' }),
+    )
+    const later = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
+      input({ separationDate: '2030-01-02' }),
+    )
+
+    expect(first.evidence.evidenceId).toBe(
+      'employer-penalty-final:d4f4c50a7b47b1a812f7d0692c61a08b' +
+        '0c78cc3c2fe23897f704dfaa412e71c1',
+    )
+    expect(second.evidence.evidenceId).toBe(first.evidence.evidenceId)
+    expect(later.evidence.evidenceId).not.toBe(first.evidence.evidenceId)
+  })
 })

@@ -8,6 +8,7 @@ import type { QualifiedDisabilityEventEvidence, RejectedDisabilityStatusEvidence
 import type { AcceptedTraditionalEmployerPlanWithdrawalClassification } from './traditionalEmployerPlanWithdrawalCharacter.js'
 import { deepFreeze } from './freeze.js'
 import { requireNonblankId } from './plainData.js'
+import { deriveActionStructuralId } from './structuralId.js'
 
 type EmployerPenaltyIdentity = {
   actionId: ActionId; allocationId: AllocationId
@@ -224,7 +225,15 @@ function structural(value: unknown, seen = new WeakSet<object>()): unknown {
   return Array.isArray(value) ? ['array', value.length, Object.keys(descriptors).filter((key) => key !== 'length').map((key) => [key, structural(descriptors[key]!.value, seen)])] : ['object', Object.keys(descriptors).sort().map((key) => [key, structural(descriptors[key]!.value, seen)])]
 }
 
-function stableId(prefix: string, parts: readonly unknown[]): string { return `${prefix}:${JSON.stringify(structural(parts))}` }
+/**
+ * `structural` stays in front of the hardened minter: it is this module's own
+ * aliasing and cycle boundary, and it rejects a shared sub-object, which
+ * `deriveActionStructuralId` deliberately allows. The minter then supplies the
+ * canonical serialization and the fixed-length digest.
+ */
+function employerEvidenceId(prefix: string, parts: readonly unknown[]): string {
+  return deriveActionStructuralId(prefix, structural(parts) as readonly unknown[])
+}
 
 function clonePlain<T>(value: T): T { structural(value); return structuredClone(value) }
 
@@ -310,7 +319,7 @@ function characterCoverage(
     if (segment.kind === 'basisReturn') basisTotal += BigInt(amount)
     else if (segment.kind === 'ordinaryIncome') ordinaryTotal += BigInt(amount)
     else throw new RangeError('Employer penalty character contains an unsupported segment')
-    characterEvidenceIds.push(stableId('employer-character-segment', [segment]))
+    characterEvidenceIds.push(employerEvidenceId('employer-character-segment', [segment]))
   }
   if (
     basisTotal !== BigInt(basisReturnExcludedAmount) ||
@@ -320,7 +329,7 @@ function characterCoverage(
   ) throw new RangeError('Employer penalty character does not conserve exact cents')
   characterEvidenceIds.sort()
 
-  const evidenceId = stableId('employer-penalty-character-coverage', [
+  const evidenceId = employerEvidenceId('employer-penalty-character-coverage', [
     identity, executedAmount, basisReturnExcludedAmount, taxableTreatmentAmount,
     availability, preDistributionAccountValue, afterTaxBasis, basisEvidenceId, characterEvidenceIds,
   ])
@@ -405,7 +414,7 @@ function seppAssessment(
       value.electionId !== null || value.scheduleId !== null ||
       !requireNonblankId(value.seppStatusEvidenceId, 'Employer SEPP status evidence ID')
     ) throw new RangeError('No-SEPP evidence must carry literal null election and schedule IDs')
-    const evidenceId = stableId('employer-sepp-rejected', [identity, value, coverage.evidenceId, coverage.characterEvidenceIds])
+    const evidenceId = employerEvidenceId('employer-sepp-rejected', [identity, value, coverage.evidenceId, coverage.characterEvidenceIds])
     return {
       exception: 'employerPlanSepp', disposition: 'refused',
       characterCoverageEvidenceId: coverage.evidenceId,
@@ -467,7 +476,7 @@ function seppAssessment(
     BigInt(scheduledAfter) === BigInt(scheduledBefore) + BigInt(currentScheduled) &&
     BigInt(actualAfter) === BigInt(actualBefore) + BigInt(currentGross) &&
     scheduledAfter <= annual && actualAfter <= annual
-  const evidenceId = stableId('employer-sepp-assessment', [
+  const evidenceId = employerEvidenceId('employer-sepp-assessment', [
     identity, separationDate, value, qualified,
     coverage.evidenceId, coverage.characterEvidenceIds,
   ])
@@ -500,7 +509,7 @@ function otherAssessment(
     exception: 'otherStatutoryException',
     disposition,
     attestation: clonePlain(value),
-    evidenceId: stableId('employer-other-exception', [identity, value]),
+    evidenceId: employerEvidenceId('employer-other-exception', [identity, value]),
   }
 }
 
@@ -530,7 +539,7 @@ function unsupported(
     disabilityEvidence: disability,
     otherExceptionAttestation: other === null ? null : clonePlain(other),
     seppAssessment: sepp,
-    evidenceId: stableId('employer-penalty-unsupported', [
+    evidenceId: employerEvidenceId('employer-penalty-unsupported', [
       identity, coverage.evidenceId, ageEvidence.evidenceId, missingEvidence,
       ruleOf55?.evidenceId ?? null, disability, other, sepp?.evidenceId ?? null,
     ]),
@@ -583,7 +592,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
     calendarYearParticipantAttains55: birth.year + 55,
     birthDateEvidenceId: participant.birthDateEvidenceId,
     calculation: 'addCalendarMonths714WithMonthEndClamp',
-    evidenceId: stableId('employer-age-59-half', [participant, age59HalfDate, birth.year + 55]),
+    evidenceId: employerEvidenceId('employer-age-59-half', [participant, age59HalfDate, birth.year + 55]),
   }
 
   let outcome: EmployerPenaltyOutcome = taxableTreatmentAmount === 0
@@ -629,7 +638,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
         separationYear,
         calendarYearParticipantAttains55: ageEvidence.calendarYearParticipantAttains55,
         separationEvidenceId: separation.separationEvidenceId,
-        evidenceId: stableId('employer-rule-of-55', [identity, separation, ageEvidence.evidenceId, rule55Qualified]),
+        evidenceId: employerEvidenceId('employer-rule-of-55', [identity, separation, ageEvidence.evidenceId, rule55Qualified]),
       }
       if (disability !== null) requireDistinctEvidenceIds([separation.separationEvidenceId, disability.disabilityEvidenceId])
       if (rule55Qualified) outcome = 'ruleOf55Qualified'
@@ -666,7 +675,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
             denominator: 10,
             quantization: 'nearestCentHalfUp',
             intermediateArithmetic: 'bigintRational',
-            evidenceId: stableId('employer-plan-penalty-rate', [identity.sourceAccountId, 1, 10]),
+            evidenceId: employerEvidenceId('employer-plan-penalty-rate', [identity.sourceAccountId, 1, 10]),
           }
           const product = BigInt(taxableTreatmentAmount)
           finalPenaltyAmount = asUsdCents(Number(product / 10n + (product % 10n >= 5n ? 1n : 0n)))
@@ -687,7 +696,7 @@ export function evaluateTraditionalEmployerPlanPenaltyPrerequisite(
     otherExceptionAssessment: other,
     rateEvidence,
     finalPenaltyAmount,
-    evidenceId: stableId('employer-penalty-final', [
+    evidenceId: employerEvidenceId('employer-penalty-final', [
       identity, coverage.evidenceId, ageEvidence.evidenceId, outcome,
       ruleOf55Assessment?.evidenceId ?? null,
       disability, sepp?.evidenceId ?? null, other?.evidenceId ?? null,
