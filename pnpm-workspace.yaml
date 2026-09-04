@@ -110,7 +110,10 @@ trustPolicyExclude:
 #   Known consequence, measured by running this file's resolve gate from
 #   scratch on 2026-09-04: with the pins gone, a no-lockfile resolve picks
 #   es-toolkit 1.51.0 and immer 11.1.18 (both transitive, inside recharts'
-#   tree) rather than the pinned 1.49.0 and 11.1.11; every other package is
-#   unchanged. The committed lockfile keeps the tested versions. Moving them
-#   is now Dependabot's job, under the same full-suite gate as any other
-#   dependency bump, rather than something a pin hides.
+#   tree) rather than the pinned 1.49.0 and 11.1.11. The other five formerly
+#   pinned packages resolve to the same versions from scratch; the rest of
+#   that resolve's drift (caniuse-lite, rollup, sharp and friends) is
+#   ordinary registry movement no pin was holding. The committed lockfile
+#   keeps the tested versions throughout. Moving them is now Dependabot's
+#   job, under the same full-suite gate as any other dependency bump,
+#   rather than something a pin hides.
