@@ -94,7 +94,7 @@ export function HouseholdSection() {
           ) : null}
         </div>
         {plan.household.people.map((person, i) => (
-          <div className="item-row" key={person.id} style={{ marginTop: '1rem' }}>
+          <div className="item-row mt-md" key={person.id}>
             <div className="item-row-head">
               <span className="item-row-title">
                 {/* The stored name always shows. The role chip is dropped only

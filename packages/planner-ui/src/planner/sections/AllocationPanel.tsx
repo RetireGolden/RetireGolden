@@ -121,7 +121,7 @@ export function ReturnEstimatorModal({ plan, initialPct, onApply, onClose }: { p
         <strong>{blended.toFixed(1)}%</strong>
         <span className="muted small">{riskLabel(stocks)}</span>
       </div>
-      <div className="add-row" style={{ marginTop: '1rem' }}>
+      <div className="add-row mt-md">
         <button type="button" className="btn btn-primary btn-small" onClick={() => { onApply(Math.round(blended * 10) / 10); onClose() }}>
           Use {blended.toFixed(1)}%
         </button>

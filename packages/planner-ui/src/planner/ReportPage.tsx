@@ -181,7 +181,7 @@ function ReportBody() {
           <ReportKpi label="Money lasts" value={depleted ? `to ${summary.depletionYear}` : 'full plan'} sub={depleted ? 'portfolio depletes' : `through ${result.endYear}`} />
           <ReportKpi label="Lifetime tax" value={fmtMoneyCompact(summary.lifetimeTaxesAndPenalties)} sub="federal + state + penalties" />
         </div>
-        <div className="report-kpis" style={{ marginTop: '1rem' }}>
+        <div className="report-kpis mt-md">
           <ReportKpi label="FI Target" value={fmtMoneyCompact(summary.fiNumber)} sub={`SWR: ${plan.assumptions.safeWithdrawalRatePct ?? 4}%`} />
           <ReportKpi label="FI Reached" value={summary.fiYear !== null ? `${summary.fiYear} (Age ${summary.fiAge})` : 'Never'} sub="based on target SWR" />
           <ReportKpi label="Avg Savings Rate" value={`${summary.averagePreRetirementSavingsRatePct.toFixed(1)}%`} sub="pre-retirement average" />
@@ -432,7 +432,7 @@ function ReportBody() {
             Compact schedule per inherited account. Full notes and citations are on the Results page.
           </p>
           {inheritedSchedules.map((account) => (
-            <div key={account.accountId} style={{ marginTop: '0.75rem' }}>
+            <div key={account.accountId} className="mt-ms">
               <h3 style={{ fontSize: '1rem', margin: '0 0 0.35rem' }}>
                 {account.accountName}: {account.regimeLabel}
               </h3>

@@ -100,7 +100,7 @@ export function BucketLensCard({
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <p className="field-hint" style={{ marginTop: '0.5rem' }}>
+          <p className="field-hint mt-sm">
             Honest labeling: the research record (Estrada&apos;s bucket studies; Kitces) finds bucket{' '}
             <em>management</em> adds no systematic benefit over a rebalanced total-return portfolio, refilling rules
             are market-timing in disguise. RetireGolden therefore simulates your plan total-return and offers buckets

@@ -135,7 +135,7 @@ export function SurvivalPercentileModal({ person, personIndex, partner, onApply,
           />
         ) : null}
       </div>
-      <div className="mc-hero" style={{ marginTop: '0.75rem' }}>
+      <div className="mc-hero mt-ms">
         <div>
           <h2 style={{ margin: 0 }}>
             Age {clampedAge}
@@ -148,7 +148,7 @@ export function SurvivalPercentileModal({ person, personIndex, partner, onApply,
           </p>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.9rem' }}>
+      <div className="gap-ms" style={{ display: 'flex', marginTop: '0.9rem' }}>
         <button type="button" className="btn btn-primary btn-small" onClick={apply}>
           Use age {clampedAge} as the planning age
         </button>

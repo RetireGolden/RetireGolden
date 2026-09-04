@@ -522,7 +522,7 @@ export function OptimizePage() {
           Using the {formatPct(plan.assumptions.heirTaxRatePct / 100)} heir tax rate from{' '}
           <Link to={`/plan/${plan.id}/assumptions`}>Assumptions</Link>.
         </p>
-        <div className="form-grid" style={{ marginTop: '0.5rem' }}>
+        <div className="form-grid mt-sm">
           <div className="field-span-full">
           <SelectField
             label="Optimize for"
@@ -552,7 +552,7 @@ export function OptimizePage() {
           <>
             <div className="skeleton" style={{ height: '2rem', marginTop: '0.75rem' }} aria-label="Optimizing" />
             {coOptimizeRequested ? (
-              <p className="field-hint" style={{ margin: '0.5rem 0 0' }} role="status">
+              <p className="field-hint mt-sm" role="status">
                 Also optimizing Social Security claim age: the optimizer is re-run in full for every claim
                 combination, so this takes several times longer than a standard optimize.
               </p>
@@ -571,7 +571,7 @@ export function OptimizePage() {
             either starts a run that cannot happen or downloads a report that
             does not exist. */}
         {optimizerUnavailable ? null : (
-          <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div className="mt-ms gap-ms" style={{ display: 'flex', flexWrap: 'wrap' }}>
             {!schedule && !running ? rerunButton(error ? 'Try again' : 'Run optimizer') : null}
             {/* Also disabled while re-running: the held result (and any claim
                 patch in it) describes the pre-edit plan, so a report downloaded
@@ -597,7 +597,7 @@ export function OptimizePage() {
           <p className="muted" style={{ margin: 0 }}>
             {optimizerRetirementActionExplanation(unsupportedActionReasons)}
           </p>
-          <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+          <p className="field-hint mt-sm">
             {OPTIMIZER_RETIREMENT_ACTION_NEXT_STEP}
           </p>
         </div>
@@ -616,7 +616,7 @@ export function OptimizePage() {
               {fmtMoneyCompact(claimAge.jointExactEstate)}), across {claimAge.combinationsEvaluated} claim combinations
               each fully re-optimized.
             </p>
-            <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+            <p className="field-hint mt-sm">
               {incumbentHolds
                 ? 'Your current conversion strategy already holds under the new claim age, so applying changes only the Social Security claim age.'
                 : scheduleApplyAvailable
@@ -630,12 +630,12 @@ export function OptimizePage() {
                 along, the normal stats row already shows the rate computed
                 against the same claim-patched plan via optimizedPlan. */}
             {claimOnlyApplyIsAvailable && mcRate !== null ? (
-              <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
+              <p className="field-hint mt-sm">
                 Monte Carlo success rate with this claim change: {Math.round(mcRate * 100)}%.
               </p>
             ) : null}
             {claimOnlyApplyIsAvailable ? (
-              <div style={{ marginTop: '0.75rem' }}>
+              <div className="mt-ms">
                 <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={applyClaimChangeOnly}>
                   Apply claim change
                 </button>
@@ -671,23 +671,23 @@ export function OptimizePage() {
               in place{claimChangeRecommended ? ', so only the claim change above is left to apply.' : ', so there is nothing to apply.'}
             </p>
             {tournament.acaActionabilityVeto ? (
-              <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+              <p className="field-hint mt-sm">
                 {acaVetoExplanation(tournament.acaActionabilityVeto)}
               </p>
             ) : null}
             {postProcessed?.cleanedValidation ? (
-              <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+              <p className="field-hint mt-sm">
                 Diagnostic: the solver's latest cleaned schedule would move the projected after-tax estate by{' '}
                 {fmtMoney(postProcessed.cleanedValidation.afterTaxEstateDelta)} versus your current plan, so it is not
                 offered as a recommendation. To explore alternatives from scratch, remove or edit the conversion
                 schedule under Strategy and re-run.
               </p>
             ) : (
-              <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+              <p className="field-hint mt-sm">
                 To explore alternatives from scratch, remove or edit the conversion schedule under Strategy and re-run.
               </p>
             )}
-            <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
+            <div className="mt-ms">{rerunButton()}</div>
           </div>
         ) : noRecommendation ? (
           <div className="card optimizer-failure" tabIndex={-1} ref={failureWell}>
@@ -698,11 +698,11 @@ export function OptimizePage() {
               shortfall in Results or Monte Carlo, then try again.
             </p>
             {tournament?.acaActionabilityVeto ? (
-              <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+              <p className="field-hint mt-sm">
                 {acaVetoExplanation(tournament.acaActionabilityVeto)}
               </p>
             ) : null}
-            <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
+            <div className="mt-ms">{rerunButton()}</div>
           </div>
         ) : rawConversions < 1 &&
           !candidateWins &&
@@ -714,11 +714,11 @@ export function OptimizePage() {
               is little pre-tax balance to convert, or the current strategy already captures the opportunity).
             </p>
             {tournament?.acaActionabilityVeto ? (
-              <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+              <p className="field-hint mt-sm">
                 {acaVetoExplanation(tournament.acaActionabilityVeto)}
               </p>
             ) : null}
-            <div style={{ marginTop: '0.75rem' }}>{rerunButton()}</div>
+            <div className="mt-ms">{rerunButton()}</div>
           </div>
         ) : (
           <>
@@ -735,7 +735,7 @@ export function OptimizePage() {
                     : `${fmtMoney(totalConversions)} of conversions across ${displayedConversions.length} year(s).`}
                 </p>
                 {candidateWins && tournament ? (
-                  <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
+                  <p className="field-hint mt-sm">
                     {candidateReplacedMilp ? (
                       <>
                         A simple strategy wins on your projection: <strong>{tournament.winnerLabel}</strong> beats the
@@ -755,18 +755,18 @@ export function OptimizePage() {
                   </p>
                 ) : null}
                 {tournament?.acaActionabilityVeto ? (
-                  <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
+                  <p className="field-hint mt-sm">
                     {acaVetoExplanation(tournament.acaActionabilityVeto)}
                   </p>
                 ) : null}
                 {tournament && tournament.policyId !== 'max-after-tax-estate' ? (
-                  <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
+                  <p className="field-hint mt-sm">
                     Candidates ranked by <strong>{objectivePolicies[tournament.policyId].label}</strong>. The estate
                     and tax deltas below are context, not the ranking metric.
                   </p>
                 ) : null}
                 {hasExecutionMismatch && validation && !displayedScheduleAlreadyExecuted ? (
-                  <p className="field-hint" style={{ margin: '0.45rem 0 0' }}>
+                  <p className="field-hint mt-sm">
                     Raw optimizer request: {fmtMoney(rawConversions)}. Cleaned executable schedule:{' '}
                     {fmtMoney(totalConversions)}. Executed after cleaning: {fmtMoney(executedConversions)} (
                     {formatPct(validation.executedConversionRatio)}).
@@ -888,7 +888,7 @@ export function OptimizePage() {
                         : ''
                     }`}
               </p>
-              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div className="gap-ms" style={{ display: 'flex', flexWrap: 'wrap' }}>
                 <button type="button" className="btn btn-primary btn-small" disabled={blocksApply || readOnly} onClick={() => apply('optimized')}>
                   {published ? 'Apply named schedule' : 'Apply optimized schedule'}
                 </button>

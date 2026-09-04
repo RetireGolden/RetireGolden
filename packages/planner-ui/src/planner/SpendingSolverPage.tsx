@@ -247,7 +247,7 @@ export function SpendingSolverPage() {
         {running ? <div className="skeleton" style={{ height: '2rem', marginTop: '0.75rem' }} aria-label="Solving" /> : null}
         {error ? <p style={{ color: 'var(--bad)' }}>Solver error: {error}</p> : null}
         {error && !running ? (
-          <div style={{ marginTop: '0.75rem' }}>
+          <div className="mt-ms">
             <button type="button" className="btn btn-secondary btn-small" onClick={run}>
               Try again
             </button>
@@ -350,7 +350,7 @@ export function SpendingSolverPage() {
                   Solved in {result.simulationCount} full-plan simulations
                   {result.converged ? ', converged to ~$500 resolution.' : '. Budget exhausted, feasible lower bound.'}
                 </p>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div className="gap-ms" style={{ display: 'flex', flexWrap: 'wrap' }}>
                   <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={applyToSpending}>
                     Apply to Spending
                   </button>
@@ -361,7 +361,7 @@ export function SpendingSolverPage() {
                     Re-solve
                   </button>
                 </div>
-                <p className="field-hint" style={{ marginTop: '0.5rem' }}>
+                <p className="field-hint mt-sm">
                   "Apply to Spending" sets your plan's baseline spending to {fmtMoney(solvedRounded ?? 0)}/yr and opens
                   the Spending screen. "Add as scenario" instead creates a side-by-side scenario under Scenarios without
                   changing your plan.
@@ -445,7 +445,7 @@ export function SpendingSolverPage() {
                 </tbody>
               </table>
             </ScrollRegion>
-            <p className="field-hint" style={{ marginTop: '0.5rem' }}>
+            <p className="field-hint mt-sm">
               Each row re-solves your full plan with that shape&apos;s phase rows (initial spend in today&apos;s
               dollars; later years follow the shape). No shape is &quot;the answer&quot;. They are framings of how
               your own later-life spending might behave.
@@ -516,7 +516,7 @@ export function SpendingSolverPage() {
             </tbody>
           </table>
         </ScrollRegion>
-        <p className="field-hint" style={{ marginTop: '0.5rem' }}>
+        <p className="field-hint mt-sm">
           Each rule runs with your accounts, taxes, healthcare, goals, and horizon unchanged, only recurring
           lifestyle spending is set to the rule&apos;s level (constant-real, as the rules define it). A rule
           &quot;running out&quot; on your plan usually means your horizon is longer than the 30 years the rule was

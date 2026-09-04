@@ -594,7 +594,7 @@ function CapacitySection({
       ]
     : []
   return (
-    <div className="card" style={{ marginTop: '1rem' }}>
+    <div className="card mt-md">
       <div className="item-row-head">
         <div>
           <h3 style={{ margin: 0 }}>Sustainable spending capacity</h3>
