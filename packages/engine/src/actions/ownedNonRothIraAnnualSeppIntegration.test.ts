@@ -688,13 +688,16 @@ describe('owned non-Roth IRA annual SEPP integration', () => {
       sourceAccountId,
       executionDate: '2030-06-01',
     })).toBe(
-      `owned-non-roth-ira-staged-distribution-date:${JSON.stringify([
-        'candidate',
-        actionId,
-        allocationId,
-        sourceAccountId,
-        '2030-06-01',
-      ])}`,
+      deriveActionStructuralId(
+        'owned-non-roth-ira-staged-distribution-date',
+        [
+          'candidate',
+          actionId,
+          allocationId,
+          sourceAccountId,
+          '2030-06-01',
+        ],
+      ),
     )
     expect(() => buildOwnedNonRothIraStagedDistributionDateEvidenceId({
       movementCandidateId: ' ',

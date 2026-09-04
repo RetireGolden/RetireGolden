@@ -15,6 +15,7 @@ import {
   asUsdCents,
 } from './money.js'
 import {
+  buildOwnedNonRothIraStagedDistributionDateEvidenceId,
   coordinateOwnedNonRothIraAnnualWithdrawalCandidate,
   type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateInput,
 } from './ownedNonRothIraAnnualCandidateCoordinator.js'
@@ -1001,5 +1002,25 @@ describe('coordinateOwnedNonRothIraAnnualWithdrawalCandidate', () => {
         outcome: 'exceptionEvaluationRequired',
       },
     ])
+  })
+
+  it('mints both coordinator evidence IDs with the hardened structural minter', () => {
+    const id = bindingId(mixedFixture())
+
+    expect(id).toBe(
+      'owned-non-roth-ira-annual-candidate-binding:5c690a0cce7bc030' +
+        '94eaf62e6b0d2cade569d88ed672b88fb73e4aa71e396756',
+    )
+    expect(bindingId(mixedFixture())).toBe(id)
+    expect(buildOwnedNonRothIraStagedDistributionDateEvidenceId({
+      movementCandidateId: 'candidate',
+      actionId: asActionId('action'),
+      allocationId: asAllocationId('allocation'),
+      sourceAccountId: asAccountId('ira-account'),
+      executionDate: '2030-06-01',
+    })).toBe(
+      'owned-non-roth-ira-staged-distribution-date:2118fcfaff60a8d8' +
+        '6cf56fd14bd8959f657f376f29a2d41360d5fadf11944002',
+    )
   })
 })

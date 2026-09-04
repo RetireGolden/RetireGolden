@@ -40,6 +40,7 @@ import type {
   OwnedNonRothIraPoolMemberEvidence,
 } from './ownedNonRothIraWithdrawalCharacter.js'
 import { deepFreeze } from './freeze.js'
+import { deriveActionStructuralId } from './structuralId.js'
 
 export type OwnedNonRothIraCandidateOwnerAliveEvidence = Omit<
   OwnedNonRothIraOwnerAliveEvidence,
@@ -140,10 +141,6 @@ export type CoordinateOwnedNonRothIraAnnualWithdrawalCandidateResult =
   | OwnedNonRothIraAnnualCandidateEvidenceBlockedResult
   | OwnedNonRothIraAnnualCandidateEvidenceBoundResult
 
-function stableId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
-}
-
 export interface BuildOwnedNonRothIraStagedDistributionDateEvidenceIdInput {
   movementCandidateId: string
   actionId: ActionId
@@ -177,7 +174,7 @@ export function buildOwnedNonRothIraStagedDistributionDateEvidenceId(
       'Owned IRA staged distribution date must be a valid civil date',
     )
   }
-  return stableId('owned-non-roth-ira-staged-distribution-date', [
+  return deriveActionStructuralId('owned-non-roth-ira-staged-distribution-date', [
     movementCandidateId,
     actionId,
     allocationId,
@@ -460,7 +457,7 @@ export function coordinateOwnedNonRothIraAnnualWithdrawalCandidate(
     line7AllocationEvidenceId:
       annualEvidence.characterization.line7AllocationEvidence
         .allocationEvidenceId,
-    bindingEvidenceId: stableId(
+    bindingEvidenceId: deriveActionStructuralId(
       'owned-non-roth-ira-annual-candidate-binding',
       [
         annualEvidence.ownerPersonId,
