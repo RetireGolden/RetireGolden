@@ -202,7 +202,7 @@ export function PromotionWithheldPanel({
       <h2>{PROMOTION_WITHHELD_HEADING}</h2>
       <p className="muted" style={{ margin: 0 }}>{promotionWithheldFrame(promotion)}</p>
       {promotion.outcome === 'notComparable' ? (
-        <p className="field-hint" style={{ margin: '0.6rem 0 0' }}>
+        <p className="field-hint mt-sm">
           {promotionComparabilityFrame(promotion.reason)}
         </p>
       ) : null}

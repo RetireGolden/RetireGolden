@@ -745,7 +745,7 @@ export function MonteCarloPage() {
               <p className="muted">Run the frontier sweep to compare bounded variants on the same market paths.</p>
             )}
             {visibleFrontier && visibleFrontier.annuitization.points.length > 1 ? (
-              <div style={{ marginTop: '1rem' }}>
+              <div className="mt-md">
                 <h3 style={{ marginTop: 0 }}>How much to annuitize?</h3>
                 <p className="card-hint">
                   Each point trades that share of your investable assets for an immediate life annuity (payout rate{' '}

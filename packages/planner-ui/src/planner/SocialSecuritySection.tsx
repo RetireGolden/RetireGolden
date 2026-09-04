@@ -168,7 +168,7 @@ export function FormerSpousesEditor({
     })
 
   return (
-    <div style={{ marginTop: '0.8rem' }}>
+    <div className="mt-ms">
       <h4 style={{ margin: '0 0 0.3rem' }}>Former spouses</h4>
       <p className="card-hint">
         A {DIVORCED_MIN_MARRIAGE_YEARS}+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
@@ -341,7 +341,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             {person.name}
           </span>
         </div>
-        <p className="card-hint" style={{ marginBottom: '0.6rem' }}>
+        <p className="card-hint mb-sm">
           No Social Security benefit is modeled for {person.name} yet.
         </p>
         <button
@@ -443,7 +443,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
         />
       </div>
 
-      <details className="ss-explainer" style={{ marginTop: '0.6rem' }}>
+      <details className="ss-explainer">
         <summary>Disability (SSDI)</summary>
         <p className="card-hint">
           If you're receiving Social Security disability, your benefit is your <strong>full PIA</strong> (no
@@ -531,7 +531,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             </p>
           )}
           {xmlNote ? (
-            <p className={xmlNote.kind === 'error' ? 'error-text' : 'field-hint'} style={{ marginTop: '0.4rem' }}>
+            <p className={`${xmlNote.kind === 'error' ? 'error-text' : 'field-hint'} mt-xs`}>
               {xmlNote.text}
             </p>
           ) : null}
@@ -583,7 +583,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
           </div>
 
           {resolved.piaMonthly !== null ? (
-            <p className="field-hint" style={{ marginTop: '0.4rem' }}>
+            <p className="field-hint mt-xs">
               Computed PIA: <strong>{fmtMoney(resolved.piaMonthly)}/mo</strong> at full retirement age.
               {projectedYears > 0 ? (
                 <>
@@ -651,13 +651,13 @@ export function SocialSecuritySection() {
         {plan.household.people.map((p, i) => (
           <PersonSsCard key={p.id} person={p} personIndex={i} />
         ))}
-        <div className="callout callout--info" style={{ marginTop: '1rem' }}>
+        <div className="callout callout--info mt-md">
           <strong>Claiming early while still working?</strong> The earnings test withholds part of the benefit above an
           annual wage limit before full retirement age. RetireGolden models that withholding, and credits the withheld
           months back at full retirement age (recomputing the benefit as if you'd claimed that many months later), as an
           annual approximation.
         </div>
-        <p className="muted small" style={{ marginTop: '0.75rem' }}>
+        <p className="muted small mt-ms">
           Not sure when to claim?{' '}
           <Link to="../social-security-analysis">Compare claiming ages on the Social Security analysis page →</Link>
         </p>

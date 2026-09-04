@@ -44,7 +44,7 @@ export function AssumptionsCardPage() {
           and see where the inputs differ. (The rest of the plan, including incomes, expenses, and goals, travels in a plan backup
           from the planner home.)
         </p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="gap-ms" style={{ display: 'flex', flexWrap: 'wrap' }}>
           <CopyButton
             label="Copy as text"
             copiedLabel="Copied ✓"
@@ -58,7 +58,7 @@ export function AssumptionsCardPage() {
             text={() => assumptionsExportJson(snapshot)}
           />
         </div>
-        <p className="field-hint" style={{ marginTop: '0.5rem' }}>
+        <p className="field-hint mt-sm">
           Applies to the {snapshot.packYear} tax year · parameter figures compiled {snapshot.dataAsOf} ·{' '}
           <Link to="/disclaimer">full source list</Link> · <Link to="/how-tested">how RetireGolden is tested</Link>
         </p>

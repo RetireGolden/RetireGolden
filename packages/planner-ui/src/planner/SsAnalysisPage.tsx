@@ -131,7 +131,7 @@ export function SsAnalysisPage() {
     <section>
       <div className="card">
         <h2>Social Security Optimizer</h2>
-        <div className="seg" role="tablist" style={{ marginBottom: '1rem' }}>
+        <div className="seg mb-md" role="tablist">
           <button type="button" role="tab" aria-pressed={tab === 'plan'} onClick={() => setTab('plan')}>
             In your plan
           </button>
@@ -648,7 +648,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         </>
       )}
 
-      <div id="ss-claim-age-heatmap-actions" className="add-row" style={{ marginTop: '1rem' }}>
+      <div id="ss-claim-age-heatmap-actions" className="add-row mt-md">
         {best ? (
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setRefined(refineClaimingMonthly(plan, best.claimByPersonId, startYear))}>
             Refine to the month
@@ -668,7 +668,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
       ) : null}
 
       {refined && best ? (
-        <div className="callout callout--info" style={{ marginTop: '0.75rem' }}>
+        <div className="callout callout--info mt-ms">
           <strong>To the month: claim at {personIds.map((id) => fmtClaim(refined.claimByPersonId[id]!)).join(' / ')}</strong>
           {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}
           {fmtMoneyCompact(refined.summary.endingAfterTaxEstate)}
@@ -689,7 +689,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       ) : null}
       {mc ? (
-        <table className="claim-table" style={{ marginTop: '0.75rem' }}>
+        <table className="claim-table mt-ms">
           <thead>
             <tr>
               <th scope="col">Strategy (claim ages)</th>
@@ -854,7 +854,7 @@ function CoupleHeatmap({
 
   return (
     <>
-      <p className="card-hint" style={{ marginTop: '0.5rem' }}>
+      <p className="card-hint mt-sm">
         After-tax estate by claim age, rows: {personName(rowId)}, columns: {personName(colId)}. Greener is better;
         {readOnly ? ' claim-age choices are read-only in this workspace.' : ' use Enter or Space on a cell to apply it.'}
       </p>
@@ -936,7 +936,7 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
 
   const personSelect =
     people.length === 2 ? (
-      <div className="seg" role="group" aria-label="Person" style={{ marginBottom: '0.75rem' }}>
+      <div className="seg mb-ms" role="group" aria-label="Person">
         {people.map((p) => (
           <button key={p.person.id} type="button" aria-pressed={selectedId === p.person.id} onClick={() => setSelectedId(p.person.id)}>
             {personName(p.person.id)}
@@ -974,7 +974,7 @@ function BreakEvenTab({ personIds, personName }: { personIds: string[]; personNa
 
       {personSelect}
 
-      <div className="seg" role="group" aria-label="Investment return on benefits" style={{ marginBottom: '1rem' }}>
+      <div className="seg mb-md" role="group" aria-label="Investment return on benefits">
         {[0, 3, 5, 7].map((g) => (
           <button key={g} type="button" aria-pressed={growthPct === g} onClick={() => setGrowthPct(g)}>
             {g}% return
@@ -1129,7 +1129,7 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
   const withEarnings = people.filter((p) => p.stream.earnings && p.stream.earnings.length > 0)
 
   return (
-    <details className="ss-explainer" style={{ marginTop: '1.5rem' }}>
+    <details className="ss-explainer mt-lg">
       <summary>What you paid in vs. what you get back</summary>
       <p className="card-hint">
         An illustrative "return on your Social Security taxes": the OASDI payroll tax you paid over your earnings
@@ -1181,7 +1181,7 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
                   </tbody>
                 </table>
               </ScrollRegion>
-              <p className="muted small" style={{ marginTop: '0.3rem' }}>
+              <p className="muted small mt-xs">
                 At a {discountPct}% real discount rate. Excludes Medicare tax, disability/survivor insurance value, and
                 spousal benefits; the OASDI rate is applied uniformly over your career.
               </p>
@@ -1258,7 +1258,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
   ).slice(0, 5)
 
   return (
-    <div style={{ marginTop: '1.5rem' }}>
+    <div className="mt-lg">
       <h3>Survivor vs. personal timing</h3>
       <p className="card-hint">
         As a widow(er) you can hold both a survivor benefit and your own, and switch between them. Survivor benefits stop

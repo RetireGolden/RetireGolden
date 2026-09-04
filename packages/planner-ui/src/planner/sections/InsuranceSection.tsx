@@ -417,7 +417,7 @@ function LtcStressPanel() {
       </ScrollRegion>
       {/* Counts follow the plan: two care events or two LTC policies read as
           plural, since both are modeled (#489). */}
-      <p className="card-hint" style={{ marginTop: '0.75rem' }}>
+      <p className="card-hint mt-ms">
         Unprotected, {episodes} would cost your estate <strong>{fmtMoneyCompact(careShock)}</strong>.{' '}
         {!cmp.hasLtcPolicy ? (
           <>You have no LTC policy to offset {many ? 'them' : 'it'}.</>

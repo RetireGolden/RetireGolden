@@ -147,7 +147,7 @@ function DriverDetails({ row }: { row: RelocationCandidateRow }) {
         </tbody>
       </table>
       </ScrollRegion>
-      <p className="field-hint" style={{ marginTop: '0.5rem' }}>
+      <p className="field-hint mt-sm">
         Each figure re-prices every ledger year with that one rule neutralized, so the figures explain, but need not
         sum to, the {fmtMoney(d.totalStateLocalTax)} lifetime state+local tax this row actually paid (top marginal
         rate {f.topRatePct}%). A negative figure means the rule costs more than the benchmark.
@@ -354,7 +354,7 @@ export function RelocationComparePage() {
             </div>
           </div>
         ))}
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.75rem' }}>
+        <div className="mt-ms gap-ms" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             type="button"
             className="btn btn-secondary btn-small"
@@ -464,11 +464,11 @@ export function RelocationComparePage() {
                 <summary>What drives &quot;{row.label}&quot;?</summary>
                 <DriverDetails row={row} />
                 {row.candidate ? (
-                  <div style={{ marginTop: '0.5rem' }}>
+                  <div className="mt-sm">
                     <button type="button" className="btn btn-secondary btn-small" disabled={readOnly} onClick={() => addScenario(row)}>
                       Add as scenario
                     </button>
-                    <p className="field-hint" style={{ marginTop: '0.5rem' }}>
+                    <p className="field-hint mt-sm">
                       Creates a side-by-side scenario under Scenarios using the planner&apos;s existing state-move
                       fields. Your plan itself is not changed. The scenario reruns to exactly this row.
                     </p>
@@ -486,7 +486,7 @@ export function RelocationComparePage() {
                 ))}
               </details>
             ))}
-          <p className="field-hint" style={{ marginTop: '0.75rem' }}>
+          <p className="field-hint mt-ms">
             Rows use the same start year, market assumptions, and (when enabled) the same {result.monteCarlo?.pathCount}{' '}
             seeded market paths, so differences are attributable to residence, not simulation noise. State rules come
             from the modeled per-state tax data (all 50 states + DC); property, sales, and estate/inheritance taxes are
