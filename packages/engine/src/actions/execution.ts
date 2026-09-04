@@ -1,4 +1,5 @@
 import type { Plan } from '../model/plan.js'
+import { nonblank } from './plainData.js'
 import { evaluateRetirementActionEligibilityFromPlan } from '../strategies/accountEligibility.js'
 import {
   assessConversionLinkedWithdrawalGroups,
@@ -1108,8 +1109,6 @@ function taxableSnapshotMatches(
   const ownerIds = snapshot.ownership.accountOwnerPersonIds
   const share = snapshot.ownership.beneficialOwnershipShare
   const members = snapshot.taxUnit.taxUnitMemberPersonIds
-  const nonblank = (value: unknown): value is string =>
-    typeof value === 'string' && value.trim().length > 0
   const filingStatusSupported = new Set([
     'single',
     'marriedFilingJointly',
