@@ -915,6 +915,164 @@ function buildOwnedIraAgeThresholdEvidence(
 }
 
 /**
+ * The four exception branches of the per-withdrawal loop in
+ * `evaluateOwnedNonRothIraPenaltyPrerequisites`, lifted out verbatim. Each is a
+ * pure constructor over exactly what its block read, returning exactly what
+ * that block produced; the loop keeps the control flow that chooses between
+ * them.
+ */
+function age59HalfReachedEvaluation(
+  base: OwnedNonRothIraPenaltyEvaluationBase,
+  ordinaryIncomeExposureAmount: UsdCents,
+  characterCoverageId: string,
+  ageThresholdEvidenceId: string,
+): Age59HalfReachedPenaltyEvaluation {
+  return {
+    ...base,
+    outcome: 'age59HalfReached',
+    evaluatedOrdinaryIncomeExposureAmount:
+      ordinaryIncomeExposureAmount,
+    finalPenaltyAmount: 0,
+    finalEvidenceId: deriveActionStructuralId('owned-ira-age-59-half-zero-penalty', [
+      characterCoverageId,
+      ageThresholdEvidenceId,
+    ]),
+  }
+}
+
+function disabilityQualifiedEvaluation(
+  base: OwnedNonRothIraPenaltyEvaluationBase,
+  ordinaryIncomeExposureAmount: UsdCents,
+  characterCoverageId: string,
+  ageThresholdEvidenceId: string,
+  disabilityEvent: QualifiedDisabilityEventEvidence,
+): DisabilityQualifiedPenaltyEvaluation {
+  return {
+    ...base,
+    outcome: 'disabilityQualified',
+    evaluatedOrdinaryIncomeExposureAmount:
+      ordinaryIncomeExposureAmount,
+    disabilityEvent,
+    finalPenaltyAmount: 0,
+    finalEvidenceId: deriveActionStructuralId(
+      'owned-ira-disability-qualified-zero-penalty',
+      [
+        characterCoverageId,
+        ageThresholdEvidenceId,
+        disabilityEvent,
+      ],
+    ),
+  }
+}
+
+function iraSeppQualifiedEvaluation(
+  base: OwnedNonRothIraPenaltyEvaluationBase,
+  ordinaryIncomeExposureAmount: UsdCents,
+  characterCoverageId: string,
+  seppQualification: Readonly<{
+    annualReconciliationEvidence:
+      CompleteOwnedNonRothIraSeppAnnualReconciliationEvidence
+    reconciledPayment:
+      OwnedNonRothIraSeppAnnualReconciledPaymentEvidence
+  }>,
+): IraSeppQualifiedPenaltyEvaluation {
+  return {
+    ...base,
+    outcome: 'iraSeppQualified',
+    evaluatedOrdinaryIncomeExposureAmount:
+      ordinaryIncomeExposureAmount,
+    annualReconciliationEvidence:
+      seppQualification.annualReconciliationEvidence,
+    reconciledPayment: seppQualification.reconciledPayment,
+    finalPenaltyAmount: 0,
+    finalEvidenceId: deriveActionStructuralId(
+      'owned-ira-sepp-qualified-zero-penalty',
+      [
+        characterCoverageId,
+        seppQualification.annualReconciliationEvidence
+          .annualReconciliationId,
+        seppQualification.reconciledPayment
+          .currentPaymentCandidateId,
+        seppQualification.reconciledPayment,
+      ],
+    ),
+  }
+}
+
+function rejectedPenaltyExceptionTuple(
+  characterCoverageId: string,
+  sourceEvidence: OwnedNonRothIraPenaltySourceEvidence,
+  age59HalfDate: string,
+  ageThresholdEvidenceId: string,
+  ownerAliveEvidence: OwnedNonRothIraOwnerAliveEvidence,
+  noSeppEvidence: OwnedNonRothIraNoSeppStatusEvidence,
+  rejectedDisabilityEvidence: RejectedDisabilityStatusEvidence,
+  noOtherExceptionAttestation: NoOtherStatutoryExceptionClaimedAttestation,
+): RejectedOwnedNonRothIraPenaltyExceptionTuple {
+  const rejectedAge: RejectedAge59HalfExceptionEvidence = {
+    exception: 'age59Half',
+    disposition: 'rejected',
+    evaluationDate: sourceEvidence.evaluationDate,
+    age59HalfDate,
+    ageThresholdEvidenceId,
+    evidenceId: deriveActionStructuralId(
+      'owned-ira-rejected-age-59-half-exception',
+      [
+        characterCoverageId,
+        sourceEvidence.evaluationDate,
+        age59HalfDate,
+        ageThresholdEvidenceId,
+      ],
+    ),
+  }
+  const rejectedDeath: RejectedDeathExceptionEvidence = {
+    exception: 'death',
+    disposition: 'rejected',
+    ownerAliveEvidence,
+    evidenceId: deriveActionStructuralId('owned-ira-rejected-death-exception', [
+      characterCoverageId,
+      ownerAliveEvidence,
+    ]),
+  }
+  const rejectedSepp: RejectedIraSeppExceptionEvidence = {
+    exception: 'iraSepp',
+    disposition: 'rejected',
+    noSeppEvidence,
+    evidenceId: deriveActionStructuralId('owned-ira-rejected-sepp-exception', [
+      characterCoverageId,
+      noSeppEvidence,
+    ]),
+  }
+  const rejectedDisability:
+    RejectedDisabilityExceptionEvidence = {
+      exception: 'disability',
+      disposition: 'rejected',
+      rejectedDisabilityEvidence,
+      evidenceId: deriveActionStructuralId(
+        'owned-ira-rejected-disability-exception',
+        [characterCoverageId, rejectedDisabilityEvidence],
+      ),
+    }
+  const rejectedOther:
+    RejectedOtherStatutoryExceptionEvidence = {
+      exception: 'otherStatutoryException',
+      disposition: 'rejected',
+      attestation: noOtherExceptionAttestation,
+      evidenceId: deriveActionStructuralId(
+        'owned-ira-rejected-other-statutory-exception',
+        [characterCoverageId, noOtherExceptionAttestation],
+      ),
+    }
+  return [
+    rejectedAge,
+    rejectedDeath,
+    rejectedSepp,
+    rejectedDisability,
+    rejectedOther,
+  ]
+}
+
+/**
  * Builds the exact early-distribution-penalty prerequisite boundary for
  * finalized owned traditional, SEP, and SIMPLE IRA line-7 character.
  *
@@ -1901,65 +2059,36 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         continue
       }
       if (sourceEvidence.evaluationDate >= age59HalfDate) {
-        evaluationByKey.set(key, {
-          ...base,
-          outcome: 'age59HalfReached',
-          evaluatedOrdinaryIncomeExposureAmount:
-            ordinaryIncomeExposureAmount,
-          finalPenaltyAmount: 0,
-          finalEvidenceId: deriveActionStructuralId('owned-ira-age-59-half-zero-penalty', [
-            characterCoverageId,
-            ageThresholdEvidenceId,
-          ]),
-        })
+        evaluationByKey.set(key, age59HalfReachedEvaluation(
+          base,
+          ordinaryIncomeExposureAmount,
+          characterCoverageId,
+          ageThresholdEvidenceId,
+        ))
         continue
       }
       const disabilityEvent = disabilityByEvaluationDate.get(
         sourceEvidence.evaluationDate,
       )
       if (disabilityEvent !== undefined) {
-        evaluationByKey.set(key, {
-          ...base,
-          outcome: 'disabilityQualified',
-          evaluatedOrdinaryIncomeExposureAmount:
-            ordinaryIncomeExposureAmount,
+        evaluationByKey.set(key, disabilityQualifiedEvaluation(
+          base,
+          ordinaryIncomeExposureAmount,
+          characterCoverageId,
+          ageThresholdEvidenceId,
           disabilityEvent,
-          finalPenaltyAmount: 0,
-          finalEvidenceId: deriveActionStructuralId(
-            'owned-ira-disability-qualified-zero-penalty',
-            [
-              characterCoverageId,
-              ageThresholdEvidenceId,
-              disabilityEvent,
-            ],
-          ),
-        })
+        ))
         continue
       }
 
       const seppQualification = qualifiedSeppByKey.get(key)
       if (seppQualification !== undefined) {
-        evaluationByKey.set(key, {
-          ...base,
-          outcome: 'iraSeppQualified',
-          evaluatedOrdinaryIncomeExposureAmount:
-            ordinaryIncomeExposureAmount,
-          annualReconciliationEvidence:
-            seppQualification.annualReconciliationEvidence,
-          reconciledPayment: seppQualification.reconciledPayment,
-          finalPenaltyAmount: 0,
-          finalEvidenceId: deriveActionStructuralId(
-            'owned-ira-sepp-qualified-zero-penalty',
-            [
-              characterCoverageId,
-              seppQualification.annualReconciliationEvidence
-                .annualReconciliationId,
-              seppQualification.reconciledPayment
-                .currentPaymentCandidateId,
-              seppQualification.reconciledPayment,
-            ],
-          ),
-        })
+        evaluationByKey.set(key, iraSeppQualifiedEvaluation(
+          base,
+          ordinaryIncomeExposureAmount,
+          characterCoverageId,
+          seppQualification,
+        ))
         continue
       }
 
@@ -2055,67 +2184,16 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
         rejectedDisabilityEvidence !== undefined &&
         noOtherExceptionAttestation !== undefined
       ) {
-        const rejectedAge: RejectedAge59HalfExceptionEvidence = {
-          exception: 'age59Half',
-          disposition: 'rejected',
-          evaluationDate: sourceEvidence.evaluationDate,
+        rejectedExceptions = rejectedPenaltyExceptionTuple(
+          characterCoverageId,
+          sourceEvidence,
           age59HalfDate,
           ageThresholdEvidenceId,
-          evidenceId: deriveActionStructuralId(
-            'owned-ira-rejected-age-59-half-exception',
-            [
-              characterCoverageId,
-              sourceEvidence.evaluationDate,
-              age59HalfDate,
-              ageThresholdEvidenceId,
-            ],
-          ),
-        }
-        const rejectedDeath: RejectedDeathExceptionEvidence = {
-          exception: 'death',
-          disposition: 'rejected',
           ownerAliveEvidence,
-          evidenceId: deriveActionStructuralId('owned-ira-rejected-death-exception', [
-            characterCoverageId,
-            ownerAliveEvidence,
-          ]),
-        }
-        const rejectedSepp: RejectedIraSeppExceptionEvidence = {
-          exception: 'iraSepp',
-          disposition: 'rejected',
           noSeppEvidence,
-          evidenceId: deriveActionStructuralId('owned-ira-rejected-sepp-exception', [
-            characterCoverageId,
-            noSeppEvidence,
-          ]),
-        }
-        const rejectedDisability:
-          RejectedDisabilityExceptionEvidence = {
-            exception: 'disability',
-            disposition: 'rejected',
-            rejectedDisabilityEvidence,
-            evidenceId: deriveActionStructuralId(
-              'owned-ira-rejected-disability-exception',
-              [characterCoverageId, rejectedDisabilityEvidence],
-            ),
-          }
-        const rejectedOther:
-          RejectedOtherStatutoryExceptionEvidence = {
-            exception: 'otherStatutoryException',
-            disposition: 'rejected',
-            attestation: noOtherExceptionAttestation,
-            evidenceId: deriveActionStructuralId(
-              'owned-ira-rejected-other-statutory-exception',
-              [characterCoverageId, noOtherExceptionAttestation],
-            ),
-          }
-        rejectedExceptions = [
-          rejectedAge,
-          rejectedDeath,
-          rejectedSepp,
-          rejectedDisability,
-          rejectedOther,
-        ]
+          rejectedDisabilityEvidence,
+          noOtherExceptionAttestation,
+        )
       }
       pendingEarlyEvaluations.push({
         key,
