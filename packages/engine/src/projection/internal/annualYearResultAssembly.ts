@@ -9,7 +9,7 @@
  *
  * WHAT IT PRODUCES: the canonical core annual-pass `YearResult` object in its
  * legacy property order, including the exact realized-gain and net-worth
- * associations.
+ * associations and the year's published `netPortfolioNeed`.
  *
  * WHAT IT REFUSES: it does not move balances, mutate pass state, append to the
  * projection result, attach the outer settlement's committed owned non-Roth
@@ -285,5 +285,12 @@ export function annualYearResultAssembly(
     ...(input.cashFlowInput === undefined
       ? {}
       : { cashFlow: assembleYearCashFlow(input.cashFlowInput) }),
+    // Every input is final at this boundary: the ledger's committed income and
+    // expense totals and the settled tax and penalty scalars. Published last so
+    // no existing key moves position — key order is observable output here.
+    netPortfolioNeed: Math.max(
+      0,
+      ledger.expenses.total + tax.tax + tax.penalties - ledger.incomes.total,
+    ),
   }
 }

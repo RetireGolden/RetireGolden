@@ -503,6 +503,19 @@ export interface YearResult {
    * HECM loans (each capped at its home's value: non-recourse).
    */
   netWorth: number
+  /**
+   * Nominal dollars the portfolio must supply this year: total expenses plus
+   * tax plus penalties, less total incomes, floored at zero —
+   * `max(0, expenses.total + tax + penalties − incomes.total)`.
+   *
+   * Published so no consumer restates the formula. A year whose incomes cover
+   * every outflow needs nothing from the portfolio and publishes 0; the floor
+   * makes this a *need* and never a surplus (surplus is `surplusInvested`).
+   * It is what the year required, not what the portfolio managed to supply —
+   * a year that could not fund it still publishes the need and records the
+   * gap in `shortfall`. Nominal, like every other dollar on this row.
+   */
+  netPortfolioNeed: number
 }
 
 export interface ProjectionResult {
