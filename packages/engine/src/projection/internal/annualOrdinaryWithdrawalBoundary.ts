@@ -23,6 +23,7 @@ import {
   type RetirementActionRequest,
   type TaxableAccountOpeningSnapshot,
 } from '../../actions/index.js'
+import { deriveActionStructuralId } from '../../actions/structuralId.js'
 import type { NonpersistedActionPersonAliveEvidence } from
   '../../strategies/accountEligibility.js'
 
@@ -183,13 +184,13 @@ export function annualOrdinaryWithdrawalBoundary(
                 ownership: {
                   accountOwnerPersonIds: [ownerPersonId],
                   accountOwnershipEvidenceId:
-                    `projection-account-ownership:${JSON.stringify([
+                    deriveActionStructuralId('projection-account-ownership', [
                       accountId,
                       ownerPersonId,
                       input.year,
                       taxUnit.federalFilingStatus,
                       taxUnit.members,
-                    ])}`,
+                    ]),
                   beneficialOwnershipShare: {
                     representation: 'exactRational' as const,
                     numerator: 1 as const,
@@ -197,13 +198,13 @@ export function annualOrdinaryWithdrawalBoundary(
                     intermediateArithmetic: 'bigintRational' as const,
                   },
                   attributionEvidenceId:
-                    `projection-taxable-attribution:${JSON.stringify([
+                    deriveActionStructuralId('projection-taxable-attribution', [
                       accountId,
                       ownerPersonId,
                       input.year,
                       taxUnit.federalFilingStatus,
                       taxUnit.members,
-                    ])}`,
+                    ]),
                 },
                 taxUnit: {
                   taxUnitId: taxUnit.taxUnitId,

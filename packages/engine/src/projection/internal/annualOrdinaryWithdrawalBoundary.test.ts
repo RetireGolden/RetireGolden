@@ -56,6 +56,18 @@ import {
 const YEAR = 2026
 type BalanceAccount = AnnualOrdinaryWithdrawalBalanceState['account']
 
+// Frozen structural identities for the snapshot fixture below. Both are
+// `deriveActionStructuralId(prefix, ['a-taxable', 'p1', 2026, 'single',
+// ['p1']])`, so they share a digest and are separated only by their prefix.
+// Written out rather than recomputed: these strings are published evidence
+// IDs, and a silent change to the minter or to the part list must fail here.
+const OWNERSHIP_EVIDENCE_ID =
+  'projection-account-ownership:' +
+  'dbe6ee5f90560e14894755e2e70d78e17a78659a344aec0c2c5b77e094592932'
+const ATTRIBUTION_EVIDENCE_ID =
+  'projection-taxable-attribution:' +
+  'dbe6ee5f90560e14894755e2e70d78e17a78659a344aec0c2c5b77e094592932'
+
 function cash(id: string, balance = 100): Extract<Account, { type: 'cash' }> {
   return {
     type: 'cash',
@@ -291,16 +303,14 @@ describe('annualOrdinaryWithdrawalBoundary — snapshots', () => {
       openingCostBasis: 4_000,
       ownership: {
         accountOwnerPersonIds: ['p1'],
-        accountOwnershipEvidenceId:
-          'projection-account-ownership:["a-taxable","p1",2026,"single",["p1"]]',
+        accountOwnershipEvidenceId: OWNERSHIP_EVIDENCE_ID,
         beneficialOwnershipShare: {
           representation: 'exactRational',
           numerator: 1,
           denominator: 1,
           intermediateArithmetic: 'bigintRational',
         },
-        attributionEvidenceId:
-          'projection-taxable-attribution:["a-taxable","p1",2026,"single",["p1"]]',
+        attributionEvidenceId: ATTRIBUTION_EVIDENCE_ID,
       },
       taxUnit: {
         taxUnitId: 'tax-unit',
@@ -339,6 +349,39 @@ describe('annualOrdinaryWithdrawalBoundary — snapshots', () => {
     const call = seam.executorInputs[0] as ExecuteOrdinaryWithdrawalsInput
     expect(call.openingBalances).toHaveLength(1)
     expect(call.taxableAccountSnapshots).toEqual([])
+  })
+
+  // Pins the hardened minter for this module: a fixed-length digest rather
+  // than an embedded `JSON.stringify` payload, and one that moves when any
+  // part of the identity moves. The literals above are the frozen values.
+  it('mints taxable ownership evidence with the hardened structural minter', () => {
+    const request = withdrawal('a-taxable', ['a-taxable'])
+    useSynthetic([execution()], [boundary()])
+
+    annualOrdinaryWithdrawalBoundary(input({
+      ordinaryActions: [request],
+      executionRequests: [request],
+      balances: [state(taxable('a-taxable', 100, 40))],
+    }))
+    const first = (seam.executorInputs[0] as ExecuteOrdinaryWithdrawalsInput)
+      .taxableAccountSnapshots?.[0]
+    expect(first?.ownership.accountOwnershipEvidenceId)
+      .toBe(OWNERSHIP_EVIDENCE_ID)
+    expect(first?.ownership.attributionEvidenceId).toBe(ATTRIBUTION_EVIDENCE_ID)
+    expect(OWNERSHIP_EVIDENCE_ID.split(':')[1]).toMatch(/^[0-9a-f]{64}$/)
+
+    // A different tax year is a different identity.
+    useSynthetic([execution()], [boundary()])
+    annualOrdinaryWithdrawalBoundary(input({
+      ordinaryActions: [request],
+      executionRequests: [request],
+      balances: [state(taxable('a-taxable', 100, 40))],
+      year: YEAR + 1,
+    }))
+    const second = (seam.executorInputs[1] as ExecuteOrdinaryWithdrawalsInput)
+      .taxableAccountSnapshots?.[0]
+    expect(second?.ownership.accountOwnershipEvidenceId)
+      .not.toBe(OWNERSHIP_EVIDENCE_ID)
   })
 })
 
