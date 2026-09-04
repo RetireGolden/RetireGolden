@@ -39,9 +39,16 @@ trustPolicyExclude:
 # the new version while package.json keeps the old one, and every CI job then
 # fails with ERR_PNPM_LOCKFILE_CONFIG_MISMATCH under --frozen-lockfile
 # (PR #593). The fix is a non-frozen `pnpm install`, which re-resolves under
-# the overrides, then a frozen install to prove the lockfile is settled.
-# Changing an override is a deliberate change: edit the entry, re-resolve, and
-# run the full suite.
+# the overrides, then a frozen install to prove the lockfile is settled. That
+# rescue does not float unrelated packages: pnpm's non-frozen install reuses
+# the lockfile's existing resolution for anything whose specifier is still
+# satisfied, and only re-resolves what the changed override (or manifest)
+# actually touches. Verified 2026-09-04: bumping only the `sharp` override
+# and rerunning the rescue moved `sharp` and its optional platform binaries;
+# every other resolved package, including anything a first-party manifest
+# declares, was byte-identical in the lockfile. Changing an override is a
+# deliberate change of its own: edit the entry, re-resolve, and run the full
+# suite.
 #
 # Per-override record. Each entry states what it raises, the reason, and the
 # condition that would let it go. Removal is a dedicated PR either way: drop
