@@ -41,6 +41,7 @@ import {
   type ResolvedIndividuallyOwnedSourceAllocationExecutionEvidence,
   type TaxableAccountOpeningSnapshot,
 } from './execution.js'
+import { describeRefusal } from '../rules/describeRefusal.js'
 import { describeRule } from '../rules/describeRule.js'
 
 function cash(id: string, ownerPersonId: string | null = 'p1'): Account {
@@ -1946,5 +1947,97 @@ describe('equity execution evidence IDs', () => {
       'cash-penalty-coverage:ef11650009513afc4aae3f5e87df2fde' +
         'b20c158e460991b7ee5b02887903699d',
     )
+  })
+})
+
+describeRefusal('irc-72-t-1-qualified-retirement-plan-scope', {
+  entryPoint: 'packages/engine/src/actions/execution.ts#executeOrdinaryWithdrawals',
+  outOfScopeInput: 'an ordinary withdrawal whose source is cash, a taxable brokerage account, or vested equity compensation, none of which is a qualified retirement plan under IRC 4974(c)',
+  refusal: "typed penaltyCoverage with applicability 'notApplicable', reason 'nonRetirementSource', and zero coveredPenaltyExposureAmount - the absence of the statutory predicate, not a computed zero section 72(t) tax",
+}, () => {
+  it('answers a non-retirement source with notApplicable rather than a penalty figure', () => {
+    const request = withdrawal({
+      actionId: 'non-retirement-scope',
+      sequence: 1,
+      allocations: [
+        allocation('cash-allocation', 'cash', 1),
+        allocation('equity-allocation', 'equity', 1),
+        allocation('taxable-allocation', 'taxable-source', 1),
+      ],
+    })
+    const result = run(
+      planWith(cash('cash'), equityComp('equity'), taxable('taxable-source')),
+      [request],
+      balances([['cash', 10], ['equity', 10], ['taxable-source', 10]]),
+      aliveEvidence([request]),
+      [taxableSnapshot('taxable-source', 4)],
+    )
+    const evidence = result.evidence[0]!
+    if (evidence.readiness !== 'actionable') {
+      throw new Error('expected an actionable non-retirement execution')
+    }
+
+    // Every source class the executor accepts is outside 4974(c), so every
+    // coverage row must say so in the same typed way. Asserting the set rather
+    // than one row is what makes this a scope assertion: a future source class
+    // admitted here without its own coverage row fails.
+    expect(evidence.penaltyCoverage.map((coverage) => coverage.sourceClass).sort())
+      .toEqual(['cash', 'equityCompensation', 'taxable'])
+    for (const coverage of evidence.penaltyCoverage) {
+      expect(coverage.applicability, coverage.sourceClass).toBe('notApplicable')
+      expect(coverage.reason, coverage.sourceClass).toBe('nonRetirementSource')
+      expect(coverage.coveredPenaltyExposureAmount, coverage.sourceClass).toBe(0)
+      expect(coverage.penaltyRelevantCharacterAmount, coverage.sourceClass).toBe(0)
+    }
+    // The refusal is the absence of the predicate, so there is no penalty
+    // record at all - not a penalty record holding zero.
+    expect(evidence.penalty).toEqual([])
+  })
+
+  it('does not extend that answer to a retirement source', () => {
+    // The control. Without it the assertion above is satisfied by an executor
+    // that stamps notApplicable on everything, which would be the dangerous
+    // reading of the record: section 72(t)(1) waived rather than absent. A
+    // traditional IRA IS a qualified retirement plan under 4974(c)(4), and this
+    // executor refuses it outright - it never mints a nonRetirementSource row
+    // for it, and never executes it - leaving the additional tax to be
+    // adjudicated on the retirement penalty path instead.
+    const request = withdrawal({
+      actionId: 'retirement-scope-control',
+      sequence: 1,
+      allocations: [allocation('ira-allocation', 'ira', 1)],
+    })
+    const result = run(
+      planWith({
+        type: 'traditional',
+        id: 'ira',
+        name: 'ira',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        kind: 'ira',
+        balance: 10,
+        annualContribution: 0,
+      }),
+      [request],
+      balances([['ira', 10]]),
+    )
+    const evidence = result.evidence[0]!
+
+    expect(evidence.readiness).toBe('nonActionable')
+    if (evidence.readiness !== 'nonActionable') {
+      throw new Error('expected a nonActionable retirement-source control')
+    }
+    expect(evidence.disposition.outcome).toBe('unsupported')
+    expect(evidence.disposition.reasons.map((reason) => reason.code))
+      .toContain('withdrawal-source-type-unsupported')
+    // Nonactionable evidence carries no penaltyCoverage field at all, which is
+    // the sharpest form of the point: the executor does not answer the section
+    // 72(t) question for a retirement source either way.
+    expect(Object.hasOwn(evidence, 'penaltyCoverage')).toBe(false)
+    expect(evidence.taxCharacter).toEqual([])
+    expect(evidence.penalty).toEqual([])
+    expect(result.balances).toMatchObject([
+      { accountId: 'ira', openingBalance: 10, closingBalance: 10 },
+    ])
   })
 })

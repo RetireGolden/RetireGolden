@@ -300,8 +300,15 @@ export const earlyDistributionAndSeppRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: ['packages/engine/src/actions/execution.ts'],
+    // `evaluateRetirementActionSchedule` stood here and does not implement this
+    // rule: it returns `{ requests, scheduleIssues }` and has no way to express
+    // an applicability, a reason, or a penalty exposure, so it cannot be the
+    // site the statement describes. The typed notApplicable/nonRetirementSource
+    // coverage is emitted by `executeOrdinaryWithdrawalsInScope`, which is
+    // module-private; `executeOrdinaryWithdrawals` is the exported function that
+    // reaches it and is what the fixture drives.
     implementedByFunctions: [
-      'packages/engine/src/actions/execution.ts#evaluateRetirementActionSchedule',
+      'packages/engine/src/actions/execution.ts#executeOrdinaryWithdrawals',
     ],
   },
 

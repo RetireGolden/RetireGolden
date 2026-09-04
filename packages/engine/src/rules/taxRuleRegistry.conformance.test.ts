@@ -355,11 +355,6 @@ const REFUSAL_FIXTURE_BACKLOG: readonly string[] = [
     // fixture cannot be written until the engine emits a refusal instead of a
     // zero, which is a product decision and not one to make from a test file.
     'irc-199A-a-qualified-business-income-deduction-not-modeled',
-    // why: the record is shaped `typedRefusal` and the engine does fail closed
-    // for it, but the record still points at `evaluateRetirementActionSchedule`,
-    // which cannot express an applicability or a penalty exposure. The pointer
-    // is corrected and the fixture written in the commit that follows this one.
-    'irc-72-t-1-qualified-retirement-plan-scope',
     // why: same shape, same reason. The annual SEPP reconciliation consumes a
     // caller-supplied attestation that no disqualifying modification occurred
     // and derives nothing from the account history, so an attestation given for
