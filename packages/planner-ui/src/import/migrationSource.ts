@@ -44,6 +44,9 @@
  *
  * Browser-free (no DOM, no Web Crypto) like the rest of the provenance surface,
  * and published as the `@retiregolden/planner-ui/migration-source` subpath.
+ *
+ * No call site for this module exists in this repository; what that costs a
+ * reviewer is recorded in `DOCS/features/published-only-modules.md`.
  */
 
 import { MAX_DOCUMENT_PAGES, MAX_DOCUMENT_TEXT_CHARS, MAX_PAGE_TEXT_CHARS } from './documentLimits'
