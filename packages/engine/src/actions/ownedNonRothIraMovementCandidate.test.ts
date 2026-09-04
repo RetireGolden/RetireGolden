@@ -960,4 +960,42 @@ describe('stageOwnedNonRothIraOrdinaryWithdrawalMovements', () => {
       stageOwnedNonRothIraOrdinaryWithdrawalMovements(input),
     ).toThrow('safe-integer cents range')
   })
+
+  it('mints both movement-candidate IDs with the hardened structural minter', () => {
+    const staged = stageOwnedNonRothIraOrdinaryWithdrawalMovements(fixture())
+    const invalid = stageOwnedNonRothIraOrdinaryWithdrawalMovements({
+      ownerPersonId: asPersonId('owner'),
+      taxYear: 2030,
+      requests: [
+        withdrawal({
+          suffix: 'b',
+          allocations: [allocation('b', 'ira-one', 10)],
+        }),
+        withdrawal({
+          suffix: 'a',
+          allocations: [allocation('a', 'ira-one', 20)],
+        }),
+      ],
+      openingBalances: [{
+        accountId: asAccountId('ira-one'),
+        openingBalance: asUsdCents(100),
+      }],
+      sourceEvidence: [source('ira-one')],
+    })
+
+    expect(staged.status).toBe('movementCandidateStaged')
+    expect(invalid.status).toBe('scheduleInvalid')
+    expect(staged.movementCandidateId).toBe(
+      'owned-non-roth-ira-movement-candidate:7d27e3a2d8ef0b4ecd9209e0' +
+        'f93a1c1910b178fe0a49e0bfb9ca0ee271f3ac1a',
+    )
+    expect(invalid.movementCandidateId).toBe(
+      'owned-non-roth-ira-movement-candidate:07ee06af68fd8524a7a2bd9b' +
+        '30bef4cef67ec1b6569d8053fc8fc13e1b74adaf',
+    )
+    expect(
+      stageOwnedNonRothIraOrdinaryWithdrawalMovements(fixture())
+        .movementCandidateId,
+    ).toBe(staged.movementCandidateId)
+  })
 })

@@ -25,7 +25,10 @@ import {
   type ActionReason,
 } from './reasons.js'
 import { deepFreeze } from './freeze.js'
-import { compareUtf16CodeUnits } from './structuralId.js'
+import {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from './structuralId.js'
 import { requireNonblankId } from './plainData.js'
 
 export interface OwnedNonRothIraMovementSourceEvidence {
@@ -177,10 +180,6 @@ interface ScheduledRequest {
   request: OrdinaryWithdrawalRequest
   executionDate: string | null
   chronologyKey: string
-}
-
-function stableId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
 }
 
 function centsFromBigInt(value: bigint, label: string): UsdCents {
@@ -552,7 +551,7 @@ export function stageOwnedNonRothIraOrdinaryWithdrawalMovements(
         }
       },
     )
-    const movementCandidateId = stableId(
+    const movementCandidateId = deriveActionStructuralId(
       'owned-non-roth-ira-movement-candidate',
       [
         ownerPersonId,
@@ -704,7 +703,7 @@ export function stageOwnedNonRothIraOrdinaryWithdrawalMovements(
       }
     },
   )
-  const movementCandidateId = stableId(
+  const movementCandidateId = deriveActionStructuralId(
     'owned-non-roth-ira-movement-candidate',
     [
       ownerPersonId,
