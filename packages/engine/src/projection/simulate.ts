@@ -67,12 +67,6 @@ import { annualAnnuityPurchaseFunding } from './internal/annualAnnuityPurchaseFu
 import { annualPropertyCarryingCosts } from './internal/annualPropertyCarryingCosts.js'
 import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
 import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
-import {
-  annualContributionsAndEmployerMatch,
-  type AnnualContributionAndMatchOperation,
-  type AnnualContributionAndMatchOperationIdentity,
-  type AnnualContributionsAndEmployerMatchResult,
-} from './internal/annualContributionsAndEmployerMatch.js'
 import { annualForcedDistributionQcdAndRetirementActionsPhase } from
   './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import { annualAggregateRothConversionPhase } from './internal/annualAggregateRothConversionPhase.js'
@@ -91,6 +85,10 @@ import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualTaxUnitIdentityPhase } from './internal/annualTaxUnitIdentityPhase.js'
 import { annualOneTimeGoalFundingPhase } from './internal/annualOneTimeGoalFundingPhase.js'
 import { annualAssumedCharacterPhase } from './internal/annualAssumedCharacterPhase.js'
+import {
+  annualContributionReconciliationPhase,
+  type SimulatorRetirementRuntimeApplicationWithoutOrdinal,
+} from './internal/annualContributionReconciliationPhase.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import {
   annualDebtServiceRows,
@@ -124,7 +122,6 @@ import {
   isAggregatedIra,
   isTreatAsOwnEffective,
 } from '../strategies/accountEligibility.js'
-import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
 import { splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import {
   asAccountId,
@@ -346,208 +343,6 @@ function indexWithStatutoryRounding(base: number, growth: number): number {
   // floor to the step below and hold the limit flat for a whole year.
   const steps = Math.floor(increase / COLA_ROUNDING_STEP + STEP_BOUNDARY_TOLERANCE)
   return base + steps * COLA_ROUNDING_STEP
-}
-
-/**
- * Bucket that a jointly-filing couple's IRA compensation ceiling lives in.
- *
- * A person id is validated only as a non-empty string, so no literal value can
- * be made collision-proof by choice alone. Safety comes from the two branches
- * being mutually exclusive: in a shared year the map is keyed by this constant
- * and nothing else, and in an unshared year it is keyed by person ids and this
- * constant is never read. The namespaced spelling is a signpost for that
- * invariant, not the thing that enforces it.
- */
-const IRA_HOUSEHOLD_COMPENSATION_KEY = 'ira:household-compensation'
-
-type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
-  SimulatorRetirementRuntimeApplication extends infer Application
-    ? Application extends SimulatorRetirementRuntimeApplication
-      ? Omit<Application, 'mutationOrdinal'>
-      : never
-    : never
-
-function snapshotStringNumberMap(
-  source: ReadonlyMap<string, number>,
-): ReadonlyMap<string, number> {
-  const snapshot = new Map<string, number>()
-  for (const entry of source) {
-    const key = entry[0]
-    const value = entry[1]
-    snapshot.set(key, value)
-  }
-  return snapshot
-}
-
-function snapshotEmployerElectiveAllocation(
-  source: Readonly<EmployerElectiveAllocation>,
-): Readonly<EmployerElectiveAllocation> {
-  return {
-    allowed: snapshotStringNumberMap(source.allowed),
-    designatedRothCatchUp: source.designatedRothCatchUp,
-    refusedCatchUp: source.refusedCatchUp,
-    redirectedCatchUpBySource:
-      snapshotStringNumberMap(source.redirectedCatchUpBySource),
-    catchUpByAccount: snapshotStringNumberMap(source.catchUpByAccount),
-    catchUpRothAccountId: source.catchUpRothAccountId,
-  }
-}
-
-/**
- * Sever every lazy/proxy-backed channel returned by the contribution planner.
- * Nothing below this boundary retains a helper-owned operation, iterator,
- * nested payload, totals object, or allocation map.
- */
-function snapshotAnnualContributionsAndEmployerMatchResult(
-  source: AnnualContributionsAndEmployerMatchResult,
-): AnnualContributionsAndEmployerMatchResult {
-  const operations: AnnualContributionAndMatchOperation[] = []
-  for (const operation of source.operations) {
-    const kind = operation.kind
-    if (kind === 'warning') {
-      operations.push({ kind, message: operation.message })
-      continue
-    }
-    const sourceRetirementOccurrence = operation.retirementOccurrence
-    const retirementOccurrence = sourceRetirementOccurrence === null
-      ? null
-      : {
-          producerOccurrenceKey:
-            sourceRetirementOccurrence.producerOccurrenceKey,
-          kind: sourceRetirementOccurrence.kind,
-          grossAmountPlanDollars:
-            sourceRetirementOccurrence.grossAmountPlanDollars,
-          ownerPersonId: sourceRetirementOccurrence.ownerPersonId,
-          sourceAccountId: sourceRetirementOccurrence.sourceAccountId,
-          executionDate: sourceRetirementOccurrence.executionDate,
-          executionSequence: sourceRetirementOccurrence.executionSequence,
-          movementAuthorityId:
-            sourceRetirementOccurrence.movementAuthorityId,
-        }
-    if (kind === 'employerMatch') {
-      const record = operation.record
-      operations.push({
-        kind,
-        balanceIndex: operation.balanceIndex,
-        sourceAccount: operation.sourceAccount,
-        balanceBefore: operation.balanceBefore,
-        balanceAfter: operation.balanceAfter,
-        retirementOccurrence,
-        record: {
-          destinationAccountId: record.destinationAccountId,
-          ownerPersonId: record.ownerPersonId,
-          amount: record.amount,
-        },
-      })
-      continue
-    }
-    const sourceRetirementApplication = operation.retirementApplication
-    let retirementApplication:
-      SimulatorRetirementRuntimeApplicationWithoutOrdinal | null = null
-    if (sourceRetirementApplication !== null) {
-      const sourceApplicationKind =
-        sourceRetirementApplication.applicationKind
-      if (sourceApplicationKind !== 'credit') {
-        throw new Error('Annual contribution plan returned a non-credit application')
-      }
-      retirementApplication = {
-        applicationKind: sourceApplicationKind,
-        producerOccurrenceKey:
-          sourceRetirementApplication.producerOccurrenceKey,
-        simulatorPhase: sourceRetirementApplication.simulatorPhase,
-        ownerPersonId: sourceRetirementApplication.ownerPersonId,
-        sourceAccountId: sourceRetirementApplication.sourceAccountId,
-        balanceIndex: sourceRetirementApplication.balanceIndex,
-        sourceBalanceBeforePlanDollars:
-          sourceRetirementApplication.sourceBalanceBeforePlanDollars,
-        creditedAmountPlanDollars:
-          sourceRetirementApplication.creditedAmountPlanDollars,
-        sourceBalanceAfterPlanDollars:
-          sourceRetirementApplication.sourceBalanceAfterPlanDollars,
-      }
-    }
-    const record = operation.record
-    operations.push({
-      kind,
-      balanceIndex: operation.balanceIndex,
-      sourceAccount: operation.sourceAccount,
-      balanceBefore: operation.balanceBefore,
-      balanceAfter: operation.balanceAfter,
-      costBasisBefore: operation.costBasisBefore,
-      costBasisAfter: operation.costBasisAfter,
-      credited: operation.credited,
-      retirementOccurrence,
-      retirementApplication,
-      rothContributionPoolKey: operation.rothContributionPoolKey,
-      rothContributionBasisDelta: operation.rothContributionBasisDelta,
-      qcdSection219OwnerPersonId: operation.qcdSection219OwnerPersonId,
-      qcdSection219Amount: operation.qcdSection219Amount,
-      record: {
-        destinationAccountId: record.destinationAccountId,
-        ownerPersonId: record.ownerPersonId,
-        requested: record.requested,
-        credited: record.credited,
-      },
-    })
-  }
-
-  const snapshotOperationIdentity = (
-    identity: AnnualContributionAndMatchOperationIdentity,
-  ): AnnualContributionAndMatchOperationIdentity => {
-    const kind = identity.kind
-    return kind === 'warning'
-      ? { kind }
-      : { kind, balanceIndex: identity.balanceIndex }
-  }
-  const operationIdentities = [...source.operationIdentities]
-    .map(snapshotOperationIdentity)
-  const expectedOperationIdentities = [...source.expectedOperationIdentities]
-    .map(snapshotOperationIdentity)
-  const expectedContributionBalanceIndices =
-    [...source.expectedContributionBalanceIndices].map((balanceIndex) =>
-      balanceIndex
-    )
-  const sourceTotals = source.totals
-  const totals = {
-    contributions: sourceTotals.contributions,
-    ownedNonRothIraContributions:
-      sourceTotals.ownedNonRothIraContributions,
-    employerMatch: sourceTotals.employerMatch,
-    preTaxContributions: sourceTotals.preTaxContributions,
-    traditionalInflow: sourceTotals.traditionalInflow,
-    otherInflow: sourceTotals.otherInflow,
-    taxableInflow: sourceTotals.taxableInflow,
-  }
-  const employerAllocationByOwner = new Map<
-    string,
-    Readonly<EmployerElectiveAllocation>
-  >()
-  for (const entry of source.employerAllocationByOwner) {
-    const ownerPersonId = entry[0]
-    const allocation = entry[1]
-    employerAllocationByOwner.set(
-      ownerPersonId,
-      snapshotEmployerElectiveAllocation(allocation),
-    )
-  }
-  return {
-    operations,
-    operationIdentities,
-    expectedOperationIdentities,
-    expectedContributionBalanceIndices,
-    totals,
-    employerAllocationByOwner,
-  }
-}
-
-function assertExactContributionTotal(
-  label: string,
-  actual: number,
-  expected: number,
-): void {
-  if (!Object.is(actual, expected)) {
-    throw new Error(`Annual contribution plan has an inconsistent ${label}`)
-  }
 }
 
 function compareNullableUtf16(
@@ -2357,309 +2152,48 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // --- contributions & employer match --------------------
-    const contributionPlan = snapshotAnnualContributionsAndEmployerMatchResult(
-      annualContributionsAndEmployerMatch({
-        balances,
-        year,
-        startYear,
-        inflFactor,
-        limitGrowth,
-        filingStatus: filingStatusForYear,
-        aliveCount,
-        peopleCount: people.length,
-        primaryPersonId: primary.id,
-        wagesByPerson,
-        resolveOwnerState: stateOf,
-        resolveOwnerBirthYear: (ownerPersonId) =>
-          dobYear(personById.get(ownerPersonId)!),
-        resolveOwnerDob: (ownerPersonId) =>
-          personById.get(ownerPersonId)?.dob ?? null,
-        resolveRothPoolKey: rothPoolKey,
-        runtimeOccurrenceKey,
-        iraHouseholdCompensationKey: IRA_HOUSEHOLD_COMPENSATION_KEY,
-        indexWithStatutoryRounding,
-        pack,
-      }),
-    )
-
-    if (
-      contributionPlan.operationIdentities.length !==
-        contributionPlan.operations.length ||
-      contributionPlan.expectedOperationIdentities.length !==
-        contributionPlan.operations.length
-    ) {
-      throw new Error('Annual contribution operations lost cardinality')
-    }
-    const seenMatchBalanceIndices = new Set<number>()
-    const expectedContributionBalanceIndices =
-      new Set(contributionPlan.expectedContributionBalanceIndices)
-    if (
-      expectedContributionBalanceIndices.size !==
-      contributionPlan.expectedContributionBalanceIndices.length
-    ) {
-      throw new Error('Annual contribution expectation has duplicate positions')
-    }
-    const seenContributionBalanceIndices = new Set<number>()
-    const shadowContributionBalances = balances.map((state) => state.balance)
-    const shadowContributionCostBases = balances.map((state) => state.costBasis)
-    let reconciledContributions = 0
-    let reconciledOwnedNonRothIraContributions = 0
-    let reconciledEmployerMatch = 0
-    let reconciledPreTaxContributions = 0
-    let reconciledTraditionalInflow = 0
-    let reconciledOtherInflow = 0
-    let reconciledTaxableInflow = 0
-    let reachedEmployerMatches = false
-    for (let operationIndex = 0; operationIndex <
-      contributionPlan.operations.length; operationIndex++) {
-      const operation = contributionPlan.operations[operationIndex]!
-      const identity = contributionPlan.operationIdentities[operationIndex]!
-      const expectedIdentity =
-        contributionPlan.expectedOperationIdentities[operationIndex]!
-      if (
-        identity.kind !== operation.kind ||
-        expectedIdentity.kind !== operation.kind
-      ) {
-        throw new Error('Annual contribution operation lost its identity')
-      }
-      if (
-        operation.kind !== 'warning' &&
-        (identity.kind === 'warning' ||
-          expectedIdentity.kind === 'warning' ||
-          identity.balanceIndex !== operation.balanceIndex ||
-          expectedIdentity.balanceIndex !== operation.balanceIndex)
-      ) {
-        throw new Error('Annual contribution operation lost its identity')
-      }
-      if (operation.kind === 'warning') {
-        if (reachedEmployerMatches) {
-          throw new Error('Annual contribution operation order is inconsistent')
-        }
-        continue
-      }
-      const state = balances[operation.balanceIndex]
-      if (
-        state === undefined ||
-        state.account !== operation.sourceAccount ||
-        !Object.is(
-          shadowContributionBalances[operation.balanceIndex],
-          operation.balanceBefore,
-        )
-      ) {
-        throw new Error(
-          'Annual contribution operation lost its live balance position',
-        )
-      }
-      if (operation.kind === 'contribution') {
-        if (reachedEmployerMatches) {
-          throw new Error('Annual contribution operation order is inconsistent')
-        }
-        if (
-          !expectedContributionBalanceIndices.has(operation.balanceIndex) ||
-          seenContributionBalanceIndices.has(operation.balanceIndex)
-        ) {
-          throw new Error('Annual contribution operation duplicated a physical position')
-        }
-        seenContributionBalanceIndices.add(operation.balanceIndex)
-        if (
-          !Object.is(
-            shadowContributionCostBases[operation.balanceIndex],
-            operation.costBasisBefore,
-          )
-        ) {
-          throw new Error(
-            'Annual contribution operation has a stale live cost basis',
-          )
-        }
-        if (!Object.is(operation.record.credited, operation.credited)) {
-          throw new Error(
-            'Annual contribution operation has an inconsistent cash-flow record',
-          )
-        }
-        if (
-          operation.credited < 0 ||
-          !Number.isFinite(operation.credited) ||
-          (operation.credited === 0
-            ? !Object.is(operation.balanceAfter, operation.balanceBefore)
-            : !Object.is(
-                operation.balanceAfter,
-                operation.balanceBefore + operation.credited,
-              ))
-        ) {
-          throw new Error('Annual contribution operation has inconsistent balance math')
-        }
-        const expectsBasisCredit =
-          operation.sourceAccount.type === 'taxable' ||
-          operation.sourceAccount.type === 'equityComp'
-        const expectedCostBasisAfter =
-          operation.credited > 0 && expectsBasisCredit
-            ? operation.costBasisBefore + operation.credited
-            : operation.costBasisBefore
-        if (!Object.is(operation.costBasisAfter, expectedCostBasisAfter)) {
-          throw new Error('Annual contribution operation has inconsistent basis math')
-        }
-        if (operation.credited > 0) {
-          shadowContributionBalances[operation.balanceIndex] =
-            operation.balanceAfter
-          if (!Object.is(operation.costBasisAfter, operation.costBasisBefore)) {
-            shadowContributionCostBases[operation.balanceIndex] =
-              operation.costBasisAfter
-          }
-        }
-        reconciledContributions += operation.credited
-        if (isAggregatedIra(operation.sourceAccount)) {
-          reconciledOwnedNonRothIraContributions += operation.credited
-        }
-        if (
-          operation.sourceAccount.type === 'traditional' ||
-          operation.sourceAccount.type === 'hsa'
-        ) {
-          reconciledPreTaxContributions += operation.credited
-        }
-        if (operation.sourceAccount.type === 'traditional') {
-          reconciledTraditionalInflow += operation.credited
-        } else {
-          reconciledOtherInflow += operation.credited
-        }
-        if (
-          operation.sourceAccount.type === 'taxable' ||
-          operation.sourceAccount.type === 'equityComp'
-        ) {
-          reconciledTaxableInflow += operation.credited
-        }
-        continue
-      }
-      reachedEmployerMatches = true
-      if (
-        seenMatchBalanceIndices.has(operation.balanceIndex) ||
-        (operation.sourceAccount.type !== 'traditional' &&
-          operation.sourceAccount.type !== 'roth') ||
-        operation.sourceAccount.kind !== 'employer' ||
-        operation.sourceAccount.employerMatch === null ||
-        operation.sourceAccount.employerMatch === undefined
-      ) {
-        throw new Error('Annual employer-match operation lost its physical identity')
-      }
-      if (
-        operation.record.amount <= 0 ||
-        !Number.isFinite(operation.record.amount) ||
-        !Object.is(
-          operation.balanceAfter,
-          operation.balanceBefore + operation.record.amount,
-        )
-      ) {
-        throw new Error('Annual employer-match operation has inconsistent balance math')
-      }
-      seenMatchBalanceIndices.add(operation.balanceIndex)
-      shadowContributionBalances[operation.balanceIndex] =
-        operation.balanceAfter
-      reconciledEmployerMatch += operation.record.amount
-      if (operation.sourceAccount.type === 'traditional') {
-        reconciledTraditionalInflow += operation.record.amount
-      } else {
-        reconciledOtherInflow += operation.record.amount
-      }
-    }
-    if (
-      seenContributionBalanceIndices.size !==
-      expectedContributionBalanceIndices.size
-    ) {
-      throw new Error('Annual contribution operations lost expected positions')
-    }
-    assertExactContributionTotal(
-      'contribution total',
-      contributionPlan.totals.contributions,
-      reconciledContributions,
-    )
-    assertExactContributionTotal(
-      'owned-IRA contribution total',
-      contributionPlan.totals.ownedNonRothIraContributions,
-      reconciledOwnedNonRothIraContributions,
-    )
-    assertExactContributionTotal(
-      'employer-match total',
-      contributionPlan.totals.employerMatch,
-      reconciledEmployerMatch,
-    )
-    assertExactContributionTotal(
-      'pre-tax contribution total',
-      contributionPlan.totals.preTaxContributions,
-      reconciledPreTaxContributions,
-    )
-    assertExactContributionTotal(
-      'traditional inflow total',
-      contributionPlan.totals.traditionalInflow,
-      reconciledTraditionalInflow,
-    )
-    assertExactContributionTotal(
-      'other inflow total',
-      contributionPlan.totals.otherInflow,
-      reconciledOtherInflow,
-    )
-    assertExactContributionTotal(
-      'taxable inflow total',
-      contributionPlan.totals.taxableInflow,
-      reconciledTaxableInflow,
-    )
-    for (const operation of contributionPlan.operations) {
-      if (operation.kind === 'warning') {
-        warnings.add(operation.message)
-        continue
-      }
-      const state = balances[operation.balanceIndex]!
-      if (operation.kind === 'contribution') {
-        if (operation.credited > 0) {
-          state.balance = operation.balanceAfter
-          if (operation.retirementOccurrence !== null) {
-            recordAnnualRetirementRuntimeOccurrence(
-              operation.retirementOccurrence,
-            )
-          }
-          if (operation.retirementApplication !== null) {
-            recordAnnualRetirementRuntimeApplication(
-              operation.retirementApplication,
-            )
-          }
-          if (!Object.is(operation.costBasisAfter, operation.costBasisBefore)) {
-            state.costBasis = operation.costBasisAfter
-          }
-          if (operation.rothContributionPoolKey !== null) {
-            const rb = rothBasis.get(operation.rothContributionPoolKey)
-            if (rb) {
-              rb.contributionBasis += operation.rothContributionBasisDelta
-            }
-          }
-          if (operation.qcdSection219OwnerPersonId !== null) {
-            const ownerId = operation.qcdSection219OwnerPersonId
-            qcdSection219ByDonor.set(
-              ownerId,
-              (qcdSection219ByDonor.get(ownerId) ?? 0) +
-                operation.qcdSection219Amount,
-            )
-          }
-        }
-        yearSites?.recordContribution(operation.record)
-        continue
-      }
-
-      // The cash-flow record originally preceded the match balance mutation.
-      yearSites?.recordEmployerMatch(operation.record)
-      state.balance = operation.balanceAfter
-      if (operation.retirementOccurrence !== null) {
-        recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)
-      }
-    }
-    const {
-      contributions,
-      ownedNonRothIraContributions,
-      employerMatch,
-      preTaxContributions,
-      traditionalInflow,
-      otherInflow,
-      taxableInflow,
-    } = contributionPlan.totals
+    // The phase lives in `internal/annualContributionReconciliationPhase.ts`:
+    // the caller-owned snapshot of the planner's result, the shadow-ledger
+    // reconciliation, the seven exact totals, and the apply pass that commits
+    // balances, bases, Roth pools, section 219 offsets, journal rows, warnings
+    // and cash-flow records, in that order.
+    const contributionReconciliation = annualContributionReconciliationPhase({
+      balances,
+      year,
+      startYear,
+      inflFactor,
+      limitGrowth,
+      filingStatus: filingStatusForYear,
+      aliveCount,
+      peopleCount: people.length,
+      primaryPersonId: primary.id,
+      wagesByPerson,
+      resolveOwnerState: stateOf,
+      resolveOwnerBirthYear: (ownerPersonId) =>
+        dobYear(personById.get(ownerPersonId)!),
+      resolveOwnerDob: (ownerPersonId) =>
+        personById.get(ownerPersonId)?.dob ?? null,
+      resolveRothPoolKey: rothPoolKey,
+      runtimeOccurrenceKey,
+      indexWithStatutoryRounding,
+      pack,
+      warnings,
+      rothBasis,
+      qcdSection219ByDonor,
+      recordAnnualRetirementRuntimeOccurrence,
+      recordAnnualRetirementRuntimeApplication,
+      yearSites,
+    })
+    const contributions = contributionReconciliation.contributions
+    const ownedNonRothIraContributions =
+      contributionReconciliation.ownedNonRothIraContributions
+    const employerMatch = contributionReconciliation.employerMatch
+    const preTaxContributions = contributionReconciliation.preTaxContributions
+    const traditionalInflow = contributionReconciliation.traditionalInflow
+    const otherInflow = contributionReconciliation.otherInflow
+    const taxableInflow = contributionReconciliation.taxableInflow
     const employerAllocationByOwner =
-      contributionPlan.employerAllocationByOwner
+      contributionReconciliation.employerAllocationByOwner
     const iraProRata = new Map<string, IraProRataYear>()
     const qcdProRataIdentityByReadSnapshot =
       new WeakMap<IraProRataYear, IraProRataYear>()
