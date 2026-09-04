@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-09-04T23:24:50.784Z",
+  "generatedAt": "2026-09-04T23:50:56.180Z",
   "recordCount": 418,
   "urlCount": 309,
-  "fetched": 10,
-  "cached": 299,
+  "fetched": 9,
+  "cached": 300,
   "entryCount": 1076,
   "counts": {
-    "EXACT": 712,
+    "EXACT": 714,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
     "ELISION-EXACT": 63,
     "PDF-NOT-VERIFIABLE": 7,
-    "UNFETCHABLE": 39
+    "UNFETCHABLE": 37
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -6420,26 +6420,6 @@
       "diagnosis": null
     },
     {
-      "id": "il-ita-203-a-2-F-retirement-income-subtraction",
-      "citation": "35 ILCS 5/203(a)(2)(F)",
-      "host": "www.ilga.gov",
-      "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm",
-      "quoteSha256": "af6ec3bd3b93c85a",
-      "verdict": "UNFETCHABLE",
-      "detail": "HTTP 404",
-      "diagnosis": null
-    },
-    {
-      "id": "il-ita-203-a-2-F-retirement-income-subtraction",
-      "citation": "35 ILCS 5/203(a)(2)",
-      "host": "www.ilga.gov",
-      "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm",
-      "quoteSha256": "b20aa287a892d09c",
-      "verdict": "UNFETCHABLE",
-      "detail": "HTTP 404",
-      "diagnosis": null
-    },
-    {
       "id": "mo-rsmo-143-121-capital-gain-deduction",
       "citation": "Mo. Rev. Stat. 143.121.3(14)(a)",
       "host": "revisor.mo.gov",
@@ -10805,6 +10785,26 @@
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/irb/2007-08_IRB",
       "quoteSha256": "654245aac251d1c7",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "il-ita-203-a-2-F-retirement-income-subtraction",
+      "citation": "35 ILCS 5/203(a)(2)(F)",
+      "host": "www.ilga.gov",
+      "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
+      "quoteSha256": "af6ec3bd3b93c85a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "il-ita-203-a-2-F-retirement-income-subtraction",
+      "citation": "35 ILCS 5/203(a)(2)",
+      "host": "www.ilga.gov",
+      "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
+      "quoteSha256": "b20aa287a892d09c",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

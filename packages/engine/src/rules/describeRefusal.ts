@@ -12,9 +12,8 @@ import { TAX_RULE_REGISTRY, type TaxRuleId, type TaxRuleRecord } from './taxRule
  * fails closed, and until now nothing checked that the refusal existed, still
  * existed, or still had the shape the record describes. That is exactly the
  * rot the `produced` field on `describeRule` was invented to stop, on the
- * slice of the registry (73 of 417 records, under a fifth) that says "we will
- * not answer this" — of which only the `typedRefusal` shape has a refusal to
- * check; see below.
+ * registry's `outOfScope` slice that says "we will not answer this" — of which
+ * only the `typedRefusal` shape has a refusal to check; see below.
  *
  * Only one of the two `outOfScope` shapes takes a fixture. A record declares
  * which it is in `outOfScope` (see `TaxRuleOutOfScope`): `typedRefusal` fails

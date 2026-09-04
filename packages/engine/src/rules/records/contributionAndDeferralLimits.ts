@@ -1,6 +1,8 @@
 /**
- * Contribution and deferral limit records: the section 219 IRA ceilings, the section
- * 402(g) elective deferral aggregate, the section 414(v) catch-up regime, the section
+ * Contribution and deferral limit records: the section 219 IRA ceilings, the
+ * 219(f)(3) prior-year contribution window and its ordinary nationwide filing
+ * calendar under 6072(a)/7503 (placed next to that window), the section 402(g)
+ * elective deferral aggregate, the section 414(v) catch-up regime, the section
  * 415 annual additions cap, and the excise taxes on excess contributions.
  *
  * One slice of the tax rule registry. `../taxRuleRegistry.ts` composes every

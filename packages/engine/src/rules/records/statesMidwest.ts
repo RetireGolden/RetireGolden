@@ -125,20 +125,20 @@ export const midwestStateRecords = {
     authority: [{
       kind: 'statute',
       citation: '35 ILCS 5/203(a)(2)(F)',
-      url: 'https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm',
+      url: 'https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm',
       quotedText:
         'An amount equal to all amounts included in such total pursuant to the provisions of Sections 402(a), 402(c), 403(a), 403(b), 406(a), 407(a), and 408 of the Internal Revenue Code, or included in such total as distributions under the provisions of any retirement or disability plan for employees of any governmental agency or unit, or retirement payments to retired partners, which payments are excluded in computing net earnings from self employment by Section 1402 of the Internal Revenue Code and regulations adopted pursuant thereto;',
     }, {
       kind: 'statute',
       citation: '35 ILCS 5/203(a)(2)',
-      url: 'https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm',
+      url: 'https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm',
       quotedText:
         'and by deducting from the total so obtained the sum of the following amounts:',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-04',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
