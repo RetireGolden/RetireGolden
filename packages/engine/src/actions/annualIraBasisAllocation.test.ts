@@ -271,4 +271,25 @@ describe('allocateAnnualIraBasis', () => {
   ])('rejects $name', ({ change, message }) => {
     expect(() => allocateAnnualIraBasis(input(change))).toThrow(message)
   })
+
+  it('mints both allocation evidence IDs with the hardened structural minter', () => {
+    const populated = allocateAnnualIraBasis(input())
+    const zeroGross = allocateAnnualIraBasis(input({
+      annualGrossAmount: asUsdCents(0),
+      entries: [entry('a', 0)],
+    }))
+
+    expect(populated.allocationEvidenceId).toBe(
+      'annual-ira-basis-allocation:1aa1a4d12a7e664a3dadc9fa146cf305' +
+        '70c919c7bde51288d54ce900144156bb',
+    )
+    expect(zeroGross.allocationEvidenceId).toBe(
+      'annual-ira-basis-allocation:8ecc046314a5fc35f4179185370650aa' +
+        '5020e4b4c3c9cfc62b9e9577b7a915bb',
+    )
+    expect(allocateAnnualIraBasis(input()).allocationEvidenceId)
+      .toBe(populated.allocationEvidenceId)
+    expect(populated.allocationEvidenceId)
+      .not.toBe(zeroGross.allocationEvidenceId)
+  })
 })
