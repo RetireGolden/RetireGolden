@@ -190,6 +190,65 @@ function baseInput(): AnnualYearResultAssemblyInput {
   }
 }
 
+describe('annualYearResultAssembly netPortfolioNeed', () => {
+  // Hand worksheet, from the published definition
+  // (`max(0, expenses.total + tax + penalties - incomes.total)`) and nothing
+  // else. Both arms use the same four inputs so the floor is the only
+  // difference between them.
+  it('publishes 0 when incomes cover every outflow', () => {
+    // expenses.total 37 + tax 31 + penalties 22 = 90 of outflow.
+    // incomes.total 101. 90 - 101 = -11, a surplus year, so the need floors
+    // at 0 rather than publishing a negative "need".
+    const result = annualYearResultAssembly(baseInput())
+    expect(result.netPortfolioNeed).toBe(0)
+  })
+
+  it('publishes the uncovered outflow when incomes fall short', () => {
+    const base = baseInput()
+    const input: AnnualYearResultAssemblyInput = {
+      ...base,
+      ledger: {
+        ...base.ledger,
+        expenses: { total: 500 } as YearResult['expenses'],
+      },
+    }
+    // expenses.total 500 + tax 31 + penalties 22 = 553 of outflow.
+    // incomes.total 101. 553 - 101 = 452, all of which the portfolio supplies.
+    const result = annualYearResultAssembly(input)
+    expect(result.netPortfolioNeed).toBe(452)
+  })
+
+  it('reads only the four published inputs, at the settled boundary', () => {
+    // Each input moved one at a time from the surplus fixture, so no arm can
+    // pass by coincidence: +463 expense, +463 tax, +463 penalty each land the
+    // same 452, and +463 of income deepens the surplus and stays floored.
+    const base = baseInput()
+    const withExpenses = annualYearResultAssembly({
+      ...base,
+      ledger: { ...base.ledger, expenses: { total: 500 } as YearResult['expenses'] },
+    })
+    const withTax = annualYearResultAssembly({
+      ...base,
+      tax: { ...base.tax, tax: 494 },
+    })
+    const withPenalties = annualYearResultAssembly({
+      ...base,
+      tax: { ...base.tax, penalties: 485 },
+    })
+    const withIncome = annualYearResultAssembly({
+      ...base,
+      ledger: {
+        ...base.ledger,
+        incomes: { taxableYield: 23, total: 564 } as YearResult['incomes'],
+      },
+    })
+    expect(withExpenses.netPortfolioNeed).toBe(452)
+    expect(withTax.netPortfolioNeed).toBe(452)
+    expect(withPenalties.netPortfolioNeed).toBe(452)
+    expect(withIncome.netPortfolioNeed).toBe(0)
+  })
+})
+
 describe('annualYearResultAssembly', () => {
   beforeEach(() => {
     cashFlowSeam.calls.length = 0
@@ -477,6 +536,7 @@ describe('annualYearResultAssembly', () => {
       'hecmLoanBalance',
       'netWorth',
       'cashFlow',
+      'netPortfolioNeed',
     ])
 
     const absent = annualYearResultAssembly(base)

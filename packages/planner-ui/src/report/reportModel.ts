@@ -36,6 +36,7 @@ import { LATEST_STATE_PACK_YEAR } from '@retiregolden/engine/params/state'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
 import type {
   InheritedAccountYearEvidence,
+  InheritedIraRefusalCode,
   ProjectionResult,
   YearResult,
 } from '@retiregolden/engine/projection/types'
@@ -292,6 +293,12 @@ export interface ReportInheritedScheduleAccount {
   classification: 'settled' | 'unsettled' | null
   finalDeadlineYear: number | null
   refusalReason: string | null
+  /**
+   * Discriminated cause published beside `refusalReason`. `null` when there
+   * is no refusal, and also when a result serialized before the engine
+   * published codes carries only the prose.
+   */
+  refusalCode: InheritedIraRefusalCode | null
   /** True when the schedule is the labeled planning approximation path. */
   isLegacyApproximation: boolean
   /** True when any year carried a classifier refusal or unsupported flag. */
@@ -956,6 +963,7 @@ export function buildInheritedSchedules(
     let isRefusal = false
     let isSuccessorScope = false
     let refusalReason: string | null = null
+    let refusalCode: InheritedIraRefusalCode | null = null
     let finalDeadlineYear: number | null = null
     let hasUnsettledClassification = false
     let hasSettledClassification = false
@@ -968,6 +976,7 @@ export function buildInheritedSchedules(
       if (evidence.refusalReason && !isSuccessorScopeEvidence(evidence)) {
         isRefusal = true
         refusalReason = evidence.refusalReason
+        refusalCode = evidence.refusalCode ?? null
       }
       if (evidence.limitation) notes.add(noteForLimitation(evidence.limitation))
       if (evidence.noticeWaived) {
@@ -1012,6 +1021,7 @@ export function buildInheritedSchedules(
       classification,
       finalDeadlineYear,
       refusalReason,
+      refusalCode,
       isLegacyApproximation,
       isRefusal,
       isSuccessorScope,

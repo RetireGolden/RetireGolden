@@ -15,6 +15,7 @@ import { rmdApplicablePlanForAccount } from '../../rmd/rmdApplicablePlanForAccou
 import {
   inheritedForcedAmount,
   inheritedRequirementForYear,
+  type InheritedIraRefusalCode,
   type InheritedRegimeClassification,
   type InheritedRegimeResult,
 } from '../../strategies/inheritedIra.js'
@@ -28,6 +29,8 @@ export interface AnnualInheritedIraClassCacheEntry {
   readonly ownerPersonId: string
   readonly path: 'legacy' | 'classified'
   readonly refusalReason?: string
+  /** The discriminated cause for `refusalReason`; the two travel together. */
+  readonly refusalCode?: InheritedIraRefusalCode
   /** Primary classifier result (regime or refusal). */
   readonly primary: InheritedRegimeResult
   /** Synthetic S0 for the S2 pre-election window; primary otherwise. */
@@ -191,6 +194,7 @@ export function annualInheritedIraDistributions(
           : {}),
         refusalReason:
           'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope',
+        refusalCode: 'successor-clock-out-of-scope',
         requirementKind: 'none',
         requiredAmount: 0,
         executedRequiredAmount: 0,
@@ -259,6 +263,7 @@ export function annualInheritedIraDistributions(
     let citations: string[]
     let finalDeadlineYear: number | undefined
     const refusalReason = cache.refusalReason
+    const refusalCode = cache.refusalCode
 
     if (cache.path === 'legacy' || cache.schedule === undefined) {
       take = inheritedForcedAmount({
@@ -355,6 +360,7 @@ export function annualInheritedIraDistributions(
       matrixRow,
       ...(classification !== undefined ? { classification } : {}),
       ...(refusalReason !== undefined ? { refusalReason } : {}),
+      ...(refusalCode !== undefined ? { refusalCode } : {}),
       requirementKind,
       requiredAmount,
       executedRequiredAmount: executed,

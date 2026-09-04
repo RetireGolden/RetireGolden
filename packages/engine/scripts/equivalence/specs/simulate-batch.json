@@ -166,24 +166,24 @@
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        1772,
-        1782
+        1786,
+        1796
       ],
       "anchors": [
         {
-          "line": 1772,
+          "line": 1786,
           "text": "if (row.runtime.creditsAggregatedIra) {"
         },
         {
-          "line": 1773,
+          "line": 1787,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1782,
+          "line": 1796,
           "text": "})"
         }
       ],
-      "note": "REPINNED after the annuity-funding extraction and prerequisite stack changed the caller position. These lines are the creditsAggregatedIra gate and the complete runtime-application call. Exact content anchors now make any later positional drift fail the normal engine test suite before coverage is collected. REPINNED AGAIN on 2026-09-03, +16 lines: the projection-seam slice added a shared scalar-binding record and an indexing-helper import above this block in simulate.ts. This is the lone-entry case DOCS/testing.md names -- every other entry in this spec sits in a different file at delta zero, so nothing corroborates the shift and the positional lines have to move explicitly. The block itself is unchanged, operand for operand."
+      "note": "REPINNED after the annuity-funding extraction and prerequisite stack changed the caller position. These lines are the creditsAggregatedIra gate and the complete runtime-application call. Exact content anchors now make any later positional drift fail the normal engine test suite before coverage is collected. REPINNED AGAIN on 2026-09-03, +16 lines: the projection-seam slice added a shared scalar-binding record and an indexing-helper import above this block in simulate.ts. This is the lone-entry case DOCS/testing.md names -- every other entry in this spec sits in a different file at delta zero, so nothing corroborates the shift and the positional lines have to move explicitly. The block itself is unchanged, operand for operand. REPINNED AGAIN on 2026-09-04, a further +14 lines: publishing the discriminated inherited-IRA refusal code added two imports, a cache field and the two classifier-refusal arms above this block. Same lone-entry case; the block itself is again unchanged, operand for operand."
     },
     {
       "id": "C",

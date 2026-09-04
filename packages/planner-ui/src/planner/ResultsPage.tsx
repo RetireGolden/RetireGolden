@@ -24,7 +24,7 @@ import {
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
-import type { YearResult } from '@retiregolden/engine/projection/types'
+import type { InheritedIraRefusalCode, YearResult } from '@retiregolden/engine/projection/types'
 import { ACCOUNT_CATEGORIES, ACCOUNT_CATEGORY_COLOR, ACCOUNT_CATEGORY_LABEL } from './accountCategories'
 import { serializeSinglePlan } from '../data/planFormat'
 import { buildExpenseRows, buildIncomeRows, buildLedgerCsv, buildResultsRows } from './resultsRows'
@@ -127,11 +127,35 @@ function moneyTick(v: number): string {
   return fmtMoneyCompact(v)
 }
 
+/** Plain-language cause per published engine refusal code. */
+const REFUSAL_CAUSE_BY_CODE: Record<InheritedIraRefusalCode, string> = {
+  'entity-beneficiary': 'estates, trusts, and other entities are not modeled',
+  'successor-beneficiary': 'accounts already inherited from a prior beneficiary are not modeled',
+  'employer-plan': 'inherited workplace-plan schedules are not modeled',
+  'multiple-beneficiaries': 'facts are contradictory or incomplete',
+  'needs-review': 'facts are contradictory or incomplete',
+  'successor-clock-out-of-scope': 'facts are contradictory or incomplete',
+}
+
 /**
  * Map a technical classifier refusal into a plain-language cause for the
  * Results callout. Verbatim technical text stays in a collapsed detail.
+ *
+ * The engine publishes a discriminated `refusalCode` beside the prose, so the
+ * normal path is a lookup. The substring reading below is the fallback for a
+ * stored result serialized before the engine published codes, or for a code
+ * a newer engine published that predates this UI build — either way,
+ * `refusalCode` is only a type at compile time; a deserialized result can
+ * carry any string, and an unrecognized one must fall through to the
+ * substring reading rather than interpolate as literal `undefined`.
  */
-function plainRefusalCause(refusalReason: string): string {
+function plainRefusalCause(
+  refusalReason: string,
+  refusalCode: InheritedIraRefusalCode | null,
+): string {
+  if (refusalCode !== null && refusalCode in REFUSAL_CAUSE_BY_CODE) {
+    return REFUSAL_CAUSE_BY_CODE[refusalCode]
+  }
   const lower = refusalReason.toLowerCase()
   if (
     lower.includes('estate') ||
@@ -218,7 +242,8 @@ function InheritedAccountSchedule({
           {details.refusalReason ? (
             <>
               <p>
-                The model does not cover these facts: {plainRefusalCause(details.refusalReason)}.
+                The model does not cover these facts:{' '}
+                {plainRefusalCause(details.refusalReason, details.refusalCode)}.
               </p>
               <details>
                 <summary>Technical detail</summary>

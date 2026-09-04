@@ -1,6 +1,6 @@
 {
   "name": "@retiregolden/engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Pure-TypeScript retirement-planning engine: year-by-year household projection with federal + state taxes, Social Security, RMDs, Roth conversions, withdrawal strategies, Monte Carlo, and an LP optimizer. Deterministic, no DOM, no network.",
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -93,65 +93,9 @@
     "./schema/plan.v4.json": "./schema/plan.v4.json",
     "./schema/plan.v5.json": "./schema/plan.v5.json",
     "./actions/*": null,
-    "./actions/annualHsaOpeningAuthority": {
-      "types": "./dist/actions/annualHsaOpeningAuthority.d.ts",
-      "default": "./dist/actions/annualHsaOpeningAuthority.js"
-    },
-    "./actions/annualHsaPenaltyEvaluation": {
-      "types": "./dist/actions/annualHsaPenaltyEvaluation.d.ts",
-      "default": "./dist/actions/annualHsaPenaltyEvaluation.js"
-    },
-    "./actions/annualHsaPhysicalMovementCandidate": {
-      "types": "./dist/actions/annualHsaPhysicalMovementCandidate.d.ts",
-      "default": "./dist/actions/annualHsaPhysicalMovementCandidate.js"
-    },
-    "./actions/annualHsaReimbursementLedger": {
-      "types": "./dist/actions/annualHsaReimbursementLedger.d.ts",
-      "default": "./dist/actions/annualHsaReimbursementLedger.js"
-    },
-    "./actions/annualHsaTreatmentBindingCoordinator": {
-      "types": "./dist/actions/annualHsaTreatmentBindingCoordinator.d.ts",
-      "default": "./dist/actions/annualHsaTreatmentBindingCoordinator.js"
-    },
-    "./actions/annualHsaWithdrawalCharacter": {
-      "types": "./dist/actions/annualHsaWithdrawalCharacter.d.ts",
-      "default": "./dist/actions/annualHsaWithdrawalCharacter.js"
-    },
-    "./actions/annualIraBasisAllocation": {
-      "types": "./dist/actions/annualIraBasisAllocation.d.ts",
-      "default": "./dist/actions/annualIraBasisAllocation.js"
-    },
-    "./actions/annualOwnedNonRothIraPoolCapacity": {
-      "types": "./dist/actions/annualOwnedNonRothIraPoolCapacity.d.ts",
-      "default": "./dist/actions/annualOwnedNonRothIraPoolCapacity.js"
-    },
     "./actions/annualQcdExecutionPrerequisite": {
       "types": "./dist/actions/annualQcdExecutionPrerequisite.d.ts",
       "default": "./dist/actions/annualQcdExecutionPrerequisite.js"
-    },
-    "./actions/annualQcdPhysicalExecution": {
-      "types": "./dist/actions/annualQcdPhysicalExecution.d.ts",
-      "default": "./dist/actions/annualQcdPhysicalExecution.js"
-    },
-    "./actions/annualQcdResidualForm8606": {
-      "types": "./dist/actions/annualQcdResidualForm8606.d.ts",
-      "default": "./dist/actions/annualQcdResidualForm8606.js"
-    },
-    "./actions/annualQcdTaxCharacterPostPass": {
-      "types": "./dist/actions/annualQcdTaxCharacterPostPass.d.ts",
-      "default": "./dist/actions/annualQcdTaxCharacterPostPass.js"
-    },
-    "./actions/annualRetirementActionMovementCoordinator": {
-      "types": "./dist/actions/annualRetirementActionMovementCoordinator.d.ts",
-      "default": "./dist/actions/annualRetirementActionMovementCoordinator.js"
-    },
-    "./actions/annualRetirementActionPublication": {
-      "types": "./dist/actions/annualRetirementActionPublication.d.ts",
-      "default": "./dist/actions/annualRetirementActionPublication.js"
-    },
-    "./actions/annualRetirementPhysicalEventInventory": {
-      "types": "./dist/actions/annualRetirementPhysicalEventInventory.d.ts",
-      "default": "./dist/actions/annualRetirementPhysicalEventInventory.js"
     },
     "./actions/civilDate": {
       "types": "./dist/actions/civilDate.d.ts",
@@ -173,54 +117,6 @@
       "types": "./dist/actions/money.d.ts",
       "default": "./dist/actions/money.js"
     },
-    "./actions/ownedNonRothIraAnnualCandidateCoordinator": {
-      "types": "./dist/actions/ownedNonRothIraAnnualCandidateCoordinator.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualCandidateCoordinator.js"
-    },
-    "./actions/ownedNonRothIraAnnualCandidateTransaction": {
-      "types": "./dist/actions/ownedNonRothIraAnnualCandidateTransaction.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualCandidateTransaction.js"
-    },
-    "./actions/ownedNonRothIraAnnualFilingEvidence": {
-      "types": "./dist/actions/ownedNonRothIraAnnualFilingEvidence.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualFilingEvidence.js"
-    },
-    "./actions/ownedNonRothIraAnnualFilingSourceResolver": {
-      "types": "./dist/actions/ownedNonRothIraAnnualFilingSourceResolver.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualFilingSourceResolver.js"
-    },
-    "./actions/ownedNonRothIraAnnualFinalization": {
-      "types": "./dist/actions/ownedNonRothIraAnnualFinalization.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualFinalization.js"
-    },
-    "./actions/ownedNonRothIraAnnualPlanCoordinator": {
-      "types": "./dist/actions/ownedNonRothIraAnnualPlanCoordinator.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualPlanCoordinator.js"
-    },
-    "./actions/ownedNonRothIraAnnualPostCandidateEvidence": {
-      "types": "./dist/actions/ownedNonRothIraAnnualPostCandidateEvidence.d.ts",
-      "default": "./dist/actions/ownedNonRothIraAnnualPostCandidateEvidence.js"
-    },
-    "./actions/ownedNonRothIraMovementCandidate": {
-      "types": "./dist/actions/ownedNonRothIraMovementCandidate.d.ts",
-      "default": "./dist/actions/ownedNonRothIraMovementCandidate.js"
-    },
-    "./actions/ownedNonRothIraPenaltyPrerequisite": {
-      "types": "./dist/actions/ownedNonRothIraPenaltyPrerequisite.d.ts",
-      "default": "./dist/actions/ownedNonRothIraPenaltyPrerequisite.js"
-    },
-    "./actions/ownedNonRothIraSeppAnnualReconciliation": {
-      "types": "./dist/actions/ownedNonRothIraSeppAnnualReconciliation.d.ts",
-      "default": "./dist/actions/ownedNonRothIraSeppAnnualReconciliation.js"
-    },
-    "./actions/ownedNonRothIraSeppCurrentPaymentCandidate": {
-      "types": "./dist/actions/ownedNonRothIraSeppCurrentPaymentCandidate.d.ts",
-      "default": "./dist/actions/ownedNonRothIraSeppCurrentPaymentCandidate.js"
-    },
-    "./actions/ownedNonRothIraWithdrawalCharacter": {
-      "types": "./dist/actions/ownedNonRothIraWithdrawalCharacter.d.ts",
-      "default": "./dist/actions/ownedNonRothIraWithdrawalCharacter.js"
-    },
     "./actions/planBalanceAdapter": {
       "types": "./dist/actions/planBalanceAdapter.d.ts",
       "default": "./dist/actions/planBalanceAdapter.js"
@@ -236,18 +132,6 @@
     "./actions/retirementActionManualReview": {
       "types": "./dist/actions/retirementActionManualReview.d.ts",
       "default": "./dist/actions/retirementActionManualReview.js"
-    },
-    "./actions/rothConversionExecution": {
-      "types": "./dist/actions/rothConversionExecution.d.ts",
-      "default": "./dist/actions/rothConversionExecution.js"
-    },
-    "./actions/taxableWithdrawalCharacter": {
-      "types": "./dist/actions/taxableWithdrawalCharacter.d.ts",
-      "default": "./dist/actions/taxableWithdrawalCharacter.js"
-    },
-    "./actions/traditionalEmployerPlanPenaltyPrerequisite": {
-      "types": "./dist/actions/traditionalEmployerPlanPenaltyPrerequisite.d.ts",
-      "default": "./dist/actions/traditionalEmployerPlanPenaltyPrerequisite.js"
     },
     "./allocation/*": {
       "types": "./dist/allocation/*.d.ts",

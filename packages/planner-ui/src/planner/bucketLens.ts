@@ -9,29 +9,25 @@
  * spending", "years 3–10", "the rest" — purely as a reading of the same
  * numbers. Nothing here feeds back into the engine; it is presentation only.
  *
- * Mapping: for each projection year, the net portfolio need of a future year
- * is its total spending (including taxes and penalties) minus all income that
- * year, floored at 0 — the dollars that must come from the portfolio. Bucket k
+ * Mapping: for each projection year, the dollars that must come from the
+ * portfolio are the engine's published `YearResult.netPortfolioNeed` — total
+ * spending including taxes and penalties, less all income that year, floored
+ * at 0. The engine owns that arithmetic; this lens only reads it. Bucket k
  * claims the (projected, nominal) need of the next `spans[k]` years,
  * cumulatively, capped by what is actually left; the final bucket is the
  * remainder. Buckets therefore reconcile to the ledger's investable total by
  * construction, every year — the acceptance criterion.
  */
 
-import type { ProjectionResult, YearResult } from '@retiregolden/engine/projection/types'
+import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 
 export interface BucketYearRow {
   year: number
-  /** This year's net portfolio need (spending + tax + penalties − income, ≥ 0). */
+  /** This year's published `netPortfolioNeed` (nominal, ≥ 0). */
   need: number
   /** One balance per bucket; sums exactly to `investableTotal`. */
   buckets: number[]
   investableTotal: number
-}
-
-/** Net dollars year `y` must draw from the portfolio (nominal, floored at 0). */
-export function netPortfolioNeed(y: YearResult): number {
-  return Math.max(0, y.expenses.total + y.tax + y.penalties - y.incomes.total)
 }
 
 /**
@@ -43,7 +39,12 @@ export function netPortfolioNeed(y: YearResult): number {
  */
 export function bucketLens(result: ProjectionResult, spans: number[]): BucketYearRow[] {
   const years = result.years
-  const needs = years.map(netPortfolioNeed)
+  // `netPortfolioNeed` types as `number` (never optional) because every
+  // `YearResult` this engine build produces sets it. A `ProjectionResult`
+  // deserialized from an engine older than 0.3.0 has no such guarantee — the
+  // field is simply absent at runtime — so a missing value reads as 0 rather
+  // than propagating `NaN` through every downstream bucket sum.
+  const needs = years.map((y) => (typeof y.netPortfolioNeed === 'number' ? y.netPortfolioNeed : 0))
   return years.map((y, i) => {
     let remaining = y.investableTotal
     const buckets: number[] = []

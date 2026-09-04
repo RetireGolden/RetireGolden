@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { bucketLens, BUCKET_PRESETS, netPortfolioNeed } from './bucketLens'
+import { bucketLens, BUCKET_PRESETS } from './bucketLens'
 import { createFlatTaxCalculator } from '@retiregolden/engine/testing/flatTax'
 import {
   cashAccount,
@@ -70,7 +70,7 @@ describe('bucketLens', () => {
     const bareRows = bucketLens(bare, [2, 8])
     const last = bareRows[bareRows.length - 1]!
     expect(last.buckets[0]!).toBeLessThanOrEqual(last.need + 1e-6)
-    expect(netPortfolioNeed(bare.years[bare.years.length - 1]!)).toBeCloseTo(last.need, 6)
+    expect(bare.years[bare.years.length - 1]!.netPortfolioNeed).toBeCloseTo(last.need, 6)
   })
 
   it('caps buckets by what is actually left when the portfolio is small', () => {

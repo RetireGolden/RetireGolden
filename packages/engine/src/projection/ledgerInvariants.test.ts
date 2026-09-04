@@ -74,6 +74,19 @@ function expectInvestableEqualsAccountBalances(result: ProjectionResult): void {
   }
 }
 
+/**
+ * `netPortfolioNeed` is the published form of the definition documented on
+ * `YearResult` — restated here from that doc comment, not from the assembly
+ * code — and is floored, so it is never negative in a surplus year.
+ */
+function expectNetPortfolioNeedMatchesDefinition(result: ProjectionResult): void {
+  for (const y of result.years) {
+    const uncovered = y.expenses.total + y.tax + y.penalties - y.incomes.total
+    expectMoney(y.netPortfolioNeed, uncovered > 0 ? uncovered : 0)
+    expect(y.netPortfolioNeed, `${y.year} floored`).toBeGreaterThanOrEqual(0)
+  }
+}
+
 describe('ledger invariants', () => {
   it('keeps yearly component totals equal to their reported totals', () => {
     const plan = singlePersonPlan({ dob: '1964-01-01', planningAge: 64 })
@@ -90,6 +103,10 @@ describe('ledger invariants', () => {
 
     expectYearSums(result)
     expectInvestableEqualsAccountBalances(result)
+    expectNetPortfolioNeedMatchesDefinition(result)
+    // This fixture spends more than it earns, so the invariant above is
+    // exercised on its unfloored arm and not only on the zero arm.
+    expect(result.years.some((y) => y.netPortfolioNeed > 0)).toBe(true)
   })
 
   it('does not report negative account balances in ordinary depletion cases', () => {
@@ -120,6 +137,10 @@ describe('ledger invariants', () => {
     expectMoney(year.surplusInvested, 10_000)
     expectMoney(year.investableTotal, 10_000)
     expectMoney(result.endingInvestable, 10_000)
+    // Same reasoning on the need side: nothing is spent, so the portfolio
+    // supplies nothing and the floor holds instead of publishing -10,000.
+    expectNetPortfolioNeedMatchesDefinition(result)
+    expectMoney(year.netPortfolioNeed, 0)
   })
 
   it('default simulatePlan years omit the cashFlow key', () => {

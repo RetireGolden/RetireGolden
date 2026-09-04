@@ -79,20 +79,8 @@ const qcdCandidateAdapterDeepApi = await import(
 const candidateIdentityAllocatorDeepApi = await import(
   '@retiregolden/engine/actions/retirementActionCandidateIdentityAllocator'
 )
-const annualOwnedIraPoolCapacityDeepApi = await import(
-  '@retiregolden/engine/actions/annualOwnedNonRothIraPoolCapacity'
-)
 const annualQcdPrerequisiteDeepApi = await import(
   '@retiregolden/engine/actions/annualQcdExecutionPrerequisite'
-)
-const annualQcdPhysicalDeepApi = await import(
-  '@retiregolden/engine/actions/annualQcdPhysicalExecution'
-)
-const annualQcdResidualDeepApi = await import(
-  '@retiregolden/engine/actions/annualQcdResidualForm8606'
-)
-const annualQcdPostPassDeepApi = await import(
-  '@retiregolden/engine/actions/annualQcdTaxCharacterPostPass'
 )
 const ordinaryWithdrawalCandidateAdapterDeepApi = await import(
   '@retiregolden/engine/decisions/ordinaryWithdrawalCandidateAdapter'
@@ -104,86 +92,80 @@ assert.equal(
   typeof optimizerAllocatedCandidateComparisonDeepApi.compareOptimizerAllocatedCandidate,
   'function',
 )
-const ownedIraCoordinatorDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualCandidateCoordinator'
-)
-const ownedIraCandidateTransactionDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualCandidateTransaction'
-)
-const ownedIraPlanCoordinatorDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualPlanCoordinator'
-)
-const ownedIraAnnualFilingEvidenceDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualFilingEvidence'
-)
-const ownedIraAnnualFilingSourceResolverDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualFilingSourceResolver'
-)
-const annualRetirementInventoryDeepApi = await import(
-  '@retiregolden/engine/actions/annualRetirementPhysicalEventInventory'
-)
-const annualHsaTreatmentBindingDeepApi = await import(
-  '@retiregolden/engine/actions/annualHsaTreatmentBindingCoordinator'
-)
-const annualHsaOpeningAuthorityDeepApi = await import(
-  '@retiregolden/engine/actions/annualHsaOpeningAuthority'
-)
+// The HSA boundaries lost their own subpaths in 0.3.0; the barrel is now
+// the only way in, so this is where their reachability is proven.
 assert.equal(
-  typeof annualHsaTreatmentBindingDeepApi.coordinateAnnualHsaTreatmentBinding,
+  typeof actionsApi.coordinateAnnualHsaTreatmentBinding,
   'function',
 )
 assert.equal(
-  typeof annualHsaOpeningAuthorityDeepApi.establishAnnualHsaOpeningAuthority,
+  typeof actionsApi.establishAnnualHsaOpeningAuthority,
   'function',
 )
-const ownedIraPostCandidateEvidenceDeepApi = await import(
-  '@retiregolden/engine/actions/ownedNonRothIraAnnualPostCandidateEvidence'
-)
+// The complete published ./actions/<name> surface as of 0.3.0. It was 39
+// names; 29 of them had no importer anywhere and were pruned in that
+// release. Every module they named is still reachable through the
+// ./actions barrel -- the loop below proves these ten resolve, and the
+// loop after it proves the pruned names no longer do.
 const canonicalActionDeepImports = [
-  'annualHsaOpeningAuthority',
-  'annualHsaPenaltyEvaluation',
-  'annualHsaPhysicalMovementCandidate',
-  'annualHsaTreatmentBindingCoordinator',
-  'annualHsaReimbursementLedger',
-  'annualHsaWithdrawalCharacter',
-  'annualIraBasisAllocation',
-  'annualOwnedNonRothIraPoolCapacity',
   'annualQcdExecutionPrerequisite',
-  'annualQcdPhysicalExecution',
-  'annualQcdResidualForm8606',
-  'annualQcdTaxCharacterPostPass',
-  'annualRetirementActionPublication',
-  'annualRetirementPhysicalEventInventory',
   'civilDate',
   'contract',
   'execution',
   'identity',
   'money',
-  'ownedNonRothIraAnnualCandidateCoordinator',
-  'ownedNonRothIraAnnualCandidateTransaction',
-  'ownedNonRothIraAnnualFilingEvidence',
-  'ownedNonRothIraAnnualFilingSourceResolver',
-  'ownedNonRothIraAnnualPlanCoordinator',
-  'ownedNonRothIraAnnualPostCandidateEvidence',
-  'ownedNonRothIraAnnualFinalization',
-  'ownedNonRothIraMovementCandidate',
-  'ownedNonRothIraPenaltyPrerequisite',
-  'ownedNonRothIraSeppAnnualReconciliation',
-  'ownedNonRothIraSeppCurrentPaymentCandidate',
-  'ownedNonRothIraWithdrawalCharacter',
   'planBalanceAdapter',
   'reasons',
   'retirementActionCandidateIdentityAllocator',
   'retirementActionManualReview',
-  'rothConversionExecution',
-  'taxableWithdrawalCharacter',
-  'traditionalEmployerPlanPenaltyPrerequisite',
 ]
 for (const moduleName of canonicalActionDeepImports) {
   const moduleApi = await import('@retiregolden/engine/actions/' + moduleName)
   assert.ok(
     Object.keys(moduleApi).length > 0,
     'canonical public action deep import must resolve: ' + moduleName,
+  )
+}
+// Pruned in 0.3.0. Each of these resolved as its own subpath in 0.2.x and
+// must not resolve now: the ./actions/* null blocker is the whole
+// enforcement, and a name accidentally left in the export map would keep
+// resolving with nothing to notice it.
+const prunedActionDeepImports = [
+  'annualHsaOpeningAuthority',
+  'annualHsaPenaltyEvaluation',
+  'annualHsaPhysicalMovementCandidate',
+  'annualHsaReimbursementLedger',
+  'annualHsaTreatmentBindingCoordinator',
+  'annualHsaWithdrawalCharacter',
+  'annualIraBasisAllocation',
+  'annualOwnedNonRothIraPoolCapacity',
+  'annualQcdPhysicalExecution',
+  'annualQcdResidualForm8606',
+  'annualQcdTaxCharacterPostPass',
+  'annualRetirementActionMovementCoordinator',
+  'annualRetirementActionPublication',
+  'annualRetirementPhysicalEventInventory',
+  'ownedNonRothIraAnnualCandidateCoordinator',
+  'ownedNonRothIraAnnualCandidateTransaction',
+  'ownedNonRothIraAnnualFilingEvidence',
+  'ownedNonRothIraAnnualFilingSourceResolver',
+  'ownedNonRothIraAnnualFinalization',
+  'ownedNonRothIraAnnualPlanCoordinator',
+  'ownedNonRothIraAnnualPostCandidateEvidence',
+  'ownedNonRothIraMovementCandidate',
+  'ownedNonRothIraPenaltyPrerequisite',
+  'ownedNonRothIraSeppAnnualReconciliation',
+  'ownedNonRothIraSeppCurrentPaymentCandidate',
+  'ownedNonRothIraWithdrawalCharacter',
+  'rothConversionExecution',
+  'taxableWithdrawalCharacter',
+  'traditionalEmployerPlanPenaltyPrerequisite',
+]
+for (const moduleName of prunedActionDeepImports) {
+  await assert.rejects(
+    import('@retiregolden/engine/actions/' + moduleName),
+    (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+    'pruned action subpath must not resolve: ' + moduleName,
   )
 }
 const {
@@ -294,31 +276,32 @@ assert.equal(
 )
 assert.equal(typeof allocateRetirementActionCandidateIdentity, 'function')
 assert.equal(
-  annualOwnedIraPoolCapacityDeepApi.buildAnnualOwnedNonRothIraPoolCapacity,
-  buildAnnualOwnedNonRothIraPoolCapacity,
-)
-assert.equal(typeof buildAnnualOwnedNonRothIraPoolCapacity, 'function')
-assert.equal(
   annualQcdPrerequisiteDeepApi.evaluateAnnualQcdExecutionPrerequisites,
   evaluateAnnualQcdExecutionPrerequisites,
 )
 assert.equal(typeof evaluateAnnualQcdExecutionPrerequisites, 'function')
-assert.equal(
-  annualQcdPhysicalDeepApi.stageAnnualQcdPhysicalExecution,
-  stageAnnualQcdPhysicalExecution,
-)
-assert.equal(typeof stageAnnualQcdPhysicalExecution, 'function')
-assert.equal(
-  annualQcdResidualDeepApi.stageAnnualQcdResidualForm8606,
-  stageAnnualQcdResidualForm8606,
-)
-assert.equal(typeof stageAnnualQcdResidualForm8606, 'function')
-assert.equal(
-  annualQcdPostPassDeepApi.stageAnnualQcdTaxCharacterPostPass,
-  stageAnnualQcdTaxCharacterPostPass,
-)
-assert.equal(typeof stageAnnualQcdTaxCharacterPostPass, 'function')
 assert.equal(typeof reviewAndReplaceRetirementActionManually, 'function')
+// Barrel-only from 0.3.0 on. Their own subpaths were pruned, so a typeof
+// through ./actions is now the whole reachability claim for each.
+assert.equal(typeof buildAnnualOwnedNonRothIraPoolCapacity, 'function')
+assert.equal(typeof stageAnnualQcdPhysicalExecution, 'function')
+assert.equal(typeof stageAnnualQcdResidualForm8606, 'function')
+assert.equal(typeof stageAnnualQcdTaxCharacterPostPass, 'function')
+assert.equal(typeof buildPlanOwnedNonRothIraAnnualFilingEvidence, 'function')
+assert.equal(typeof resolvePlanOwnedNonRothIraAnnualFilingSources, 'function')
+assert.equal(
+  typeof buildOwnedNonRothIraStagedDistributionDateEvidenceId,
+  'function',
+)
+assert.equal(
+  typeof coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate,
+  'function',
+)
+assert.equal(typeof buildAnnualRetirementPhysicalEventInventory, 'function')
+assert.equal(
+  typeof buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
+  'function',
+)
 assert.equal(
   ordinaryWithdrawalCandidateAdapterDeepApi
     .adaptOrdinaryWithdrawalGeneratorCandidate,
@@ -334,43 +317,8 @@ assert.equal(
   decisionsApi.adaptFillTargetRothConversionGeneratorCandidate,
 )
 assert.equal(
-  ownedIraAnnualFilingEvidenceDeepApi
-    .buildPlanOwnedNonRothIraAnnualFilingEvidence,
-  buildPlanOwnedNonRothIraAnnualFilingEvidence,
-)
-assert.equal(
-  ownedIraAnnualFilingSourceResolverDeepApi
-    .resolvePlanOwnedNonRothIraAnnualFilingSources,
-  resolvePlanOwnedNonRothIraAnnualFilingSources,
-)
-assert.equal(
-  ownedIraCoordinatorDeepApi
-    .buildOwnedNonRothIraStagedDistributionDateEvidenceId,
-  buildOwnedNonRothIraStagedDistributionDateEvidenceId,
-)
-assert.equal(
-  ownedIraCandidateTransactionDeepApi
-    .preparePlanOwnedNonRothIraAnnualCandidateTransaction,
-  preparePlanOwnedNonRothIraAnnualCandidateTransaction,
-)
-assert.equal(
   typeof preparePlanOwnedNonRothIraAnnualCandidateTransaction,
   'function',
-)
-assert.equal(
-  ownedIraPlanCoordinatorDeepApi
-    .coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate,
-  coordinatePlanOwnedNonRothIraAnnualWithdrawalCandidate,
-)
-assert.equal(
-  annualRetirementInventoryDeepApi
-    .buildAnnualRetirementPhysicalEventInventory,
-  buildAnnualRetirementPhysicalEventInventory,
-)
-assert.equal(
-  ownedIraPostCandidateEvidenceDeepApi
-    .buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
-  buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput,
 )
 const moneyDeepApi = await import('@retiregolden/engine/actions/money')
 const {

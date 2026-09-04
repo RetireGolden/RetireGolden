@@ -143,6 +143,85 @@ export type InheritedRefusalKey =
   | 'unsupported' // X2/X3/X4, S4
   | 'needs-review' // X5, S3x, RBD needs-review
 
+/**
+ * Discriminated cause behind a published
+ * `InheritedAccountYearEvidence.refusalReason`.
+ *
+ * The prose on that row is written for a reader, names the specific fact or
+ * rule, and interpolates plan values; it is not a classification key, and a
+ * consumer that classified it by substring was reading a message the engine
+ * is free to reword. This is the key. It is published beside the prose, never
+ * instead of it — the prose stays the technical detail.
+ *
+ * One member per cause a producer can actually emit. There is deliberately no
+ * member for `legacy-planning-approximation` (matrix X1, and a traditional
+ * account with no beneficiary block): that path publishes no refusal on the
+ * evidence row at all, and labels itself through `regime` instead.
+ */
+export type InheritedIraRefusalCode =
+  /** X2: the account was already inherited from a prior beneficiary. */
+  | 'successor-beneficiary'
+  /** X3: estate, trust, or other non-individual beneficiary. */
+  | 'entity-beneficiary'
+  /** X4: multiple beneficiaries with no separate-account facts. */
+  | 'multiple-beneficiaries'
+  /** X5 `unsupported`: the matrix scopes inherited support to IRAs. */
+  | 'employer-plan'
+  /** X5 / S3x `needs-review`: the facts are contradictory or incomplete. */
+  | 'needs-review'
+  /**
+   * Not a classifier refusal. The beneficiary died, which starts the successor
+   * ten-year clock of §1.401(a)(9)-5(e)(3); the schedule after that death is
+   * out of scope. Produced by the annual distribution boundary, not by
+   * `classifyInheritedRegime`.
+   */
+  | 'successor-clock-out-of-scope'
+
+/**
+ * The discriminated code for a classifier refusal, or `undefined` when the
+ * refusal is the labeled legacy planning approximation, which publishes no
+ * `refusalReason` and so needs no code.
+ *
+ * Pairs with `refusal.reason`: a caller that publishes one publishes the
+ * other, which is what keeps the two from drifting.
+ */
+export function inheritedIraRefusalCode(
+  refusal: InheritedRegimeRefusal,
+): InheritedIraRefusalCode | undefined {
+  switch (refusal.refusal) {
+    case 'legacy-planning-approximation':
+      return undefined
+    case 'needs-review':
+      return 'needs-review'
+    case 'unsupported':
+      switch (refusal.row) {
+        case 'X2':
+          return 'successor-beneficiary'
+        case 'X3':
+          return 'entity-beneficiary'
+        case 'X4':
+          return 'multiple-beneficiaries'
+        case 'X5':
+          return 'employer-plan'
+        default:
+          // No other row refuses as `unsupported` today. A row that starts to
+          // must decide its own cause here rather than inherit one of the
+          // four above, so it fails closed onto the generic cause instead.
+          return 'needs-review'
+      }
+    default: {
+      // No other `InheritedRefusalKey` member exists today. A member added
+      // without a case here must not fall through and drop the published
+      // reason — falling off this switch would return `undefined` and the
+      // Results callout (gated on `refusalReason`) would render the account
+      // as a quiet legacy schedule instead of a needs-review limitation.
+      // This is the line that makes adding one a compile error.
+      const exhaustive: never = refusal.refusal
+      throw new Error(`Unhandled inherited-IRA refusal key: ${JSON.stringify(exhaustive)}`)
+    }
+  }
+}
+
 export type MatrixRow =
   | 'R1'
   | 'R2'

@@ -135,7 +135,7 @@ supported runtime API.
 | `scenarios/` | Scenario patch apply/diff + side-by-side comparison |
 | `decisions/`, `insights/` | Candidate evaluation, recommendation detectors |
 | `rules/` | `TAX_RULE_REGISTRY` — every statutory rule the engine implements, as data: the authority it rests on, the reading taken, the contrary reading where one exists, and the date it was last verified against primary sources. Its own subpath, not the root export, because the records carry quoted statutory text |
-| `actions/` | Typed retirement-action boundaries — QCD, Roth conversion, HSA, SEPP, owned and inherited IRA execution — plus their exact-cent money and structural-identity primitives. Also published per module (`actions/execution`, `actions/money`, …) |
+| `actions/` | Typed retirement-action boundaries — QCD, Roth conversion, HSA, SEPP, owned and inherited IRA execution — plus their exact-cent money and structural-identity primitives. Ten of these modules are also published on their own subpath — `actions/annualQcdExecutionPrerequisite`, `actions/civilDate`, `actions/contract`, `actions/execution`, `actions/identity`, `actions/money`, `actions/planBalanceAdapter`, `actions/reasons`, `actions/retirementActionCandidateIdentityAllocator`, `actions/retirementActionManualReview`. Every other module is reachable through the `actions` barrel only; no other `actions/<name>` path resolves |
 | `ladder/` | TIPS ladder math, Social Security bridge, FedInvest CSV parsing |
 | `allocation/`, `spending/` | Asset classes, spending shape presets |
 | `testing/` | Plan fixtures, money matchers, and deterministic tax doubles for consumer test suites |

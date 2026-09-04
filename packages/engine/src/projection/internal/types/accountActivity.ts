@@ -10,6 +10,13 @@
  * them were moved here verbatim, so a block that says "above" or "below" may
  * now point across a module boundary.
  */
+import type { InheritedIraRefusalCode } from '../../../strategies/inheritedIra.js'
+
+// Re-exported here so `projection/types.js` stays the one public specifier for
+// every name a consumer of `InheritedAccountYearEvidence` needs, including the
+// code union its `refusalCode` is drawn from.
+export type { InheritedIraRefusalCode }
+
 /**
  * Per-account, per-year inherited-IRA execution evidence (WS4 exact ledger).
  * Regime law is produced solely by `classifyInheritedRegime` /
@@ -28,8 +35,18 @@ export interface InheritedAccountYearEvidence {
    * Present when the classifier refused (non-X1 → legacy fallback) OR when the
    * successor-clock / out-of-scope condition suppresses the schedule (matrix X2
    * beneficiary-death rows).
+   *
+   * Reader-facing prose that names the specific fact or rule and interpolates
+   * plan values. It is not a classification key — classify on `refusalCode`.
    */
   refusalReason?: string
+  /**
+   * The discriminated cause behind `refusalReason`. Present exactly when
+   * `refusalReason` is: every producer publishes the pair, never one half.
+   * Optional only because a result serialized before this field existed has
+   * the prose and no code.
+   */
+  refusalCode?: InheritedIraRefusalCode
   requirementKind: 'year-of-death-rmd' | 'annual-rmd' | 'none' | 'final-sweep' | 'legacy'
   /** Evidence amount on the real prior-Dec-31 balance (0 on the legacy path when forced is 0). */
   requiredAmount: number
