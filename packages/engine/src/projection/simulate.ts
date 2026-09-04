@@ -116,6 +116,8 @@ import {
 import { type RothBasisState } from '../strategies/rothBasis.js'
 import {
   classifyInheritedRegime,
+  inheritedIraRefusalCode,
+  type InheritedIraRefusalCode,
   type InheritedRegimeClassification,
   type InheritedRegimeResult,
 } from '../strategies/inheritedIra.js'
@@ -1316,6 +1318,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     ownerPersonId: string
     path: 'legacy' | 'classified'
     refusalReason?: string
+    /** The discriminated cause for `refusalReason`; the two travel together. */
+    refusalCode?: InheritedIraRefusalCode
     /** Primary classifier result (regime or refusal). */
     primary: InheritedRegimeResult
     /**
@@ -1362,15 +1366,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       // on the evidence row so no consumer can call the schedule compliant.
       // Pre-horizon year-of-death limitation applies uniformly on the refusal
       // path too (same fact test as the classified path).
+      //
+      // The code decides whether there is a refusal to publish at all: it is
+      // undefined for exactly the legacy-planning-approximation arm, so prose
+      // and code are set from one test and cannot disagree.
+      const refusalCode = inheritedIraRefusalCode(regimeResult)
       inheritedClassCache.set(account.id, {
         accountId: account.id,
         accountType,
         ownerPersonId,
         path: 'legacy',
-        refusalReason:
-          regimeResult.refusal === 'legacy-planning-approximation'
-            ? undefined
-            : regimeResult.reason,
+        refusalReason: refusalCode === undefined ? undefined : regimeResult.reason,
+        refusalCode,
         primary: regimeResult,
         isS2: false,
         preHorizonYearOfDeathRmdUnresolved,
@@ -1423,6 +1430,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           ownerPersonId,
           path: 'legacy',
           refusalReason: synthetic.reason,
+          // This arm publishes the synthetic reason unconditionally, so it
+          // needs a code unconditionally. The synthetic S0 cannot refuse as
+          // the legacy planning approximation (its X1 arms were already
+          // cleared by the primary classification that reached S2), but if a
+          // future one did, the generic cause is the fail-closed answer
+          // rather than a row-specific claim the classifier never made.
+          refusalCode: inheritedIraRefusalCode(synthetic) ?? 'needs-review',
           primary: regimeResult,
           isS2: true,
           treatAsOwnElectionYear,

@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-inherited-ira-boundary",
-  "why": "Measured reach for the grouped annual inherited-IRA distribution planner and shared applicable-plan identity boundary. Six block-O members exercise legacy and classified schedules, S2 pre/post-election and death-year behavior, final sweeps, dead beneficiaries, Roth character, zero-movement sub-cent shortfalls, compatible duplicate physical rows represented by one logical ID, ordered application, applicable-plan aggregation, pre-horizon limitations, and repeated all-four-mode entry.",
+  "why": "Measured reach for the grouped annual inherited-IRA distribution planner and shared applicable-plan identity boundary. Six block-O members exercise legacy and classified schedules, S2 pre/post-election and death-year behavior, final sweeps, dead beneficiaries, Roth character, zero-movement sub-cent shortfalls, compatible duplicate physical rows represented by one logical ID, ordered application, applicable-plan aggregation, pre-horizon limitations, and repeated all-four-mode entry. REPINNED on 2026-09-04: publishing the discriminated inherited-IRA refusal code added one line inside each of C2.death-evidence, E.legacy and G.identity-and-execution, so those three measured ranges are one line longer than they were -- the added line is the refusalCode publication itself, in each case beside the refusalReason the range already covered. Every other range in this spec moved positionally only.",
   "entries": [
     {
       "id": "A.applicable-plan-identity",
@@ -21,23 +21,23 @@
       "id": "B.ordered-row-fold",
       "label": "fresh logical distribution operations and ordered character totals",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [142, 162],
+      "lines": [145, 165],
       "anchors": [
-        { "line": 143, "text": "if (executed > 0) {" },
-        { "line": 144, "text": "const sourceBalanceAfter = state.balance - executed" },
-        { "line": 153, "text": "if (state.account.type === 'roth') rothForced += executed" },
-        { "line": 157, "text": "rows.push({" }
+        { "line": 146, "text": "if (executed > 0) {" },
+        { "line": 147, "text": "const sourceBalanceAfter = state.balance - executed" },
+        { "line": 156, "text": "if (state.account.type === 'roth') rothForced += executed" },
+        { "line": 160, "text": "rows.push({" }
       ]
     },
     {
       "id": "C.death-gates",
       "label": "logical account gates, cache lookup, and dead-beneficiary successor evidence",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [165, 185],
+      "lines": [168, 188],
       "anchors": [
-        { "line": 165, "text": "for (const [balanceIndex, state] of input.balances.entries()) {" },
-        { "line": 171, "text": "const cache = input.classCache.get(state.account.id)" },
-        { "line": 177, "text": "if (!beneficiaryState.alive) {" }
+        { "line": 168, "text": "for (const [balanceIndex, state] of input.balances.entries()) {" },
+        { "line": 174, "text": "const cache = input.classCache.get(state.account.id)" },
+        { "line": 180, "text": "if (!beneficiaryState.alive) {" }
       ],
       "note": "The impossible final unsupported union fallback is excluded; classifier output is exhaustively regime or refusal."
     },
@@ -45,12 +45,12 @@
       "id": "C2.death-evidence",
       "label": "dead-beneficiary identity, successor disclosure, and cached citations",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [187, 201],
+      "lines": [190, 205],
       "anchors": [
-        { "line": 187, "text": "matrixRow: primaryClass?.row ??" },
-        { "line": 193, "text": "'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope'," },
-        { "line": 198, "text": "disclosures: ['successor-clock-out-of-scope']," },
-        { "line": 199, "text": "citations: primaryClass?.citations ??" }
+        { "line": 190, "text": "matrixRow: primaryClass?.row ??" },
+        { "line": 196, "text": "'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope'," },
+        { "line": 202, "text": "disclosures: ['successor-clock-out-of-scope']," },
+        { "line": 203, "text": "citations: primaryClass?.citations ??" }
       ],
       "note": "Raw fallback citations are excluded because an inherited classifier result cannot be neither regime nor refusal."
     },
@@ -58,21 +58,21 @@
       "id": "C3.death-completion",
       "label": "dead-beneficiary row completion keeps account order",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [206, 207],
+      "lines": [210, 211],
       "anchors": [
-        { "line": 206, "text": "}, 0)" },
-        { "line": 207, "text": "continue" }
+        { "line": 210, "text": "}, 0)" },
+        { "line": 211, "text": "continue" }
       ]
     },
     {
       "id": "D.effective-s2",
       "label": "post-election S2 zero-requirement evidence and pre-horizon limitation",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [210, 223],
+      "lines": [214, 227],
       "anchors": [
-        { "line": 210, "text": "if (isTreatAsOwnEffective(state.account, input.year)) {" },
-        { "line": 215, "text": "const preHorizonLimitation =" },
-        { "line": 220, "text": "addRow(balanceIndex, state, {" }
+        { "line": 214, "text": "if (isTreatAsOwnEffective(state.account, input.year)) {" },
+        { "line": 219, "text": "const preHorizonLimitation =" },
+        { "line": 224, "text": "addRow(balanceIndex, state, {" }
       ],
       "note": "Effective S2 rows always carry a regime primary; refusal and unsupported identity fallbacks remain defensively typed but are structurally unreachable."
     },
@@ -80,44 +80,44 @@
       "id": "D2.effective-s2-classification",
       "label": "effective S2 publishes the cached settled classification",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [229, 230],
+      "lines": [233, 234],
       "anchors": [
-        { "line": 229, "text": "...(primaryClass !== undefined" },
-        { "line": 230, "text": "? { classification: primaryClass.classification }" }
+        { "line": 233, "text": "...(primaryClass !== undefined" },
+        { "line": 234, "text": "? { classification: primaryClass.classification }" }
       ]
     },
     {
       "id": "D3.effective-s2-zero-row",
       "label": "effective S2 has no inherited requirement and preserves limitations/disclosures",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [232, 240],
+      "lines": [236, 244],
       "anchors": [
-        { "line": 232, "text": "requirementKind: 'none'," },
-        { "line": 236, "text": "...(preHorizonLimitation !== undefined" },
-        { "line": 239, "text": "disclosures: primaryClass?.disclosures ?? []," }
+        { "line": 236, "text": "requirementKind: 'none'," },
+        { "line": 240, "text": "...(preHorizonLimitation !== undefined" },
+        { "line": 243, "text": "disclosures: primaryClass?.disclosures ?? []," }
       ]
     },
     {
       "id": "D4.effective-s2-completion",
       "label": "effective S2 completes one ordered zero row",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [242, 243],
+      "lines": [246, 247],
       "anchors": [
-        { "line": 242, "text": "}, 0)" },
-        { "line": 243, "text": "continue" }
+        { "line": 246, "text": "}, 0)" },
+        { "line": 247, "text": "continue" }
       ]
     },
     {
       "id": "E.legacy",
       "label": "aggregate opening selection and labeled legacy/refusal requirement",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [246, 280],
+      "lines": [250, 285],
       "anchors": [
-        { "line": 246, "text": "const priorYearEndBalance =" },
-        { "line": 263, "text": "if (cache.path === 'legacy' || cache.schedule === undefined) {" },
-        { "line": 264, "text": "take = inheritedForcedAmount({" },
-        { "line": 275, "text": "requirementKind = 'legacy'" },
-        { "line": 276, "text": "if (cache.primary.kind === 'refusal') {" }
+        { "line": 250, "text": "const priorYearEndBalance =" },
+        { "line": 268, "text": "if (cache.path === 'legacy' || cache.schedule === undefined) {" },
+        { "line": 269, "text": "take = inheritedForcedAmount({" },
+        { "line": 280, "text": "requirementKind = 'legacy'" },
+        { "line": 281, "text": "if (cache.primary.kind === 'refusal') {" }
       ],
       "note": "The synthetic-S2 classifier-refusal fallback is retained defensively and pinned in focused helper construction; no validated corpus plan can produce it from current classifier unions."
     },
@@ -125,40 +125,40 @@
       "id": "F.classified",
       "label": "classified and synthetic-S0 requirement selection including final sweep",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [288, 324],
+      "lines": [293, 329],
       "anchors": [
-        { "line": 288, "text": "const scheduleClass = cache.schedule" },
-        { "line": 289, "text": "const inheritedForReq =" },
-        { "line": 299, "text": "const req = inheritedRequirementForYear({" },
-        { "line": 312, "text": "if (req.kind === 'final-sweep') {" },
-        { "line": 317, "text": "take = Math.min(req.requiredAmount, state.balance)" }
+        { "line": 293, "text": "const scheduleClass = cache.schedule" },
+        { "line": 294, "text": "const inheritedForReq =" },
+        { "line": 304, "text": "const req = inheritedRequirementForYear({" },
+        { "line": 317, "text": "if (req.kind === 'final-sweep') {" },
+        { "line": 322, "text": "take = Math.min(req.requiredAmount, state.balance)" }
       ]
     },
     {
       "id": "G.identity-and-execution",
       "label": "death-year S2 identity, pre-horizon limitation, exact-cent movement suppression, and evidence",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [327, 369],
+      "lines": [332, 375],
       "anchors": [
-        { "line": 327, "text": "const beneficiaryForIdentity = state.account.inherited.beneficiary" },
-        { "line": 336, "text": "regime = cache.primary.regime" },
-        { "line": 346, "text": "limitation = 'pre-horizon-year-of-death-rmd-unresolved'" },
-        { "line": 349, "text": "const executed =" },
-        { "line": 351, "text": "addRow(balanceIndex, state, {" }
+        { "line": 332, "text": "const beneficiaryForIdentity = state.account.inherited.beneficiary" },
+        { "line": 341, "text": "regime = cache.primary.regime" },
+        { "line": 351, "text": "limitation = 'pre-horizon-year-of-death-rmd-unresolved'" },
+        { "line": 354, "text": "const executed =" },
+        { "line": 356, "text": "addRow(balanceIndex, state, {" }
       ]
     },
     {
       "id": "H.section-4974",
       "label": "logical-row applicable-plan grouping, actual-distribution accounting, mixed kinds, and obligations",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [372, 430],
+      "lines": [378, 436],
       "anchors": [
-        { "line": 379, "text": "for (const { evidence, balanceIndex } of rows) {" },
-        { "line": 387, "text": "const applicablePlan = rmdApplicablePlanForAccount(" },
-        { "line": 398, "text": "distributedByApplicablePlan.set(" },
-        { "line": 417, "text": "for (const [applicablePlanKey, requiredAmount] of requiredByApplicablePlan) {" },
-        { "line": 421, "text": "const actuallyDistributed =" },
-        { "line": 429, "text": "requirementKind: requirementKinds.size === 1" }
+        { "line": 385, "text": "for (const { evidence, balanceIndex } of rows) {" },
+        { "line": 393, "text": "const applicablePlan = rmdApplicablePlanForAccount(" },
+        { "line": 404, "text": "distributedByApplicablePlan.set(" },
+        { "line": 423, "text": "for (const [applicablePlanKey, requiredAmount] of requiredByApplicablePlan) {" },
+        { "line": 427, "text": "const actuallyDistributed =" },
+        { "line": 435, "text": "requirementKind: requirementKinds.size === 1" }
       ],
       "note": "Validated accounts in one inherited applicable-plan pool must carry consistent schedule facts, so mixed requirement kinds cannot arise end to end; focused helper tests inject the cross-layer defensive case."
     },
@@ -166,12 +166,12 @@
       "id": "H2.section-4974-result",
       "label": "actual distributed amount and fresh grouped obligation/result containers",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
-      "lines": [432, 440],
+      "lines": [438, 446],
       "anchors": [
-        { "line": 432, "text": "requiredAmount," },
-        { "line": 433, "text": "distributedByDeadline: actuallyDistributed," },
-        { "line": 437, "text": "return {" },
-        { "line": 440, "text": "rmdShortfallObligations," }
+        { "line": 438, "text": "requiredAmount," },
+        { "line": 439, "text": "distributedByDeadline: actuallyDistributed," },
+        { "line": 443, "text": "return {" },
+        { "line": 446, "text": "rmdShortfallObligations," }
       ]
     },
     {

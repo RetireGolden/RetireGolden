@@ -8,7 +8,11 @@ import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
-import type { InheritedAccountYearEvidence, YearResult } from '@retiregolden/engine/projection/types'
+import type {
+  InheritedAccountYearEvidence,
+  InheritedIraRefusalCode,
+  YearResult,
+} from '@retiregolden/engine/projection/types'
 import { singlePersonPlan, validatePlan } from '@retiregolden/engine/testing/planFixtures'
 import { InheritedSchedulesSection } from './ResultsPage'
 
@@ -107,6 +111,50 @@ function renderSection(plan: Plan, years: YearResult[]) {
   return renderToStaticMarkup(
     <InheritedSchedulesSection plan={plan} years={years} startYear={2026} adj={identityAdj} />,
   )
+}
+
+/** A plan whose one inherited account always lands on the refusal callout. */
+function refusedPlan(): Plan {
+  return basePlan((p) => {
+    p.accounts.push({
+      type: 'traditional',
+      id: 'refused-ira',
+      name: 'Refused Inherited IRA',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      kind: 'ira',
+      balance: 80_000,
+      annualContribution: 0,
+      inherited: {
+        ownerDeathYear: 2023,
+        decedentHadStartedRmds: false,
+        beneficiary: {
+          beneficiaryClass: 'estate',
+          provenance: { source: 'user-entered', asOf: '2026-01-01' },
+        },
+      },
+    })
+  })
+}
+
+function refusedEvidence(
+  refusalReason: string,
+  refusalCode: InheritedIraRefusalCode | null,
+): InheritedAccountYearEvidence {
+  return {
+    accountId: 'refused-ira',
+    ownerPersonId: 'p1',
+    regime: 'unsupported',
+    matrixRow: 'X3',
+    refusalReason,
+    ...(refusalCode === null ? {} : { refusalCode }),
+    requirementKind: 'legacy',
+    requiredAmount: 8_000,
+    executedRequiredAmount: 8_000,
+    voluntaryAmount: 0,
+    disclosures: [],
+    citations: [],
+  }
 }
 
 describe('InheritedSchedulesSection', () => {
@@ -281,6 +329,7 @@ describe('InheritedSchedulesSection', () => {
       matrixRow: 'X3',
       refusalReason:
         "beneficiaryClass 'estate' is unsupported (see-through trust and non-individual rules of Treas. Reg. §1.401(a)(9)-4(f) are not modeled)",
+      refusalCode: 'entity-beneficiary',
       requirementKind: 'legacy',
       requiredAmount: 8_000,
       executedRequiredAmount: 8_000,
@@ -301,6 +350,50 @@ describe('InheritedSchedulesSection', () => {
     expect(html).toContain(
       'The simpler planning estimate empties the account by the 10th year after the owner',
     )
+  })
+
+  it('reads the published refusal code, not the prose, when both are present', () => {
+    // Same account and the same technical prose in both arms; only the
+    // published code differs. The prose here names an estate, which the
+    // legacy substring reading would classify as an entity — so a row that
+    // carries a workplace-plan code proves the code decides.
+    const plan = refusedPlan()
+    const prose =
+      "beneficiaryClass 'estate' is unsupported (see-through trust and non-individual rules of Treas. Reg. §1.401(a)(9)-4(f) are not modeled)"
+    const withCode = renderSection(plan, [yearWithEvidence(2026, [refusedEvidence(prose, 'employer-plan')])])
+    expect(withCode).toContain(
+      'The model does not cover these facts: inherited workplace-plan schedules are not modeled',
+    )
+    expect(withCode).not.toContain('estates, trusts, and other entities are not modeled')
+  })
+
+  it('falls back to reading the prose for a result stored before codes existed', () => {
+    // No refusalCode on the row, as an older serialized result would have.
+    const plan = refusedPlan()
+    const html = renderSection(plan, [yearWithEvidence(2026, [refusedEvidence(
+      'this matrix scopes inherited support to IRAs; employer-plan beneficiary rules are not modeled',
+      null,
+    )])])
+    expect(html).toContain(
+      'The model does not cover these facts: inherited workplace-plan schedules are not modeled',
+    )
+  })
+
+  it('names each published code with its own plain-language cause', () => {
+    const plan = refusedPlan()
+    const cases = [
+      ['entity-beneficiary', 'estates, trusts, and other entities are not modeled'],
+      ['successor-beneficiary', 'accounts already inherited from a prior beneficiary are not modeled'],
+      ['employer-plan', 'inherited workplace-plan schedules are not modeled'],
+      ['multiple-beneficiaries', 'facts are contradictory or incomplete'],
+      ['needs-review', 'facts are contradictory or incomplete'],
+    ] as const
+    for (const [code, cause] of cases) {
+      const html = renderSection(plan, [
+        yearWithEvidence(2026, [refusedEvidence('technical prose for ' + code, code)]),
+      ])
+      expect(html, code).toContain('The model does not cover these facts: ' + cause)
+    }
   })
 
   it('renders nothing when the plan has no inherited accounts', () => {
@@ -347,6 +440,7 @@ describe('InheritedSchedulesSection', () => {
       voluntaryAmount: 0,
       refusalReason:
         'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope',
+      refusalCode: 'successor-clock-out-of-scope',
       disclosures: ['successor-clock-out-of-scope'],
       citations: ['IRC §401(a)(9)(H)(iii)'],
     }

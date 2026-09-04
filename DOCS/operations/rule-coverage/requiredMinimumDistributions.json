@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -103,7 +103,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -112,7 +112,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 460
+              "line": 529
             }
           ]
         }
@@ -194,7 +194,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -269,7 +269,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -341,7 +341,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -550,7 +550,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -559,7 +559,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -568,11 +568,11 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 460
+              "line": 529
             },
             {
               "name": "inheritedRequirementForYear",
-              "line": 1054
+              "line": 1123
             }
           ]
         }
@@ -640,7 +640,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -649,7 +649,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -738,7 +738,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -747,7 +747,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -756,7 +756,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 460
+              "line": 529
             },
             {
               "name": "inheritedForcedAmount",
@@ -764,7 +764,7 @@
             },
             {
               "name": "inheritedRequirementForYear",
-              "line": 1054
+              "line": 1123
             }
           ]
         }
@@ -849,7 +849,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -921,7 +921,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -996,7 +996,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -1051,7 +1051,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -1069,7 +1069,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -1212,7 +1212,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -1221,7 +1221,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -1230,7 +1230,7 @@
           "functions": [
             {
               "name": "inheritedRequirementForYear",
-              "line": 1054
+              "line": 1123
             }
           ]
         }
@@ -1474,7 +1474,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -1566,7 +1566,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -1575,7 +1575,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -1593,7 +1593,7 @@
           "functions": [
             {
               "name": "inheritedRequirementForYear",
-              "line": 1054
+              "line": 1123
             }
           ]
         }
@@ -1857,7 +1857,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -1979,7 +1979,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -2066,7 +2066,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -2156,7 +2156,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -2224,7 +2224,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -2233,7 +2233,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -2242,7 +2242,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 460
+              "line": 529
             }
           ]
         }
@@ -2367,7 +2367,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -2443,7 +2443,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -2461,7 +2461,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -2658,7 +2658,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -2667,7 +2667,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -2685,7 +2685,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 460
+              "line": 529
             }
           ]
         }
@@ -2717,31 +2717,31 @@
             },
             {
               "title": "E8: keeps voluntary inherited-traditional draws out of the forced-only distribution total",
-              "line": 366
+              "line": 367
             },
             {
               "title": "E9: preserves the two-field legacy amounts at three annual Single Life walk-back points",
-              "line": 384
+              "line": 385
             },
             {
               "title": "E10: enters owner RMD rules at the S2 identity flip after a synthetic refusal",
-              "line": 398
+              "line": 399
             },
             {
               "title": "E11 K1: voluntary inherited Roth draws stay outside the beneficiary owned-Roth ordering pool",
-              "line": 418
+              "line": 420
             },
             {
               "title": "P5: emits successor-scope evidence and stops forcing after the beneficiary dies",
-              "line": 447
+              "line": 449
             },
             {
               "title": "P6: marks the R1 relief-year amount notice-waived for non-execution",
-              "line": 475
+              "line": 478
             },
             {
               "title": "P7: stamps pre-horizon year-of-death RMD limitation on the legacy refusal path",
-              "line": 517
+              "line": 520
             }
           ]
         }
@@ -2797,7 +2797,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -2896,7 +2896,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         }
@@ -3176,7 +3176,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -3274,7 +3274,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 107
+              "line": 110
             }
           ]
         },
@@ -3283,7 +3283,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -3292,7 +3292,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 460
+              "line": 529
             }
           ]
         }
@@ -3350,7 +3350,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -3411,7 +3411,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },
@@ -3472,7 +3472,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 600
+              "line": 602
             }
           ]
         },

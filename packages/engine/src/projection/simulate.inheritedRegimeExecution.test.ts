@@ -347,6 +347,7 @@ describe('WS4 inherited-regime execution fixtures', () => {
     const e = evidence(result, 2026)
     expect(e.requirementKind).toBe('legacy')
     expect(e.refusalReason).toMatch(/estate|unsupported/i)
+    expect(e.refusalCode).toBe('entity-beneficiary')
     expect(e.executedRequiredAmount).toBeGreaterThan(0)
   })
 
@@ -408,6 +409,7 @@ describe('WS4 inherited-regime execution fixtures', () => {
       expect(e.regime).toBe('needs-review')
       expect(e.matrixRow).toBe('X5')
       expect(e.refusalReason).toMatch(/1959|applicable age|contested/i)
+      expect(e.refusalCode).toBe('needs-review')
     }
     const y2030 = year(result, 2030)
     expect(year(result, 2030).inheritedDistribution).toBe(0)
@@ -467,6 +469,7 @@ describe('WS4 inherited-regime execution fixtures', () => {
       expect(e.requirementKind).toBe('none')
       expect(e.disclosures).toContain('successor-clock-out-of-scope')
       expect(e.refusalReason).toMatch(/successor.*out of scope/i)
+      expect(e.refusalCode).toBe('successor-clock-out-of-scope')
       expect(e.executedRequiredAmount).toBe(0)
       expect(y.inheritedDistribution).toBe(0)
     }
