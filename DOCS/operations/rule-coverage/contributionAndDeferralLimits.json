@@ -2713,10 +2713,6 @@
             {
               "title": "reports ordinary income only on the executed part of a same-year cliff vest",
               "line": 1843
-            },
-            {
-              "title": "mints its four evidence IDs with the hardened structural minter",
-              "line": 1867
             }
           ]
         }

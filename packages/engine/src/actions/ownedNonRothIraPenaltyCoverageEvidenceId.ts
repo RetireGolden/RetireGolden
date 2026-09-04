@@ -98,10 +98,18 @@ export function coverageEvidenceIdParts(
 
 /**
  * Mints the character-coverage evidence ID from its part list, through the
- * hardened structural minter: canonical key order, no `NaN`/`Infinity`/`-0`,
- * no cycles or non-plain prototypes, and a fixed 64-hex digest instead of the
- * whole payload inline. The historical `${prefix}:${JSON.stringify(parts)}`
- * form it replaced could not say any of that.
+ * hardened structural minter: no `NaN`/`Infinity`/`-0`, no cycles or
+ * non-plain prototypes, and a fixed 64-hex digest instead of the whole
+ * payload inline. The historical `${prefix}:${JSON.stringify(parts)}` form
+ * it replaced could not say any of that.
+ *
+ * The minter does not sort object keys; it walks `Reflect.ownKeys` in
+ * insertion order, same as `JSON.stringify`. What keeps producer and
+ * consumer aligned on the part-13 source-evidence object is that
+ * {@link coverageEvidenceIdParts} rebuilds that object in the same declared
+ * key order on every call — a consumer that reconstructs it with a
+ * different key insertion order will mint a different digest for the same
+ * fields.
  *
  * The output is still a frozen wire format: producer and both SEPP consumers
  * compare minted IDs, so changing this function, or the part order it is fed,

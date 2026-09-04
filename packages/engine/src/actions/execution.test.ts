@@ -1863,7 +1863,16 @@ describeRule('irc-83-a-equity-compensation-execution-character', {
     expect(character.amount).toBe(produced)
     expect(character.amount).not.toBe(accepted)
   })
+})
 
+// Wire-format pin, not a statutory-reading fixture: this exercises the
+// hardened structural minter's output shape for equity-execution evidence,
+// not any section 83(a) cliff-vesting question, so it sits on a plain
+// describe rather than nested inside describeRule('irc-83-a-equity-
+// compensation-execution-character', ...) above. describeRule registers
+// every it() in its callback as coverage for the named rule, and this test
+// does not exercise the same-year cliff vest that rule discriminates.
+describe('equity execution evidence IDs', () => {
   it('mints its four evidence IDs with the hardened structural minter', () => {
     const equity = run(
       planWith(equityComp('equity')),
