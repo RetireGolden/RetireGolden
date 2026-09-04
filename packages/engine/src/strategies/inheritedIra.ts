@@ -209,6 +209,16 @@ export function inheritedIraRefusalCode(
           // four above, so it fails closed onto the generic cause instead.
           return 'needs-review'
       }
+    default: {
+      // No other `InheritedRefusalKey` member exists today. A member added
+      // without a case here must not fall through and drop the published
+      // reason — falling off this switch would return `undefined` and the
+      // Results callout (gated on `refusalReason`) would render the account
+      // as a quiet legacy schedule instead of a needs-review limitation.
+      // This is the line that makes adding one a compile error.
+      const exhaustive: never = refusal.refusal
+      throw new Error(`Unhandled inherited-IRA refusal key: ${JSON.stringify(exhaustive)}`)
+    }
   }
 }
 

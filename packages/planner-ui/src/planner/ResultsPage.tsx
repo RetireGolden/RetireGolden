@@ -143,14 +143,19 @@ const REFUSAL_CAUSE_BY_CODE: Record<InheritedIraRefusalCode, string> = {
  *
  * The engine publishes a discriminated `refusalCode` beside the prose, so the
  * normal path is a lookup. The substring reading below is the fallback for a
- * stored result serialized before the engine published codes; it is the
- * classification this component used to do for every row.
+ * stored result serialized before the engine published codes, or for a code
+ * a newer engine published that predates this UI build — either way,
+ * `refusalCode` is only a type at compile time; a deserialized result can
+ * carry any string, and an unrecognized one must fall through to the
+ * substring reading rather than interpolate as literal `undefined`.
  */
 function plainRefusalCause(
   refusalReason: string,
   refusalCode: InheritedIraRefusalCode | null,
 ): string {
-  if (refusalCode !== null) return REFUSAL_CAUSE_BY_CODE[refusalCode]
+  if (refusalCode !== null && refusalCode in REFUSAL_CAUSE_BY_CODE) {
+    return REFUSAL_CAUSE_BY_CODE[refusalCode]
+  }
   const lower = refusalReason.toLowerCase()
   if (
     lower.includes('estate') ||

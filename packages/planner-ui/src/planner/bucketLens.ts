@@ -39,7 +39,12 @@ export interface BucketYearRow {
  */
 export function bucketLens(result: ProjectionResult, spans: number[]): BucketYearRow[] {
   const years = result.years
-  const needs = years.map((y) => y.netPortfolioNeed)
+  // `netPortfolioNeed` types as `number` (never optional) because every
+  // `YearResult` this engine build produces sets it. A `ProjectionResult`
+  // deserialized from an engine older than 0.3.0 has no such guarantee — the
+  // field is simply absent at runtime — so a missing value reads as 0 rather
+  // than propagating `NaN` through every downstream bucket sum.
+  const needs = years.map((y) => (typeof y.netPortfolioNeed === 'number' ? y.netPortfolioNeed : 0))
   return years.map((y, i) => {
     let remaining = y.investableTotal
     const buckets: number[] = []

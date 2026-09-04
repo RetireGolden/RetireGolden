@@ -138,9 +138,11 @@ feature-off plans byte-identical, guarded by `cases:diff` and the golden suites)
 - **Bucket reporting lens** (Results; [planner/bucketLens.ts](../../../packages/planner-ui/src/planner/bucketLens.ts)):
   buckets are popular but the evidence (Estrada's bucket studies; Kitces) finds no systematic benefit over
   total-return rebalancing, so RetireGolden *reports* buckets without *managing* them — each year's investable
-  total is partitioned into "next N years of net spending" segments (net need = spending + taxes −
-  income, floored at 0; presets 2yr/8yr/growth and 3yr/growth), reconciling to the ledger total every year
-  by construction. Presentation only; no engine feedback.
+  total is partitioned into "next N years of net spending" segments (net need = the engine's published
+  `YearResult.netPortfolioNeed` — spending plus taxes and penalties, less income, floored at 0; presets
+  2yr/8yr/growth and 3yr/growth), reconciling to the ledger total every year by construction. The engine
+  owns that arithmetic; `bucketLens.ts` only reads the published field. Presentation only; no engine
+  feedback.
 
 **Code:** [engine/spending/abw.ts](../../../packages/engine/src/spending/abw.ts),
 [engine/spending/shapePresets.ts](../../../packages/engine/src/spending/shapePresets.ts),

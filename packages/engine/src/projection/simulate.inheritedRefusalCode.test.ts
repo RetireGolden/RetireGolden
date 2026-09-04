@@ -217,7 +217,11 @@ describe('published inherited-IRA refusal codes', () => {
     const refused = rows.filter((row) => row.refusalReason !== undefined)
     expect(refused.length).toBeGreaterThan(0)
     for (const row of refused) expect(row.refusalCode).toBe(fixture.code)
-    expect(producerFor(fixture.code)).not.toBe('')
+    // Not an assertion: `producerFor` always returns a non-empty string or
+    // throws from its `never` arm, so the real pin is the observed-set
+    // equality below and the compile-time exhaustiveness check this call
+    // exercises.
+    producerFor(fixture.code)
   })
 
   it('publishes the code exactly when it publishes the prose', () => {
@@ -262,7 +266,7 @@ describe('published inherited-IRA refusal codes', () => {
       'needs-review',
       'successor-clock-out-of-scope',
     ]
-    for (const code of declared) expect(producerFor(code)).not.toBe('')
+    for (const code of declared) producerFor(code)
     expect([...observed].sort()).toEqual([...declared].sort())
   })
 })

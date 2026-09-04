@@ -133,9 +133,13 @@ has — rather than the runtime contract a consumer needs on the landing page.
   `actions/identity`, `actions/money`, `actions/planBalanceAdapter`,
   `actions/reasons`, `actions/retirementActionCandidateIdentityAllocator`,
   `actions/retirementActionManualReview`. **No module became unreachable**:
-  all 29 pruned names are still exported from the `./actions` barrel, which is
-  where the engine pack smoke now proves them, alongside a new loop asserting
-  each pruned subpath fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+  all 29 pruned names are still exported from the `./actions` barrel, which
+  `publishedSurface.test.ts` proves for every one of them by comparing the
+  source modules against the package's export map and the barrel's re-export
+  list. Pack smoke adds a runtime check in the packed artifact — `typeof`
+  assertions through the barrel for a representative subset of the 29, plus a
+  new loop asserting every pruned subpath fails with
+  `ERR_PACKAGE_PATH_NOT_EXPORTED`.
 - **The planner-ui range moves in the same commit, and it has to** — the same
   `linkWorkspacePackages` reasoning as the 0.2.0 entry below:
   `@retiregolden/planner-ui` now declares `^0.3.0`. Its own version is not

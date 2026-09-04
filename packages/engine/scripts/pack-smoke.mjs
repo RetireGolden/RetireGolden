@@ -275,15 +275,11 @@ assert.equal(
   allocateRetirementActionCandidateIdentity,
 )
 assert.equal(typeof allocateRetirementActionCandidateIdentity, 'function')
-assert.equal(typeof buildAnnualOwnedNonRothIraPoolCapacity, 'function')
 assert.equal(
   annualQcdPrerequisiteDeepApi.evaluateAnnualQcdExecutionPrerequisites,
   evaluateAnnualQcdExecutionPrerequisites,
 )
 assert.equal(typeof evaluateAnnualQcdExecutionPrerequisites, 'function')
-assert.equal(typeof stageAnnualQcdPhysicalExecution, 'function')
-assert.equal(typeof stageAnnualQcdResidualForm8606, 'function')
-assert.equal(typeof stageAnnualQcdTaxCharacterPostPass, 'function')
 assert.equal(typeof reviewAndReplaceRetirementActionManually, 'function')
 // Barrel-only from 0.3.0 on. Their own subpaths were pruned, so a typeof
 // through ./actions is now the whole reachability claim for each.

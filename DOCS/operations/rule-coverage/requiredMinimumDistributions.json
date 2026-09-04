@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 529
+              "line": 539
             }
           ]
         }
@@ -568,11 +568,11 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 529
+              "line": 539
             },
             {
               "name": "inheritedRequirementForYear",
-              "line": 1123
+              "line": 1133
             }
           ]
         }
@@ -756,7 +756,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 529
+              "line": 539
             },
             {
               "name": "inheritedForcedAmount",
@@ -764,7 +764,7 @@
             },
             {
               "name": "inheritedRequirementForYear",
-              "line": 1123
+              "line": 1133
             }
           ]
         }
@@ -1230,7 +1230,7 @@
           "functions": [
             {
               "name": "inheritedRequirementForYear",
-              "line": 1123
+              "line": 1133
             }
           ]
         }
@@ -1593,7 +1593,7 @@
           "functions": [
             {
               "name": "inheritedRequirementForYear",
-              "line": 1123
+              "line": 1133
             }
           ]
         }
@@ -2242,7 +2242,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 529
+              "line": 539
             }
           ]
         }
@@ -2685,7 +2685,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 529
+              "line": 539
             }
           ]
         }
@@ -3292,7 +3292,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 529
+              "line": 539
             }
           ]
         }
