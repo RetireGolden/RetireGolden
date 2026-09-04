@@ -113,7 +113,8 @@ Running both on each PR gives coverage from both directions.
 
 The base pipeline is the Azure Static Web Apps workflow
 ([`azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml)):
-`lint` + `test` → `build` → `deploy`. The security scanners attach like this:
+`authorize` releases `lint`, three coverage shards (aggregated as required check `test`), `e2e`, and
+`build` in parallel; `deploy` is the all-gates barrier. The security scanners attach like this:
 
 - **Semgrep** is an **independent workflow** that runs in parallel on every push/PR — it needs no
   deployment.
@@ -161,11 +162,10 @@ Net effect: a PR is blocked when Semgrep finds an **ERROR** issue, ZAP finds a
 review. Low/medium/informational security findings are surfaced but never block.
 
 > [!NOTE]
-> **Label gate.** On PRs, **Semgrep always runs** (cheap scan, real required-check result on every push),
-> but **ZAP** — like the rest of the deploy pipeline — runs only while the PR carries the **`run-ci`
-> label**; see "Label-gated PR CI" in [ci-cd-and-deploy.md](ci-cd-and-deploy.md). Without the label the
-> ZAP check reports **skipped** (via a no-op invocation of `zap.yml`), which *satisfies* the required
-> check, so apply `run-ci` and let the scan finish before merging.
+> **Authorization gate.** On PRs, **Semgrep always runs** (cheap scan, real required-check result on every
+> push), while ZAP runs only after live exact-head `run-ci` + trusted-clean-review authorization and a
+> successful preview deploy. Unauthorized runs still call `zap.yml` with an empty URL so the nested check
+> reports **skipped** instead of waiting as Expected; see [Label-gated PR CI](ci-cd-and-deploy.md#label-gated-pr-ci).
 
 > [!WARNING]
 > **Renaming coupling.** The required checks are keyed to **job/display names**. If you rename the Semgrep

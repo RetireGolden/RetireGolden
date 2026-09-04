@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-Ten GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; OpenRouter review and CLA enforcement run on PR activity; the resolve gate re-resolves dependencies on manifest-touching PRs and weekly; Grok Build review is manual emergency-only; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+Eleven GitHub Actions workflows: the SWA pipeline and both security scans run on pushes and pull requests to `main`; OpenRouter review, its trusted CI broker, and CLA enforcement run on PR activity; the resolve gate re-resolves dependencies on manifest-touching PRs and weekly; Grok Build review is manual emergency-only; the Owl parity oracle and the engine and planner-ui npm releases are triggered manually (the engine release also fires on `engine-v*` tags). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -60,15 +60,32 @@ Ten GitHub Actions workflows: the SWA pipeline and both security scans run on pu
 
 | Job | What it does |
 |-----|----------------|
+| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review gate; push to `main` is authorized, forks are not, and same-repository Dependabot can be authorized only after a maintainer applies `run-ci` and the exact-head trusted clean review gate passes |
 | `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine, planner-ui, and app) |
-| `test` | Root `pnpm install --frozen-lockfile` + `pnpm test:coverage` (engine, planner-ui, and app unit tests + coverage thresholds) |
+| `test engine`, `test planner-ui`, `test web` → `test` | Independent workspace coverage jobs run in parallel; the fail-closed aggregate keeps the required `test` context |
 | `e2e` | Playwright browser smoke/layout specs (`pnpm test:e2e` in `app/`) |
-| `build` | Runs after lint, test, and e2e pass; `pnpm build` → `app/dist/` (artifact retained 1 day) |
-| `deploy` | Uploads `app/dist` to **Azure Static Web Apps** (`skip_app_build: true`) |
+| `build` | Runs with lint/tests/e2e after authorization; `pnpm build` → `app/dist/` (artifact retained 1 day) |
+| `deploy` | Uploads `app/dist` to **Azure Static Web Apps** (`skip_app_build: true`) only after every authorized prerequisite passes |
 | `dast` | PR previews only — calls the ZAP workflow against the deployed preview URL |
 | `close_pull_request` | Tears down the SWA preview environment when a PR is closed |
 
 **Triggers:** push to `main` deploys production; open/sync/reopen PRs get a preview URL; closing a PR removes the preview.
+
+Same-repository PRs first pass an API-only live authorization gate: `run-ci`, an exact-head decoded clean
+OpenRouter ledger from the real GitHub Actions bot, and a review-caller blob equal to the default branch.
+Lint, the three coverage shards (aggregated as `test`), e2e, and build then run in parallel; deploy waits
+for them all. Forks never authorize or deploy; the broker does not automatically label or rerun Dependabot PRs, but a maintainer-applied `run-ci` can authorize a same-repository Dependabot PR when its exact-head trusted clean review is valid.
+
+### OpenRouter CI broker
+
+[`.github/workflows/openrouter-ci-broker.yml`](.github/workflows/openrouter-ci-broker.yml)
+
+Runs on completed OpenRouter reviews and completed Azure CI runs from the default branch only. It checks
+the live, same-repository PR head, decoded bot-authored clean ledger, and head/default caller-blob equality
+through GitHub APIs. It first identifies an eligible skipped Azure run, then adds `run-ci` and reruns that
+specific run, serializing competing completion events by head. It never checks out or executes PR code.
+This inaugural CI-broker PR still needs the documented manual `run-ci` fallback after its clean review;
+later PRs auto-start.
 
 **Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **24** in CI (the workspaces require Node >=24.15.0). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
 

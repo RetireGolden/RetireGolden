@@ -10,24 +10,29 @@ no server and no backend — "deploy" means uploading static files to a CDN.
 
 One workflow drives build + deploy:
 [`.github/workflows/azure-static-web-apps-retiregolden.yml`](../../.github/workflows/azure-static-web-apps-retiregolden.yml).
-It triggers on push to `main` and on every pull-request event targeting `main`, but on PRs the jobs
-themselves are gated on the **`run-ci` label** — an unlabeled PR produces a workflow run whose jobs
-all report **skipped** (see [Label-gated PR CI](#label-gated-pr-ci) below).
+It triggers on push to `main` and on every pull-request event targeting `main`. On a same-repository PR,
+the lightweight `authorize` job reads **live** PR state before any checkout: it requires the current head,
+the `run-ci` label, and an exact-head clean OpenRouter review ledger. An unauthorized run therefore stays
+cheap and its expensive jobs report skipped (see [Label-gated PR CI](#label-gated-pr-ci) below).
 
 ```
-lint ─┐
-test ─┼─► build ─► deploy ─► dast (PR only)
-e2e  ─┘
+authorize ─┬─► lint ─────┐
+           ├─► test engine ─┐
+           ├─► test planner-ui ─┼─► test ─┐
+           ├─► test web ──────┘          ├─► deploy ─► dast (PR only)
+           ├─► e2e ──────────────────────┤
+           └─► build ────────────────────┘
 ```
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `lint` | push + labeled PR | root `pnpm install --frozen-lockfile` then `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
-| `test` | push + labeled PR | root `pnpm install --frozen-lockfile` then `pnpm test:coverage` (Vitest in `packages/engine`, `packages/planner-ui`, and `app`) |
-| `e2e` | push + labeled PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
-| `build` | needs `lint`, `test`, `e2e` | root `pnpm build` (engine `tsc -b`, planner-ui `tsc -b`, then app `tsc -b && vite build`, the **bundle budget** — `check-bundle-budget.mjs`, which fails the build when `dist/` is over its measured size limits, see [bundle-budget.md](bundle-budget.md) — the **CSS clamp gate** — `check-css-clamp.mjs`, which fails the build when the emitted stylesheet has lost any declaration of the plan-card name clamp (#533) — and sitemap generation), then the **third-party notices drift check** — re-runs `pnpm --filter retiregolden-web run licenses` and `git diff --exit-code` on `app/THIRD-PARTY-NOTICES.txt` and `app/public/THIRD-PARTY-NOTICES.txt`, so a production dependency change that ships without regenerating the AGPL attribution surface fails here (the generator is deterministic and its provenance digest covers the attributed package set, so a devDependency bump alone does not trip it) — then both packages' pack-smoke scripts (the engine tarball from plain Node ESM; the planner-ui tarball from a scratch Vite consumer, which also pins the single-worker-entry invariant); uploads `app/dist` as the `dist` artifact |
-| `deploy` | needs `build`; skipped on PR close | downloads `dist`, deploys via `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`, `app_location: app/dist`; exposes the deployed URL as `preview_url` |
-| `dast` | PR only; needs `deploy` | OWASP ZAP baseline scan of the freshly deployed PR preview URL — see [security-scanning.md](security-scanning.md). On unlabeled PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
+| `authorize` | push + open PR (except first-attempt unrelated label events) | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, and have the trusted exact-head clean OpenRouter ledger. Forks do not pass; a maintainer may manually label a Dependabot PR. |
+| `lint` | authorized push/PR | root `pnpm install --frozen-lockfile` then `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
+| `test engine`, `test planner-ui`, `test web` | authorized push/PR, in parallel | Each workspace runs its own `test:coverage`, retaining its own coverage threshold. The fail-closed aggregate check is still named **`test`** for Main Guard. |
+| `e2e` | authorized push/PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
+| `build` | authorized push/PR, in parallel with lint/tests/e2e | root `pnpm build`, then the third-party notices drift and both package pack-smoke checks; uploads `app/dist` as the `dist` artifact |
+| `deploy` | every authorized prerequisite succeeds; skipped on PR close | the all-gates barrier: downloads `dist`, deploys via `Azure/static-web-apps-deploy@v1` with `skip_app_build: true`, `app_location: app/dist`; exposes the deployed URL as `preview_url` |
+| `dast` | PR only; needs `deploy` | OWASP ZAP baseline scan of the freshly deployed PR preview URL — see [security-scanning.md](security-scanning.md). On unauthorized PRs it still invokes `zap.yml` with an empty URL (the scan job skips itself) so the required nested check reports as skipped instead of hanging on "Expected" |
 | `close_pull_request` | PR close | tears down the SWA preview environment |
 
 CI uses **Node 24**, set up by the shared composite `.github/actions/setup-toolchain` (pnpm from the
@@ -39,13 +44,46 @@ scan is cheap and it is a Main Guard required check (also in [security-scanning.
 
 ## Label-gated PR CI
 
-To keep Actions minutes down, PR pushes do **not** run the pipeline by default — review bots can
-iterate on a PR without every commit re-running lint/test/e2e/deploy/DAST. The full pipeline runs on a
-PR only while it carries the **`run-ci` label**:
+To keep Actions minutes down, PR pushes do **not** run the expensive pipeline by default — review bots can
+iterate without every commit running lint/test/e2e/build/deploy/DAST. The trusted default-branch
+[`openrouter-ci-broker.yml`](../../.github/workflows/openrouter-ci-broker.yml) automatically adds
+`run-ci` only after a successful OpenRouter run is associated with exactly one open same-repository PR to
+`main`, whose live head still equals the run SHA and whose `github-actions[bot]` review has bot id
+`41898282`, type `Bot`, the decoded clean ledger, these production Markdown fields, and that run's exact
+URL. The lane section is intentionally variable-length:
 
-- **Apply `run-ci`** only after the automated review reports a clean verdict for the PR's current head
-  commit. Applying the label triggers a run immediately, and every later push runs CI too.
-  Applying any **other** label never starts or re-runs the pipeline.
+```
+## OpenRouter pull-request review
+<!-- openrouter-review-ledger:v1:<canonical base64 JSON> -->
+
+**Verdict:** `clean`
+**Scope:** `<review scope>`
+**Mode:** `<review mode>`
+**Commit:** `<40-character SHA>`
+... production lane report ...
+[Workflow run](https://github.com/RetireGolden/RetireGolden/actions/runs/<id>)
+```
+
+The marker JSON must have ledger version `1`, this repository, PR number, head SHA, a 12-character
+generation id, a positive round, and an empty `findings` array. Both authorization paths also prove the
+successful `pull_request` review run came from the same repository and that its caller workflow blob at
+the reviewed head exactly equals the caller blob on the default branch. They read GitHub APIs only and
+never check out or execute PR code.
+
+- The broker serializes review/Azure completion events for a head, finds the newest eligible skipped Azure
+  `pull_request` run before it mutates the PR, rechecks live PR state, adds `run-ci`, rechecks again, then
+  reruns that run through the Actions API. It does nothing when live work is queued/running or a
+  current-head Azure run has already performed a non-skipped expensive job. A maintainer may still apply
+  `run-ci` manually when the review workflow needs operational recovery; the live authorization gate
+  remains authoritative.
+- A rerun deliberately ignores its frozen event labels. `authorize` re-reads the live PR, label, review,
+  and head immediately before releasing checkout jobs; a head race fails closed. Fork PRs never authorize
+  or deploy. The broker never auto-reruns Dependabot PRs, but a maintainer's manual `run-ci` label can
+  authorize one. A first-attempt label other than `run-ci` neither cancels a live run nor starts the
+  expensive lane; rerunning that event is allowed for operational recovery.
+- This CI-broker PR itself is the inaugural exception: the broker only exists on the default branch after
+  this PR merges, so after its clean review a maintainer must apply `run-ci` manually. Future PRs use the
+  broker automatically.
 - **Without the label**, the gated jobs report as **skipped**. Skipped checks *satisfy* the Main Guard
   required checks, so always apply `run-ci` (and let CI go green) **before merging** — a merge without
   the label lands on `main` unvalidated (the push-to-`main` run will still catch it, but after the fact).
