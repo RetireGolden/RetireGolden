@@ -366,4 +366,34 @@ describe('annualRothConversionExecutionInput', () => {
       result.executorInput.runtimeEvidence?.ownerAggregatedIraBasisEvidence,
     )).toBe(true)
   })
+
+  // All three published identities are `deriveActionStructuralId` digests
+  // rather than interpolated `JSON.stringify` payloads. The digest is written
+  // out rather than recomputed: these strings reach the executor and are
+  // re-embedded by its own evidence, so a change to the minter or to a part
+  // list has to fail here. All three share the parts
+  // ['conversion-a', 'p1', 2030, '2030-12-15'], so one digest serves all
+  // three and only the prefix separates them.
+  it('mints every published identity with the hardened structural minter', () => {
+    const DIGEST =
+      '9fcc629c3794752695ec726bde71a448e4c4b3556d4df5b3d129383df30ecf17'
+    const result = annualRothConversionExecutionInput(input())
+    if (result.status !== 'ready') throw new Error('expected ready input')
+    const runtime = result.executorInput.runtimeEvidence
+
+    expect(runtime?.personAliveEvidence?.[0]?.evidenceId)
+      .toBe(`projection-alive:${DIGEST}`)
+    expect(runtime?.ownerIraRmdSatisfactionEvidence?.[0]?.evidenceId)
+      .toBe(`projection-owner-ira-rmd-satisfaction:${DIGEST}`)
+    expect(runtime?.ownerAggregatedIraBasisEvidence?.[0]?.evidenceId)
+      .toBe(`projection-owner-aggregated-ira-basis:${DIGEST}`)
+
+    // The identity moves with the tax year: it is not a constant.
+    const laterYear = annualRothConversionExecutionInput(input({
+      taxYear: YEAR + 1,
+    }))
+    if (laterYear.status !== 'ready') throw new Error('expected ready input')
+    expect(laterYear.executorInput.runtimeEvidence?.personAliveEvidence?.[0]
+      ?.evidenceId).not.toBe(`projection-alive:${DIGEST}`)
+  })
 })
