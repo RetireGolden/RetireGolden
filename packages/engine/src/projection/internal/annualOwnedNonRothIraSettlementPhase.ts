@@ -68,9 +68,10 @@ interface AnnualOwnedNonRothIraSettlementPhaseFacts {
 }
 
 /**
- * Exported because `simulate.ts` declares the mutable carry it hands this phase
- * against this type. The phase's other sub-records are file-local: callers
- * build them inline inside the composed `...Input`.
+ * Exported because `simulate.ts` declares the mutable carry it hands this
+ * phase against this type, and against the `scalars` field's own type below.
+ * The phase's remaining sub-records (facts, callbacks) are file-local:
+ * callers build them inline inside the composed `...Input`.
  */
 export interface AnnualOwnedNonRothIraSettlementPhaseLedger {
   iraBasisByOwner: Map<string, number>

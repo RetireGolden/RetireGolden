@@ -1,10 +1,13 @@
 /**
- * The `Complete | Blocked` result contract the action evaluators share.
+ * The `Complete | Blocked` result contract some action evaluators share.
  *
- * Every evaluator in this directory answers with one of two records: a
+ * An evaluator that adopts this frame answers with one of two records: a
  * completed arm carrying the evidence it derived, or a blocked arm carrying
- * exactly one issue and no evidence. Each module used to restate that union
- * and hand-roll the factory that builds the blocked record, so the invariant
+ * exactly one issue plus whatever evaluator-specific diagnostics it reports
+ * (see below) — not every evaluator has adopted it, and `actions/` still has
+ * hand-rolled `blocked()` factories whose issue shape does not fit this
+ * frame. Each module that has adopted it used to restate the union and
+ * hand-roll the factory that builds the blocked record, so the invariant
  * lived in as many places as there were evaluators and could drift in any of
  * them.
  *
@@ -54,17 +57,20 @@ export type BlockedActionArm<TStatus extends string, TIssue> = Readonly<{
  * the record this produces is byte-identical to what each module's local
  * `blocked()` built.
  *
- * The return is asserted rather than inferred. A structural type cannot be
- * built from an open `Record<string, unknown>` spread, and every caller has
- * already declared the exact blocked type it is producing; performing the
- * erasure here means it is written and explained once instead of once per
- * evaluator. Callers keep the guarantee by declaring their local `blocked()`
- * with an explicit blocked return type, which is what pins `TBlocked`.
+ * `fields` is still an open `Record<string, unknown>` spread — a structural
+ * type cannot be built from it, so that half of the payload is asserted, not
+ * checked. `status` and `issue` are not: they are typed against `TBlocked`
+ * itself (`TBlocked['status']`, `TBlocked['issues'][0]`), and every caller's
+ * local `blocked()` has an explicit blocked return type, so `TBlocked` is
+ * inferred from that contextual return type rather than from the call's
+ * arguments. A `status` literal or `issue` shape that does not match the
+ * caller's declared blocked type is a compile error, the same as it was with
+ * the single hand-rolled `as` this replaces.
  */
-export function blockedActionResult<TBlocked>(
-  status: string,
+export function blockedActionResult<TBlocked extends BlockedActionArm<string, unknown>>(
+  status: TBlocked['status'],
   fields: Readonly<Record<string, unknown>>,
-  issue: Readonly<Record<string, unknown>>,
+  issue: TBlocked['issues'][0],
 ): TBlocked {
   return deepFreeze({ status, ...fields, issues: [issue] }) as unknown as TBlocked
 }
