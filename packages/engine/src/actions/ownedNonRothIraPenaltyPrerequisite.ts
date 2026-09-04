@@ -785,19 +785,15 @@ function scheduleRouteKey(
 }
 
 /**
- * Builds the exact early-distribution-penalty prerequisite boundary for
- * finalized owned traditional, SEP, and SIMPLE IRA line-7 character.
- *
- * An under-59½ result may receive final zero-penalty treatment from a complete
- * annual SEPP reconciliation rebuilt over this evaluator's canonical character
- * coverage. Otherwise it remains a candidate unless exact negative evidence
- * rejects death, IRA SEPP, disability, and the planning-attested other
- * statutory-exception scope. No outcome establishes readiness or movement.
+ * Rederives the caller-supplied characterization from its own annual basis
+ * evidence and refuses anything that does not reproduce it exactly. Lifted
+ * verbatim out of `evaluateOwnedNonRothIraPenaltyPrerequisites`: it reads only
+ * the supplied characterization and produces only the canonical one.
  */
-export function evaluateOwnedNonRothIraPenaltyPrerequisites(
-  input: Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesInput>,
-): Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesResult> {
-  const suppliedCharacterization = input.characterization
+function rederiveCanonicalCharacterization(
+  suppliedCharacterization:
+    EvaluateOwnedNonRothIraPenaltyPrerequisitesInput['characterization'],
+): Readonly<ClassifyOwnedNonRothIraAnnualWithdrawalsResult> {
   const suppliedAnnualBasis = suppliedCharacterization.annualBasisEvidence
   const characterization = classifyOwnedNonRothIraAnnualWithdrawals({
     ownerPersonId: suppliedAnnualBasis.ownerPersonId,
@@ -856,6 +852,25 @@ export function evaluateOwnedNonRothIraPenaltyPrerequisites(
       'Supplied IRA characterization must exactly equal its canonical rederived result',
     )
   }
+  return characterization
+}
+
+/**
+ * Builds the exact early-distribution-penalty prerequisite boundary for
+ * finalized owned traditional, SEP, and SIMPLE IRA line-7 character.
+ *
+ * An under-59½ result may receive final zero-penalty treatment from a complete
+ * annual SEPP reconciliation rebuilt over this evaluator's canonical character
+ * coverage. Otherwise it remains a candidate unless exact negative evidence
+ * rejects death, IRA SEPP, disability, and the planning-attested other
+ * statutory-exception scope. No outcome establishes readiness or movement.
+ */
+export function evaluateOwnedNonRothIraPenaltyPrerequisites(
+  input: Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesInput>,
+): Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesResult> {
+  const characterization = rederiveCanonicalCharacterization(
+    input.characterization,
+  )
 
   const annualBasisEvidence = characterization.annualBasisEvidence
   const ownerPersonId = personIdSchema.parse(
