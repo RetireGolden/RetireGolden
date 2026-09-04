@@ -53,7 +53,7 @@ export type AnnualPostContributionPassRunner = (
   publishCashFlow?: boolean,
 ) => { yearResult: YearResult; optimizerProbe: OptimizerYearProbe | null }
 
-export interface AnnualOwnedNonRothIraSettlementPhaseFacts {
+interface AnnualOwnedNonRothIraSettlementPhaseFacts {
   readonly year: number
   readonly plan: Readonly<Plan>
   readonly primary: Readonly<Person>
@@ -67,6 +67,12 @@ export interface AnnualOwnedNonRothIraSettlementPhaseFacts {
   readonly annualCounterfactual: Readonly<SimulateAnnualCounterfactualRequest> | undefined
 }
 
+/**
+ * Exported because `simulate.ts` declares the mutable carry it hands this
+ * phase against this type, and against the `scalars` field's own type below.
+ * The phase's remaining sub-records (facts, callbacks) are file-local:
+ * callers build them inline inside the composed `...Input`.
+ */
 export interface AnnualOwnedNonRothIraSettlementPhaseLedger {
   iraBasisByOwner: Map<string, number>
   ownedNonRothIraSettlementRolledBackOwners: Set<string>
@@ -85,7 +91,7 @@ export interface AnnualOwnedNonRothIraSettlementPhaseScalars {
   ownedNonRothIraSettlementRolledBackHousehold: boolean
 }
 
-export interface AnnualOwnedNonRothIraSettlementPhaseCallbacks {
+interface AnnualOwnedNonRothIraSettlementPhaseCallbacks {
   readonly isTreatAsOwnEffective: (
     account: Readonly<TreatAsOwnAccount>,
     taxYear: number,

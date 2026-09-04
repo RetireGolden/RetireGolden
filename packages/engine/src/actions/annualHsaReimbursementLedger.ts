@@ -22,6 +22,11 @@ import {
   deriveActionStructuralId,
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
+import {
+  blockedActionResult,
+  type ActionResult,
+  type BlockedActionArm,
+} from './actionResult.js'
 import { INVALID_SNAPSHOT, exactKeys, plainDataSnapshot, requireNonblankId } from './plainData.js'
 
 export interface HsaReimbursementPriorHistoryEvidence {
@@ -174,24 +179,27 @@ export type AnnualHsaReimbursementLedgerEvaluated = Readonly<{
   issues: readonly []
 }>
 
-export type AnnualHsaReimbursementLedgerBlocked = Readonly<{
-  status: 'blocked'
-  committed: false
-  movement: 'notEstablished'
-  actionability: 'notEstablished'
-  publication: 'notEstablished'
-  taxYear: number | null
-  reimbursementScopeId: null
-  openingExpenseStateId: null
-  entries: readonly []
-  terminalExpenseStateId: null
-  terminalExpenseState: readonly []
-  issues: readonly [Readonly<AnnualHsaReimbursementLedgerIssue>]
-}>
+export type AnnualHsaReimbursementLedgerBlocked = BlockedActionArm<
+  'blocked',
+  AnnualHsaReimbursementLedgerIssue
+> &
+  Readonly<{
+    committed: false
+    movement: 'notEstablished'
+    actionability: 'notEstablished'
+    publication: 'notEstablished'
+    taxYear: number | null
+    reimbursementScopeId: null
+    openingExpenseStateId: null
+    entries: readonly []
+    terminalExpenseStateId: null
+    terminalExpenseState: readonly []
+  }>
 
-export type EvaluateAnnualHsaReimbursementLedgerResult =
-  | AnnualHsaReimbursementLedgerEvaluated
-  | AnnualHsaReimbursementLedgerBlocked
+export type EvaluateAnnualHsaReimbursementLedgerResult = ActionResult<
+  AnnualHsaReimbursementLedgerEvaluated,
+  AnnualHsaReimbursementLedgerBlocked
+>
 
 const INPUT_KEYS = ['taxYear', 'allocationInventoryComplete', 'scope', 'allocations']
 const SCOPE_KEYS = ['predicate', 'reimbursementScopeId', 'eligibleHsaOwnerPersonIds', 'coveredHsaAccountIds', 'ownerEstablishmentInventoryComplete', 'ownerEstablishments', 'expenseInventoryComplete', 'priorHistory', 'expenses']
@@ -214,7 +222,7 @@ function positiveSequence(value: unknown, label: string): number {
 }
 
 function blocked(taxYear: number | null, kind: AnnualHsaReimbursementLedgerIssue['kind'], detail: string): AnnualHsaReimbursementLedgerBlocked {
-  return deepFreeze({ status: 'blocked', committed: false, movement: 'notEstablished', actionability: 'notEstablished', publication: 'notEstablished', taxYear, reimbursementScopeId: null, openingExpenseStateId: null, entries: [], terminalExpenseStateId: null, terminalExpenseState: [], issues: [{ kind, detail }] }) as AnnualHsaReimbursementLedgerBlocked
+  return blockedActionResult('blocked', { committed: false, movement: 'notEstablished', actionability: 'notEstablished', publication: 'notEstablished', taxYear, reimbursementScopeId: null, openingExpenseStateId: null, entries: [], terminalExpenseStateId: null, terminalExpenseState: [] }, { kind, detail })
 }
 
 type StateRecord = HsaReimbursementExpenseStateRecord

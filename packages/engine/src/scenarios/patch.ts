@@ -50,6 +50,21 @@ const protectedFields = [
   'scenarios',
 ] as const
 
+/**
+ * Read a `Plan` as an untyped record so a JSON-pointer walk can index it.
+ *
+ * `Plan` is inferred from a Zod object schema, so indexing it requires a key
+ * the schema declares; pointer segments are only known at runtime, which is
+ * why traversal needs `Record<string, unknown>`. TypeScript rejects the direct
+ * assertion between the two, so the conversion has to hop through `unknown`.
+ * Seven call sites repeated that hop verbatim. Naming it once means the type
+ * erasure — the thing a reviewer should look at — is stated in one place, with
+ * the reason attached, instead of being re-derived at each use.
+ */
+function asRecord(value: Plan): Record<string, unknown> {
+  return value as unknown as Record<string, unknown>
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
   const prototype = Object.getPrototypeOf(value)
@@ -109,7 +124,7 @@ function jsonEqual(left: unknown, right: unknown): boolean {
 export function scenarioPlanSnapshotHash(plan: Plan): string {
   const parsed = parsePlan(plan)
   if (!parsed.ok) throw new Error(`cannot fingerprint invalid plan: ${parsed.issues.join('; ')}`)
-  const record = parsed.plan as unknown as Record<string, unknown>
+  const record = asRecord(parsed.plan)
   const snapshot = Object.fromEntries([
     ['planId', parsed.plan.id],
     ['planSchemaVersion', parsed.plan.schemaVersion],
@@ -250,8 +265,8 @@ export function createScenarioPatch(
     }
   }
   const operations: ScenarioOperation[] = []
-  const baseRecord = base.plan as unknown as Record<string, unknown>
-  const editedRecord = edited.plan as unknown as Record<string, unknown>
+  const baseRecord = asRecord(base.plan)
+  const editedRecord = asRecord(edited.plan)
   for (const root of editableRoots) diffNode(baseRecord[root], editedRecord[root], [root], operations)
   return parseScenarioPatch({
     kind: 'retiregolden.scenario-patch',
@@ -346,7 +361,7 @@ function conflictReport(plan: Plan, patch: ScenarioPatchV1, direction: 'apply' |
       message: `patch targets plan schema ${patch.base.planSchemaVersion}`,
     })
   }
-  const record = plan as unknown as Record<string, unknown>
+  const record = asRecord(plan)
   for (const operation of patch.operations) {
     const segments = decodeScenarioPointer(operation.path)
     if (segments === null) {
@@ -408,7 +423,7 @@ function mutateOperations(
       conflicts: report.conflicts,
     }
   }
-  const draft = structuredClone(plan) as unknown as Record<string, unknown>
+  const draft = asRecord(structuredClone(plan))
   const operations = direction === 'apply' ? parsedPatch.patch.operations : [...parsedPatch.patch.operations].reverse()
   for (const operation of operations) {
     const segments = decodeScenarioPointer(operation.path)!
@@ -457,7 +472,7 @@ function mutateOperations(
     }
     return { ok: false, issues: parsedPlan.issues, conflicts: [] }
   }
-  const parsedRecord = parsedPlan.plan as unknown as Record<string, unknown>
+  const parsedRecord = asRecord(parsedPlan.plan)
   for (const operation of parsedPatch.patch.operations) {
     const segments = decodeScenarioPointer(operation.path)!
     const expected = direction === 'apply' ? operationTarget(operation) : operation.before
@@ -500,7 +515,7 @@ export function revertScenarioPatch(plan: Plan, patch: ScenarioPatchV1): ApplySc
 /** Read a validated operation target from the current plan without traversing arrays. */
 export function readScenarioValueState(plan: Plan, path: string): ScenarioValueState | null {
   const segments = decodeScenarioPointer(path)
-  const record = plan as unknown as Record<string, unknown>
+  const record = asRecord(plan)
   if (segments === null || assertNoArrayTraversal(record, segments)) return null
   return valueStateAt(record, segments)
 }

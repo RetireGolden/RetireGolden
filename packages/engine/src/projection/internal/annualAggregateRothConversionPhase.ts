@@ -53,7 +53,7 @@ type AcaContractYear = NonNullable<
 
 const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 
-export interface AnnualAggregateRothConversionPhaseFacts {
+interface AnnualAggregateRothConversionPhaseFacts {
   readonly year: number
   readonly pack: Readonly<ParameterPack>
   readonly plan: Readonly<Plan>
@@ -96,7 +96,7 @@ export interface AnnualAggregateRothConversionPhaseFacts {
   readonly inflFactorFrom: (packYear: number, projectionYear: number) => number
 }
 
-export interface AnnualAggregateRothConversionPhaseLedger {
+interface AnnualAggregateRothConversionPhaseLedger {
   readonly balances: PhysicalBalanceState[]
   readonly annualIdKeyedBalances: PhysicalBalanceState[]
   readonly iraProRata: Map<string, IraProRataYear>
@@ -104,7 +104,7 @@ export interface AnnualAggregateRothConversionPhaseLedger {
   readonly warnings: Set<string>
 }
 
-export interface AnnualAggregateRothConversionPhaseCallbacks {
+interface AnnualAggregateRothConversionPhaseCallbacks {
   readonly stateOf: (personId: string) => Readonly<PersonYearState>
   readonly splitWithAssumedCharacter: (
     state: IraProRataYear,
@@ -148,7 +148,7 @@ export interface AnnualAggregateRothConversionPhaseCallbacks {
   ) => string
 }
 
-export interface AnnualAggregateRothConversionPhaseCapture {
+interface AnnualAggregateRothConversionPhaseCapture {
   aggregateConversionDraws: {
     ownerPersonId: string
     sourceAccountId: string

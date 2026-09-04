@@ -138,6 +138,7 @@ const EXPECTED_REACHABILITY: Readonly<Record<string, readonly string[]>> = {
   ],
   subpathOnly: [],
   neither: [
+    'actionResult',
     'aggregateRothConversionOwnerAllocation',
     'annualLiabilityRunIdentity',
     'annualQcdUnifiedTransactionFinalization',
