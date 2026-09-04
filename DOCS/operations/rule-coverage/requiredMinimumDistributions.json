@@ -1241,12 +1241,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/inheritedRegime.test.ts",
-          "line": 73,
+          "line": 74,
           "note": "annual R1 amount after the 2024 relief year",
           "tests": [
             {
               "title": "stops marking a post-RBD ten-year annual amount as notice-waived in 2025",
-              "line": 89
+              "line": 90
             }
           ]
         }
