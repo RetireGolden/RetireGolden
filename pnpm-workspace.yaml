@@ -31,35 +31,29 @@ trustPolicyExclude:
   - '@trickfilm400/rollup-plugin-off-main-thread@3.0.0-pre1'
   - 'semver@6.3.1'
 
-# Root package.json `pnpm.overrides` (react, react-dom, react-is, recharts,
-# highs, es-toolkit, immer, sharp, ejs>jake) are deliberate: seven hold an
-# exact version, and two (`sharp`, `ejs>jake`) hold a caret range instead, so
-# a fresh resolve can still move those two within it. Either way the repo
-# only ever tests whatever version the committed lockfile resolved, and the
-# published manifests keep main's caret ranges so consumers are not
-# advertised a minimum this repo did not test. Dependabot does not read
-# `pnpm.overrides`; when it bumps an
-# overridden package it rewrites the lockfile's `overrides:` block to the new
-# version while package.json keeps the pin, and every CI job then fails with
-# ERR_PNPM_LOCKFILE_CONFIG_MISMATCH under --frozen-lockfile (PR #593). The fix
-# is a non-frozen `pnpm install`, which re-resolves under the pins, then a
-# frozen install to prove the lockfile is settled. Bumping a pin itself is a
-# deliberate change: update the override, re-resolve, and run the full suite.
+# Root package.json `pnpm.overrides` holds two entries, `sharp` and
+# `ejs>jake`. Both exist to raise a transitive floor above what the declaring
+# package's own range allows, each for a named advisory; neither is a pin of a
+# first-party dependency. Dependabot does not read `pnpm.overrides`; when it
+# bumps an overridden package it rewrites the lockfile's `overrides:` block to
+# the new version while package.json keeps the old one, and every CI job then
+# fails with ERR_PNPM_LOCKFILE_CONFIG_MISMATCH under --frozen-lockfile
+# (PR #593). The fix is a non-frozen `pnpm install`, which re-resolves under
+# the overrides, then a frozen install to prove the lockfile is settled. That
+# rescue does not float unrelated packages: pnpm's non-frozen install reuses
+# the lockfile's existing resolution for anything whose specifier is still
+# satisfied, and only re-resolves what the changed override (or manifest)
+# actually touches. Verified 2026-09-04: bumping only the `sharp` override
+# and rerunning the rescue moved `sharp` and its optional platform binaries;
+# every other resolved package, including anything a first-party manifest
+# declares, was byte-identical in the lockfile. Changing an override is a
+# deliberate change of its own: edit the entry, re-resolve, and run the full
+# suite.
 #
-# Per-override record. Each entry states what it pins, the reason the repo's
-# own history supports, and the condition that would let it go. Where no
-# reason is recorded, this says so instead of inventing one. Removal is a
-# dedicated PR either way: drop the entry, re-resolve, and let
-# `.github/workflows/resolve-gate.yml` show what a fresh resolve then picks.
-# Two of the nine change resolution today (`sharp`, `ejs>jake`); the other
-# seven are inert against the committed lockfile and bite only at re-resolve
-# time. Four of those seven (react, react-dom, recharts, highs) hold their
-# own declared range at its floor; es-toolkit and immer do not — both sit
-# above the floor of the range recharts declares for them, so dropping
-# either pin moves resolution further than "floor to latest" implies. The
-# seventh, react-is, is not declared by any first-party package and has no
-# range of its own to hold a floor of; its entry below explains what it
-# tracks instead.
+# Per-override record. Each entry states what it raises, the reason, and the
+# condition that would let it go. Removal is a dedicated PR either way: drop
+# the entry, re-resolve, and let `.github/workflows/resolve-gate.yml` show
+# what a fresh resolve then picks.
 #
 # sharp: ^0.35.0
 #   Build-time image toolchain, reached only through
@@ -83,74 +77,67 @@ trustPolicyExclude:
 #   workbox generateSW confirmed that (commit 4d2e5f5f).
 #   Drop when nothing under `ejs` resolves a brace-expansion below 5.0.8.
 #
-# The remaining seven arrived together in commit 5c5f4a49 during the npm to
-# pnpm migration, each set to the exact version the outgoing
-# `package-lock.json` had resolved (react/react-dom/react-is 19.2.7,
-# recharts 3.9.2, highs 1.14.2, es-toolkit 1.49.0, immer 11.1.11), so the
-# package-manager switch could not quietly move the runtime tree. That
-# migration is long finished; what each still earns today is below.
-#
-# highs: 1.15.2
-#   Exact pin of the WASM solver that `packages/engine` and
-#   `packages/planner-ui` both declare as `^1.15.2`.
-#   Reason: optimizer output and the measured wasm figures in
-#   DOCS/features/optimizer.md are tied to one HiGHS build, so a floating
-#   patch could move solver results or bundle size with nothing naming the
-#   cause. PR #601 bumped it deliberately and recorded the evidence a bump
-#   needs: full suite green, `pnpm cases:diff` reporting no case deltas, and
-#   the optimizer doc's byte figures re-measured.
-#   Drop when the optimizer no longer pins solver-version-sensitive numbers
-#   in docs or goldens, so an in-range HiGHS bump needs no paired review.
-#
-# react: 19.2.8
-# react-dom: 19.2.8
-#   Exact pins of the React runtime that `app` declares as `^19.2.8` and
-#   `packages/planner-ui` declares as a peer and dev dependency at `^19.2.8`.
-#   Reason: one tested React build across the workspace, which also keeps
-#   `@retiregolden/planner-ui`'s published peer range honest (main's caret
-#   range is what consumers see; the pin is what CI actually ran).
-#   Known cost: the pin equals the floor of every declared range, so CI only
-#   ever resolves the oldest React a consumer could install, never a newer
-#   in-range one.
-#   Drop when a scheduled non-frozen resolve plus the full suite covers the
-#   declared range rather than its floor.
-#
-# react-is: 19.2.8
-#   Not declared by any first-party package. Its only consumer is recharts,
-#   whose published peer range is
-#   `^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0`.
-#   Reason: no commit records one of its own. What the history shows is that
-#   it has always carried the same version as `react` and has moved with it
-#   (5c5f4a49, PR #601), which keeps the react-is copy recharts loads from
-#   splitting away from the React runtime.
-#   Drop with the `react` pin, or sooner if recharts stops depending on it.
-#
-# recharts: 3.10.1
-#   Exact pin of the chart library `packages/planner-ui` declares as
-#   `^3.10.1`.
-#   Reason: the chart vendor chunk is a named budget line
-#   (DOCS/operations/bundle-budget.md, `CartesianChart`, 380 KiB), so a
-#   floating minor can move a gated budget with no deliberate change behind
-#   it. PR #601's bump recorded that no chart or Legend test changed outcome.
-#   Side effect worth knowing: pnpm applies overrides to peer ranges too, so
-#   pnpm-lock.yaml records recharts' peers as exactly `react: 19.2.8` and
-#   `react-is: 19.2.8` where the published recharts manifest allows
-#   `^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0`. Nothing in CI exercises
-#   recharts against any other React in its supported range.
-#   Drop with the `react` pin, under the same scheduled non-frozen resolve.
-#
-# es-toolkit: 1.49.0
-#   Transitive only: the sole consumer is recharts, which declares
-#   `^1.39.3`.
-#   No recorded reason beyond the migration snapshot above, and it has never
-#   been bumped. Candidate for removal in a resolve-gate PR.
-#   Drop once a fresh resolve shows which version the range now picks and the
-#   suite is green on it.
-#
-# immer: 11.1.11
-#   Transitive only, shared by recharts (`^11.1.8`) and the
-#   `@reduxjs/toolkit` 2.12.0 that recharts pulls (`^11.0.0`). The two ranges
-#   overlap, so a single copy resolves with or without the pin.
-#   No recorded reason beyond the migration snapshot above, and it has never
-#   been bumped. Candidate for removal in a resolve-gate PR, on the same
-#   terms as es-toolkit.
+# Removed 2026-09-04: highs, react, react-dom, react-is, recharts,
+# es-toolkit, immer.
+#   All seven arrived together in commit 5c5f4a49 during the npm to pnpm
+#   migration, each set to the exact version the outgoing `package-lock.json`
+#   had resolved, so the package-manager switch could not quietly move the
+#   runtime tree. That migration is long finished. Four of the seven
+#   restated a range a first-party manifest already declared — `highs:
+#   ^1.15.2` in both packages, `react`/`react-dom: ^19.2.8` in `app` and in
+#   planner-ui's peers, `recharts: ^3.10.1` in planner-ui — and held it at
+#   its floor, so CI only ever resolved the oldest version a consumer could
+#   install. The other three, react-is, es-toolkit and immer, restated
+#   ranges from inside recharts' own dependency tree rather than a
+#   first-party declaration, and sat interior to those ranges rather than at
+#   their floor: es-toolkit 1.49.0 inside recharts' `^1.39.3`, immer 11.1.11
+#   inside recharts' `^11.1.8`, react-is 19.2.8 inside recharts' peer
+#   `^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0`. Dependabot could not move any
+#   of the seven without the lockfile mismatch above, and nothing in the
+#   repo's history recorded a version move that any of them had caught.
+#   What removing them actually changed: no resolved version moved. react,
+#   react-dom and react-is stay 19.2.8, recharts 3.10.1, highs 1.15.2,
+#   es-toolkit 1.49.0, immer 11.1.11 — each still satisfies its declared
+#   caret range, so a non-frozen resolve kept it. The lockfile lost the
+#   overrides' reach into both peer ranges and importer specifiers:
+#   `@reduxjs/toolkit`, `react-dom`, `react-redux`, `react-router`,
+#   `recharts` and `use-sync-external-store` now record their published peer
+#   ranges where they had recorded `react: 19.2.8`, and the seven importer
+#   `specifier:` fields that named an exact overridden version (`app`'s
+#   react and react-dom; `packages/engine`'s highs; `packages/planner-ui`'s
+#   highs, recharts, and its dev-dependency react and react-dom) now record
+#   the caret range each manifest already declared.
+#   Evidence taken on the re-resolved lockfile: engine 418 files / 6489
+#   tests, planner-ui 215 / 2505, web 14 / 94, all green — including the
+#   optimizer suite (`optimizePlan.test.ts`, `optimizer.highsMemo.test.ts`
+#   and the other `optimizePlan*`/`*adversarialFindings*` files), which is
+#   what actually exercises `highs` and is what a solver-version move would
+#   fail; `pnpm audit --prod` 0 advisories over 53 production dependencies;
+#   both pack smokes green; the app build's bundle budget green with the
+#   chart vendor line at 330.7 of 380 KiB; the differential equivalence
+#   dump over the 150-member `full` corpus byte-identical against
+#   origin/main (600 entries, 0 moved); and `pnpm cases diff` between the
+#   pre- and post-removal trees reporting no case deltas — that check runs
+#   only `simulatePlan`, not `optimizePlan`, so it does not exercise `highs`
+#   and is not the HiGHS-move detector; it is evidence the deterministic
+#   projection path itself did not drift.
+#   Restore condition, per package: an override comes back only with the
+#   concrete test or measured figure that a version move broke named here.
+#   The two measured figures a future in-range bump still has to re-measure
+#   by hand are the HiGHS wasm bytes in DOCS/features/optimizer.md
+#   (3,431,156 bytes at highs 1.15.2) and the chart vendor budget line in
+#   DOCS/operations/bundle-budget.md (380 KiB); neither is a reason to hold
+#   a floor, because neither is checked by the pin.
+#   Known consequence, measured by running this file's resolve gate from
+#   scratch on 2026-09-04: with the pins gone, a no-lockfile resolve picks
+#   es-toolkit 1.51.0 and immer 11.1.18 (both transitive, inside recharts'
+#   tree) rather than the pinned 1.49.0 and 11.1.11. On that date, the other
+#   five formerly pinned packages resolved to the same versions from
+#   scratch — an observation of that one resolve, not a stable property:
+#   their caret ranges let a later fresh resolve pick a newer in-range
+#   react, recharts or highs the same as any other dependency. The rest of
+#   that resolve's drift (caniuse-lite, rollup, sharp and friends) is
+#   ordinary registry movement no pin was holding. The committed lockfile
+#   keeps the tested versions throughout. Moving them is now Dependabot's
+#   job, under the same full-suite gate as any other dependency bump,
+#   rather than something a pin hides.

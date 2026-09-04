@@ -40,7 +40,7 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | planner Web Worker, and **exactly one of them** | 1000 KiB | 903 KiB | The engine simulation core, shipped once |
 | engine simulation core (`useProjection`) | 640 KiB | 572 KiB | The deterministic ledger the analysis pages share |
 | Learning Center registry | 150 KiB | 124 KiB | Article *metadata* — bodies load per article |
-| chart vendor (`CartesianChart`) | 380 KiB | 326 KiB | Recharts and its d3 slices |
+| chart vendor (`CartesianChart`) | 380 KiB | 331 KiB | Recharts and its d3 slices |
 | plan route group (`PlanRoutes`), and **exactly one of them** | 300 KiB | 267 KiB | The lazy plan-route boundary staying route-sized |
 | app entry (the script `index.html` loads) | 300 KiB | 248 KiB | The chunk a cold visit blocks on first |
 | every other JS chunk | 260 KiB | 96 KiB (`ResultsPage`) | Route and page chunks staying route-sized |
@@ -57,7 +57,7 @@ uneven — read the table, not an average:
   they get the least slack. Expect to justify growth here, not absorb it. The landing row's slack is
   sized so the entry and the registry could each grow into their own limits and still fit.
 - The **per-class chunk** rows sit near 11–21% (worker 903 → 1000, `useProjection` 572 → 640,
-  `learningRegistry` 124 → 150, Recharts 326 → 380, `PlanRoutes` 267 → 300): enough for a feature
+  `learningRegistry` 124 → 150, Recharts 331 → 380, `PlanRoutes` 267 → 300): enough for a feature
   landing in a known chunk.
   `learningRegistry` now holds only metadata, about 0.9 KiB per article, so its 26 KiB of slack is
   roughly 25 more articles.
