@@ -178,22 +178,23 @@
     {
       "id": "R.debt.callsite",
       "label": "debt planner invocation, ordered balance writes, total fold and ledger publication",
-      "file": "projection/simulate.ts",
+      "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        1899,
-        1912
+        263,
+        276
       ],
+      "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 1899,
+          "line": 263,
           "text": "let debtService = 0"
         },
         {
-          "line": 1900,
+          "line": 264,
           "text": "for (const row of annualDebtServiceRows({"
         },
         {
-          "line": 1912,
+          "line": 276,
           "text": "}"
         }
       ]
@@ -201,26 +202,27 @@
     {
       "id": "R.healthcare.callsite",
       "label": "healthcare planner invocation and complete result consumption",
-      "file": "projection/simulate.ts",
+      "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        1913,
-        1962
+        277,
+        326
       ],
+      "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 1913,
+          "line": 277,
           "text": "const healthcarePlan = annualHealthcareExpenses({"
         },
         {
-          "line": 1957,
+          "line": 321,
           "text": "const marketplaceMonthsByPersonPosition ="
         },
         {
-          "line": 1959,
+          "line": 323,
           "text": "if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')"
         },
         {
-          "line": 1962,
+          "line": 326,
           "text": "for (const warning of healthcarePlan.warnings) warnings.add(warning)"
         }
       ]
@@ -251,22 +253,23 @@
     {
       "id": "R.ltc.callsite",
       "label": "LTC planner invocation, benefit-year writes and reporting rows",
-      "file": "projection/simulate.ts",
+      "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        1978,
-        1995
+        342,
+        359
       ],
+      "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 1978,
+          "line": 342,
           "text": "const longTermCare = annualLongTermCarePlan({"
         },
         {
-          "line": 1990,
+          "line": 354,
           "text": "for (const write of longTermCare.benefitYearWrites) {"
         },
         {
-          "line": 1995,
+          "line": 359,
           "text": "}"
         }
       ]
@@ -274,22 +277,23 @@
     {
       "id": "R.guardrail.callsite",
       "label": "guardrail planner invocation and persistent/output state consumption",
-      "file": "projection/simulate.ts",
+      "file": "projection/internal/annualExpenseAssemblyPhase.ts",
       "lines": [
-        2031,
-        2061
+        395,
+        425
       ],
+      "note": "RELOCATED on 2026-09-04: the expense assembly moved out of the simulatePlan year loop into `internal/annualExpenseAssemblyPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
         {
-          "line": 2031,
+          "line": 395,
           "text": "const guardrailFunding = annualGuardrailFundingPlan({"
         },
         {
-          "line": 2052,
+          "line": 416,
           "text": "discretionaryMultiplier = guardrailFunding.discretionaryMultiplier"
         },
         {
-          "line": 2061,
+          "line": 425,
           "text": "const canPullForwardGoals = guardrailFunding.canPullForwardGoals"
         }
       ]

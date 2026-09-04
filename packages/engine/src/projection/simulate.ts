@@ -56,17 +56,13 @@ import {
   type SealableAnnualCashFlowYearSites,
 } from './annualCashFlowYearSites.js'
 import { buildLadder } from '../ladder/ladderMath.js'
-import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
-import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import {
   AnnualLogicalBalanceLedger,
   type PhysicalBalanceState,
 } from './internal/annualLogicalBalanceLedger.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
 import { annualAnnuityPurchaseFunding } from './internal/annualAnnuityPurchaseFunding.js'
-import { annualPropertyCarryingCosts } from './internal/annualPropertyCarryingCosts.js'
 import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
-import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
 import { annualForcedDistributionQcdAndRetirementActionsPhase } from
   './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import { annualAggregateRothConversionPhase } from './internal/annualAggregateRothConversionPhase.js'
@@ -83,19 +79,13 @@ import {
 import type { PhaseLedgerScalarBindings } from './internal/phaseLedgerScalars.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
 import { annualTaxUnitIdentityPhase } from './internal/annualTaxUnitIdentityPhase.js'
-import { annualOneTimeGoalFundingPhase } from './internal/annualOneTimeGoalFundingPhase.js'
 import { annualAssumedCharacterPhase } from './internal/annualAssumedCharacterPhase.js'
+import { annualExpenseAssemblyPhase } from './internal/annualExpenseAssemblyPhase.js'
 import {
   annualContributionReconciliationPhase,
   type SimulatorRetirementRuntimeApplicationWithoutOrdinal,
 } from './internal/annualContributionReconciliationPhase.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
-import {
-  annualDebtServiceRows,
-  annualLongTermCarePlan,
-} from './internal/annualDebtAndLongTermCare.js'
-import { annualGuardrailFundingPlan } from './internal/annualGuardrailFunding.js'
-import { annualHealthcareExpenses } from './internal/annualHealthcareExpenses.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
@@ -1876,258 +1866,109 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes.taxExemptInterest
 
     // --- expenses ---------------------------------------------------------
-    const {
-      requiredLifestyle,
-      targetLifestyle,
-      idealLifestyle,
-      excessLifestyle,
-    } = annualLifestyleLayers({
-      expenses: plan.expenses,
-      primaryAge: stateOf(primary.id).ageAttained,
-      peopleStateCount: peopleStates.length,
-      aliveCount,
-      anyAlive,
-      inflFactor,
-      abwActive,
-      abwRealReturnPct,
-      abwTiltPct,
-      abwHorizonYear,
-      year,
-      balances,
-      startOfYearBalances: startOfYearPositionalBalances,
-    })
-    let debtService = 0
-    for (const row of annualDebtServiceRows({
-      accounts: plan.accounts,
-      balances: debtBalances,
-      year,
-    })) {
-      debtBalances.set(row.accountId, row.nextBalance)
-      debtService += row.amount
-      yearSites?.recordDebtService({
-        accountId: row.accountId,
-        ownerPersonId: row.ownerPersonId,
-        amount: row.amount,
-      })
-    }
-    const healthcarePlan = annualHealthcareExpenses({
+    // The phase lives in `internal/annualExpenseAssemblyPhase.ts`: lifestyle
+    // layers, then the five system-computed costs, then the HSA cap, the
+    // withdrawal-rate guardrail decision, the one-time goals and the expense
+    // summary, in that order, because each step reads a number the one before
+    // it produced. The three guardrail values it hands back are the ones that
+    // carry across years, so they are assigned back here.
+    const expenseAssembly = annualExpenseAssemblyPhase({
       plan,
       pack,
       year,
       startYear,
-      peopleStates,
-      birthMonthByPerson,
-      resolveMagiFor,
-      ssa44ActiveInYear,
-      filingStatusForYear,
-      taxFilingStatusForYear,
+      inflFactor,
+      isStandIn,
       inflFactorFrom,
       healthInflFactorFrom,
-      isStandIn,
-      hasModeledPerson: (personId) => personById.has(personId),
+      aliveCount,
+      anyAlive,
+      peopleStates,
+      primaryPersonId: primary.id,
       resolvePerson: stateOf,
+      hasModeledPerson: (personId) => personById.has(personId),
+      birthMonthByPerson,
+      filingStatusForYear,
+      taxFilingStatusForYear,
+      resolveMagiFor,
+      ssa44ActiveInYear,
       planHasTaxExemptYieldAttestation,
       taxExemptInterest: incomes.taxExemptInterest,
-    })
-    let healthcare = healthcarePlan.healthcare
-    const healthInflFactor = healthcarePlan.healthInflFactor
-    const acaContractsForYear = healthcarePlan.acaContractsForYear
-    const acaContract = healthcarePlan.acaContract
-    const acaEnrollmentPremiums = healthcarePlan.acaEnrollmentPremiums
-    const acaSlcspBenchmarkPremiums =
-      healthcarePlan.acaSlcspBenchmarkPremiums
-    const acaGrossEnrollmentPremium =
-      healthcarePlan.acaGrossEnrollmentPremium
-    const acaActive = healthcarePlan.acaActive
-    const healthcareExcludingAcaEnrollment =
-      healthcarePlan.healthcareExcludingAcaEnrollment
-    const healthcareExcludingMarketplacePremium =
-      healthcarePlan.healthcareExcludingMarketplacePremium
-    const acaInitialSupportCodes = healthcarePlan.acaInitialSupportCodes
-    const exampleContractInputMismatch =
-      healthcarePlan.exampleContractInputMismatch
-    const medicarePremiums = healthcarePlan.medicarePremiums
-    const irmaaSurcharge = healthcarePlan.irmaaSurcharge
-    const irmaaTier = healthcarePlan.irmaaTier
-    const irmaaMagi = healthcarePlan.irmaaMagi
-    const irmaaLookbackMagiSource =
-      healthcarePlan.irmaaLookbackMagiSource
-    const irmaaLookbackMagiYear = healthcarePlan.irmaaLookbackMagiYear
-    const irmaaNextTierThreshold = healthcarePlan.irmaaNextTierThreshold
-    const marketplaceMonthsByPersonPosition =
-      healthcarePlan.marketplaceMonthsByPersonPosition
-    if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')
-    const pre65MonthlyPremiumPerPerson =
-      healthcarePlan.pre65MonthlyPremiumPerPerson
-    for (const warning of healthcarePlan.warnings) warnings.add(warning)
-    // Insurance premiums: level (fixed nominal), charged while the insured/owner
-    // is alive. paidUp charges nothing; untilAge stops at premiumEndAge.
-    let insurancePremiums = 0
-    for (const row of annualInsurancePremiumRows({
-      policies: plan.insurance,
-      resolveSubject: stateOf,
-    })) {
-      insurancePremiums += row.amount
-      yearSites?.recordInsurancePremium(row.record)
-    }
-
-    // LTC care episodes: a deterministic late-life cost spike, additive to
-    // baseline spending. An owned LTC policy offsets it up to its monthly cap
-    // (grown by the inflation rider) after the elimination period, for at most
-    // benefitPeriodYears. The net (careCost − ltcBenefit) is what hits spending.
-    const longTermCare = annualLongTermCarePlan({
-      careEvents: plan.careEvents,
-      policies: plan.insurance,
-      benefitYearsUsed: ltcBenefitYearsUsed,
-      resolvePerson: stateOf,
-      healthInflFactor,
-      year,
-      startYear,
-      capturePersonRows: captureAnnualCashFlow,
-    })
-    const careCost = longTermCare.careCost
-    const ltcBenefit = longTermCare.ltcBenefit
-    for (const write of longTermCare.benefitYearWrites) {
-      ltcBenefitYearsUsed.set(write.policyId, write.yearsUsed)
-    }
-    for (const row of longTermCare.personRows) {
-      yearSites?.recordLongTermCare(row)
-    }
-
-    // Property carrying costs: tax + insurance charged while the property is
-    // owned, continuing after any mortgage is paid off — the part of a PITI
-    // payment the debt account deliberately excludes. Today's dollars, inflated;
-    // skipped from the sale year on, and (like base spending) once nobody is alive.
-    let propertyCosts = 0
-    for (const row of annualPropertyCarryingCosts({
-      accounts: plan.accounts,
-      year,
-      anyAlive,
-      inflFactor,
-    })) {
-      propertyCosts += row.amount
-      yearSites?.recordPropertyCosts(row.record)
-    }
-
-    // System-computed costs are required by default: a plan must never report
-    // "floor success" after silently cutting healthcare, housing, debt, or care.
-    const netCare = careCost - ltcBenefit // ltcBenefit is capped at careCost above
-    const systemRequired = debtService + propertyCosts + healthcare + insurancePremiums + netCare
-
-    // HSA qualified-withdrawal cap (steps 2–3): the household's modeled medical
-    // costs this year (healthcare premiums + net care costs), plus the
-    // accumulated reimburse-later pool when any HSA opts in. Cap-mode HSA
-    // withdrawals are tax- and penalty-free only up to this.
-    // Ordinary Marketplace premiums are not HSA-qualified medical expenses
-    // under Pub. 969's general rule. (The narrow COBRA, unemployment, Medicare,
-    // and qualified-LTC exceptions are not represented by an ACA contract.)
-    let qualifiedMedicalThisYear = healthcareExcludingMarketplacePremium + netCare
-    let hsaQualifiedCap = qualifiedMedicalThisYear + (hsaReimburseLaterActive ? hsaReimbursablePool : 0)
-
-    // Withdrawal-rate guardrail decision (before funding). The signal is this
-    // year's recurring target spending over the start-of-year portfolio, compared
-    // to the same ratio in the first solvent year. Cutting/raising moves the
-    // discretionary multiplier; the required floor is never touched.
-    const guardrailFunding = annualGuardrailFundingPlan({
+      balances,
+      startOfYearPositionalBalances,
+      debtBalances,
+      ltcBenefitYearsUsed,
+      captureAnnualCashFlow,
+      abwActive,
+      abwRealReturnPct,
+      abwTiltPct,
+      abwHorizonYear,
+      hsaReimburseLaterActive,
+      hsaReimbursablePool,
       guardrailsActive,
       riskBasedGuardrails,
-      allowRaisesAboveTarget: spendingPolicy?.allowRaisesAboveTarget,
+      spendingPolicy,
       guardrailPolicy,
-      oneTimeGoals: plan.expenses.oneTimeGoals,
-      isGoalResolved: (goalId) => goalScheduler?.isResolved(goalId) ?? false,
-      year,
-      inflFactor,
-      anyAlive,
-      balances,
-      startOfYearBalances: startOfYearPositionalBalances,
-      requiredLifestyle,
-      targetLifestyle,
-      idealLifestyle,
-      excessLifestyle,
-      systemRequired,
+      goalScheduler,
       discretionaryMultiplier,
       startingWithdrawalRate,
       startingRealPortfolio,
+      warnings,
+      yearSites,
     })
-    discretionaryMultiplier = guardrailFunding.discretionaryMultiplier
-    startingWithdrawalRate = guardrailFunding.startingWithdrawalRate
-    startingRealPortfolio = guardrailFunding.startingRealPortfolio
-    const guardrailAction = guardrailFunding.guardrailAction
-    const targetLifestyleFunded = guardrailFunding.targetLifestyleFunded
-    const idealLifestyleFunded = guardrailFunding.idealLifestyleFunded
-    const excessLifestyleFunded = guardrailFunding.excessLifestyleFunded
-    const remainingUpsideBudget = guardrailFunding.remainingUpsideBudget
-    const cutting = guardrailFunding.cutting
-    const canPullForwardGoals = guardrailFunding.canPullForwardGoals
-
-    // One-time goals. The phase lives in
-    // `internal/annualOneTimeGoalFundingPhase.ts`: under guardrails they route
-    // through the scheduler (which may delay/skip flexible goals when cutting);
-    // otherwise every goal funds in its target year exactly, as it always has.
-    // A *skipped* goal is intended spending that never happens, so its amount is
-    // tracked as a target miss (a required-classified skip is also a required
-    // miss) rather than silently vanishing from both sides of the ledger.
-    // Every accumulator starts at zero and has no earlier writer this year, so
-    // the fold moved with the loops; `goalOutcomeCounts` comes back by identity
-    // because the year publishes that very object as `spending.flexibleGoals`.
-    const oneTimeGoalFunding = annualOneTimeGoalFundingPhase({
-      year,
-      inflFactor,
-      anyAlive,
-      goalScheduler,
-      oneTimeGoals: plan.expenses.oneTimeGoals,
-      cutting,
-      canPullForwardGoals,
-      remainingUpsideBudget,
-      commitGoalOutcome: yearSites === null
-        ? undefined
-        : (row) => yearSites.recordGoalOutcome(row),
-    })
-    const oneTimeGoalsFunded = oneTimeGoalFunding.oneTimeGoalsFunded
-    const requiredGoalsFunded = oneTimeGoalFunding.requiredGoalsFunded
-    const targetGoalsFunded = oneTimeGoalFunding.targetGoalsFunded
-    const idealGoalsFunded = oneTimeGoalFunding.idealGoalsFunded
-    const excessGoalsFunded = oneTimeGoalFunding.excessGoalsFunded
-    const skippedRequiredNominal = oneTimeGoalFunding.skippedRequiredNominal
-    const skippedTargetNominal = oneTimeGoalFunding.skippedTargetNominal
-    const skippedIdealNominal = oneTimeGoalFunding.skippedIdealNominal
-    const skippedExcessNominal = oneTimeGoalFunding.skippedExcessNominal
-    const goalOutcomeCounts = oneTimeGoalFunding.goalOutcomeCounts
-
-    // Base layers are funding-consistent (they exclude skipped goals) so the
-    // shortfall attribution below stays clean; skipped goals are folded back into
-    // the *reported* required/target totals and the shortfalls as explicit deltas.
-    const expenseSummary = annualExpenseSummary({
-      requiredLifestyle,
-      targetLifestyle,
-      targetLifestyleFunded,
-      idealLifestyle,
-      idealLifestyleFunded,
-      excessLifestyle,
-      excessLifestyleFunded,
-      systemRequired,
-      oneTimeGoalsFunded,
-      requiredGoalsFunded,
-      targetGoalsFunded,
-      idealGoalsFunded,
-      excessGoalsFunded,
-      skippedRequiredNominal,
-      skippedTargetNominal,
-      skippedIdealNominal,
-      skippedExcessNominal,
-      debtService,
-      propertyCosts,
-      healthcare,
-      insurancePremiums,
-      careCost,
-      ltcBenefit,
-      discretionaryMultiplier,
-    })
-    const expenses = expenseSummary.expenses
-    let requiredSpendingBase = expenseSummary.requiredSpendingBase
-    let targetSpendingBase = expenseSummary.targetSpendingBase
-    const idealSpendingBase = expenseSummary.idealSpendingBase
-    const excessSpendingBase = expenseSummary.excessSpendingBase
+    const requiredLifestyle = expenseAssembly.requiredLifestyle
+    const targetLifestyle = expenseAssembly.targetLifestyle
+    const idealLifestyle = expenseAssembly.idealLifestyle
+    const excessLifestyle = expenseAssembly.excessLifestyle
+    // Mutable: the ACA fixed point adds its converged healthcare delta.
+    let healthcare = expenseAssembly.healthcare
+    const healthInflFactor = expenseAssembly.healthInflFactor
+    const acaContractsForYear = expenseAssembly.acaContractsForYear
+    const acaContract = expenseAssembly.acaContract
+    const acaEnrollmentPremiums = expenseAssembly.acaEnrollmentPremiums
+    const acaSlcspBenchmarkPremiums = expenseAssembly.acaSlcspBenchmarkPremiums
+    const acaGrossEnrollmentPremium = expenseAssembly.acaGrossEnrollmentPremium
+    const acaActive = expenseAssembly.acaActive
+    const healthcareExcludingAcaEnrollment =
+      expenseAssembly.healthcareExcludingAcaEnrollment
+    const healthcareExcludingMarketplacePremium =
+      expenseAssembly.healthcareExcludingMarketplacePremium
+    const acaInitialSupportCodes = expenseAssembly.acaInitialSupportCodes
+    const exampleContractInputMismatch =
+      expenseAssembly.exampleContractInputMismatch
+    const medicarePremiums = expenseAssembly.medicarePremiums
+    const irmaaSurcharge = expenseAssembly.irmaaSurcharge
+    const irmaaTier = expenseAssembly.irmaaTier
+    const irmaaMagi = expenseAssembly.irmaaMagi
+    const irmaaLookbackMagiSource = expenseAssembly.irmaaLookbackMagiSource
+    const irmaaLookbackMagiYear = expenseAssembly.irmaaLookbackMagiYear
+    const irmaaNextTierThreshold = expenseAssembly.irmaaNextTierThreshold
+    const marketplaceMonthsByPersonPosition =
+      expenseAssembly.marketplaceMonthsByPersonPosition
+    const pre65MonthlyPremiumPerPerson =
+      expenseAssembly.pre65MonthlyPremiumPerPerson
+    const netCare = expenseAssembly.netCare
+    // Mutable: the annual pass moves both.
+    let qualifiedMedicalThisYear = expenseAssembly.qualifiedMedicalThisYear
+    let hsaQualifiedCap = expenseAssembly.hsaQualifiedCap
+    discretionaryMultiplier = expenseAssembly.discretionaryMultiplier
+    startingWithdrawalRate = expenseAssembly.startingWithdrawalRate
+    startingRealPortfolio = expenseAssembly.startingRealPortfolio
+    const guardrailAction = expenseAssembly.guardrailAction
+    const targetLifestyleFunded = expenseAssembly.targetLifestyleFunded
+    const idealLifestyleFunded = expenseAssembly.idealLifestyleFunded
+    const excessLifestyleFunded = expenseAssembly.excessLifestyleFunded
+    const skippedRequiredNominal = expenseAssembly.skippedRequiredNominal
+    const skippedTargetNominal = expenseAssembly.skippedTargetNominal
+    const skippedIdealNominal = expenseAssembly.skippedIdealNominal
+    const skippedExcessNominal = expenseAssembly.skippedExcessNominal
+    const goalOutcomeCounts = expenseAssembly.goalOutcomeCounts
+    const expenses = expenseAssembly.expenses
+    // Mutable: the ACA fixed point adds its converged healthcare delta.
+    let requiredSpendingBase = expenseAssembly.requiredSpendingBase
+    let targetSpendingBase = expenseAssembly.targetSpendingBase
+    const idealSpendingBase = expenseAssembly.idealSpendingBase
+    const excessSpendingBase = expenseAssembly.excessSpendingBase
 
     // --- fixed-asset dispositions (step 6) ----------------------------------
     // The phase lives in `internal/fixedAssetDispositions.ts`, which says which
