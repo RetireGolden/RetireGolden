@@ -20,6 +20,7 @@ import {
   type OwnedNonRothIraSeppPriorPaymentHistoryWithoutId,
   type ValidateOwnedNonRothIraSeppCurrentPaymentCandidateInput,
 } from './ownedNonRothIraSeppCurrentPaymentCandidate.js'
+import { deriveActionStructuralId } from './structuralId.js'
 
 function canonicalCoverage(options: {
   grossAmount?: number
@@ -256,9 +257,10 @@ function expectedOpeningStateId(
     actualQualifyingGrossAmount:
       opening.actualQualifyingGrossAmount,
   }
-  return `owned-ira-sepp-annual-opening-state:${JSON.stringify([
-    lineage,
-  ])}`
+  return deriveActionStructuralId(
+    'owned-ira-sepp-annual-opening-state',
+    [lineage],
+  )
 }
 
 function expectedBeforeStateId(
@@ -909,5 +911,38 @@ describe('validateOwnedNonRothIraSeppCurrentPaymentCandidate', () => {
         validateOwnedNonRothIraSeppCurrentPaymentCandidate(malformed),
       ).toThrow(/nonblank|must be unique/)
     }
+  })
+
+  it('recomputes the opening-state ID with the hardened structural minter', () => {
+    const value = input({})
+    const opening = value.openingStateEvidence!
+
+    expect(opening.openingStateEvidenceId).toBe(
+      'owned-ira-sepp-annual-opening-state:7447a312613e10a2dd20dc3a' +
+        'fffd9c265d04e53b5a40709658a3f4cde08e615b',
+    )
+    expect(expectedOpeningStateId(opening))
+      .toBe(opening.openingStateEvidenceId)
+    // The module recomputes the caller-supplied ID and refuses a mismatch,
+    // so a fixture built with any other minter must now be rejected.
+    expect(issueKinds(validateOwnedNonRothIraSeppCurrentPaymentCandidate({
+      ...value,
+      openingStateEvidence: {
+        ...opening,
+        openingStateEvidenceId:
+          `owned-ira-sepp-annual-opening-state:${JSON.stringify([{
+            predicate: opening.predicate,
+            electionId: opening.electionId,
+            scheduleId: opening.scheduleId,
+            participantPersonId: opening.participantPersonId,
+            sourceAccountId: opening.sourceAccountId,
+            taxYear: opening.taxYear,
+            priorHistoryTerminalStateId: opening.priorHistoryTerminalStateId,
+            nextScheduledSequence: opening.nextScheduledSequence,
+            scheduledGrossAmount: opening.scheduledGrossAmount,
+            actualQualifyingGrossAmount: opening.actualQualifyingGrossAmount,
+          }])}`,
+      },
+    }))).toContain('openingStateBindingMismatch')
   })
 })

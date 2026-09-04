@@ -501,16 +501,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1342,
+          "line": 1338,
           "note": null,
           "tests": [
             {
               "title": "excepts nothing in a year that never completed the annual payment",
-              "line": 1362
+              "line": 1358
             },
             {
               "title": "reports the year incomplete rather than partly qualified",
-              "line": 1368
+              "line": 1364
             }
           ]
         }
@@ -905,7 +905,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 431
+              "line": 427
             }
           ]
         }
@@ -916,20 +916,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1520,
+          "line": 1516,
           "note": null,
           "tests": [
             {
               "title": "refuses a payment its no-modification proof does not reach",
-              "line": 1540
+              "line": 1536
             },
             {
               "title": "names the insufficient modification evidence on the payment",
-              "line": 1546
+              "line": 1542
             },
             {
               "title": "reconciles once the proof reaches the payment date",
-              "line": 1551
+              "line": 1547
             }
           ]
         }
@@ -1011,7 +1011,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 431
+              "line": 427
             }
           ]
         }
@@ -1022,16 +1022,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1377,
+          "line": 1373,
           "note": null,
           "tests": [
             {
               "title": "scores the series for the participant it belongs to, not the household",
-              "line": 1396
+              "line": 1392
             },
             {
               "title": "names the inventory member as foreign to this participant",
-              "line": 1402
+              "line": 1398
             }
           ]
         }
@@ -1142,16 +1142,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1454,
+          "line": 1450,
           "note": null,
           "tests": [
             {
               "title": "measures the year by the total of every scheduled distribution",
-              "line": 1473
+              "line": 1469
             },
             {
               "title": "keeps all three distributions in the one reconciled series",
-              "line": 1480
+              "line": 1476
             }
           ]
         }
@@ -1288,7 +1288,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 431
+              "line": 427
             }
           ]
         },
@@ -1308,20 +1308,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1408,
+          "line": 1404,
           "note": null,
           "tests": [
             {
               "title": "accepts the fixed annuitization method on the same footing as the others",
-              "line": 1428
+              "line": 1424
             },
             {
               "title": "accepts the required minimum distribution and fixed amortization methods",
-              "line": 1434
+              "line": 1430
             },
             {
               "title": "refuses a fourth method by name rather than reconciling it",
-              "line": 1439
+              "line": 1435
             }
           ]
         }
@@ -1682,7 +1682,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 431
+              "line": 427
             }
           ]
         }
@@ -1740,16 +1740,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraSeppAnnualReconciliation.test.ts",
-          "line": 1485,
+          "line": 1481,
           "note": null,
           "tests": [
             {
               "title": "excepts nothing when the account made a distribution outside the series",
-              "line": 1508
+              "line": 1504
             },
             {
               "title": "names the inventory member that no scheduled payment answers",
-              "line": 1514
+              "line": 1510
             }
           ]
         }
@@ -1828,7 +1828,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraSeppCurrentPaymentCandidate",
-              "line": 431
+              "line": 427
             }
           ]
         },

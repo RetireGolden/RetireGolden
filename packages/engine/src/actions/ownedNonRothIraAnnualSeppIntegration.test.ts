@@ -96,9 +96,10 @@ function scheduleRoute(
   const openingStateEvidence = {
     ...openingLineage,
     openingStateEvidenceId:
-      `owned-ira-sepp-annual-opening-state:${JSON.stringify([
-        openingLineage,
-      ])}`,
+      deriveActionStructuralId(
+        'owned-ira-sepp-annual-opening-state',
+        [openingLineage],
+      ),
   }
   return {
     sourceAccountId,

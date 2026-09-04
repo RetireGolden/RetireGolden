@@ -28,6 +28,7 @@ import {
   classifyOwnedNonRothIraAnnualWithdrawals,
   type OwnedNonRothIraSubtype,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+import { deriveActionStructuralId } from './structuralId.js'
 
 function characterization(options: Readonly<{
   subtype?: OwnedNonRothIraSubtype
@@ -111,9 +112,10 @@ function scheduleRoute(options: Readonly<{
   const openingStateEvidence = {
     ...openingLineage,
     openingStateEvidenceId:
-      `owned-ira-sepp-annual-opening-state:${JSON.stringify([
-        openingLineage,
-      ])}`,
+      deriveActionStructuralId(
+        'owned-ira-sepp-annual-opening-state',
+        [openingLineage],
+      ),
   }
   const priorElectionHistoryEvidence =
     buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence({
@@ -454,9 +456,10 @@ function completeRouteForInput(
   const openingStateEvidence: OwnedNonRothIraSeppAnnualOpeningStateEvidence = {
     ...openingLineage,
     openingStateEvidenceId:
-      `owned-ira-sepp-annual-opening-state:${JSON.stringify([
-        openingLineage,
-      ])}`,
+      deriveActionStructuralId(
+        'owned-ira-sepp-annual-opening-state',
+        [openingLineage],
+      ),
   }
   const priorElectionHistoryEvidence =
     buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence({
