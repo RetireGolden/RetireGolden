@@ -7,9 +7,11 @@
  * engine against itself and passes either way, and so does a caller that
  * rebuilds a helper's payload field for field. Each seam guard therefore mocks
  * one extracted helper, runs the REAL implementation first so the natural
- * result is on record, and then returns deliberately different references and
- * scalars. The published year has to consume those injected values, which
- * proves both that the call happens and that the caller-side wiring is real.
+ * result is on record, and then either returns deliberately different
+ * references and scalars that the published year has to consume — proving
+ * both that the call happens and that the caller-side wiring is real — or,
+ * for a guard whose only claim is call identity, returns that natural result
+ * untouched and pins that the real helper ran with the caller's own input.
  * The load-bearing assertion is `toBe` (identity), never `toEqual`.
  *
  * **What is shared and what cannot be.** Vitest hoists every `vi.mock` call

@@ -226,10 +226,18 @@ looks clean while some of the numbers came from different bytes.
 - **Object identity.** A caller that publishes a field-for-field rebuild of a helper's payload dumps
   identically to one that publishes the helper's own object — and a byte-identical dump passes a helper that
   is never called at all. That is a delegation test's `toBe`, not this tool's job. The
-  `packages/engine/src/projection/simulate.*Delegation.test.ts` family is that guard: each one mocks a single
-  extracted annual phase, runs the real helper so the natural result is on record, returns deliberately
-  different references and scalars, and requires the published year to consume them. Their shared
-  scaffolding is
+  `packages/engine/src/projection/simulate.*Delegation.test.ts` family is that guard: each one mocks the
+  module an extracted annual phase is delegated through — most mock one module, but a phase that fans out
+  over several helpers mocks each of them (`simulate.annualExpenseBandDelegation.test.ts` mocks four seam
+  exports plus a non-seam settlement runner; `simulate.annualDistributionAndRothPhaseDelegation.test.ts` and
+  `simulate.annualFundingAndSettlementPhaseDelegation.test.ts` mock two) — and runs the real helper so the
+  natural result is on record. Most guards then return deliberately different references and scalars and
+  require the published year to consume them; a record-only guard needs no injection because its only claim
+  is call identity, so it returns `natural` untouched instead —
+  `simulate.hecmLineOpeningsDelegation.test.ts`, `simulate.annualRebalanceDelegation.test.ts`,
+  `simulate.tipsLadderAnnualCashFlowDelegation.test.ts`, `simulate.pensionLumpSumRolloversDelegation.test.ts`,
+  `simulate.otherIncomeStreamsDelegation.test.ts`, `simulate.wageIncomeStreamsDelegation.test.ts`, and
+  `simulate.fixedAssetDispositionsDelegation.test.ts` are that shape. Their shared scaffolding is
   [`packages/engine/src/projection/simulate.seamGuard.test-support.ts`](../packages/engine/src/projection/simulate.seamGuard.test-support.ts):
   a typed recorder, a `through(original, exportName, inject)` wrapper for the mock factory, and the standard
   assertions, so a spec keeps its module specifier and its sentinels and nothing else. The specifier stays a
