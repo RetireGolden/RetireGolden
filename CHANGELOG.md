@@ -75,6 +75,80 @@ has — rather than the runtime contract a consumer needs on the landing page.
   remain unestablished, and it publishes no December 31, tax, penalty, basis,
   or finalization claim.
 
+## 2026-09
+
+**2026-09-04**
+- Prepared **`@retiregolden/engine` 0.3.0** — a **minor** bump, because the
+  published module surface got smaller. **Not yet published**; the owner tags
+  `engine-v0.3.0` and approves the `npm-publish` environment, and npm serves
+  what it serves until they do.
+- **Two new published fields on `YearResult`.**
+  - `netPortfolioNeed`: the nominal dollars the portfolio must supply that
+    year — total expenses plus tax plus penalties, less total incomes, floored
+    at zero. planner-ui's bucket lens was computing exactly that per year in
+    the UI, which is money math outside the engine; it now reads the published
+    field and its own helper is gone. Assembled in `annualYearResultAssembly`,
+    where all four inputs are final, and published last in the literal so no
+    existing key moves position.
+  - `InheritedAccountYearEvidence.refusalCode`: the discriminated cause behind
+    `refusalReason`. The prose is reader-facing text that names the specific
+    fact or rule, and the Results page was classifying it with seven
+    `includes()` checks — so rewording an engine message silently rewrote the
+    user's explanation. The union is `successor-beneficiary`,
+    `entity-beneficiary`, `multiple-beneficiaries`, `employer-plan`,
+    `needs-review`, `successor-clock-out-of-scope`; there is deliberately no
+    member for the labeled legacy planning approximation, which publishes no
+    refusal at all. `refusalReason` is unchanged, word for word, and the
+    substring reading survives as the fallback for results serialized before
+    codes existed.
+- **Twenty-nine `./actions/<name>` subpaths removed.** This is the breaking
+  part, and the reason for the minor rather than a patch. The export map
+  listed 39 of them behind the `"./actions/*": null` blocker; 29 had no
+  importer anywhere — not in RetireGolden-Pro, not in RetireGolden-MCP, not in
+  `app/` or `planner-ui` — and every listed name is public API a semver bump
+  then has to honour. Removed: `annualHsaOpeningAuthority`,
+  `annualHsaPenaltyEvaluation`, `annualHsaPhysicalMovementCandidate`,
+  `annualHsaReimbursementLedger`, `annualHsaTreatmentBindingCoordinator`,
+  `annualHsaWithdrawalCharacter`, `annualIraBasisAllocation`,
+  `annualOwnedNonRothIraPoolCapacity`, `annualQcdPhysicalExecution`,
+  `annualQcdResidualForm8606`, `annualQcdTaxCharacterPostPass`,
+  `annualRetirementActionMovementCoordinator`,
+  `annualRetirementActionPublication`,
+  `annualRetirementPhysicalEventInventory`,
+  `ownedNonRothIraAnnualCandidateCoordinator`,
+  `ownedNonRothIraAnnualCandidateTransaction`,
+  `ownedNonRothIraAnnualFilingEvidence`,
+  `ownedNonRothIraAnnualFilingSourceResolver`,
+  `ownedNonRothIraAnnualFinalization`,
+  `ownedNonRothIraAnnualPlanCoordinator`,
+  `ownedNonRothIraAnnualPostCandidateEvidence`,
+  `ownedNonRothIraMovementCandidate`, `ownedNonRothIraPenaltyPrerequisite`,
+  `ownedNonRothIraSeppAnnualReconciliation`,
+  `ownedNonRothIraSeppCurrentPaymentCandidate`,
+  `ownedNonRothIraWithdrawalCharacter`, `rothConversionExecution`,
+  `taxableWithdrawalCharacter`, `traditionalEmployerPlanPenaltyPrerequisite`.
+- **The ten kept subpaths are unchanged**, and they are the ten this monorepo
+  imports one at a time: `actions/annualQcdExecutionPrerequisite`,
+  `actions/civilDate`, `actions/contract`, `actions/execution`,
+  `actions/identity`, `actions/money`, `actions/planBalanceAdapter`,
+  `actions/reasons`, `actions/retirementActionCandidateIdentityAllocator`,
+  `actions/retirementActionManualReview`. **No module became unreachable**:
+  all 29 pruned names are still exported from the `./actions` barrel, which is
+  where the engine pack smoke now proves them, alongside a new loop asserting
+  each pruned subpath fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+- **The planner-ui range moves in the same commit, and it has to** — the same
+  `linkWorkspacePackages` reasoning as the 0.2.0 entry below:
+  `@retiregolden/planner-ui` now declares `^0.3.0`. Its own version is not
+  bumped here. The pack smoke's `auto` mode detects that 0.3.0 is not on npm,
+  asserts the local engine's version equals the declared minimum, and packs
+  the local engine: `packing the exact local engine minimum 0.3.0 ... pack
+  smoke OK ... against local minimum 0.3.0`.
+- **Downstream to coordinate:** a consumer importing any of the 29 pruned
+  subpaths changes the import to `@retiregolden/engine/actions`; the exported
+  names are identical. A consumer that constructs a `YearResult` literal now
+  has to supply `netPortfolioNeed`, which is required rather than optional
+  because the ledger always publishes it.
+
 ## 2026-08
 
 **2026-08-31**

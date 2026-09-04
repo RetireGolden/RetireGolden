@@ -129,7 +129,7 @@ importers:
   packages/planner-ui:
     dependencies:
       '@retiregolden/engine':
-        specifier: ^0.2.0
+        specifier: ^0.3.0
         version: link:../engine
       highs:
         specifier: 1.15.2
