@@ -79,13 +79,32 @@ const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'd
 const CONFORMANCE_SOURCE = 'taxRuleRegistry.conformance.test.ts'
 
 /**
+ * Whether a regex literal can begin at `index`: true at the start of the
+ * source or after `( , = : ; ! & | ? { [` (skipping whitespace), the same
+ * heuristic a parser uses to decide `/` opens a regex rather than division.
+ * Needed so a quote inside a regex literal — such as the `'` in this very
+ * file's own `(['"\`]?)` character class — is never mistaken by
+ * `stripComments` for a string opener, which would make it skip forward to
+ * some unrelated later quote and silently fail to blank a comment (or a
+ * commented-out fixture call) hiding inside that misread span.
+ */
+function regexLiteralCanOpenAt(source: string, index: number): boolean {
+  let cursor = index - 1
+  while (cursor >= 0 && /\s/u.test(source[cursor]!)) cursor -= 1
+  if (cursor < 0) return true
+  return '(,=:;!&|?{['.includes(source[cursor]!)
+}
+
+/**
  * Blanks out `//` and `/* *\/` comments in `source`, replacing each with
  * whitespace of the same length so a commented-out `describeRule(` or
  * `describeRefusal(` call can never satisfy the coverage scans below —
  * without this, deleting a real fixture but leaving it commented out would
- * still count as coverage under a plain regex scan. String and template
- * literal contents are walked past but left intact, since the id argument the
- * scans capture lives inside one.
+ * still count as coverage under a plain regex scan. String, template, and
+ * regex literal contents are walked past but left intact, since the id
+ * argument the scans capture lives inside a string, and a quote or `//`-
+ * shaped sequence inside a regex literal must never be mistaken for a string
+ * opener or a comment.
  */
 function stripComments(source: string): string {
   let out = ''
@@ -126,6 +145,36 @@ function stripComments(source: string): string {
       out += source.slice(i, cursor)
       i = cursor
       continue
+    }
+    if (c === '/' && regexLiteralCanOpenAt(source, i)) {
+      let cursor = i + 1
+      let inClass = false
+      let closed = false
+      while (cursor < source.length) {
+        const cc = source[cursor]!
+        if (cc === '\\') {
+          cursor += 2
+          continue
+        }
+        if (cc === '[') {
+          inClass = true
+        } else if (cc === ']') {
+          inClass = false
+        } else if (cc === '/' && !inClass) {
+          cursor += 1
+          closed = true
+          break
+        } else if (cc === '\n') {
+          break // not a regex after all; bail at EOL and fall through to plain '/'
+        }
+        cursor += 1
+      }
+      if (closed) {
+        while (cursor < source.length && /[a-z]/iu.test(source[cursor]!)) cursor += 1
+        out += source.slice(i, cursor)
+        i = cursor
+        continue
+      }
     }
     out += c
     i += 1
@@ -173,22 +222,42 @@ function callEnd(source: string, start: number): number {
 }
 
 /**
+ * Whether `expect(...)` at `matchStart` (the index of its `e`) within `body`
+ * is chained into an actual matcher — `.toBe(`, `.not.toContain(`, and so on
+ * — immediately after its balanced close, rather than standing alone as the
+ * no-op `expect(value)` is in Vitest with nothing chained onto it.
+ */
+function isChainedExpect(body: string, matchStart: number): boolean {
+  const close = callEnd(body, matchStart)
+  let cursor = close
+  while (cursor < body.length && /\s/u.test(body[cursor]!)) cursor += 1
+  return body[cursor] === '.'
+}
+
+/**
  * Whether the balanced `describeRefusal(...)` call body registers at least
- * one `it(` test that itself calls `expect(`. `describeRefusal` validates the
- * rule id, its classification, and the fixture's prose fields, but nothing
- * about the helper itself forces the suite callback to assert anything —
- * `describeRefusal(id, spec, () => {})` would otherwise satisfy the
- * backlog-equality ratchet below while driving no refusal at all, and so
- * would `describeRefusal(id, spec, () => { it('todo', () => {}) })`, an `it`
- * that registers but asserts nothing. Requiring both a real `it(` AND an
- * `expect(` inside the call's own extent closes both: an empty suite, and a
- * suite whose only test is a no-op, are neither counted as coverage, so the
- * rule id stays "uncovered" and must stay in `REFUSAL_FIXTURE_BACKLOG` until
- * a real fixture is written.
+ * one `it(` test that itself calls a chained `expect(...).<matcher>(...)`.
+ * `describeRefusal` validates the rule id, its classification, and the
+ * fixture's prose fields, but nothing about the helper itself forces the
+ * suite callback to assert anything — `describeRefusal(id, spec, () => {})`
+ * would otherwise satisfy the backlog-equality ratchet below while driving no
+ * refusal at all, and so would `describeRefusal(id, spec, () => { it('todo',
+ * () => {}) })` (an `it` that registers but asserts nothing) or
+ * `describeRefusal(id, spec, () => { it('x', () => { expect(plan) }) })` (an
+ * `expect(...)` with no matcher chained on, a no-op in Vitest). Requiring a
+ * real `it(` AND an `expect(...)` immediately followed by `.` closes all
+ * three: an empty suite, a suite whose only `it` is a no-op, and a suite
+ * whose only `expect` carries no matcher, are none of them counted as
+ * coverage, so the rule id stays "uncovered" and must stay in
+ * `REFUSAL_FIXTURE_BACKLOG` until a real fixture is written.
  */
 function registersATest(source: string, start: number, end: number): boolean {
   const body = source.slice(start, end)
-  return /\bit\(\s*['"`]/u.test(body) && /\bexpect\(/u.test(body)
+  if (!/\bit\(\s*['"`]/u.test(body)) return false
+  for (const match of body.matchAll(/\bexpect\(/gu)) {
+    if (isChainedExpect(body, match.index)) return true
+  }
+  return false
 }
 
 const claimedRuleIds = new Map<string, string[]>()
