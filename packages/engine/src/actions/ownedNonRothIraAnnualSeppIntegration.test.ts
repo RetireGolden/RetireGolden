@@ -564,7 +564,7 @@ describe('owned non-Roth IRA annual SEPP integration', () => {
     )
     // The whole finalization ID is rebuilt here, so this pins that the
     // non-success route contributes exactly its account/election/schedule
-    // triple, its status, and the fixed-width digest of the reconciliation —
+    // triple, its status, and the fixed-width digest of the reconciliation --
     // never the reconciliation payload itself.
     expect(evidence.finalizationEvidenceId).toBe(
       deriveActionStructuralId(
