@@ -1582,6 +1582,8 @@ type CapturedOccurrenceSource = NonNullable<YearResult['retirementRuntimeSource'
 type CapturedApplicationSource =
   NonNullable<YearResult['retirementRuntimeApplicationSource']>
 type CapturedBalanceSource = NonNullable<YearResult['ownedNonRothIraPostGrowthSource']>
+type PublishedPreGrowthBalances =
+  NonNullable<YearResult['ownedNonRothIraBalancesBeforeGrowth']>
 type OccurrenceIndex =
   ReadonlyMap<string, Readonly<SimulatorAnnualRetirementRuntimeOccurrence>>
 
@@ -1982,65 +1984,23 @@ function requireStagedAnnuityPurchases(
   }
 }
 
-/** @internal What one year's step produces: the next carry, and that year's normalized record. */
-export interface YearStep {
-  readonly carry: YearCarry
-  readonly year: NormalizedOwnedNonRothIraRuntimeSourceYear
-}
-
 /**
- * One tax year of the replay: every check that year needs, in the order it
- * needs them, against the carry the year before it returned.
- *
- * @internal
+ * The year's live balance observation, on both ledgers the replay carries: the
+ * published pre-growth figure every application chain has to rejoin, and the
+ * post-growth pools that become the next year's openings. Read before the
+ * chain runs, so the chain has something fixed to arrive at.
  */
-export function stepYear(
-  carry: YearCarry,
+function observeBalances(
   yearResult: Readonly<YearResult>,
-  facts: SeriesFacts,
-): YearStep {
-  const {
-    plan, accountById, accountOrder, personIds, stagingContracts,
-    contractOwnerById, contractFundingById, contractPremiumById,
-    contractPurchaseYearById,
-  } = facts
-  // Copy-on-write at the boundary. The chains below advance these maps in
-  // place, exactly as they did when they were the loop's own locals, and the
-  // carry this step was handed has to survive the year untouched.
-  const openingBalances = new Map(carry.openingBalances)
-  const openingRawBalances = new Map(carry.openingRawBalances)
-  const openingPhysicalRawBalances = new Map(carry.openingPhysicalRawBalances)
-  const openingContractRawValues = carry.openingContractRawValues
-
-  const taxYear = yearResult.year
-  const {
-    pools, ownedAccounts, physicalOwnedRows,
-    occurrenceSource, applicationSource, balanceSource,
-    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
-    publishedPhysicalOpeningBalances,
-  } = readYearSources(yearResult, plan, taxYear)
-  continuePhysicalOpeningBalances(
-    publishedPhysicalOpeningBalances, physicalOwnedRows, ownedAccounts,
-    openingPhysicalRawBalances, taxYear,
-  )
-  requireCapturedSourceContracts(
-    occurrenceSource, applicationSource, balanceSource, plan, taxYear,
-  )
-  const { occurrenceByKey, occurrenceOrderId } = indexOccurrences(
-    occurrenceSource, plan, accountById, personIds, taxYear,
-  )
-  requirePensionRolloverOccurrences(plan, accountById, occurrenceByKey, taxYear)
-  const namedConversionCoverage = reconcilePublishedAnnualTotals(
-    yearResult, occurrenceSource, accountById, accountOrder, taxYear,
-  )
-  const namedQcdCoverage = requireExactActionEvidence(
-    plan, yearResult, accountById, occurrenceSource, taxYear,
-  )
-  requireStagedAnnuityPurchases(
-    plan, accountById, contractOwnerById, occurrenceByKey, openingRawBalances,
-    taxYear,
-  )
-
+  balanceSource: CapturedBalanceSource,
+  pools: ReadonlyMap<PersonId, OwnedIraAccount[]>,
+  ownedAccounts: readonly OwnedIraAccount[],
+  physicalOwnedRows: readonly OwnedPhysicalRow[],
+  publishedBalancesBeforeGrowth: PublishedPreGrowthBalances,
+  publishedPhysicalBalancesBeforeGrowth:
+    YearResult['ownedNonRothIraPhysicalBalancesBeforeGrowth'],
+  taxYear: number,
+) {
   const expectedOwners = [...pools.keys()]
   if (balanceSource.ownerPools.length !== expectedOwners.length) {
     fail('postGrowthPoolInvalid', 'Post-growth source must contain every and only complete owned-IRA pool', { taxYear })
@@ -2174,7 +2134,28 @@ export function stepYear(
     })
     ownerBalances.set(owner, normalizedBalances)
   }
+  return {
+    expectedOwners,
+    postGrowthBalances, postGrowthRawBalances, postGrowthPhysicalRawBalances,
+    preGrowthBalances, preGrowthRawBalances, preGrowthPhysicalRawBalances,
+    ownerBalances,
+  }
+}
 
+/**
+ * The published annuity contract openings and closings, read at the same
+ * instant as the balances beside them and bounded before the chain that moves
+ * them.
+ */
+function readPublishedContractValues(
+  expectedOwners: readonly PersonId[],
+  balanceSource: CapturedBalanceSource,
+  stagingContracts: SeriesFacts['stagingContracts'],
+  contractPremiumById: ReadonlyMap<AccountId, number>,
+  contractPurchaseYearById: ReadonlyMap<AccountId, number>,
+  openingContractRawValues: ReadonlyMap<AccountId, number> | null,
+  taxYear: number,
+) {
   // The other half of line 6, read at the same instant and checked before the
   // chain that moves it. Each owner's staged contracts must be present, in
   // canonical order, bound to the funding account that put them in this pool,
@@ -2220,8 +2201,23 @@ export function stepYear(
       )
     }
   }
+  return { publishedContractOpenings, publishedContractClosings }
+}
 
-  const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
+/**
+ * The openings of accounts this replay is seeing for the first time. Runs after
+ * the pre-growth observation, because the unchanged-account arm reads it, and
+ * before the application chain, which needs every account it will touch to have
+ * an opening already.
+ */
+function seedNewlyOwnedOpenings(
+  ownedAccounts: readonly OwnedIraAccount[],
+  applicationSource: CapturedApplicationSource,
+  preGrowthRawBalances: ReadonlyMap<AccountId, number>,
+  openingRawBalances: Map<AccountId, number>,
+  openingBalances: Map<AccountId, UsdCents>,
+  taxYear: number,
+): void {
   // An S2 account first joins this replay at its election-year owner-side
   // RMD. It has no prior owned-pool close to carry, so seed its chain from
   // that first published mutation (or the unchanged pre-growth observation
@@ -2247,6 +2243,88 @@ export function stepYear(
       { taxYear, ownerPersonId: account.ownerPersonId!, sourceAccountId: account.id },
     ))
   }
+}
+
+/** @internal What one year's step produces: the next carry, and that year's normalized record. */
+export interface YearStep {
+  readonly carry: YearCarry
+  readonly year: NormalizedOwnedNonRothIraRuntimeSourceYear
+}
+
+/**
+ * One tax year of the replay: every check that year needs, in the order it
+ * needs them, against the carry the year before it returned.
+ *
+ * @internal
+ */
+export function stepYear(
+  carry: YearCarry,
+  yearResult: Readonly<YearResult>,
+  facts: SeriesFacts,
+): YearStep {
+  const {
+    plan, accountById, accountOrder, personIds, stagingContracts,
+    contractOwnerById, contractFundingById, contractPremiumById,
+    contractPurchaseYearById,
+  } = facts
+  // Copy-on-write at the boundary. The chains below advance these maps in
+  // place, exactly as they did when they were the loop's own locals, and the
+  // carry this step was handed has to survive the year untouched.
+  const openingBalances = new Map(carry.openingBalances)
+  const openingRawBalances = new Map(carry.openingRawBalances)
+  const openingPhysicalRawBalances = new Map(carry.openingPhysicalRawBalances)
+  const openingContractRawValues = carry.openingContractRawValues
+
+  const taxYear = yearResult.year
+  const {
+    pools, ownedAccounts, physicalOwnedRows,
+    occurrenceSource, applicationSource, balanceSource,
+    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
+    publishedPhysicalOpeningBalances,
+  } = readYearSources(yearResult, plan, taxYear)
+  continuePhysicalOpeningBalances(
+    publishedPhysicalOpeningBalances, physicalOwnedRows, ownedAccounts,
+    openingPhysicalRawBalances, taxYear,
+  )
+  requireCapturedSourceContracts(
+    occurrenceSource, applicationSource, balanceSource, plan, taxYear,
+  )
+  const { occurrenceByKey, occurrenceOrderId } = indexOccurrences(
+    occurrenceSource, plan, accountById, personIds, taxYear,
+  )
+  requirePensionRolloverOccurrences(plan, accountById, occurrenceByKey, taxYear)
+  const namedConversionCoverage = reconcilePublishedAnnualTotals(
+    yearResult, occurrenceSource, accountById, accountOrder, taxYear,
+  )
+  const namedQcdCoverage = requireExactActionEvidence(
+    plan, yearResult, accountById, occurrenceSource, taxYear,
+  )
+  requireStagedAnnuityPurchases(
+    plan, accountById, contractOwnerById, occurrenceByKey, openingRawBalances,
+    taxYear,
+  )
+
+  const {
+    expectedOwners,
+    postGrowthBalances, postGrowthRawBalances, postGrowthPhysicalRawBalances,
+    preGrowthBalances, preGrowthRawBalances, preGrowthPhysicalRawBalances,
+    ownerBalances,
+  } = observeBalances(
+    yearResult, balanceSource, pools, ownedAccounts, physicalOwnedRows,
+    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
+    taxYear,
+  )
+  const { publishedContractOpenings, publishedContractClosings } =
+    readPublishedContractValues(
+      expectedOwners, balanceSource, stagingContracts, contractPremiumById,
+      contractPurchaseYearById, openingContractRawValues, taxYear,
+    )
+
+  const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
+  seedNewlyOwnedOpenings(
+    ownedAccounts, applicationSource, preGrowthRawBalances, openingRawBalances,
+    openingBalances, taxYear,
+  )
   /**
    * The year's running contract-value channel, chained the same way the
    * account balances are.
