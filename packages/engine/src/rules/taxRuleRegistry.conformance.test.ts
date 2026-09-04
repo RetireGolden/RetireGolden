@@ -7,6 +7,7 @@ import {
   TAX_RULE_RECORD_MODULES,
   TAX_RULE_REGISTRY,
   taxRuleIds,
+  taxRuleDueOn,
   taxRulesDueForVerification,
   type TaxRuleAuthorityKind,
   type TaxRuleId,
@@ -1842,7 +1843,10 @@ describe('periodic re-verification', () => {
   })
 
   it('eventually brings every rule due', () => {
-    expect(taxRulesDueForVerification('2027-09-01')).toEqual([...taxRuleIds])
+    const latestDueOn = taxRuleIds
+      .map((ruleId) => taxRuleDueOn(ruleId))
+      .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
+    expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 
   it('rejects a malformed as-of date rather than silently reporting nothing', () => {

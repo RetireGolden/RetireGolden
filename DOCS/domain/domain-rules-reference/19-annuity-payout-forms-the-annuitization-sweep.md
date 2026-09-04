@@ -35,14 +35,19 @@ byte-identical projection.
   control − baseline isolates the implicit rising-equity-glidepath share of the benefit, point − control is
   what annuitization adds beyond it (mortality credits, payout floor) net of lost liquidity.
 - **Pension lump-sum offer & election.** `lumpSumOffer` (amount + election year) on a pension records the
-  decision inputs without ledger effect; `lumpSumElection` commutes the pension — the offer rolls over
-  **tax-free** into the named traditional account in the election year (direct rollover; no withholding or
-  income) and the annuity never pays. The decision view (Accounts section) shows the annuity's PV at a
-  curve-anchored discount rate (TIPS real yield at the horizon + assumed inflation), the survivor option's
-  PV value, and a discount-rate × longevity sensitivity table — tradeoffs, never advice. The
-  `pensionLumpSumGenerator` scenario pair and the `pension-election-pending` insight price the same
-  mechanics on the exact ledger. Survivor rule matches the ledger: no survivor benefit if the owner dies
-  before the start age.
+  decision inputs without ledger effect; `lumpSumElection` commutes the pension — the engine **assumes** the
+  offer is an eligible distribution from a qualified plan and rolls it **tax-free** into the named traditional
+  account in the election year (direct rollover; no withholding or income), then the annuity never pays.
+  The schema has no qualified-plan, plan-exemption, distributability, or eligible-rollover-distribution facts,
+  so a nonqualifying offer can be currently taxable even while the engine reports zero; this is the disclosed
+  `irc-402-c-1-pension-lump-sum-direct-rollover-eligibility` approximation. The separate required-minimum-
+  distribution portion of an otherwise qualifying offer is governed by
+  `irc-402-c-4-B-rmd-not-eligible-rollover-distribution`, not this assumption. The decision view (Accounts
+  section) shows the annuity's PV at a curve-anchored discount rate (TIPS real yield at the horizon +
+  assumed inflation), the survivor option's PV value, and a discount-rate × longevity sensitivity table —
+  tradeoffs, never advice. The `pensionLumpSumGenerator` scenario pair and the
+  `pension-election-pending` insight price the same mechanics on the exact ledger. Survivor rule matches
+  the ledger: no survivor benefit if the owner dies before the start age.
 - **HECM line of credit (buffer asset).** `hecm` on a primary-residence property models Pfau's strategy:
   - **Line size:** the user's lender-quoted `principalLimitPct`, else the pack's published principal-limit
     factors (HUD PLF tables at a 5.875% expected rate, 2026: 35.1% of value at 62 → 61.4% at 90, youngest

@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 416 |
-| Classification: approximated | 109 |
+| Total rules | 417 |
+| Classification: approximated | 110 |
 | Classification: outOfScope | 73 |
 | Classification: settled | 229 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 60 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 339 |
+| Volatility: staticStatute | 340 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 310 |
+| Federal jurisdiction | 311 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -84,8 +84,8 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 367 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 56 |
-| registered | 103 |
+| partial | 55 |
+| registered | 104 |
 | rule-free | 208 |
 | unswept | 0 |
 
@@ -96,7 +96,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | (root) | 3 | 0 | 0 | 3 | 0 |
 | actions | 78 | 15 | 33 | 30 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
-| decisions | 18 | 2 | 2 | 14 | 0 |
+| decisions | 18 | 1 | 3 | 14 | 0 |
 | insights | 22 | 2 | 3 | 17 | 0 |
 | internal | 11 | 1 | 3 | 7 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
@@ -138,7 +138,6 @@ None.
 | actions/retirementActionManualReview.ts | 2026-08-29 | replacement source-owner and Roth-destination identity checks registered under irc-408-d-3-A-i; the type gate here does not discriminate a designated Roth (that vehicle refusal lives in the identity allocator), and the QCD source-owner clause remains open |
 | actions/rothConversionExecution.ts | 2026-08-29 | ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual |
 | actions/traditionalEmployerPlanPenaltyPrerequisite.ts | 2026-08-29 | Rule of 55, employer-SEPP, permitted methods, public-safety, recapture and the age-59½ threshold are registered records naming this file, and irc-72-t-2-A-iii now names the disability arm; the 10% rate application site for employer plans remains the residual |
-| decisions/pensionElection.ts | 2026-08-24 | Tax-free direct rollover into traditional IRA; no record |
 | decisions/rothConversionCandidateAdapter.ts | 2026-08-29 | same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered |
 | insights/detectors/missingDataBasis.ts | 2026-08-29 | The detector consumes the shared ROTH_QUALIFIED_AGE constant to scope its suggestion; the qualified-distribution rule itself is registered and enforced at the Roth basis records, which do not name this consumer |
 | insights/detectors/ssClaimMilestone.ts | 2026-08-24 | Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra |
@@ -186,7 +185,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 | Shard | Rules |
 | --- | ---: |
-| rule-coverage/annuities.json | 5 |
+| rule-coverage/annuities.json | 6 |
 | rule-coverage/charitableDeductions.json | 14 |
 | rule-coverage/charitableDistributions.json | 22 |
 | rule-coverage/contributionAndDeferralLimits.json | 37 |
@@ -208,7 +207,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (416 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (417 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -248,19 +247,19 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-08-30T01:23:40.459Z over 1066 authority entries (0 fetched live, 305 from cache).
+Committed ledger generated at 2026-09-04T17:47:16.011Z over 1071 authority entries (0 fetched live, 305 from cache).
 
-3 serious, 47 advisory, 1016 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 50 advisory, 1018 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 64 |
-| ELISION-PUNCTUATION | advisory | 4 |
-| EXACT | ok | 740 |
+| ELISION-PUNCTUATION | advisory | 6 |
+| EXACT | ok | 742 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
-| PUNCTUATION | advisory | 36 |
+| PUNCTUATION | advisory | 37 |
 | UNFETCHABLE | serious | 3 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.

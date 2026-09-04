@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 416,
+    "total": 417,
     "byClassification": {
-      "approximated": 109,
+      "approximated": 110,
       "outOfScope": 73,
       "settled": 229,
       "unsettled": 5
@@ -12,11 +12,11 @@
     "byVolatility": {
       "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 339,
+      "staticStatute": 340,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 310,
+      "federal": 311,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 367,
     "byStatus": {
-      "partial": 56,
-      "registered": 103,
+      "partial": 55,
+      "registered": 104,
       "rule-free": 208,
       "unswept": 0
     },
@@ -160,11 +160,6 @@
       "path": "actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
       "sweptOn": "2026-08-29",
       "note": "Rule of 55, employer-SEPP, permitted methods, public-safety, recapture and the age-59½ threshold are registered records naming this file, and irc-72-t-2-A-iii now names the disability arm; the 10% rate application site for employer plans remains the residual"
-    },
-    {
-      "path": "decisions/pensionElection.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Tax-free direct rollover into traditional IRA; no record"
     },
     {
       "path": "decisions/rothConversionCandidateAdapter.ts",
@@ -395,8 +390,8 @@
       "directory": "decisions",
       "files": 18,
       "byStatus": {
-        "partial": 2,
-        "registered": 2,
+        "partial": 1,
+        "registered": 3,
         "rule-free": 14
       }
     },
@@ -542,7 +537,7 @@
     {
       "module": "annuities",
       "path": "rule-coverage/annuities.json",
-      "ruleCount": 5
+      "ruleCount": 6
     },
     {
       "module": "charitableDeductions",
@@ -636,17 +631,17 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-08-30T01:23:40.459Z",
-    "entryCount": 1066,
+    "generatedAt": "2026-09-04T17:47:16.011Z",
+    "entryCount": 1071,
     "fetched": 0,
     "cached": 305,
     "counts": {
       "ELISION-EXACT": 64,
-      "ELISION-PUNCTUATION": 4,
-      "EXACT": 740,
+      "ELISION-PUNCTUATION": 6,
+      "EXACT": 742,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 212,
-      "PUNCTUATION": 36,
+      "PUNCTUATION": 37,
       "UNFETCHABLE": 3
     }
   }

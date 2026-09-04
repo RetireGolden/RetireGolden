@@ -206,4 +206,64 @@ export const annuityRecords = {
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts#classifyTraditionalEmployerPlanWithdrawal',
     ],
   },
+  'irc-402-c-1-pension-lump-sum-direct-rollover-eligibility': {
+    title: 'Pension lump-sum direct-rollover eligibility is assumed',
+    statement:
+      'A distribution from a qualified trust is excluded from gross income only to the extent an eligible rollover distribution is transferred to an eligible retirement plan; a qualified trust and an individual retirement account described in §408(a) are within those definitions, and a specified direct rollover is not includible in gross income. The engine treats every modeled pension lump-sum offer elected into a traditional account as satisfying those conditions: it credits the whole offer to the destination and reports no current-year pension income or MAGI from it. The Plan carries only the offer amount, election year, and destination account id; it carries no qualified-plan, exemption, distributability, or eligible-rollover-distribution facts. A nonqualifying or ineligible offer can instead be currently taxable, so the reported zero understates tax. The separate §402(c)(4)(B) required-minimum-distribution portion is governed by irc-402-c-4-B-rmd-not-eligible-rollover-distribution and is not duplicated here.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. checkAccountCrossFieldRules requires an election to have an offer and an existing non-inherited traditional destination, and pensionTakeLumpSumPatch selects or creates an owned traditional IRA destination, but neither can establish that the source is a qualified trust, that the offer is an eligible rollover distribution, or that a plan may distribute it. pensionLumpSumRollovers then selects every elected offer in its election year at its full amount; simulatePlan credits that amount; and annualPensionAndAnnuityIncome suppresses the pension stream from that year forward. The approximation fixture uses a 300,000 offer for a 60-year-old, deliberately outside the RMD regime: facts the Plan cannot encode hide a genuinely nonqualifying or ineligible offer, for which the statutory reading is a 300,000 currently taxable pension distribution with no rollover credit, while the engine instead credits 300,000 to the traditional destination with zero pension income and MAGI. The RMD-specific sibling remains the only record for a qualifying offer whose required-distribution portion must be carved out.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 402(c)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'If— (A) any portion of the balance to the credit of an employee in a qualified trust is paid to the employee in an eligible rollover distribution, (B) the distributee transfers any portion of the property received in such distribution to an eligible retirement plan, … then such distribution (to the extent so transferred) shall not be includible in gross income for the taxable year in which paid.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(c)(4)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term "eligible rollover distribution" means any distribution to an employee of all or any portion of the balance to the credit of the employee in a qualified trust; except that such term shall not include-',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(c)(8)(A)-(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'The term "qualified trust" means an employees\' trust described in section 401(a) which is exempt from tax under section 501(a). … The term "eligible retirement plan" means— (i) an individual retirement account described in section 408(a),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(31)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'A trust shall not constitute a qualified trust under this section unless the plan of which such trust is a part provides that if the distributee of any eligible rollover distribution— (i) elects to have such distribution paid directly to an eligible retirement plan, and (ii) specifies the eligible retirement plan to which such distribution is to be paid (in such form and at such time as the plan administrator may prescribe), such distribution shall be made in the form of a direct trustee-to-trustee transfer to the eligible retirement plan so specified.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 402(e)(6)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
+      quotedText:
+        'Any amount transferred in a direct trustee-to-trustee transfer in accordance with section 401(a)(31) shall not be includible in gross income for the taxable year of such transfer.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-04',
+    implementedBy: [
+      'packages/engine/src/decisions/pensionElection.ts',
+      'packages/engine/src/model/planCrossFieldChecks.ts',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
+      'packages/engine/src/projection/internal/pensionLumpSumRollovers.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/pensionElection.ts#pensionTakeLumpSumPatch',
+      'packages/engine/src/model/planCrossFieldChecks.ts#checkAccountCrossFieldRules',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
+      'packages/engine/src/projection/internal/pensionLumpSumRollovers.ts#pensionLumpSumRollovers',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
+  },
 } satisfies Record<string, TaxRuleRecord>
