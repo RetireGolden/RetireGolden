@@ -42,3 +42,106 @@ trustPolicyExclude:
 # is a non-frozen `pnpm install`, which re-resolves under the pins, then a
 # frozen install to prove the lockfile is settled. Bumping a pin itself is a
 # deliberate change: update the override, re-resolve, and run the full suite.
+#
+# Per-override record. Each entry states what it pins, the reason the repo's
+# own history supports, and the condition that would let it go. Where no
+# reason is recorded, this says so instead of inventing one. Removal is a
+# dedicated PR either way: drop the entry, re-resolve, and let
+# `.github/workflows/resolve-gate.yml` show what a fresh resolve then picks.
+# Two of the nine change resolution today (`sharp`, `ejs>jake`); the other
+# seven are inert against the committed lockfile and bite only at re-resolve
+# time, where they hold each declared range at its floor.
+#
+# sharp: ^0.35.0
+#   Build-time image toolchain, reached only through
+#   `@vite-pwa/assets-generator` (PWA icon generation) and `sharp-ico`.
+#   Reason: GHSA-f88m-g3jw-g9cj (high, dev-only). assets-generator 1.0.2
+#   still declares `sharp: ^0.33.5` and sharp-ico declares `*`, so without
+#   this override a fresh resolve lands back on the vulnerable 0.33 line
+#   (commit 0ca3b2a7).
+#   Drop when `@vite-pwa/assets-generator` publishes a sharp range that
+#   already excludes the advisory.
+#
+# ejs>jake: ^12.10.1
+#   Scoped: jake only where `ejs` depends on it. ejs 3.1.10 declares
+#   `jake: ^10.8.5`; jake 12 pulls filelist 2, minimatch 10.2, and
+#   brace-expansion ^5.0.8.
+#   Reason: GHSA-mh99-v99m-4gvg (brace-expansion DoS) has no patched 1.x or
+#   2.x release, and the vite-plugin-pwa to workbox-build to
+#   rollup-plugin-off-main-thread to ejs chain still reaches it. ejs lists
+#   jake for its own dev tasks and never imports it at runtime, so the
+#   override is functionally inert; a full production build including
+#   workbox generateSW confirmed that (commit 4d2e5f5f).
+#   Drop when nothing under `ejs` resolves a brace-expansion below 5.0.8.
+#
+# The remaining seven arrived together in commit 5c5f4a49 during the npm to
+# pnpm migration, each set to the exact version the outgoing
+# `package-lock.json` had resolved (react/react-dom/react-is 19.2.7,
+# recharts 3.9.2, highs 1.14.2, es-toolkit 1.49.0, immer 11.1.11), so the
+# package-manager switch could not quietly move the runtime tree. That
+# migration is long finished; what each still earns today is below.
+#
+# highs: 1.15.2
+#   Exact pin of the WASM solver that `packages/engine` and
+#   `packages/planner-ui` both declare as `^1.15.2`.
+#   Reason: optimizer output and the measured wasm figures in
+#   DOCS/features/optimizer.md are tied to one HiGHS build, so a floating
+#   patch could move solver results or bundle size with nothing naming the
+#   cause. PR #601 bumped it deliberately and recorded the evidence a bump
+#   needs: full suite green, `pnpm cases:diff` reporting no case deltas, and
+#   the optimizer doc's byte figures re-measured.
+#   Drop when the optimizer no longer pins solver-version-sensitive numbers
+#   in docs or goldens, so an in-range HiGHS bump needs no paired review.
+#
+# react: 19.2.8
+# react-dom: 19.2.8
+#   Exact pins of the React runtime that `app` declares as `^19.2.8` and
+#   `packages/planner-ui` declares as a peer and dev dependency at `^19.2.8`.
+#   Reason: one tested React build across the workspace, which also keeps
+#   `@retiregolden/planner-ui`'s published peer range honest (main's caret
+#   range is what consumers see; the pin is what CI actually ran).
+#   Known cost: the pin equals the floor of every declared range, so CI only
+#   ever resolves the oldest React a consumer could install, never a newer
+#   in-range one.
+#   Drop when a scheduled non-frozen resolve plus the full suite covers the
+#   declared range rather than its floor.
+#
+# react-is: 19.2.8
+#   Not declared by any first-party package. Its only consumer is recharts,
+#   whose published peer range is
+#   `^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0`.
+#   Reason: no commit records one of its own. What the history shows is that
+#   it has always carried the same version as `react` and has moved with it
+#   (5c5f4a49, PR #601), which keeps the react-is copy recharts loads from
+#   splitting away from the React runtime.
+#   Drop with the `react` pin, or sooner if recharts stops depending on it.
+#
+# recharts: 3.10.1
+#   Exact pin of the chart library `packages/planner-ui` declares as
+#   `^3.10.1`.
+#   Reason: the chart vendor chunk is a named budget line
+#   (DOCS/operations/bundle-budget.md, `CartesianChart`, 380 KiB), so a
+#   floating minor can move a gated budget with no deliberate change behind
+#   it. PR #601's bump recorded that no chart or Legend test changed outcome.
+#   Side effect worth knowing: pnpm applies overrides to peer ranges too, so
+#   pnpm-lock.yaml records recharts' peers as exactly `react: 19.2.8` and
+#   `react-is: 19.2.8` where the published recharts manifest allows
+#   `^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0`. Nothing in CI exercises
+#   recharts against any other React in its supported range.
+#   Drop with the `react` pin, under the same scheduled non-frozen resolve.
+#
+# es-toolkit: 1.49.0
+#   Transitive only: the sole consumer is recharts, which declares
+#   `^1.39.3`.
+#   No recorded reason beyond the migration snapshot above, and it has never
+#   been bumped. Candidate for removal in a resolve-gate PR.
+#   Drop once a fresh resolve shows which version the range now picks and the
+#   suite is green on it.
+#
+# immer: 11.1.11
+#   Transitive only, shared by recharts (`^11.1.8`) and the
+#   `@reduxjs/toolkit` 2.12.0 that recharts pulls (`^11.0.0`). The two ranges
+#   overlap, so a single copy resolves with or without the pin.
+#   No recorded reason beyond the migration snapshot above, and it has never
+#   been bumped. Candidate for removal in a resolve-gate PR, on the same
+#   terms as es-toolkit.
