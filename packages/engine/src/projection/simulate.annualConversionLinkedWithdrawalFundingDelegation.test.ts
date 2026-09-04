@@ -4,6 +4,9 @@
  * The wrapper first runs production, then replaces an earned authorization with
  * the fail-closed permission. Both authored legs must stop moving; merely calling
  * the coordinator while rebuilding its decision locally fails this test.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,42 +15,41 @@ import type {
   AnnualConversionLinkedWithdrawalFundingResult,
 } from './internal/annualConversionLinkedWithdrawalFunding.js'
 
-interface FundingCall {
-  readonly input: AnnualConversionLinkedWithdrawalFundingInput
-  readonly original: Readonly<AnnualConversionLinkedWithdrawalFundingResult>
-  readonly output: Readonly<AnnualConversionLinkedWithdrawalFundingResult>
-}
+const hostile = vi.hoisted(() => ({ injectRefusal: false }))
 
-const seam = vi.hoisted(() => ({
-  injectRefusal: false,
-  calls: [] as FundingCall[],
-}))
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualConversionLinkedWithdrawalFundingInput,
+      Readonly<AnnualConversionLinkedWithdrawalFundingResult>
+    >(),
+)
 
 vi.mock(
   './internal/annualConversionLinkedWithdrawalFunding.js',
   async (importOriginal) => {
+    // The refusal sentinel is an export of the mocked module itself, so this
+    // factory keeps a block body to name the original namespace.
     const original = await importOriginal<
       typeof import('./internal/annualConversionLinkedWithdrawalFunding.js')
     >()
-    return {
-      ...original,
-      annualConversionLinkedWithdrawalFunding: (
-        input: AnnualConversionLinkedWithdrawalFundingInput,
-      ) => {
-        const production = original.annualConversionLinkedWithdrawalFunding(input)
-        const output = seam.injectRefusal && production.release.kind === 'proven'
+    return seam.through(
+      original,
+      'annualConversionLinkedWithdrawalFunding',
+      (natural): Readonly<AnnualConversionLinkedWithdrawalFundingResult> =>
+        hostile.injectRefusal && natural.release.kind === 'proven'
           ? {
-              ...production,
+              ...natural,
               release: original.REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
             }
-          : production
-        seam.calls.push({ input, original: production, output })
-        return output
-      },
-    }
+          : natural,
+    )
   },
 )
 
+import { expectSeamRanAtLeastOnce } from './simulate.seamGuard.test-support.js'
 import { parseRetirementActionRequest } from '../actions/index.js'
 import type { Account, Plan } from '../model/plan.js'
 import {
@@ -168,8 +170,8 @@ function actionYear() {
 }
 
 beforeEach(() => {
-  seam.injectRefusal = false
-  seam.calls.length = 0
+  hostile.injectRefusal = false
+  seam.reset()
 })
 
 describe('simulatePlan conversion-linked withdrawal funding delegation', () => {
@@ -179,8 +181,8 @@ describe('simulatePlan conversion-linked withdrawal funding delegation', () => {
       status: 'executed',
       movement: 'bothLegs',
     })
-    expect(seam.calls.length).toBeGreaterThan(0)
-    expect(seam.calls.every((call) =>
+    const provenCalls = expectSeamRanAtLeastOnce(seam)
+    expect(provenCalls.every((call) =>
       Object.isFrozen(call.input) &&
       call.input.taxUnitId !== null &&
       new Set(call.input.omitActionIds).size === 2 &&
@@ -189,14 +191,14 @@ describe('simulatePlan conversion-linked withdrawal funding delegation', () => {
       call.input.omitActionIds.some((actionId) =>
         actionId === WITHDRAWAL_ACTION_ID)
     )).toBe(true)
-    expect(seam.calls.some((call) => call.original.release.kind === 'proven'))
+    expect(provenCalls.some((call) => call.natural.release.kind === 'proven'))
       .toBe(true)
 
-    seam.injectRefusal = true
-    seam.calls.length = 0
+    hostile.injectRefusal = true
+    seam.reset()
     const refused = actionYear()
 
-    expect(seam.calls.some((call) => call.output !== call.original)).toBe(true)
+    expect(seam.calls.some((call) => call.injected !== call.natural)).toBe(true)
     expect(refused.conversionLinkedWithdrawalGroupExecution).toMatchObject({
       status: 'refused',
       movement: 'none',

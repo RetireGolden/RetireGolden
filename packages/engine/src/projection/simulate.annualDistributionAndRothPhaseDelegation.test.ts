@@ -1,4 +1,15 @@
-/** Delegation and live-result guards for the grouped annual execution phases. */
+/**
+ * Delegation and live-result guards for the grouped annual execution phases.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here. Two modules
+ * are mocked, so there is one recorder each. Both seams replace *functions the
+ * result carries* rather than plain values, so the injector builds those
+ * wrappers and parks them on `hostile` by call ordinal. That keeps the
+ * identity assertions non-vacuous — each one compares what the recorder saw
+ * the caller receive against the wrapper this file built — without widening
+ * `SeamCall`, which models the result and not the instrumentation hung off it.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Account, Plan } from '../model/plan.js'
@@ -11,102 +22,89 @@ import type {
   AnnualAggregateRothConversionPhaseResult,
 } from './internal/annualAggregateRothConversionPhase.js'
 
-interface ForcedCall {
-  readonly input: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput
-  readonly natural: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult
-  readonly returned: AnnualForcedDistributionQcdAndRetirementActionsPhaseResult
-  readonly downstreamIsAggregatedIraThisYear: ReturnType<typeof vi.fn>
-}
-
-interface AggregateCall {
-  readonly input: AnnualAggregateRothConversionPhaseInput
-  readonly natural: AnnualAggregateRothConversionPhaseResult
-  readonly returned: AnnualAggregateRothConversionPhaseResult
-  readonly downstreamYearConvertibleToRoth:
-    AnnualAggregateRothConversionPhaseResult['yearConvertibleToRoth']
-  readonly downstreamYearConvertibleCalls: Account[]
-  readonly downstreamOwnedIraConversionTaxableFraction: ReturnType<typeof vi.fn>
-}
-
-const seam = vi.hoisted(() => ({
-  forcedCalls: [] as ForcedCall[],
-  aggregateCalls: [] as AggregateCall[],
+const hostile = vi.hoisted(() => ({
+  isAggregatedIraThisYear: [] as ReturnType<typeof vi.fn>[],
+  yearConvertibleToRoth: [] as
+    AnnualAggregateRothConversionPhaseResult['yearConvertibleToRoth'][],
+  yearConvertibleCalls: [] as Account[][],
+  ownedIraConversionTaxableFraction: [] as ReturnType<typeof vi.fn>[],
 }))
+
+const forcedSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
+      AnnualForcedDistributionQcdAndRetirementActionsPhaseResult
+    >(),
+)
+
+const aggregateSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualAggregateRothConversionPhaseInput,
+      AnnualAggregateRothConversionPhaseResult
+    >(),
+)
 
 vi.mock(
   './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualForcedDistributionQcdAndRetirementActionsPhase.js')
-    >()
-    return {
-      ...original,
-      annualForcedDistributionQcdAndRetirementActionsPhase: (
-        input: AnnualForcedDistributionQcdAndRetirementActionsPhaseInput,
+  async (importOriginal) =>
+    forcedSeam.through(
+      await importOriginal<
+        typeof import('./internal/annualForcedDistributionQcdAndRetirementActionsPhase.js')
+      >(),
+      'annualForcedDistributionQcdAndRetirementActionsPhase',
+      (
+        natural,
+        { ordinal },
       ): AnnualForcedDistributionQcdAndRetirementActionsPhaseResult => {
-        const natural =
-          original.annualForcedDistributionQcdAndRetirementActionsPhase(input)
-        const downstreamIsAggregatedIraThisYear = vi.fn(
-          natural.isAggregatedIraThisYear,
-        )
-        const returned = {
-          ...natural,
-          isAggregatedIraThisYear: downstreamIsAggregatedIraThisYear,
-        }
-        seam.forcedCalls.push({
-          input,
-          natural,
-          returned,
-          downstreamIsAggregatedIraThisYear,
-        })
-        return returned
+        const isAggregatedIraThisYear = vi.fn(natural.isAggregatedIraThisYear)
+        hostile.isAggregatedIraThisYear[ordinal] = isAggregatedIraThisYear
+        return { ...natural, isAggregatedIraThisYear }
       },
-    }
-  },
+    ),
 )
 
 vi.mock(
   './internal/annualAggregateRothConversionPhase.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualAggregateRothConversionPhase.js')
-    >()
-    return {
-      ...original,
-      annualAggregateRothConversionPhase: (
-        input: AnnualAggregateRothConversionPhaseInput,
-      ): AnnualAggregateRothConversionPhaseResult => {
-        const natural = original.annualAggregateRothConversionPhase(input)
-        const downstreamYearConvertibleCalls: Account[] = []
-        const downstreamYearConvertibleToRoth:
+  async (importOriginal) =>
+    aggregateSeam.through(
+      await importOriginal<
+        typeof import('./internal/annualAggregateRothConversionPhase.js')
+      >(),
+      'annualAggregateRothConversionPhase',
+      (natural, { ordinal }): AnnualAggregateRothConversionPhaseResult => {
+        const yearConvertibleCalls: Account[] = []
+        hostile.yearConvertibleCalls[ordinal] = yearConvertibleCalls
+        const yearConvertibleToRoth:
           AnnualAggregateRothConversionPhaseResult['yearConvertibleToRoth'] =
           (account): account is Extract<Account, { type: 'traditional' }> => {
-            downstreamYearConvertibleCalls.push(account)
+            yearConvertibleCalls.push(account)
             return natural.yearConvertibleToRoth(account)
           }
-        const downstreamOwnedIraConversionTaxableFraction = vi.fn(
+        hostile.yearConvertibleToRoth[ordinal] = yearConvertibleToRoth
+        const ownedIraConversionTaxableFraction = vi.fn(
           natural.ownedIraConversionTaxableFraction,
         )
-        const returned = {
+        hostile.ownedIraConversionTaxableFraction[ordinal] =
+          ownedIraConversionTaxableFraction
+        return {
           ...natural,
-          yearConvertibleToRoth: downstreamYearConvertibleToRoth,
-          ownedIraConversionTaxableFraction:
-            downstreamOwnedIraConversionTaxableFraction,
+          yearConvertibleToRoth,
+          ownedIraConversionTaxableFraction,
         }
-        seam.aggregateCalls.push({
-          input,
-          natural,
-          returned,
-          downstreamYearConvertibleToRoth,
-          downstreamYearConvertibleCalls,
-          downstreamOwnedIraConversionTaxableFraction,
-        })
-        return returned
       },
-    }
-  },
+    ),
 )
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+} from './simulate.seamGuard.test-support.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   cashAccount,
@@ -151,8 +149,12 @@ function plan(): Plan {
 }
 
 beforeEach(() => {
-  seam.forcedCalls.length = 0
-  seam.aggregateCalls.length = 0
+  forcedSeam.reset()
+  aggregateSeam.reset()
+  hostile.isAggregatedIraThisYear.length = 0
+  hostile.yearConvertibleToRoth.length = 0
+  hostile.yearConvertibleCalls.length = 0
+  hostile.ownedIraConversionTaxableFraction.length = 0
 })
 
 describe('simulatePlan delegates grouped annual execution phases', () => {
@@ -167,31 +169,33 @@ describe('simulatePlan delegates grouped annual execution phases', () => {
       captureOptimizerInputs: (probe) => probes.push(probe),
     })
 
-    expect(seam.forcedCalls).toHaveLength(1)
-    expect(seam.aggregateCalls).toHaveLength(1)
-    const forced = seam.forcedCalls[0]!
-    const aggregate = seam.aggregateCalls[0]!
+    const forced = expectSeamRan(forcedSeam, 1)[0]!
+    const aggregate = expectSeamRan(aggregateSeam, 1)[0]!
 
     expect(Object.isFrozen(forced.input)).toBe(true)
     expect(Object.isFrozen(forced.input.facts)).toBe(true)
     expect(forced.input.facts.plan).toBe(target)
-    expect(aggregate.input.prior).toBe(forced.returned)
-    expect(aggregate.input.prior.isAggregatedIraThisYear).toBe(
-      forced.downstreamIsAggregatedIraThisYear,
+    expectPublishedFromSeam(
+      aggregate.input.prior,
+      forced.injected,
+      "the aggregate phase's prior result",
     )
-    expect(forced.downstreamIsAggregatedIraThisYear).toHaveBeenCalled()
+    expect(aggregate.input.prior.isAggregatedIraThisYear).toBe(
+      hostile.isAggregatedIraThisYear[0],
+    )
+    expect(hostile.isAggregatedIraThisYear[0]).toHaveBeenCalled()
 
     expect(Object.isFrozen(aggregate.input)).toBe(true)
     expect(Object.isFrozen(aggregate.input.facts)).toBe(true)
     expect(aggregate.input.facts.plan).toBe(target)
-    expect(aggregate.returned.yearConvertibleToRoth).toBe(
-      aggregate.downstreamYearConvertibleToRoth,
+    expect(aggregate.injected.yearConvertibleToRoth).toBe(
+      hostile.yearConvertibleToRoth[0],
     )
-    expect(aggregate.returned.ownedIraConversionTaxableFraction).toBe(
-      aggregate.downstreamOwnedIraConversionTaxableFraction,
+    expect(aggregate.injected.ownedIraConversionTaxableFraction).toBe(
+      hostile.ownedIraConversionTaxableFraction[0],
     )
-    expect(aggregate.downstreamYearConvertibleCalls.length).toBeGreaterThan(0)
-    expect(aggregate.downstreamOwnedIraConversionTaxableFraction)
+    expect(hostile.yearConvertibleCalls[0]!.length).toBeGreaterThan(0)
+    expect(hostile.ownedIraConversionTaxableFraction[0])
       .toHaveBeenCalledWith('p1')
     expect(probes).toHaveLength(1)
   })

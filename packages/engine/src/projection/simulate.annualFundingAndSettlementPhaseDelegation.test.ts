@@ -1,4 +1,17 @@
-/** Delegation and live-result guards for the grouped funding and settlement phases. */
+/**
+ * Delegation and live-result guards for the grouped funding and settlement
+ * phases.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here. Two modules
+ * are mocked, so there is one recorder each. The settlement recorder is what
+ * motivated the helper's `wrapInput` option: this guard's proof is that the
+ * settlement phase really calls the funding callback it was handed, and the
+ * only way to watch that fire is to substitute a wrapped
+ * `callbacks.runPostContributionAnnualPass` into the argument the real phase
+ * receives. The recorded `input` stays the simulator's own frozen object, so
+ * the frozen and identity assertions below still mean what they say.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Plan } from '../model/plan.js'
@@ -11,91 +24,84 @@ import type {
   AnnualOwnedNonRothIraSettlementPhaseResult,
 } from './internal/annualOwnedNonRothIraSettlementPhase.js'
 
-interface FundingCall {
-  readonly input: AnnualFundingApplicationAndClosePhaseInput
-  readonly natural: AnnualFundingApplicationAndClosePhaseResult
-  readonly returned: AnnualFundingApplicationAndClosePhaseResult
-}
+const settlementSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualOwnedNonRothIraSettlementPhaseInput,
+      AnnualOwnedNonRothIraSettlementPhaseResult,
+      AnnualFundingApplicationAndClosePhaseResult[]
+    >(),
+)
 
-interface SettlementCall {
-  readonly input: AnnualOwnedNonRothIraSettlementPhaseInput
-  readonly callbackResults: AnnualFundingApplicationAndClosePhaseResult[]
-  readonly natural: AnnualOwnedNonRothIraSettlementPhaseResult
-  readonly returned: AnnualOwnedNonRothIraSettlementPhaseResult
-}
-
-const seam = vi.hoisted(() => ({
-  fundingCalls: [] as FundingCall[],
-  settlementCalls: [] as SettlementCall[],
-}))
+const fundingSeam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualFundingApplicationAndClosePhaseInput,
+      AnnualFundingApplicationAndClosePhaseResult
+    >(),
+)
 
 vi.mock(
   './internal/annualFundingApplicationAndClosePhase.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualFundingApplicationAndClosePhase.js')
-    >()
-    return {
-      ...original,
-      annualFundingApplicationAndClosePhase: (
-        input: AnnualFundingApplicationAndClosePhaseInput,
-      ): AnnualFundingApplicationAndClosePhaseResult => {
-        const natural = original.annualFundingApplicationAndClosePhase(input)
-        const returned = {
-          yearResult: Object.freeze({ ...natural.yearResult }),
-          optimizerProbe: natural.optimizerProbe === null
-            ? null
-            : Object.freeze({ ...natural.optimizerProbe }),
-        }
-        seam.fundingCalls.push({ input, natural, returned })
-        return returned
-      },
-    }
-  },
+  async (importOriginal) =>
+    fundingSeam.through(
+      await importOriginal<
+        typeof import('./internal/annualFundingApplicationAndClosePhase.js')
+      >(),
+      'annualFundingApplicationAndClosePhase',
+      (natural): AnnualFundingApplicationAndClosePhaseResult => ({
+        yearResult: Object.freeze({ ...natural.yearResult }),
+        optimizerProbe: natural.optimizerProbe === null
+          ? null
+          : Object.freeze({ ...natural.optimizerProbe }),
+      }),
+    ),
 )
 
 vi.mock(
   './internal/annualOwnedNonRothIraSettlementPhase.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualOwnedNonRothIraSettlementPhase.js')
-    >()
-    return {
-      ...original,
-      annualOwnedNonRothIraSettlementPhase: (
-        input: AnnualOwnedNonRothIraSettlementPhaseInput,
-      ): AnnualOwnedNonRothIraSettlementPhaseResult => {
-        const callbackResults: AnnualFundingApplicationAndClosePhaseResult[] = []
-        const natural = original.annualOwnedNonRothIraSettlementPhase(
-          Object.freeze({
-            ...input,
-            callbacks: Object.freeze({
-              ...input.callbacks,
-              runPostContributionAnnualPass: (
-                ...args: Parameters<
-                  AnnualOwnedNonRothIraSettlementPhaseInput['callbacks']['runPostContributionAnnualPass']
-                >
-              ) => {
-                const result = input.callbacks.runPostContributionAnnualPass(...args)
-                callbackResults.push(result)
-                return result
-              },
-            }),
+  async (importOriginal) =>
+    settlementSeam.through(
+      await importOriginal<
+        typeof import('./internal/annualOwnedNonRothIraSettlementPhase.js')
+      >(),
+      'annualOwnedNonRothIraSettlementPhase',
+      (natural): AnnualOwnedNonRothIraSettlementPhaseResult => ({
+        yearResult: Object.freeze({ ...natural.yearResult }),
+        optimizerProbe: natural.optimizerProbe === null
+          ? null
+          : Object.freeze({ ...natural.optimizerProbe }),
+      }),
+      {
+        capture: () => [] as AnnualFundingApplicationAndClosePhaseResult[],
+        wrapInput: (input, callbackResults) => Object.freeze({
+          ...input,
+          callbacks: Object.freeze({
+            ...input.callbacks,
+            runPostContributionAnnualPass: (
+              ...args: Parameters<
+                AnnualOwnedNonRothIraSettlementPhaseInput['callbacks']['runPostContributionAnnualPass']
+              >
+            ) => {
+              const result = input.callbacks.runPostContributionAnnualPass(...args)
+              callbackResults.push(result)
+              return result
+            },
           }),
-        )
-        const returned = {
-          yearResult: Object.freeze({ ...natural.yearResult }),
-          optimizerProbe: natural.optimizerProbe === null
-            ? null
-            : Object.freeze({ ...natural.optimizerProbe }),
-        }
-        seam.settlementCalls.push({ input, callbackResults, natural, returned })
-        return returned
+        }),
       },
-    }
-  },
+    ),
 )
 
+import {
+  expectPublishedFromSeam,
+  expectSeamRan,
+  expectSeamRanAtLeastOnce,
+} from './simulate.seamGuard.test-support.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   cashAccount,
@@ -126,8 +132,8 @@ function plan(): Plan {
 }
 
 beforeEach(() => {
-  seam.fundingCalls.length = 0
-  seam.settlementCalls.length = 0
+  fundingSeam.reset()
+  settlementSeam.reset()
 })
 
 describe('simulatePlan delegates grouped funding and settlement phases', () => {
@@ -142,27 +148,30 @@ describe('simulatePlan delegates grouped funding and settlement phases', () => {
       captureOptimizerInputs: (probe) => probes.push(probe),
     })
 
-    expect(seam.settlementCalls).toHaveLength(1)
-    expect(seam.fundingCalls.length).toBeGreaterThan(0)
-    const settlement = seam.settlementCalls[0]!
+    const fundingCalls = expectSeamRanAtLeastOnce(fundingSeam)
+    const settlement = expectSeamRan(settlementSeam, 1)[0]!
 
     expect(Object.isFrozen(settlement.input)).toBe(true)
     expect(Object.isFrozen(settlement.input.facts)).toBe(true)
     expect(Object.isFrozen(settlement.input.callbacks)).toBe(true)
     expect(settlement.input.facts.plan).toBe(target)
-    expect(settlement.callbackResults.length).toBeGreaterThan(0)
-    expect(settlement.callbackResults.every((result) =>
-      seam.fundingCalls.some((call) => call.returned === result))).toBe(true)
+    expect(settlement.captured.length).toBeGreaterThan(0)
+    expect(settlement.captured.every((result) =>
+      fundingCalls.some((call) => call.injected === result))).toBe(true)
 
-    for (const funding of seam.fundingCalls) {
+    for (const funding of fundingCalls) {
       expect(Object.isFrozen(funding.input)).toBe(true)
       expect(Object.isFrozen(funding.input.facts)).toBe(true)
       expect(funding.input.facts.plan).toBe(target)
     }
 
-    expect(projection.years[0]).toBe(settlement.returned.yearResult)
-    expect(settlement.returned.optimizerProbe).not.toBeNull()
-    expect(probes).toEqual([settlement.returned.optimizerProbe])
+    expectPublishedFromSeam(
+      projection.years[0],
+      settlement.injected.yearResult,
+      'the published year result',
+    )
+    expect(settlement.injected.optimizerProbe).not.toBeNull()
+    expect(probes).toEqual([settlement.injected.optimizerProbe])
   })
 
   it("hands the funding phase the simulator's own scalar cells, not copies", () => {
@@ -172,8 +181,8 @@ describe('simulatePlan delegates grouped funding and settlement phases', () => {
       taxCalculator: createFlatTaxCalculator(0),
     })
 
-    const settlement = seam.settlementCalls[0]!
-    const funding = seam.fundingCalls[0]!
+    const settlement = expectSeamRan(settlementSeam, 1)[0]!
+    const funding = expectSeamRanAtLeastOnce(fundingSeam)[0]!
 
     // The ten money-bearing scalars the funding-and-close phase writes are the
     // very bindings the annual-pass transaction rolls back, so a phase write

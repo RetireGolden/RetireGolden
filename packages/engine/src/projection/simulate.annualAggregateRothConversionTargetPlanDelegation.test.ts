@@ -1,4 +1,9 @@
-/** Hostile delegation guard for aggregate Roth-conversion target planning. */
+/**
+ * Hostile delegation guard for aggregate Roth-conversion target planning.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -8,78 +13,79 @@ import type {
 
 type Mode = 'original' | 'economic' | 'acaGetter' | 'taxableFunction'
 
-interface TargetEvent {
-  readonly input: AnnualAggregateRothConversionTargetPlanInput
-  readonly original: AnnualAggregateRothConversionTargetPlanResult
-  readonly output: AnnualAggregateRothConversionTargetPlanResult
-  readonly sourcesAtCall: ReturnType<
+interface TargetCapture {
+  readonly sources: ReturnType<
     AnnualAggregateRothConversionTargetPlanInput['readSources']
   >
-  readonly liquidAtCall: readonly number[]
+  readonly liquid: readonly number[]
 }
 
 const SENTINEL_DESIRED = 1_234.56
 const SENTINEL_WARNING = 'delegated aggregate conversion target warning'
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   mode: 'original' as Mode,
-  events: [] as TargetEvent[],
   acaReads: 0,
   taxableCalls: [] as number[],
 }))
 
-vi.mock('./internal/annualAggregateRothConversionTargetPlan.js', async (
-  importOriginal,
-) => {
-  const original = await importOriginal<
-    typeof import('./internal/annualAggregateRothConversionTargetPlan.js')
-  >()
-  return {
-    ...original,
-    annualAggregateRothConversionTargetPlan: (
-      input: Parameters<
-        typeof original.annualAggregateRothConversionTargetPlan
-      >[0],
-    ): ReturnType<
-      typeof original.annualAggregateRothConversionTargetPlan
-    > => {
-      const production = original.annualAggregateRothConversionTargetPlan(input)
-      let output: AnnualAggregateRothConversionTargetPlanResult = production
-      if (seam.mode === 'economic') {
-        output = {
-          ...production,
-          desiredPlanDollars: SENTINEL_DESIRED,
-          warnings: [SENTINEL_WARNING],
-          fillToTargetSelected: true,
-        }
-      } else if (seam.mode === 'acaGetter') {
-        output = {
-          ...production,
-          get acaSizingInput() {
-            seam.acaReads += 1
-            return production.acaSizingInput
-          },
-        }
-      } else if (seam.mode === 'taxableFunction') {
-        output = {
-          ...production,
-          taxableAmountForGross: (grossPlanDollars) => {
-            seam.taxableCalls.push(grossPlanDollars)
-            return grossPlanDollars / 4
-          },
-        }
-      }
-      seam.events.push({
-        input,
-        original: production,
-        output,
-        sourcesAtCall: input.readSources(),
-        liquidAtCall: input.safetyNet.readSpendableLiquidBalances(),
-      })
-      return output
-    },
-  }
-})
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualAggregateRothConversionTargetPlanInput,
+      AnnualAggregateRothConversionTargetPlanResult,
+      TargetCapture
+    >(),
+)
 
+vi.mock(
+  './internal/annualAggregateRothConversionTargetPlan.js',
+  async (importOriginal) =>
+    seam.through(
+      await importOriginal<
+        typeof import('./internal/annualAggregateRothConversionTargetPlan.js')
+      >(),
+      'annualAggregateRothConversionTargetPlan',
+      (natural): AnnualAggregateRothConversionTargetPlanResult => {
+        if (hostile.mode === 'economic') {
+          return {
+            ...natural,
+            desiredPlanDollars: SENTINEL_DESIRED,
+            warnings: [SENTINEL_WARNING],
+            fillToTargetSelected: true,
+          }
+        }
+        if (hostile.mode === 'acaGetter') {
+          return {
+            ...natural,
+            get acaSizingInput() {
+              hostile.acaReads += 1
+              return natural.acaSizingInput
+            },
+          }
+        }
+        if (hostile.mode === 'taxableFunction') {
+          return {
+            ...natural,
+            taxableAmountForGross: (grossPlanDollars) => {
+              hostile.taxableCalls.push(grossPlanDollars)
+              return grossPlanDollars / 4
+            },
+          }
+        }
+        return natural
+      },
+      {
+        capture: (input) => ({
+          sources: input.readSources(),
+          liquid: input.safetyNet.readSpendableLiquidBalances(),
+        }),
+      },
+    ),
+)
+
+import { expectSeamRanAtLeastOnce } from './simulate.seamGuard.test-support.js'
 import type { Account, Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
@@ -131,31 +137,29 @@ function run(
   target = plan(),
   captureOptimizerInputs?: (probe: OptimizerYearProbe) => void,
 ) {
-  seam.mode = mode
-  seam.events.length = 0
-  seam.acaReads = 0
-  seam.taxableCalls.length = 0
-  const result = simulatePlan(target, {
+  hostile.mode = mode
+  seam.reset()
+  hostile.acaReads = 0
+  hostile.taxableCalls.length = 0
+  return simulatePlan(target, {
     startYear: YEAR,
     horizonEndYear: YEAR,
     taxCalculator: noTax,
     captureOptimizerInputs,
   })
-  return { result, events: [...seam.events] }
 }
 
 beforeEach(() => {
-  seam.mode = 'original'
-  seam.events.length = 0
-  seam.acaReads = 0
-  seam.taxableCalls.length = 0
+  hostile.mode = 'original'
+  seam.reset()
+  hostile.acaReads = 0
+  hostile.taxableCalls.length = 0
 })
 
 describe('simulatePlan delegates aggregate Roth-conversion target planning', () => {
   it('passes frozen annual snapshots and commits the delegated target, warnings, and fill-target signal', () => {
-    const { result, events } = run('economic')
-    const event = events.at(-1)
-    if (event === undefined) throw new Error('target coordinator was not called')
+    const result = run('economic')
+    const event = expectSeamRanAtLeastOnce(seam).at(-1)!
 
     expect(Object.isFrozen(event.input)).toBe(true)
     expect(Object.isFrozen(event.input.sizing)).toBe(true)
@@ -166,12 +170,12 @@ describe('simulatePlan delegates aggregate Roth-conversion target planning', () 
       conversions: [{ year: YEAR, amount: 5_000 }],
     })
     expect(event.input.namedConversionActionCount).toBe(0)
-    expect(event.sourcesAtCall).toEqual([
+    expect(event.captured.sources).toEqual([
       { balancePlanDollars: 0, convertible: false, taxableFraction: 1 },
       { balancePlanDollars: 100_000, convertible: true, taxableFraction: 1 },
       { balancePlanDollars: 0, convertible: false, taxableFraction: 1 },
     ])
-    expect(event.liquidAtCall).toEqual([0])
+    expect(event.captured.liquid).toEqual([0])
     expect(result.years[0]!.aggregateRothConversionAllocationDesired)
       .toBe(SENTINEL_DESIRED)
     expect(result.years[0]!.rothConversion).toBe(SENTINEL_DESIRED)
@@ -191,7 +195,7 @@ describe('simulatePlan delegates aggregate Roth-conversion target planning', () 
 
     run('acaGetter', validatePlan(target))
 
-    expect(seam.acaReads).toBeGreaterThan(0)
+    expect(hostile.acaReads).toBeGreaterThan(0)
   })
 
   it('uses the delegated then-current taxable-gross translator in optimizer probes', () => {
@@ -202,8 +206,8 @@ describe('simulatePlan delegates aggregate Roth-conversion target planning', () 
 
     run('taxableFunction', validatePlan(target), (probe) => probes.push(probe))
 
-    expect(seam.taxableCalls.length).toBeGreaterThan(0)
-    expect(seam.taxableCalls.at(-1)).toBeGreaterThan(0)
+    expect(hostile.taxableCalls.length).toBeGreaterThan(0)
+    expect(hostile.taxableCalls.at(-1)).toBeGreaterThan(0)
     expect(probes[0]!.rothConversionTaxableFraction).toBe(0.25)
   })
 })

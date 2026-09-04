@@ -12,6 +12,9 @@
  * An empty-omit counterfactual re-enters the
  * annual pass and proves the pre-pass contribution prefix is neither replanned
  * nor applied twice.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -23,11 +26,6 @@ import type {
   AnnualContributionsAndEmployerMatchInput,
   AnnualContributionsAndEmployerMatchResult,
 } from './internal/annualContributionsAndEmployerMatch.js'
-
-interface CallRecord {
-  readonly input: AnnualContributionsAndEmployerMatchInput
-  readonly result: AnnualContributionsAndEmployerMatchResult
-}
 
 const contributionRecords: readonly RecordedContribution[] = [
   {
@@ -68,8 +66,7 @@ const signedZeroBasisRecord: Readonly<RecordedContribution> = {
   credited: 0,
 }
 
-const seam = vi.hoisted(() => ({
-  calls: [] as CallRecord[],
+const hostile = vi.hoisted(() => ({
   recordedContributions: [] as RecordedContribution[],
   recordedMatches: [] as RecordedEmployerMatch[],
   fault: null as null | 'wrongPosition' | 'staleBalance' | 'staleBasis' |
@@ -89,17 +86,28 @@ const seam = vi.hoisted(() => ({
   },
 }))
 
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualContributionsAndEmployerMatchInput,
+      AnnualContributionsAndEmployerMatchResult
+    >(),
+)
+
 vi.mock(
   './internal/annualContributionsAndEmployerMatch.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualContributionsAndEmployerMatch.js')
-    >()
-    return {
-      ...original,
-      annualContributionsAndEmployerMatch: (
-        input: AnnualContributionsAndEmployerMatchInput,
-      ) => {
+  async (importOriginal) =>
+    seam.through(
+      await importOriginal<
+        typeof import('./internal/annualContributionsAndEmployerMatch.js')
+      >(),
+      'annualContributionsAndEmployerMatch',
+      (
+        _natural,
+        { input },
+      ): AnnualContributionsAndEmployerMatchResult => {
         let result: AnnualContributionsAndEmployerMatchResult =
           input.year === 2026
             ? {
@@ -284,8 +292,8 @@ vi.mock(
                 },
                 employerAllocationByOwner: new Map(),
               }
-        if (input.year === 2026 && seam.fault !== null) {
-          if (seam.fault === 'lateIterator') {
+        if (input.year === 2026 && hostile.fault !== null) {
+          if (hostile.fault === 'lateIterator') {
             const operations = result.operations
             result = {
               ...result,
@@ -298,7 +306,7 @@ vi.mock(
                 },
               } as unknown as typeof result.operations,
             }
-          } else if (seam.fault === 'coordinatedOmitZero') {
+          } else if (hostile.fault === 'coordinatedOmitZero') {
             const omittedIndex = result.operations.findIndex((operation) =>
               operation.kind === 'contribution' && operation.credited === 0
             )
@@ -311,7 +319,7 @@ vi.mock(
                 (_, index) => index !== omittedIndex,
               ),
             }
-          } else if (seam.fault === 'coordinatedInsertWarning') {
+          } else if (hostile.fault === 'coordinatedInsertWarning') {
             result = {
               ...result,
               operations: [
@@ -323,7 +331,7 @@ vi.mock(
                 ...result.operationIdentities,
               ],
             }
-          } else if (seam.fault === 'omitWholeContributionDecision') {
+          } else if (hostile.fault === 'omitWholeContributionDecision') {
             const omittedIndex = result.operations.findIndex((operation) =>
               operation.kind === 'contribution' && operation.credited === 0
             )
@@ -340,7 +348,7 @@ vi.mock(
                   (_, index) => index !== omittedIndex,
                 ),
             }
-          } else if (seam.fault === 'duplicateContributionIndex') {
+          } else if (hostile.fault === 'duplicateContributionIndex') {
             const duplicateIndex = result.operations.findIndex((operation) =>
               operation.kind === 'contribution' && operation.credited === 0
             )
@@ -371,7 +379,7 @@ vi.mock(
                     : identity,
                 ),
             }
-          } else if (seam.fault === 'changingGetters') {
+          } else if (hostile.fault === 'changingGetters') {
             result = {
               ...result,
               operations: result.operations.map((operation) => {
@@ -387,8 +395,8 @@ vi.mock(
                 return {
                   ...operation,
                   get retirementOccurrence() {
-                    seam.changingGetterReads.retirementOccurrence++
-                    return seam.changingGetterReads.retirementOccurrence === 1
+                    hostile.changingGetterReads.retirementOccurrence++
+                    return hostile.changingGetterReads.retirementOccurrence === 1
                       ? sourceOccurrence
                       : {
                           ...sourceOccurrence,
@@ -399,8 +407,8 @@ vi.mock(
                   retirementApplication: {
                     ...sourceApplication,
                     get applicationKind(): 'credit' {
-                      seam.changingGetterReads.applicationKind++
-                      return (seam.changingGetterReads.applicationKind === 1
+                      hostile.changingGetterReads.applicationKind++
+                      return (hostile.changingGetterReads.applicationKind === 1
                         ? 'credit'
                         : 'debit') as 'credit'
                     },
@@ -416,8 +424,8 @@ vi.mock(
                   return {
                     balanceIndex: identity.balanceIndex,
                     get kind(): 'contribution' {
-                      seam.changingGetterReads.identityKind++
-                      return (seam.changingGetterReads.identityKind === 1
+                      hostile.changingGetterReads.identityKind++
+                      return (hostile.changingGetterReads.identityKind === 1
                         ? 'contribution'
                         : 'warning') as 'contribution'
                     },
@@ -425,7 +433,7 @@ vi.mock(
                 },
               ),
             }
-          } else if (seam.fault === 'nonCreditApplication') {
+          } else if (hostile.fault === 'nonCreditApplication') {
             result = {
               ...result,
               operations: result.operations.map((operation) =>
@@ -441,7 +449,7 @@ vi.mock(
                   : operation
               ),
             }
-          } else if (seam.fault === 'wrongIdentity') {
+          } else if (hostile.fault === 'wrongIdentity') {
             result = {
               ...result,
               operationIdentities: result.operationIdentities.map(
@@ -450,7 +458,7 @@ vi.mock(
                   : identity,
               ),
             }
-          } else if (seam.fault === 'postMatchWarning') {
+          } else if (hostile.fault === 'postMatchWarning') {
             const warningIndex = 3
             const reorder = <T,>(rows: readonly T[]): readonly T[] => [
               ...rows.slice(0, warningIndex),
@@ -464,7 +472,7 @@ vi.mock(
               expectedOperationIdentities:
                 reorder(result.expectedOperationIdentities),
             }
-          } else if (seam.fault === 'badContributionMath') {
+          } else if (hostile.fault === 'badContributionMath') {
             result = {
               ...result,
               operations: result.operations.map((operation) =>
@@ -474,7 +482,7 @@ vi.mock(
                   : operation
               ),
             }
-          } else if (seam.fault === 'duplicateMatchIdentity') {
+          } else if (hostile.fault === 'duplicateMatchIdentity') {
             result = {
               ...result,
               operations: result.operations.map((operation, index) =>
@@ -502,7 +510,7 @@ vi.mock(
                       : identity,
                 ),
             }
-          } else if (seam.fault === 'badMatchMath') {
+          } else if (hostile.fault === 'badMatchMath') {
             result = {
               ...result,
               operations: result.operations.map((operation, index) =>
@@ -512,18 +520,18 @@ vi.mock(
                   : operation
               ),
             }
-          } else if (seam.fault === 'truncate') {
+          } else if (hostile.fault === 'truncate') {
             result = {
               ...result,
               operations: result.operations.slice(0, -1),
             }
-          } else if (seam.fault === 'emptyNonzero') {
+          } else if (hostile.fault === 'emptyNonzero') {
             result = {
               ...result,
               operations: [],
               operationIdentities: [],
             }
-          } else if (seam.fault === 'inconsistentTotal') {
+          } else if (hostile.fault === 'inconsistentTotal') {
             result = {
               ...result,
               totals: {
@@ -531,7 +539,7 @@ vi.mock(
                 contributions: result.totals.contributions + 1,
               },
             }
-          } else if (seam.fault === 'duplicateExpectedContributionIndex') {
+          } else if (hostile.fault === 'duplicateExpectedContributionIndex') {
             result = {
               ...result,
               expectedContributionBalanceIndices: [
@@ -539,7 +547,7 @@ vi.mock(
                 result.expectedContributionBalanceIndices[0]!,
               ],
             }
-          } else if (seam.fault === 'totalsGetter') {
+          } else if (hostile.fault === 'totalsGetter') {
             const totals = result.totals
             result = {
               ...result,
@@ -556,7 +564,7 @@ vi.mock(
                 },
               },
             }
-          } else if (seam.fault === 'allocationGetter') {
+          } else if (hostile.fault === 'allocationGetter') {
             result = {
               ...result,
               employerAllocationByOwner: {
@@ -570,7 +578,7 @@ vi.mock(
               ...result,
               operations: result.operations.map((operation) => {
                 if (
-                  seam.fault === 'lateWarningGetter' &&
+                  hostile.fault === 'lateWarningGetter' &&
                   operation.kind === 'warning' &&
                   operation.message.startsWith('later')
                 ) {
@@ -582,7 +590,7 @@ vi.mock(
                   }
                 }
                 if (
-                  seam.fault === 'lateNestedGetter' &&
+                  hostile.fault === 'lateNestedGetter' &&
                   operation.kind === 'employerMatch' &&
                   operation.balanceIndex === 2
                 ) {
@@ -599,7 +607,7 @@ vi.mock(
                   }
                 }
               if (
-                seam.fault === 'signedZero' &&
+                hostile.fault === 'signedZero' &&
                 operation.kind === 'contribution' &&
                 operation.balanceIndex === 1
               ) {
@@ -609,7 +617,7 @@ vi.mock(
                 }
               }
               if (
-                seam.fault === 'signedZeroBasis' &&
+                hostile.fault === 'signedZeroBasis' &&
                 operation.kind === 'contribution' &&
                 operation.balanceIndex === 2
               ) {
@@ -623,24 +631,22 @@ vi.mock(
               if (operation.kind !== 'contribution' || operation.balanceIndex !== 2) {
                 return operation
               }
-              if (seam.fault === 'wrongPosition') {
+              if (hostile.fault === 'wrongPosition') {
                 return { ...operation, sourceAccount: input.balances[3]!.account }
               }
-              if (seam.fault === 'staleBalance') {
+              if (hostile.fault === 'staleBalance') {
                 return { ...operation, balanceBefore: operation.balanceBefore + 1 }
               }
-              return seam.fault === 'staleBasis'
+              return hostile.fault === 'staleBasis'
                 ? { ...operation, costBasisBefore: operation.costBasisBefore + 1 }
                 : operation
               }),
             }
           }
         }
-        seam.calls.push({ input, result })
         return result
       },
-    }
-  },
+    ),
 )
 
 vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
@@ -654,13 +660,13 @@ vi.mock('./annualCashFlowYearSites.js', async (importOriginal) => {
         get(target, prop) {
           if (prop === 'recordContribution') {
             return (row: RecordedContribution) => {
-              seam.recordedContributions.push(row)
+              hostile.recordedContributions.push(row)
               target.recordContribution(row)
             }
           }
           if (prop === 'recordEmployerMatch') {
             return (row: RecordedEmployerMatch) => {
-              seam.recordedMatches.push(row)
+              hostile.recordedMatches.push(row)
               target.recordEmployerMatch(row)
             }
           }
@@ -725,10 +731,10 @@ function plan(): Plan {
 
 describe('simulatePlan delegates annual contributions and employer match', () => {
   it('applies the exact hostile operation stream once across annual-pass re-entry', () => {
-    seam.calls.length = 0
-    seam.recordedContributions.length = 0
-    seam.recordedMatches.length = 0
-    seam.fault = null
+    seam.reset()
+    hostile.recordedContributions.length = 0
+    hostile.recordedMatches.length = 0
+    hostile.fault = null
     const counterfactuals: CounterfactualAnnualLiabilityResult[] = []
     const fixturePlan = plan()
     const requiredContributionPublications = fixturePlan.accounts.filter(
@@ -772,12 +778,12 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
     // These cardinalities come only from authored fixture accounts. They do
     // not read helper operations or either helper identity channel, so deleting
     // an entire helper decision site still loses a required publication.
-    expect(seam.recordedContributions)
+    expect(hostile.recordedContributions)
       .toHaveLength(requiredContributionPublications)
-    expect(seam.recordedMatches).toHaveLength(requiredMatchPublications)
-    expect(new Set(seam.recordedContributions).size).toBe(4)
-    expect(new Set(seam.recordedMatches).size).toBe(2)
-    expect(seam.recordedContributions).toEqual([
+    expect(hostile.recordedMatches).toHaveLength(requiredMatchPublications)
+    expect(new Set(hostile.recordedContributions).size).toBe(4)
+    expect(new Set(hostile.recordedMatches).size).toBe(2)
+    expect(hostile.recordedContributions).toEqual([
       contributionRecords[0],
       contributionRecords[1],
       signedZeroBasisRecord,
@@ -790,16 +796,16 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
       contributionRecords[2],
     ]
     for (let index = 0; index < expectedContributionRecords.length; index++) {
-      expect(seam.recordedContributions[index])
+      expect(hostile.recordedContributions[index])
         .toEqual(expectedContributionRecords[index])
-      expect(seam.recordedContributions[index])
+      expect(hostile.recordedContributions[index])
         .not.toBe(expectedContributionRecords[index])
     }
     for (let index = 0; index < matchRecords.length; index++) {
-      expect(seam.recordedMatches[index]).toEqual(matchRecords[index])
-      expect(seam.recordedMatches[index]).not.toBe(matchRecords[index])
+      expect(hostile.recordedMatches[index]).toEqual(matchRecords[index])
+      expect(hostile.recordedMatches[index]).not.toBe(matchRecords[index])
     }
-    expect(seam.recordedContributions.map((row) => row.destinationAccountId))
+    expect(hostile.recordedContributions.map((row) => row.destinationAccountId))
       .toEqual([
         'duplicate-publication-id',
         'duplicate-publication-id',
@@ -876,10 +882,10 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
       'Annual contribution operation has a stale live cost basis',
     ],
   ])('fails closed before publishing a %s operation', (fault, message) => {
-    seam.calls.length = 0
-    seam.recordedContributions.length = 0
-    seam.recordedMatches.length = 0
-    seam.fault = fault
+    seam.reset()
+    hostile.recordedContributions.length = 0
+    hostile.recordedMatches.length = 0
+    hostile.fault = fault
 
     expect(() => simulatePlan(plan(), {
       startYear: 2026,
@@ -888,9 +894,9 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
       captureAnnualCashFlow: true,
     })).toThrow(message)
 
-    expect(seam.recordedContributions).toEqual([])
-    expect(seam.recordedMatches).toEqual([])
-    seam.fault = null
+    expect(hostile.recordedContributions).toEqual([])
+    expect(hostile.recordedMatches).toEqual([])
+    hostile.fault = null
   })
 
   it.each([
@@ -949,10 +955,10 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
   ])(
     'materializes and reconciles %s before any caller-owned effect',
     (fault, message) => {
-      seam.calls.length = 0
-      seam.recordedContributions.length = 0
-      seam.recordedMatches.length = 0
-      seam.fault = fault
+      seam.reset()
+      hostile.recordedContributions.length = 0
+      hostile.recordedMatches.length = 0
+      hostile.fault = fault
 
       expect(() => simulatePlan(plan(), {
         startYear: 2026,
@@ -961,20 +967,20 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
         captureAnnualCashFlow: true,
       })).toThrow(message)
 
-      expect(seam.recordedContributions).toEqual([])
-      expect(seam.recordedMatches).toEqual([])
-      seam.fault = null
+      expect(hostile.recordedContributions).toEqual([])
+      expect(hostile.recordedMatches).toEqual([])
+      hostile.fault = null
     },
   )
 
   it('snapshots changing nested getters exactly once without a hybrid payload', () => {
-    seam.calls.length = 0
-    seam.recordedContributions.length = 0
-    seam.recordedMatches.length = 0
-    seam.changingGetterReads.retirementOccurrence = 0
-    seam.changingGetterReads.applicationKind = 0
-    seam.changingGetterReads.identityKind = 0
-    seam.fault = 'changingGetters'
+    seam.reset()
+    hostile.recordedContributions.length = 0
+    hostile.recordedMatches.length = 0
+    hostile.changingGetterReads.retirementOccurrence = 0
+    hostile.changingGetterReads.applicationKind = 0
+    hostile.changingGetterReads.identityKind = 0
+    hostile.fault = 'changingGetters'
 
     const year = simulatePlan(plan(), {
       startYear: 2026,
@@ -983,7 +989,7 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
       captureAnnualCashFlow: true,
     }).years[0]!
 
-    expect(seam.changingGetterReads).toEqual({
+    expect(hostile.changingGetterReads).toEqual({
       retirementOccurrence: 1,
       applicationKind: 1,
       identityKind: 1,
@@ -999,6 +1005,6 @@ describe('simulatePlan delegates annual contributions and employer match', () =>
         applicationKind: 'credit',
         producerOccurrenceKey: 'a-sentinel-contribution',
       }))
-    seam.fault = null
+    hostile.fault = null
   })
 })

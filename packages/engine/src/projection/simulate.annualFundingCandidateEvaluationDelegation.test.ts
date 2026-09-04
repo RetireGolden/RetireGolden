@@ -5,6 +5,9 @@
  * required-need, healthcare, HSA-cap, and warning-gate values. Independent
  * ledger and warning observations fail if simulatePlan calls the coordinator
  * but reconstructs any of those outputs locally.
+ *
+ * Scaffolding and the policy behind it live in
+ * `simulate.seamGuard.test-support.ts`; the sentinels stay here.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -14,17 +17,20 @@ import type {
   AnnualFundingCandidateWithdrawalPlan,
 } from './internal/annualFundingCandidateEvaluation.js'
 
-interface CandidateCall {
-  readonly input: AnnualFundingCandidateEvaluationInput<AnnualFundingCandidateWithdrawalPlan>
-  readonly original: AnnualFundingCandidateEvaluationResult<AnnualFundingCandidateWithdrawalPlan>
-  readonly output: AnnualFundingCandidateEvaluationResult<AnnualFundingCandidateWithdrawalPlan>
-}
-
-const seam = vi.hoisted(() => ({
+const hostile = vi.hoisted(() => ({
   inject: false,
-  calls: [] as CandidateCall[],
   withdrawalEffectsInputs: [] as unknown[],
 }))
+
+const seam = await vi.hoisted(
+  async () =>
+    (
+      await import('./simulate.seamGuard.test-support.js')
+    ).createSeamRecorder<
+      AnnualFundingCandidateEvaluationInput<AnnualFundingCandidateWithdrawalPlan>,
+      AnnualFundingCandidateEvaluationResult<AnnualFundingCandidateWithdrawalPlan>
+    >(),
+)
 
 vi.mock(
   './internal/annualFundingWithdrawalEffects.js',
@@ -37,7 +43,7 @@ vi.mock(
       annualFundingWithdrawalEffects: (
         input: Parameters<typeof original.annualFundingWithdrawalEffects>[0],
       ) => {
-        seam.withdrawalEffectsInputs.push(input)
+        hostile.withdrawalEffectsInputs.push(input)
         return original.annualFundingWithdrawalEffects(input)
       },
     }
@@ -46,19 +52,18 @@ vi.mock(
 
 vi.mock(
   './internal/annualFundingCandidateEvaluation.js',
-  async (importOriginal) => {
-    const original = await importOriginal<
-      typeof import('./internal/annualFundingCandidateEvaluation.js')
-    >()
-    return {
-      ...original,
-      annualFundingCandidateEvaluation: (
-        input: AnnualFundingCandidateEvaluationInput<AnnualFundingCandidateWithdrawalPlan>,
-      ) => {
-        const production = original.annualFundingCandidateEvaluation(input)
-        const output = seam.inject
+  async (importOriginal) =>
+    seam.through(
+      await importOriginal<
+        typeof import('./internal/annualFundingCandidateEvaluation.js')
+      >(),
+      'annualFundingCandidateEvaluation',
+      (
+        natural,
+      ): AnnualFundingCandidateEvaluationResult<AnnualFundingCandidateWithdrawalPlan> =>
+        hostile.inject
           ? {
-              ...production,
+              ...natural,
               tax: 321,
               penalties: 123,
               requiredNeed: 444,
@@ -66,12 +71,8 @@ vi.mock(
               hsaQualifiedCap: 70,
               traditionalEarlyWithdrawalPenaltyCharged: true,
             }
-          : production
-        seam.calls.push({ input, original: production, output })
-        return output
-      },
-    }
-  },
+          : natural,
+    ),
 )
 
 import { cashAccount, singlePersonPlan, validatePlan } from '../testing/planFixtures.js'
@@ -82,9 +83,9 @@ const START_YEAR = 2026
 const zeroTax: TaxCalculator = { compute: () => 0 }
 
 beforeEach(() => {
-  seam.inject = false
-  seam.calls.length = 0
-  seam.withdrawalEffectsInputs.length = 0
+  hostile.inject = false
+  hostile.withdrawalEffectsInputs.length = 0
+  seam.reset()
 })
 
 describe('simulatePlan annual funding candidate-evaluation delegation', () => {
@@ -107,7 +108,7 @@ describe('simulatePlan annual funding candidate-evaluation delegation', () => {
     plan.assumptions.inflationPct = 0
     plan.assumptions.defaultReturnPct = 0
 
-    seam.inject = true
+    hostile.inject = true
     const result = simulatePlan(validatePlan(plan), {
       startYear: START_YEAR,
       horizonEndYear: START_YEAR,
@@ -116,7 +117,7 @@ describe('simulatePlan annual funding candidate-evaluation delegation', () => {
     const year = result.years[0]!
 
     expect(seam.calls.length).toBeGreaterThanOrEqual(2)
-    expect(seam.calls.every((call) => call.output !== call.original)).toBe(true)
+    expect(seam.calls.every((call) => call.injected !== call.natural)).toBe(true)
     expect(seam.calls.every((call) =>
       Object.isFrozen(call.input) &&
       Object.isFrozen(call.input.taxInputBase) &&
@@ -126,10 +127,10 @@ describe('simulatePlan annual funding candidate-evaluation delegation', () => {
     expect(seam.calls.some((call) =>
       call.input.request.need === 444 &&
       call.input.withdrawalPlan.byCategory.cash === 444 &&
-      call.original.withdrawalPlan === call.input.withdrawalPlan
+      call.natural.withdrawalPlan === call.input.withdrawalPlan
     )).toBe(true)
-    expect(seam.withdrawalEffectsInputs).toHaveLength(seam.calls.length + 1)
-    expect(seam.withdrawalEffectsInputs.at(-1)).toMatchObject({
+    expect(hostile.withdrawalEffectsInputs).toHaveLength(seam.calls.length + 1)
+    expect(hostile.withdrawalEffectsInputs.at(-1)).toMatchObject({
       hsaQualifiedCap: 70,
     })
     expect(year.tax).toBe(321)
