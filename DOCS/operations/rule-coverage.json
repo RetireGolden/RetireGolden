@@ -393,11 +393,11 @@
     },
     {
       "directory": "decisions",
-      "files": 19,
+      "files": 18,
       "byStatus": {
         "partial": 2,
         "registered": 2,
-        "rule-free": 15
+        "rule-free": 14
       }
     },
     {
@@ -531,10 +531,10 @@
     },
     {
       "directory": "testing",
-      "files": 3,
+      "files": 4,
       "byStatus": {
         "partial": 1,
-        "rule-free": 2
+        "rule-free": 3
       }
     }
   ],

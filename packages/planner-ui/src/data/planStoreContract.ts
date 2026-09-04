@@ -25,10 +25,10 @@
  *
  * Module dependencies: `vitest` + local seam types only. This file imports no
  * engine code and no adapter code — plan documents come from the factory — so
- * either repo can consume it. It is a TEST-ONLY subpath export
- * (`@retiregolden/planner-ui/data/planStoreContract`, via the package's
- * `"./*"` -> `"./src/*.ts"` map) and is deliberately NOT re-exported from
- * src/index.ts.
+ * either repo can consume it. It is a TEST-ONLY subpath export, named
+ * explicitly in the exports map as `./data/planStoreContract` since 0.10.0
+ * retired the `"./*"` -> `"./src/*.ts"` wildcard it used to reach the wire
+ * through, and is deliberately NOT re-exported from src/index.ts.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'

@@ -4,7 +4,7 @@ import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/
 import { asPositiveUsdCents } from '../actions/money.js'
 import type { RothConversionCandidateIdentityIntent } from '../actions/retirementActionCandidateIdentityAllocator.js'
 import { createDecisionContext, evaluateCandidate } from '../decisions/evaluateCandidate.js'
-import { simOptions } from '../decisions/decisionFixtures.js'
+import { simOptions } from '../testing/decisionFixtures.js'
 import { simpleRothConversionGenerator } from '../decisions/generators.js'
 import { adaptFillTargetRothConversionGeneratorCandidate } from '../decisions/rothConversionCandidateAdapter.js'
 import type { ExactDecisionEvaluation } from '../decisions/types.js'

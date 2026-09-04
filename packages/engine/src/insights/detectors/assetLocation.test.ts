@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { assetLocationPlan } from '../../decisions/decisionFixtures.js'
+import { assetLocationPlan } from '../../testing/decisionFixtures.js'
 import type { Plan } from '../../model/plan.js'
 import { summarizeProjection } from '../../projection/compare.js'
 import { simulatePlan } from '../../projection/simulate.js'

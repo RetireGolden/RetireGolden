@@ -29,7 +29,13 @@ import { summarizeProjection } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { createDecisionContext } from './evaluateCandidate.js'
 import { simpleRothConversionGenerator, noConversionGenerator } from './generators.js'
-import { simOptions, testIds, fixedNow, validate } from './decisionFixtures.js'
+import { simOptions, makeTestIds, fixedNow, validate } from '../testing/decisionFixtures.js'
+
+// This file's own id sequence. The fixture module used to export a SHARED
+// counter, so the cash id below depended on how many fixture plans any other
+// import in this run had built first; the two accounts this test actually
+// pins are the literal TRAD_ID/ROTH_ID constants right below.
+const testIds = makeTestIds('assetLocationInvariance')
 
 const BALANCED: AssetAllocationPolicy = {
   mode: 'static',

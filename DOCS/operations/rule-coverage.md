@@ -96,7 +96,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | (root) | 3 | 0 | 0 | 3 | 0 |
 | actions | 78 | 15 | 33 | 30 | 0 |
 | allocation | 1 | 0 | 0 | 1 | 0 |
-| decisions | 19 | 2 | 2 | 15 | 0 |
+| decisions | 18 | 2 | 2 | 14 | 0 |
 | insights | 22 | 2 | 3 | 17 | 0 |
 | internal | 11 | 1 | 3 | 7 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
@@ -113,7 +113,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
 | tax | 7 | 2 | 4 | 1 | 0 |
-| testing | 3 | 1 | 0 | 2 | 0 |
+| testing | 4 | 1 | 0 | 3 | 0 |
 
 ## Unswept files
 

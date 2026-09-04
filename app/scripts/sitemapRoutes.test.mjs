@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import learnRoutesSource from '@retiregolden/planner-ui/routes/LearnRoutes.tsx?raw'
+import learnRoutesSource from '@retiregolden/planner-ui/routes/LearnRoutes?raw'
 import { plannerContentRoutes, plannerHomeRoutes } from '@retiregolden/planner-ui/routes/groups'
 
 import { STATIC_ROUTES } from './sitemapRoutes.mjs'

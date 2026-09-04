@@ -11,7 +11,7 @@ import {
   solveMaxSustainableSpending,
   SPENDING_SOLVER_UI_BUDGET,
 } from '@retiregolden/engine/decisions'
-import { noTraditionalPlan } from '@retiregolden/engine/decisions/decisionFixtures'
+import { noTraditionalPlan } from '@retiregolden/engine/testing/decisionFixtures'
 import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
 import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
 import { runSpendingSolveRequest } from './runSpendingSolve'

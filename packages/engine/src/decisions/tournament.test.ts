@@ -14,7 +14,7 @@ import {
   ssTaxabilityPlan,
   survivorPlan,
   tradHeavyPlan,
-} from './decisionFixtures.js'
+} from '../testing/decisionFixtures.js'
 import { createDecisionContext, evaluateCandidate, planForCandidate } from './evaluateCandidate.js'
 import {
   milpScheduleGenerator,

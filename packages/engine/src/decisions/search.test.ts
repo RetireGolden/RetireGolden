@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 
 import { runExactLedgerTournament } from '../projection/optimizePlan.js'
 import { simulatePlan } from '../projection/simulate.js'
-import { simOptions, tradHeavyPlan } from './decisionFixtures.js'
+import { simOptions, tradHeavyPlan } from '../testing/decisionFixtures.js'
 import { createDecisionContext } from './evaluateCandidate.js'
 import { refineConversionSchedule } from './search.js'
 

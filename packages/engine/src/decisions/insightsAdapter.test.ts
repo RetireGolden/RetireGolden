@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { InsightAction, InsightCard } from '../insights/types.js'
-import { simOptions, tradHeavyPlan } from './decisionFixtures.js'
+import { simOptions, tradHeavyPlan } from '../testing/decisionFixtures.js'
 import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js'
 import { simpleRothConversionGenerator } from './generators.js'
 import { candidateFromInsight, evaluateInsightAction } from './insightsAdapter.js'

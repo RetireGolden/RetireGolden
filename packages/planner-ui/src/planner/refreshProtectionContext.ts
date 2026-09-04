@@ -108,8 +108,9 @@ export interface RefreshProtectionValue {
    * its protection is genuinely known (empty), so it must never be gated.
    * Optional rather than required because this interface is named in the
    * README as part of the supported product API and the context module is
-   * importable through the exports wildcard, so a host that builds its own
-   * value object must keep compiling across this addition. Every read goes
+   * also importable directly through its `./planner/refreshProtectionContext`
+   * unpromised deep subpath, so a host that builds its own value object must
+   * keep compiling across this addition. Every read goes
    * through {@link useRefreshProtectionPending}, which normalises the absent
    * case, so nothing downstream ever sees `undefined`.
    */

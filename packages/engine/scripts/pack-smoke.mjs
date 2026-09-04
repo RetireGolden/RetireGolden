@@ -328,6 +328,22 @@ const simulate = await import('@retiregolden/engine/projection/simulate')
 const { singlePersonPlan, cashAccount, productionTaxCalculator, runPlan } = await import(
   '@retiregolden/engine/testing/planFixtures'
 )
+// decisionFixtures.ts moved from src/decisions/ to src/testing/ in 0.3.0 (see
+// CHANGELOG "One subpath added: ./testing/decisionFixtures"); this proves the
+// relocated file is actually packed and reachable at the new subpath, and
+// that the old ./decisions/decisionFixtures path -- which the ./decisions/*
+// wildcard would otherwise still nominally match against a file the tarball
+// no longer contains -- is refused by name instead of failing later with a
+// bare module-not-found.
+const { assetLocationPlan: packedAssetLocationPlan } = await import(
+  '@retiregolden/engine/testing/decisionFixtures'
+)
+assert.equal(typeof packedAssetLocationPlan, 'function')
+await assert.rejects(
+  import('@retiregolden/engine/decisions/decisionFixtures'),
+  (error) => error?.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED',
+  'relocated decisions/decisionFixtures path must not resolve',
+)
 
 // The current-only schema subpath (the MCP's plan-format source), each explicit
 // version subpath, the legacy compatibility barrel, and the offline JSON

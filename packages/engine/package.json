@@ -137,6 +137,7 @@
       "types": "./dist/allocation/*.d.ts",
       "default": "./dist/allocation/*.js"
     },
+    "./decisions/decisionFixtures": null,
     "./decisions/*": {
       "types": "./dist/decisions/*.d.ts",
       "default": "./dist/decisions/*.js"

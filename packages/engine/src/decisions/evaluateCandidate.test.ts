@@ -20,7 +20,7 @@ import {
   ssTaxabilityPlan,
   taxableBridgePlan,
   tradHeavyPlan,
-} from './decisionFixtures.js'
+} from '../testing/decisionFixtures.js'
 import { createDecisionContext, evaluateCandidate, planForCandidate } from './evaluateCandidate.js'
 import type { DecisionCandidate } from './types.js'
 
