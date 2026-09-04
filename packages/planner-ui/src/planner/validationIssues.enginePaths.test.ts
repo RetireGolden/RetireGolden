@@ -100,6 +100,9 @@ function fixture(): Plan {
   plan.expenses.requiredAnnual = 60_000
   // The dynamic-spending card's five policy percents. They live under one
   // optional object, so every one of them is absent from a default plan.
+  // The dynamic-spending card's amortized (ABW) parameters sit in a second
+  // optional object under the same policy, and the card edits them behind its
+  // own mode; they are present here so each one is a field of this plan.
   plan.expenses.spendingPolicy = {
     mode: 'riskBasedGuardrails',
     upperGuardrailPct: 120,
@@ -107,7 +110,18 @@ function fixture(): Plan {
     adjustmentPct: 10,
     targetSuccessLowerPct: 70,
     targetSuccessUpperPct: 95,
+    abw: {
+      returnSource: 'fixed',
+      fixedRealReturnPct: 3.8,
+      startingCape: 25,
+      equitySharePct: 60,
+      bondRealYieldPct: 2,
+      horizon: 'planningAge',
+      tiltPct: 0,
+    },
   }
+  // The couple-only survivor-spending percent on the Spending card.
+  plan.expenses.survivorSpendingPct = 70
   plan.incomeFloor = {
     ladders: [
       {
@@ -123,11 +137,27 @@ function fixture(): Plan {
   }
   const goalYear = year + 3
   plan.expenses.oneTimeGoals = [
-    { id: 'goal-fixture', label: 'Kitchen', year: goalYear, amount: 45_000, flexibility: 'movable', earliestYear: goalYear, latestYear: goalYear + 1 },
+    {
+      id: 'goal-fixture',
+      label: 'Kitchen',
+      year: goalYear,
+      amount: 45_000,
+      flexibility: 'movable',
+      earliestYear: goalYear,
+      latestYear: goalYear + 1,
+      // The partial-funding minimum only exists behind the goal's own
+      // checkbox, so the goal row carries it here.
+      allowPartialFunding: true,
+      minFundingPct: 50,
+    },
   ]
   // Index 0 is the property and index 1 the debt for the accounts.0.* paths;
   // index 2 is the brokerage, whose yields the walk cited.
-  const property = plan.accounts.find((a) => a.type === 'property')!
+  const property = plan.accounts.find((a) => a.type === 'property') as Extract<Plan['accounts'][number], { type: 'property' }>
+  // The opt-in HECM line of credit the property card edits behind its own
+  // checkbox, so `accounts.N.hecm.openYear` is a field of this plan.
+  property.primaryResidence = true
+  property.hecm = { openYear: year, growthRatePct: 7, drawPolicy: 'lastResort' }
   const debt = plan.accounts.find((a) => a.type === 'debt') as Extract<Plan['accounts'][number], { type: 'debt' }>
   debt.payoffYear = year + 12
   const brokerage = plan.accounts.find((a) => a.type === 'taxable') as Extract<Plan['accounts'][number], { type: 'taxable' }>
@@ -137,6 +167,24 @@ function fixture(): Plan {
   // The estate destination the accounts editor offers, so its Charity share is a
   // field of this plan (#540).
   brokerage.estateBeneficiary = { destination: 'charity', charityPct: 50 }
+  // The three shapes of the allocation panel's own year fields. A policy is one
+  // branch of a discriminated union, so no single account can hold the linear
+  // glidepath's years, a staged row, and a custom target at once (#476 tail).
+  const evenWeights = { usStocks: 40, intlStocks: 20, bonds: 30, cash: 10 }
+  const employer401k = plan.accounts.find(
+    (a) => a.type === 'traditional' && a.kind === 'employer',
+  ) as Extract<Plan['accounts'][number], { type: 'traditional' }>
+  const partnerIra = plan.accounts.find(
+    (a) => a.type === 'traditional' && a.kind === 'ira',
+  ) as Extract<Plan['accounts'][number], { type: 'traditional' }>
+  const roth = plan.accounts.find((a) => a.type === 'roth') as Extract<Plan['accounts'][number], { type: 'roth' }>
+  employer401k.allocation = { mode: 'linear', rebalancing: 'annual', from: evenWeights, to: evenWeights, startYear: year, endYear: year + 20 }
+  partnerIra.allocation = { mode: 'staged', rebalancing: 'annual', stages: [{ fromYear: year, weights: evenWeights }] }
+  roth.allocation = { mode: 'custom', rebalancing: 'annual', targets: [{ year, weights: evenWeights }] }
+  // The scheduled-contribution phase rows and the 72(t) SEPP election, each
+  // behind its own checkbox on the account card.
+  employer401k.contributionSchedule = [{ annualAmount: 24_000, fromAge: 55, toAge: 66, escalationPct: 0 }]
+  partnerIra.sepp = { startAge: 55, method: 'rmd' }
   // A pension and the two annuity payout forms: the guaranteed-income editors
   // wire the same leaves from separate JSX, and a payout form is one branch of a
   // union, so each shape a wired path needs is present here (#516).
@@ -166,6 +214,13 @@ function fixture(): Plan {
     id: 'annuity-certain-fixture',
     name: 'Annuity (period certain)',
     payoutForm: { kind: 'periodCertain', certainYears: 10 },
+    // A funded purchase, so the annuity card's Purchase year is a field here.
+    purchase: {
+      year: year + 1,
+      premium: 100_000,
+      fundingAccountId: plan.accounts.find((a) => a.type === 'cash')!.id,
+      taxQualification: 'nonQualified',
+    },
   }
   const jointSurvivor: Plan['accounts'][number] = {
     ...annuityBase,
@@ -231,6 +286,22 @@ function fixture(): Plan {
   // `incomes.N.disability.onsetAge` is a field of this plan (#511). Onset at
   // 60 is inside the schema's 40–75 and before FRA, so the fixture stays valid.
   ss.disability = { onsetAge: 60 }
+  // The rest of the Social Security card's optional blocks: the manual credit
+  // count, the earnings projection, and a deceased former spouse (the record
+  // shape that reaches every one of the survivor fields at once).
+  ss.coveredQuarters = 40
+  ss.earningsProjection = { assumedAnnualEarnings: 120_000, throughAge: 65 }
+  ss.formerSpouses = [
+    {
+      id: 'former-spouse-fixture',
+      relationship: 'deceased',
+      dob: '1958-03-02',
+      piaMonthly: 2_100,
+      marriageYears: 12,
+      remarriedAtAge: 62,
+      deceasedClaimAge: { years: 66, months: 3 },
+    },
+  ]
   plan.incomes = [
     wages,
     { type: 'recurring', id: 'rent-fixture', label: 'Rental', annualAmount: 12_000, startYear: year + 1, endYear: year + 10, inflationAdjusted: true, taxTreatment: 'ordinary' },

@@ -1,21 +1,17 @@
 /** Spending section: baseline, phases, goals, debts, property. */
 
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 
-import type { GoalFlexibility, SpendingClassification, SpendingPolicy } from '@retiregolden/engine/model/plan'
+import type { GoalFlexibility, SpendingClassification } from '@retiregolden/engine/model/plan'
 import { annualDeltaPhases, spendingShapePhases, type SpendingShapeId } from '@retiregolden/engine/spending/shapePresets'
-import { startingInvestableOf, type RiskBasedGuardrailSolution } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
-import { runRiskBasedGuardrailSolve } from '../../mc/pool'
 import { invalidateAcaEvidence } from '../householdActions'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
-import { fmtMoney } from '../format'
-import { buildModel } from '../marketModelPicker'
 import { TypeChip } from '../TypeChip'
-import { currentStartYear, seedFromPlanId } from '../useProjection'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
+import { SpendingPolicyCard } from './SpendingPolicyCard'
 import { Issues } from './shared'
 import { newId } from './sectionHelpers'
 
@@ -24,91 +20,9 @@ import { newId } from './sectionHelpers'
 // live with the compiler in engine/spending/shapePresets.ts.
 type SpendingProfileId = SpendingShapeId
 
-/** Solver budget for the on-demand threshold solve (worker; ~40 probes). */
-const THRESHOLD_SOLVE_PATH_COUNT = 200
-
 export function SpendingSection() {
   const { plan, update } = usePlan()
   const e = plan.expenses
-  const [solvingThresholds, setSolvingThresholds] = useState(false)
-  const [thresholdSolveError, setThresholdSolveError] = useState<string | null>(null)
-  const [thresholdSolution, setThresholdSolution] = useState<RiskBasedGuardrailSolution | null>(null)
-  // Latest committed band, readable from async solve callbacks: a solve result
-  // computed against an older band (edited while the worker was busy) is
-  // discarded instead of persisted.
-  const committedBandRef = useRef({ mode: e.spendingPolicy?.mode, lower: 70, upper: 95 })
-  useEffect(() => {
-    committedBandRef.current = {
-      mode: e.spendingPolicy?.mode,
-      lower: e.spendingPolicy?.targetSuccessLowerPct ?? 70,
-      upper: e.spendingPolicy?.targetSuccessUpperPct ?? 95,
-    }
-  })
-  const solveThresholds = () => {
-    setSolvingThresholds(true)
-    setThresholdSolveError(null)
-    const solvedBand = { ...committedBandRef.current }
-    void runRiskBasedGuardrailSolve(plan, {
-      startYear: currentStartYear(),
-      pathCount: THRESHOLD_SOLVE_PATH_COUNT,
-      seed: seedFromPlanId(plan.id),
-      model: buildModel('lognormal', plan.assumptions.inflationPct, 12, 60, plan),
-    })
-      .then((solution) => {
-        const current = committedBandRef.current
-        if (current.mode !== 'riskBasedGuardrails' || current.lower !== solvedBand.lower || current.upper !== solvedBand.upper) {
-          return // the band (or mode) changed mid-solve; the result no longer applies
-        }
-        setThresholdSolution(solution)
-        update((d) => {
-          const policy = d.expenses.spendingPolicy
-          if (!policy || policy.mode !== 'riskBasedGuardrails') return
-          if (solution.lower) policy.lowerBalanceThresholdPct = Math.round(solution.lower.balanceFrac * 10_000) / 100
-          else delete policy.lowerBalanceThresholdPct
-          if (solution.upper) policy.upperBalanceThresholdPct = Math.round(solution.upper.balanceFrac * 10_000) / 100
-          else delete policy.upperBalanceThresholdPct
-        })
-      })
-      .catch((err: unknown) => setThresholdSolveError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setSolvingThresholds(false))
-  }
-  /**
-   * The success band read as a pair, which neither edge's own path can do.
-   *
-   * The engine accepts either percent on its own (1–99 and 1–100), and refuses
-   * the pair: `solveRiskBasedGuardrails` throws "the cut edge must be below the
-   * raise edge" before it probes anything. Both edges therefore keep what was
-   * typed and say what the solve will do with it, which is the `.field-warning`
-   * contract — nothing refused, nothing rewritten, nothing marked invalid.
-   * A one-point gap is what the solve needs, so equal edges warn too.
-   */
-  const bandLower = e.spendingPolicy?.targetSuccessLowerPct ?? 70
-  const bandUpper = e.spendingPolicy?.targetSuccessUpperPct ?? 95
-  const bandWarning =
-    e.spendingPolicy?.mode === 'riskBasedGuardrails' && bandLower >= bandUpper
-      ? 'The cut edge is not below the raise edge, so the balance thresholds cannot be solved. Kept as entered.'
-      : null
-  /**
-   * The withdrawal-rate pair, read the same way: neither edge's own path
-   * carries what the other holds, and `spendingPolicySchema` accepts each
-   * percent on its own with no cross-field refine (engine/model/plan.ts).
-   * With the pair inverted, `nextGuardrailMultiplier` (engine/spending/
-   * guardrails.ts) cuts whenever the rate clears the upper edge and raises
-   * otherwise — there is no rate left that holds — so this is the same
-   * `.field-warning` contract as the success band above: nothing refused,
-   * nothing rewritten, nothing marked invalid, just said.
-   */
-  const guardrailLower = e.spendingPolicy?.lowerGuardrailPct ?? 80
-  const guardrailUpper = e.spendingPolicy?.upperGuardrailPct ?? 120
-  const guardrailWarning =
-    e.spendingPolicy?.mode === 'withdrawalRateGuardrails' && guardrailLower >= guardrailUpper
-      ? 'The lower guardrail is not below the upper guardrail, so every withdrawal rate would cut or raise spending, never hold. Kept as entered.'
-      : null
-  const hasEarlyPullFlexibleGoals = e.oneTimeGoals.some((g) => {
-    const flexibility = g.flexibility ?? 'fixed'
-    const earliestYear = Math.min(g.earliestYear ?? g.year, g.year)
-    return flexibility !== 'fixed' && earliestYear < g.year
-  })
   const applyProfile = (profile: SpendingProfileId) =>
     update((d) => {
       d.expenses.phases = spendingShapePhases(profile, plan.household.people[0]?.retirementAge ?? 65)
@@ -117,14 +31,6 @@ export function SpendingSection() {
   const applyCustomDelta = () =>
     update((d) => {
       d.expenses.phases = annualDeltaPhases(customDeltaPct, plan.household.people[0]?.retirementAge ?? 65)
-    })
-  // Mutate the ABW parameter object, creating it on first edit.
-  const setAbw = (mutate: (abw: NonNullable<SpendingPolicy['abw']>) => void) =>
-    update((d) => {
-      const policy = d.expenses.spendingPolicy
-      if (!policy || policy.mode !== 'abw') return
-      policy.abw ??= { returnSource: 'fixed' }
-      mutate(policy.abw)
     })
   return (
     <section>
@@ -200,8 +106,7 @@ export function SpendingSection() {
               learn={LEARN.survivorSpending}
               hint="100% = no change in survivor years."
               step={5}
-              min={0}
-              max={100}
+              path="expenses.survivorSpendingPct"
               value={e.survivorSpendingPct ?? 100}
               onCommit={(v) =>
                 update((d) => {
@@ -226,345 +131,7 @@ export function SpendingSection() {
           />
         </div>
 
-        <h3>Dynamic spending policy</h3>
-        <p className="card-hint">
-          Let spending flex with the market instead of holding a fixed budget. Guardrails trim and restore the
-          discretionary layer (baseline minus the required floor). The floor is never cut. Amortized spending
-          (ABW, the rule behind VPW and TPAW) goes further: it replaces the baseline entirely, re-computing each
-          year&apos;s spending from the actual portfolio and remaining horizon. Applies in Results and Monte Carlo.{' '}
-          <LearnLink {...LEARN.spendingBudget} />
-        </p>
-        <div className="form-grid">
-          {/* Full-width: the option labels ("Fixed target (no guardrails)",
-              "Risk-based guardrails (success band)") clip to an ellipsis in a
-              one-column cell at the default workspace width (#423). */}
-          <div className="field-span-full">
-            <SelectField
-              label="Spending policy"
-              help="Fixed target funds the whole budget every year (today's behavior). Withdrawal-rate guardrails ration the discretionary layer path by path based on how the current withdrawal rate compares to the starting rate. Risk-based guardrails trigger on dollar portfolio thresholds solved from your target probability-of-success band, cut only when the plan's odds actually leave the band, not on the withdrawal rate alone. Amortized spending (ABW) ignores the baseline and phases and spends each year's amortized payment: the actual start-of-year portfolio spread over the remaining horizon at an expected real return, so spending self-corrects after good or bad markets and the portfolio is designed to be spent down by the horizon."
-              learn={LEARN.dynamicSpendingGuardrails}
-              value={e.spendingPolicy?.mode ?? 'fixedTarget'}
-              options={[
-                { value: 'fixedTarget', label: 'Fixed target (no guardrails)' },
-                { value: 'withdrawalRateGuardrails', label: 'Withdrawal-rate guardrails' },
-                { value: 'riskBasedGuardrails', label: 'Risk-based guardrails (success band)' },
-                { value: 'abw', label: 'Amortized spending (ABW / VPW)' },
-              ]}
-              onCommit={(mode) =>
-                update((d) => {
-                  if (mode === 'fixedTarget') delete d.expenses.spendingPolicy
-                  else d.expenses.spendingPolicy = { ...d.expenses.spendingPolicy, mode }
-                })
-              }
-            />
-          </div>
-          {e.spendingPolicy?.mode === 'withdrawalRateGuardrails' ? (
-            <>
-              <PercentField
-                label="Upper guardrail"
-                help="Cut discretionary spending when the current withdrawal rate exceeds this percent of the starting rate. A common setting is 120%."
-                hint="% of the starting withdrawal rate that triggers a cut."
-                learn={LEARN.spendingBudget}
-                step={5}
-                path="expenses.spendingPolicy.upperGuardrailPct"
-                warning={guardrailWarning}
-                value={e.spendingPolicy.upperGuardrailPct ?? 120}
-                onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.upperGuardrailPct = v ?? 120))}
-              />
-              <PercentField
-                label="Lower guardrail"
-                help="Restore discretionary spending when the current withdrawal rate falls below this percent of the starting rate. A common setting is 80%."
-                hint="% of the starting withdrawal rate that allows a raise."
-                learn={LEARN.spendingBudget}
-                step={5}
-                path="expenses.spendingPolicy.lowerGuardrailPct"
-                warning={guardrailWarning}
-                value={e.spendingPolicy.lowerGuardrailPct ?? 80}
-                onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.lowerGuardrailPct = v ?? 80))}
-              />
-              <PercentField
-                label="Adjustment size"
-                help="How much of the full discretionary layer each cut or raise moves. A common setting is 10%."
-                hint="Cut/raise step, as a % of the discretionary layer."
-                learn={LEARN.spendingBudget}
-                step={5}
-                path="expenses.spendingPolicy.adjustmentPct"
-                value={e.spendingPolicy.adjustmentPct ?? 10}
-                onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.adjustmentPct = v ?? 10))}
-              />
-              <CheckboxField
-                label="Allow upside raises"
-                help="When enabled, strong paths can restore target spending and then fund ideal/excess annual layers or pull flexible goals earlier within their window. The required floor still stays protected in down markets."
-                learn={LEARN.spendingBudget}
-                value={e.spendingPolicy.allowRaisesAboveTarget ?? ((e.idealAnnual ?? 0) + (e.excessAnnual ?? 0) > 0 || hasEarlyPullFlexibleGoals)}
-                onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.allowRaisesAboveTarget = v))}
-              />
-            </>
-          ) : null}
-          {e.spendingPolicy?.mode === 'riskBasedGuardrails' ? (
-            <>
-              <PercentField
-                label="Cut when success falls below"
-                help="The lower edge of your target probability-of-success band. The solver finds the portfolio balance where the plan's Monte Carlo success probability would drop to this level; spending cuts trigger below that dollar threshold."
-                hint="Lower edge of the target success band."
-                learn={LEARN.riskBasedGuardrails}
-                step={5}
-                path="expenses.spendingPolicy.targetSuccessLowerPct"
-                warning={bandWarning}
-                value={e.spendingPolicy.targetSuccessLowerPct ?? 70}
-                onCommit={(v) => {
-                  // The solved thresholds (and any displayed suggestions) belonged to the old band.
-                  setThresholdSolution(null)
-                  update((d) => {
-                    const policy = d.expenses.spendingPolicy!
-                    // The edge is stored as typed. An inverted band is one the
-                    // engine accepts and the threshold solve refuses, so it is
-                    // said in a warning under both edges rather than corrected
-                    // here into a band nobody chose (D5).
-                    policy.targetSuccessLowerPct = v ?? 70
-                    delete policy.lowerBalanceThresholdPct
-                    delete policy.upperBalanceThresholdPct
-                  })
-                }}
-              />
-              <PercentField
-                label="Raise when success rises above"
-                help="The upper edge of your target probability-of-success band. Above the balance where success clears this level, discretionary spending can be restored or raised."
-                hint="Upper edge of the target success band."
-                learn={LEARN.riskBasedGuardrails}
-                step={5}
-                path="expenses.spendingPolicy.targetSuccessUpperPct"
-                warning={bandWarning}
-                value={e.spendingPolicy.targetSuccessUpperPct ?? 95}
-                onCommit={(v) => {
-                  setThresholdSolution(null)
-                  update((d) => {
-                    const policy = d.expenses.spendingPolicy!
-                    policy.targetSuccessUpperPct = v ?? 95
-                    delete policy.lowerBalanceThresholdPct
-                    delete policy.upperBalanceThresholdPct
-                  })
-                }}
-              />
-              <PercentField
-                label="Adjustment size"
-                help="How much of the full discretionary layer each cut or raise moves. A common setting is 10%."
-                hint="Cut/raise step, as a % of the discretionary layer."
-                learn={LEARN.riskBasedGuardrails}
-                step={5}
-                path="expenses.spendingPolicy.adjustmentPct"
-                value={e.spendingPolicy.adjustmentPct ?? 10}
-                onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.adjustmentPct = v ?? 10))}
-              />
-              <CheckboxField
-                label="Allow upside raises"
-                help="When enabled, strong paths can restore target spending and then fund ideal/excess annual layers or pull flexible goals earlier within their window. The required floor still stays protected in down markets."
-                learn={LEARN.riskBasedGuardrails}
-                value={e.spendingPolicy.allowRaisesAboveTarget ?? ((e.idealAnnual ?? 0) + (e.excessAnnual ?? 0) > 0 || hasEarlyPullFlexibleGoals)}
-                onCommit={(v) => update((d) => void (d.expenses.spendingPolicy!.allowRaisesAboveTarget = v))}
-              />
-            </>
-          ) : null}
-          {e.spendingPolicy?.mode === 'abw' ? (
-            <>
-              <SelectField
-                label="Expected return source"
-                help="Where the amortization's expected real return comes from. Fixed uses the rate you enter (the VPW preset's approach, its published global returns, 60/40 weighted, are about 3.8%/yr real). CAPE conditions on valuations: expected stock return = 100 ÷ CAPE (the cyclically-adjusted earnings yield), blended with the bond yield at your stock share, richer valuations mean lower planned spending. TIPS yield prices the whole portfolio at a real bond yield, the most conservative reading."
-                learn={LEARN.spendingBudget}
-                value={e.spendingPolicy.abw?.returnSource ?? 'fixed'}
-                options={[
-                  { value: 'fixed', label: 'Fixed real return (VPW-style)' },
-                  { value: 'cape', label: 'CAPE earnings yield (valuation-aware)' },
-                  { value: 'tips', label: 'TIPS real yield (most conservative)' },
-                ]}
-                onCommit={(v) => setAbw((abw) => void (abw.returnSource = v))}
-              />
-              {(e.spendingPolicy.abw?.returnSource ?? 'fixed') === 'fixed' ? (
-                <PercentField
-                  label="Expected real return"
-                  help="Expected portfolio return per year above inflation, used to amortize the balance over the remaining horizon. The Bogleheads VPW table's global internal rates of return (stocks 5.0%, bonds 1.9% real) weighted 60/40 give about 3.8%. Higher values front-load spending and risk deeper later cuts if markets disappoint."
-                  hint="%/yr above inflation. VPW 60/40 ≈ 3.8%."
-                  learn={LEARN.spendingBudget}
-                  step={0.1}
-                  min={-5}
-                  max={12}
-                  value={e.spendingPolicy.abw?.fixedRealReturnPct ?? 3.8}
-                  onCommit={(v) => setAbw((abw) => void (abw.fixedRealReturnPct = v ?? 3.8))}
-                />
-              ) : null}
-              {e.spendingPolicy.abw?.returnSource === 'cape' ? (
-                <>
-                  <NumberField
-                    label="Starting CAPE"
-                    help="The cyclically-adjusted price/earnings ratio used for the expected stock return (100 ÷ CAPE). Around 25 matches this app's CAPE-conditioned market model default; check a current published CAPE for today's value."
-                    hint="Expected stock return = 100 ÷ CAPE."
-                    learn={LEARN.spendingBudget}
-                    step={1}
-                    min={5}
-                    max={60}
-                    value={e.spendingPolicy.abw?.startingCape ?? 25}
-                    onCommit={(v) => setAbw((abw) => void (abw.startingCape = v ?? 25))}
-                  />
-                  <PercentField
-                    label="Stock share"
-                    help="How much of the portfolio is priced at the CAPE earnings yield; the rest is priced at the real bond yield below."
-                    hint="Blends the CAPE yield with the bond yield."
-                    learn={LEARN.spendingBudget}
-                    step={5}
-                    min={0}
-                    max={100}
-                    value={e.spendingPolicy.abw?.equitySharePct ?? 60}
-                    onCommit={(v) => setAbw((abw) => void (abw.equitySharePct = v ?? 60))}
-                  />
-                </>
-              ) : null}
-              {e.spendingPolicy.abw?.returnSource === 'cape' || e.spendingPolicy.abw?.returnSource === 'tips' ? (
-                <PercentField
-                  label="Real bond/TIPS yield"
-                  help="The real (above-inflation) bond yield: the whole portfolio under the TIPS source, or the non-stock share under CAPE. Long TIPS real yields were near 2% in mid-2026; check the current curve."
-                  hint="%/yr above inflation; ~2% in mid-2026."
-                  learn={LEARN.spendingBudget}
-                  step={0.1}
-                  min={-2}
-                  max={8}
-                  value={e.spendingPolicy.abw?.bondRealYieldPct ?? 2}
-                  onCommit={(v) => setAbw((abw) => void (abw.bondRealYieldPct = v ?? 2))}
-                />
-              ) : null}
-              <SelectField
-                label="Amortize to"
-                help="The horizon the balance is spread over. Planning age uses the household's plan horizon. The survival percentiles amortize to the age you (for couples: either of you) have a 25% or 10% chance of reaching, the unadjusted SSA life table, with no health-questionnaire adjustment even if your planning age used one, a shorter, spendier horizon than a conservative planning age."
-                learn={LEARN.longevity}
-                value={e.spendingPolicy.abw?.horizon ?? 'planningAge'}
-                options={[
-                  { value: 'planningAge', label: 'Planning age (plan horizon)' },
-                  { value: 'survival25', label: 'Age with 25% chance of reaching' },
-                  { value: 'survival10', label: 'Age with 10% chance of reaching' },
-                ]}
-                onCommit={(v) => setAbw((abw) => void (abw.horizon = v))}
-              />
-              <PercentField
-                label="Spending tilt"
-                help="Planned real change in spending per year. Negative front-loads spending into early retirement (consistent with the observed decline in real retiree spending); positive defers it. 0 plans level real spending."
-                hint="−1 to −1.5%/yr matches observed spending declines."
-                learn={LEARN.spendingProfiles}
-                step={0.5}
-                min={-5}
-                max={5}
-                value={e.spendingPolicy.abw?.tiltPct ?? 0}
-                onCommit={(v) => setAbw((abw) => void (abw.tiltPct = v ?? 0))}
-              />
-            </>
-          ) : null}
-        </div>
-        {e.spendingPolicy?.mode === 'abw' ? (
-          <div className="callout callout--info">
-            <p className="card-hint">
-              Amortized spending replaces the baseline, retirement phases, and required/ideal/excess layers: each
-              year&apos;s recurring lifestyle spending is the amortized payment from the actual start-of-year
-              portfolio. Healthcare, debt payments, property costs, insurance premiums, and one-time goals stay
-              separately modeled on top. Because the payment is recomputed every year, spending self-corrects after
-              market surprises instead of failing. The trade-off is a variable budget.{' '}
-              <button
-                type="button"
-                className="btn btn-secondary btn-small"
-                onClick={() =>
-                  update((d) => {
-                    d.expenses.spendingPolicy = {
-                      mode: 'abw',
-                      abw: { returnSource: 'fixed', fixedRealReturnPct: 3.8, horizon: 'planningAge', tiltPct: 0 },
-                    }
-                  })
-                }
-              >
-                Apply the VPW preset
-              </button>
-            </p>
-          </div>
-        ) : null}
-        {e.spendingPolicy?.mode === 'riskBasedGuardrails' ? (
-          <div className="callout callout--info">
-            {e.spendingPolicy.lowerBalanceThresholdPct !== undefined ||
-            e.spendingPolicy.upperBalanceThresholdPct !== undefined ? (
-              <p className="card-hint">
-                Solved dollar guardrails for the {e.spendingPolicy.targetSuccessLowerPct ?? 70}–
-                {e.spendingPolicy.targetSuccessUpperPct ?? 95}% success band:{' '}
-                {e.spendingPolicy.lowerBalanceThresholdPct !== undefined ? (
-                  <>
-                    cut spending if the portfolio falls below{' '}
-                    <strong>{fmtMoney((e.spendingPolicy.lowerBalanceThresholdPct / 100) * startingInvestableOf(plan))}</strong>
-                  </>
-                ) : (
-                  <>no cut threshold was solved for this band</>
-                )}
-                {'; '}
-                {e.spendingPolicy.upperBalanceThresholdPct !== undefined ? (
-                  <>
-                    raise if it rises above{' '}
-                    <strong>{fmtMoney((e.spendingPolicy.upperBalanceThresholdPct / 100) * startingInvestableOf(plan))}</strong>
-                  </>
-                ) : (
-                  <>no raise threshold was solved for this band</>
-                )}
-                . Thresholds are in today's dollars, solved under the standard smooth-randomness market model
-                (12% return volatility, 60/40 weighting) with your plan's inflation, custom Monte Carlo page
-                model settings are not reflected here. Re-solve after meaningful plan changes.
-              </p>
-            ) : (
-              <p className="card-hint">
-                No dollar thresholds solved yet. Until they are computed, this policy holds spending steady (it
-                behaves like fixed target). Solving runs a bounded Monte Carlo search in the background under the
-                standard smooth-randomness market model.
-              </p>
-            )}
-            {thresholdSolution?.lowerOutcome === 'never-reaches-band' ? (
-              <p className="card-hint">
-                <strong>Heads up:</strong> the plan's success probability stays below your{' '}
-                {thresholdSolution.lowerBandPct}% cut edge even with several times the current portfolio, so no
-                cut threshold exists. The plan is underfunded for this band, not safe. Consider lower target
-                spending or a lower band.
-              </p>
-            ) : null}
-            {thresholdSolution?.lowerOutcome === 'always-above-band' ? (
-              <p className="card-hint">
-                The plan stays above the {thresholdSolution.lowerBandPct}% cut edge even at very low balances
-                (guaranteed income carries it), so no cut trigger is needed.
-              </p>
-            ) : null}
-            {thresholdSolution?.suggestedCut || thresholdSolution?.suggestedRaise ? (
-              <p className="card-hint">
-                {thresholdSolution.suggestedCut ? (
-                  <>
-                    At the cut threshold, trimming about{' '}
-                    <strong>{fmtMoney(thresholdSolution.suggestedCut.monthlyDollars)}/mo</strong> restores the middle of
-                    the band.{' '}
-                  </>
-                ) : null}
-                {thresholdSolution.suggestedRaise ? (
-                  <>
-                    At the raise threshold, roughly{' '}
-                    <strong>{fmtMoney(thresholdSolution.suggestedRaise.monthlyDollars)}/mo</strong> of extra spending
-                    still keeps the plan above the middle of the band.
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-            <button
-              type="button"
-              className="btn btn-secondary btn-small"
-              disabled={solvingThresholds}
-              onClick={solveThresholds}
-            >
-              {solvingThresholds
-                ? 'Solving thresholds…'
-                : e.spendingPolicy.lowerBalanceThresholdPct !== undefined ||
-                    e.spendingPolicy.upperBalanceThresholdPct !== undefined
-                  ? 'Re-solve dollar thresholds'
-                  : 'Solve dollar thresholds'}
-            </button>
-            {thresholdSolveError ? <p className="card-hint error-text">{thresholdSolveError}</p> : null}
-          </div>
-        ) : null}
+        <SpendingPolicyCard />
 
         <h3>Retirement phases</h3>
         <p className="card-hint">
@@ -639,6 +206,10 @@ export function SpendingSection() {
             hint="Negative = declining real spending."
             learn={LEARN.spendingProfiles}
             step={0.5}
+            // Intentionally pathless: this drift is not a plan field. It is
+            // component state that "Apply custom shape" compiles into ordinary
+            // `expenses.phases` rows, so there is no schema path to read a
+            // range from and nothing to route an engine issue to.
             min={-5}
             max={5}
             value={customDeltaPct}
@@ -836,6 +407,12 @@ export function SpendingSection() {
                     help="Lower numbers fund first within the same spending layer. Required goals still outrank target, ideal, and excess goals."
                     learn={LEARN.spendingBudget}
                     value={g.priority ?? i}
+                    // Intentionally pathless: `expenses.oneTimeGoals.N.priority`
+                    // is `z.number().int()` with no range (engine/model/plan.ts),
+                    // so `boundsForPath` has nothing to hand back and a `path`
+                    // here would leave the field unbounded. These two are a
+                    // sort key, not a modeled quantity; they wait for the engine
+                    // to state a range rather than borrow one invented here.
                     min={0}
                     max={999}
                     onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.priority = Math.round(v ?? i)))}
@@ -864,12 +441,19 @@ export function SpendingSection() {
                       help="The smallest percent of the goal that must be available before RetireGolden records it as partially funded instead of deferred or skipped."
                       learn={LEARN.spendingBudget}
                       step={5}
-                      min={0}
-                      max={95}
+                      path={`expenses.oneTimeGoals.${i}.minFundingPct`}
                       value={g.minFundingPct ?? 50}
-                      onCommit={(v) =>
-                        update((d) => void (d.expenses.oneTimeGoals[i]!.minFundingPct = Math.min(95, Math.max(0, v ?? 50))))
-                      }
+                      // No clamp: the engine's own 0-100 range (oneTimeGoalSchema,
+                      // plan.ts) flags an entry outside it while typing and hands
+                      // back the plan's value on blur (D5), so the percent only
+                      // reaches here once it is already one the schema accepts.
+                      // The old Math.min(95, ...) was a tighter ceiling this file
+                      // invented on top of the schema's 0-100: 96-99 are schema-
+                      // legal and now reach the plan. A 100 with partial funding
+                      // on is refused separately, by planCrossFieldChecks.ts
+                      // ("partial funding requires a minimum funding percent
+                      // below 100"), which useFieldIssue surfaces on this field.
+                      onCommit={(v) => update((d) => void (d.expenses.oneTimeGoals[i]!.minFundingPct = v ?? 50))}
                     />
                   ) : null}
                 </>

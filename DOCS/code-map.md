@@ -224,7 +224,8 @@ these across all three workspace packages (engine, then planner-ui, then app); t
 Package-only: `pnpm --filter @retiregolden/planner-ui benchmark:documents` prints the WS5 PDF
 text-extraction accuracy report (per-field precision/recall over a hand-built synthetic corpus; add
 `-- --json` for the machine-readable form). Findings:
-[features/document-parsing-spike.md](features/document-parsing-spike.md).
+[features/document-parsing-spike.md](features/document-parsing-spike.md); the extractor's design record is
+[features/document-text-extraction.md](features/document-text-extraction.md).
 
 App-only (run from `app/`): `pnpm test:e2e` (Playwright specs in `e2e/`), `pnpm preview`
 (serve the built `dist/`), `pnpm run licenses`.

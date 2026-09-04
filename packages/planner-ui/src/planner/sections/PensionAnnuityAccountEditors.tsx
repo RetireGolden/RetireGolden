@@ -111,9 +111,13 @@ export function PensionAccountEditor({
             label="Election year"
             help="The year the election is due, and the year the lump sum would be paid if taken. Taking the lump sum needs a year that has not passed yet: if the rollover already happened, clear the election and add its dollars to the receiving account balance."
             value={account.lumpSumOffer.electionYear}
-            // An offer kept for comparison may be historical, but an elected
-            // rollover needs a projection year that has not passed. Bound the
-            // field to the same floor the engine checks against the save stamp.
+            // Intentionally pathless. An offer kept for comparison may be
+            // historical, but an elected rollover needs a projection year that
+            // has not passed, and that floor moves with the election checkbox
+            // and the save stamp. `accounts.N.lumpSumOffer.electionYear` is a
+            // plain calendarYear (1900–2200), so a bound read by path could not
+            // state the floor the engine actually checks here; the range below
+            // is the engine's own, read at the same two conditions it uses.
             min={account.lumpSumElection ? electionFloorYear(plan) : 1900}
             max={2200}
             onCommit={(v) =>
@@ -297,9 +301,8 @@ export function AnnuityAccountEditor({
         <>
           <NumberField
             label="Purchase year"
+            path={`accounts.${index}.purchase.year`}
             value={account.purchase.year}
-            min={1900}
-            max={2200}
             onCommit={(v) => setPurchase({ ...account.purchase!, year: Math.round(v ?? new Date().getFullYear()) })}
           />
           <MoneyField

@@ -262,10 +262,15 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
               label="Benefit period (years)"
               help="How many years benefits can continue. A care episode that lasts longer than this is partly self-funded."
               learn={LEARN.ltcInsurance}
+              path={`insurance.${index}.benefitPeriodYears`}
               value={policy.benefitPeriodYears}
-              min={1}
-              max={20}
-              onCommit={(v) => set('benefitPeriodYears', Math.round(v ?? 3))}
+              // Not rounded (review r1-1): the schema is `z.number().positive()`
+              // with no `.int()`, so a typed 0.4 is schema-legal on its own. The
+              // old `Math.round` forced a whole year, and because it ran after
+              // the field's own range check (which validates the typed value,
+              // not the rounded one) it could turn a value the control had just
+              // accepted into 0, which `.positive()` then refuses.
+              onCommit={(v) => set('benefitPeriodYears', v ?? 3)}
             />
           ) : null}
           <NumberField
@@ -273,9 +278,8 @@ function InsuranceFields({ policy, index }: { policy: InsurancePolicy; index: nu
             help="The waiting period before benefits begin. Care costs during this period are self-funded."
             learn={LEARN.ltcInsurance}
             hint="Waiting period before benefits begin."
+            path={`insurance.${index}.eliminationPeriodDays`}
             value={policy.eliminationPeriodDays}
-            min={0}
-            max={365}
             onCommit={(v) => set('eliminationPeriodDays', Math.round(v ?? 90))}
           />
           <PercentField

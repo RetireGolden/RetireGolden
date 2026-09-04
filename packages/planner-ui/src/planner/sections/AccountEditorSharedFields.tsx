@@ -170,7 +170,7 @@ function InvestmentFields({
         />
       ) : null}
       {isAllocatable(account) && account.allocation !== undefined ? (
-        <AllocationPanel account={account} plan={plan} onCommit={(allocation) => onCommit('allocation', allocation)} />
+        <AllocationPanel account={account} index={index} plan={plan} onCommit={(allocation) => onCommit('allocation', allocation)} />
       ) : null}
     </>
   )
@@ -237,19 +237,17 @@ function ContributionFields({
                   <NumberField
                     label="From age"
                     hint="Blank = start age."
+                    path={`accounts.${index}.contributionSchedule.${phaseIndex}.fromAge`}
                     value={phase.fromAge}
                     allowNull
-                    min={0}
-                    max={100}
                     onCommit={(value) => updatePhase('fromAge', value)}
                   />
                   <NumberField
                     label="To age"
                     hint="Blank = run forever."
+                    path={`accounts.${index}.contributionSchedule.${phaseIndex}.toAge`}
                     value={phase.toAge}
                     allowNull
-                    min={0}
-                    max={100}
                     onCommit={(value) => updatePhase('toAge', value)}
                   />
                 </div>

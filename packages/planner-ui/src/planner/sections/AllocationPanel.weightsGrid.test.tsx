@@ -38,7 +38,7 @@ function renderPanel(weights: AllocationWeights): HTMLDivElement {
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
-    root!.render(<AllocationPanel account={account} plan={plan} onCommit={() => undefined} />)
+    root!.render(<AllocationPanel account={account} index={0} plan={plan} onCommit={() => undefined} />)
   })
   return container
 }
