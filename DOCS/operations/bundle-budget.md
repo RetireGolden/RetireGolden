@@ -47,15 +47,17 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | all JS together | 4400 KiB | 4049 KiB | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
 | landing critical path | 700 KiB | 596 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
-| PWA precache | 4500 KiB | 4179 KiB | Install cost, and the offline guarantee's price |
+| PWA precache | 4550 KiB | 4504 KiB (4179 when the row landed) | Install cost, and the offline guarantee's price |
 
 Each limit is the size measured when the budget landed plus headroom, and the headroom is deliberately
 uneven — read the table, not an average:
 
-- The **aggregate** rows are tight, ~8–17%: the precache (4179 → 4500) and the landing critical path
+- The **aggregate** rows are tight, ~1–17%: the precache (4504 → 4550) and the landing critical path
   (596 → 700). These are the two numbers a reader actually pays, and they are the ones that drifted, so
   they get the least slack. Expect to justify growth here, not absorb it. The landing row's slack is
-  sized so the entry and the registry could each grow into their own limits and still fit.
+  sized so the entry and the registry could each grow into their own limits and still fit. The precache
+  row is the one with almost nothing left, and "Raising the precache row" below says exactly what its
+  46 KiB is reserved for; the all-JS row (4356 → 4400) is nearly as tight and has no such reservation.
 - The **per-class chunk** rows sit near 11–21% (worker 903 → 1000, `useProjection` 572 → 640,
   `learningRegistry` 124 → 150, Recharts 331 → 380, `PlanRoutes` 267 → 300): enough for a feature
   landing in a known chunk.
@@ -157,6 +159,72 @@ letting the row disappear.
 To see where a chunk's weight actually is, build with a plugin that dumps `chunk.modules` from
 `generateBundle`, or run `pnpm dlx vite-bundle-visualizer` against `app/`. Neither is a committed
 dependency; the budget is.
+
+## Raising the precache row: the `simulatePlan` annual-phase extraction
+
+The precache row went from 4500 to 4550 KiB. This is the worked example of rule 3 above, and it is
+written out so it can be argued with rather than inherited.
+
+**What was measured.** Two builds, same toolchain: the extraction's parent — the annual-phase *rename*
+branch, which is `main` plus a rename-and-seam-test stack that measures identically to `main` on every
+row, precache included — and the extraction itself:
+
+| | parent (= `main`) | with the extraction | delta |
+|---|---|---|---|
+| planner Web Worker | 829.5 | 841.3 | +11.8 |
+| engine simulation core (`useProjection`) | 612.0 | 623.7 | +11.7 |
+| `annualProjectionFundingClose` (×2 graphs) | 30.9 each | 27.9 each | −3.0 each |
+| `HowTestedPage` | 46.6 | 47.3 | +0.7 |
+| all JS | 4337.9 (189 chunks) | 4356.2 (189 chunks) | +18.3 |
+| PWA precache | 4485.6 (209 entries) | 4504.0 (209 entries) | +18.4 |
+
+Every other chunk moved by single-digit bytes, and neither the chunk count nor the precache entry count
+changed. The landing critical path (626.5) and the app entry (256.0) are unchanged to a tenth of a KiB.
+
+**Why 18.4 KiB was enough to trip it.** The row was set at 4179 KiB with 321 KiB of headroom. Feature
+work spent 306 of that before this branch existed, leaving 14.4 KiB on `main` — so the extraction did
+not blow a generous budget, it arrived at an almost-full one. Read the raise as paying for the drift
+*and* the extraction, and read the drift as the thing that should have been noticed at 4400.
+
+**Where the +18.4 KiB is.** Nine annual phases moved out of `simulatePlan`'s year loop into explicit
+`Input`/`Result` seams, and `simulate.ts` shrank by roughly what they gained. What is left over is the
+seam itself: an object literal built at the call site and destructured inside the phase, for contracts
+that run to 42 fields. A `chunk.modules` dump attributes 18.1 KiB of the 18.4 to those nine modules,
+0.7 KiB to `HowTestedPage` — whose harness counts are `import.meta.glob` keys, so nine new seam-guard
+test files are nine more literal paths in the bundle — and the rest to noise. That is ~1.0 KiB per seam
+per graph, and there are two graphs: **the worker entry cannot share a chunk with the app graph**, so
+every engine module ships twice, and so does every seam. The migration of 18 evidence-ID minters to
+`deriveActionStructuralId`, which travelled on the same branch, cost 120 bytes per graph and pulled in
+no new dependency — `structuralId.ts` and its SHA-256 were already in both graphs.
+
+**Why no chunk-level fix applies, measured twice.** The precache totals *every* emitted file, so
+regrouping is arithmetic that cannot change this row — it moves bytes between the per-chunk rows above
+and leaves the sum alone.
+
+- Adding the phases to `ANNUAL_PROJECTION_KERNEL_MODULE_NAMES` was tried and rejected: all JS went
+  4350.1 → 4349.5 KiB (nothing removed) while the app entry went 256 → 384 KiB, over its own 300 KiB
+  budget.
+- Consolidating the phase files was tried and rejected: rolldown flattens them into
+  `planner.worker` / `useProjection` already — they are not separate chunks, their symbol names are
+  mangled, and there is no wrapper to remove. Merging two phase modules into one file emitted a
+  byte-identical `dist/`, down to the content hashes. File boundaries cost zero here; the seam costs the
+  bytes, and the seam is the point of the refactor.
+
+**What the 46 KiB of new headroom is for.** The extraction, and the rest of it: at ~2 KiB per seam
+across both graphs, this covers roughly twenty more annual phases coming out of the year loop. It is not
+feature headroom. A feature that lands in the precache still has to justify its own bytes against 4550,
+the same as it would have against 4500.
+
+**If you would rather not spend it.** The honest alternative is not trimming somewhere else — nothing in
+the two heavyweight runtime-cached buckets counts here, and the offline guarantee is not a lever (see
+above). It is to decide that install size outranks the seams, and stop extracting: keep the phases
+already landed and leave the remaining year loop inline, or revert the extraction outright. That is a
+product call about what a reader downloads once versus what the engine costs to change, and it belongs
+to whoever owns install size, not to this file.
+
+One number this raise does *not* address: all JS is 4356.2 against 4400, 99% of its row, and it drifted
+there the same way. Nothing on this branch was withheld from it, but the next change that adds JS will
+likely hit that row first.
 
 ## The Learn content split
 

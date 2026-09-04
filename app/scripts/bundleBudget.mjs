@@ -102,8 +102,25 @@ export const LANDING_PATH_KIB = 700
  * offline visit is guaranteed. The HiGHS wasm (~3 MB) and the Learn
  * illustrations (~5 MB) are runtime-cached instead and are not counted here —
  * see the workbox config in vite.config.ts.
+ *
+ * Raised 4500 -> 4550 for the `simulatePlan` annual-phase extraction, which
+ * measured 4504.0 KiB against the old limit. The row was set at 4179 KiB and
+ * had drifted to 4485.6 KiB on `main` through feature work before that branch
+ * started, so 14.4 of its original 321 KiB of headroom was left and the
+ * extraction's +18.4 KiB did not fit in what remained.
+ *
+ * That +18.4 KiB is nine explicit phase seams, each emitted TWICE — a worker
+ * entry cannot share a chunk with the app graph — at ~1.0 KiB per seam per
+ * graph, plus 0.8 KiB of new test-file paths in HowTestedPage's
+ * `import.meta.glob` keys. No chunk-level fix touches it: the precache totals
+ * every emitted file, so regrouping moves bytes between the per-chunk rows and
+ * changes this one by zero. Measured, twice — see
+ * DOCS/operations/bundle-budget.md.
+ *
+ * This is headroom for that extraction, not for features. The next feature
+ * that lands here still has to justify its own bytes against 4550.
  */
-export const PRECACHE_KIB = 4500
+export const PRECACHE_KIB = 4550
 
 export const kib = (bytes) => bytes / 1024
 export const fmt = (n) => `${n.toFixed(1)} KiB`
