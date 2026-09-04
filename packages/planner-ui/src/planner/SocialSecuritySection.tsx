@@ -596,7 +596,7 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
             </p>
           ) : null}
           {stream.earningsProjection != null && projectedYears === 0 && resolved.piaMonthly !== null ? (
-            <p className="field-hint" style={{ marginTop: '0.4rem', color: 'var(--warn)' }}>
+            <p className="field-hint mt-xs" style={{ color: 'var(--warn)' }}>
               No years were projected. Your reported earnings already reach your retirement age, or no retirement age is
               set on the Household step.
             </p>
