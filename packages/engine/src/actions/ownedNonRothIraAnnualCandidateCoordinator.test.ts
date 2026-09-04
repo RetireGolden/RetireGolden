@@ -1008,8 +1008,8 @@ describe('coordinateOwnedNonRothIraAnnualWithdrawalCandidate', () => {
     const id = bindingId(mixedFixture())
 
     expect(id).toBe(
-      'owned-non-roth-ira-annual-candidate-binding:f521628d70a7aae2' +
-        'cf9f3417b45f2424e390171170faa7b82ab4b73f14182266',
+      'owned-non-roth-ira-annual-candidate-binding:961230a8d1f8e271' +
+        'd4d8ca4e5702dbb5ec9f95ddfa444d1b1f70f950b6813f60',
     )
     expect(bindingId(mixedFixture())).toBe(id)
     expect(buildOwnedNonRothIraStagedDistributionDateEvidenceId({

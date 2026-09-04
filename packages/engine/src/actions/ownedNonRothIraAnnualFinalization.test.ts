@@ -457,8 +457,8 @@ describe('resolveOwnedNonRothIraAnnualWithdrawalEvidence', () => {
     const id = resolvedId(fixture())
 
     expect(id).toBe(
-      'owned-non-roth-ira-annual-withdrawal-finalization:575657a1ef6e' +
-        'a4970a5d5ce0f12e28fc938f0a4c964e172a8df14b4b3a5b2e55',
+      'owned-non-roth-ira-annual-withdrawal-finalization:1b613c7fbf6a' +
+        '0e3b32f1726485b92fa3ffc60955456b8ccb9860f7e3dff3627c',
     )
     expect(resolvedId(fixture())).toBe(id)
     expect(resolvedId(fixture({ includeLine8: true }))).not.toBe(id)

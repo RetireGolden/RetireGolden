@@ -1867,4 +1867,52 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
         : null,
     ).not.toBe(evaluation.finalEvidenceId)
   })
+
+  it('mints its evidence IDs with the hardened structural minter', () => {
+    const overAge = evaluateOwnedNonRothIraPenaltyPrerequisites(
+      input({ birthDate: '1950-01-01' }),
+    )
+    const applies = evaluateOwnedNonRothIraPenaltyPrerequisites(
+      completeNegativeEvidence(input({})),
+    )
+
+    expect(overAge.coverage[0]?.ageThresholdEvidenceId).toBe(
+      'owned-ira-age-59-half:57fa14d8ff984f3e1d93e0898f57e4e7' +
+        '8a5421ede3301f9b20b74135b0f28042',
+    )
+    expect(overAge.coverage[0]?.characterEvidenceIds).toEqual([
+      'owned-ira-character-segment:11ec85684f393fd5fa1e494c69b763cd' +
+        'e23dbb98f99b2ed1c1cfe5bc9411d0f7',
+    ])
+    const overAgeEvaluation = first(overAge)
+    const appliesEvaluation = first(applies)
+
+    expect(
+      overAgeEvaluation.outcome === 'age59HalfReached'
+        ? overAgeEvaluation.finalEvidenceId
+        : null,
+    ).toBe(
+      'owned-ira-age-59-half-zero-penalty:6b0faa1abb2cb165dcec8701' +
+        '26603f2b701491e3fe65145e0bfc2d0cdf49966e',
+    )
+    expect(appliesEvaluation.outcome).toBe('penaltyApplies')
+    expect(
+      appliesEvaluation.outcome === 'penaltyApplies'
+        ? appliesEvaluation.finalEvidenceId
+        : null,
+    ).toBe(
+      'owned-ira-penalty-applies:342dbd4994b82ec1bcb2df232807fecb' +
+        '05507d81f66d79270d404c0040d2141c',
+    )
+    expect(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(
+        input({ birthDate: '1950-01-01' }),
+      ).coverage[0]?.ageThresholdEvidenceId,
+    ).toBe(overAge.coverage[0]?.ageThresholdEvidenceId)
+    expect(
+      evaluateOwnedNonRothIraPenaltyPrerequisites(
+        input({ birthDate: '1950-01-02' }),
+      ).coverage[0]?.ageThresholdEvidenceId,
+    ).not.toBe(overAge.coverage[0]?.ageThresholdEvidenceId)
+  })
 })
