@@ -20,7 +20,7 @@ export function updatePersonLongevity(
   personIndex: number,
   longevity: Plan['household']['people'][number]['longevity'],
 ) {
-  d.household.people[personIndex].longevity = longevity
+  d.household.people[personIndex]!.longevity = longevity
   invalidateAcaEvidence(d)
 }
 
@@ -34,7 +34,7 @@ export function updatePersonLongevity(
 export function removePartner(d: Plan, removedId: string) {
   d.household.people = d.household.people.filter((p) => p.id !== removedId)
   d.household.filingStatus = 'single'
-  const primaryId = d.household.people[0].id
+  const primaryId = d.household.people[0]!.id
   d.accounts = d.accounts.map((a) => (a.ownerPersonId === removedId ? { ...a, ownerPersonId: primaryId } : a))
   d.incomes = d.incomes.filter((s) => !('personId' in s) || s.personId !== removedId)
   d.insurance = d.insurance

@@ -27,7 +27,7 @@ describe('buildResultsRows', () => {
     const result = view(plan).result
     expect(rows).toHaveLength(result.years.length)
     expect(rows[0]).toMatchObject({
-      year: result.years[0].year,
+      year: result.years[0]!.year,
       cash: expect.any(Number),
       taxable: expect.any(Number),
       equityComp: expect.any(Number),
@@ -83,7 +83,7 @@ describe('buildResultsRows', () => {
     // `spending` that silently dropped both terms would still pass below.
     expect(years.some((y) => y.tax > 0 || y.penalties > 0)).toBe(true)
     years.forEach((y, i) => {
-      expect(rows[i].spending, `year ${y.year}`).toBeCloseTo(y.expenses.total + y.tax + y.penalties, 6)
+      expect(rows[i]!.spending, `year ${y.year}`).toBeCloseTo(y.expenses.total + y.tax + y.penalties, 6)
     })
   })
 
@@ -95,7 +95,7 @@ describe('buildResultsRows', () => {
     // as 0 too, so this guard is what makes the loop below discriminating.
     expect(v.summary.fiNumber).toBeGreaterThan(0)
     v.result.years.forEach((y, i) => {
-      expect(rows[i].fiTarget, `year ${y.year}`).toBeCloseTo(v.inflate(y.year, v.summary.fiNumber), 6)
+      expect(rows[i]!.fiTarget, `year ${y.year}`).toBeCloseTo(v.inflate(y.year, v.summary.fiNumber), 6)
     })
   })
 })
@@ -105,7 +105,7 @@ describe('buildIncomeRows / buildExpenseRows', () => {
     const plan = buildExampleCouple()
     const rows = buildIncomeRows(view(plan), identity)
     expect(rows).toHaveLength(view(plan).result.years.length)
-    expect(Object.keys(rows[0]).sort()).toEqual(
+    expect(Object.keys(rows[0]!).sort()).toEqual(
       [
         'year', 'wages', 'socialSecurity', 'pension', 'annuity', 'tipsLadder',
         'recurring', 'oneTime', 'taxableYield', 'taxExemptInterest',
@@ -117,7 +117,7 @@ describe('buildIncomeRows / buildExpenseRows', () => {
     const plan = buildExampleCouple()
     const rows = buildExpenseRows(view(plan), identity)
     expect(rows).toHaveLength(view(plan).result.years.length)
-    expect(Object.keys(rows[0]).sort()).toEqual(
+    expect(Object.keys(rows[0]!).sort()).toEqual(
       ['year', 'base', 'healthcare', 'property', 'debt', 'insurance', 'care', 'goals', 'taxes'].sort(),
     )
   })
@@ -132,7 +132,7 @@ describe('buildIncomeRows / buildExpenseRows', () => {
     const rows = buildExpenseRows(v, identity)
     expect(v.result.years.some((y) => y.expenses.careCost > 0)).toBe(true)
     v.result.years.forEach((y, i) => {
-      expect(rows[i].care, `year ${y.year}`).toBeCloseTo(
+      expect(rows[i]!.care, `year ${y.year}`).toBeCloseTo(
         Math.max(0, y.expenses.careCost - y.expenses.ltcBenefit),
         6,
       )
@@ -164,19 +164,19 @@ describe('buildLedgerCsv', () => {
     const csv = buildLedgerCsv(plan, v)
     const lines = csv.split('\n')
     expect(lines).toHaveLength(v.result.years.length + 1)
-    expect(lines[0].split(',').slice(0, 4)).toEqual(['year', 'filingStatus', 'wages', 'socialSecurity'])
+    expect(lines[0]!.split(',').slice(0, 4)).toEqual(['year', 'filingStatus', 'wages', 'socialSecurity'])
     // No inherited accounts in this fixture, so no inherited_* columns.
     expect(lines[0]).not.toContain('inherited_')
-    expect(lines[1].startsWith(`${v.result.years[0].year},`)).toBe(true)
+    expect(lines[1]!.startsWith(`${v.result.years[0]!.year},`)).toBe(true)
   })
 
   it('rounds numeric cells to the nearest dollar the way the button always has', () => {
     const plan = buildExampleCouple()
     const v = view(plan)
     const csv = buildLedgerCsv(plan, v)
-    const firstDataRow = csv.split('\n')[1].split(',')
+    const firstDataRow = csv.split('\n')[1]!.split(',')
     const wagesCell = firstDataRow[2]
-    expect(wagesCell).toBe(String(Math.round(v.result.years[0].incomes.wages)))
+    expect(wagesCell).toBe(String(Math.round(v.result.years[0]!.incomes.wages)))
   })
 
   it('fills the inherited_* columns from the plan account and the year evidence', () => {
@@ -190,7 +190,7 @@ describe('buildLedgerCsv', () => {
     const v = view(plan)
     const evidence: InheritedAccountYearEvidence = {
       accountId: inheritedId,
-      ownerPersonId: plan.household.people[0].id,
+      ownerPersonId: plan.household.people[0]!.id,
       regime: 'legacy-planning-approximation',
       matrixRow: 'X1',
       requirementKind: 'legacy',
@@ -209,8 +209,8 @@ describe('buildLedgerCsv', () => {
     }
     const csv = buildLedgerCsv(plan, patchedView)
     const [header, firstRow] = csv.split('\n')
-    const headerCols = header.split(',')
-    const dataCols = firstRow.split(',')
+    const headerCols = header!.split(',')
+    const dataCols = firstRow!.split(',')
     // `requirementKind: 'legacy'` makes `needsProfessionalConfirmation` true
     // (see `professionalConfirmation.ts`), so the confirm column reads 'yes'.
     const expected: Record<string, string> = {
@@ -252,8 +252,8 @@ describe('buildLedgerCsv', () => {
     }
     const csv = buildLedgerCsv(plan, patchedView)
     const [header, firstRow] = csv.split('\n')
-    const at = header.split(',').indexOf(`inherited_${inheritedId}_requiredAmount`)
+    const at = header!.split(',').indexOf(`inherited_${inheritedId}_requiredAmount`)
     expect(at).toBeGreaterThanOrEqual(0)
-    expect(firstRow.split(',')[at]).toBe('')
+    expect(firstRow!.split(',')[at]).toBe('')
   })
 })

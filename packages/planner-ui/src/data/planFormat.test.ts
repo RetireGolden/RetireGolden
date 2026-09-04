@@ -47,7 +47,7 @@ describe('plan-format subpath', () => {
     expect(parsed.ok).toBe(true)
     if (parsed.ok) {
       expect(parsed.plans).toHaveLength(1)
-      expect(parsed.plans[0].id).toBe(plan.id)
+      expect(parsed.plans[0]!.id).toBe(plan.id)
       expect(parsed.warnings).toEqual([])
     }
   })

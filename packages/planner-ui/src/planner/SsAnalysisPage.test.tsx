@@ -83,8 +83,8 @@ describe('SsAnalysisPage claim-age heatmap', () => {
       })
       const [alexAge, samAge] = matches!.slice(1).map(Number)
       expect(updates.at(-1)).toMatchObject({
-        [plan.household.people[0].id]: alexAge,
-        [plan.household.people[1].id]: samAge,
+        [plan.household.people[0]!.id]: alexAge,
+        [plan.household.people[1]!.id]: samAge,
       })
     }
 
@@ -110,7 +110,7 @@ describe('SsAnalysisPage claim-age heatmap', () => {
     expect(buttons.length).toBeGreaterThan(0)
     expect(buttons.every((button) => button.disabled)).toBe(true)
     expect(buttons.some((button) => button.getAttribute('aria-current') === 'true')).toBe(true)
-    expect(buttons[0].parentElement?.getAttribute('title')).toMatch(/Alex \d+ \/ Sam \d+: \$/)
+    expect(buttons[0]!.parentElement?.getAttribute('title')).toMatch(/Alex \d+ \/ Sam \d+: \$/)
     expect(container.textContent).toContain('claim-age choices are read-only in this workspace.')
   })
 })

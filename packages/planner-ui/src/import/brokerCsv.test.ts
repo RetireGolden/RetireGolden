@@ -136,7 +136,7 @@ describe('parseBrokerPositionsCsv — Fidelity', () => {
     // an account. What matters is that the checklist says so: an unreported
     // skip here reads as a complete import of a balance that is $4,000 low.
     expect(r.accounts).toHaveLength(1)
-    expect(r.accounts[0].totalValue).toBe(19_050)
+    expect(r.accounts[0]!.totalValue).toBe(19_050)
     const orphan = r.review.find((i) => i.status === 'skipped' && i.source === 'Row 3')
     expect(orphan).toBeDefined()
     expect(orphan!.detail).toContain('$4,000')
@@ -149,9 +149,25 @@ describe('parseBrokerPositionsCsv — Fidelity', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
 
-    expect(r.accounts[0].totalValue).toBe(19_050)
+    expect(r.accounts[0]!.totalValue).toBe(19_050)
     const orphan = r.review.find((i) => i.status === 'skipped' && i.source === 'Row 3')
     expect(orphan?.detail).toContain('$4,000')
+  })
+
+  it('reads a named-month "Date downloaded" line the same as a numeric one', () => {
+    const namedMonth = FIDELITY_FIXTURE.replace('Date downloaded 07/07/2026 9:12 PM ET', 'Date downloaded January 7, 2026 9:12 PM ET')
+    const r = parseBrokerPositionsCsv(namedMonth)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.accounts.every((account) => account.asOfIso === '2026-01-07')).toBe(true)
+  })
+
+  it('reads an abbreviated named-month "Date downloaded" line', () => {
+    const abbreviated = FIDELITY_FIXTURE.replace('Date downloaded 07/07/2026 9:12 PM ET', 'Date downloaded Sept. 7, 2026 9:12 PM ET')
+    const r = parseBrokerPositionsCsv(abbreviated)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.accounts.every((account) => account.asOfIso === '2026-09-07')).toBe(true)
   })
 })
 
@@ -216,7 +232,7 @@ describe('parseBrokerPositionsCsv — hostile and malformed input', () => {
     const r = parseBrokerPositionsCsv(hostile)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.accounts[0].totalValue).toBe(1000)
+    expect(r.accounts[0]!.totalValue).toBe(1000)
     expect(r.review.filter((i) => i.status === 'skipped')).toHaveLength(2)
   })
 
@@ -228,8 +244,8 @@ describe('parseBrokerPositionsCsv — hostile and malformed input', () => {
     const r = parseBrokerPositionsCsv(hostile)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.accounts[0].accountLabel).toContain('=HYPERLINK')
-    expect(r.accounts[0].totalValue).toBe(500)
+    expect(r.accounts[0]!.accountLabel).toContain('=HYPERLINK')
+    expect(r.accounts[0]!.totalValue).toBe(500)
   })
 
   it('handles negative (short/margin) positions via parenthesized values', () => {
@@ -241,7 +257,7 @@ describe('parseBrokerPositionsCsv — hostile and malformed input', () => {
     const r = parseBrokerPositionsCsv(csv)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.accounts[0].totalValue).toBe(8000)
+    expect(r.accounts[0]!.totalValue).toBe(8000)
   })
 })
 

@@ -39,8 +39,8 @@ export function Modal({ title, onClose, children, width, initialFocus }: ModalPr
         panelRef.current?.focus()
         return
       }
-      const first = items[0]
-      const last = items[items.length - 1]
+      const first = items[0]!
+      const last = items[items.length - 1]!
       const active = document.activeElement
       if (e.shiftKey && (active === first || active === panelRef.current)) {
         e.preventDefault()

@@ -284,8 +284,8 @@ describe('buildYearCashFlowSankey', () => {
 
     const unfundedLinks = model.views.cashFlow.links.filter((link) => link.flag === 'unfunded')
     expect(unfundedLinks).toHaveLength(1)
-    expect(unfundedLinks[0].source).toBe(UNFUNDED_ORIGIN_NODE_ID)
-    expect(unfundedLinks[0].target).toBe(unfundedNode!.id)
+    expect(unfundedLinks[0]!.source).toBe(UNFUNDED_ORIGIN_NODE_ID)
+    expect(unfundedLinks[0]!.target).toBe(unfundedNode!.id)
 
     for (const link of model.views.cashFlow.links) {
       if (link.target === unfundedNode!.id || link.target.startsWith('unfunded:')) {

@@ -43,10 +43,10 @@ describe('SelectField wide (#465)', () => {
     )
     const fields = Array.from(el.querySelectorAll('.field'))
     expect(fields).toHaveLength(2)
-    expect(fields[0].classList.contains('field--wide')).toBe(true)
-    expect(fields[1].classList.contains('field--wide')).toBe(false)
+    expect(fields[0]!.classList.contains('field--wide')).toBe(true)
+    expect(fields[1]!.classList.contains('field--wide')).toBe(false)
     // The select itself is unchanged: same element, same title carrying the full label.
-    const wideSelect = fields[0].querySelector('select')!
+    const wideSelect = fields[0]!.querySelector('select')!
     expect(wideSelect.title).toBe('Fixed (happens in its year)')
   })
 })

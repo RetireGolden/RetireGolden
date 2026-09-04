@@ -49,7 +49,7 @@ describe('runMonteCarlo (pool entry; sync fallback in this environment)', () => 
     expect(a.pathCount).toBe(50)
     expect(a.successRate).toBe(b.successRate)
     expect(a.fan).toEqual(b.fan)
-    expect(a.fan[0].year).toBe(2026)
+    expect(a.fan[0]!.year).toBe(2026)
   })
 
   it('reports monotonically non-decreasing progress up to the total', async () => {
@@ -67,7 +67,7 @@ describe('runMonteCarlo (pool entry; sync fallback in this environment)', () => 
     })
     expect(seen.length).toBeGreaterThan(0)
     expect(seen[seen.length - 1]).toBe(30)
-    for (let i = 1; i < seen.length; i++) expect(seen[i]).toBeGreaterThanOrEqual(seen[i - 1])
+    for (let i = 1; i < seen.length; i++) expect(seen[i]).toBeGreaterThanOrEqual(seen[i - 1]!)
   })
 
   it('completes 1,000 paths over a ~26-year horizon within the performance budget', async () => {
@@ -107,8 +107,8 @@ describe('runMonteCarlo (pool entry; sync fallback in this environment)', () => 
     expect(result.suites).toHaveLength(2)
     for (const suite of result.suites) {
       expect(suite.worstByEndingAfterTaxEstate).toHaveLength(3)
-      expect(suite.worstByEndingAfterTaxEstate[0].summary.endingAfterTaxEstate).toEqual(expect.any(Number))
-      expect(suite.worstByEndingAfterTaxEstate[0].projection.depletionYear ?? null).not.toBeUndefined()
+      expect(suite.worstByEndingAfterTaxEstate[0]!.summary.endingAfterTaxEstate).toEqual(expect.any(Number))
+      expect(suite.worstByEndingAfterTaxEstate[0]!.projection.depletionYear ?? null).not.toBeUndefined()
     }
   })
 })

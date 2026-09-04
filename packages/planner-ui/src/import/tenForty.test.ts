@@ -51,8 +51,8 @@ describe('seedPlanFromTenForty', () => {
     expect(r.plan.household.filingStatus).toBe('marriedFilingJointly')
     expect(r.plan.household.state).toBe('NC')
     expect(r.plan.household.people).toHaveLength(2)
-    expect(r.plan.household.people[0].dob).toBe('1958-03-10')
-    expect(r.plan.household.people[1].dob).toBe('1960-08-22')
+    expect(r.plan.household.people[0]!.dob).toBe('1958-03-10')
+    expect(r.plan.household.people[1]!.dob).toBe('1960-08-22')
 
     // Interest+dividends → estimated taxable account at the assumed yield.
     const taxable = r.plan.accounts.find((a) => a.type === 'taxable')!
@@ -123,7 +123,7 @@ describe('seedPlanFromTenForty', () => {
     const taxable = r.plan.accounts.find((a) => a.type === 'taxable')
     expect(taxable?.type === 'taxable' && taxable.balance).toBe(6000)
     // Single has one person — the estimate is theirs, not a Joint label.
-    expect(taxable?.ownerPersonId).toBe(r.plan.household.people[0].id)
+    expect(taxable?.ownerPersonId).toBe(r.plan.household.people[0]!.id)
     expect(r.plan.accounts.some((a) => a.type === 'pension')).toBe(false)
   })
 
@@ -139,7 +139,7 @@ describe('seedPlanFromTenForty', () => {
     if (!r.ok) return
     const taxable = r.plan.accounts.find((a) => a.type === 'taxable')!
     expect(taxable.balance).toBe(76_000)
-    expect(taxable.ownerPersonId).toBe(r.plan.household.people[0].id)
+    expect(taxable.ownerPersonId).toBe(r.plan.household.people[0]!.id)
     expect(r.plan.household.people).toHaveLength(1)
   })
 

@@ -28,8 +28,8 @@ function mapped(target: string, confidence: 'exact' | 'derived' | 'assumed' = 'e
 }
 
 function addCurrentFacts(plan: Plan): void {
-  const personId = plan.household.people[0].id
-  plan.household.people[0].dob = '1970-04-15'
+  const personId = plan.household.people[0]!.id
+  plan.household.people[0]!.dob = '1970-04-15'
   plan.incomes.push(
     { type: 'wages', id: nextId(), personId, annualGross: 100_000, endAge: 64, realGrowthPct: 2 },
     {
@@ -56,8 +56,8 @@ function addCurrentFacts(plan: Plan): void {
 }
 
 function addIncomingFacts(plan: Plan): ImportReviewItem[] {
-  const personId = plan.household.people[0].id
-  plan.household.people[0].dob = '1970-04-15'
+  const personId = plan.household.people[0]!.id
+  plan.household.people[0]!.dob = '1970-04-15'
   plan.incomes.push(
     { type: 'wages', id: nextId(), personId, annualGross: 112_000, endAge: 67, realGrowthPct: 9 },
     {
@@ -109,8 +109,8 @@ describe('existing-plan intake refresh', () => {
     const incoming = empty('Incoming')
     addCurrentFacts(current)
     const review = addIncomingFacts(incoming)
-    expect(incoming.household.people[0].id).not.toBe(current.household.people[0].id)
-    expect(incoming.incomes[0].id).not.toBe(current.incomes[0].id)
+    expect(incoming.household.people[0]!.id).not.toBe(current.household.people[0]!.id)
+    expect(incoming.incomes[0]!.id).not.toBe(current.incomes[0]!.id)
 
     const classification = classifyIntakeRefresh(current, incoming, review)
     expect(classification.candidates.map((item) => item.match)).toEqual(['exact', 'exact', 'exact', 'exact'])
@@ -135,7 +135,7 @@ describe('existing-plan intake refresh', () => {
         sourcePath: 'incomes[0].annualGross',
         targetBinding: expect.objectContaining({
           path: 'incomes[0].annualGross',
-          incomeId: current.incomes[0].id,
+          incomeId: current.incomes[0]!.id,
         }),
       },
       {
@@ -146,7 +146,7 @@ describe('existing-plan intake refresh', () => {
         sourcePath: 'incomes[1].annualAmount',
         targetBinding: expect.objectContaining({
           path: 'incomes[1].annualAmount',
-          incomeId: current.incomes[1].id,
+          incomeId: current.incomes[1]!.id,
         }),
       },
       {
@@ -157,7 +157,7 @@ describe('existing-plan intake refresh', () => {
         sourcePath: 'incomes[2].amount',
         targetBinding: expect.objectContaining({
           path: 'incomes[2].amount',
-          incomeId: current.incomes[2].id,
+          incomeId: current.incomes[2]!.id,
         }),
       },
       {
@@ -180,12 +180,12 @@ describe('existing-plan intake refresh', () => {
         const index = Number(/^incomes\[(\d+)]/.exec(change.path)![1])
         const income = current.incomes[index]
         expect(
-          income.type === 'wages'
-            ? income.annualGross
-            : income.type === 'recurring'
-              ? income.annualAmount
-              : income.type === 'oneTime'
-                ? income.amount
+          income!.type === 'wages'
+            ? income!.annualGross
+            : income!.type === 'recurring'
+              ? income!.annualAmount
+              : income!.type === 'oneTime'
+                ? income!.amount
                 : null,
         ).toBe(change.after)
       }
@@ -198,7 +198,7 @@ describe('existing-plan intake refresh', () => {
     const current = empty('Current')
     const incoming = empty('1040')
     addCurrentFacts(current)
-    incoming.household.people[0].dob = current.household.people[0].dob
+    incoming.household.people[0]!.dob = current.household.people[0]!.dob
     incoming.household.people.push({
       id: nextId(),
       name: 'Spouse',
@@ -210,7 +210,7 @@ describe('existing-plan intake refresh', () => {
     incoming.incomes.push({
       type: 'wages',
       id: nextId(),
-      personId: incoming.household.people[0].id,
+      personId: incoming.household.people[0]!.id,
       annualGross: 250_000,
       endAge: null,
       realGrowthPct: 0,
@@ -236,8 +236,8 @@ describe('existing-plan intake refresh', () => {
   it('requires unique semantic labels (and year for one-time income); ids and equal amounts never match', () => {
     const current = empty('Current')
     const incoming = empty('Incoming')
-    const owner = current.household.people[0].id
-    const incomingOwner = incoming.household.people[0].id
+    const owner = current.household.people[0]!.id
+    const incomingOwner = incoming.household.people[0]!.id
     current.incomes.push(
       {
         type: 'recurring',
@@ -266,8 +266,8 @@ describe('existing-plan intake refresh', () => {
       { type: 'oneTime', id: nextId(), label: 'Sale', year: 2031, inflationAdjusted: false, amount: 50_000, taxTreatment: 'ordinary' },
       { type: 'wages', id: nextId(), personId: incomingOwner, annualGross: 50_000, endAge: null, realGrowthPct: 0 },
     )
-    incoming.household.people[0].dob = '1980-01-01'
-    current.household.people[0].dob = '1981-01-01'
+    incoming.household.people[0]!.dob = '1980-01-01'
+    current.household.people[0]!.dob = '1981-01-01'
     const classification = classifyIntakeRefresh(current, incoming, [
       mapped('incomes[0]'),
       mapped('incomes[1]'),
@@ -427,10 +427,10 @@ describe('existing-plan intake refresh', () => {
   it('requires exactly one wage stream on both sides for the proven person', () => {
     const current = empty('Current')
     const incoming = empty('Incoming')
-    current.household.people[0].dob = '1975-03-02'
-    incoming.household.people[0].dob = '1975-03-02'
-    const currentPerson = current.household.people[0].id
-    const incomingPerson = incoming.household.people[0].id
+    current.household.people[0]!.dob = '1975-03-02'
+    incoming.household.people[0]!.dob = '1975-03-02'
+    const currentPerson = current.household.people[0]!.id
+    const incomingPerson = incoming.household.people[0]!.id
     current.incomes.push(
       { type: 'wages', id: nextId(), personId: currentPerson, annualGross: 80_000, endAge: null, realGrowthPct: 0 },
       { type: 'wages', id: nextId(), personId: currentPerson, annualGross: 20_000, endAge: 60, realGrowthPct: 0 },
@@ -567,7 +567,7 @@ describe('existing-plan intake refresh', () => {
     ])
     expect(delta.changes).toEqual([])
     expect(delta.review).toHaveLength(3)
-    expect(delta.review[2].detail).toContain('Another selected field has a duplicate target')
+    expect(delta.review[2]!.detail).toContain('Another selected field has a duplicate target')
     expect(applyIntakeRefresh(current, delta)).toBe(0)
     expect((current.incomes[0] as Extract<(typeof current.incomes)[number], { type: 'recurring' }>).annualAmount).toBe(10_000)
 
@@ -598,7 +598,7 @@ describe('existing-plan intake refresh', () => {
     const classified = classifyIntakeRefresh(classifiedCase.current, classifiedCase.incoming, classifiedCase.review, {
       protectedTargets: new Set([target]),
     })
-    expect(classified.candidates[0].isProtected).toBe(true)
+    expect(classified.candidates[0]!.isProtected).toBe(true)
     const classifiedDelta = buildIntakeRefreshDelta(
       classifiedCase.current,
       classified,
@@ -655,8 +655,8 @@ describe('existing-plan intake refresh', () => {
     const current = empty('Current')
     const incoming = empty('Incoming')
     addCurrentFacts(current)
-    const owner = incoming.household.people[0].id
-    incoming.household.people[0].dob = current.household.people[0].dob
+    const owner = incoming.household.people[0]!.id
+    incoming.household.people[0]!.dob = current.household.people[0]!.dob
     incoming.incomes.push({
       type: 'wages',
       id: nextId(),
@@ -831,7 +831,7 @@ describe('existing-plan intake refresh', () => {
       selection,
     )
     expect(reorderedPreview.changes).toEqual([])
-    expect(reorderedPreview.review[0].detail).toContain('requires reclassification')
+    expect(reorderedPreview.review[0]!.detail).toContain('requires reclassification')
 
     const changed = make()
     const changedSelection = defaultIntakeRefreshSelection(changed.classification)
@@ -852,7 +852,7 @@ describe('existing-plan intake refresh', () => {
       defaultIntakeRefreshSelection(afterPreview.classification),
     )
     const retargeted = structuredClone(delta)
-    retargeted.changes[0].path = 'incomes[1].annualAmount'
+    retargeted.changes[0]!.path = 'incomes[1].annualAmount'
     const beforeRetarget = structuredClone(afterPreview.current)
     expect(applyIntakeRefresh(afterPreview.current, retargeted)).toBe(0)
     expect(afterPreview.current).toEqual(beforeRetarget)
@@ -875,7 +875,7 @@ describe('existing-plan intake refresh', () => {
     )
     const before = structuredClone(current)
     const forged = structuredClone(delta)
-    forged.changes[1].after = Number.NaN
+    forged.changes[1]!.after = Number.NaN
     expect(applyIntakeRefresh(current, forged)).toBe(0)
     expect(current).toEqual(before)
 

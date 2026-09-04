@@ -43,8 +43,8 @@ describe('the reading the notice states is what the engine does (#555)', () => {
     plan.household.filingStatus = 'marriedFilingJointly'
     const { years } = simulatePlan(plan, { startYear: 2026, taxCalculator: taxCalculatorFor(plan) })
     const first = years[0]
-    expect(first.people.filter((p) => p.alive)).toHaveLength(2)
-    expect(first.filingStatus).toBe('marriedFilingJointly')
+    expect(first!.people.filter((p) => p.alive)).toHaveLength(2)
+    expect(first!.filingStatus).toBe('marriedFilingJointly')
   })
 })
 
@@ -77,7 +77,7 @@ describe('Assumptions snapshot: Single filing status with two people (#555)', ()
     expect(longevity(joint).note).toBeUndefined()
     const alone = createSamplePlan()
     alone.household.filingStatus = 'single'
-    alone.household.people = [alone.household.people[0]]
+    alone.household.people = [alone.household.people[0]!]
     expect(longevity(alone).note).toBeUndefined()
   })
 })

@@ -227,13 +227,13 @@ describe('validation chrome', () => {
       )
     })
     const [floor, qcd] = [...container.querySelectorAll<HTMLInputElement>('input')]
-    expect(floor.getAttribute('aria-invalid')).toBe('true')
-    expect(floor.closest('.field')?.querySelector('.field-error')?.textContent).toBe('Must be at least 0')
-    expect(qcd.hasAttribute('aria-invalid')).toBe(false)
+    expect(floor!.getAttribute('aria-invalid')).toBe('true')
+    expect(floor!.closest('.field')?.querySelector('.field-error')?.textContent).toBe('Must be at least 0')
+    expect(qcd!.hasAttribute('aria-invalid')).toBe(false)
     // Each wired control names its path, so the chip can land on the one the
     // first issue is about rather than the first invalid control in tree order.
-    expect(floor.getAttribute('data-path')).toBe('strategies.taxableSafetyNetFloor')
-    expect(qcd.getAttribute('data-path')).toBe('strategies.qcdAnnual')
+    expect(floor!.getAttribute('data-path')).toBe('strategies.taxableSafetyNetFloor')
+    expect(qcd!.getAttribute('data-path')).toBe('strategies.qcdAnnual')
   })
 
   it('money, text, date, and select fields show the engine issue for their path the same way (#489–#531)', async () => {
@@ -272,13 +272,13 @@ describe('validation chrome', () => {
       expect(error.textContent).toBe(advice)
       expect(control.getAttribute('aria-describedby')?.split(' ')).toContain(error.id)
     }
-    expectInvalid(qcd, 'Must be at least 0')
-    expectInvalid(name, 'Enter a value')
-    expectInvalid(dob, 'Enter a valid date')
-    expectInvalid(filing, 'Choose one of the listed options')
+    expectInvalid(qcd!, 'Must be at least 0')
+    expectInvalid(name!, 'Enter a value')
+    expectInvalid(dob!, 'Enter a valid date')
+    expectInvalid(filing!, 'Choose one of the listed options')
     for (const clean of [charitable, sex]) {
-      expect(clean.hasAttribute('aria-invalid')).toBe(false)
-      expect(clean.closest('.field')?.querySelector('.field-error')).toBeNull()
+      expect(clean!.hasAttribute('aria-invalid')).toBe(false)
+      expect(clean!.closest('.field')?.querySelector('.field-error')).toBeNull()
     }
   })
 
@@ -323,7 +323,7 @@ describe('validation chrome', () => {
         kind: 'permanentLife',
         id: 'policy-1',
         name: 'Whole life',
-        insured: plan.household.people[0].id,
+        insured: plan.household.people[0]!.id,
         beneficiary: 'estate',
         annualPremium: 1200,
         premiumMode: 'lifetime',
@@ -343,21 +343,21 @@ describe('validation chrome', () => {
     })
     const block = [...container.querySelectorAll<HTMLElement>('.field--invalid')]
     expect(block).toHaveLength(1)
-    expect(block[0].textContent).toContain('Cash-value schedule (age → value)')
+    expect(block[0]!.textContent).toContain('Cash-value schedule (age → value)')
     // The caption sits in the same row structure as every field's label, so
     // the invalid tint rule applies to it too (r2-6).
-    expect(block[0].querySelector(':scope > .field-label-row > .field-label')?.textContent).toBe('Cash-value schedule (age → value)')
-    expect(block[0].getAttribute('data-path')).toBe('insurance.0.cashValueSchedule')
-    const error = block[0].querySelector('.field-error')!
+    expect(block[0]!.querySelector(':scope > .field-label-row > .field-label')?.textContent).toBe('Cash-value schedule (age → value)')
+    expect(block[0]!.getAttribute('data-path')).toBe('insurance.0.cashValueSchedule')
+    const error = block[0]!.querySelector('.field-error')!
     expect(error.textContent).toBe('Add at least one schedule row, or grow cash value by a flat rate')
     expect(container.textContent).not.toContain('cashValueMode')
     const add = [...container.querySelectorAll('button')].find((b) => b.textContent === '+ Schedule row')!
     expect(add.getAttribute('aria-describedby')).toBe(error.id)
     // The block is the invalid control the chip's jump looks for, so the jump
     // lands on the schedule rather than on the card's list (r1-5).
-    expect(block[0].getAttribute('aria-invalid')).toBe('true')
-    expect(block[0].getAttribute('aria-describedby')).toBe(error.id)
-    expect(block[0].tabIndex).toBe(-1)
+    expect(block[0]!.getAttribute('aria-invalid')).toBe('true')
+    expect(block[0]!.getAttribute('aria-describedby')).toBe(error.id)
+    expect(block[0]!.tabIndex).toBe(-1)
     expect(container.querySelector('[aria-invalid="true"]')).toBe(block[0])
     focusIssueTarget(container, 'insurance')
     expect(document.activeElement).toBe(block[0])
@@ -387,7 +387,7 @@ describe('validation chrome', () => {
       "Strategy: QCD per year (today's $): Must be at least 0",
       'Itemized deductions: State & local taxes (SALT): Must be at least 0',
     ])
-    expect(strategy[0].getAttribute('title')).toBe('strategies.qcdAnnual: Too small: expected number to be >=0')
+    expect(strategy[0]!.getAttribute('title')).toBe('strategies.qcdAnnual: Too small: expected number to be >=0')
     expect(container.querySelector('[data-card="spending"] li')).toBeNull()
     expect(container.querySelector('[data-card="strategy"] ul')?.getAttribute('tabindex')).toBe('-1')
   })

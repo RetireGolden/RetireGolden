@@ -57,8 +57,8 @@ describe('Workspace chrome', () => {
     const rail = container.querySelector('nav[aria-label="Plan sections"]')!
     const active = [...rail.querySelectorAll('a')].filter((a) => a.getAttribute('aria-current') === 'page')
     expect(active.map((a) => a.textContent)).toEqual(['Assumptions'])
-    expect(active[0].className).toContain('rail-link--active')
-    expect(active[0].getAttribute('href')).toBe(`/plan/${plan.id}/assumptions`)
+    expect(active[0]!.className).toContain('rail-link--active')
+    expect(active[0]!.getAttribute('href')).toBe(`/plan/${plan.id}/assumptions`)
     await unmount()
   })
 

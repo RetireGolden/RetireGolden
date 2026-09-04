@@ -116,7 +116,7 @@ describe('cluster I: the help ⓘ is the label element it belongs to (#573)', ()
     for (const caption of [salt!, plain!]) {
       const field = caption.closest('.field')!
       expect(field.children).toHaveLength(2)
-      expect(field.children[0].className).toBe('field-label-row')
+      expect(field.children[0]!.className).toBe('field-label-row')
     }
   })
 })

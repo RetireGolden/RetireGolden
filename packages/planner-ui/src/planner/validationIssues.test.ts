@@ -16,7 +16,7 @@ describe('real engine output', () => {
     const plan = createEmptyPlan({ newId: () => 'id-' + Math.random().toString(36).slice(2, 8) })
     plan.assumptions.inflationPct = -999
     plan.strategies.qcdAnnual = -5
-    plan.household.people[0] = { ...plan.household.people[0], longevity: { planningAge: 9, source: 'manual' } }
+    plan.household.people[0] = { ...plan.household.people[0]!, longevity: { planningAge: 9, source: 'manual' } }
     const r = parsePlan(plan)
     expect(r.ok).toBe(false)
     if (r.ok) return
@@ -183,11 +183,11 @@ describe('labels with the plan in hand', () => {
   it('names a Social Security stream for its person, not its slot in the incomes array (r2-7)', () => {
     const plan = createEmptyPlan({ newId: () => 'id-' + Math.random().toString(36).slice(2, 8) })
     const alex = plan.household.people[0]
-    plan.household.people[0] = { ...alex, name: 'Alex' }
+    plan.household.people[0] = { ...alex!, name: 'Alex' }
     plan.incomes = [
-      { type: 'wages', id: 'w', personId: alex.id, annualGross: 100_000, endAge: null, realGrowthPct: 0 },
+      { type: 'wages', id: 'w', personId: alex!.id, annualGross: 100_000, endAge: null, realGrowthPct: 0 },
       { type: 'recurring', id: 'r', label: 'Rental', annualAmount: 1, startYear: null, endYear: null, inflationAdjusted: true, taxTreatment: 'ordinary' },
-      { type: 'socialSecurity', id: 's', personId: alex.id, piaMonthly: 2_000, earnings: null, claimAge: { years: 67, months: 18 } },
+      { type: 'socialSecurity', id: 's', personId: alex!.id, piaMonthly: 2_000, earnings: null, claimAge: { years: 67, months: 18 } },
     ]
     const issue = 'incomes.2.claimAge.months: Too big: expected number to be <=11'
     expect(parseIssue(issue, plan).label).toBe('Social Security (Alex): Claim age (+ months)')
@@ -195,7 +195,7 @@ describe('labels with the plan in hand', () => {
     expect(parseIssue('incomes.0.annualGross: Too small: expected number to be >=0', plan).label).toBe('Income 1: Annual gross')
     // Without the plan, the numbered form is all there is.
     expect(parseIssue(issue).label).toBe('Income 3: Claim age (+ months)')
-    expect(parseIssues([issue], plan)[0].section).toBe('social-security')
+    expect(parseIssues([issue], plan)[0]!.section).toBe('social-security')
   })
 
   it('states the brokerage qualified-dividend bound in the percent the card shows, not the stored ratio (r2-4)', () => {

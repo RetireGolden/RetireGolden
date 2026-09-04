@@ -337,7 +337,16 @@ const ISO_TIMESTAMP_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+
 function isIsoTimestamp(value: string): boolean {
   const m = ISO_TIMESTAMP_RE.exec(value)
   if (!m) return false
-  const [, year, month, day, hour, minute, second] = m.map(Number)
+  // Groups 1-6 are unconditional in ISO_TIMESTAMP_RE, so a match fills all six.
+  const [, year, month, day, hour, minute, second] = m.map(Number) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ]
   if (month < 1 || month > 12) return false
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
   if (day < 1 || day > daysInMonth) return false

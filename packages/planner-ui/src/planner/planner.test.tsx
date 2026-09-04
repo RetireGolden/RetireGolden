@@ -89,10 +89,10 @@ describe('removePartner', () => {
     const [primary, partner] = plan.household.people
     // Give the partner a policy and point a life beneficiary at them.
     plan.insurance = [
-      { kind: 'ltc', id: 'ltc-partner', name: 'Partner LTC', owner: partner.id, annualPremium: 2_000, premiumMode: 'lifetime', benefitMonthly: 5_000, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
-      { kind: 'permanentLife', id: 'life-primary', name: 'Primary life', insured: primary.id, beneficiary: partner.id, annualPremium: 1_000, premiumMode: 'lifetime', deathBenefit: 100_000, cashValue: 0, cashValueMode: 'flatRate', cashValueGrowthPct: 0 },
+      { kind: 'ltc', id: 'ltc-partner', name: 'Partner LTC', owner: partner!.id, annualPremium: 2_000, premiumMode: 'lifetime', benefitMonthly: 5_000, benefitPeriodYears: 3, eliminationPeriodDays: 90 },
+      { kind: 'permanentLife', id: 'life-primary', name: 'Primary life', insured: primary!.id, beneficiary: partner!.id, annualPremium: 1_000, premiumMode: 'lifetime', deathBenefit: 100_000, cashValue: 0, cashValueMode: 'flatRate', cashValueGrowthPct: 0 },
     ]
-    plan.careEvents = [{ id: 'care-partner', personId: partner.id, startAge: 85, durationYears: 3, annualCost: 90_000 }]
+    plan.careEvents = [{ id: 'care-partner', personId: partner!.id, startAge: 85, durationYears: 3, annualCost: 90_000 }]
     plan.retirementActionEligibilityFacts = {
       iraClassifications: [],
       sepSimpleActivities: [],
@@ -100,26 +100,26 @@ describe('removePartner', () => {
         {
           evidenceId: 'primary-contribution',
           provenance: { source: 'manual' },
-          donorPersonId: primary.id,
+          donorPersonId: primary!.id,
           taxYear: 2036,
           amountCents: asUsdCents(100_000),
         },
         {
           evidenceId: 'partner-contribution',
           provenance: { source: 'manual' },
-          donorPersonId: partner.id,
+          donorPersonId: partner!.id,
           taxYear: 2036,
           amountCents: asUsdCents(200_000),
         },
       ],
     }
 
-    removePartner(plan, partner.id)
+    removePartner(plan, partner!.id)
 
     // The partner's own policy is gone; the surviving policy's beneficiary falls back to the estate.
     expect(plan.insurance.map((p) => p.id)).toEqual(['life-primary'])
     const life = plan.insurance[0]
-    expect(life.kind === 'permanentLife' && life.beneficiary).toBe('estate')
+    expect(life!.kind === 'permanentLife' && life!.beneficiary).toBe('estate')
     // The partner's care event is dropped too.
     expect(plan.careEvents).toEqual([])
     expect(plan.retirementActionEligibilityFacts.deductibleIraContributions).toEqual([
@@ -187,7 +187,7 @@ describe('eligibility fact edit integrity', () => {
   it('clears only contribution facts invalidated by a corrected donor DOB', () => {
     const plan = createSamplePlan()
     const [primary, partner] = plan.household.people
-    primary.dob = '1960-01-01'
+    primary!.dob = '1960-01-01'
     plan.retirementActionEligibilityFacts = {
       iraClassifications: [],
       sepSimpleActivities: [],
@@ -195,14 +195,14 @@ describe('eligibility fact edit integrity', () => {
         {
           evidenceId: 'primary-contribution',
           provenance: { source: 'manual' },
-          donorPersonId: primary.id,
+          donorPersonId: primary!.id,
           taxYear: 2031,
           amountCents: asUsdCents(100_000),
         },
         {
           evidenceId: 'partner-contribution',
           provenance: { source: 'manual' },
-          donorPersonId: partner.id,
+          donorPersonId: partner!.id,
           taxYear: 2036,
           amountCents: asUsdCents(200_000),
         },
@@ -231,13 +231,13 @@ describe('annual filing-source edit integrity', () => {
     const primaryIra = plan.accounts[primaryIraIndex]
     if (primaryIra?.type !== 'traditional') throw new Error('expected traditional account')
     primaryIra.kind = 'ira'
-    primaryIra.ownerPersonId = primary.id
+    primaryIra.ownerPersonId = primary!.id
     delete primaryIra.inherited
     plan.accounts.push({
       ...primaryIra,
       id: 'partner-ira',
       name: 'Partner IRA',
-      ownerPersonId: partner.id,
+      ownerPersonId: partner!.id,
     })
     const currentPool = (ownerPersonId: string) => plan.accounts
       .filter((account) =>
@@ -248,9 +248,9 @@ describe('annual filing-source edit integrity', () => {
       .map((account) => account.id)
     plan.retirementActionAnnualTaxFacts = {
       ownedNonRothIraAnnualFilingSourceRecords: [
-        annualFilingSource(plan, primary.id, currentPool(primary.id), 2030, 'primary'),
-        annualFilingSource(plan, primary.id, currentPool(primary.id), 2031, 'primary'),
-        annualFilingSource(plan, partner.id, currentPool(partner.id), 2030, 'partner'),
+        annualFilingSource(plan, primary!.id, currentPool(primary!.id), 2030, 'primary'),
+        annualFilingSource(plan, primary!.id, currentPool(primary!.id), 2031, 'primary'),
+        annualFilingSource(plan, partner!.id, currentPool(partner!.id), 2030, 'partner'),
       ],
     }
 
@@ -264,7 +264,7 @@ describe('annual filing-source edit integrity', () => {
     expect(
       plan.retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords,
     ).toEqual([
-      expect.objectContaining({ ownerPersonId: partner.id }),
+      expect.objectContaining({ ownerPersonId: partner!.id }),
     ])
     const parsed = parsePlan(plan)
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
@@ -277,11 +277,11 @@ describe('annual filing-source edit integrity', () => {
     const ira = plan.accounts[iraIndex]
     if (ira?.type !== 'traditional') throw new Error('expected traditional account')
     ira.kind = 'ira'
-    ira.ownerPersonId = primary.id
+    ira.ownerPersonId = primary!.id
     delete ira.inherited
     plan.retirementActionAnnualTaxFacts = {
       ownedNonRothIraAnnualFilingSourceRecords: [
-        annualFilingSource(plan, primary.id, [ira.id]),
+        annualFilingSource(plan, primary!.id, [ira.id]),
       ],
     }
 
@@ -298,7 +298,7 @@ describe('annual filing-source edit integrity', () => {
       type: 'traditional' as const,
       id: 'primary-ira',
       name: 'Primary IRA',
-      ownerPersonId: primary.id,
+      ownerPersonId: primary!.id,
       annualReturnPct: null,
       kind: 'ira' as const,
       balance: 10_000,
@@ -308,17 +308,17 @@ describe('annual filing-source edit integrity', () => {
       ...primaryIra,
       id: 'partner-ira',
       name: 'Partner IRA',
-      ownerPersonId: partner.id,
+      ownerPersonId: partner!.id,
     }
     plan.accounts = [primaryIra, partnerIra]
     plan.retirementActionAnnualTaxFacts = {
       ownedNonRothIraAnnualFilingSourceRecords: [
-        annualFilingSource(plan, primary.id, ['primary-ira'], 2030, 'primary'),
-        annualFilingSource(plan, partner.id, ['partner-ira'], 2030, 'partner'),
+        annualFilingSource(plan, primary!.id, ['primary-ira'], 2030, 'primary'),
+        annualFilingSource(plan, partner!.id, ['partner-ira'], 2030, 'partner'),
       ],
     }
 
-    removePartner(plan, partner.id)
+    removePartner(plan, partner!.id)
 
     expect(plan).not.toHaveProperty('retirementActionAnnualTaxFacts')
     expect(parsePlan(plan).ok).toBe(true)
@@ -362,7 +362,7 @@ describe('ACA annual evidence invalidation', () => {
 
     updatePersonLongevity(plan, 0, { planningAge: 88, source: 'model' })
 
-    expect(plan.household.people[0].longevity).toEqual({ planningAge: 88, source: 'model' })
+    expect(plan.household.people[0]!.longevity).toEqual({ planningAge: 88, source: 'model' })
     expect(plan.expenses.healthcare.acaYears).toBeUndefined()
   })
 })
@@ -417,7 +417,7 @@ describe('report ACA wording', () => {
 describe('AccountsSection', () => {
   it('removes account-bound eligibility facts with an imported IRA account', async () => {
     const plan = createSamplePlan()
-    const ownerPersonId = plan.household.people[0].id
+    const ownerPersonId = plan.household.people[0]!.id
     plan.accounts = [
       {
         type: 'traditional',
@@ -520,9 +520,9 @@ describe('AccountsSection', () => {
   it('does not offer Joint ownership for 401(k), IRA/Roth, or HSA accounts', async () => {
     const plan = createSamplePlan()
     plan.accounts = [
-      { type: 'traditional', id: 'trad', name: '401(k)', ownerPersonId: plan.household.people[0].id, annualReturnPct: null, kind: 'employer', balance: 1, annualContribution: 0 },
-      { type: 'roth', id: 'roth', name: 'Roth IRA', ownerPersonId: plan.household.people[0].id, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
-      { type: 'hsa', id: 'hsa', name: 'HSA', ownerPersonId: plan.household.people[0].id, annualReturnPct: null, balance: 1, annualContribution: 0 },
+      { type: 'traditional', id: 'trad', name: '401(k)', ownerPersonId: plan.household.people[0]!.id, annualReturnPct: null, kind: 'employer', balance: 1, annualContribution: 0 },
+      { type: 'roth', id: 'roth', name: 'Roth IRA', ownerPersonId: plan.household.people[0]!.id, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
+      { type: 'hsa', id: 'hsa', name: 'HSA', ownerPersonId: plan.household.people[0]!.id, annualReturnPct: null, balance: 1, annualContribution: 0 },
       { type: 'taxable', id: 'tax', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
     ]
     const container = document.createElement('div')
@@ -545,7 +545,7 @@ describe('AccountsSection', () => {
     })
     expect(ownerSelects).toHaveLength(4)
     expect(ownerSelects.slice(0, 3).every((select) => Array.from(select.options).every((option) => option.textContent !== 'Joint'))).toBe(true)
-    expect(Array.from(ownerSelects[3].options).some((option) => option.textContent === 'Joint')).toBe(true)
+    expect(Array.from(ownerSelects[3]!.options).some((option) => option.textContent === 'Joint')).toBe(true)
 
     await act(async () => root.unmount())
     container.remove()
@@ -642,8 +642,8 @@ describe('planner learn links', () => {
       const actions = Array.from(cluster.querySelectorAll(':scope > button.btn'))
       expect(actions.map((button) => button.textContent?.trim())).toEqual(['Calculate', 'Percentile'])
       expect(actions[0]).not.toBe(actions[1])
-      expect(actions[0].parentElement).toBe(cluster)
-      expect(actions[1].parentElement).toBe(cluster)
+      expect(actions[0]!.parentElement).toBe(cluster)
+      expect(actions[1]!.parentElement).toBe(cluster)
     }
     expect(unknownSlug(errors)).toEqual([])
     await act(async () => root.unmount())
@@ -690,8 +690,8 @@ describe('PlanWorkspace information architecture', () => {
     // Exactly one h1 per plan page: the workspace's sr-only section heading.
     const h1s = Array.from(container.querySelectorAll('h1'))
     expect(h1s).toHaveLength(1)
-    expect(h1s[0].textContent).toBe('Insights: Example couple')
-    expect(h1s[0].classList.contains('sr-only')).toBe(true)
+    expect(h1s[0]!.textContent).toBe('Insights: Example couple')
+    expect(h1s[0]!.classList.contains('sr-only')).toBe(true)
     expect(container.textContent).toContain('modeled opportunities worth comparing')
 
     await act(async () => root.unmount())
@@ -798,7 +798,7 @@ describe('PlanProvider', () => {
     const sample = createSamplePlan()
     // make it a single-person plan so the broken edit is reachable (via the real
     // remove-partner logic, which re-homes accounts/incomes/insurance)
-    removePartner(sample, sample.household.people[1].id)
+    removePartner(sample, sample.household.people[1]!.id)
     const parsed = parsePlan(sample)
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
     await savePlan(parsed.plan)

@@ -246,10 +246,10 @@ describe('example plan golden KPIs', () => {
       const expected = EXPECTED[example.id]
       expect(expected, `missing golden fixture for ${example.id}`).toBeDefined()
 
-      expect(summary.depletionYear).toBe(expected.depletionYear)
-      expect(round2(summary.endingInvestable)).toBe(expected.endingInvestable)
-      expect(round2(summary.lifetimeTaxesAndPenalties)).toBe(expected.lifetimeTax)
-      expect(round2(summary.lifetimeRothConversions)).toBe(expected.lifetimeRoth)
+      expect(summary.depletionYear).toBe(expected!.depletionYear)
+      expect(round2(summary.endingInvestable)).toBe(expected!.endingInvestable)
+      expect(round2(summary.lifetimeTaxesAndPenalties)).toBe(expected!.lifetimeTax)
+      expect(round2(summary.lifetimeRothConversions)).toBe(expected!.lifetimeRoth)
     })
   }
 })

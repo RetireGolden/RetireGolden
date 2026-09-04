@@ -56,7 +56,7 @@ const testIds = () => `ub-${++n}`
 
 function planWithAccounts(): Plan {
   const plan = createEmptyPlan({ newId: testIds })
-  const ownerId = plan.household.people[0].id
+  const ownerId = plan.household.people[0]!.id
   plan.accounts.push(
     { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
     { id: 'acct-roth', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
@@ -305,8 +305,8 @@ describe('UpdateBalancesPanel', () => {
 
     // Name-similarity guesses should already point at the right accounts.
     const [first, second] = selects(el)
-    expect(first.value).toBe('acct-brokerage')
-    expect(second.value).toBe('acct-roth')
+    expect(first!.value).toBe('acct-brokerage')
+    expect(second!.value).toBe('acct-roth')
 
     act(() => applyButton(el).click())
     const brokerage = plan.accounts.find((a) => a.id === 'acct-brokerage')!
@@ -468,7 +468,7 @@ describe('UpdateBalancesPanel', () => {
     const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }) })
     await advanceBy(20)
 
-    act(() => restoreButtons(el)[0].click())
+    act(() => restoreButtons(el)[0]!.click())
     await advanceBy(20)
 
     expect(brokerage).toMatchObject({ balance: 50_000, costBasis: 30_000 })
@@ -522,8 +522,8 @@ describe('UpdateBalancesPanel', () => {
     const restores = restoreButtons(el)
 
     act(() => {
-      restores[0].click()
-      restores[1].click()
+      restores[0]!.click()
+      restores[1]!.click()
     })
     await advanceBy(20)
 
@@ -539,7 +539,7 @@ describe('UpdateBalancesPanel', () => {
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!
       setter.call(second, 'acct-brokerage')
-      second.dispatchEvent(new Event('change', { bubbles: true }))
+      second!.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('same plan account')
@@ -551,7 +551,7 @@ describe('UpdateBalancesPanel', () => {
 
   it('renders the before→after delta for an assigned account', async () => {
     const plan = createEmptyPlan({ newId: testIds })
-    const ownerId = plan.household.people[0].id
+    const ownerId = plan.household.people[0]!.id
     // Distinctive current balances so the "before" side is unambiguous vs. the file value.
     plan.accounts.push(
       { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 33000, costBasis: 22000, annualContribution: 0 },
@@ -574,7 +574,7 @@ describe('UpdateBalancesPanel', () => {
 
   it('notes an updatable plan account that is missing from the file (going stale)', async () => {
     const plan = createEmptyPlan({ newId: testIds })
-    const ownerId = plan.household.people[0].id
+    const ownerId = plan.household.people[0]!.id
     plan.accounts.push(
       { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       { id: 'acct-roth', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
@@ -602,8 +602,8 @@ describe('UpdateBalancesPanel', () => {
     await chooseFile(el, TWO_BROKERAGE_CSV)
 
     const [first, second] = selects(el)
-    expect(first.value).toBe('acct-brokerage')
-    expect(second.value).toBe('acct-brokerage')
+    expect(first!.value).toBe('acct-brokerage')
+    expect(second!.value).toBe('acct-brokerage')
 
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('same plan account')
     expect(applyButton(el).disabled).toBe(true)
@@ -615,7 +615,7 @@ describe('UpdateBalancesPanel', () => {
 
   it('defaults an ambiguous match to "Don\'t update"', async () => {
     const plan = createEmptyPlan({ newId: testIds })
-    const ownerId = plan.household.people[0].id
+    const ownerId = plan.household.people[0]!.id
     plan.accounts.push(
       { id: 'acct-roth', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
       { id: 'acct-rollover', type: 'traditional', name: 'Rollover IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
@@ -626,7 +626,7 @@ describe('UpdateBalancesPanel', () => {
     // "Roth IRA" and "Rollover IRA" both match on the shared word "ira" — the
     // row is ambiguous, so its select stays on "Don't update" until the user picks.
     const [rothRow] = selects(el)
-    expect(rothRow.value).toBe('')
+    expect(rothRow!.value).toBe('')
     // And with nothing assigned, the preview shows no write for it.
     expect(previewCells(el)[0]).not.toContain('→')
   })
@@ -656,10 +656,10 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Brokerage's guess is protected: the row is selected onto it but BLOCKED (not
     // disabled — protected accounts stay selectable), with a visible note. Roth is
     // an ordinary applying row.
-    expect(brokerageSel.value).toBe('acct-brokerage')
-    expect(brokerageSel.disabled).toBe(false)
-    expect(rothSel.disabled).toBe(false)
-    expect(rothSel.value).toBe('acct-roth')
+    expect(brokerageSel!.value).toBe('acct-brokerage')
+    expect(brokerageSel!.disabled).toBe(false)
+    expect(rothSel!.disabled).toBe(false)
+    expect(rothSel!.value).toBe('acct-roth')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
 
     act(() => applyButton(el).click())
@@ -699,7 +699,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage', field: 'costBasis' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
     // Selected onto the protected account, the row renders blocked (not disabled).
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
 
     act(() => applyButton(el).click())
@@ -716,7 +716,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // string contract the flat 'a.costBasis' would have been the ambiguous case; the
     // structured shape eliminates it.
     const plan = createEmptyPlan({ newId: testIds })
-    const ownerId = plan.household.people[0].id
+    const ownerId = plan.household.people[0]!.id
     plan.accounts.push(
       { id: 'a.b', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       { id: 'a', type: 'roth', name: 'Roth IRA', ownerPersonId: ownerId, annualReturnPct: null, kind: 'ira', balance: 1, annualContribution: 0 },
@@ -727,8 +727,8 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Brokerage guessed 'a.b' (whole-account protected); Roth guessed 'a' (costBasis
     // entry, conservatively the whole account). Both selected-but-blocked.
     const [brokerageSel, rothSel] = selects(el)
-    expect(brokerageSel.value).toBe('a.b')
-    expect(rothSel.value).toBe('a')
+    expect(brokerageSel!.value).toBe('a.b')
+    expect(rothSel!.value).toBe('a')
     expect(el.querySelectorAll('[role="note"]').length).toBe(2)
 
     act(() => applyButton(el).click())
@@ -742,7 +742,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // account: the protected account is a selectable (marked) option, selecting it
     // blocks the row, and the row-scoped release then lets it apply.
     const plan = createEmptyPlan({ newId: testIds })
-    const ownerId = plan.household.people[0].id
+    const ownerId = plan.household.people[0]!.id
     plan.accounts.push(
       { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       { id: 'acct-hsa', type: 'hsa', name: 'Fidelity HSA', ownerPersonId: ownerId, annualReturnPct: null, balance: 4000, annualContribution: 0 },
@@ -752,10 +752,10 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
     // The file row matches nothing, so it starts on "Don't update" with no note.
     const sel = selects(el)[0]
-    expect(sel.value).toBe('')
+    expect(sel!.value).toBe('')
     expect(el.querySelector('[role="note"]')).toBeNull()
     // The protected Brokerage account is offered as a selectable (marked) option.
-    const brokerageOption = Array.from(sel.options).find((o) => o.value === 'acct-brokerage')!
+    const brokerageOption = Array.from(sel!.options).find((o) => o.value === 'acct-brokerage')!
     expect(brokerageOption.disabled).toBe(false)
     expect(brokerageOption.textContent).toContain('(protected)')
 
@@ -764,7 +764,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!
       setter.call(sel, 'acct-brokerage')
-      sel.dispatchEvent(new Event('change', { bubbles: true }))
+      sel!.dispatchEvent(new Event('change', { bubbles: true }))
     })
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
     expect(previewCells(el)[0]).not.toContain('→')
@@ -781,8 +781,8 @@ describe('UpdateBalancesPanel refresh protection', () => {
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Both guessed onto protected accounts: both selected but blocked, each with a note.
-    expect(selects(el)[0].value).toBe('acct-brokerage')
-    expect(selects(el)[1].value).toBe('acct-roth')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(selects(el)[1]!.value).toBe('acct-roth')
     expect(el.querySelectorAll('[role="note"]').length).toBe(2)
 
     // Release only the Brokerage row.
@@ -791,8 +791,8 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
     // The released row's note clears (it now applies); the sibling stays blocked.
     const [brokerageSel, rothSel] = selects(el)
-    expect(brokerageSel.value).toBe('acct-brokerage')
-    expect(rothSel.value).toBe('acct-roth')
+    expect(brokerageSel!.value).toBe('acct-brokerage')
+    expect(rothSel!.value).toBe('acct-roth')
     expect(el.querySelectorAll('[role="note"]').length).toBe(1) // only the still-protected Roth row
 
     act(() => applyButton(el).click())
@@ -814,7 +814,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Row 1's Brokerage <option> is now SELECTABLE (never disabled) but still marked
     // "(protected)" — it belongs to row 0's release, so selecting it blocks row 1.
     const rothSel = selects(el)[1]
-    const brokerageOption = Array.from(rothSel.options).find((o) => o.value === 'acct-brokerage')!
+    const brokerageOption = Array.from(rothSel!.options).find((o) => o.value === 'acct-brokerage')!
     expect(brokerageOption.disabled).toBe(false)
     expect(brokerageOption.textContent).toContain('(protected)')
 
@@ -825,7 +825,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!
       setter.call(rothSel, 'acct-brokerage')
-      rothSel.dispatchEvent(new Event('change', { bubbles: true }))
+      rothSel!.dispatchEvent(new Event('change', { bubbles: true }))
     })
     // The stripped sibling leaves an audit record: the checklist shows a skipped
     // item naming the released-elsewhere protection, so the discard is not silent.
@@ -851,9 +851,9 @@ describe('UpdateBalancesPanel refresh protection', () => {
     await chooseFile(el, TWO_BROKERAGE_PLUS_ROTH_CSV)
 
     const [b0, b1, rothRow] = selects(el)
-    expect(b0.value).toBe('acct-brokerage')
-    expect(b1.value).toBe('acct-brokerage')
-    expect(rothRow.value).toBe('acct-roth')
+    expect(b0!.value).toBe('acct-brokerage')
+    expect(b1!.value).toBe('acct-brokerage')
+    expect(rothRow!.value).toBe('acct-roth')
 
     // No false duplicate collision, so Apply stays enabled and no alert is shown.
     expect(el.querySelector('[role="alert"]')).toBeNull()
@@ -879,13 +879,13 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // Release Brokerage for row 0 (it was selected-but-blocked; now it applies).
     act(() => el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Brokerage"]')!.click())
     const brokerageSel = selects(el)[0]
-    expect(brokerageSel.value).toBe('acct-brokerage')
+    expect(brokerageSel!.value).toBe('acct-brokerage')
 
     // Deselect row 0 back to "Don't update", then apply.
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!
       setter.call(brokerageSel, '')
-      brokerageSel.dispatchEvent(new Event('change', { bubbles: true }))
+      brokerageSel!.dispatchEvent(new Event('change', { bubbles: true }))
     })
     act(() => applyButton(el).click())
     // Nothing targets Brokerage, so it is unchanged even though it was released.
@@ -903,7 +903,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
     // Choosing a new file clears the release — protection is restored (row blocked again).
     await chooseFile(el, TWO_ACCOUNT_CSV)
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
   })
 
@@ -929,10 +929,10 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
     // Row 0 re-targets to "Don't update": its release of Brokerage is revoked, so
     // Brokerage is protected again.
-    setSelect(selects(el)[0], '')
+    setSelect(selects(el)[0]!, '')
 
     // Row 1 now selects Brokerage — with protection restored it is blocked, not applied.
-    setSelect(selects(el)[1], 'acct-brokerage')
+    setSelect(selects(el)[1]!, 'acct-brokerage')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
 
     // Row 1 releases it (a fresh release, now owned by row 1) and applies — the write
@@ -952,7 +952,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
     // Brokerage is the protected, blocked row; Roth applies normally.
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
     const review = el.querySelector('.import-review')!
     expect(review.textContent).toContain('Skipped')
     expect(review.textContent).toContain('protected by an advisor override')
@@ -970,7 +970,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // by an override, not absent. The panel must show the blocked note and must NOT
     // also name the account in the stale list, so it never says both at once.
     const plan = createEmptyPlan({ newId: testIds })
-    const ownerId = plan.household.people[0].id
+    const ownerId = plan.household.people[0]!.id
     plan.accounts.push(
       { id: 'acct-brokerage', type: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 1, costBasis: 1, annualContribution: 0 },
       // Genuinely absent from the file — this one SHOULD be reported stale.
@@ -983,7 +983,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!
       setter.call(selects(el)[0], 'acct-brokerage')
-      selects(el)[0].dispatchEvent(new Event('change', { bubbles: true }))
+      selects(el)[0]!.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
     // The row is blocked by the override.
@@ -1005,8 +1005,8 @@ describe('UpdateBalancesPanel refresh protection', () => {
     const el = renderPanel(plan, { protectedAccounts: protect(plan, { accountId: 'acct-brokerage' }, { accountId: 'acct-roth' }) })
     await chooseFile(el, TWO_ACCOUNT_CSV)
 
-    expect(selects(el)[0].value).toBe('acct-brokerage')
-    expect(selects(el)[1].value).toBe('acct-roth')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(selects(el)[1]!.value).toBe('acct-roth')
 
     act(() => applyButton(el).click())
     // Nothing was written — both accounts stayed put.
@@ -1021,8 +1021,8 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // The zero came purely from protection, so the panel must NOT tear itself down:
     // the message points at "Allow this refresh" controls, which must still be there.
     expect(el.querySelector('tbody')).not.toBeNull()
-    expect(selects(el)[0].value).toBe('acct-brokerage')
-    expect(selects(el)[1].value).toBe('acct-roth')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(selects(el)[1]!.value).toBe('acct-roth')
     const allowButtons = Array.from(el.querySelectorAll('button')).filter((b) =>
       b.getAttribute('aria-label')?.startsWith('Allow this refresh for'),
     )
@@ -1050,8 +1050,8 @@ describe('UpdateBalancesPanel refresh protection', () => {
 
     // Both rows guessed the one protected Brokerage account; stripping keeps them from
     // forming a duplicate block, so Apply proceeds and writes nothing.
-    expect(selects(el)[0].value).toBe('acct-brokerage')
-    expect(selects(el)[1].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
+    expect(selects(el)[1]!.value).toBe('acct-brokerage')
     expect(applyButton(el).disabled).toBe(false)
 
     act(() => applyButton(el).click())
@@ -1087,7 +1087,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // And re-parsing under the new plan protects its (freshly protected) account —
     // the stale release did not carry over.
     await chooseFile(el, TWO_ACCOUNT_CSV)
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
   })
 
@@ -1135,7 +1135,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
     // The epoch is not stuck: a fresh read under the new plan still builds its table.
     await chooseFile(el, TWO_ACCOUNT_CSV)
     expect(el.querySelector('tbody')).not.toBeNull()
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
   })
 
   it('leaves an in-flight read untouched by a plain re-render with the same plan (epoch not bumped in render)', async () => {
@@ -1176,7 +1176,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
       await new Promise((resolve) => setTimeout(resolve, 20))
     })
     expect(el.querySelector('tbody')).not.toBeNull()
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
   })
 
   it('shows the newer file and discards a superseded slower read (releases after it stay valid)', async () => {
@@ -1220,7 +1220,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
       await new Promise((resolve) => setTimeout(resolve, 20))
     })
     expect(el.querySelector('tbody')).not.toBeNull()
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
 
     // A release made after B is in effect (its blocked note clears).
     act(() => el.querySelector<HTMLButtonElement>('button[aria-label="Allow this refresh for Brokerage"]')!.click())
@@ -1233,7 +1233,7 @@ describe('UpdateBalancesPanel refresh protection', () => {
       await new Promise((resolve) => setTimeout(resolve, 20))
     })
     // Still B's table with B's release intact — the row applies, so apply writes it.
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
     expect(el.querySelector('[role="note"]')).toBeNull()
     act(() => applyButton(el).click())
     expect(plan.accounts.find((a) => a.id === 'acct-brokerage')!).toMatchObject({ balance: 55000, costBasis: 40000 })
@@ -1343,7 +1343,7 @@ describe('UpdateBalancesPanel protection pending', () => {
     // The now-known protection is in force: the Brokerage row is blocked, the Roth
     // row applies.
     await chooseFile(el, TWO_ACCOUNT_CSV)
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
     expect(el.querySelector('[role="note"]')?.textContent).toContain('Protected: advisor override')
     expect(applyButton(el).disabled).toBe(false)
 
@@ -1516,7 +1516,7 @@ describe('UpdateBalancesPanel protection pending', () => {
     // Not stuck: a fresh read, started now that protection is known, still lands.
     await chooseFile(el, TWO_ACCOUNT_CSV)
     expect(el.querySelector('tbody')).not.toBeNull()
-    expect(selects(el)[0].value).toBe('acct-brokerage')
+    expect(selects(el)[0]!.value).toBe('acct-brokerage')
   })
 
   it('accepts a host-built context value that omits pending entirely', async () => {

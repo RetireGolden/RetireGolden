@@ -739,7 +739,7 @@ export function inheritedRequirementKindLabelForYear(
   yearRows: ReadonlyArray<{ year: number; evidence: InheritedAccountYearEvidence }>,
 ): string {
   if (isSuccessorScopeEvidence(evidence)) {
-    return DISCLOSURE_NOTE_LABELS['successor-clock-out-of-scope']
+    return DISCLOSURE_NOTE_LABELS['successor-clock-out-of-scope']!
   }
 
   const beneficiary =
@@ -786,7 +786,8 @@ export function primaryInheritedRegimeLabel(
   account: Account,
   yearRows: ReadonlyArray<{ year: number; evidence: InheritedAccountYearEvidence }>,
 ): { regime: string; matrixRow: string; regimeLabel: string } {
-  const first = yearRows[0].evidence
+  // Callers only build a schedule for accounts with at least one year row.
+  const first = yearRows[0]!.evidence
   const beneficiary =
     'inherited' in account && account.inherited !== undefined
       ? account.inherited.beneficiary
@@ -947,7 +948,7 @@ export function buildInheritedSchedules(
     }
     if (yearRows.length === 0) continue
 
-    const first = yearRows[0].evidence
+    const first = yearRows[0]!.evidence
     const primary = primaryInheritedRegimeLabel(account, yearRows)
     const notes = new Set<string>()
     const citations = new Set<string>()

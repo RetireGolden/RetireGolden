@@ -73,7 +73,7 @@ const ids = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`
 function estimateRow(review: ReturnType<typeof seed>['review']) {
   const rows = review.filter((i) => i.confidence === 'estimated')
   expect(rows, 'exactly one estimated row').toHaveLength(1)
-  return rows[0]
+  return rows[0]!
 }
 
 function seed(overrides: Partial<TenFortyInputs>) {
@@ -132,7 +132,7 @@ describe('cluster J: a 1040 line never leaves the checklist silent (#568)', () =
     // but its qualified ratio is 0, and 3a still landed nowhere. Both facts
     // have to be on the checklist, and neither row may claim the other's.
     const { plan, review } = seed({ taxableInterest: 5_000, qualifiedDividends: 50_000, agi: 55_000 })
-    const account = plan.accounts[0]
+    const account = plan.accounts[0]!
     expect(account.type === 'taxable' && account.qualifiedRatio).toBe(0)
     expect(account.type === 'taxable' && account.dividendYieldPct).toBe(0)
     const estimate = estimateRow(review)
@@ -162,7 +162,7 @@ describe('cluster J: a 1040 line never leaves the checklist silent (#568)', () =
     // 3a is the qualified portion of 3b, so 3a > 3b cannot be a filed return;
     // the ratio is capped at 1 and the copy has to say so (#568, deep108).
     const { plan, review } = seed({ qualifiedDividends: 8_000, ordinaryDividends: 5_000, agi: 5_000 })
-    const account = plan.accounts[0]
+    const account = plan.accounts[0]!
     expect(account.type === 'taxable' && account.qualifiedRatio).toBe(1)
     const estimate = estimateRow(review)
     expect(estimate.detail).not.toContain('The qualified-dividend share was kept.')
@@ -277,8 +277,8 @@ describe('cluster J: two columns cannot quietly share one role (#569)', () => {
     // Choosing which column really is the name clears the warning and Continue,
     // and the column the user picked is the one that lands.
     await act(async () => {
-      selects[0].value = 'ignore'
-      selects[0].dispatchEvent(new Event('change', { bubbles: true }))
+      selects[0]!.value = 'ignore'
+      selects[0]!.dispatchEvent(new Event('change', { bubbles: true }))
     })
     expect(el.querySelector('[role="alert"]')).toBeNull()
     const enabled = [...el.querySelectorAll('button')].find((b) =>

@@ -156,24 +156,24 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       totals['logicalRecords'] = 6
     }, 'malformed')
     expectRefusal((raw) => {
-      entries(raw, 'components')[0]['byteLength'] = 2 ** 53
+      entries(raw, 'components')[0]!['byteLength'] = 2 ** 53
     }, 'malformed')
     expectRefusal((raw) => {
-      entries(raw, 'components')[0]['path'] = '/absolute/path.json'
+      entries(raw, 'components')[0]!['path'] = '/absolute/path.json'
     }, 'malformed')
     expectRefusal((raw) => {
-      entries(raw, 'components')[0]['path'] = 'manifest.json'
+      entries(raw, 'components')[0]!['path'] = 'manifest.json'
     }, 'malformed')
     expectRefusal((raw) => {
       // Win32 strips trailing dots from the final component on disk.
-      entries(raw, 'components')[0]['path'] = 'manifest.json.'
+      entries(raw, 'components')[0]!['path'] = 'manifest.json.'
     }, 'malformed')
     expectRefusal((raw) => {
       // A segment of only dots folds to an empty name on Win32.
-      entries(raw, 'components')[0]['path'] = 'library/...'
+      entries(raw, 'components')[0]!['path'] = 'library/...'
     }, 'malformed')
     expectRefusal((raw) => {
-      entries(raw, 'components')[0]['path'] = ' .'
+      entries(raw, 'components')[0]!['path'] = ' .'
     }, 'malformed')
     expectRefusal((raw) => {
       // Trailing-space fold: extracts to the same file as library/clients.jsonl.
@@ -184,8 +184,8 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       // Individually safe byteLengths whose IEEE sum collides with a rounded
       // total: without the overflow guard this parses "consistently".
       const components = entries(raw, 'components')
-      components[0]['byteLength'] = Number.MAX_SAFE_INTEGER
-      components[1]['byteLength'] = 2
+      components[0]!['byteLength'] = Number.MAX_SAFE_INTEGER
+      components[1]!['byteLength'] = 2
       const totals = raw['totals'] as Record<string, unknown>
       totals['bytes'] = Number.MAX_SAFE_INTEGER + 2
     }, 'malformed')
@@ -194,7 +194,7 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       const totals = raw['totals'] as Record<string, unknown>
       const limits = raw['limits'] as Record<string, unknown>
       limits['maxComponentBytes'] = 100
-      component['byteLength'] = 101
+      component!['byteLength'] = 101
       totals['bytes'] = (totals['bytes'] as number) - 194 + 101
     }, 'malformed')
     expectRefusal((raw) => {
@@ -207,7 +207,7 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
     }, 'malformed')
     expectRefusal((raw) => {
       const free = (raw['compatibility'] as Record<string, Record<string, unknown>>)['free']
-      free['plansComponent'] = 'advisor/audit-ledger.jsonl'
+      free!['plansComponent'] = 'advisor/audit-ledger.jsonl'
     }, 'malformed')
     expectRefusal((raw) => {
       // Sub-millisecond precision would let Date.parse comparisons truncate
@@ -216,15 +216,15 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       snapshot['startedAtUtc'] = '2026-08-18T12:00:00.0009Z'
     }, 'malformed')
     expectRefusal((raw) => {
-      entries(raw, 'components')[0]['path'] = 'MANIFEST.JSON'
+      entries(raw, 'components')[0]!['path'] = 'MANIFEST.JSON'
     }, 'malformed')
     expectRefusal((raw) => {
       const pro = (raw['compatibility'] as Record<string, Record<string, unknown>>)['pro']
-      pro['minimumContainerVersion'] = 2
+      pro!['minimumContainerVersion'] = 2
     }, 'malformed')
     expectRefusal((raw) => {
       const free = (raw['compatibility'] as Record<string, Record<string, unknown>>)['free']
-      delete free['reason']
+      delete free!['reason']
     }, 'malformed')
     expectRefusal((raw) => {
       const limits = raw['limits'] as Record<string, unknown>
@@ -233,21 +233,21 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
     expectRefusal((raw) => {
       // Case-folded duplicate: both entries extract to one path on Windows.
       const components = entries(raw, 'components')
-      components.push({ ...components[0], path: (components[0]['path'] as string).toUpperCase() })
+      components.push({ ...components[0], path: (components[0]!['path'] as string).toUpperCase() })
     }, 'malformed')
     expectRefusal((raw) => {
       const components = entries(raw, 'components')
       components.push({ ...components[0] })
     }, 'malformed')
     expectRefusal((raw) => {
-      entries(raw, 'components')[0]['path'] = '../evil'
+      entries(raw, 'components')[0]!['path'] = '../evil'
     }, 'malformed')
     expectRefusal((raw) => {
-      entries(raw, 'components')[0]['path'] = 'evil\\path.json'
+      entries(raw, 'components')[0]!['path'] = 'evil\\path.json'
     }, 'malformed')
     expectRefusal((raw) => {
       const component = entries(raw, 'components')[0]
-      component['sha256'] = String(component['sha256']).toUpperCase()
+      component!['sha256'] = String(component!['sha256']).toUpperCase()
     }, 'malformed')
     expectRefusal((raw) => {
       raw['plaintext'] = false
@@ -273,41 +273,41 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
       ['snapshot.startedAtUtc bad', (raw) => void (((raw['snapshot'] as Record<string, unknown>)['startedAtUtc'] = '12:00'))],
       ['components not an array', (raw) => void (raw['components'] = {})],
       ['component not an object', (raw) => void ((raw['components'] as unknown[])[0] = 7)],
-      ['component.mediaType empty', (raw) => void (entries(raw, 'components')[0]['mediaType'] = '')],
-      ['component.schema empty', (raw) => void (entries(raw, 'components')[0]['schema'] = '')],
-      ['component.schemaVersion zero', (raw) => void (entries(raw, 'components')[0]['schemaVersion'] = 0)],
-      ['component.byteLength negative', (raw) => void (entries(raw, 'components')[0]['byteLength'] = -1)],
-      ['component.byteLength fractional', (raw) => void (entries(raw, 'components')[0]['byteLength'] = 1.5)],
-      ['component.sha256 short', (raw) => void (entries(raw, 'components')[0]['sha256'] = 'abc')],
-      ['component.logicalCount negative', (raw) => void (entries(raw, 'components')[0]['logicalCount'] = -1)],
-      ['component.restorePolicy empty', (raw) => void (entries(raw, 'components')[0]['restorePolicy'] = '')],
-      ['component.edition empty', (raw) => void (entries(raw, 'components')[0]['edition'] = '')],
-      ['component.path with colon', (raw) => void (entries(raw, 'components')[0]['path'] = 'c:evil.json')],
-      ['component.path with control char', (raw) => void (entries(raw, 'components')[0]['path'] = 'a' + String.fromCharCode(7) + 'b.json')],
-      ['component.path dot segment', (raw) => void (entries(raw, 'components')[0]['path'] = 'a/./b.json')],
-      ['component.path empty segment', (raw) => void (entries(raw, 'components')[0]['path'] = 'a//b.json')],
+      ['component.mediaType empty', (raw) => void (entries(raw, 'components')[0]!['mediaType'] = '')],
+      ['component.schema empty', (raw) => void (entries(raw, 'components')[0]!['schema'] = '')],
+      ['component.schemaVersion zero', (raw) => void (entries(raw, 'components')[0]!['schemaVersion'] = 0)],
+      ['component.byteLength negative', (raw) => void (entries(raw, 'components')[0]!['byteLength'] = -1)],
+      ['component.byteLength fractional', (raw) => void (entries(raw, 'components')[0]!['byteLength'] = 1.5)],
+      ['component.sha256 short', (raw) => void (entries(raw, 'components')[0]!['sha256'] = 'abc')],
+      ['component.logicalCount negative', (raw) => void (entries(raw, 'components')[0]!['logicalCount'] = -1)],
+      ['component.restorePolicy empty', (raw) => void (entries(raw, 'components')[0]!['restorePolicy'] = '')],
+      ['component.edition empty', (raw) => void (entries(raw, 'components')[0]!['edition'] = '')],
+      ['component.path with colon', (raw) => void (entries(raw, 'components')[0]!['path'] = 'c:evil.json')],
+      ['component.path with control char', (raw) => void (entries(raw, 'components')[0]!['path'] = 'a' + String.fromCharCode(7) + 'b.json')],
+      ['component.path dot segment', (raw) => void (entries(raw, 'components')[0]!['path'] = 'a/./b.json')],
+      ['component.path empty segment', (raw) => void (entries(raw, 'components')[0]!['path'] = 'a//b.json')],
       ['stores not an array', (raw) => void (raw['stores'] = 'stores')],
-      ['store.storeId empty', (raw) => void (entries(raw, 'stores')[0]['storeId'] = '')],
+      ['store.storeId empty', (raw) => void (entries(raw, 'stores')[0]!['storeId'] = '')],
       ['store duplicate storeId', (raw) => {
         const stores = entries(raw, 'stores')
-        stores.push({ storeId: stores[0]['storeId'], disposition: 'excluded' })
+        stores.push({ storeId: stores[0]!['storeId'], disposition: 'excluded' })
       }],
-      ['store.disposition empty', (raw) => void (entries(raw, 'stores')[0]['disposition'] = '')],
-      ['store.sourceCount negative', (raw) => void (entries(raw, 'stores')[0]['sourceCount'] = -2)],
-      ['store.reasonCode empty', (raw) => void (entries(raw, 'stores')[0]['reasonCode'] = '')],
-      ['store.detail non-string', (raw) => void (entries(raw, 'stores')[0]['detail'] = 9)],
+      ['store.disposition empty', (raw) => void (entries(raw, 'stores')[0]!['disposition'] = '')],
+      ['store.sourceCount negative', (raw) => void (entries(raw, 'stores')[0]!['sourceCount'] = -2)],
+      ['store.reasonCode empty', (raw) => void (entries(raw, 'stores')[0]!['reasonCode'] = '')],
+      ['store.detail non-string', (raw) => void (entries(raw, 'stores')[0]!['detail'] = 9)],
       ['omissions not an array', (raw) => void (raw['omissions'] = null)],
-      ['omission.storeId empty', (raw) => void (entries(raw, 'omissions')[0]['storeId'] = '')],
-      ['omission.reasonCode empty', (raw) => void (entries(raw, 'omissions')[0]['reasonCode'] = '')],
-      ['omission.detail empty', (raw) => void (entries(raw, 'omissions')[0]['detail'] = '')],
+      ['omission.storeId empty', (raw) => void (entries(raw, 'omissions')[0]!['storeId'] = '')],
+      ['omission.reasonCode empty', (raw) => void (entries(raw, 'omissions')[0]!['reasonCode'] = '')],
+      ['omission.detail empty', (raw) => void (entries(raw, 'omissions')[0]!['detail'] = '')],
       ['totals missing', (raw) => void delete raw['totals']],
       ['compatibility missing', (raw) => void delete raw['compatibility']],
       ['compatibility.pro missing', (raw) => void delete (raw['compatibility'] as Record<string, unknown>)['pro']],
-      ['compatibility.pro.importable non-boolean', (raw) => void (((raw['compatibility'] as Record<string, Record<string, unknown>>)['pro']['importable'] = 'yes'))],
-      ['compatibility.pro.minimumContainerVersion zero', (raw) => void (((raw['compatibility'] as Record<string, Record<string, unknown>>)['pro']['minimumContainerVersion'] = 0))],
+      ['compatibility.pro.importable non-boolean', (raw) => void (((raw['compatibility'] as Record<string, Record<string, unknown>>)['pro']!['importable'] = 'yes'))],
+      ['compatibility.pro.minimumContainerVersion zero', (raw) => void (((raw['compatibility'] as Record<string, Record<string, unknown>>)['pro']!['minimumContainerVersion'] = 0))],
       ['compatibility.free missing', (raw) => void delete (raw['compatibility'] as Record<string, unknown>)['free']],
-      ['compatibility.free.importableContainer non-boolean', (raw) => void (((raw['compatibility'] as Record<string, Record<string, unknown>>)['free']['importableContainer'] = 1))],
-      ['compatibility.free.reason non-string', (raw) => void (((raw['compatibility'] as Record<string, Record<string, unknown>>)['free']['reason'] = 4))],
+      ['compatibility.free.importableContainer non-boolean', (raw) => void (((raw['compatibility'] as Record<string, Record<string, unknown>>)['free']!['importableContainer'] = 1))],
+      ['compatibility.free.reason non-string', (raw) => void (((raw['compatibility'] as Record<string, Record<string, unknown>>)['free']!['reason'] = 4))],
       ['limits missing', (raw) => void delete raw['limits']],
       ['limits.maxTotalStoredBytes zero', (raw) => void (((raw['limits'] as Record<string, unknown>)['maxTotalStoredBytes'] = 0))],
       ['limits.maxEntries non-integer', (raw) => void (((raw['limits'] as Record<string, unknown>)['maxEntries'] = 1.5))],
@@ -335,17 +335,17 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
     const raw = fixtureObject()
     raw['futureTopLevel'] = { retainedByTheProducer: true }
     const component = entries(raw, 'components')[0]
-    component['futureComponentField'] = 'ignored'
+    component!['futureComponentField'] = 'ignored'
     raw['purpose'] = 'future-purpose'
-    component['edition'] = 'future-edition'
-    entries(raw, 'stores')[0]['disposition'] = 'future-disposition'
+    component!['edition'] = 'future-edition'
+    entries(raw, 'stores')[0]!['disposition'] = 'future-disposition'
 
     const parsed = parseCompleteExportManifest(JSON.stringify(raw))
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
     expect(parsed.manifest.purpose).toBe('future-purpose')
-    expect(parsed.manifest.components[0].edition).toBe('future-edition')
-    expect(parsed.manifest.stores[0].disposition).toBe('future-disposition')
+    expect(parsed.manifest.components[0]!.edition).toBe('future-edition')
+    expect(parsed.manifest.stores[0]!.disposition).toBe('future-disposition')
     expect(parsed.manifest).not.toHaveProperty('futureTopLevel')
     expect(parsed.manifest.components[0]).not.toHaveProperty('futureComponentField')
   })
@@ -366,7 +366,7 @@ describe('parseCompleteExportManifest refusals and tolerances', () => {
     const totals = raw['totals'] as Record<string, unknown>
     totals['components'] = (totals['components'] as number) + 1
     const free = (raw['compatibility'] as Record<string, Record<string, unknown>>)['free']
-    free['plansComponent'] = 'portable/plans-v2.json'
+    free!['plansComponent'] = 'portable/plans-v2.json'
     const parsed = parseCompleteExportManifest(JSON.stringify(raw))
     expect(parsed).toMatchObject({ ok: true })
   })

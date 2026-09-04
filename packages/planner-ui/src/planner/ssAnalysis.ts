@@ -134,7 +134,7 @@ export function planWithClaimAges(plan: Plan, claimByPersonId: Record<string, nu
   const next = structuredClone(plan)
   for (const stream of next.incomes) {
     if (stream.type === 'socialSecurity' && claimByPersonId[stream.personId] !== undefined) {
-      stream.claimAge = { years: claimByPersonId[stream.personId], months: 0 }
+      stream.claimAge = { years: claimByPersonId[stream.personId]!, months: 0 }
     }
   }
   return next
@@ -177,7 +177,7 @@ export function sweepClaimingStrategies(
     const claim = claimByPersonId as Record<string, number>
     if (!personIds.every((id) => typeof claim[id] === 'number')) continue
     rowByCandidateId.set(row.evaluation.candidate.id, {
-      claimByPersonId: Object.fromEntries(personIds.map((id) => [id, claim[id]])),
+      claimByPersonId: Object.fromEntries(personIds.map((id) => [id, claim[id]!])),
       summary: row.evaluation.candidateSummary,
       primaryValue: row.primaryValue,
       eligible: row.eligible,
@@ -213,7 +213,7 @@ export function planWithClaimAgesMonthly(plan: Plan, claimByPersonId: Record<str
   const next = structuredClone(plan)
   for (const stream of next.incomes) {
     if (stream.type === 'socialSecurity' && claimByPersonId[stream.personId] !== undefined) {
-      stream.claimAge = { ...claimByPersonId[stream.personId] }
+      stream.claimAge = { ...claimByPersonId[stream.personId]! }
     }
   }
   return next
@@ -238,13 +238,13 @@ export function refineClaimingMonthly(
   }
 
   let best: Record<string, MonthlyClaim> = {}
-  for (const id of Object.keys(baseClaimYears)) best[id] = { years: baseClaimYears[id], months: 0 }
+  for (const id of Object.keys(baseClaimYears)) best[id] = { years: baseClaimYears[id]!, months: 0 }
   let bestSummary = evaluate(best)
 
   for (const { person } of people) {
-    const baseYear = best[person.id].years
+    const baseYear = best[person.id]!.years
     const currentAge = startYear - dobParts(person).y
-    let localBest = best[person.id]
+    let localBest = best[person.id]!
     for (let yy = baseYear - 1; yy <= baseYear + 1; yy++) {
       if (yy < 62 || yy > 70 || yy < currentAge) continue
       const maxMonth = yy === 70 ? 0 : 11 // engine caps claim at 70y0m
@@ -313,14 +313,15 @@ export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear 
   const rows: BenefitsPvRow[] = []
 
   if (people.length === 1) {
-    const { person, pia, stream } = people[0]
+    const { person, pia, stream } = people[0]!
     for (const age of candidateClaimAges(person, startYear)) {
       const benefitFloorMonthly = divorcedSpousalFloorMonthly(person, stream, age, householdSingle)
       const pv = expectedPvSingle({ ...claimantInput(person, pia, age, startYear), benefitFloorMonthly }, { discountRate })
       rows.push({ claimByPersonId: { [person.id]: age }, expectedPv: pv })
     }
   } else if (people.length === 2) {
-    const [a, b] = people
+    const a = people[0]!
+    const b = people[1]!
     for (const ageA of candidateClaimAges(a.person, startYear)) {
       for (const ageB of candidateClaimAges(b.person, startYear)) {
         const pv = expectedPvCouple(
@@ -348,7 +349,7 @@ const FLAT_TOLERANCE = 0.5
 export function objectiveIsFlat(ranked: readonly SweepRow[]): boolean {
   const eligible = ranked.filter((row) => row.eligible)
   if (eligible.length < 2) return false
-  const first = eligible[0].primaryValue
+  const first = eligible[0]!.primaryValue
   return eligible.every((row) => Math.abs(row.primaryValue - first) <= FLAT_TOLERANCE)
 }
 

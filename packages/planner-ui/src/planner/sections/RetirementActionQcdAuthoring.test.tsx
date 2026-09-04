@@ -70,7 +70,7 @@ interface GiftPlanOptions {
  */
 function giftPlan(options: GiftPlanOptions = {}): Plan {
   const plan = createSamplePlan()
-  const donor = plan.household.people[0]
+  const donor = plan.household.people[0]!
   plan.household.filingStatus = 'single'
   plan.household.hasQualifyingDependent = false
   plan.household.people = [{

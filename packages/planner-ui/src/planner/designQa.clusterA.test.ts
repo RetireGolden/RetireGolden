@@ -49,10 +49,10 @@ function rule(selector: string, source = css): string {
     if (at < 0) break
     from = at + selector.length
     let after = from
-    while (after < source.length && /\s/.test(source[after])) after++
+    while (after < source.length && /\s/.test(source[after]!)) after++
     if (source[after] !== '{') continue
     let before = at - 1
-    while (before >= 0 && /\s/.test(source[before])) before--
+    while (before >= 0 && /\s/.test(source[before]!)) before--
     const boundary = before < 0 || source[before] === '}' || source.slice(before - 1, before + 1) === '*/'
     if (!boundary) continue
     return ruleBodyAt(source, at, selector)
@@ -404,7 +404,7 @@ describe('the two dark mechanisms declare one palette', () => {
    * different hexes is the same defect wearing a disguise.
    */
   const declarations = (block: string): Array<[string, string]> =>
-    [...block.matchAll(/^\s*(--[a-z0-9-]+):\s*([^;]+);/gm)].map(([, token, value]) => [token, value.trim()])
+    [...block.matchAll(/^\s*(--[a-z0-9-]+):\s*([^;]+);/gm)].map(([, token, value]) => [token!, value!.trim()])
 
   const toggled = indexCss.slice(
     indexCss.indexOf(":root[data-theme='dark'] {"),

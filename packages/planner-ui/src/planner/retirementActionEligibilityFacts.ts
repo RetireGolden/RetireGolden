@@ -341,7 +341,7 @@ export function iraClassificationFor(
   const matches = (plan.retirementActionEligibilityFacts?.iraClassifications ?? []).filter(
     (record) => record.sourceAccountId === sourceAccountId,
   )
-  return matches.length === 1 ? matches[0] : null
+  return matches.length === 1 ? matches[0]! : null
 }
 
 export function sepSimpleActivityFor(
@@ -353,7 +353,7 @@ export function sepSimpleActivityFor(
     (record) =>
       record.sourceAccountId === sourceAccountId && record.actionTaxYear === actionTaxYear,
   )
-  return matches.length === 1 ? matches[0] : null
+  return matches.length === 1 ? matches[0]! : null
 }
 
 export function sepSimpleActivityYears(
@@ -373,7 +373,7 @@ export function deductibleContributionFor(
 ): RetirementActionDeductibleIraContribution | null {
   const matches = (plan.retirementActionEligibilityFacts?.deductibleIraContributions ?? [])
     .filter((record) => record.donorPersonId === donorPersonId && record.taxYear === taxYear)
-  return matches.length === 1 ? matches[0] : null
+  return matches.length === 1 ? matches[0]! : null
 }
 
 /**

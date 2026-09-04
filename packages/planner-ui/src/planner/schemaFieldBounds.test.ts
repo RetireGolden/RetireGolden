@@ -22,9 +22,9 @@ function nodeAt(node: unknown, path: readonly string[]): Node | null {
   const here = node as Node
   if (path.length === 0) return here
   const [head, ...rest] = path
-  if (/^\d+$/.test(head)) return nodeAt(here.items, rest)
+  if (/^\d+$/.test(head!)) return nodeAt(here.items, rest)
   const properties = here.properties as Node | undefined
-  if (properties && head in properties) return nodeAt(properties[head], rest)
+  if (properties && head! in properties) return nodeAt(properties[head!], rest)
   for (const key of ['anyOf', 'oneOf', 'allOf']) {
     for (const sub of (here[key] as unknown[] | undefined) ?? []) {
       const hit = nodeAt(sub, path)

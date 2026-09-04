@@ -32,7 +32,7 @@ describe('v2 backup envelope', () => {
       now: fixedNow,
       name: 'Eligibility evidence',
     })
-    const personId = plan.household.people[0].id
+    const personId = plan.household.people[0]!.id
     plan.accounts = [
       {
         type: 'traditional',
@@ -77,7 +77,7 @@ describe('v2 backup envelope', () => {
       now: fixedNow,
       name: 'Annual filing evidence',
     })
-    const ownerPersonId = plan.household.people[0].id
+    const ownerPersonId = plan.household.people[0]!.id
     plan.accounts = [traditionalAccount('ira-1', 10_000, ownerPersonId)]
     plan.retirementActionAnnualTaxFacts = {
       ownedNonRothIraAnnualFilingSourceRecords: [
@@ -191,9 +191,9 @@ describe('v2 backup envelope', () => {
     const result = parseV2Backup(serializeV2Backup([plan], fixedNow))
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.plans[0].name).toBe('<img src=x onerror=alert(1)> Retirement')
-      expect(result.plans[0].scenarios[0].name).toBe('<script>alert("scenario")</script>')
-      expect(result.plans[0].scenarios[0].patch).toEqual({
+      expect(result.plans[0]!.name).toBe('<img src=x onerror=alert(1)> Retirement')
+      expect(result.plans[0]!.scenarios[0]!.name).toBe('<script>alert("scenario")</script>')
+      expect(result.plans[0]!.scenarios[0]!.patch).toEqual({
         expenses: { baseAnnual: 42_000 },
         note: '<svg onload=alert(1) />',
       })

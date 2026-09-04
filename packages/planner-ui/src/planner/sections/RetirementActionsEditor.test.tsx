@@ -58,7 +58,7 @@ function scheduledWithdrawal(plan: Plan, executionDate: string, executionSequenc
     executionSequence,
     requestedAmount: asPositiveUsdCents(100_00),
     provenance: { source: 'manual' },
-    personId: owner.id,
+    personId: owner!.id,
     allocations: [{
       allocationId: 'preserved-withdrawal-allocation',
       sourceAccountId: 'source-ira',
@@ -78,7 +78,7 @@ function editorPlan(): Plan {
       type: 'cash',
       id: 'source-cash',
       name: 'Cash reserve',
-      ownerPersonId: owner.id,
+      ownerPersonId: owner!.id,
       annualReturnPct: null,
       balance: 10_000_000,
       annualContribution: 0,
@@ -87,7 +87,7 @@ function editorPlan(): Plan {
       type: 'traditional',
       id: 'source-ira',
       name: 'Traditional IRA',
-      ownerPersonId: owner.id,
+      ownerPersonId: owner!.id,
       annualReturnPct: null,
       kind: 'ira',
       balance: 100_000,
@@ -97,7 +97,7 @@ function editorPlan(): Plan {
       type: 'roth',
       id: 'destination-roth',
       name: 'Roth IRA',
-      ownerPersonId: owner.id,
+      ownerPersonId: owner!.id,
       annualReturnPct: null,
       kind: 'ira',
       balance: 10_000,
@@ -209,7 +209,7 @@ function row(host: HTMLElement, selector: string): HTMLElement {
 /** A donor whose age-70½ threshold year is seven tax years back from today. */
 function donorPlanWithContributionYears(): { plan: Plan; years: readonly number[] } {
   const plan = editorPlan()
-  plan.household.people[0].dob = `${THIS_YEAR - 76}-03-01`
+  plan.household.people[0]!.dob = `${THIS_YEAR - 76}-03-01`
   const years: number[] = []
   for (let year = THIS_YEAR - 6; year <= THIS_YEAR; year++) years.push(year)
   return { plan, years }
@@ -259,7 +259,7 @@ describe('RetirementActionsEditor', () => {
     const plan = editorPlan()
     const first = plan.household.people[0]
     const second = plan.household.people[1]
-    second.name = first.name
+    second!.name = first!.name
     plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
     const mounted = await mount(plan)
 
@@ -268,8 +268,8 @@ describe('RetirementActionsEditor', () => {
     ).slice(1).map((option) => option.textContent)
 
     expect(labels).toEqual([
-      `${first.name} (ID ${first.id})`,
-      `${second.name} (ID ${second.id})`,
+      `${first!.name} (ID ${first!.id})`,
+      `${second!.name} (ID ${second!.id})`,
     ])
   })
 
@@ -277,21 +277,21 @@ describe('RetirementActionsEditor', () => {
     const plan = editorPlan()
     const deceasedOwner = plan.household.people[0]
     const livingOwner = plan.household.people[1]
-    deceasedOwner.dob = '1973-01-01'
-    deceasedOwner.longevity = { planningAge: 60, source: 'manual' }
+    deceasedOwner!.dob = '1973-01-01'
+    deceasedOwner!.longevity = { planningAge: 60, source: 'manual' }
     plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
     const mounted = await mount(plan)
 
     const personOptions = Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Person').options,
     ).slice(1).map((option) => option.value)
-    expect(personOptions).toEqual([livingOwner.id])
-    expect(personOptions).not.toContain(deceasedOwner.id)
+    expect(personOptions).toEqual([livingOwner!.id])
+    expect(personOptions).not.toContain(deceasedOwner!.id)
     expect(mounted.container.textContent).toContain(
       'Some household members are unavailable for this action year.',
     )
     expect(mounted.container.textContent).toContain(
-      `${deceasedOwner.name} (ID ${deceasedOwner.id}) is not modeled alive in 2034; their last modeled-alive year is 2033.`,
+      `${deceasedOwner!.name} (ID ${deceasedOwner!.id}) is not modeled alive in 2034; their last modeled-alive year is 2033.`,
     )
     expect(mounted.container.textContent).toContain('Needs source review')
   })
@@ -300,17 +300,17 @@ describe('RetirementActionsEditor', () => {
     const plan = editorPlan()
     const owner = plan.household.people[0]
     plan.accounts = [
-      { type: 'cash', id: 'cash-a', name: 'Cash', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, annualContribution: 0 },
-      { type: 'taxable', id: 'taxable-a', name: 'Taxable', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0 },
-      { type: 'equityComp', id: 'equity-final', name: 'Vested equity', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0, vestingMode: 'final', vestDate: null },
-      { type: 'equityComp', id: 'equity-cliff', name: 'Cliff equity', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0, vestingMode: 'cliff', vestDate: '2034-09-01' },
-      { type: 'traditional', id: 'traditional-a', name: 'Traditional IRA', ownerPersonId: owner.id, annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0 },
-      { type: 'roth', id: 'roth-a', name: 'Roth IRA', ownerPersonId: owner.id, annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0 },
-      { type: 'hsa', id: 'hsa-a', name: 'HSA', ownerPersonId: owner.id, annualReturnPct: null, balance: 10_000, annualContribution: 0 },
+      { type: 'cash', id: 'cash-a', name: 'Cash', ownerPersonId: owner!.id, annualReturnPct: null, balance: 10_000, annualContribution: 0 },
+      { type: 'taxable', id: 'taxable-a', name: 'Taxable', ownerPersonId: owner!.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0 },
+      { type: 'equityComp', id: 'equity-final', name: 'Vested equity', ownerPersonId: owner!.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0, vestingMode: 'final', vestDate: null },
+      { type: 'equityComp', id: 'equity-cliff', name: 'Cliff equity', ownerPersonId: owner!.id, annualReturnPct: null, balance: 10_000, costBasis: 8_000, annualContribution: 0, vestingMode: 'cliff', vestDate: '2034-09-01' },
+      { type: 'traditional', id: 'traditional-a', name: 'Traditional IRA', ownerPersonId: owner!.id, annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0 },
+      { type: 'roth', id: 'roth-a', name: 'Roth IRA', ownerPersonId: owner!.id, annualReturnPct: null, kind: 'ira', balance: 10_000, annualContribution: 0 },
+      { type: 'hsa', id: 'hsa-a', name: 'HSA', ownerPersonId: owner!.id, annualReturnPct: null, balance: 10_000, annualContribution: 0 },
     ]
     plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
     const mounted = await mount(plan)
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     await change(controlByLabel(mounted.container, 'Execution date'), '2034-06-15')
     const source = controlByLabel<HTMLSelectElement>(mounted.container, 'Source account')
     expect(Array.from(source.options).slice(1).map((option) => option.value)).toEqual([
@@ -336,7 +336,7 @@ describe('RetirementActionsEditor', () => {
       type: 'taxable',
       id: 'taxable-a',
       name: 'Taxable',
-      ownerPersonId: owner.id,
+      ownerPersonId: owner!.id,
       annualReturnPct: null,
       balance: 10_000,
       costBasis: 8_000,
@@ -345,7 +345,7 @@ describe('RetirementActionsEditor', () => {
     plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
     const mounted = await mount(plan)
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     await change(controlByLabel(mounted.container, 'Execution date'), '2034-06-15')
     const sourceOptions = Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
@@ -365,7 +365,7 @@ describe('RetirementActionsEditor', () => {
     const otherPerson = plan.household.people[1]
     plan.accounts = [
       {
-        type: 'cash', id: 'other-cash', name: 'Other cash', ownerPersonId: otherPerson.id,
+        type: 'cash', id: 'other-cash', name: 'Other cash', ownerPersonId: otherPerson!.id,
         annualReturnPct: null, balance: 100, annualContribution: 0,
       },
       {
@@ -376,7 +376,7 @@ describe('RetirementActionsEditor', () => {
     plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
     const mounted = await mount(plan)
 
-    await change(controlByLabel(mounted.container, 'Person'), actingPerson.id)
+    await change(controlByLabel(mounted.container, 'Person'), actingPerson!.id)
     expect(Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
     ).slice(1)).toEqual([])
@@ -396,11 +396,11 @@ describe('RetirementActionsEditor', () => {
     const oneCentOver = boundary + 0.01
     plan.accounts = [
       {
-        type: 'cash', id: 'cash-over', name: 'Cash', ownerPersonId: owner.id,
+        type: 'cash', id: 'cash-over', name: 'Cash', ownerPersonId: owner!.id,
         annualReturnPct: null, balance: oneCentOver, annualContribution: 0,
       },
       {
-        type: 'taxable', id: 'taxable-basis-over', name: 'Taxable', ownerPersonId: owner.id,
+        type: 'taxable', id: 'taxable-basis-over', name: 'Taxable', ownerPersonId: owner!.id,
         annualReturnPct: null, balance: boundary, costBasis: oneCentOver,
         annualContribution: 0,
       },
@@ -408,7 +408,7 @@ describe('RetirementActionsEditor', () => {
     plan.strategies.retirementActions = [migratedAction('legacyAggregateWithdrawal')]
     const mounted = await mount(plan)
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     const sourceOptions = Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
     ).slice(1)
@@ -429,11 +429,11 @@ describe('RetirementActionsEditor', () => {
     const boundary = ledgerCentsToPlanDollars(asUsdCents(Number.MAX_SAFE_INTEGER - 1))
     plan.accounts = [
       {
-        type: 'cash', id: 'cash-zero', name: 'Cash', ownerPersonId: owner.id,
+        type: 'cash', id: 'cash-zero', name: 'Cash', ownerPersonId: owner!.id,
         annualReturnPct: null, balance: 0, annualContribution: 0,
       },
       {
-        type: 'equityComp', id: 'equity-boundary', name: 'Equity', ownerPersonId: owner.id,
+        type: 'equityComp', id: 'equity-boundary', name: 'Equity', ownerPersonId: owner!.id,
         annualReturnPct: null, balance: boundary, costBasis: 0,
         annualContribution: 0, vestingMode: 'final', vestDate: null,
       },
@@ -445,7 +445,7 @@ describe('RetirementActionsEditor', () => {
     )]
     const mounted = await mount(plan)
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     expect(Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
     ).slice(1)).toEqual([])
@@ -465,7 +465,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     await change(controlByLabel(mounted.container, 'Source account'), 'source-cash')
     const confirm = controlByLabel<HTMLInputElement>(
       mounted.container,
@@ -485,14 +485,14 @@ describe('RetirementActionsEditor', () => {
       kind: 'ordinaryWithdrawal',
       year: target.year,
       requestedAmount: target.requestedAmount,
-      personId: owner.id,
+      personId: owner!.id,
       executionDate: '2034-06-15',
       executionSequence: 3,
       provenance: { source: 'manual' },
       allocations: [{ sourceAccountId: 'source-cash', requestedAmount: target.requestedAmount }],
       purpose: { kind: 'spending' },
     })
-    expect(replacement.actionId).not.toBe(target.actionId)
+    expect(replacement!.actionId).not.toBe(target.actionId)
     expect(parsePlan(mounted.current()).ok).toBe(true)
     expect(mounted.container.textContent).not.toContain('Needs source review')
   })
@@ -502,13 +502,13 @@ describe('RetirementActionsEditor', () => {
     const owner = plan.household.people[0]
     plan.accounts = [
       {
-        type: 'cash', id: 'cash-large', name: 'Large cash', ownerPersonId: owner.id,
+        type: 'cash', id: 'cash-large', name: 'Large cash', ownerPersonId: owner!.id,
         annualReturnPct: null,
         balance: ledgerCentsToPlanDollars(asUsdCents(9_007_199_254_740_990)),
         annualContribution: 0,
       },
       {
-        type: 'cash', id: 'cash-cent', name: 'One cent', ownerPersonId: owner.id,
+        type: 'cash', id: 'cash-cent', name: 'One cent', ownerPersonId: owner!.id,
         annualReturnPct: null, balance: 0.01, annualContribution: 0,
       },
     ]
@@ -533,7 +533,7 @@ describe('RetirementActionsEditor', () => {
     const firstRow = mounted.container.querySelector<HTMLElement>(
       `[data-retirement-action-id="${first.actionId}"]`,
     )!
-    await change(controlByLabel(firstRow, 'Person'), owner.id)
+    await change(controlByLabel(firstRow, 'Person'), owner!.id)
     await change(controlByLabel(firstRow, 'Source account'), 'cash-large')
     await act(async () => firstRow.querySelector<HTMLInputElement>(
       'input[type="checkbox"]',
@@ -548,7 +548,7 @@ describe('RetirementActionsEditor', () => {
     const secondRow = mounted.container.querySelector<HTMLElement>(
       `[data-retirement-action-id="${second.actionId}"]`,
     )!
-    await change(controlByLabel(secondRow, 'Person'), owner.id)
+    await change(controlByLabel(secondRow, 'Person'), owner!.id)
     await change(controlByLabel(secondRow, 'Source account'), 'cash-cent')
     await act(async () => secondRow.querySelector<HTMLInputElement>(
       'input[type="checkbox"]',
@@ -581,7 +581,7 @@ describe('RetirementActionsEditor', () => {
       `[data-retirement-action-id="${second.actionId}"]`,
     )!
 
-    await change(controlByLabel(secondRow, 'Person'), owner.id)
+    await change(controlByLabel(secondRow, 'Person'), owner!.id)
     await change(controlByLabel(secondRow, 'Source account'), 'source-cash')
     await change(controlByLabel(secondRow, 'Execution date'), '2034-11-20')
     await change(controlByLabel(secondRow, 'Execution sequence'), '9')
@@ -589,7 +589,7 @@ describe('RetirementActionsEditor', () => {
     const firstRow = mounted.container.querySelector<HTMLElement>(
       `[data-retirement-action-id="${first.actionId}"]`,
     )!
-    await change(controlByLabel(firstRow, 'Person'), owner.id)
+    await change(controlByLabel(firstRow, 'Person'), owner!.id)
     await change(controlByLabel(firstRow, 'Source account'), 'source-cash')
     await act(async () => controlByLabel<HTMLInputElement>(
       firstRow,
@@ -606,7 +606,7 @@ describe('RetirementActionsEditor', () => {
     const preservedSecondRow = mounted.container.querySelector<HTMLElement>(
       `[data-retirement-action-id="${second.actionId}"]`,
     )!
-    expect(controlByLabel(preservedSecondRow, 'Person').value).toBe(owner.id)
+    expect(controlByLabel(preservedSecondRow, 'Person').value).toBe(owner!.id)
     expect(controlByLabel(preservedSecondRow, 'Source account').value).toBe('source-cash')
     expect(controlByLabel(preservedSecondRow, 'Execution date').value).toBe('2034-11-20')
     expect(controlByLabel(preservedSecondRow, 'Execution sequence').value).toBe('9')
@@ -624,7 +624,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     await change(controlByLabel(mounted.container, 'Source account'), 'source-cash')
     await act(async () => controlByLabel<HTMLInputElement>(
       mounted.container,
@@ -650,7 +650,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     expect(controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').value).toBe('')
     expect(controlByLabel<HTMLSelectElement>(mounted.container, 'Roth destination account').value).toBe('')
     expect(controlByLabel<HTMLSelectElement>(mounted.container, 'Conversion tax funding').value).toBe('')
@@ -669,7 +669,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await completeConversionIdentityReview(mounted.container, owner.id)
+    await completeConversionIdentityReview(mounted.container, owner!.id)
     await change(
       controlByLabel(mounted.container, 'Conversion tax funding'),
       'conversionPrincipalWithholding',
@@ -703,7 +703,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     const sourceOptions = Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
     ).slice(1)
@@ -730,7 +730,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     expect(Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
     ).slice(1)).toEqual([])
@@ -771,7 +771,7 @@ describe('RetirementActionsEditor', () => {
         type: 'traditional',
         id: 'source-ira-2',
         name: 'Traditional IRA',
-        ownerPersonId: owner.id,
+        ownerPersonId: owner!.id,
         annualReturnPct: null,
         kind: 'ira',
         balance: 200_000,
@@ -781,7 +781,7 @@ describe('RetirementActionsEditor', () => {
         type: 'roth',
         id: 'destination-roth-2',
         name: 'Roth IRA',
-        ownerPersonId: owner.id,
+        ownerPersonId: owner!.id,
         annualReturnPct: null,
         kind: 'ira',
         balance: 20_000,
@@ -797,7 +797,7 @@ describe('RetirementActionsEditor', () => {
     plan.strategies.retirementActions = [migratedAction('legacyAggregateRothConversion')]
     const mounted = await mount(plan)
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     const sourceLabels = Array.from(
       controlByLabel<HTMLSelectElement>(mounted.container, 'Source account').options,
     ).slice(1).map((option) => option.textContent)
@@ -822,7 +822,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await change(controlByLabel(mounted.container, 'Person'), owner.id)
+    await change(controlByLabel(mounted.container, 'Person'), owner!.id)
     await change(controlByLabel(mounted.container, 'Source account'), 'source-ira')
     await act(async () => controlByLabel<HTMLInputElement>(
       mounted.container,
@@ -846,17 +846,17 @@ describe('RetirementActionsEditor', () => {
     const saved = mounted.current().strategies.retirementActions
     expect(saved).toHaveLength(1)
     const replacement = saved[0]
-    if (replacement.kind !== 'rothConversion') throw new Error('expected a named conversion')
-    expect(replacement.actionId).not.toBe(target.actionId)
-    expect(replacement.personId).toBe(owner.id)
-    expect(replacement.year).toBe(2034)
-    expect(replacement.executionDate).toBe('2034-09-01')
-    expect(replacement.executionSequence).toBe(4)
-    expect(replacement.requestedAmount).toBe(25_000_00)
-    expect(replacement.destinationRothAccountId).toBe('destination-roth')
-    expect(replacement.taxFunding).toEqual({ kind: 'noneExpected' })
-    expect(replacement.provenance).toEqual({ source: 'manual' })
-    expect(replacement.allocations.map((allocation) => [
+    if (replacement!.kind !== 'rothConversion') throw new Error('expected a named conversion')
+    expect(replacement!.actionId).not.toBe(target.actionId)
+    expect(replacement!.personId).toBe(owner!.id)
+    expect(replacement!.year).toBe(2034)
+    expect(replacement!.executionDate).toBe('2034-09-01')
+    expect(replacement!.executionSequence).toBe(4)
+    expect(replacement!.requestedAmount).toBe(25_000_00)
+    expect(replacement!.destinationRothAccountId).toBe('destination-roth')
+    expect(replacement!.taxFunding).toEqual({ kind: 'noneExpected' })
+    expect(replacement!.provenance).toEqual({ source: 'manual' })
+    expect(replacement!.allocations.map((allocation) => [
       allocation.sourceAccountId,
       allocation.requestedAmount,
     ])).toEqual([['source-ira', 25_000_00]])
@@ -871,7 +871,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await completeConversionIdentityReview(mounted.container, owner.id)
+    await completeConversionIdentityReview(mounted.container, owner!.id)
     const amount = controlByLabel<HTMLInputElement>(mounted.container, 'Tax-funding amount')
     await change(amount, '100')
     await act(async () => controlByLabel<HTMLInputElement>(
@@ -898,7 +898,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await completeConversionIdentityReview(mounted.container, owner.id)
+    await completeConversionIdentityReview(mounted.container, owner!.id)
     const amount = controlByLabel<HTMLInputElement>(mounted.container, 'Tax-funding amount')
     await change(amount, '0.07')
     expect(amount.value).toBe('0.07')
@@ -919,8 +919,8 @@ describe('RetirementActionsEditor', () => {
     const saved = mounted.current().strategies.retirementActions
     expect(saved).toHaveLength(1)
     const replacement = saved[0]
-    if (replacement.kind !== 'rothConversion') throw new Error('expected a named conversion')
-    expect(replacement.taxFunding).toEqual({
+    if (replacement!.kind !== 'rothConversion') throw new Error('expected a named conversion')
+    expect(replacement!.taxFunding).toEqual({
       kind: 'externalCash',
       amount: 7,
       attested: true,
@@ -935,7 +935,7 @@ describe('RetirementActionsEditor', () => {
     const mounted = await mount(plan)
     const owner = plan.household.people[0]
 
-    await completeConversionIdentityReview(mounted.container, owner.id)
+    await completeConversionIdentityReview(mounted.container, owner!.id)
     const amount = controlByLabel<HTMLInputElement>(mounted.container, 'Tax-funding amount')
     await change(amount, '100')
     const attestation = controlByLabel<HTMLInputElement>(
@@ -1163,7 +1163,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
     const { plan, years } = donorPlanWithContributionYears()
     const mounted = await mount(plan)
     const donor = plan.household.people[0]
-    const host = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
+    const host = () => row(mounted.container, `[data-eligibility-contributions="${donor!.id}"]`)
 
     expect(host().textContent).toContain(
       `No deductible IRA contributions in any of these years: ${years.join(', ')}.`,
@@ -1186,22 +1186,22 @@ describe('RetirementActionsEditor eligibility facts', () => {
   it('refuses the whole bulk statement when one year has a colliding ID', async () => {
     const { plan, years } = donorPlanWithContributionYears()
     const donor = plan.household.people[0]
-    const collidingYear = years[2]
+    const collidingYear = years[2]!
     plan.accounts.push({
       type: 'cash',
       id: mintEligibilityEvidenceId({
         role: 'deductibleContribution',
-        donorPersonId: donor.id,
+        donorPersonId: donor!.id,
         taxYear: collidingYear,
       }),
       name: 'Collision',
-      ownerPersonId: donor.id,
+      ownerPersonId: donor!.id,
       annualReturnPct: null,
       balance: 1,
       annualContribution: 0,
     })
     const mounted = await mount(plan)
-    const host = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
+    const host = () => row(mounted.container, `[data-eligibility-contributions="${donor!.id}"]`)
 
     await act(async () => buttonByText(
       host(),
@@ -1220,7 +1220,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
     const { plan, years } = donorPlanWithContributionYears()
     const mounted = await mount(plan)
     const donor = plan.household.people[0]
-    const block = () => row(mounted.container, `[data-eligibility-contributions="${donor.id}"]`)
+    const block = () => row(mounted.container, `[data-eligibility-contributions="${donor!.id}"]`)
     const target = years[3]
 
     await act(async () => buttonByText(
@@ -1229,7 +1229,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
     ).click())
     const yearRow = () => row(
       mounted.container,
-      `[data-eligibility-contribution="${donor.id}:${target}"]`,
+      `[data-eligibility-contribution="${donor!.id}:${target}"]`,
     )
     expect(yearRow().textContent).toContain('On record')
 
@@ -1249,7 +1249,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
     const target = years[2]
     const yearRow = () => row(
       mounted.container,
-      `[data-eligibility-contribution="${donor.id}:${target}"]`,
+      `[data-eligibility-contribution="${donor!.id}:${target}"]`,
     )
 
     await change(
@@ -1258,14 +1258,14 @@ describe('RetirementActionsEditor eligibility facts', () => {
     )
     await act(async () => buttonByText(
       yearRow(),
-      `Record: ${donor.name} contributed $6,500.25 to a deductible IRA for ${target}`,
+      `Record: ${donor!.name} contributed $6,500.25 to a deductible IRA for ${target}`,
     ).click())
 
     expect(mounted.current().retirementActionEligibilityFacts!.deductibleIraContributions)
       .toEqual([{
-        evidenceId: `planner-eligibility-deductible-contribution:["${donor.id}",${target}]`,
+        evidenceId: `planner-eligibility-deductible-contribution:["${donor!.id}",${target}]`,
         provenance: { source: 'manual' },
-        donorPersonId: donor.id,
+        donorPersonId: donor!.id,
         taxYear: target,
         amountCents: 650_025,
       }])
@@ -1282,7 +1282,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
         sourceAccountId: 'source-ira',
       }),
       name: 'Collision',
-      ownerPersonId: plan.household.people[0].id,
+      ownerPersonId: plan.household.people[0]!.id,
       annualReturnPct: null,
       balance: 1,
       annualContribution: 0,
@@ -1346,7 +1346,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
     const target = years[1]
     const yearRow = () => row(
       mounted.container,
-      `[data-eligibility-contribution="${donor.id}:${target}"]`,
+      `[data-eligibility-contribution="${donor!.id}:${target}"]`,
     )
     const amount = () => controlByLabel<HTMLInputElement>(
       yearRow(),
@@ -1356,7 +1356,7 @@ describe('RetirementActionsEditor eligibility facts', () => {
     await change(amount(), '500')
     await act(async () => buttonByText(
       yearRow(),
-      `Record: ${donor.name} contributed $500.00 to a deductible IRA for ${target}`,
+      `Record: ${donor!.name} contributed $500.00 to a deductible IRA for ${target}`,
     ).click())
     expect(yearRow().textContent).toContain('On record')
     expect(amount().value).toBe('500.00')

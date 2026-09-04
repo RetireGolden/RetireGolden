@@ -58,7 +58,7 @@ function socialSecurityPlan(): Plan {
   plan.incomes.push({
     type: 'socialSecurity',
     id: 'social-security-test',
-    personId: person.id,
+    personId: person!.id,
     piaMonthly: null,
     earnings: [],
     claimAge: { years: 67, months: 0 },

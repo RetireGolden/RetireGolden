@@ -63,7 +63,7 @@ export function computeBreakEven(input: BreakEvenInput): BreakEvenResult {
 
   /** Annual benefit received at `age` for a person who claimed at `a` (0 before claim). */
   const annualBenefit = (a: number, age: number): number =>
-    age < a ? 0 : piaMonthly * factors[a] * 12 * Math.pow(1 + cola, age - FIRST_AGE)
+    age < a ? 0 : piaMonthly * factors[a]! * 12 * Math.pow(1 + cola, age - FIRST_AGE)
 
   const series: BreakEvenPoint[] = []
   const balance: Record<number, number> = {}
@@ -72,7 +72,7 @@ export function computeBreakEven(input: BreakEvenInput): BreakEvenResult {
   for (let age = FIRST_AGE; age <= throughAge; age++) {
     const cumulative: Record<number, number> = {}
     for (const a of claimAges) {
-      balance[a] = balance[a] * (1 + g) + annualBenefit(a, age)
+      balance[a] = balance[a]! * (1 + g) + annualBenefit(a, age)
       cumulative[a] = Math.round(balance[a])
     }
     series.push({ age, cumulative })
@@ -82,14 +82,14 @@ export function computeBreakEven(input: BreakEvenInput): BreakEvenResult {
   const crossings: BreakEvenCrossing[] = []
   for (let i = 0; i < sorted.length; i++) {
     for (let j = i + 1; j < sorted.length; j++) {
-      const early = sorted[i]
-      const late = sorted[j]
+      const early = sorted[i]!
+      const late = sorted[j]!
       let crossAge: number | null = null
       let prevDiff: number | null = null
       for (const pt of series) {
         // Before the earlier claim begins, both are $0 — nothing to compare yet.
-        if (pt.cumulative[early] <= 0) continue
-        const diff = pt.cumulative[late] - pt.cumulative[early]
+        if (pt.cumulative[early]! <= 0) continue
+        const diff = pt.cumulative[late]! - pt.cumulative[early]!
         if (diff >= 0) {
           crossAge =
             prevDiff !== null && prevDiff < 0

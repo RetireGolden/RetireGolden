@@ -80,7 +80,7 @@ export function InsightsPage() {
     }
     setDismissedMap(nextMap)
     writeLocal(STORAGE_KEYS.insightsDismissed, JSON.stringify(nextMap))
-    setLiveMessage(`Insight dismissed. ${nextMap[plan.id].length} dismissed on this plan.`)
+    setLiveMessage(`Insight dismissed. ${nextMap[plan.id]!.length} dismissed on this plan.`)
   }
 
   useLayoutEffect(() => {

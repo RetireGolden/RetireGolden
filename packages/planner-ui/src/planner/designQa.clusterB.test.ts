@@ -44,10 +44,10 @@ function rule(selector: string, source = css): string {
     if (at < 0) break
     from = at + selector.length
     let after = from
-    while (after < source.length && /\s/.test(source[after])) after++
+    while (after < source.length && /\s/.test(source[after]!)) after++
     if (source[after] !== '{') continue
     let before = at - 1
-    while (before >= 0 && /\s/.test(source[before])) before--
+    while (before >= 0 && /\s/.test(source[before]!)) before--
     const boundary =
       before < 0 || source[before] === '}' || source[before] === '{' || source.slice(before - 1, before + 1) === '*/'
     if (!boundary) continue
@@ -66,7 +66,7 @@ const clusterBlock = (() => {
 function tokensOf(block: string): Record<string, string> {
   const out: Record<string, string> = {}
   for (const match of block.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)) {
-    out[match[1]] = match[2].toLowerCase()
+    out[match[1]!] = match[2]!.toLowerCase()
   }
   return out
 }
@@ -110,11 +110,11 @@ describe('Design-QA cluster B: native check boxes carry their own edge token (#5
       ['dark', toggledDark],
     ] as const) {
       for (const bg of ['surface-1', 'surface-2'] as const) {
-        expect(contrast(theme['control-border'], theme[bg]), `${name}: control-border on ${bg}`).toBeGreaterThanOrEqual(3)
+        expect(contrast(theme['control-border']!, theme[bg]!), `${name}: control-border on ${bg}`).toBeGreaterThanOrEqual(3)
       }
       // The old edge, kept for panels and fields, is what failed: pin the
       // reason the token exists so nobody "simplifies" it back to --border.
-      expect(contrast(theme['border'], theme['surface-1']), `${name}: --border alone is not enough`).toBeLessThan(3)
+      expect(contrast(theme['border']!, theme['surface-1']!), `${name}: --border alone is not enough`).toBeLessThan(3)
     }
   })
 

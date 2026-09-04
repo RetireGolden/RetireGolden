@@ -78,7 +78,7 @@ async function mount(plan: Plan) {
 function actionBearingPlan(): Plan {
   const plan = createSamplePlan()
   const owner = plan.household.people[0]
-  const source = plan.accounts.find((a) => a.type === 'traditional' && a.ownerPersonId === owner.id)!
+  const source = plan.accounts.find((a) => a.type === 'traditional' && a.ownerPersonId === owner!.id)!
   const parsed = parseRetirementActionRequest({
     actionId: 'guard-withdrawal',
     kind: 'ordinaryWithdrawal',
@@ -87,7 +87,7 @@ function actionBearingPlan(): Plan {
     executionSequence: 1,
     requestedAmount: 10_000_00,
     provenance: { source: 'manual' },
-    personId: owner.id,
+    personId: owner!.id,
     allocations: [{
       allocationId: 'guard-withdrawal-allocation',
       sourceAccountId: source.id,

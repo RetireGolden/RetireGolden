@@ -349,7 +349,7 @@ describe('planner home adaptive layout', () => {
     })
     const restored = await listUserPlanSummaries()
     expect(restored).toHaveLength(1)
-    expect(restored[0].name).toBe('Doomed plan')
+    expect(restored[0]!.name).toBe('Doomed plan')
   })
 
   it('keeps refresh history during the delete undo window, then purges it on final dismissal', async () => {

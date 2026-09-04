@@ -39,7 +39,7 @@ describe('example registry', () => {
       startYear: 2026,
       horizonEndYear: 2026,
       taxCalculator: createFederalTaxCalculator(),
-    }).years[0]
+    }).years[0]!
     expect(year.aca?.readiness).toBe('nonActionable')
     expect(year.aca?.supportCodes).toContain('example-contract-input-mismatch')
     expect(year.aca?.grossEnrollmentPremium).toBe(24_000)
