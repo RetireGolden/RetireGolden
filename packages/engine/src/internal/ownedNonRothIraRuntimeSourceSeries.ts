@@ -2245,86 +2245,32 @@ function seedNewlyOwnedOpenings(
   }
 }
 
-/** @internal What one year's step produces: the next carry, and that year's normalized record. */
-export interface YearStep {
-  readonly carry: YearCarry
-  readonly year: NormalizedOwnedNonRothIraRuntimeSourceYear
-}
-
 /**
- * One tax year of the replay: every check that year needs, in the order it
- * needs them, against the carry the year before it returned.
+ * The application chain: every published owned-IRA mutation of the year, walked
+ * in its published order against two ledgers at once -- the account balances
+ * the carry brought in, and the contract-value channel opened just above.
  *
- * @internal
+ * This is the phase the ones around it exist to protect. It advances the
+ * opening maps in place, so it must run after every opening they will need is
+ * seeded, and before the rejoin, coverage and arrival refusals that read what
+ * it left behind.
  */
-export function stepYear(
-  carry: YearCarry,
-  yearResult: Readonly<YearResult>,
-  facts: SeriesFacts,
-): YearStep {
-  const {
-    plan, accountById, accountOrder, personIds, stagingContracts,
-    contractOwnerById, contractFundingById, contractPremiumById,
-    contractPurchaseYearById,
-  } = facts
-  // Copy-on-write at the boundary. The chains below advance these maps in
-  // place, exactly as they did when they were the loop's own locals, and the
-  // carry this step was handed has to survive the year untouched.
-  const openingBalances = new Map(carry.openingBalances)
-  const openingRawBalances = new Map(carry.openingRawBalances)
-  const openingPhysicalRawBalances = new Map(carry.openingPhysicalRawBalances)
-  const openingContractRawValues = carry.openingContractRawValues
-
-  const taxYear = yearResult.year
-  const {
-    pools, ownedAccounts, physicalOwnedRows,
-    occurrenceSource, applicationSource, balanceSource,
-    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
-    publishedPhysicalOpeningBalances,
-  } = readYearSources(yearResult, plan, taxYear)
-  continuePhysicalOpeningBalances(
-    publishedPhysicalOpeningBalances, physicalOwnedRows, ownedAccounts,
-    openingPhysicalRawBalances, taxYear,
-  )
-  requireCapturedSourceContracts(
-    occurrenceSource, applicationSource, balanceSource, plan, taxYear,
-  )
-  const { occurrenceByKey, occurrenceOrderId } = indexOccurrences(
-    occurrenceSource, plan, accountById, personIds, taxYear,
-  )
-  requirePensionRolloverOccurrences(plan, accountById, occurrenceByKey, taxYear)
-  const namedConversionCoverage = reconcilePublishedAnnualTotals(
-    yearResult, occurrenceSource, accountById, accountOrder, taxYear,
-  )
-  const namedQcdCoverage = requireExactActionEvidence(
-    plan, yearResult, accountById, occurrenceSource, taxYear,
-  )
-  requireStagedAnnuityPurchases(
-    plan, accountById, contractOwnerById, occurrenceByKey, openingRawBalances,
-    taxYear,
-  )
-
-  const {
-    expectedOwners,
-    postGrowthBalances, postGrowthRawBalances, postGrowthPhysicalRawBalances,
-    preGrowthBalances, preGrowthRawBalances, preGrowthPhysicalRawBalances,
-    ownerBalances,
-  } = observeBalances(
-    yearResult, balanceSource, pools, ownedAccounts, physicalOwnedRows,
-    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
-    taxYear,
-  )
-  const { publishedContractOpenings, publishedContractClosings } =
-    readPublishedContractValues(
-      expectedOwners, balanceSource, stagingContracts, contractPremiumById,
-      contractPurchaseYearById, openingContractRawValues, taxYear,
-    )
-
+function runApplicationChain(
+  applicationSource: CapturedApplicationSource,
+  occurrenceByKey: OccurrenceIndex,
+  occurrenceOrderId: ReadonlyMap<string, string>,
+  accountById: ReadonlyMap<string, Account>,
+  accountOrder: ReadonlyMap<string, number>,
+  contractOwnerById: ReadonlyMap<AccountId, PersonId>,
+  contractFundingById: ReadonlyMap<AccountId, AccountId>,
+  publishedContractOpenings: ReadonlyMap<AccountId, number>,
+  physicalOwnedRows: readonly OwnedPhysicalRow[],
+  openingBalances: Map<AccountId, UsdCents>,
+  openingRawBalances: Map<AccountId, number>,
+  openingPhysicalRawBalances: Map<string, number>,
+  taxYear: number,
+) {
   const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
-  seedNewlyOwnedOpenings(
-    ownedAccounts, applicationSource, preGrowthRawBalances, openingRawBalances,
-    openingBalances, taxYear,
-  )
   /**
    * The year's running contract-value channel, chained the same way the
    * account balances are.
@@ -2623,6 +2569,22 @@ export function stepYear(
       form8606LineGrossAmount: occurrenceAmount,
     })
   }
+  return {
+    normalizedApplications, contractRawValues, contractValues,
+    creditedPremiumKeys, appliedKeys,
+  }
+}
+
+/**
+ * Nothing the year published may sit outside the chain: every owned-IRA
+ * occurrence has to have been applied by exactly one supported application.
+ */
+function requireEveryOwnedOccurrenceApplied(
+  occurrenceSource: CapturedOccurrenceSource,
+  accountById: ReadonlyMap<string, Account>,
+  appliedKeys: ReadonlySet<string>,
+  taxYear: number,
+): void {
   for (const occurrence of occurrenceSource.runtimeOccurrences) {
     const account = accountById.get(occurrence.sourceAccountId!)
     // Only a traditional IRA can be S2-effective; narrow before the
@@ -2640,6 +2602,26 @@ export function stepYear(
       })
     }
   }
+}
+
+/**
+ * Where the chain has to end up. Having walked every mutation, both ledgers
+ * must arrive exactly at the live pre-growth observation read before it ran --
+ * per balance row where the year published rows, and per account always.
+ */
+function requireChainRejoinsPreGrowth(
+  publishedPhysicalBalancesBeforeGrowth:
+    YearResult['ownedNonRothIraPhysicalBalancesBeforeGrowth'],
+  physicalOwnedRows: readonly OwnedPhysicalRow[],
+  ownedAccounts: readonly OwnedIraAccount[],
+  openingBalances: ReadonlyMap<AccountId, UsdCents>,
+  openingRawBalances: ReadonlyMap<AccountId, number>,
+  openingPhysicalRawBalances: ReadonlyMap<string, number>,
+  preGrowthBalances: ReadonlyMap<AccountId, UsdCents>,
+  preGrowthRawBalances: ReadonlyMap<AccountId, number>,
+  preGrowthPhysicalRawBalances: ReadonlyMap<string, number>,
+  taxYear: number,
+): void {
   if (publishedPhysicalBalancesBeforeGrowth !== undefined) {
     for (const { account, balanceIndex } of physicalOwnedRows) {
       const key = physicalBalanceKey(account.id, balanceIndex)
@@ -2671,6 +2653,18 @@ export function stepYear(
       )
     }
   }
+}
+
+/**
+ * The premium arrival refusal, whose position is the whole point of it: it runs
+ * after the rejoin above, never in place inside the chain.
+ */
+function requireEveryPremiumArrived(
+  occurrenceSource: CapturedOccurrenceSource,
+  accountById: ReadonlyMap<string, Account>,
+  creditedPremiumKeys: ReadonlySet<string>,
+  taxYear: number,
+): void {
   // THE PREMIUM MUST HAVE ARRIVED. Every `annuityFundingTransfer` debit the
   // chain took has to be matched by the credit that put its dollars into a
   // contract-value channel, or the year is one in which value left a section
@@ -2692,6 +2686,19 @@ export function stepYear(
       producerOccurrenceKey: occurrence.producerOccurrenceKey,
     })
   }
+}
+
+/**
+ * The contract channel's own close, settled against the value the projection
+ * published for it.
+ */
+function settleContractValues(
+  stagingContracts: SeriesFacts['stagingContracts'],
+  publishedContractClosings: ReadonlyMap<AccountId, number>,
+  contractRawValues: ReadonlyMap<AccountId, number>,
+  contractValues: ReadonlyMap<AccountId, UsdCents>,
+  taxYear: number,
+): Map<AccountId, UsdCents> {
   // And the December 31 value the projection published must be the one this
   // chain arrived at, contract by contract, in exact cents. The opening was
   // taken on trust and bounded; everything that happened to it since was not.
@@ -2711,6 +2718,113 @@ export function stepYear(
     }
     settledContractValues.set(contractAccountId, chainCents)
   }
+  return settledContractValues
+}
+
+/** @internal What one year's step produces: the next carry, and that year's normalized record. */
+export interface YearStep {
+  readonly carry: YearCarry
+  readonly year: NormalizedOwnedNonRothIraRuntimeSourceYear
+}
+
+/**
+ * One tax year of the replay: every check that year needs, in the order it
+ * needs them, against the carry the year before it returned.
+ *
+ * @internal
+ */
+export function stepYear(
+  carry: YearCarry,
+  yearResult: Readonly<YearResult>,
+  facts: SeriesFacts,
+): YearStep {
+  const {
+    plan, accountById, accountOrder, personIds, stagingContracts,
+    contractOwnerById, contractFundingById, contractPremiumById,
+    contractPurchaseYearById,
+  } = facts
+  // Copy-on-write at the boundary. The chains below advance these maps in
+  // place, exactly as they did when they were the loop's own locals, and the
+  // carry this step was handed has to survive the year untouched.
+  const openingBalances = new Map(carry.openingBalances)
+  const openingRawBalances = new Map(carry.openingRawBalances)
+  const openingPhysicalRawBalances = new Map(carry.openingPhysicalRawBalances)
+  const openingContractRawValues = carry.openingContractRawValues
+
+  const taxYear = yearResult.year
+  const {
+    pools, ownedAccounts, physicalOwnedRows,
+    occurrenceSource, applicationSource, balanceSource,
+    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
+    publishedPhysicalOpeningBalances,
+  } = readYearSources(yearResult, plan, taxYear)
+  continuePhysicalOpeningBalances(
+    publishedPhysicalOpeningBalances, physicalOwnedRows, ownedAccounts,
+    openingPhysicalRawBalances, taxYear,
+  )
+  requireCapturedSourceContracts(
+    occurrenceSource, applicationSource, balanceSource, plan, taxYear,
+  )
+  const { occurrenceByKey, occurrenceOrderId } = indexOccurrences(
+    occurrenceSource, plan, accountById, personIds, taxYear,
+  )
+  requirePensionRolloverOccurrences(plan, accountById, occurrenceByKey, taxYear)
+  const namedConversionCoverage = reconcilePublishedAnnualTotals(
+    yearResult, occurrenceSource, accountById, accountOrder, taxYear,
+  )
+  const namedQcdCoverage = requireExactActionEvidence(
+    plan, yearResult, accountById, occurrenceSource, taxYear,
+  )
+  requireStagedAnnuityPurchases(
+    plan, accountById, contractOwnerById, occurrenceByKey, openingRawBalances,
+    taxYear,
+  )
+
+  const {
+    expectedOwners,
+    postGrowthBalances, postGrowthRawBalances, postGrowthPhysicalRawBalances,
+    preGrowthBalances, preGrowthRawBalances, preGrowthPhysicalRawBalances,
+    ownerBalances,
+  } = observeBalances(
+    yearResult, balanceSource, pools, ownedAccounts, physicalOwnedRows,
+    publishedBalancesBeforeGrowth, publishedPhysicalBalancesBeforeGrowth,
+    taxYear,
+  )
+  const { publishedContractOpenings, publishedContractClosings } =
+    readPublishedContractValues(
+      expectedOwners, balanceSource, stagingContracts, contractPremiumById,
+      contractPurchaseYearById, openingContractRawValues, taxYear,
+    )
+
+  seedNewlyOwnedOpenings(
+    ownedAccounts, applicationSource, preGrowthRawBalances, openingRawBalances,
+    openingBalances, taxYear,
+  )
+  const {
+    normalizedApplications, contractRawValues, contractValues,
+    creditedPremiumKeys, appliedKeys,
+  } = runApplicationChain(
+    applicationSource, occurrenceByKey, occurrenceOrderId, accountById,
+    accountOrder, contractOwnerById, contractFundingById,
+    publishedContractOpenings, physicalOwnedRows, openingBalances,
+    openingRawBalances, openingPhysicalRawBalances, taxYear,
+  )
+  requireEveryOwnedOccurrenceApplied(
+    occurrenceSource, accountById, appliedKeys, taxYear,
+  )
+  requireChainRejoinsPreGrowth(
+    publishedPhysicalBalancesBeforeGrowth, physicalOwnedRows, ownedAccounts,
+    openingBalances, openingRawBalances, openingPhysicalRawBalances,
+    preGrowthBalances, preGrowthRawBalances, preGrowthPhysicalRawBalances,
+    taxYear,
+  )
+  requireEveryPremiumArrived(
+    occurrenceSource, accountById, creditedPremiumKeys, taxYear,
+  )
+  const settledContractValues = settleContractValues(
+    stagingContracts, publishedContractClosings, contractRawValues,
+    contractValues, taxYear,
+  )
 
   // A charitable gift reaches the published annual total by two routes that
   // are not interchangeable. Dollars routed out of an RMD move nothing extra
