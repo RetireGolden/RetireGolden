@@ -286,10 +286,6 @@ const resultFlags: OwnedNonRothIraSeppCurrentPaymentResultBase = {
   penaltyTreatment: 'notEstablished',
 }
 
-function legacyJsonId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
-}
-
 function civilDate(value: string, label: string): string {
   if (parseCivilIsoDate(value) === null) {
     throw new RangeError(`${label} must be a canonical civil ISO date`)
@@ -801,7 +797,7 @@ export function validateOwnedNonRothIraSeppCurrentPaymentCandidate(
     actualQualifyingGrossAmount:
       opening.actualQualifyingGrossAmount,
   }
-  const expectedOpeningStateEvidenceId = legacyJsonId(
+  const expectedOpeningStateEvidenceId = deriveActionStructuralId(
     'owned-ira-sepp-annual-opening-state',
     [openingStateLineage],
   )

@@ -26,6 +26,7 @@ import type {
 import {
   buildOwnedNonRothIraSeppCompletePriorElectionHistoryEvidence,
 } from './ownedNonRothIraSeppAnnualReconciliation.js'
+import { deriveActionStructuralId } from './structuralId.js'
 
 const ownerPersonId = asPersonId('p1')
 const requestedSourceId = asAccountId('ira-requested')
@@ -229,9 +230,10 @@ function qualifiedSeppRoute(
   const openingStateEvidence = {
     ...openingLineage,
     openingStateEvidenceId:
-      `owned-ira-sepp-annual-opening-state:${JSON.stringify([
-        openingLineage,
-      ])}`,
+      deriveActionStructuralId(
+        'owned-ira-sepp-annual-opening-state',
+        [openingLineage],
+      ),
   }
   return {
     sourceAccountId: requestedSourceId,

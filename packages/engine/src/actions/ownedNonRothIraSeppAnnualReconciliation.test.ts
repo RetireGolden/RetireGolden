@@ -44,10 +44,6 @@ import {
   mintCoverageEvidenceId,
 } from './ownedNonRothIraPenaltyCoverageEvidenceId.js'
 
-function legacyJsonId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
-}
-
 function coverageOrder(
   left: Readonly<OwnedNonRothIraPenaltyCharacterCoverageEvidence>,
   right: Readonly<OwnedNonRothIraPenaltyCharacterCoverageEvidence>,
@@ -209,7 +205,7 @@ function openingEvidence() {
   }
   return {
     ...lineage,
-    openingStateEvidenceId: legacyJsonId(
+    openingStateEvidenceId: deriveActionStructuralId(
       'owned-ira-sepp-annual-opening-state',
       [lineage],
     ),

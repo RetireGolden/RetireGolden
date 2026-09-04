@@ -2676,7 +2676,7 @@
           "functions": [
             {
               "name": "executeOrdinaryWithdrawals",
-              "line": 2131
+              "line": 2134
             }
           ]
         },
@@ -2696,23 +2696,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/execution.test.ts",
-          "line": 1787,
+          "line": 1788,
           "note": "already-vested equity execution",
           "tests": [
             {
               "title": "classifies an already-vested equity execution as ordinary income anyway",
-              "line": 1802
+              "line": 1803
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/execution.test.ts",
-          "line": 1833,
+          "line": 1834,
           "note": "partial-execution cliff vest",
           "tests": [
             {
               "title": "reports ordinary income only on the executed part of a same-year cliff vest",
-              "line": 1842
+              "line": 1843
             }
           ]
         }

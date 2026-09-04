@@ -20,7 +20,10 @@ import {
   type UsdCents,
 } from './money.js'
 import { deepFreeze } from './freeze.js'
-import { compareUtf16CodeUnits } from './structuralId.js'
+import {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from './structuralId.js'
 import { requireNonblankId } from './plainData.js'
 
 export type OwnedNonRothIraSubtype = 'traditional' | 'sep' | 'simple'
@@ -132,10 +135,6 @@ export interface ClassifyOwnedNonRothIraAnnualWithdrawalsResult {
   line7AllocationEvidence: Readonly<AnnualIraBasisAllocationEvidence>
   line8AllocationEvidence: Readonly<AnnualIraBasisAllocationEvidence>
   withdrawals: readonly Readonly<OwnedNonRothIraWithdrawalClassification>[]
-}
-
-function stableId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
 }
 
 function centsFromBigInt(value: bigint, label: string): UsdCents {
@@ -468,7 +467,7 @@ export function classifyOwnedNonRothIraAnnualWithdrawals(
     form8606Line7DistributionAmount,
     form8606Line8NetConversionAmount,
   }
-  const basisEvidenceId = stableId('owned-non-roth-ira-annual-basis', [
+  const basisEvidenceId = deriveActionStructuralId('owned-non-roth-ira-annual-basis', [
     ownerPersonId,
     ownerWideNonRothIraPoolId,
     completePoolEvidence,

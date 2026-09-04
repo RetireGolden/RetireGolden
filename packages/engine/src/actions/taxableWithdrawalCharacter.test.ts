@@ -337,4 +337,34 @@ describe('individually owned taxable-withdrawal character', () => {
       ).toBe(federalFilingStatus)
     },
   )
+
+  it('mints the three taxable evidence IDs with the hardened structural minter', () => {
+    const result = classifyIndividuallyOwnedTaxableWithdrawal(
+      input(40_000, 100_000, 60_000),
+    )
+    const gain = result.taxCharacter.find((item) => item.kind === 'capitalGain')
+
+    expect(basisOf(result).basisEvidenceId).toBe(
+      'taxable-basis:cafcf69dca718b2a8809f30d0a0e0d4381c0804d06c3837' +
+        '9875f2a53b1748ac2',
+    )
+    expect(gain?.taxAttribution?.taxAttributionEvidenceId).toBe(
+      'taxable-tax-attribution:7b9c54e433571fd20fa722e0f04b515b6fc5a10c' +
+        '6aba77210742e1bd82e168b1',
+    )
+    expect(gain?.taxAttribution?.taxAttributionEntryId).toBe(
+      'taxable-tax-attribution-entry:9763f6a847318f252bafcbf874af06dc' +
+        '755433488e5f4f1055ff611394441596',
+    )
+    expect(
+      basisOf(classifyIndividuallyOwnedTaxableWithdrawal(
+        input(40_000, 100_000, 60_000),
+      )).basisEvidenceId,
+    ).toBe(basisOf(result).basisEvidenceId)
+    expect(
+      basisOf(classifyIndividuallyOwnedTaxableWithdrawal(
+        input(40_001, 100_000, 60_000),
+      )).basisEvidenceId,
+    ).not.toBe(basisOf(result).basisEvidenceId)
+  })
 })

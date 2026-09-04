@@ -827,11 +827,19 @@ const smokeSeppOpeningLineage = {
   scheduledGrossAmount: 0,
   actualQualifyingGrossAmount: 0,
 }
+// The packed consumer cannot call the internal deriveActionStructuralId
+// minter (it deliberately is not part of the public actions barrel, see
+// the assertion above), so this ID is a pinned literal computed once with
+// that minter over smokeSeppOpeningLineage, the same way
+// ownedNonRothIraSeppCurrentPaymentCandidate.test.ts pins its opening
+// state ID. validateOwnedNonRothIraSeppCurrentPaymentCandidate recomputes
+// and compares this ID; a JSON.stringify-minted value here would be
+// rejected as openingStateBindingMismatch.
 const smokeSeppOpening = {
   ...smokeSeppOpeningLineage,
   openingStateEvidenceId:
-    'owned-ira-sepp-annual-opening-state:' +
-    JSON.stringify([smokeSeppOpeningLineage]),
+    'owned-ira-sepp-annual-opening-state:cbedc3312309c205533cbf6ca024535' +
+    '5f29e5ac0c9c1cf6f74bae07d8761a7f1',
 }
 const smokeSeppHistoryWithoutId = {
   predicate: 'ownedNonRothIraSeppPriorPaymentHistory',

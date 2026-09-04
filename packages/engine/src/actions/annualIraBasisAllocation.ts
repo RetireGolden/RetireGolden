@@ -15,7 +15,10 @@ import {
 } from './money.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import { deepFreeze } from './freeze.js'
-import { compareUtf16CodeUnits } from './structuralId.js'
+import {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from './structuralId.js'
 import { requireNonblankId } from './plainData.js'
 
 export type AnnualIraBasisAllocationScope =
@@ -128,10 +131,6 @@ function exactHalfUp(numerator: bigint, denominator: bigint): bigint {
   const quotient = numerator / denominator
   const remainder = numerator % denominator
   return quotient + (remainder * 2n >= denominator ? 1n : 0n)
-}
-
-function stableId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
 }
 
 type ValidatedEntry = AnnualIraBasisAllocationEntryInput & {
@@ -317,7 +316,7 @@ function allocateAnnualIraBasisInternal(
       residualAllocationOrder:
         'scheduledDateThenSequenceThenActionIdThenAllocationId',
       allocations: [],
-      allocationEvidenceId: stableId('annual-ira-basis-allocation', [
+      allocationEvidenceId: deriveActionStructuralId('annual-ira-basis-allocation', [
         input.calculationScope,
         poolId,
         input.taxYear,
@@ -436,7 +435,7 @@ function allocateAnnualIraBasisInternal(
       AnnualIraBasisAllocationEntry,
       ...AnnualIraBasisAllocationEntry[],
     ],
-    allocationEvidenceId: stableId(
+    allocationEvidenceId: deriveActionStructuralId(
       'annual-ira-basis-allocation',
       evidenceIdParts,
     ),

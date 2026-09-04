@@ -19,7 +19,10 @@ import {
 import { exactCentProRataNearestHalfUp } from './exactCentProRata.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import { deepFreeze } from './freeze.js'
-import { compareUtf16CodeUnits } from './structuralId.js'
+import {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from './structuralId.js'
 import { requireNonblankId } from './plainData.js'
 
 export type TaxableWithdrawalFederalFilingStatus =
@@ -184,10 +187,6 @@ function signedCentsFromBigInt(value: bigint): number {
     throw new RangeError('Signed taxable character arithmetic exceeded the safe-integer range')
   }
   return Number(value)
-}
-
-function stableId(prefix: string, parts: readonly unknown[]): string {
-  return `${prefix}:${JSON.stringify(parts)}`
 }
 
 function validateInput(input: ClassifyIndividuallyOwnedTaxableWithdrawalInput) {
@@ -397,7 +396,7 @@ export function classifyIndividuallyOwnedTaxableWithdrawal(
   const signedAmount = signedCentsFromBigInt(
     BigInt(value.executedAmount) - recoveredBigInt,
   )
-  const basisEvidenceId = stableId('taxable-basis', [
+  const basisEvidenceId = deriveActionStructuralId('taxable-basis', [
     value.actionId,
     value.allocationId,
     value.sourceAccountId,
@@ -414,7 +413,7 @@ export function classifyIndividuallyOwnedTaxableWithdrawal(
     value.taxUnit.stateFilingStatusId,
     value.taxUnit.taxUnitEvidenceId,
   ])
-  const taxAttributionEvidenceId = stableId('taxable-tax-attribution', [
+  const taxAttributionEvidenceId = deriveActionStructuralId('taxable-tax-attribution', [
     basisEvidenceId,
     value.allocationId,
     value.sourceAccountId,
@@ -425,7 +424,7 @@ export function classifyIndividuallyOwnedTaxableWithdrawal(
   const entries: TaxableAccountTaxAttributionEntry[] = []
   if (signedAmount !== 0) {
     entries.push({
-      taxAttributionEntryId: stableId('taxable-tax-attribution-entry', [
+      taxAttributionEntryId: deriveActionStructuralId('taxable-tax-attribution-entry', [
         taxAttributionEvidenceId,
         value.ownership.accountOwnerPersonIds[0],
         value.taxUnit.taxUnitId,

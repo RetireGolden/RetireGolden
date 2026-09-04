@@ -45,7 +45,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 230
+              "line": 229
             }
           ]
         }
@@ -96,7 +96,7 @@
           "functions": [
             {
               "name": "stageOwnedNonRothIraOrdinaryWithdrawalMovements",
-              "line": 392
+              "line": 391
             }
           ]
         }
@@ -532,7 +532,7 @@
           "functions": [
             {
               "name": "stageOwnedNonRothIraOrdinaryWithdrawalMovements",
-              "line": 392
+              "line": 391
             }
           ]
         }
@@ -544,12 +544,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.test.ts",
-          "line": 323,
+          "line": 325,
           "note": "the basis pool is owner-wide, not per-account and not household-wide",
           "tests": [
             {
               "title": "aggregates both owner IRAs and excludes the spouse account",
-              "line": 331
+              "line": 333
             }
           ]
         },
@@ -840,7 +840,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 230
+              "line": 229
             }
           ]
         },
@@ -960,7 +960,7 @@
           "functions": [
             {
               "name": "allocateAnnualIraBasis",
-              "line": 446
+              "line": 445
             }
           ]
         },
@@ -978,7 +978,7 @@
           "functions": [
             {
               "name": "classifyOwnedNonRothIraAnnualWithdrawals",
-              "line": 230
+              "line": 229
             }
           ]
         }

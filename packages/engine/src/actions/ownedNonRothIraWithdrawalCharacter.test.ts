@@ -622,4 +622,22 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
       classifyOwnedNonRothIraAnnualWithdrawals(input(change)),
     ).toThrow(message)
   })
+
+  it('mints the annual basis evidence ID with the hardened structural minter', () => {
+    const result = classifyOwnedNonRothIraAnnualWithdrawals(input())
+
+    expect(result.annualBasisEvidence.basisEvidenceId).toBe(
+      'owned-non-roth-ira-annual-basis:8ff6726c40841c1d40180a2fe9daba7e' +
+        'cd8530c7868cb0b933220d8bf10c019d',
+    )
+    expect(
+      classifyOwnedNonRothIraAnnualWithdrawals(input())
+        .annualBasisEvidence.basisEvidenceId,
+    ).toBe(result.annualBasisEvidence.basisEvidenceId)
+    expect(
+      classifyOwnedNonRothIraAnnualWithdrawals(input({
+        annualBasisRecordEvidenceId: 'annual-basis-record-2',
+      })).annualBasisEvidence.basisEvidenceId,
+    ).not.toBe(result.annualBasisEvidence.basisEvidenceId)
+  })
 })

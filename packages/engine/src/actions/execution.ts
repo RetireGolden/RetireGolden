@@ -48,7 +48,10 @@ import {
   signedLedgerCentTotalToPlanDollars,
 } from './planBalanceAdapter.js'
 import { deepFreeze } from './freeze.js'
-import { compareUtf16CodeUnits } from './structuralId.js'
+import {
+  compareUtf16CodeUnits,
+  deriveActionStructuralId,
+} from './structuralId.js'
 
 export interface AccountOpeningBalanceSnapshot {
   accountId: AccountId
@@ -1097,7 +1100,7 @@ function nonRetirementCoverageEvidenceId(
       : sourceClass === 'equityCompensation'
         ? 'equity-compensation-penalty-coverage'
         : 'taxable-penalty-coverage'
-  return `${prefix}:${JSON.stringify([actionId, allocationId])}`
+  return deriveActionStructuralId(prefix, [actionId, allocationId])
 }
 
 function taxableSnapshotMatches(
@@ -1167,12 +1170,12 @@ function zeroExecutionTaxableEligibility(
       },
       basisPreservedAmount: 0,
       reason: 'depletedSource',
-      basisEvidenceId: `taxable-basis-zero:${JSON.stringify([
+      basisEvidenceId: deriveActionStructuralId('taxable-basis-zero', [
         actionId,
         allocationId,
         sourceAccountId,
         evaluationDate,
-      ])}`,
+      ]),
     },
   }
 }
@@ -1182,11 +1185,11 @@ function equityCompensationVestingEvidenceId(
   vestingMode: 'final' | 'cliff',
   vestingDate: string | null,
 ): string {
-  return `equity-compensation-vesting:${JSON.stringify([
+  return deriveActionStructuralId('equity-compensation-vesting', [
     sourceAccountId,
     vestingMode,
     vestingDate,
-  ])}`
+  ])
 }
 
 function equityCompensationCharacterEvidenceId(
@@ -1195,12 +1198,12 @@ function equityCompensationCharacterEvidenceId(
   evaluationDate: string,
   vestingEvidenceId: string,
 ): string {
-  return `equity-compensation-character:${JSON.stringify([
+  return deriveActionStructuralId('equity-compensation-character', [
     actionId,
     allocationId,
     evaluationDate,
     vestingEvidenceId,
-  ])}`
+  ])
 }
 
 function assertOrdinaryWithdrawalExecutionEvidence(

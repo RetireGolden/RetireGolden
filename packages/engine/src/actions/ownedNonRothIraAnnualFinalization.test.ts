@@ -452,4 +452,15 @@ describe('resolveOwnedNonRothIraAnnualWithdrawalEvidence', () => {
       resolveOwnedNonRothIraAnnualWithdrawalEvidence(fixture()),
     ).toEqual(baseline)
   })
+
+  it('mints the finalization evidence ID with the hardened structural minter', () => {
+    const id = resolvedId(fixture())
+
+    expect(id).toBe(
+      'owned-non-roth-ira-annual-withdrawal-finalization:1b613c7fbf6a' +
+        '0e3b32f1726485b92fa3ffc60955456b8ccb9860f7e3dff3627c',
+    )
+    expect(resolvedId(fixture())).toBe(id)
+    expect(resolvedId(fixture({ includeLine8: true }))).not.toBe(id)
+  })
 })
