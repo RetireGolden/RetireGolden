@@ -1,5 +1,8 @@
 /** @vitest-environment jsdom */
 
+// @ts-expect-error -- node builtin in a test; the app tsconfig omits node types
+import { createHash } from 'node:crypto'
+
 import { act, useState, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
@@ -184,14 +187,24 @@ function namedGift(year: number) {
  * Plan that already carries this exact string on one of its own eligibility
  * records makes the whole year's QCD prerequisite batch refuse
  * `evidenceIdReused`, and the year then publishes no record for any gift.
+ *
+ * The engine mints it with `deriveActionStructuralId`, which is package
+ * internal and deliberately not exported. This rebuilds the same identity
+ * from its published definition — `<prefix>:sha256(JSON of the canonical
+ * parts)` — using Node's SHA-256 rather than the engine's own hand-rolled
+ * one, so the two implementations have to agree for this test to collide.
+ * The parts are all strings and finite numbers, so canonicalization is the
+ * identity here and plain `JSON.stringify` is the canonical form.
  */
 function mintedPriorOffsetEvidenceId(gift: { actionId: string; year: number }): string {
-  return `projection-prior-qcd-offset:${JSON.stringify([
+  const canonical = JSON.stringify([
     gift.actionId,
     DONOR_ID,
     gift.year,
     `${gift.year}-08-01`,
-  ])}`
+  ])
+  const digest = createHash('sha256').update(canonical, 'utf8').digest('hex')
+  return `projection-prior-qcd-offset:${digest}`
 }
 
 /**

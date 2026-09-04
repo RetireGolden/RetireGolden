@@ -415,265 +415,279 @@
     {
       "id": "U.snapshot.maps",
       "label": "complete caller-owned string-number map snapshot function",
-      "file": "projection/simulate.ts",
-      "lines": [382, 392],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [81, 91],
+      "note": "RELOCATED on 2026-09-04: the caller-owned snapshot moved out of simulate.ts into `internal/annualContributionReconciliationPhase.ts` with the phase it exists for. The measured source text is unchanged.",
       "anchors": [
-        { "line": 382, "text": "function snapshotStringNumberMap(" },
-        { "line": 392, "text": "}" }
+        { "line": 81, "text": "function snapshotStringNumberMap(" },
+        { "line": 91, "text": "}" }
       ]
     },
     {
       "id": "U.snapshot.allocation",
       "label": "complete caller-owned employer allocation scalar and nested-map snapshot function",
-      "file": "projection/simulate.ts",
-      "lines": [394, 406],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [93, 105],
+      "note": "RELOCATED on 2026-09-04: the caller-owned snapshot moved out of simulate.ts into `internal/annualContributionReconciliationPhase.ts` with the phase it exists for. The measured source text is unchanged.",
       "anchors": [
-        { "line": 394, "text": "function snapshotEmployerElectiveAllocation(" },
-        { "line": 406, "text": "}" }
+        { "line": 93, "text": "function snapshotEmployerElectiveAllocation(" },
+        { "line": 105, "text": "}" }
       ]
     },
     {
       "id": "U.snapshot.operationKinds",
       "label": "eager warning, runtime occurrence, and match-record detachment",
-      "file": "projection/simulate.ts",
-      "lines": [416, 456],
-      "note": "The non-credit application refusal on lines 591-593 is excluded from measured reach and pinned by the hostile delegation suite.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [115, 155],
+      "note": "The non-credit application refusal on lines 161-163 is excluded from measured reach and pinned by the hostile delegation suite. RELOCATED on 2026-09-04: the caller-owned snapshot moved out of simulate.ts into `internal/annualContributionReconciliationPhase.ts` with the phase it exists for. The measured source text is unchanged.",
       "anchors": [
-        { "line": 416, "text": "const operations: AnnualContributionAndMatchOperation[] = []" },
-        { "line": 456, "text": "const sourceRetirementApplication = operation.retirementApplication" }
+        { "line": 115, "text": "const operations: AnnualContributionAndMatchOperation[] = []" },
+        { "line": 155, "text": "const sourceRetirementApplication = operation.retirementApplication" }
       ]
     },
     {
       "id": "U.snapshot.contributionPayload",
       "label": "eager application, contribution payload, and record detachment",
-      "file": "projection/simulate.ts",
-      "lines": [465, 503],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [164, 202],
+      "note": "RELOCATED on 2026-09-04: the caller-owned snapshot moved out of simulate.ts into `internal/annualContributionReconciliationPhase.ts` with the phase it exists for. The measured source text is unchanged.",
       "anchors": [
-        { "line": 465, "text": "retirementApplication = {" },
-        { "line": 503, "text": "})" }
+        { "line": 164, "text": "retirementApplication = {" },
+        { "line": 202, "text": "})" }
       ]
     },
     {
       "id": "U.snapshot.resultChannels",
       "label": "single-read emitted/expected identity, totals, owner-allocation, and detached-result snapshot",
-      "file": "projection/simulate.ts",
-      "lines": [506, 553],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [205, 252],
+      "note": "RELOCATED on 2026-09-04: the caller-owned snapshot moved out of simulate.ts into `internal/annualContributionReconciliationPhase.ts` with the phase it exists for. The measured source text is unchanged.",
       "anchors": [
-        { "line": 506, "text": "const snapshotOperationIdentity = (" },
-        { "line": 553, "text": "}" }
+        { "line": 205, "text": "const snapshotOperationIdentity = (" },
+        { "line": 252, "text": "}" }
       ]
     },
     {
       "id": "U.snapshot.totalAssertion",
       "label": "exact Object.is total comparison",
-      "file": "projection/simulate.ts",
-      "lines": [560, 560],
-      "note": "The throw on the next line is hostile-only and pinned by a dedicated inconsistent-total delegation case.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [259, 259],
+      "note": "The throw on the next line is hostile-only and pinned by a dedicated inconsistent-total delegation case. RELOCATED on 2026-09-04: the caller-owned snapshot moved out of simulate.ts into `internal/annualContributionReconciliationPhase.ts` with the phase it exists for. The measured source text is unchanged.",
       "anchors": [
-        { "line": 560, "text": "if (!Object.is(actual, expected)) {" }
+        { "line": 259, "text": "if (!Object.is(actual, expected)) {" }
       ]
     },
     {
       "id": "U.callsite.invoke",
       "label": "annual contribution boundary invocation and atomic snapshot",
-      "file": "projection/simulate.ts",
-      "lines": [2576, 2599],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [363, 384],
+      "note": "RE-MEASURED, not shifted: the planner invocation lost two lines in the move, because the caller-supplied `filingStatus`, `peopleCount`, `primaryPersonId` and the two owner resolvers are now fields of this module's own Input and pass through as shorthand. Both anchors are the same text they always were. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2576, "text": "const contributionPlan = snapshotAnnualContributionsAndEmployerMatchResult(" },
-        { "line": 2599, "text": ")" }
+        { "line": 363, "text": "const contributionPlan = snapshotAnnualContributionsAndEmployerMatchResult(" },
+        { "line": 384, "text": ")" }
       ]
     },
     {
       "id": "U.callsite.cardinalitySetup",
       "label": "independent cardinality check and shadow reconciliation state",
-      "file": "projection/simulate.ts",
-      "lines": [2601, 2605],
-      "note": "The throw on line 2902 is excluded from measured reach and pinned by truncated, coordinated zero-row omission, coordinated warning insertion, and empty/nonzero delegation cases.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [386, 390],
+      "note": "The throw on line 392 is excluded from measured reach and pinned by truncated, coordinated zero-row omission, coordinated warning insertion, and empty/nonzero delegation cases. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2601, "text": "if (" },
-        { "line": 2605, "text": "contributionPlan.operations.length" }
+        { "line": 386, "text": "if (" },
+        { "line": 390, "text": "contributionPlan.operations.length" }
       ]
     },
     {
       "id": "U.callsite.expectedContributionPositions",
       "label": "unique pre-loop physical contribution expectation",
-      "file": "projection/simulate.ts",
-      "lines": [2609, 2615],
-      "note": "The duplicate-position refusal on line 2911 is excluded from measured reach and pinned by a coordinated hostile delegation case.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [394, 400],
+      "note": "The duplicate-position refusal on line 401 is excluded from measured reach and pinned by a coordinated hostile delegation case. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2609, "text": "const seenMatchBalanceIndices = new Set<number>()" },
-        { "line": 2615, "text": ") {" }
+        { "line": 394, "text": "const seenMatchBalanceIndices = new Set<number>()" },
+        { "line": 400, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.identitySetup",
       "label": "shadow state and ordered identity preflight setup",
-      "file": "projection/simulate.ts",
-      "lines": [2618, 2638],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [403, 423],
+      "note": "RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2618, "text": "const seenContributionBalanceIndices = new Set<number>()" },
-        { "line": 2638, "text": ") {" }
+        { "line": 403, "text": "const seenContributionBalanceIndices = new Set<number>()" },
+        { "line": 423, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.indexIdentity",
       "label": "physical index identity preflight",
-      "file": "projection/simulate.ts",
-      "lines": [2641, 2647],
-      "note": "The identity throw on line 2943 and post-match-warning throw on line 2947 are excluded from measured reach and pinned by hostile delegation cases.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [426, 432],
+      "note": "The identity throw on line 433 and post-match-warning throw on line 437 are excluded from measured reach and pinned by hostile delegation cases. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2641, "text": "if (" },
-        { "line": 2647, "text": ") {" }
+        { "line": 426, "text": "if (" },
+        { "line": 432, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.physicalPreimage",
       "label": "exact source-account and shadow-balance preimage validation",
-      "file": "projection/simulate.ts",
-      "lines": [2656, 2664],
-      "note": "The fail-closed body is hostile-only and includes exact Object.is signed-zero coverage in the delegation suite.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [441, 449],
+      "note": "The fail-closed body is hostile-only and includes exact Object.is signed-zero coverage in the delegation suite. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2656, "text": "const state = balances[operation.balanceIndex]" },
-        { "line": 2664, "text": ") {" }
+        { "line": 441, "text": "const state = balances[operation.balanceIndex]" },
+        { "line": 449, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.contributionIdentity",
       "label": "expected unique physical contribution identity",
-      "file": "projection/simulate.ts",
-      "lines": [2673, 2676],
-      "note": "The duplicate or unexpected-position refusal on line 2972 is excluded from measured reach and pinned by coordinated hostile delegation cases.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [458, 461],
+      "note": "The duplicate or unexpected-position refusal on line 462 is excluded from measured reach and pinned by coordinated hostile delegation cases. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2673, "text": "if (" },
-        { "line": 2676, "text": ") {" }
+        { "line": 458, "text": "if (" },
+        { "line": 461, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.contributionIdentityCommit",
       "label": "physical contribution identity commit to preflight set",
-      "file": "projection/simulate.ts",
-      "lines": [2679, 2679],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [464, 464],
+      "note": "RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2679, "text": "seenContributionBalanceIndices.add(operation.balanceIndex)" }
+        { "line": 464, "text": "seenContributionBalanceIndices.add(operation.balanceIndex)" }
       ]
     },
     {
       "id": "U.callsite.basisPreimage",
       "label": "exact shadow-basis preimage validation",
-      "file": "projection/simulate.ts",
-      "lines": [2680, 2685],
-      "note": "The fail-closed body is hostile-only and includes exact Object.is signed-zero coverage in the delegation suite.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [465, 470],
+      "note": "The fail-closed body is hostile-only and includes exact Object.is signed-zero coverage in the delegation suite. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2680, "text": "if (" },
-        { "line": 2685, "text": ") {" }
+        { "line": 465, "text": "if (" },
+        { "line": 470, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.contributionMath",
       "label": "finite contribution amount and exact closing-balance math",
-      "file": "projection/simulate.ts",
-      "lines": [2695, 2704],
-      "note": "The balance-math throw on line 3000 is excluded from this measured range and pinned by a hostile delegation case.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [480, 489],
+      "note": "The balance-math throw on line 490 is excluded from this measured range and pinned by a hostile delegation case. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2695, "text": "if (" },
-        { "line": 2704, "text": ") {" }
+        { "line": 480, "text": "if (" },
+        { "line": 489, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.contributionBasisMath",
       "label": "taxable/equity basis expectation and exact closing-basis comparison",
-      "file": "projection/simulate.ts",
-      "lines": [2707, 2714],
-      "note": "The basis-math guard and throw on lines 3009-3010 are excluded from measured reach; exact stale/signed-zero preimages are pinned separately by the delegation suite.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [492, 499],
+      "note": "The basis-math throw on line 500 is excluded from measured reach; exact stale/signed-zero preimages are pinned separately by the delegation suite. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2707, "text": "const expectsBasisCredit =" },
-        { "line": 2714, "text": "if (!Object.is(operation.costBasisAfter, expectedCostBasisAfter)) {" }
+        { "line": 492, "text": "const expectsBasisCredit =" },
+        { "line": 499, "text": "if (!Object.is(operation.costBasisAfter, expectedCostBasisAfter)) {" }
       ]
     },
     {
       "id": "U.callsite.contributionFold",
       "label": "shadow writes and exact left-associated contribution totals",
-      "file": "projection/simulate.ts",
-      "lines": [2717, 2746],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [502, 531],
+      "note": "RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2717, "text": "if (operation.credited > 0) {" },
-        { "line": 2746, "text": "continue" }
+        { "line": 502, "text": "if (operation.credited > 0) {" },
+        { "line": 531, "text": "continue" }
       ]
     },
     {
       "id": "U.callsite.matchIdentity",
       "label": "ordered unique physical employer-match validation",
-      "file": "projection/simulate.ts",
-      "lines": [2748, 2756],
-      "note": "The fail-closed body is hostile-only and pinned by focused delegation tests.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [533, 541],
+      "note": "The fail-closed body is hostile-only and pinned by focused delegation tests. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2748, "text": "reachedEmployerMatches = true" },
-        { "line": 2756, "text": ") {" }
+        { "line": 533, "text": "reachedEmployerMatches = true" },
+        { "line": 541, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.matchMath",
       "label": "finite positive employer-match and exact closing-balance math",
-      "file": "projection/simulate.ts",
-      "lines": [2759, 2766],
-      "note": "The fail-closed body is hostile-only and pinned by focused delegation tests.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [544, 551],
+      "note": "The fail-closed body is hostile-only and pinned by focused delegation tests. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2759, "text": "if (" },
-        { "line": 2766, "text": ") {" }
+        { "line": 544, "text": "if (" },
+        { "line": 551, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.matchFold",
       "label": "shadow match write and exact left-associated match totals",
-      "file": "projection/simulate.ts",
-      "lines": [2769, 2778],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [554, 563],
+      "note": "RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2769, "text": "seenMatchBalanceIndices.add(operation.balanceIndex)" },
-        { "line": 2778, "text": "}" }
+        { "line": 554, "text": "seenMatchBalanceIndices.add(operation.balanceIndex)" },
+        { "line": 563, "text": "}" }
       ]
     },
     {
       "id": "U.callsite.contributionCompleteness",
       "label": "complete physical contribution position reconciliation",
-      "file": "projection/simulate.ts",
-      "lines": [2779, 2782],
-      "note": "The missing-position refusal on line 3078 is excluded from measured reach and pinned by the fixture-derived whole-decision omission hostile case.",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [564, 567],
+      "note": "The missing-position refusal on line 568 is excluded from measured reach and pinned by the fixture-derived whole-decision omission hostile case. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2779, "text": "if (" },
-        { "line": 2782, "text": ") {" }
+        { "line": 564, "text": "if (" },
+        { "line": 567, "text": ") {" }
       ]
     },
     {
       "id": "U.callsite.totalReconciliation",
       "label": "complete exact total reconciliation before commit",
-      "file": "projection/simulate.ts",
-      "lines": [2785, 2819],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [570, 604],
+      "note": "RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2785, "text": "assertExactContributionTotal(" },
-        { "line": 2819, "text": ")" }
+        { "line": 570, "text": "assertExactContributionTotal(" },
+        { "line": 604, "text": ")" }
       ]
     },
     {
       "id": "U.callsite.apply",
       "label": "entire ordered commit loop for cached warnings, balances, basis, runtime, QCD, records, and matches",
-      "file": "projection/simulate.ts",
-      "lines": [2820, 2867],
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [605, 652],
+      "note": "RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2820, "text": "for (const operation of contributionPlan.operations) {" },
-        { "line": 2862, "text": "yearSites?.recordEmployerMatch(operation.record)" },
-        { "line": 2863, "text": "state.balance = operation.balanceAfter" },
-        { "line": 2865, "text": "recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)" },
-        { "line": 2867, "text": "}" }
+        { "line": 605, "text": "for (const operation of contributionPlan.operations) {" },
+        { "line": 647, "text": "yearSites?.recordEmployerMatch(operation.record)" },
+        { "line": 648, "text": "state.balance = operation.balanceAfter" },
+        { "line": 650, "text": "recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)" },
+        { "line": 652, "text": "}" }
       ]
     },
     {
       "id": "U.callsite.totals",
-      "label": "complete reconciled totals, detached downstream owner allocations, and IRA handoff",
-      "file": "projection/simulate.ts",
-      "lines": [2868, 2879],
+      "label": "complete reconciled totals, detached downstream owner allocations, and the phase return",
+      "file": "projection/internal/annualContributionReconciliationPhase.ts",
+      "lines": [653, 673],
+      "note": "RE-MEASURED, not shifted: the totals destructuring and the allocation read are unchanged, but what follows them is no longer the year's `iraProRata` map -- it is this phase's own return, which publishes the same eight channels. The range now ends there, and the two interior anchors are new because the closing anchor had to move. RELOCATED on 2026-09-04: the reconciliation and apply pass moved out of the simulatePlan year loop into `internal/annualContributionReconciliationPhase.ts`. The measured source text is unchanged operand for operand, so this entry follows it rather than being re-anchored in place.",
       "anchors": [
-        { "line": 2868, "text": "const {" },
-        { "line": 2879, "text": "const iraProRata = new Map<string, IraProRataYear>()" }
+        { "line": 653, "text": "const {" },
+        { "line": 661, "text": "} = contributionPlan.totals" },
+        { "line": 663, "text": "contributionPlan.employerAllocationByOwner" },
+        { "line": 673, "text": "}" }
       ]
     }
   ],

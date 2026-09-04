@@ -46,7 +46,6 @@ import {
   type RothBasisState,
 } from '../../strategies/rothBasis.js'
 import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from '../../tax/federalTax.js'
-import { compareUtf16CodeUnits } from '../../actions/structuralId.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
 import type { PhaseLedgerScalarBindings } from './phaseLedgerScalars.js'
 import { readPhaseLedgerScalars, writePhaseLedgerScalars } from './phaseLedgerScalars.js'
@@ -60,14 +59,15 @@ import {
   type AnnualAcaResultPublicationResult,
 } from './annualAcaResultPublication.js'
 import { annualOptimizerProbePublication } from './annualOptimizerProbePublication.js'
-import { annualPermanentLifeTransitions } from './annualPermanentLifeTransitions.js'
+import { annualPropertyAndInsuranceClosePhase } from './annualPropertyAndInsuranceClosePhase.js'
 import { annualSnapshot } from './annualSnapshot.js'
 import { annualWithdrawalApplyFlowPlan } from './annualWithdrawalApplyFlowPlan.js'
 import {
   annualWithdrawalPlan,
   annualWithdrawalStrategy,
 } from './annualWithdrawalPlanning.js'
-import { annualPostSolveAccountGrowth } from './annualPostSolveAccountGrowth.js'
+import { annualPostGrowthCapturePhase } from './annualPostGrowthCapturePhase.js'
+import { annualRuntimeJournalCapturePhase } from './annualRuntimeJournalCapturePhase.js'
 import { annualRetirementActionSettlementPublication } from './annualRetirementActionSettlementPublication.js'
 import { annualYearResultAssembly } from './annualYearResultAssembly.js'
 import {
@@ -83,7 +83,6 @@ import {
   annualFundingCandidateEvaluation,
   type AnnualFundingCandidateEvaluationContext,
 } from './annualFundingCandidateEvaluation.js'
-import { propertyEventsAndGrowth } from './propertyEventsAndGrowth.js'
 import { publishedEntityFacts } from './publishedEntityFacts.js'
 import { attributeShortfall } from '../../spending/layers.js'
 import {
@@ -1791,218 +1790,64 @@ export function annualFundingApplicationAndClosePhase(
 
     if (shortfallAfterHecm > EPSILON && depletionYear === null) depletionYear = year
 
-    // --- property events + growth ------------------------------------------
-    // The phase itself lives in `internal/propertyEventsAndGrowth.ts`. It owns
-    // the growth, the legacy tax-free sale and the line accrual; this loop owns
-    // every write, applied per row in the same statement order the inlined
-    // phase used (close the line, deposit, publish, write the value back, then
-    // compound what is left open). `plan.accounts` order is load-bearing three
-    // ways at once — deposit order, value compounding, and whether a same-id
-    // line accrues before a later row closes it. The helper carries a private
-    // numeric shadow of both maps, plus an accrued-id set so each actual HECM
-    // line receives its annual multiplier exactly once.
-    for (const row of propertyEventsAndGrowth({
-      accounts: plan.accounts,
+    // --- property events + growth, then permanent-life transitions ---------
+    // Both are application loops over a sibling phase rows, they deposit into
+    // the same annual cash channel, and each writes a live map the year
+    // publishes from, so they travel together. The sub-phase lives in
+    // `internal/annualPropertyAndInsuranceClosePhase.ts` and takes its own
+    // 14-field input; `inflRateAt` moved into it, because the property row
+    // producer is its only caller anywhere in this file.
+    const propertyAndInsurance = annualPropertyAndInsuranceClosePhase({
       year,
-      propertyValues,
-      inflRateAt,
-      hecmStates,
-      // Gated on the ARRAY this payload feeds, which is what the inlined phase
-      // gated on: it built its literal inside `legacyPropertySaleDeposits?.push(
-      // { … })`. Both are assigned in the same `if (publishCashFlow)` block, so
-      // this is a no-op today; writing it this way makes the payload's laziness
-      // hold by construction rather than by that coincidence.
-      surplusDestination: legacyPropertySaleDeposits === null ? null : surplusDestination,
-    })) {
-      if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
-      if (row.deposit !== null) deposit(row.deposit)
-      if (row.record !== null) legacyPropertySaleDeposits?.push(row.record)
-      propertyValues.set(row.propertyAccountId, row.value)
-      if (row.hecmGrowth !== null) {
-        const line = hecmStates.get(row.propertyAccountId)!
-        line.principalLimit *= row.hecmGrowth
-        line.loanBalance *= row.hecmGrowth
-      }
-    }
-
-    // --- insurance: permanent-life cash value + death benefit --------------
-    const permanentLife = annualPermanentLifeTransitions({
+      accounts: plan.accounts,
       policies: plan.insurance,
+      propertyValues,
+      hecmStates,
       insuranceCashValues,
-      resolveInsured: (personId) => {
-        const insured = personById.get(personId)
-        return insured === undefined
-          ? null
-          : {
-              deathAge: lifeAgeOf(insured),
-              ageAttained: stateOf(personId).ageAttained,
-            }
-      },
+      personById,
+      stateOf,
+      lifeAgeOf,
+      inflRateAt,
+      deposit,
+      legacyPropertySaleDeposits,
+      deathBenefits,
+      surplusDestination,
     })
-    const deathBenefitPaid = permanentLife.deathBenefitPaid
-    for (const transition of permanentLife.transitions) {
-      if (transition.payout !== null) {
-        deposit(transition.payout)
-        if (transition.payout > 0) {
-          deathBenefits?.push({
-            policyId: transition.policyId,
-            insuredPersonId: transition.insuredPersonId,
-            amount: transition.payout,
-            destination: surplusDestination!,
-          })
-        }
-      }
-      insuranceCashValues.set(transition.policyId, transition.cashValue)
-    }
+    const deathBenefitPaid = propertyAndInsurance.deathBenefitPaid
 
-    const ownedNonRothIraBalancesBeforeGrowth = Object.freeze(
-      Object.fromEntries(
-        annualIdKeyedBalances
-          .filter((state) => isAggregatedIraThisYear(state.account))
-          .map((state) => [state.account.id, state.balance]),
-      ),
-    )
-    const ownedNonRothIraPhysicalBalancesBeforeGrowth = Object.freeze(
-      balances.flatMap((state, balanceIndex) =>
-        isAggregatedIraThisYear(state.account)
-          ? [Object.freeze({
-              sourceAccountId: state.account.id,
-              balanceIndex,
-              balancePlanDollars: state.balance,
-            })]
-          : []),
-    )
-    const ownedNonRothIraPhysicalOpeningBalances = Object.freeze(
-      balances.flatMap((state, balanceIndex) =>
-        isAggregatedIraThisYear(state.account)
-          ? [Object.freeze({
-              sourceAccountId: state.account.id,
-              balanceIndex,
-              balancePlanDollars: startOfYearPositionalBalances[balanceIndex]!,
-            })]
-          : []),
-    )
-
-    const accountGrowth = annualPostSolveAccountGrowth({
-      states: balances,
+    // --- post-solve growth + owned-non-Roth-IRA capture ---------------------
+    // The sub-phase lives in `internal/annualPostGrowthCapturePhase.ts`. It is
+    // the first block in this file to take its OWN input record instead of
+    // reading the 91-field `Facts` destructure: fifteen values, named, and
+    // nothing else. It captures the pre-growth owned-IRA positions, commits
+    // market growth and then reinvested yield in that order over the
+    // positional rows, and captures the post-growth owner pools.
+    const postGrowth = annualPostGrowthCapturePhase({
+      planId: plan.id,
+      year,
+      balances,
+      annualIdKeyedBalances,
+      startOfYearPositionalBalances,
+      isAggregatedIraThisYear,
       allocationTrack,
       distributedYieldByBalanceIndex,
       classParams,
       defaultReturnPct: plan.assumptions.defaultReturnPct,
-      shockPct: returnShockAt(year),
-      year,
+      returnShockAt,
       classShockAt,
+      annuityStagingCandidates,
+      annuityContractValue,
+      startOfYearAnnuityContractValue,
     })
-    // Wealth-weighted total return the ledger actually applies this year
-    // (including distributed yield — interest, dividends, and tax-exempt
-    // interest; a distribution, not a loss). Next year's coordinated HECM
-    // check reads it, so the down-market signal is the realized portfolio
-    // return, not the raw additive shock. The coordinator returns exactly one
-    // positional row per physical balance; the caller commits every market
-    // balance and drifted weight before publishing that signal, then commits
-    // reinvestment in the original second pass below.
-    for (let balanceIndex = 0; balanceIndex < balances.length; balanceIndex++) {
-      const row = accountGrowth.rows[balanceIndex]!
-      const state = balances[balanceIndex]!
-      state.balance = row.marketClosingBalance
-      if (row.kind === 'allocated') {
-        allocationTrack.get(String(balanceIndex))!.weights = row.driftedWeights
-      }
-    }
-    priorYearPortfolioReturnPct = accountGrowth.priorYearPortfolioReturnPct
-
-    // Distributed yield is credited only after every account's market growth.
-    // Reinvestment is not growth and adds basis only to the taxable physical
-    // row whose earlier yield calculation produced it.
-    for (let balanceIndex = 0; balanceIndex < balances.length; balanceIndex++) {
-      const row = accountGrowth.rows[balanceIndex]!
-      if (row.reinvestedYield <= 0) continue
-      const state = balances[balanceIndex]!
-      state.balance += row.reinvestedYield
-      if (state.account.type === 'taxable') state.costBasis += row.reinvestedYield
-    }
-
-    const ownedNonRothIraBalancesByOwner = new Map<
-      string | null,
-      Array<{ sourceAccountId: string; balanceIndex: number; balancePlanDollars: number }>
-    >()
-    for (const [balanceIndex, state] of balances.entries()) {
-      if (!isAggregatedIraThisYear(state.account)) continue
-      // A validated Plan always supplies an owner here. Preserve null on a
-      // malformed direct simulatePlan call so this raw, not-yet-validated
-      // source never invents ownership that later replay could mistake as fact.
-      const ownerPersonId = state.account.ownerPersonId
-      const accountBalances = ownedNonRothIraBalancesByOwner.get(ownerPersonId) ?? []
-      accountBalances.push({
-        sourceAccountId: state.account.id,
-        balanceIndex,
-        balancePlanDollars: state.balance,
-      })
-      ownedNonRothIraBalancesByOwner.set(ownerPersonId, accountBalances)
-    }
-    // The contract values that belong on line 6 beside those balances, read at
-    // the same instant. Annuity accounts take no growth -- they hold no balance
-    // the ledger could grow -- so reading the channel here rather than before
-    // the growth loop changes no figure; it is read here so the two halves of
-    // line 6 are captured at one boundary and the replay can say so.
-    const annuityContractValuesByOwner = new Map<
-      string | null,
-      Array<{
-        annuityAccountId: string
-        fundingAccountId: string
-        contractValueOpeningPlanDollars: number
-        contractValuePlanDollars: number
-      }>
-    >()
-    for (const { contract, funding, ownerPersonId } of annuityStagingCandidates) {
-      const contractValuePlanDollars = annuityContractValue.get(contract.id)
-      if (contractValuePlanDollars === undefined) continue
-      const entries = annuityContractValuesByOwner.get(ownerPersonId) ?? []
-      entries.push({
-        annuityAccountId: contract.id,
-        fundingAccountId: funding.id,
-        contractValueOpeningPlanDollars:
-          startOfYearAnnuityContractValue.get(contract.id) ?? 0,
-        contractValuePlanDollars,
-      })
-      annuityContractValuesByOwner.set(ownerPersonId, entries)
-    }
-    const ownedNonRothIraPostGrowthSource = Object.freeze({
-      status: 'postGrowthOwnedNonRothIraBalancesCaptured' as const,
-      captureBoundary:
-        'afterAllAnnualTransactionsAndGrowthBeforeYearResultPublication' as const,
-      annualObservationValidation: 'notRun' as const,
-      planId: plan.id,
-      taxYear: year,
-      ownerPools: Object.freeze(
-        [...ownedNonRothIraBalancesByOwner]
-          .sort(([leftOwner], [rightOwner]) => {
-            if (leftOwner === null) return rightOwner === null ? 0 : -1
-            if (rightOwner === null) return 1
-            return compareUtf16CodeUnits(leftOwner, rightOwner)
-          })
-          .map(([ownerPersonId, accountBalances]) => Object.freeze({
-            ownerPersonId,
-            accountBalances: Object.freeze(
-              accountBalances
-                .sort((left, right) =>
-                  compareUtf16CodeUnits(
-                    left.sourceAccountId,
-                    right.sourceAccountId,
-                  ) || left.balanceIndex - right.balanceIndex,
-                )
-                .map((balance) => Object.freeze({ ...balance })),
-            ),
-            annuityContractValues: Object.freeze(
-              (annuityContractValuesByOwner.get(ownerPersonId) ?? [])
-                .sort((left, right) => compareUtf16CodeUnits(
-                  left.annuityAccountId, right.annuityAccountId,
-                ))
-                .map((value) => Object.freeze({ ...value })),
-            ),
-          })),
-      ),
-    })
+    const ownedNonRothIraBalancesBeforeGrowth =
+      postGrowth.ownedNonRothIraBalancesBeforeGrowth
+    const ownedNonRothIraPhysicalBalancesBeforeGrowth =
+      postGrowth.ownedNonRothIraPhysicalBalancesBeforeGrowth
+    const ownedNonRothIraPhysicalOpeningBalances =
+      postGrowth.ownedNonRothIraPhysicalOpeningBalances
+    priorYearPortfolioReturnPct = postGrowth.priorYearPortfolioReturnPct
+    const ownedNonRothIraPostGrowthSource =
+      postGrowth.ownedNonRothIraPostGrowthSource
 
     // --- snapshot ------------------------------------------------------------
     const snapshot = annualSnapshot({
@@ -2053,88 +1898,27 @@ export function annualFundingApplicationAndClosePhase(
     const targetShortfall = shortfallAttribution.targetShortfall + skippedTargetNominal + skippedRequiredNominal
     const idealShortfall = shortfallAttribution.idealShortfall + skippedIdealNominal
     const excessShortfall = shortfallAttribution.excessShortfall + skippedExcessNominal
-    const retirementRuntimeSource = Object.freeze({
-      status: 'runtimeOccurrenceSourcesCaptured' as const,
-      captureBoundary:
-        'legacyAnnualPassCommittedBeforeYearResultPublication' as const,
-      journalValidation: 'notRun' as const,
+    // --- retirement runtime journal capture --------------------------------
+    // Two frozen records that read nine values and write nothing. The
+    // sub-phase lives in `internal/annualRuntimeJournalCapturePhase.ts` and
+    // takes those nine as its own input rather than reading this phase
+    // 91-field `Facts` destructure. Both orderings travel with it: occurrences
+    // sorted into the canonical order, applications deliberately unsorted
+    // because mutation order is itself the evidence.
+    const runtimeJournalCapture = annualRuntimeJournalCapturePhase({
       planId: plan.id,
-      taxYear: year,
-      runtimeOccurrences: Object.freeze(
-        [...annualRetirementRuntimeOccurrences]
-          .sort(canonicalRuntimeOccurrenceOrder)
-          .map((occurrence) => Object.freeze({ ...occurrence })),
-      ),
-      // Only the routed share belongs in the nonmoving overlay. The rest of the
-      // annual total left an owned IRA under its own occurrences above, and
-      // publishing it here as well would double-count the gift.
-      //
-      // The attribution travels with it, which is what lets the owned-IRA
-      // runtime source series characterize a gift year instead of refusing it.
-      // Both figures are the ones the 408(d)(8)(D) block settled above:
-      // `qcdFromRmdByOwner` is the routed gross the published annual total is
-      // made of, and `qcdQualifiedFromRmdByOwner` is the carve the deferred
-      // forced distributions were committed against, so the replay reproduces
-      // the ledger's own line-7 grosses rather than deriving rival ones.
-      nonmovingLegacyQcdOverlay: qcdFromRmd > 0
-        ? Object.freeze({
-          status: 'nonmovingLegacyQcdCaptured' as const,
-          kind: 'legacyQcd' as const,
-          taxYear: year,
-          grossAmountPlanDollars: qcdFromRmd,
-          ownerAttributions: Object.freeze(
-            [...qcdFromRmdByOwner.entries()]
-              .filter(([, routed]) => routed > 0)
-              .sort(([left], [right]) => compareUtf16CodeUnits(left, right))
-              .map(([ownerPersonId, routedGrossPlanDollars]) => Object.freeze({
-                ownerPersonId,
-                routedGrossPlanDollars,
-                qualifiedLine7ExclusionPlanDollars: Math.min(
-                  routedGrossPlanDollars,
-                  qcdQualifiedFromRmdByOwner.get(ownerPersonId) ?? 0,
-                ),
-              })),
-          ),
-          physicalMovement: 'notAdditionalMovement' as const,
-          inventoryReplay:
-            'attributedToOwnedIraRequiredDistributionGrosses' as const,
-        })
-        : null,
-      // The moving half's characterization, in the order the draws moved. The
-      // 408(d)(8)(D) block sized each one against the owner's aggregate
-      // includible amount, so the replay reads which part of each draw was a
-      // gift and which part was an ordinary distribution rather than assuming
-      // the whole of it was the former.
-      legacyQcdCharacterizations: Object.freeze(
-        legacyQcdCharacterizations.map((entry) => Object.freeze({ ...entry })),
-      ),
+      year,
+      annualRetirementRuntimeOccurrences,
+      canonicalRuntimeOccurrenceOrder,
+      annualRetirementRuntimeApplications,
+      qcdFromRmd,
+      qcdFromRmdByOwner,
+      qcdQualifiedFromRmdByOwner,
+      legacyQcdCharacterizations,
     })
-    const retirementRuntimeApplicationSource = Object.freeze({
-      status: 'runtimeApplicationSourcesCaptured' as const,
-      captureBoundary:
-        'atOwnedNonRothIraMutationSitesBeforeAnnualGrowth' as const,
-      applicationValidation: 'notRun' as const,
-      planId: plan.id,
-      taxYear: year,
-      // Mutation order is evidence. Do not sort this array: account-order
-      // dependent legacy commits must remain visible to later replay.
-      applications: Object.freeze(
-        annualRetirementRuntimeApplications.map((application) =>
-          application.applicationKind === 'aggregateRothDestinationCredit' ||
-            application.applicationKind === 'namedRothDestinationCredit'
-            ? Object.freeze({
-              ...application,
-              producerOccurrenceKeys: Object.freeze([
-                ...application.producerOccurrenceKeys,
-              ]),
-              sourceOwnerPersonIds: Object.freeze([
-                ...application.sourceOwnerPersonIds,
-              ]),
-            })
-            : Object.freeze({ ...application }),
-        ),
-      ),
-    })
+    const retirementRuntimeSource = runtimeJournalCapture.retirementRuntimeSource
+    const retirementRuntimeApplicationSource =
+      runtimeJournalCapture.retirementRuntimeApplicationSource
     // This publication depends on settled tax, penalties, and committed
     // executor evidence, so it remains ordered after every annual movement and
     // before per-entity fact publication and `YearResult` assembly. The

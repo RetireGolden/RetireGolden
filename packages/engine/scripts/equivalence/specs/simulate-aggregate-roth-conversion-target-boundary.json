@@ -386,21 +386,21 @@
       "label": "downstream fill-to-target strategy signal",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1159,
-        1162
+        1158,
+        1161
       ],
       "note": "The exact true-arm output consumption is pinned by hostile delegation; corpus reach proves the coordinator-owned signal is the condition used at the downstream boundary.",
       "anchors": [
         {
-          "line": 1159,
+          "line": 1158,
           "text": "if ("
         },
         {
-          "line": 1160,
+          "line": 1159,
           "text": "aggregateRothConversionTarget.fillToTargetSelected &&"
         },
         {
-          "line": 1162,
+          "line": 1161,
           "text": "withdrawalPlan.byCategory.traditional > 0.01"
         }
       ]
@@ -410,17 +410,17 @@
       "label": "optimizer probe then-current gross-to-taxable translation",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1489,
-        1490
+        1488,
+        1489
       ],
       "note": "The callback's source reread timing and injected non-economic return are hostile-delegation claims; this range proves the extracted optimizer-publication boundary receives the original aggregate-target translation.",
       "anchors": [
         {
-          "line": 1489,
+          "line": 1488,
           "text": "taxableAmountForGrossConversion: (gross: number) =>"
         },
         {
-          "line": 1490,
+          "line": 1489,
           "text": "aggregateRothConversionTarget.taxableAmountForGross(gross),"
         }
       ]

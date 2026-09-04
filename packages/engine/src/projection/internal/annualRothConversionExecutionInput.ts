@@ -16,7 +16,7 @@ import {
   type ExecuteRothConversionsInput,
   type RothConversionRequest,
 } from '../../actions/index.js'
-import { compareUtf16CodeUnits } from '../../actions/structuralId.js'
+import { compareUtf16CodeUnits, deriveActionStructuralId } from '../../actions/structuralId.js'
 import type {
   NonpersistedOwnerAggregatedIraBasisEvidence,
   NonpersistedOwnerIraRmdSatisfactionEvidence,
@@ -163,12 +163,12 @@ export function annualRothConversionExecutionInput(
   ] as const))
 
   const personAliveEvidence = freezeRows(input.requests.map((request) => ({
-    evidenceId: `projection-alive:${JSON.stringify([
+    evidenceId: deriveActionStructuralId('projection-alive', [
       request.actionId,
       request.personId,
       input.taxYear,
       request.executionDate ?? null,
-    ])}`,
+    ]),
     actionId: request.actionId,
     personId: request.personId,
     actionYear: input.taxYear,
@@ -191,12 +191,12 @@ export function annualRothConversionExecutionInput(
         const shortfall = planDollarsToLedgerCents(Math.max(0, unsatisfied))
         return [{
           evidenceId:
-            `projection-owner-ira-rmd-satisfaction:${JSON.stringify([
+            deriveActionStructuralId('projection-owner-ira-rmd-satisfaction', [
               request.actionId,
               request.personId,
               input.taxYear,
               request.executionDate ?? null,
-            ])}`,
+            ]),
           actionId: request.actionId,
           personId: request.personId,
           actionYear: input.taxYear,
@@ -222,12 +222,12 @@ export function annualRothConversionExecutionInput(
       try {
         return [{
           evidenceId:
-            `projection-owner-aggregated-ira-basis:${JSON.stringify([
+            deriveActionStructuralId('projection-owner-aggregated-ira-basis', [
               request.actionId,
               request.personId,
               input.taxYear,
               request.executionDate ?? null,
-            ])}`,
+            ]),
           actionId: request.actionId,
           personId: request.personId,
           actionYear: input.taxYear,

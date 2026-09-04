@@ -98,26 +98,26 @@
       "id": "AF.callsite.context",
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [876, 946],
+      "lines": [875, 945],
       "anchors": [
-        { "line": 876, "text": "const fundingCandidateAcaContract = acaContract" },
-        { "line": 893, "text": "const fundingCandidateEvaluationContext:" },
-        { "line": 899, "text": "taxInputBase: Object.freeze({" },
-        { "line": 923, "text": "aca: Object.freeze({" },
-        { "line": 935, "text": "hsa: Object.freeze({" }
+        { "line": 875, "text": "const fundingCandidateAcaContract = acaContract" },
+        { "line": 892, "text": "const fundingCandidateEvaluationContext:" },
+        { "line": 898, "text": "taxInputBase: Object.freeze({" },
+        { "line": 922, "text": "aca: Object.freeze({" },
+        { "line": 934, "text": "hsa: Object.freeze({" }
       ]
     },
     {
       "id": "AF.callsite.delegate",
       "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [947, 971],
+      "lines": [946, 970],
       "anchors": [
-        { "line": 950, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
-        { "line": 957, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 960, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
-        { "line": 966, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
-        { "line": 971, "text": "return evaluation" }
+        { "line": 949, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
+        { "line": 956, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
+        { "line": 959, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
+        { "line": 965, "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {" },
+        { "line": 970, "text": "return evaluation" }
       ]
     }
   ],

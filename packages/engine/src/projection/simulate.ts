@@ -38,11 +38,7 @@
  *   at the assumed inflation rate (statutory limits are inflation-indexed).
  */
 import type { Account, AssetAllocationPolicy, Person, Plan } from '../model/plan.js'
-import {
-  ASSET_CLASS_IDS,
-  stateForYear,
-  stateResidencySegmentsForYear,
-} from '../model/plan.js'
+import { ASSET_CLASS_IDS } from '../model/plan.js'
 import {
   accountAllocation,
   resolveAssetClassParams,
@@ -60,23 +56,13 @@ import {
   type SealableAnnualCashFlowYearSites,
 } from './annualCashFlowYearSites.js'
 import { buildLadder } from '../ladder/ladderMath.js'
-import { annualInsurancePremiumRows } from './internal/annualInsurancePremiumRows.js'
-import { annualLifestyleLayers } from './internal/annualLifestyleLayers.js'
 import {
   AnnualLogicalBalanceLedger,
   type PhysicalBalanceState,
 } from './internal/annualLogicalBalanceLedger.js'
 import { annualRebalanceToTarget } from './internal/annualRebalanceToTarget.js'
-import { annualAnnuityPurchaseFunding } from './internal/annualAnnuityPurchaseFunding.js'
-import { annualPropertyCarryingCosts } from './internal/annualPropertyCarryingCosts.js'
+import { annualAnnuityPurchaseApplicationPhase } from './internal/annualAnnuityPurchaseApplicationPhase.js'
 import { annualSocialSecurity } from './internal/annualSocialSecurity.js'
-import { annualExpenseSummary } from './internal/annualExpenseSummary.js'
-import {
-  annualContributionsAndEmployerMatch,
-  type AnnualContributionAndMatchOperation,
-  type AnnualContributionAndMatchOperationIdentity,
-  type AnnualContributionsAndEmployerMatchResult,
-} from './internal/annualContributionsAndEmployerMatch.js'
 import { annualForcedDistributionQcdAndRetirementActionsPhase } from
   './internal/annualForcedDistributionQcdAndRetirementActionsPhase.js'
 import { annualAggregateRothConversionPhase } from './internal/annualAggregateRothConversionPhase.js'
@@ -92,13 +78,14 @@ import {
 } from './internal/annualOwnedNonRothIraSettlementPhase.js'
 import type { PhaseLedgerScalarBindings } from './internal/phaseLedgerScalars.js'
 import { annualIncomeSetup } from './internal/annualIncomeSetup.js'
-import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
+import { annualTaxUnitIdentityPhase } from './internal/annualTaxUnitIdentityPhase.js'
+import { annualAssumedCharacterPhase } from './internal/annualAssumedCharacterPhase.js'
+import { annualExpenseAssemblyPhase } from './internal/annualExpenseAssemblyPhase.js'
 import {
-  annualDebtServiceRows,
-  annualLongTermCarePlan,
-} from './internal/annualDebtAndLongTermCare.js'
-import { annualGuardrailFundingPlan } from './internal/annualGuardrailFunding.js'
-import { annualHealthcareExpenses } from './internal/annualHealthcareExpenses.js'
+  annualContributionReconciliationPhase,
+  type SimulatorRetirementRuntimeApplicationWithoutOrdinal,
+} from './internal/annualContributionReconciliationPhase.js'
+import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
@@ -125,20 +112,14 @@ import {
   isAggregatedIra,
   isTreatAsOwnEffective,
 } from '../strategies/accountEligibility.js'
-import type { EmployerElectiveAllocation } from './employerRothCatchUp.js'
 import { splitIraDistribution, type IraProRataYear } from '../strategies/iraBasis.js'
 import {
   asAccountId,
-  asPersonId,
-  ledgerCentsToPlanDollars,
-  planDollarsToLedgerCents,
   type ActionId,
   type ConversionLinkedWithdrawalGroupLiabilityRun,
 } from '../actions/index.js'
 import { addCalendarMonths } from '../actions/civilDate.js'
-import {
-  compareUtf16CodeUnits,
-} from '../actions/structuralId.js'
+import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 import { type SimulatorAnnualRetirementRuntimeOccurrence } from './annualRetirementRuntimeJournal.js'
 import type { SimulatorAnnualPassDeferredFirstRmd, SimulatorAnnualPassStateBindings } from './annualPassTransaction.js'
 import {
@@ -155,12 +136,6 @@ import {
   REFUSE_ANNUAL_CONVERSION_LINKED_WITHDRAWALS,
   type AnnualConversionLinkedWithdrawalRelease,
 } from './internal/annualConversionLinkedWithdrawalFunding.js'
-import type { AnnualLiabilityRunTaxInput } from '../actions/annualLiabilityRunIdentity.js'
-import type {
-  ConversionTaxFundingTaxUnitEvidence,
-} from '../actions/conversionTaxFundingEvidence.js'
-import { deriveOwnedNonRothIraReplayAllocationIdentity } from
-  '../internal/ownedNonRothIraReplayIdentity.js'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
@@ -358,208 +333,6 @@ function indexWithStatutoryRounding(base: number, growth: number): number {
   // floor to the step below and hold the limit flat for a whole year.
   const steps = Math.floor(increase / COLA_ROUNDING_STEP + STEP_BOUNDARY_TOLERANCE)
   return base + steps * COLA_ROUNDING_STEP
-}
-
-/**
- * Bucket that a jointly-filing couple's IRA compensation ceiling lives in.
- *
- * A person id is validated only as a non-empty string, so no literal value can
- * be made collision-proof by choice alone. Safety comes from the two branches
- * being mutually exclusive: in a shared year the map is keyed by this constant
- * and nothing else, and in an unshared year it is keyed by person ids and this
- * constant is never read. The namespaced spelling is a signpost for that
- * invariant, not the thing that enforces it.
- */
-const IRA_HOUSEHOLD_COMPENSATION_KEY = 'ira:household-compensation'
-
-type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
-  SimulatorRetirementRuntimeApplication extends infer Application
-    ? Application extends SimulatorRetirementRuntimeApplication
-      ? Omit<Application, 'mutationOrdinal'>
-      : never
-    : never
-
-function snapshotStringNumberMap(
-  source: ReadonlyMap<string, number>,
-): ReadonlyMap<string, number> {
-  const snapshot = new Map<string, number>()
-  for (const entry of source) {
-    const key = entry[0]
-    const value = entry[1]
-    snapshot.set(key, value)
-  }
-  return snapshot
-}
-
-function snapshotEmployerElectiveAllocation(
-  source: Readonly<EmployerElectiveAllocation>,
-): Readonly<EmployerElectiveAllocation> {
-  return {
-    allowed: snapshotStringNumberMap(source.allowed),
-    designatedRothCatchUp: source.designatedRothCatchUp,
-    refusedCatchUp: source.refusedCatchUp,
-    redirectedCatchUpBySource:
-      snapshotStringNumberMap(source.redirectedCatchUpBySource),
-    catchUpByAccount: snapshotStringNumberMap(source.catchUpByAccount),
-    catchUpRothAccountId: source.catchUpRothAccountId,
-  }
-}
-
-/**
- * Sever every lazy/proxy-backed channel returned by the contribution planner.
- * Nothing below this boundary retains a helper-owned operation, iterator,
- * nested payload, totals object, or allocation map.
- */
-function snapshotAnnualContributionsAndEmployerMatchResult(
-  source: AnnualContributionsAndEmployerMatchResult,
-): AnnualContributionsAndEmployerMatchResult {
-  const operations: AnnualContributionAndMatchOperation[] = []
-  for (const operation of source.operations) {
-    const kind = operation.kind
-    if (kind === 'warning') {
-      operations.push({ kind, message: operation.message })
-      continue
-    }
-    const sourceRetirementOccurrence = operation.retirementOccurrence
-    const retirementOccurrence = sourceRetirementOccurrence === null
-      ? null
-      : {
-          producerOccurrenceKey:
-            sourceRetirementOccurrence.producerOccurrenceKey,
-          kind: sourceRetirementOccurrence.kind,
-          grossAmountPlanDollars:
-            sourceRetirementOccurrence.grossAmountPlanDollars,
-          ownerPersonId: sourceRetirementOccurrence.ownerPersonId,
-          sourceAccountId: sourceRetirementOccurrence.sourceAccountId,
-          executionDate: sourceRetirementOccurrence.executionDate,
-          executionSequence: sourceRetirementOccurrence.executionSequence,
-          movementAuthorityId:
-            sourceRetirementOccurrence.movementAuthorityId,
-        }
-    if (kind === 'employerMatch') {
-      const record = operation.record
-      operations.push({
-        kind,
-        balanceIndex: operation.balanceIndex,
-        sourceAccount: operation.sourceAccount,
-        balanceBefore: operation.balanceBefore,
-        balanceAfter: operation.balanceAfter,
-        retirementOccurrence,
-        record: {
-          destinationAccountId: record.destinationAccountId,
-          ownerPersonId: record.ownerPersonId,
-          amount: record.amount,
-        },
-      })
-      continue
-    }
-    const sourceRetirementApplication = operation.retirementApplication
-    let retirementApplication:
-      SimulatorRetirementRuntimeApplicationWithoutOrdinal | null = null
-    if (sourceRetirementApplication !== null) {
-      const sourceApplicationKind =
-        sourceRetirementApplication.applicationKind
-      if (sourceApplicationKind !== 'credit') {
-        throw new Error('Annual contribution plan returned a non-credit application')
-      }
-      retirementApplication = {
-        applicationKind: sourceApplicationKind,
-        producerOccurrenceKey:
-          sourceRetirementApplication.producerOccurrenceKey,
-        simulatorPhase: sourceRetirementApplication.simulatorPhase,
-        ownerPersonId: sourceRetirementApplication.ownerPersonId,
-        sourceAccountId: sourceRetirementApplication.sourceAccountId,
-        balanceIndex: sourceRetirementApplication.balanceIndex,
-        sourceBalanceBeforePlanDollars:
-          sourceRetirementApplication.sourceBalanceBeforePlanDollars,
-        creditedAmountPlanDollars:
-          sourceRetirementApplication.creditedAmountPlanDollars,
-        sourceBalanceAfterPlanDollars:
-          sourceRetirementApplication.sourceBalanceAfterPlanDollars,
-      }
-    }
-    const record = operation.record
-    operations.push({
-      kind,
-      balanceIndex: operation.balanceIndex,
-      sourceAccount: operation.sourceAccount,
-      balanceBefore: operation.balanceBefore,
-      balanceAfter: operation.balanceAfter,
-      costBasisBefore: operation.costBasisBefore,
-      costBasisAfter: operation.costBasisAfter,
-      credited: operation.credited,
-      retirementOccurrence,
-      retirementApplication,
-      rothContributionPoolKey: operation.rothContributionPoolKey,
-      rothContributionBasisDelta: operation.rothContributionBasisDelta,
-      qcdSection219OwnerPersonId: operation.qcdSection219OwnerPersonId,
-      qcdSection219Amount: operation.qcdSection219Amount,
-      record: {
-        destinationAccountId: record.destinationAccountId,
-        ownerPersonId: record.ownerPersonId,
-        requested: record.requested,
-        credited: record.credited,
-      },
-    })
-  }
-
-  const snapshotOperationIdentity = (
-    identity: AnnualContributionAndMatchOperationIdentity,
-  ): AnnualContributionAndMatchOperationIdentity => {
-    const kind = identity.kind
-    return kind === 'warning'
-      ? { kind }
-      : { kind, balanceIndex: identity.balanceIndex }
-  }
-  const operationIdentities = [...source.operationIdentities]
-    .map(snapshotOperationIdentity)
-  const expectedOperationIdentities = [...source.expectedOperationIdentities]
-    .map(snapshotOperationIdentity)
-  const expectedContributionBalanceIndices =
-    [...source.expectedContributionBalanceIndices].map((balanceIndex) =>
-      balanceIndex
-    )
-  const sourceTotals = source.totals
-  const totals = {
-    contributions: sourceTotals.contributions,
-    ownedNonRothIraContributions:
-      sourceTotals.ownedNonRothIraContributions,
-    employerMatch: sourceTotals.employerMatch,
-    preTaxContributions: sourceTotals.preTaxContributions,
-    traditionalInflow: sourceTotals.traditionalInflow,
-    otherInflow: sourceTotals.otherInflow,
-    taxableInflow: sourceTotals.taxableInflow,
-  }
-  const employerAllocationByOwner = new Map<
-    string,
-    Readonly<EmployerElectiveAllocation>
-  >()
-  for (const entry of source.employerAllocationByOwner) {
-    const ownerPersonId = entry[0]
-    const allocation = entry[1]
-    employerAllocationByOwner.set(
-      ownerPersonId,
-      snapshotEmployerElectiveAllocation(allocation),
-    )
-  }
-  return {
-    operations,
-    operationIdentities,
-    expectedOperationIdentities,
-    expectedContributionBalanceIndices,
-    totals,
-    employerAllocationByOwner,
-  }
-}
-
-function assertExactContributionTotal(
-  label: string,
-  actual: number,
-  expected: number,
-): void {
-  if (!Object.is(actual, expected)) {
-    throw new Error(`Annual contribution plan has an inconsistent ${label}`)
-  }
 }
 
 function compareNullableUtf16(
@@ -1596,31 +1369,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       allocationTrack.get(String(i))!.weights = row.targetWeights
     }
 
-    /** Contract-value credits, held back so the phase runs contiguously. */
-    const pendingAnnuityContractCredits: {
-      producerOccurrenceKey: string
-      annuityAccountId: string
-      ownerPersonId: string | null
-      creditedAmountPlanDollars: number
-      contractValueBeforePlanDollars: number
-      contractValueAfterPlanDollars: number
-    }[] = []
+    // Contract-value credits are held inside the phase below, not here.
     // --- annuity purchase funding (guaranteed-income-and-estate-depth) -------
-    // A purchased annuity trades a premium out of a funding account in its
-    // purchase year. The move is a transfer, not spending: cash and qualified
-    // (traditional) sources move at book value; a taxable/equity-comp source
-    // realizes gains pro-rata like any sale, folded into this year's realized
-    // gains, and the premium leaves the account. A qualified premium leaving a
-    // traditional balance shrinks future RMDs automatically. A QLAC premium is
-    // held to the statutory cap. The premium actually funded becomes the
-    // contract's investment for the non-qualified exclusion ratio.
-    //
-    // The late-start warning is a last line rather than the only one.
-    // `parsePlan` refuses a qualified purchase that starts paying later than
-    // its shape permits, but simulatePlan accepts an in-memory Plan by type.
-    // The pure planner therefore preserves the warning for that reachable
-    // shape alongside the statutory cap and available-funding warnings.
-    const annuityPurchaseRows = annualAnnuityPurchaseFunding({
+    // The phase lives in `internal/annualAnnuityPurchaseApplicationPhase.ts`:
+    // the positional refusals, the funding-account mutation, the realized-gain
+    // fold that continues from the rebalance's non-zero base, and the
+    // runtime-journal rows -- every debit first, then every deferred contract
+    // credit, so a household that buys two contracts in one year keeps each
+    // application phase to one contiguous run.
+    const annuityPurchaseApplication = annualAnnuityPurchaseApplicationPhase({
       accounts: plan.accounts,
       balances,
       peopleById: personById,
@@ -1628,124 +1385,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       year,
       qlacPremiumCap: pack.annuities.qlacPremiumCap,
       limitGrowth,
+      rebalanceRealizedGains,
+      warnings,
+      exogenousStrategyDebits,
+      annuityContractValue,
+      annuityInvestmentInContract,
+      runtimeOccurrenceKey,
+      recordAnnualRetirementRuntimeOccurrence,
+      recordAnnualRetirementRuntimeApplication,
+      yearSites,
     })
-    if (annuityPurchaseRows.length !== plan.accounts.length) {
-      throw new Error('Annuity-purchase funding row count does not match Plan accounts')
-    }
-    for (let accountIndex = 0; accountIndex < plan.accounts.length; accountIndex++) {
-      const row = annuityPurchaseRows[accountIndex]!
-      if (row.accountIndex !== accountIndex) {
-        throw new Error('Annuity-purchase funding row lost its Plan position')
-      }
-      if (row.kind === 'none') continue
-      const account = plan.accounts[accountIndex]
-      const funding = balances[row.fundingIndex]
-      if (
-        account?.type !== 'annuity' ||
-        !account.purchase ||
-        funding === undefined ||
-        funding.account.id !== account.purchase.fundingAccountId
-      ) {
-        throw new Error('Annuity-purchase funding row does not resolve its funding account')
-      }
-      for (const warning of row.warnings) warnings.add(warning)
-      const fundingBalanceBefore = funding.balance
-      if (row.capitalGainOrLossDelta !== null) {
-        rebalanceRealizedGains += row.capitalGainOrLossDelta
-        funding.costBasis = row.closingCostBasis!
-      }
-      funding.balance = row.closingBalance
-      yearSites?.recordAnnuityPurchase(row.record)
-      // The premium leaves an LP bucket for a contract the LP does not carry.
-      // Captured here rather than from the occurrence below, which is emitted
-      // only for a traditional funding source — a cash- or brokerage-funded
-      // premium moves exactly the same dollars and publishes nothing.
-      if (row.debit !== null) exogenousStrategyDebits.push(row.debit)
-      if (row.funded > 0 && funding.account.type === 'traditional') {
-        const kind = 'annuityFundingTransfer' as const
-        const producerOccurrenceKey = runtimeOccurrenceKey(
-          kind,
-          funding.account.id,
-          account.id,
-        )
-        recordAnnualRetirementRuntimeOccurrence({
-          producerOccurrenceKey,
-          kind,
-          grossAmountPlanDollars: row.funded,
-          ownerPersonId: funding.account.ownerPersonId,
-          sourceAccountId: funding.account.id,
-          executionDate: null,
-          executionSequence: null,
-          movementAuthorityId: null,
-        })
-        if (isAggregatedIra(funding.account)) {
-          recordAnnualRetirementRuntimeApplication({
-            applicationKind: 'debit',
-            producerOccurrenceKey,
-            simulatorPhase: 'annuityPurchaseFunding',
-            ownerPersonId: funding.account.ownerPersonId,
-            sourceAccountId: funding.account.id,
-            sourceBalanceBeforePlanDollars: fundingBalanceBefore,
-            appliedAmountPlanDollars: row.funded,
-            sourceBalanceAfterPlanDollars: funding.balance,
-          })
-          // THE CREDIT BESIDE THE DEBIT. The premium is not a distribution --
-          // IRC 408(d)(1) reaches only what is paid or distributed OUT, and
-          // Publication 590-B says the owner is not taxed on receiving the
-          // contract -- so the value did not leave the section 408(d)(2)
-          // aggregate, it changed which asset holds it. Recording only the debit
-          // asserted the opposite by omission: the line-6 denominator lost the
-          // premium and nothing gained it. Withheld where the contract has no
-          // channel at all, so the year refuses in the source series rather
-          // than crediting one that cannot say whose aggregate it belongs to.
-          //
-          // DEFERRED PAST THE LOOP rather than recorded in place, and a
-          // household that buys two contracts in one year is the whole reason.
-          // The replay requires application phases to be non-decreasing across
-          // the year, so debit-credit-debit-credit would refuse an ordinary
-          // Plan on an ordering rule that is about the simulator's own passes
-          // and not about anything the statute cares about. Every debit first,
-          // then every credit, keeps each phase to one contiguous run.
-          if (annuityContractValue.has(account.id)) {
-            const contractValueBefore = annuityContractValue.get(account.id)!
-            const contractValueAfter = contractValueBefore + row.funded
-            annuityContractValue.set(account.id, contractValueAfter)
-            pendingAnnuityContractCredits.push({
-              producerOccurrenceKey,
-              annuityAccountId: account.id,
-              ownerPersonId: funding.account.ownerPersonId,
-              creditedAmountPlanDollars: row.funded,
-              contractValueBeforePlanDollars: contractValueBefore,
-              contractValueAfterPlanDollars: contractValueAfter,
-            })
-          }
-        }
-      }
-      annuityInvestmentInContract.set(
-        account.id,
-        (annuityInvestmentInContract.get(account.id) ?? 0) + row.funded,
-      )
-    }
-    for (const credit of pendingAnnuityContractCredits) {
-      recordAnnualRetirementRuntimeApplication({
-        applicationKind: 'annuityContractPremiumCredit',
-        simulatorPhase: 'annuityPurchaseContractCredit',
-        producerOccurrenceKey: null,
-        ownerPersonId: null,
-        sourceAccountId: null,
-        sourceBalanceBeforePlanDollars: null,
-        sourceBalanceAfterPlanDollars: null,
-        producerOccurrenceKeys: [credit.producerOccurrenceKey],
-        sourceOwnerPersonIds: [credit.ownerPersonId],
-        destinationAnnuityAccountId: credit.annuityAccountId,
-        destinationOwnerPersonId: credit.ownerPersonId,
-        destinationContractValueBeforePlanDollars:
-          credit.contractValueBeforePlanDollars,
-        destinationCreditedAmountPlanDollars: credit.creditedAmountPlanDollars,
-        destinationContractValueAfterPlanDollars:
-          credit.contractValueAfterPlanDollars,
-      })
-    }
+    rebalanceRealizedGains = annuityPurchaseApplication.rebalanceRealizedGains
 
     // --- pension lump-sum rollover (annuity-pension-and-home-equity, step 3) -
     // An elected lump sum commutes the pension: the offer amount arrives as a
@@ -1871,179 +1521,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const filingStatusForYear = filingStatusFor(year, aliveCount)
     const taxFilingStatusForYear = taxParameterFilingStatus(filingStatusForYear)
 
-    /**
-     * The filing unit every exact-cent action evidence in this year answers to,
-     * or null when the projection cannot name one unambiguously.
-     *
-     * Derived once at year scope rather than inside the annual pass. Nothing in
-     * it depends on the pass — `peopleStates` fixes each person's survival for
-     * the whole year before the pass opens, the filing status follows from
-     * that, and the state-filing inputs are read off the household — so
-     * computing it per pass produced the same four values every time. What
-     * moving it buys is that the annual liability runs can name their filing
-     * unit: a counterfactual pass runs *around* the pass rather than inside it,
-     * and a tax unit that only existed within one could not be the unit both
-     * runs answer for.
-     *
-     * Null is a real answer and not a fallback. A year where three people are
-     * alive under a joint status, or where a person's identity does not satisfy
-     * the action layer's nonblank contract, has no unambiguous unit, and
-     * inventing one would attribute a liability to a filing unit that never
-     * filed.
-     */
-    const annualActionTaxUnit = ((): Readonly<{
-      taxUnitId: string
-      taxUnitEvidenceId: string
-      stateFilingStatusId: string
-      federalFilingStatus: 'single' | 'marriedFilingJointly' | 'qualifyingSurvivingSpouse'
-      members: readonly [
-        ReturnType<typeof asPersonId>,
-        ...ReturnType<typeof asPersonId>[],
-      ]
-    }> | null => {
-      let aliveTaxUnitMemberIds: ReturnType<typeof asPersonId>[]
-      try {
-        aliveTaxUnitMemberIds = peopleStates
-          .filter((state) => state.alive)
-          .map((state) => asPersonId(state.personId))
-          .sort((left, right) => left < right ? -1 : left > right ? 1 : 0)
-      } catch {
-        // A persisted household ID can satisfy the Plan's legacy string
-        // schema without satisfying action identity's nonblank contract.
-        // Omit tax-unit evidence rather than letting unrelated cash/equity
-        // action execution fail with a validation exception.
-        return null
-      }
-      const federalFilingStatus =
-        filingStatusForYear === 'marriedFilingJointly' &&
-          aliveTaxUnitMemberIds.length === 2
-          ? 'marriedFilingJointly' as const
-          : (filingStatusForYear === 'single' ||
-              filingStatusForYear === 'qualifyingSurvivingSpouse') &&
-            aliveTaxUnitMemberIds.length === 1
-            ? filingStatusForYear
-            : null
-      if (federalFilingStatus === null) return null
-      const members = aliveTaxUnitMemberIds as [
-        ReturnType<typeof asPersonId>,
-        ...ReturnType<typeof asPersonId>[],
-      ]
-      const annualStateFilingInputs = [
-        stateForYear(plan.household, year),
-        stateResidencySegmentsForYear(plan.household, year),
-      ] as const
-      return {
-        taxUnitId: `projection-tax-unit:${JSON.stringify([
-          year,
-          filingStatusForYear,
-          members,
-        ])}`,
-        taxUnitEvidenceId: `projection-tax-unit-evidence:${JSON.stringify([
-          year,
-          filingStatusForYear,
-          members,
-          annualStateFilingInputs,
-        ])}`,
-        stateFilingStatusId: `projection-state-filing-status:${JSON.stringify([
-          year,
-          filingStatusForYear,
-          members,
-          annualStateFilingInputs,
-        ])}`,
-        federalFilingStatus,
-        members,
-      }
-    })()
-
-    /** The same unit, in the shape the conversion funding contract names it. */
-    const conversionFundingTaxUnitEvidence:
-      Readonly<ConversionTaxFundingTaxUnitEvidence> | null =
-      annualActionTaxUnit === null
-        ? null
-        : {
-          taxUnitId: annualActionTaxUnit.taxUnitId,
-          taxYear: year,
-          federalFilingStatus: annualActionTaxUnit.federalFilingStatus,
-          stateFilingStatusId: annualActionTaxUnit.stateFilingStatusId,
-          taxUnitEvidenceId: annualActionTaxUnit.taxUnitEvidenceId,
-          taxUnitMemberPersonIds: annualActionTaxUnit.members,
-        }
-
-    /**
-     * What the year's two annual liability runs were computed from, other than
-     * which requests each of them ran.
-     *
-     * The baseline and the candidate must agree about every one of these or
-     * their difference is not the group's tax effect but the difference between
-     * two unrelated calculations. They are stated as the filing unit's own
-     * evidence identifiers rather than re-enumerated as figures: the tax-unit
-     * evidence ID is already derived from the year, the filing status, the
-     * exact member set and the state-filing inputs, so it is the compact,
-     * already-canonical name for the run's non-group inputs. Both runs read the
-     * same one because it is computed once, at year scope, above.
-     */
-    const annualLiabilityNonGroupTaxInputs:
-      readonly Readonly<AnnualLiabilityRunTaxInput>[] =
-      annualActionTaxUnit === null
-        ? []
-        : [
-          {
-            inputId: 'taxUnitEvidenceId',
-            value: {
-              representation: 'declaredTerm',
-              term: annualActionTaxUnit.taxUnitEvidenceId,
-            },
-          },
-          {
-            inputId: 'federalFilingStatus',
-            value: {
-              representation: 'declaredTerm',
-              term: annualActionTaxUnit.federalFilingStatus,
-            },
-          },
-          {
-            inputId: 'stateFilingStatusId',
-            value: {
-              representation: 'declaredTerm',
-              term: annualActionTaxUnit.stateFilingStatusId,
-            },
-          },
-          {
-            inputId: 'taxUnitMemberPersonIds',
-            value: {
-              representation: 'declaredTerm',
-              term: JSON.stringify(annualActionTaxUnit.members),
-            },
-          },
-        ]
-
-    /**
-     * Both legs of every conversion-linked withdrawal group this year declares.
-     *
-     * This is the counterfactual's omission set, and it is read off the Plan
-     * rather than off the assessment inside the pass, because the counterfactual
-     * has to be launched before any pass runs. The two agree by construction:
-     * the assessment reads the same conversions out of the same array.
-     *
-     * Both legs, not just the conversion. `T0` is the unit's liability with
-     * "every conversion in this annual group and every dedicated linked
-     * withdrawal omitted", and a baseline that removed the conversion while
-     * leaving its funding withdrawal to draw down a taxable account would
-     * measure the withdrawal's own tax as part of the group's cost.
-     */
-    const annualLinkedGroupOmissionIds: readonly ActionId[] = (() => {
-      const ids = new Set<ActionId>()
-      for (const request of plan.strategies.retirementActions) {
-        if (
-          request.kind !== 'rothConversion' ||
-          request.year !== year ||
-          request.taxFunding.kind !== 'linkedWithdrawal'
-        ) continue
-        ids.add(request.actionId)
-        ids.add(request.taxFunding.withdrawalActionId)
-      }
-      return [...ids]
-    })()
+    // --- annual tax-unit identity ------------------------------------------
+    // The filing unit every exact-cent action evidence answers to this year,
+    // the conversion-funding restatement of it, the two liability runs'
+    // non-group inputs, and the counterfactual's omission set. The phase lives
+    // in `internal/annualTaxUnitIdentityPhase.ts`; it reads only facts this
+    // year has already fixed, so it is derived once at year scope rather than
+    // once per annual pass, and the doc comments that explain each of the four
+    // answers moved with them.
+    const taxUnitIdentity = annualTaxUnitIdentityPhase({
+      year,
+      household: plan.household,
+      filingStatusForYear,
+      peopleStates,
+      retirementActions: plan.strategies.retirementActions,
+    })
+    const annualActionTaxUnit = taxUnitIdentity.annualActionTaxUnit
+    const conversionFundingTaxUnitEvidence =
+      taxUnitIdentity.conversionFundingTaxUnitEvidence
+    const annualLiabilityNonGroupTaxInputs =
+      taxUnitIdentity.annualLiabilityNonGroupTaxInputs
+    const annualLinkedGroupOmissionIds =
+      taxUnitIdentity.annualLinkedGroupOmissionIds
 
     // --- income setup: distributed yield, then wages --------------------
     const incomeSetup = annualIncomeSetup({
@@ -2244,311 +1743,109 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       incomes.taxExemptInterest
 
     // --- expenses ---------------------------------------------------------
-    const {
-      requiredLifestyle,
-      targetLifestyle,
-      idealLifestyle,
-      excessLifestyle,
-    } = annualLifestyleLayers({
-      expenses: plan.expenses,
-      primaryAge: stateOf(primary.id).ageAttained,
-      peopleStateCount: peopleStates.length,
-      aliveCount,
-      anyAlive,
-      inflFactor,
-      abwActive,
-      abwRealReturnPct,
-      abwTiltPct,
-      abwHorizonYear,
-      year,
-      balances,
-      startOfYearBalances: startOfYearPositionalBalances,
-    })
-    let debtService = 0
-    for (const row of annualDebtServiceRows({
-      accounts: plan.accounts,
-      balances: debtBalances,
-      year,
-    })) {
-      debtBalances.set(row.accountId, row.nextBalance)
-      debtService += row.amount
-      yearSites?.recordDebtService({
-        accountId: row.accountId,
-        ownerPersonId: row.ownerPersonId,
-        amount: row.amount,
-      })
-    }
-    const healthcarePlan = annualHealthcareExpenses({
+    // The phase lives in `internal/annualExpenseAssemblyPhase.ts`: lifestyle
+    // layers, then the five system-computed costs, then the HSA cap, the
+    // withdrawal-rate guardrail decision, the one-time goals and the expense
+    // summary, in that order, because each step reads a number the one before
+    // it produced. The three guardrail values it hands back are the ones that
+    // carry across years, so they are assigned back here.
+    const expenseAssembly = annualExpenseAssemblyPhase({
       plan,
       pack,
       year,
       startYear,
-      peopleStates,
-      birthMonthByPerson,
-      resolveMagiFor,
-      ssa44ActiveInYear,
-      filingStatusForYear,
-      taxFilingStatusForYear,
+      inflFactor,
+      isStandIn,
       inflFactorFrom,
       healthInflFactorFrom,
-      isStandIn,
-      hasModeledPerson: (personId) => personById.has(personId),
+      aliveCount,
+      anyAlive,
+      peopleStates,
+      primaryPersonId: primary.id,
       resolvePerson: stateOf,
+      hasModeledPerson: (personId) => personById.has(personId),
+      birthMonthByPerson,
+      filingStatusForYear,
+      taxFilingStatusForYear,
+      resolveMagiFor,
+      ssa44ActiveInYear,
       planHasTaxExemptYieldAttestation,
       taxExemptInterest: incomes.taxExemptInterest,
-    })
-    let healthcare = healthcarePlan.healthcare
-    const healthInflFactor = healthcarePlan.healthInflFactor
-    const acaContractsForYear = healthcarePlan.acaContractsForYear
-    const acaContract = healthcarePlan.acaContract
-    const acaEnrollmentPremiums = healthcarePlan.acaEnrollmentPremiums
-    const acaSlcspBenchmarkPremiums =
-      healthcarePlan.acaSlcspBenchmarkPremiums
-    const acaGrossEnrollmentPremium =
-      healthcarePlan.acaGrossEnrollmentPremium
-    const acaActive = healthcarePlan.acaActive
-    const healthcareExcludingAcaEnrollment =
-      healthcarePlan.healthcareExcludingAcaEnrollment
-    const healthcareExcludingMarketplacePremium =
-      healthcarePlan.healthcareExcludingMarketplacePremium
-    const acaInitialSupportCodes = healthcarePlan.acaInitialSupportCodes
-    const exampleContractInputMismatch =
-      healthcarePlan.exampleContractInputMismatch
-    const medicarePremiums = healthcarePlan.medicarePremiums
-    const irmaaSurcharge = healthcarePlan.irmaaSurcharge
-    const irmaaTier = healthcarePlan.irmaaTier
-    const irmaaMagi = healthcarePlan.irmaaMagi
-    const irmaaLookbackMagiSource =
-      healthcarePlan.irmaaLookbackMagiSource
-    const irmaaLookbackMagiYear = healthcarePlan.irmaaLookbackMagiYear
-    const irmaaNextTierThreshold = healthcarePlan.irmaaNextTierThreshold
-    const marketplaceMonthsByPersonPosition =
-      healthcarePlan.marketplaceMonthsByPersonPosition
-    if (marketplaceMonthsByPersonPosition.length !== peopleStates.length) throw new Error('Healthcare planner person-row mismatch')
-    const pre65MonthlyPremiumPerPerson =
-      healthcarePlan.pre65MonthlyPremiumPerPerson
-    for (const warning of healthcarePlan.warnings) warnings.add(warning)
-    // Insurance premiums: level (fixed nominal), charged while the insured/owner
-    // is alive. paidUp charges nothing; untilAge stops at premiumEndAge.
-    let insurancePremiums = 0
-    for (const row of annualInsurancePremiumRows({
-      policies: plan.insurance,
-      resolveSubject: stateOf,
-    })) {
-      insurancePremiums += row.amount
-      yearSites?.recordInsurancePremium(row.record)
-    }
-
-    // LTC care episodes: a deterministic late-life cost spike, additive to
-    // baseline spending. An owned LTC policy offsets it up to its monthly cap
-    // (grown by the inflation rider) after the elimination period, for at most
-    // benefitPeriodYears. The net (careCost − ltcBenefit) is what hits spending.
-    const longTermCare = annualLongTermCarePlan({
-      careEvents: plan.careEvents,
-      policies: plan.insurance,
-      benefitYearsUsed: ltcBenefitYearsUsed,
-      resolvePerson: stateOf,
-      healthInflFactor,
-      year,
-      startYear,
-      capturePersonRows: captureAnnualCashFlow,
-    })
-    const careCost = longTermCare.careCost
-    const ltcBenefit = longTermCare.ltcBenefit
-    for (const write of longTermCare.benefitYearWrites) {
-      ltcBenefitYearsUsed.set(write.policyId, write.yearsUsed)
-    }
-    for (const row of longTermCare.personRows) {
-      yearSites?.recordLongTermCare(row)
-    }
-
-    // Property carrying costs: tax + insurance charged while the property is
-    // owned, continuing after any mortgage is paid off — the part of a PITI
-    // payment the debt account deliberately excludes. Today's dollars, inflated;
-    // skipped from the sale year on, and (like base spending) once nobody is alive.
-    let propertyCosts = 0
-    for (const row of annualPropertyCarryingCosts({
-      accounts: plan.accounts,
-      year,
-      anyAlive,
-      inflFactor,
-    })) {
-      propertyCosts += row.amount
-      yearSites?.recordPropertyCosts(row.record)
-    }
-
-    // System-computed costs are required by default: a plan must never report
-    // "floor success" after silently cutting healthcare, housing, debt, or care.
-    const netCare = careCost - ltcBenefit // ltcBenefit is capped at careCost above
-    const systemRequired = debtService + propertyCosts + healthcare + insurancePremiums + netCare
-
-    // HSA qualified-withdrawal cap (steps 2–3): the household's modeled medical
-    // costs this year (healthcare premiums + net care costs), plus the
-    // accumulated reimburse-later pool when any HSA opts in. Cap-mode HSA
-    // withdrawals are tax- and penalty-free only up to this.
-    // Ordinary Marketplace premiums are not HSA-qualified medical expenses
-    // under Pub. 969's general rule. (The narrow COBRA, unemployment, Medicare,
-    // and qualified-LTC exceptions are not represented by an ACA contract.)
-    let qualifiedMedicalThisYear = healthcareExcludingMarketplacePremium + netCare
-    let hsaQualifiedCap = qualifiedMedicalThisYear + (hsaReimburseLaterActive ? hsaReimbursablePool : 0)
-
-    // Withdrawal-rate guardrail decision (before funding). The signal is this
-    // year's recurring target spending over the start-of-year portfolio, compared
-    // to the same ratio in the first solvent year. Cutting/raising moves the
-    // discretionary multiplier; the required floor is never touched.
-    const guardrailFunding = annualGuardrailFundingPlan({
+      balances,
+      startOfYearPositionalBalances,
+      debtBalances,
+      ltcBenefitYearsUsed,
+      captureAnnualCashFlow,
+      abwActive,
+      abwRealReturnPct,
+      abwTiltPct,
+      abwHorizonYear,
+      hsaReimburseLaterActive,
+      hsaReimbursablePool,
       guardrailsActive,
       riskBasedGuardrails,
-      allowRaisesAboveTarget: spendingPolicy?.allowRaisesAboveTarget,
+      spendingPolicy,
       guardrailPolicy,
-      oneTimeGoals: plan.expenses.oneTimeGoals,
-      isGoalResolved: (goalId) => goalScheduler?.isResolved(goalId) ?? false,
-      year,
-      inflFactor,
-      anyAlive,
-      balances,
-      startOfYearBalances: startOfYearPositionalBalances,
-      requiredLifestyle,
-      targetLifestyle,
-      idealLifestyle,
-      excessLifestyle,
-      systemRequired,
+      goalScheduler,
       discretionaryMultiplier,
       startingWithdrawalRate,
       startingRealPortfolio,
+      warnings,
+      yearSites,
     })
-    discretionaryMultiplier = guardrailFunding.discretionaryMultiplier
-    startingWithdrawalRate = guardrailFunding.startingWithdrawalRate
-    startingRealPortfolio = guardrailFunding.startingRealPortfolio
-    const guardrailAction = guardrailFunding.guardrailAction
-    const targetLifestyleFunded = guardrailFunding.targetLifestyleFunded
-    const idealLifestyleFunded = guardrailFunding.idealLifestyleFunded
-    const excessLifestyleFunded = guardrailFunding.excessLifestyleFunded
-    const remainingUpsideBudget = guardrailFunding.remainingUpsideBudget
-    const cutting = guardrailFunding.cutting
-    const canPullForwardGoals = guardrailFunding.canPullForwardGoals
-
-    // One-time goals. Under guardrails they route through the scheduler (which
-    // may delay/skip flexible goals when cutting); otherwise every goal funds in
-    // its target year exactly, as it always has. A *skipped* goal is intended
-    // spending that never happens, so its amount is tracked as a target miss (a
-    // required-classified skip is also a required miss) rather than silently
-    // vanishing from both sides of the ledger.
-    let oneTimeGoalsFunded = 0
-    let requiredGoalsFunded = 0
-    let targetGoalsFunded = 0
-    let idealGoalsFunded = 0
-    let excessGoalsFunded = 0
-    let skippedTargetNominal = 0
-    let skippedIdealNominal = 0
-    let skippedExcessNominal = 0
-    let skippedRequiredNominal = 0
-    const goalOutcomeCounts = { funded: 0, partiallyFunded: 0, deferred: 0, skipped: 0, fundedAmount: 0, unfundedAmount: 0 }
-    if (anyAlive) {
-      if (goalScheduler) {
-        const plannedGoals = goalScheduler.planYear(year, {
-          inflFactor,
-          cutting,
-          canPullForward: canPullForwardGoals,
-          availableBudget: cutting ? 0 : canPullForwardGoals ? remainingUpsideBudget : null,
-        })
-        for (const r of plannedGoals.results) {
-          if (r.outcome === 'funded' || r.outcome === 'partiallyFunded') {
-            oneTimeGoalsFunded += r.fundedNominal
-            if (r.classification === 'required') requiredGoalsFunded += r.fundedNominal
-            else if (r.classification === 'target') targetGoalsFunded += r.fundedNominal
-            else if (r.classification === 'ideal') idealGoalsFunded += r.fundedNominal
-            else excessGoalsFunded += r.fundedNominal
-            if (r.outcome === 'funded') goalOutcomeCounts.funded++
-            else goalOutcomeCounts.partiallyFunded++
-            goalOutcomeCounts.fundedAmount += r.fundedNominal
-            goalOutcomeCounts.unfundedAmount += r.unfundedNominal
-            if (r.unfundedNominal > 0) {
-              if (r.classification === 'required') skippedRequiredNominal += r.unfundedNominal
-              else if (r.classification === 'target') skippedTargetNominal += r.unfundedNominal
-              else if (r.classification === 'ideal') skippedIdealNominal += r.unfundedNominal
-              else skippedExcessNominal += r.unfundedNominal
-            }
-            yearSites?.recordGoalOutcome({
-              goalId: r.id,
-              classification: r.classification,
-              outcome: r.outcome,
-              requested: r.fundedNominal + r.unfundedNominal,
-              fundedNominal: r.fundedNominal,
-            })
-          } else if (r.outcome === 'deferred') {
-            goalOutcomeCounts.deferred++
-          } else {
-            if (r.classification === 'required') skippedRequiredNominal += r.amountNominal
-            else if (r.classification === 'target') skippedTargetNominal += r.amountNominal
-            else if (r.classification === 'ideal') skippedIdealNominal += r.amountNominal
-            else skippedExcessNominal += r.amountNominal
-            goalOutcomeCounts.unfundedAmount += r.amountNominal
-            goalOutcomeCounts.skipped++
-            yearSites?.recordGoalOutcome({
-              goalId: r.id,
-              classification: r.classification,
-              outcome: 'skipped',
-              requested: r.amountNominal,
-              fundedNominal: 0,
-            })
-          }
-        }
-      } else {
-        for (const goal of plan.expenses.oneTimeGoals) {
-          if (goal.year !== year) continue
-          const amount = goal.amount * inflFactor
-          oneTimeGoalsFunded += amount
-          const classification = goal.classification ?? 'target'
-          if (classification === 'required') requiredGoalsFunded += amount
-          else if (classification === 'target') targetGoalsFunded += amount
-          else if (classification === 'ideal') idealGoalsFunded += amount
-          else excessGoalsFunded += amount
-          yearSites?.recordGoalOutcome({
-            goalId: goal.id,
-            classification,
-            outcome: 'funded',
-            requested: amount,
-            fundedNominal: amount,
-          })
-        }
-      }
-    }
-
-    // Base layers are funding-consistent (they exclude skipped goals) so the
-    // shortfall attribution below stays clean; skipped goals are folded back into
-    // the *reported* required/target totals and the shortfalls as explicit deltas.
-    const expenseSummary = annualExpenseSummary({
-      requiredLifestyle,
-      targetLifestyle,
-      targetLifestyleFunded,
-      idealLifestyle,
-      idealLifestyleFunded,
-      excessLifestyle,
-      excessLifestyleFunded,
-      systemRequired,
-      oneTimeGoalsFunded,
-      requiredGoalsFunded,
-      targetGoalsFunded,
-      idealGoalsFunded,
-      excessGoalsFunded,
-      skippedRequiredNominal,
-      skippedTargetNominal,
-      skippedIdealNominal,
-      skippedExcessNominal,
-      debtService,
-      propertyCosts,
-      healthcare,
-      insurancePremiums,
-      careCost,
-      ltcBenefit,
-      discretionaryMultiplier,
-    })
-    const expenses = expenseSummary.expenses
-    let requiredSpendingBase = expenseSummary.requiredSpendingBase
-    let targetSpendingBase = expenseSummary.targetSpendingBase
-    const idealSpendingBase = expenseSummary.idealSpendingBase
-    const excessSpendingBase = expenseSummary.excessSpendingBase
+    const requiredLifestyle = expenseAssembly.requiredLifestyle
+    const targetLifestyle = expenseAssembly.targetLifestyle
+    const idealLifestyle = expenseAssembly.idealLifestyle
+    const excessLifestyle = expenseAssembly.excessLifestyle
+    // Mutable: the ACA fixed point adds its converged healthcare delta.
+    let healthcare = expenseAssembly.healthcare
+    const healthInflFactor = expenseAssembly.healthInflFactor
+    const acaContractsForYear = expenseAssembly.acaContractsForYear
+    const acaContract = expenseAssembly.acaContract
+    const acaEnrollmentPremiums = expenseAssembly.acaEnrollmentPremiums
+    const acaSlcspBenchmarkPremiums = expenseAssembly.acaSlcspBenchmarkPremiums
+    const acaGrossEnrollmentPremium = expenseAssembly.acaGrossEnrollmentPremium
+    const acaActive = expenseAssembly.acaActive
+    const healthcareExcludingAcaEnrollment =
+      expenseAssembly.healthcareExcludingAcaEnrollment
+    const healthcareExcludingMarketplacePremium =
+      expenseAssembly.healthcareExcludingMarketplacePremium
+    const acaInitialSupportCodes = expenseAssembly.acaInitialSupportCodes
+    const exampleContractInputMismatch =
+      expenseAssembly.exampleContractInputMismatch
+    const medicarePremiums = expenseAssembly.medicarePremiums
+    const irmaaSurcharge = expenseAssembly.irmaaSurcharge
+    const irmaaTier = expenseAssembly.irmaaTier
+    const irmaaMagi = expenseAssembly.irmaaMagi
+    const irmaaLookbackMagiSource = expenseAssembly.irmaaLookbackMagiSource
+    const irmaaLookbackMagiYear = expenseAssembly.irmaaLookbackMagiYear
+    const irmaaNextTierThreshold = expenseAssembly.irmaaNextTierThreshold
+    const marketplaceMonthsByPersonPosition =
+      expenseAssembly.marketplaceMonthsByPersonPosition
+    const pre65MonthlyPremiumPerPerson =
+      expenseAssembly.pre65MonthlyPremiumPerPerson
+    const netCare = expenseAssembly.netCare
+    // Mutable: the annual pass moves both.
+    let qualifiedMedicalThisYear = expenseAssembly.qualifiedMedicalThisYear
+    let hsaQualifiedCap = expenseAssembly.hsaQualifiedCap
+    discretionaryMultiplier = expenseAssembly.discretionaryMultiplier
+    startingWithdrawalRate = expenseAssembly.startingWithdrawalRate
+    startingRealPortfolio = expenseAssembly.startingRealPortfolio
+    const guardrailAction = expenseAssembly.guardrailAction
+    const targetLifestyleFunded = expenseAssembly.targetLifestyleFunded
+    const idealLifestyleFunded = expenseAssembly.idealLifestyleFunded
+    const excessLifestyleFunded = expenseAssembly.excessLifestyleFunded
+    const skippedRequiredNominal = expenseAssembly.skippedRequiredNominal
+    const skippedTargetNominal = expenseAssembly.skippedTargetNominal
+    const skippedIdealNominal = expenseAssembly.skippedIdealNominal
+    const skippedExcessNominal = expenseAssembly.skippedExcessNominal
+    const goalOutcomeCounts = expenseAssembly.goalOutcomeCounts
+    const expenses = expenseAssembly.expenses
+    // Mutable: the ACA fixed point adds its converged healthcare delta.
+    let requiredSpendingBase = expenseAssembly.requiredSpendingBase
+    let targetSpendingBase = expenseAssembly.targetSpendingBase
+    const idealSpendingBase = expenseAssembly.idealSpendingBase
+    const excessSpendingBase = expenseAssembly.excessSpendingBase
 
     // --- fixed-asset dispositions (step 6) ----------------------------------
     // The phase lives in `internal/fixedAssetDispositions.ts`, which says which
@@ -2573,309 +1870,48 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // --- contributions & employer match --------------------
-    const contributionPlan = snapshotAnnualContributionsAndEmployerMatchResult(
-      annualContributionsAndEmployerMatch({
-        balances,
-        year,
-        startYear,
-        inflFactor,
-        limitGrowth,
-        filingStatus: filingStatusForYear,
-        aliveCount,
-        peopleCount: people.length,
-        primaryPersonId: primary.id,
-        wagesByPerson,
-        resolveOwnerState: stateOf,
-        resolveOwnerBirthYear: (ownerPersonId) =>
-          dobYear(personById.get(ownerPersonId)!),
-        resolveOwnerDob: (ownerPersonId) =>
-          personById.get(ownerPersonId)?.dob ?? null,
-        resolveRothPoolKey: rothPoolKey,
-        runtimeOccurrenceKey,
-        iraHouseholdCompensationKey: IRA_HOUSEHOLD_COMPENSATION_KEY,
-        indexWithStatutoryRounding,
-        pack,
-      }),
-    )
-
-    if (
-      contributionPlan.operationIdentities.length !==
-        contributionPlan.operations.length ||
-      contributionPlan.expectedOperationIdentities.length !==
-        contributionPlan.operations.length
-    ) {
-      throw new Error('Annual contribution operations lost cardinality')
-    }
-    const seenMatchBalanceIndices = new Set<number>()
-    const expectedContributionBalanceIndices =
-      new Set(contributionPlan.expectedContributionBalanceIndices)
-    if (
-      expectedContributionBalanceIndices.size !==
-      contributionPlan.expectedContributionBalanceIndices.length
-    ) {
-      throw new Error('Annual contribution expectation has duplicate positions')
-    }
-    const seenContributionBalanceIndices = new Set<number>()
-    const shadowContributionBalances = balances.map((state) => state.balance)
-    const shadowContributionCostBases = balances.map((state) => state.costBasis)
-    let reconciledContributions = 0
-    let reconciledOwnedNonRothIraContributions = 0
-    let reconciledEmployerMatch = 0
-    let reconciledPreTaxContributions = 0
-    let reconciledTraditionalInflow = 0
-    let reconciledOtherInflow = 0
-    let reconciledTaxableInflow = 0
-    let reachedEmployerMatches = false
-    for (let operationIndex = 0; operationIndex <
-      contributionPlan.operations.length; operationIndex++) {
-      const operation = contributionPlan.operations[operationIndex]!
-      const identity = contributionPlan.operationIdentities[operationIndex]!
-      const expectedIdentity =
-        contributionPlan.expectedOperationIdentities[operationIndex]!
-      if (
-        identity.kind !== operation.kind ||
-        expectedIdentity.kind !== operation.kind
-      ) {
-        throw new Error('Annual contribution operation lost its identity')
-      }
-      if (
-        operation.kind !== 'warning' &&
-        (identity.kind === 'warning' ||
-          expectedIdentity.kind === 'warning' ||
-          identity.balanceIndex !== operation.balanceIndex ||
-          expectedIdentity.balanceIndex !== operation.balanceIndex)
-      ) {
-        throw new Error('Annual contribution operation lost its identity')
-      }
-      if (operation.kind === 'warning') {
-        if (reachedEmployerMatches) {
-          throw new Error('Annual contribution operation order is inconsistent')
-        }
-        continue
-      }
-      const state = balances[operation.balanceIndex]
-      if (
-        state === undefined ||
-        state.account !== operation.sourceAccount ||
-        !Object.is(
-          shadowContributionBalances[operation.balanceIndex],
-          operation.balanceBefore,
-        )
-      ) {
-        throw new Error(
-          'Annual contribution operation lost its live balance position',
-        )
-      }
-      if (operation.kind === 'contribution') {
-        if (reachedEmployerMatches) {
-          throw new Error('Annual contribution operation order is inconsistent')
-        }
-        if (
-          !expectedContributionBalanceIndices.has(operation.balanceIndex) ||
-          seenContributionBalanceIndices.has(operation.balanceIndex)
-        ) {
-          throw new Error('Annual contribution operation duplicated a physical position')
-        }
-        seenContributionBalanceIndices.add(operation.balanceIndex)
-        if (
-          !Object.is(
-            shadowContributionCostBases[operation.balanceIndex],
-            operation.costBasisBefore,
-          )
-        ) {
-          throw new Error(
-            'Annual contribution operation has a stale live cost basis',
-          )
-        }
-        if (!Object.is(operation.record.credited, operation.credited)) {
-          throw new Error(
-            'Annual contribution operation has an inconsistent cash-flow record',
-          )
-        }
-        if (
-          operation.credited < 0 ||
-          !Number.isFinite(operation.credited) ||
-          (operation.credited === 0
-            ? !Object.is(operation.balanceAfter, operation.balanceBefore)
-            : !Object.is(
-                operation.balanceAfter,
-                operation.balanceBefore + operation.credited,
-              ))
-        ) {
-          throw new Error('Annual contribution operation has inconsistent balance math')
-        }
-        const expectsBasisCredit =
-          operation.sourceAccount.type === 'taxable' ||
-          operation.sourceAccount.type === 'equityComp'
-        const expectedCostBasisAfter =
-          operation.credited > 0 && expectsBasisCredit
-            ? operation.costBasisBefore + operation.credited
-            : operation.costBasisBefore
-        if (!Object.is(operation.costBasisAfter, expectedCostBasisAfter)) {
-          throw new Error('Annual contribution operation has inconsistent basis math')
-        }
-        if (operation.credited > 0) {
-          shadowContributionBalances[operation.balanceIndex] =
-            operation.balanceAfter
-          if (!Object.is(operation.costBasisAfter, operation.costBasisBefore)) {
-            shadowContributionCostBases[operation.balanceIndex] =
-              operation.costBasisAfter
-          }
-        }
-        reconciledContributions += operation.credited
-        if (isAggregatedIra(operation.sourceAccount)) {
-          reconciledOwnedNonRothIraContributions += operation.credited
-        }
-        if (
-          operation.sourceAccount.type === 'traditional' ||
-          operation.sourceAccount.type === 'hsa'
-        ) {
-          reconciledPreTaxContributions += operation.credited
-        }
-        if (operation.sourceAccount.type === 'traditional') {
-          reconciledTraditionalInflow += operation.credited
-        } else {
-          reconciledOtherInflow += operation.credited
-        }
-        if (
-          operation.sourceAccount.type === 'taxable' ||
-          operation.sourceAccount.type === 'equityComp'
-        ) {
-          reconciledTaxableInflow += operation.credited
-        }
-        continue
-      }
-      reachedEmployerMatches = true
-      if (
-        seenMatchBalanceIndices.has(operation.balanceIndex) ||
-        (operation.sourceAccount.type !== 'traditional' &&
-          operation.sourceAccount.type !== 'roth') ||
-        operation.sourceAccount.kind !== 'employer' ||
-        operation.sourceAccount.employerMatch === null ||
-        operation.sourceAccount.employerMatch === undefined
-      ) {
-        throw new Error('Annual employer-match operation lost its physical identity')
-      }
-      if (
-        operation.record.amount <= 0 ||
-        !Number.isFinite(operation.record.amount) ||
-        !Object.is(
-          operation.balanceAfter,
-          operation.balanceBefore + operation.record.amount,
-        )
-      ) {
-        throw new Error('Annual employer-match operation has inconsistent balance math')
-      }
-      seenMatchBalanceIndices.add(operation.balanceIndex)
-      shadowContributionBalances[operation.balanceIndex] =
-        operation.balanceAfter
-      reconciledEmployerMatch += operation.record.amount
-      if (operation.sourceAccount.type === 'traditional') {
-        reconciledTraditionalInflow += operation.record.amount
-      } else {
-        reconciledOtherInflow += operation.record.amount
-      }
-    }
-    if (
-      seenContributionBalanceIndices.size !==
-      expectedContributionBalanceIndices.size
-    ) {
-      throw new Error('Annual contribution operations lost expected positions')
-    }
-    assertExactContributionTotal(
-      'contribution total',
-      contributionPlan.totals.contributions,
-      reconciledContributions,
-    )
-    assertExactContributionTotal(
-      'owned-IRA contribution total',
-      contributionPlan.totals.ownedNonRothIraContributions,
-      reconciledOwnedNonRothIraContributions,
-    )
-    assertExactContributionTotal(
-      'employer-match total',
-      contributionPlan.totals.employerMatch,
-      reconciledEmployerMatch,
-    )
-    assertExactContributionTotal(
-      'pre-tax contribution total',
-      contributionPlan.totals.preTaxContributions,
-      reconciledPreTaxContributions,
-    )
-    assertExactContributionTotal(
-      'traditional inflow total',
-      contributionPlan.totals.traditionalInflow,
-      reconciledTraditionalInflow,
-    )
-    assertExactContributionTotal(
-      'other inflow total',
-      contributionPlan.totals.otherInflow,
-      reconciledOtherInflow,
-    )
-    assertExactContributionTotal(
-      'taxable inflow total',
-      contributionPlan.totals.taxableInflow,
-      reconciledTaxableInflow,
-    )
-    for (const operation of contributionPlan.operations) {
-      if (operation.kind === 'warning') {
-        warnings.add(operation.message)
-        continue
-      }
-      const state = balances[operation.balanceIndex]!
-      if (operation.kind === 'contribution') {
-        if (operation.credited > 0) {
-          state.balance = operation.balanceAfter
-          if (operation.retirementOccurrence !== null) {
-            recordAnnualRetirementRuntimeOccurrence(
-              operation.retirementOccurrence,
-            )
-          }
-          if (operation.retirementApplication !== null) {
-            recordAnnualRetirementRuntimeApplication(
-              operation.retirementApplication,
-            )
-          }
-          if (!Object.is(operation.costBasisAfter, operation.costBasisBefore)) {
-            state.costBasis = operation.costBasisAfter
-          }
-          if (operation.rothContributionPoolKey !== null) {
-            const rb = rothBasis.get(operation.rothContributionPoolKey)
-            if (rb) {
-              rb.contributionBasis += operation.rothContributionBasisDelta
-            }
-          }
-          if (operation.qcdSection219OwnerPersonId !== null) {
-            const ownerId = operation.qcdSection219OwnerPersonId
-            qcdSection219ByDonor.set(
-              ownerId,
-              (qcdSection219ByDonor.get(ownerId) ?? 0) +
-                operation.qcdSection219Amount,
-            )
-          }
-        }
-        yearSites?.recordContribution(operation.record)
-        continue
-      }
-
-      // The cash-flow record originally preceded the match balance mutation.
-      yearSites?.recordEmployerMatch(operation.record)
-      state.balance = operation.balanceAfter
-      if (operation.retirementOccurrence !== null) {
-        recordAnnualRetirementRuntimeOccurrence(operation.retirementOccurrence)
-      }
-    }
-    const {
-      contributions,
-      ownedNonRothIraContributions,
-      employerMatch,
-      preTaxContributions,
-      traditionalInflow,
-      otherInflow,
-      taxableInflow,
-    } = contributionPlan.totals
+    // The phase lives in `internal/annualContributionReconciliationPhase.ts`:
+    // the caller-owned snapshot of the planner's result, the shadow-ledger
+    // reconciliation, the seven exact totals, and the apply pass that commits
+    // balances, bases, Roth pools, section 219 offsets, journal rows, warnings
+    // and cash-flow records, in that order.
+    const contributionReconciliation = annualContributionReconciliationPhase({
+      balances,
+      year,
+      startYear,
+      inflFactor,
+      limitGrowth,
+      filingStatus: filingStatusForYear,
+      aliveCount,
+      peopleCount: people.length,
+      primaryPersonId: primary.id,
+      wagesByPerson,
+      resolveOwnerState: stateOf,
+      resolveOwnerBirthYear: (ownerPersonId) =>
+        dobYear(personById.get(ownerPersonId)!),
+      resolveOwnerDob: (ownerPersonId) =>
+        personById.get(ownerPersonId)?.dob ?? null,
+      resolveRothPoolKey: rothPoolKey,
+      runtimeOccurrenceKey,
+      indexWithStatutoryRounding,
+      pack,
+      warnings,
+      rothBasis,
+      qcdSection219ByDonor,
+      recordAnnualRetirementRuntimeOccurrence,
+      recordAnnualRetirementRuntimeApplication,
+      yearSites,
+    })
+    const contributions = contributionReconciliation.contributions
+    const ownedNonRothIraContributions =
+      contributionReconciliation.ownedNonRothIraContributions
+    const employerMatch = contributionReconciliation.employerMatch
+    const preTaxContributions = contributionReconciliation.preTaxContributions
+    const traditionalInflow = contributionReconciliation.traditionalInflow
+    const otherInflow = contributionReconciliation.otherInflow
+    const taxableInflow = contributionReconciliation.taxableInflow
     const employerAllocationByOwner =
-      contributionPlan.employerAllocationByOwner
+      contributionReconciliation.employerAllocationByOwner
     const iraProRata = new Map<string, IraProRataYear>()
     const qcdProRataIdentityByReadSnapshot =
       new WeakMap<IraProRataYear, IraProRataYear>()
@@ -3145,137 +2181,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
 
     const rmdNontaxable = 0
     const seppNontaxable = 0
-    const assumedEffectByIdentity = new Map(
-      assumedEffects
-        .filter((effect) => effect.taxYear === year)
-        .map((effect) => [
-          JSON.stringify([effect.actionId, effect.allocationId]),
-          effect,
-        ]),
-    )
-    const resolveAssumedCharacter = (input: {
-      ownerPersonId: string
-      calculationScope:
-        'form8606Line7Distributions' | 'form8606Line8NetConversions'
-      occurrenceKind:
-        | 'ownedIraRmd'
-        | 'annuityContractDistribution'
-        | 'automaticSeppDistribution'
-        | 'legacyNeedBasedWithdrawal'
-        | 'legacyQcd'
-        | 'legacyRothConversion'
-        | 'namedRothConversion'
-      producerOccurrenceKey: string
-      sourceAccountId: string
-      mutationOrdinal: number
-      grossAmountPlanDollars: number
-      remainingBasisPlanDollars?: number
-    }): { basisReturn: number; ordinaryIncome: number } | null => {
-      let grossAmount: ReturnType<typeof planDollarsToLedgerCents>
-      let remainingBasis:
-        ReturnType<typeof planDollarsToLedgerCents> | null = null
-      try {
-        grossAmount = planDollarsToLedgerCents(input.grossAmountPlanDollars)
-        if (input.remainingBasisPlanDollars !== undefined) {
-          remainingBasis = planDollarsToLedgerCents(
-            input.remainingBasisPlanDollars,
-          )
-        }
-      } catch {
-        return null
-      }
-      const identity = deriveOwnedNonRothIraReplayAllocationIdentity({
-        planId: plan.id,
-        taxYear: year,
-        producerOccurrenceKey: input.producerOccurrenceKey,
-        occurrenceKind: input.occurrenceKind,
-        sourceAccountId: input.sourceAccountId,
-        mutationOrdinal: input.mutationOrdinal,
-      })
-      const effect = assumedEffectByIdentity.get(JSON.stringify([
-        identity.actionId,
-        identity.allocationId,
-      ]))
-      if (effect === undefined ||
-          effect.ownerPersonId !== input.ownerPersonId ||
-          effect.calculationScope !== input.calculationScope ||
-          effect.actionId !== identity.actionId ||
-          effect.allocationId !== identity.allocationId ||
-          effect.sourceAccountId !== input.sourceAccountId ||
-          effect.grossAmount !== grossAmount ||
-          (remainingBasis !== null && effect.basisReturnAmount > remainingBasis)) {
-        return null
-      }
-      return {
-        basisReturn: ledgerCentsToPlanDollars(effect.basisReturnAmount),
-        ordinaryIncome: ledgerCentsToPlanDollars(effect.ordinaryIncomeAmount),
-      }
-    }
-    /**
-     * Observation-only: per-channel Form 8606 taxable ordinary income produced
-     * this year for owners with omitted `nondeductibleBasis`. Per-attempt;
-     * drives the assumed-basis consequential verdict. Each channel accumulates
-     * only the taxable character that channel's binding transaction produced
-     * under the assumption — never the year's full gross for that channel.
-     */
-    type Form8606ConsequentialChannel =
-      | 'distributions'
-      | 'conversions'
-      | 'annuityPayments'
-    const form8606ConsequentialByOwner = new Map<string, {
-      distributions: number
-      conversions: number
-      annuityPayments: number
-    }>()
-    const noteForm8606Taxable = (
-      ownerPersonId: string,
-      taxable: number,
-      channel: Form8606ConsequentialChannel,
-    ): void => {
-      if (taxable <= 0 || !ownersWithOmittedNondeductibleBasis.has(ownerPersonId)) return
-      const entry = form8606ConsequentialByOwner.get(ownerPersonId) ?? {
-        distributions: 0,
-        conversions: 0,
-        annuityPayments: 0,
-      }
-      entry[channel] += taxable
-      form8606ConsequentialByOwner.set(ownerPersonId, entry)
-    }
-    const splitWithAssumedCharacter = (
-      state: IraProRataYear,
-      amount: number,
-      input: Omit<Parameters<typeof resolveAssumedCharacter>[0],
-        'grossAmountPlanDollars' | 'remainingBasisPlanDollars'>,
-    ) => {
-      const assumed = resolveAssumedCharacter({
-        ...input,
-        grossAmountPlanDollars: amount,
-        remainingBasisPlanDollars: state.basis,
-      })
-      // Fallback path: settlement published no matching assumed effect, so this
-      // draw is priced with the pre-distribution pro-rata state (or full ordinary
-      // when that state cannot answer). That is the registered legacy tax path —
-      // not an executed character under assumed-zero basis. Do not publish an
-      // assumed-basis verdict here (same silence as the annuity refused-settlement
-      // site): the settlement never priced this transaction over the assumption.
-      if (assumed === null) {
-        return splitAnnualIraDistribution(state, amount)
-      }
-      const split = {
-        nontaxable: assumed.basisReturn,
-        taxable: assumed.ordinaryIncome,
-        next: {
-          basis: Math.max(0, state.basis - assumed.basisReturn),
-          nontaxableFraction: state.nontaxableFraction,
-        },
-      }
-      const channel: Form8606ConsequentialChannel =
-        input.calculationScope === 'form8606Line8NetConversions'
-          ? 'conversions'
-          : 'distributions'
-      noteForm8606Taxable(input.ownerPersonId, split.taxable, channel)
-      return split
-    }
+    // The assumed-character resolver, its Form 8606 consequential observer,
+    // and the pro-rata split wrapper that joins them. The phase lives in
+    // `internal/annualAssumedCharacterPhase.ts` and is built PER PASS, not per
+    // year: T0, staging and the committed settlement each enter with their own
+    // settlement effects. `form8606ConsequentialByOwner` comes back live and by
+    // identity, because the funding-close phase publishes that very map.
+    const assumedCharacter = annualAssumedCharacterPhase({
+      planId: plan.id,
+      year,
+      assumedEffects,
+      ownersWithOmittedNondeductibleBasis,
+      splitAnnualIraDistribution,
+    })
+    const resolveAssumedCharacter = assumedCharacter.resolveAssumedCharacter
+    const noteForm8606Taxable = assumedCharacter.noteForm8606Taxable
+    const splitWithAssumedCharacter = assumedCharacter.splitWithAssumedCharacter
+    const form8606ConsequentialByOwner =
+      assumedCharacter.form8606ConsequentialByOwner
 
     const forcedDistributionPhase =
       annualForcedDistributionQcdAndRetirementActionsPhase(Object.freeze({

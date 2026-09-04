@@ -262,4 +262,69 @@ describe('annualQcdExecutionInput', () => {
     expect(Object.isFrozen(result.executorInput.poolCapacityInputs)).toBe(true)
     expect(Object.isFrozen(result.executorInput.poolCapacityInputs[0])).toBe(true)
   })
+
+  // Every ID this module publishes is a `deriveActionStructuralId` digest, not
+  // an interpolated `JSON.stringify` payload. The digests are written out
+  // rather than recomputed here: these strings cross the module boundary into
+  // the executor and are re-embedded by downstream evidence, so a change to
+  // the minter or to any part list has to fail in this file. Two identities
+  // repeat by construction — the per-action pair shares
+  // ['qcd-action', 'p1', 2026, '2026-08-01'] and the five per-owner IDs share
+  // ['annual-qcd-execution-input', 'p1', 2026] — so the prefix, not the
+  // digest, is what separates them.
+  it('mints every published identity with the hardened structural minter', () => {
+    const ACTION_DIGEST =
+      '0b2342c8fa2d6964b204a3f32edeb3bce43f3473ce9341317553ef5681b3f4aa'
+    const OWNER_DIGEST =
+      'e8be33278183f929a9f1b8d721a088072cb794089f43d001abdce8c10ca96fd9'
+    const IRA_A_DIGEST =
+      'b23ea66123c712a97349d69f822ee7bc66d5c3c3cd5da1d18b0bbb9fa239e3fc'
+    const IRA_B_DIGEST =
+      'b020baa28d73376c3c397dd00f018cecf083fceb190bff6251e343a9884faf21'
+
+    const result = annualQcdExecutionInput(input())
+    if (result.status !== 'ready') throw new Error('expected ready input')
+    const physical = result.executorInput.physicalInput
+    const pool = result.executorInput.poolCapacityInputs[0]
+    if (pool === undefined) throw new Error('expected an owner pool')
+
+    expect(physical.runtimeEvidence.personAliveEvidence?.[0]?.evidenceId)
+      .toBe(`projection-alive:${ACTION_DIGEST}`)
+    expect(physical.runtimeEvidence.priorQcdOffsetEvidence?.[0]?.evidenceId)
+      .toBe(`projection-prior-qcd-offset:${ACTION_DIGEST}`)
+    expect(physical.rmdPools[0]?.poolId)
+      .toBe(`projection-owned-ira-rmd-pool:${OWNER_DIGEST}`)
+    expect(physical.rmdPools[0]?.upstreamEvidenceId)
+      .toBe(`projection-owner-ira-rmd-satisfaction:${OWNER_DIGEST}`)
+    expect(pool.ownerWideNonRothIraPoolId)
+      .toBe(`projection-owned-ira-pool:${OWNER_DIGEST}`)
+    expect(pool.completePoolEvidence.evidenceId)
+      .toBe(`projection-owned-ira-pool-evidence:${OWNER_DIGEST}`)
+    expect(pool.annualBasisRecordEvidenceId)
+      .toBe(`projection-owned-ira-annual-basis:${OWNER_DIGEST}`)
+    expect(pool.poolMembers.map((member) => [
+      member.iraClassificationEvidenceId,
+      member.accountOwnershipEvidenceId,
+    ])).toEqual([
+      [
+        `projection-owned-ira-classification:${IRA_A_DIGEST}`,
+        `projection-owned-ira-ownership:${IRA_A_DIGEST}`,
+      ],
+      [
+        `projection-owned-ira-classification:${IRA_B_DIGEST}`,
+        `projection-owned-ira-ownership:${IRA_B_DIGEST}`,
+      ],
+    ])
+
+    // The per-account identity moves with the account and the per-owner
+    // identity moves with the plan: neither is a constant.
+    expect(IRA_A_DIGEST).not.toBe(IRA_B_DIGEST)
+    const otherPlan = annualQcdExecutionInput(input({
+      plan: { ...donorPlan(), id: 'another-plan' },
+    }))
+    if (otherPlan.status !== 'ready') throw new Error('expected ready input')
+    expect(otherPlan.executorInput.poolCapacityInputs[0]
+      ?.ownerWideNonRothIraPoolId)
+      .not.toBe(`projection-owned-ira-pool:${OWNER_DIGEST}`)
+  })
 })

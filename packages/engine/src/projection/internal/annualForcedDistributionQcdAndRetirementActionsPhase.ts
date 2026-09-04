@@ -50,7 +50,7 @@ import {
   type ExecuteRothConversionsResult,
   type PersonId,
 } from '../../actions/index.js'
-import { compareUtf16CodeUnits } from '../../actions/structuralId.js'
+import { compareUtf16CodeUnits, deriveActionStructuralId } from '../../actions/structuralId.js'
 import type { SimulatorAnnualPassDeferredFirstRmd } from '../annualPassTransaction.js'
 import type { AnnualConversionLinkedWithdrawalRelease }
   from './annualConversionLinkedWithdrawalFunding.js'
@@ -1551,12 +1551,12 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     personId: PersonId,
     actionDate: string | null,
   ): NonpersistedActionPersonAliveEvidence => ({
-    evidenceId: `projection-alive:${JSON.stringify([
+    evidenceId: deriveActionStructuralId('projection-alive', [
       actionId,
       personId,
       year,
       actionDate,
-    ])}`,
+    ]),
     actionId,
     personId,
     actionYear: year,

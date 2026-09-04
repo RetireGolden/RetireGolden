@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  DIGEST_CACHE_BOUNDS,
+  clearDigestCache,
   compareUtf16CodeUnits,
   deriveActionStructuralId,
+  digestCacheSize,
 } from './structuralId.js'
 
 describe('action structural IDs', () => {
@@ -167,5 +170,46 @@ describe('action structural IDs', () => {
       'ownKeys',
       'getOwnPropertyDescriptor:value',
     ])
+  })
+})
+
+describe('the structural-ID digest memo', () => {
+  it('answers a warm derivation exactly as a cold one', () => {
+    const parts = [2045, 'marriedFilingJointly', ['person-1', 'person-2']]
+
+    clearDigestCache()
+    const cold = deriveActionStructuralId('memo', parts)
+    const warm = deriveActionStructuralId('memo', parts)
+    clearDigestCache()
+    const coldAgain = deriveActionStructuralId('memo', parts)
+
+    expect(warm).toBe(cold)
+    expect(coldAgain).toBe(cold)
+    // Same payload, different prefix: the memo holds digests, not IDs.
+    expect(deriveActionStructuralId('other', parts)).toBe(
+      `other:${cold.slice('memo:'.length)}`,
+    )
+  })
+
+  it('stays bounded and keeps answering correctly across a clear', () => {
+    clearDigestCache()
+    const first = deriveActionStructuralId('bounded', ['payload-0'])
+    for (let index = 1; index <= DIGEST_CACHE_BOUNDS.maxEntries; index += 1) {
+      deriveActionStructuralId('bounded', [`payload-${index}`])
+    }
+
+    expect(digestCacheSize()).toBeLessThanOrEqual(
+      DIGEST_CACHE_BOUNDS.maxEntries,
+    )
+    expect(deriveActionStructuralId('bounded', ['payload-0'])).toBe(first)
+  })
+
+  it('hashes a payload past the length cap without retaining it', () => {
+    clearDigestCache()
+    const long = 'x'.repeat(DIGEST_CACHE_BOUNDS.maxPayloadLength + 1)
+    const id = deriveActionStructuralId('long', [long])
+
+    expect(digestCacheSize()).toBe(0)
+    expect(deriveActionStructuralId('long', [long])).toBe(id)
   })
 })
