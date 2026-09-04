@@ -73,7 +73,7 @@ interface DeferredLegacyQcdDistribution {
   readonly mutationOrdinal: number
 }
 
-export interface AnnualForcedDistributionQcdRetirementActionsFacts {
+interface AnnualForcedDistributionQcdRetirementActionsFacts {
   readonly year: number
   readonly startYear: number
   readonly pack: Readonly<ParameterPack>
@@ -96,7 +96,7 @@ export interface AnnualForcedDistributionQcdRetirementActionsFacts {
   readonly preProjectionQcdOffsetUnprovable: ReadonlySet<string>
 }
 
-export interface AnnualForcedDistributionQcdRetirementActionsLedger {
+interface AnnualForcedDistributionQcdRetirementActionsLedger {
   readonly balances: PhysicalBalanceState[]
   readonly annualIdKeyedBalances: PhysicalBalanceState[]
   readonly ownersWithOmittedNondeductibleBasis: Set<string>
@@ -120,7 +120,7 @@ export interface AnnualForcedDistributionQcdRetirementActionsLedger {
   readonly initialSeppNontaxable: number
 }
 
-export interface AnnualForcedDistributionQcdRetirementActionsCallbacks {
+interface AnnualForcedDistributionQcdRetirementActionsCallbacks {
   readonly stateOf: (personId: string) => Readonly<PersonYearState>
   readonly isTreatAsOwnEffective: (
     account: Readonly<TreatAsOwnAccount>,
@@ -199,7 +199,7 @@ export interface AnnualForcedDistributionQcdRetirementActionsCallbacks {
   Readonly<ConversionLinkedWithdrawalGroupLiabilityRun> | null
 }
 
-export interface AnnualForcedDistributionQcdRetirementActionsCapture {
+interface AnnualForcedDistributionQcdRetirementActionsCapture {
   seppByAccountId: Map<string, { ownerPersonId: string | null; take: number }>
   rmdNontaxableByOwner: Map<string, number>
   seppNontaxableByAccountId: Map<string, number>

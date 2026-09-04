@@ -125,7 +125,7 @@ type Form8606ConsequentialChannel =
 
 const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 
-export interface AnnualFundingApplicationAndClosePhaseFacts {
+interface AnnualFundingApplicationAndClosePhaseFacts {
   readonly year: number
   readonly startYear: number
   readonly pack: Readonly<ParameterPack>
@@ -236,7 +236,7 @@ export interface AnnualFundingApplicationAndClosePhaseFacts {
   ) => number
 }
 
-export interface AnnualFundingApplicationAndClosePhaseLedger {
+interface AnnualFundingApplicationAndClosePhaseLedger {
   balances: PhysicalBalanceState[]
   annualIdKeyedBalances: PhysicalBalanceState[]
   annualLogicalBalanceLedger: AnnualLogicalBalanceLedger
@@ -293,7 +293,7 @@ export interface AnnualFundingApplicationAndClosePhaseScalars {
   priorYearPortfolioReturnPct: number
 }
 
-export interface AnnualFundingApplicationAndClosePhaseCallbacks {
+interface AnnualFundingApplicationAndClosePhaseCallbacks {
   readonly stateOf: (personId: string) => Readonly<PersonYearState>
   readonly isTreatAsOwnEffective: (
     account: Readonly<TreatAsOwnAccount>,
@@ -349,7 +349,7 @@ export interface AnnualFundingApplicationAndClosePhaseCallbacks {
   readonly readNextRetirementRuntimeMutationOrdinal: () => number
 }
 
-export interface AnnualFundingApplicationAndClosePhaseCapture {
+interface AnnualFundingApplicationAndClosePhaseCapture {
   readonly yearSites: AnnualCashFlowYearSites
   readonly seppByAccountId: Map<string, { ownerPersonId: string | null; take: number }>
   readonly hecmCoordinatedByProperty: Map<string, number>
@@ -394,7 +394,7 @@ export interface AnnualFundingApplicationAndClosePhaseCapture {
   readonly distributedYieldByAccountId: AnnualIncomeSetupResult['distributedYieldByAccountId']
 }
 
-export interface AnnualFundingApplicationAndClosePhasePrior {
+interface AnnualFundingApplicationAndClosePhasePrior {
   readonly forcedDistribution: AnnualForcedDistributionQcdRetirementActionsResult
   readonly aggregateRoth: AnnualAggregateRothConversionPhaseResult
 }
