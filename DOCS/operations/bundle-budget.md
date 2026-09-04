@@ -57,7 +57,7 @@ uneven — read the table, not an average:
   they get the least slack. Expect to justify growth here, not absorb it. The landing row's slack is
   sized so the entry and the registry could each grow into their own limits and still fit.
 - The **per-class chunk** rows sit near 11–21% (worker 903 → 1000, `useProjection` 572 → 640,
-  `learningRegistry` 124 → 150, Recharts 326 → 380, `PlanRoutes` 267 → 300): enough for a feature
+  `learningRegistry` 124 → 150, Recharts 331 → 380, `PlanRoutes` 267 → 300): enough for a feature
   landing in a known chunk.
   `learningRegistry` now holds only metadata, about 0.9 KiB per article, so its 26 KiB of slack is
   roughly 25 more articles.
