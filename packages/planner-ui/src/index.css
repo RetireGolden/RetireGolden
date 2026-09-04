@@ -34,6 +34,17 @@
   --chart-7: #0891b2;
   --chart-8: #b91c1c;
   --radius: 10px;
+  /* Spacing scale (DESIGN.md `spacing:`). Theme-independent, so the dark
+     blocks below do not redefine these. `--space-ms` is the one step the
+     doc gained with this scale: 0.75rem was already the single most common
+     vertical literal in the planner (25 sites) and sits between sm and md.
+     Utility classes for these live under "Spacing utilities" below. */
+  --space-xs: 0.35rem;
+  --space-sm: 0.5rem;
+  --space-ms: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 2px 8px rgb(15 23 42 / 0.06);
   /* Shared native-control treatment (2026-09): one height rhythm for text
      inputs, selects, and affixed inputs; one box size for checks and radios;
@@ -453,6 +464,56 @@ code {
 
 .small {
   font-size: 0.9rem;
+}
+
+/* --- Spacing utilities ------------------------------------------------------
+   One-property classes over the --space-* scale, so a component reaches for a
+   named step instead of a fresh inline literal. Steps are added here as a use
+   appears rather than pre-emptively, so every rule below has callers.
+
+   Each selector doubles its own class on purpose. planner.css and index.css
+   are two stylesheets whose emitted order differs between dev and the
+   production build (see the .planner-shell note at the top of planner.css),
+   so a single-class utility would win or lose against an equally specific
+   component rule depending on the bundler. Doubling makes the utility 0-2-0,
+   which beats every single-class component rule in either order; it is still
+   below the inline styles these replace, and below any component rule that
+   already needed two classes to say something.
+   --------------------------------------------------------------------------- */
+.mt-xs.mt-xs {
+  margin-top: var(--space-xs);
+}
+
+.mt-sm.mt-sm {
+  margin-top: var(--space-sm);
+}
+
+.mt-ms.mt-ms {
+  margin-top: var(--space-ms);
+}
+
+.mt-md.mt-md {
+  margin-top: var(--space-md);
+}
+
+.mt-lg.mt-lg {
+  margin-top: var(--space-lg);
+}
+
+.mb-sm.mb-sm {
+  margin-bottom: var(--space-sm);
+}
+
+.mb-ms.mb-ms {
+  margin-bottom: var(--space-ms);
+}
+
+.mb-md.mb-md {
+  margin-bottom: var(--space-md);
+}
+
+.gap-ms.gap-ms {
+  gap: var(--space-ms);
 }
 
 /* Longevity wizard */
