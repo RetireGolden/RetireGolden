@@ -444,32 +444,48 @@ describe('ORACLE-016: South Carolina H.4216 two-tier schedule + SCIAD vs SCDOR',
  * (modeled as a 9.15% top bracket) vs the Maine Revenue Services 2026 rate
  * schedule.
  *
- * For 2026 Maine decoupled from the federal standard deduction (36 M.R.S.
- * §5124-C 1-B), publishing its own $15,700 single / $31,400 MFJ amounts; and
- * added a 2% surcharge on Maine taxable income over $1,000,000 (single) /
- * $1,500,000 (MFJ). The pack encodes the surcharge as an equivalent 9.15% top
- * bracket (7.15% base + 2% surcharge); on income above the threshold,
+ * For 2026 Maine decoupled from the federal **basic** standard deduction (36
+ * M.R.S. §5124-C(1-B)), publishing its own $15,700 single / $31,400 MFJ
+ * amounts; and added a 2% surcharge on Maine taxable income over $1,000,000
+ * (single) / $1,500,000 (MFJ). The pack encodes the surcharge as an equivalent
+ * 9.15% top bracket (7.15% base + 2% surcharge); on income above the threshold,
  * 9.15% = 7.15% + 2%, so the marginal-bracket form reproduces the surcharge
- * exactly.
+ * exactly. Maine separately adopts the federal age-65 additional amount through
+ * `standardDeductionAge65AdditionConformity: 'federal'` ($2,050 unmarried /
+ * $1,650 per eligible person married — `mrs-36-5124-c-1-b-decoupled-standard-deduction`);
+ * that limb is outside this oracle's asserted subset.
  *
  * WHAT THE ORACLE ASSERTS. The MRS rate schedule is a published mapping from
  * MAINE TAXABLE INCOME to tax, and each worksheet below is that mapping
  * evaluated at an explicit taxable income T — the overlapping subset — plus
- * the decoupled deduction AMOUNTS asserted against the pack parameters. Each
- * fixture input is back-constructed as wages = T + pack standard deduction so
- * the pack's taxable income equals T. Pack taxable income is NOT Form 1040ME
- * taxable income, because two return-level rules are documented pack
- * simplifications (DOCS/domain/state-tax-research/ME.md):
+ * the decoupled **basic** deduction AMOUNTS asserted against the pack parameters.
+ * Each below-phaseout fixture input is back-constructed as wages = T + pack basic
+ * standard deduction so the pack's taxable income equals T on an under-65 return
+ * with `peopleAged65Plus: 0`. High-income fixtures where the deduction is fully
+ * phased out use wages = T because the allowed deduction is zero at that Maine
+ * AGI. Pack taxable income is NOT Form 1040ME taxable income,
+ * because two return-level rules are documented pack simplifications
+ * (DOCS/domain/state-tax-research/ME.md):
  *   - the $5,300 personal exemption (unmodeled: a real return subtracts it
  *     too, until its own high-income phase-out); and
  *   - the deduction phase-out (36 M.R.S. §5124-C(2); MRS 2026 phase-out
  *     worksheet, rev. Dec 2025): the deduction shrinks ratably once Maine AGI
  *     exceeds $102,250 single / $204,550 MFJ (over a $75,000 / $150,000
- *     range) and is $0 from $177,250 / $354,550 — so in the surcharge cases
- *     below a real return receives no deduction at all.
+ *     range) and is $0 from $177,250 / $354,550. The production path now
+ *     models that phase-out on the combined basic-plus-age total using a
+ *     modeled Maine-AGI proxy; this oracle still asserts only schedule tax at
+ *     the chosen taxable income T, not a complete return.
  * Maine's $48,216-per-person pension deduction and its reduction by
  * SS/Railroad Retirement received are likewise outside this subset; wage
  * income only here.
+ *
+ * SCOPE: under-65 inputs only (`peopleAged65Plus: 0`). A future age-65+ case
+ * must resolve the age addition through the production path
+ * (`computeStateTaxYearTotal` → `conformStateStandardDeduction`) before
+ * back-constructing wages: wages = T + Maine basic + (MRS married additional
+ * $1,650 or unmarried $2,050, per eligible person). Raw-pack
+ * `computeStateTax(me, …)` on wages = T + basic alone would omit the addition.
+ * No 65+ worksheet is asserted here.
  *
  * The MRS schedule publishes each bracket's cumulative base rounded to whole
  * dollars (single: $1,589 / $4,117 / $70,980; MFJ: $3,181 / $8,237 /
@@ -511,11 +527,12 @@ describe('ORACLE-017: Maine decoupled deduction + surcharge bracket vs MRS 2026 
   it('applies the 5.8% first bracket at Maine taxable income of $14,300', () => {
     // Oracle: MRS schedule, taxable < $27,400 => tax = 5.8% of Maine taxable
     // income. T = 14,300; tax = 14,300 * 5.8% = $829.40.
-    // Input construction: wages 30,000 - pack SD 15,700 = T 14,300. (Maine
-    // AGI 30,000 is below the $102,250 phase-out start, so a real return
-    // subtracts the same full $15,700 — but also the unmodeled $5,300
-    // personal exemption. The expectation is the schedule at T on pack
-    // taxable income, not the Form 1040ME return tax on these wages.)
+    // Input construction: wages 30,000 - pack basic SD 15,700 = T 14,300.
+    // Under-65 scope: peopleAged65Plus 0; no age addition in this oracle subset.
+    // (Maine AGI 30,000 is below the $102,250 phase-out start, so a real return
+    // subtracts the same full $15,700 — but also the unmodeled $5,300 personal
+    // exemption. The expectation is the schedule at T on pack taxable income,
+    // not the Form 1040ME return tax on these wages.)
     const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 30_000, agesAlive: [45] }))
     expectMoney(tax, 829.4)
   })
@@ -547,13 +564,10 @@ describe('ORACLE-017: Maine decoupled deduction + surcharge bracket vs MRS 2026 
     //     total                            =    89,280.30   (within $1 of the published form)
     //   surcharge check: the $200,000 over $1M is taxed at 9.15% = 7.15% + 2%,
     //   i.e. 18,300 = 14,300 (base) + 4,000 (2% surcharge).
-    // Input construction: wages 1,215,700 - pack SD 15,700 = T 1,200,000. On
-    // a real return the deduction is $0 at this AGI (fully phased out above
-    // $177,250), so return taxable income would be the full 1,215,700 and the
-    // pack's flat SD understates Maine tax by 15,700 * 9.15% ~= $1,437 — the
-    // documented phase-out simplification above. The oracle claim is the
-    // schedule at T = 1,200,000, not the return tax on these wages.
-    const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 1_215_700, agesAlive: [55] }))
+    // Input construction: wages = T = 1,200,000 because the allowed deduction
+    // is zero at this Maine AGI (fully phased out above $177,250). The oracle
+    // claim is the schedule at T = 1,200,000, not the return tax on these wages.
+    const tax = computeStateTax(me, stateInput('ME', { ordinaryIncome: 1_200_000, agesAlive: [55] }))
     expectMoney(tax, 89_280.3)
   })
 
@@ -568,15 +582,12 @@ describe('ORACLE-017: Maine decoupled deduction + surcharge bracket vs MRS 2026 
     //     total                            =    115,359.925  (to the cent $115,359.93)
     //   surcharge check: the $100,000 over $1.5M is taxed at 9.15% = 7.15% + 2%,
     //   i.e. 9,150 = 7,150 (base) + 2,000 (2% surcharge).
-    // Input construction: wages 1,631,400 - pack SD 31,400 = T 1,600,000. On
-    // a real return the deduction is $0 at this AGI (fully phased out above
-    // $354,550), so return taxable income would be the full 1,631,400 and the
-    // pack's flat SD understates Maine tax by 31,400 * 9.15% ~= $2,873 — the
-    // documented phase-out simplification above. The oracle claim is the
-    // schedule at T = 1,600,000, not the return tax on these wages.
+    // Input construction: wages = T = 1,600,000 because the allowed deduction
+    // is zero at this Maine AGI (fully phased out above $354,550). The oracle
+    // claim is the schedule at T = 1,600,000, not the return tax on these wages.
     const tax = computeStateTax(
       me,
-      stateInput('ME', { filingStatus: 'marriedFilingJointly', ordinaryIncome: 1_631_400, agesAlive: [55, 55] }),
+      stateInput('ME', { filingStatus: 'marriedFilingJointly', ordinaryIncome: 1_600_000, agesAlive: [55, 55] }),
     )
     expectMoney(tax, 115_359.93)
   })

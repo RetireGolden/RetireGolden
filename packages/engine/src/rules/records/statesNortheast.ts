@@ -129,13 +129,14 @@ export const northeastStateRecords = {
   },
 
   'mrs-36-5124-c-1-b-decoupled-standard-deduction': {
-    title: 'Maine’s standard deduction decoupled from the federal figure in 2026',
+    title: 'Maine’s 2026 standard deduction uses Maine’s basic plus the federal age-65 addition',
     statement:
-      'For tax years beginning on or after January 1, 2026 a Maine resident\'s standard deduction is Maine\'s own basic amount plus the additional deduction under IRC 63(c)(3) — no longer the federal standard deduction that subsection 1-A carried through 2025. Maine must therefore NOT be tagged `standardDeductionConformity: \'federal\'`: the tag exists to keep a borrowed federal figure equal to the federal one as IRC 63(c)(7)(B)(ii) raises it each year, and applying it to a figure Maine now sets for itself would inflate the deduction, and shrink Maine tax, further with every projected year.',
+      'For tax years beginning on or after January 1, 2026, and for Maine adjusted gross income below the §5124-C(2) phase-out, a Maine resident\'s standard deduction uses Maine\'s published basic standard deduction amount plus the IRC 63(f)(1) age additional amount incorporated through IRC 63(c)(3) for a taxpayer — and, on a joint return, an eligible spouse — who has attained age 65 before the close of the taxable year, and is no longer the whole federal standard deduction that subsection 1-A carried through 2025. This settled component is age-only and filing-status-scoped to the single and married amounts the engine models; it does not settle blindness under IRC 63(f)(2) or head-of-household basic amounts.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'This record settles only the published-basic-plus-age-65-addition component for tax years beginning 2026. The combined total is then subject to the §5124-C(2) phase-out through sibling `mrs-36-5124-c-2-standard-deduction-phaseout`. The unmodeled personal exemption can move complete-return tax the other way, so this record does not assert a net Form 1040ME tax direction. Pre-2026 inputs use the sole 2026 state pack as a parameter stand-in and are not certified historical Maine dollar amounts; projected future age amounts scale with assumed plan inflation rather than a statutory COLA oracle. It does not register Maine\'s personal exemption, blindness (not modeled — the engine\'s age counter drives only IRC 63(f) age relief, not blindness), head-of-household amounts, or any other return line. A fixture taxable income in this subset is pack taxable income, not Form 1040ME taxable income. The statutory $12,000 basic in §5124-C(1-B)(A) is the statutory base subject to index; the pack\'s $15,700 / $31,400 are the MRS-published figures for 2026 — reconciling that indexed statutory base to the published table is separate research beyond this record. Maine must NOT be tagged `standardDeductionConformity: \'federal\'`: that tag federally scales a borrowed basic amount and is not how Maine adopts only the federal age additional amount while setting its own basic. The federal conformity sibling (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`) does not decide Maine\'s roster; decoupling the basic is untagging, while Maine\'s IRC 63(c)(3)/63(f)(1) age adoption is registered here. Implementation is filing-status-scoped to single and married amounts the engine models; MFS and HOH are not represented.',
     jurisdiction: 'state:ME',
     authority: [{
       kind: 'statute',
@@ -157,15 +158,39 @@ export const northeastStateRecords = {
         'The additional standard deduction is the amount allowed under the Code, Section 63(c)(3).',
     }, {
       kind: 'statute',
+      citation: 'IRC 63(c)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'For purposes of paragraph (1), the additional standard deduction is the sum of each additional amount to which the taxpayer is entitled under subsection (f).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(f)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'The taxpayer shall be entitled to an additional amount of $600- (A) for himself if he has attained age 65 before the close of his taxable year, and (B) for the spouse of the taxpayer if the spouse has attained age 65 before the close of the taxable year and an additional exemption is allowable to the taxpayer for such spouse under section 151(b).',
+    }, {
+      kind: 'statute',
       citation: '36 M.R.S. 5124-C(1-A)',
       url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
       quotedText:
         'Amount; before January 1, 2026. For tax years beginning on or after January 1, 2020 and before January 1, 2026, the standard deduction of a resident individual is equal to the federal standard deduction, subject to the phase-out under subsection 2.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'MRS 2026 individual income tax rate schedule (rev. May 20, 2026), Standard Deduction',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf',
+      quotedText:
+        'Standard Deduction: Single - $15,700 Married Filing Jointly - $31,400',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'MRS 2026 individual income tax rate schedule (rev. May 20, 2026), Additional Amount for Age or Blindness',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf',
+      quotedText:
+        'Additional Amount for Age or Blindness: $1,650 if married … $2,050 if unmarried (single or head of household)',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -175,6 +200,67 @@ export const northeastStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#ME',
       'packages/engine/src/params/state/index.ts#conformStateStandardDeduction',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
+  'mrs-36-5124-c-2-standard-deduction-phaseout': {
+    title: 'Maine’s standard deduction phases out proportionally above the published Maine AGI start',
+    statement:
+      'For tax years beginning on or after January 1, 2026, a resident individual\'s Maine standard deduction — the sum of the basic standard deduction and the additional standard deduction under §5124-C(1-B) — must be reduced by an amount equal to that total standard deduction multiplied by a fraction whose numerator is the taxpayer\'s Maine adjusted gross income less the inflation-adjusted start amount for the filing status, except that the numerator may not be less than zero, and whose denominator is the statutory range for that status, capped so the fraction is never more than one. For single individuals and married persons filing separate returns the statutory start base is $80,000 and the denominator is $75,000; for individuals filing married joint returns or surviving spouses permitted to file a joint return the statutory start base is $160,000 and the denominator is $150,000. The 2026 published starts are $102,250 if single or married filing separately and $204,550 if married filing jointly or qualifying surviving spouse, with those same statutory ranges. This record settles only that proportional reduction given a supplied annual Maine AGI and those applicable published parameters for the single and married filing statuses the engine models.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Narrow formula record: it settles the §5124-C(2) proportional reduction of the already-determined total standard deduction once annual Maine AGI and the applicable published start/range parameters are supplied. It does not certify construction of Maine AGI, Form 1040ME additions or subtractions, the personal exemption, blindness, or any other return line — a fixture taxable income here is the modeled pack taxable-income component after that phased standard deduction, not Form 1040ME taxable income. The StateTax consumer remains partial: the engine\'s modeled Maine AGI is a proxy (§5122 additions not all representable), and part-year residency is the existing month-proration approximation rather than certified statutory apportionment — but the annual phase-out fraction is now chosen from full-year modeled income before residency scaling, so split-year segments no longer compare prorated income to annual thresholds. Effective 2026+; the sole 2026 pack is the parameter stand-in for other years. Starts are annually indexed under §5403(4) while the statutory range widths stay fixed; projected or historical pack fallbacks are nominal and are not certified future or historical Maine figures. The worksheet displays the fraction to four decimal places; this engine retains the exact ratio and does not claim cent-for-cent form reproduction at arbitrary incomes. Sibling `mrs-36-5124-c-1-b-decoupled-standard-deduction` remains the basic-plus-age component before this phase-out. Implementation is filing-status-scoped to single and married amounts the engine models; MFS and HOH are not represented.',
+    jurisdiction: 'state:ME',
+    authority: [{
+      kind: 'statute',
+      citation: '36 M.R.S. 5124-C(1-B)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
+      quotedText:
+        'Amount; on or after January 1, 2026. For tax years beginning on or after January 1, 2026, the standard deduction of a resident individual is equal to the sum of the basic standard deduction and the additional standard deduction, subject to the phase-out under subsection 2.',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. 5124-C(2)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
+      quotedText:
+        'Phase-out. The standard deduction of the taxpayer must be reduced by an amount equal to the total standard deduction multiplied by the following fraction:',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. 5124-C(2)(A)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
+      quotedText:
+        'For single individuals and married persons filing separate returns, the numerator is the taxpayer\'s Maine adjusted gross income less $80,000, except that the numerator may not be less than zero, and the denominator is $75,000. In no case may the fraction calculated pursuant to this paragraph produce a result that is more than one. The $80,000 amount used to calculate the numerator in this paragraph must be adjusted for inflation in accordance with section 5403, subsection 4;',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. 5124-C(2)(C)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
+      quotedText:
+        'For individuals filing married joint returns or surviving spouses permitted to file a joint return, the numerator is the taxpayer\'s Maine adjusted gross income less $160,000, except that the numerator may not be less than zero, and the denominator is $150,000. In no case may the fraction calculated pursuant to this paragraph produce a result that is more than one. The $160,000 amount used to calculate the numerator in this paragraph must be adjusted for inflation in accordance with section 5403, subsection 4.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'MRS 2026 Estimated Tax Worksheet, Line 6a — Phaseout of Itemized / Standard Deductions Worksheet (rev. December 2025)',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf',
+      quotedText:
+        'You must use this Worksheet to calculate the reduction of your standard deduction amount or itemized deduction amount if your estimated Maine adjusted gross income for 2026 is greater than $102,250 if single or married filing separately; $153,400 if head of household; or $204,550 if married filing jointly or qualifying surviving spouse.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'MRS 2026 Estimated Tax Worksheet, Line 6a — Phaseout worksheet lines 7–8 (rev. December 2025)',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf',
+      quotedText:
+        'Multiply line 6 by line 5.…Subtract line 7 from line 6. Enter this amount on your 2026 Estimated Tax Worksheet, line 6a.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-05',
+    implementedBy: [
+      'packages/engine/src/tax/stateStandardDeduction.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/tax/stateStandardDeduction.ts#phaseOutStandardDeduction',
+      'packages/engine/src/params/state/data/year2026.ts#ME',
     ],
   },
 

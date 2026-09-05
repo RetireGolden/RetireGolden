@@ -752,6 +752,15 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   ],
   ME: [
     'legislature.maine.gov', // Office of the Revisor of Statutes, Maine Revised Statutes
+    // Verified 2026-09-05. MRS publishes the 2026 individual rate schedule PDF
+    // under www.maine.gov/revenue/... — there is no narrower revenue.maine.gov
+    // host for that document. Admitting `maine.gov` is the same apex-executive
+    // cost recorded for Tennessee's `tn.gov`: a future Maine record could cite
+    // any maine.gov agency page without this table objecting. Kept because the
+    // MRS schedule is the operative published basic/age-addition table for the
+    // Maine standard-deduction record, and the statute alone prints only the
+    // $12,000 statutory base subject to index.
+    'maine.gov', // Maine Revenue Services rate schedules (www.maine.gov/revenue)
   ],
   MO: [
     'revisor.mo.gov', // Missouri Revisor of Statutes

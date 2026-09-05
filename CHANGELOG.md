@@ -4,6 +4,24 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Maine 2026 standard deduction — age-65 addition and §5124-C(2) phase-out.** Reason: for tax
+  years beginning 2026, 36 M.R.S. §5124-C(1-B) keeps Maine’s published basic
+  ($15,700 / $31,400) and adopts the IRC §63(c)(3)/§63(f)(1) age additional
+  amount; the pack had omitted the age addition unless whole-federal basic
+  conformity was also tagged, and the combined basic-plus-age total was not
+  subject to the §5124-C(2) proportional phase-out. Result: Maine keeps the
+  published basic, attaches the federal age-65 addition without whole-federal
+  basic tagging, and phases out the combined total above the published starts
+  using a modeled Maine-AGI proxy. Legally settled components: basic plus age
+  (`mrs-36-5124-c-1-b-decoupled-standard-deduction`) and the narrow phase-out
+  formula (`mrs-36-5124-c-2-standard-deduction-phaseout`) for single and
+  married statuses the engine models — age-only, not blindness or HOH. Residual:
+  personal exemption, blindness, incomplete §5122 AGI, and part-year month
+  approximation remain unmodeled; no net Form 1040ME tax direction is asserted.
+  Independent modeled example (single age 65, $139,750 wages): allowed standard
+  deduction $8,875, modeled state tax $8,837.8625 (pack taxable-income component
+  only). Evidence: discriminating fixtures and goldens updated; example-case
+  impact counts deferred to maintainer verification.
 - Prepared **`@retiregolden/engine` 0.3.1** — a **patch** bump exporting the
   shared `passesModeledOrdinaryWidowRecordGates` helper so modeled ordinary
   widow record gates are not duplicated across callers. **Not yet published.**

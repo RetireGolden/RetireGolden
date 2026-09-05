@@ -26,7 +26,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 343
+              "line": 347
             }
           ]
         },
@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -46,16 +46,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1362,
+          "line": 1503,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income Hoosier’s Social Security out of the Indiana base",
-              "line": 1376
+              "line": 1517
             },
             {
               "title": "would pull 34,000 of benefit into the base if Indiana taxed it",
-              "line": 1381
+              "line": 1522
             }
           ]
         }
@@ -99,7 +99,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 343
+              "line": 347
             }
           ]
         },
@@ -117,7 +117,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -195,7 +195,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 343
+              "line": 347
             }
           ]
         },
@@ -204,7 +204,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 145
+              "line": 166
             }
           ]
         }
@@ -215,20 +215,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1314,
+          "line": 1455,
           "note": null,
           "tests": [
             {
               "title": "charges the 2026 step of the ramp, not the 2025 one",
-              "line": 1327
+              "line": 1468
             },
             {
               "title": "would over-charge by the ramp step if the prior year were held forward",
-              "line": 1332
+              "line": 1473
             },
             {
               "title": "is filing-status blind, with no married-filing-jointly doubling",
-              "line": 1344
+              "line": 1485
             }
           ]
         }
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 343
+              "line": 347
             }
           ]
         },
@@ -300,7 +300,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -374,7 +374,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 57
+              "line": 61
             }
           ]
         },
@@ -392,7 +392,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -455,7 +455,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 343
+              "line": 347
             }
           ]
         },
@@ -464,11 +464,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -479,20 +479,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1396,
+          "line": 1537,
           "note": null,
           "tests": [
             {
               "title": "taxes a TRF pension in full",
-              "line": 1410
+              "line": 1551
             },
             {
               "title": "taxes a private pension and an IRA distribution the same way",
-              "line": 1415
+              "line": 1556
             },
             {
               "title": "would exempt the whole pension under the override the pack used to carry",
-              "line": 1427
+              "line": 1568
             }
           ]
         }
@@ -536,7 +536,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 343
+              "line": 347
             }
           ]
         },
@@ -554,7 +554,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 145
+              "line": 166
             }
           ]
         }
@@ -627,7 +627,7 @@
           "functions": [
             {
               "name": "IL",
-              "line": 337
+              "line": 341
             }
           ]
         },
@@ -636,11 +636,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -703,7 +703,7 @@
           "functions": [
             {
               "name": "IA",
-              "line": 378
+              "line": 382
             }
           ]
         },
@@ -712,11 +712,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -775,7 +775,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 57
+              "line": 61
             }
           ]
         },
@@ -793,7 +793,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -804,12 +804,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1998,
+          "line": 2139,
           "note": null,
           "tests": [
             {
               "title": "pins the overbroad Kansas public-pension override",
-              "line": 2014
+              "line": 2155
             }
           ]
         }
@@ -867,7 +867,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 384
+              "line": 388
             }
           ]
         },
@@ -876,7 +876,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -887,12 +887,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1968,
+          "line": 2109,
           "note": null,
           "tests": [
             {
               "title": "subtracts all post-2023 federally taxable Kansas Social Security",
-              "line": 1984
+              "line": 2125
             }
           ]
         }
@@ -930,7 +930,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 449
+              "line": 461
             }
           ]
         },
@@ -939,7 +939,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -950,16 +950,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2268,
+          "line": 2409,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 2282
+              "line": 2423
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 2287
+              "line": 2428
             }
           ]
         }
@@ -1002,7 +1002,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 449
+              "line": 461
             }
           ]
         },
@@ -1011,11 +1011,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -1078,7 +1078,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 455
+              "line": 467
             }
           ]
         },
@@ -1087,7 +1087,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1160,7 +1160,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 513
+              "line": 525
             }
           ]
         },
@@ -1169,7 +1169,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1232,7 +1232,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 637
+              "line": 649
             }
           ]
         },
@@ -1241,7 +1241,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 145
+              "line": 166
             }
           ]
         }
@@ -1319,7 +1319,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 57
+              "line": 61
             }
           ]
         },
@@ -1337,7 +1337,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1410,11 +1410,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 648
+              "line": 660
             },
             {
               "name": "states.ND",
-              "line": 637
+              "line": 649
             }
           ]
         },
@@ -1432,7 +1432,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1495,7 +1495,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 648
+              "line": 660
             }
           ]
         },
@@ -1504,7 +1504,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1571,7 +1571,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 57
+              "line": 61
             }
           ]
         },
@@ -1580,11 +1580,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -1651,7 +1651,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 637
+              "line": 649
             }
           ]
         },
@@ -1660,7 +1660,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1728,7 +1728,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 57
+              "line": 61
             }
           ]
         },
@@ -1737,11 +1737,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -1810,7 +1810,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 637
+              "line": 649
             }
           ]
         },
@@ -1819,7 +1819,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 90
+              "line": 66
             }
           ]
         },
@@ -1828,7 +1828,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1891,7 +1891,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 57
+              "line": 61
             }
           ]
         },
@@ -1900,11 +1900,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -1976,7 +1976,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 548
+              "line": 560
             }
           ]
         },
@@ -1985,7 +1985,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1996,16 +1996,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2423,
+          "line": 2564,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 2439
+              "line": 2580
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 2445
+              "line": 2586
             }
           ]
         }
@@ -2053,7 +2053,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 57
+              "line": 61
             }
           ]
         },
@@ -2062,11 +2062,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -2077,23 +2077,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2526,
+          "line": 2667,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 2545
+              "line": 2686
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2552,
+          "line": 2693,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 2566
+              "line": 2707
             }
           ]
         }
@@ -2141,7 +2141,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 738
+              "line": 750
             }
           ]
         },
@@ -2150,7 +2150,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -2161,16 +2161,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 746,
+          "line": 887,
           "note": null,
           "tests": [
             {
               "title": "leaves a South Dakota retiree with no state base at all",
-              "line": 765
+              "line": 906
             },
             {
               "title": "would build a base the day the Legislature exercised the power it holds",
-              "line": 770
+              "line": 911
             }
           ]
         }
@@ -2213,7 +2213,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 811
+              "line": 823
             }
           ]
         },
@@ -2222,7 +2222,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -2233,12 +2233,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2820,
+          "line": 2961,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 2834
+              "line": 2975
             }
           ]
         }
@@ -2281,7 +2281,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 811
+              "line": 823
             }
           ]
         },
@@ -2290,11 +2290,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             },
             {
               "name": "retirementExclusion",
-              "line": 40
+              "line": 41
             }
           ]
         }
@@ -2305,20 +2305,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2841,
+          "line": 2982,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 2865
+              "line": 3006
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 2874
+              "line": 3015
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 2887
+              "line": 3028
             }
           ]
         }

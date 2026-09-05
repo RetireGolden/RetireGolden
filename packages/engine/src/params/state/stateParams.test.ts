@@ -140,35 +140,47 @@ describe('federal standard-deduction conformity tags', () => {
     expect(taggedCount).toBeGreaterThan(0)
   })
 
-  it('leaves ME and SC untagged with a figure of their own, since both decoupled for 2026', () => {
-    // The decoupling is the statutory fact; the observable consequence is that
-    // their published amounts are NOT the federal ones. Assert the consequence,
-    // so re-typing either amount to the federal figure fails here rather than
-    // silently making the tag optional.
+  it('leaves ME and SC without whole-federal basic conformity, since both decoupled for 2026', () => {
+    // The basic decoupling is the statutory fact; the observable consequence is
+    // that their published amounts are NOT the federal ones. Assert the
+    // consequence, so re-typing either amount to the federal figure fails here
+    // rather than silently making the tag optional. Maine still adopts the
+    // federal age-65 addition through the independent policy; South Carolina
+    // does not.
     for (const code of ['ME', 'SC']) {
       const p = stateParamsFor(code, 2026)!
       expect(p.standardDeductionConformity).toBeUndefined()
       expect(carriesTheFederalFigure(p)).toBe(false)
     }
+    expect(stateParamsFor('ME', 2026)!.standardDeductionAge65AdditionConformity).toBe('federal')
+    expect(stateParamsFor('SC', 2026)!.standardDeductionAge65AdditionConformity).toBeUndefined()
   })
 
-  it('drives conformity entirely off the tag, for every modeled state', () => {
-    // The behavioural half: whatever the tag says, `conformStateStandardDeduction`
-    // must act on exactly the tagged states and no others. Expectations come
-    // from the federal pack — an untagged state must come back identical, and a
-    // tagged one must come back with both federal amounts scaled.
+  it('drives conformity entirely off the adoption policies, for every modeled state', () => {
+    // The behavioural half: whatever the tags say, `conformStateStandardDeduction`
+    // must act on exactly the states that borrow a federal component and no
+    // others. Expectations come from the federal pack — a state with neither
+    // policy must come back identical; whole-federal basic scales both amounts;
+    // age-addition-only preserves the published basic and attaches the addition.
     const age65 = packForYear(2026).pack.federalTax.age65Addition
     for (const code of modeledStateCodes()) {
       const p = stateParamsFor(code, 2026)!
       const conformed = conformStateStandardDeduction(p, age65, 2)
-      if (p.standardDeductionConformity !== 'federal') {
+      const federalBasic = p.standardDeductionConformity === 'federal'
+      const federalAdditional =
+        federalBasic || p.standardDeductionAge65AdditionConformity === 'federal'
+      if (!federalBasic && !federalAdditional) {
         expect(conformed).toBe(p)
         continue
       }
-      expect(conformed.standardDeduction).toEqual({
-        single: federal.single * 2,
-        marriedFilingJointly: federal.marriedFilingJointly * 2,
-      })
+      if (federalBasic) {
+        expect(conformed.standardDeduction).toEqual({
+          single: federal.single * 2,
+          marriedFilingJointly: federal.marriedFilingJointly * 2,
+        })
+      } else {
+        expect(conformed.standardDeduction).toEqual(p.standardDeduction)
+      }
       expect(conformed.standardDeductionAge65Addition).toEqual({
         single: age65.single * 2,
         marriedFilingJointly: age65.marriedFilingJointly * 2,
@@ -188,12 +200,14 @@ describe('federal standard-deduction conformity tags', () => {
 describe('conformStateStandardDeduction', () => {
   const AGE65 = packForYear(2026).pack.federalTax.age65Addition
 
-  it('is a no-op on an untagged state at any scale', () => {
+  it('is a no-op on a state with neither federal adoption policy at any scale', () => {
     const nc = stateParamsFor('NC', 2026)!
+    expect(nc.standardDeductionConformity).toBeUndefined()
+    expect(nc.standardDeductionAge65AdditionConformity).toBeUndefined()
     expect(conformStateStandardDeduction(nc, AGE65, 2)).toBe(nc)
     expect(conformStateStandardDeduction(nc, AGE65, 0.5)).toBe(nc)
     // Above all: no age-65 addition leaks onto a state that publishes its own
-    // deduction. Whatever age relief NC gives is already in its own figures.
+    // deduction and does not adopt the federal additional amount.
     expect(conformStateStandardDeduction(nc, AGE65, 1).standardDeductionAge65Addition).toBeUndefined()
   })
 

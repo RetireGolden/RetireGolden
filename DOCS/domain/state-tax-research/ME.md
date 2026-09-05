@@ -1,61 +1,111 @@
 # Maine (ME) — state income tax for retirement planning
 
-Tax year: 2025. Researched 2026-06-13.
+Tax year: 2026. Researched 2026-06-13; standard-deduction correction 2026-09-05.
 
-> **2026 update (PR #23 review, 2026-07-17):** Maine **decoupled from the federal standard deduction**
-> for tax years from 2026 (36 M.R.S. §5124-C 1-B). Per the MRS revised 2026 rate schedule (rev.
-> 2026-05-20): standard deduction **$15,700 / $31,400**; brackets 5.8% / 6.75% / 7.15% at
-> **$27,400 / $64,850** single and **$54,850 / $129,750** MFJ; plus a new **2% surcharge** on taxable
-> income over $1,000,000 single / $1,500,000 MFJ (encoded in the pack as an equivalent 9.15% top
-> bracket; surcharge thresholds index from 2027). The statement below that the deduction is federal is
-> obsolete for 2026. Source (primary): MRS 2026 rate schedule PDF (rev. May 20, 2026), accessed
-> 2026-07-17.
+> **2026 update (PR #23 review, 2026-07-17; age-addition and phase-out correction 2026-09-05):**
+> Maine **decoupled from the federal basic standard deduction** for tax years
+> from 2026 (36 M.R.S. §5124-C(1-B)). Per the MRS revised 2026 rate schedule
+> (rev. 2026-05-20): **basic** standard deduction **$15,700 / $31,400**; brackets
+> 5.8% / 6.75% / 7.15% at **$27,400 / $64,850** single and **$54,850 / $129,750**
+> MFJ; plus a new **2% surcharge** on taxable income over $1,000,000 single /
+> $1,500,000 MFJ (encoded in the pack as an equivalent 9.15% top bracket;
+> surcharge thresholds index from 2027).
+>
+> Subsection (1-B)(B) separately makes the **additional** standard deduction the
+> amount allowed under IRC §63(c)(3). The settled repair models only the
+> **§63(f)(1) age** limb for 2026: **$2,050** unmarried / **$1,650** married or
+> qualifying surviving spouse per age-65 condition (MRS schedule; IRS Rev. Proc.
+> 2025-32). Blindness and head-of-household basics remain outside that settled
+> component. The pack therefore keeps Maine’s published basic amounts **without**
+> `standardDeductionConformity: 'federal'`, and marks
+> `standardDeductionAge65AdditionConformity: 'federal'` so the resolver attaches
+> the federal age-65 addition without federally scaling Maine’s basic.
+>
+> **§5124-C(2) phase-out:** the engine now phases out the **combined** basic
+> plus age total once modeled Maine AGI exceeds **$102,250** single /
+> **$204,550** MFJ (over **$75,000 / $150,000** ranges; fully out at
+> **$177,250 / $354,550**). Phase-out income is a **modeled Maine-AGI proxy**
+> (wages plus represented modifications), not certified Form 1040ME AGI. Split-
+> year residency uses the annual fraction before month proration — still the
+> existing month approximation, not statutory apportionment.
+>
+> Source (primary): MRS 2026 rate schedule PDF (rev. May 20, 2026),
+> https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf;
+> MRS 2026 phase-out worksheet (rev. December 2025); 36 M.R.S. §5124-C(1-B) and (2).
 
 ## Summary
-- Broad individual income tax: **yes** (graduated, 5.8%–7.15%)
+- Broad individual income tax: **yes** (graduated, 5.8%–7.15%, plus surcharge bracket)
 - Taxes Social Security benefits: no (fully exempt)
 - Long-term capital gains: taxed as ordinary income
-- Retirement income (pension, IRA, 401k): excluded up to $48,216 per person (2025), reduced by Social Security/Railroad Retirement received
+- Retirement income (pension, IRA, 401k): excluded up to $48,216 per person (2025 figure carried), reduced by Social Security/Railroad Retirement received
+- Standard deduction (2026): Maine basic **$15,700 / $31,400** plus IRC 63(c)(3) age-65 addition (**$2,050 / $1,650** per eligible person), with §5124-C(2) proportional phase-out above the published starts
 
-## Proposed StateTaxParams (2025)
+## Proposed StateTaxParams (2026 pack)
 - code: "ME"
 - name: "Maine"
 - hasIncomeTax: true
 - taxesSocialSecurity: false
 - capitalGainsAsOrdinary: true
-- standardDeduction: { single: 15000, marriedFilingJointly: 30000 }
+- standardDeduction: { single: 15700, marriedFilingJointly: 31400 }
+- standardDeductionAge65AdditionConformity: "federal"
+- standardDeductionPhaseout: { startsAt: { single: 102250, marriedFilingJointly: 204550 }, range: { single: 75000, marriedFilingJointly: 150000 } }
 - brackets.single:
   - { lowerBound: 0, ratePct: 5.8 }
-  - { lowerBound: 26800, ratePct: 6.75 }
-  - { lowerBound: 63450, ratePct: 7.15 }
+  - { lowerBound: 27400, ratePct: 6.75 }
+  - { lowerBound: 64850, ratePct: 7.15 }
+  - { lowerBound: 1000000, ratePct: 9.15 }
 - brackets.marriedFilingJointly:
   - { lowerBound: 0, ratePct: 5.8 }
-  - { lowerBound: 53600, ratePct: 6.75 }
-  - { lowerBound: 126900, ratePct: 7.15 }
+  - { lowerBound: 54850, ratePct: 6.75 }
+  - { lowerBound: 129750, ratePct: 7.15 }
+  - { lowerBound: 1500000, ratePct: 9.15 }
 - retirement: { kind: "capped", capPerPerson: 48216 }
 
 ## Retirement-income detail
-Maine has three graduated brackets for 2025: 5.8%, 6.75%, and 7.15%. Single
-thresholds are $26,800 and $63,450; MFJ thresholds are $53,600 and $126,900 (per
-the official Maine Revenue Services 2025 rate schedules). Standard deduction is
-$15,000 single / $30,000 MFJ. Social Security benefits are fully exempt.
+Maine has three graduated brackets for 2026 plus the surcharge top bracket.
+Single thresholds are $27,400 and $64,850; MFJ thresholds are $54,850 and
+$129,750 (MRS 2026 rate schedule). Social Security benefits are fully exempt.
 
 Maine offers a **pension income deduction** of up to **$48,216 per eligible
-recipient** for 2025, covering employer pensions and IRA/401(k) distributions
-(the deduction is per person, so both spouses can claim it on a joint return).
-The deduction is **reduced dollar-for-dollar by Social Security and Railroad
-Retirement benefits** received. Mapped to `retirement: { kind: "capped",
-capPerPerson: 48216 }`, no age gate (Maine's pension deduction is not strictly
-age-conditioned for the general non-military deduction).
+recipient** for 2025 (carried pending a dedicated 2026 refresh), covering
+employer pensions and IRA/401(k) distributions (the deduction is per person, so
+both spouses can claim it on a joint return). The deduction is **reduced
+dollar-for-dollar by Social Security and Railroad Retirement benefits**
+received. Mapped to `retirement: { kind: "capped", capPerPerson: 48216 }`, no
+age gate (Maine's pension deduction is not strictly age-conditioned for the
+general non-military deduction).
+
+## Modeled standard-deduction examples
+
+Independent worksheet, single Maine resident, wages/ordinary income, inflation
+scale 1 — **modeled pack taxable income only** (personal exemption not
+subtracted):
+
+| Wages | Age | Modeled taxable base | Modeled tax |
+|---:|---:|---:|---:|
+| $30,000 | 65 | $12,250 | $710.50 |
+| $139,750 | 65 | $130,875 | $8,837.8625 |
+
+At $139,750 the §5124-C(2) fraction is 0.5 on the combined $17,750 deduction
+(allowed $8,875). Age benefit at that income is $1,025 of deduction and
+$73.2875 of tax, not the full $2,050 / $146.575.
 
 ## Simplifications / not modeled
 - The pension deduction's reduction by SS/Railroad Retirement received is not modeled — modeling the full $48,216 cap understates Maine tax for retirees with large SS benefits.
 - Military retirement pay is fully exempt (separate, uncapped); approximated by the $48,216 cap (conservative for military retirees).
-- Standard deduction phase-out for high earners and the personal exemption ($5,150) not modeled.
-- Brackets are CPI-adjusted annually; 2025 nominal figures used.
+- **Personal exemption** ($5,300 on the MRS 2026 schedule) not modeled; that omission can offset modeled tax on a complete return, so no net Form 1040ME tax direction is asserted.
+- **Blindness** additional amount not modeled — the engine age counter drives IRC 63(f) age relief only.
+- Head-of-household basic amounts and other Form 1040ME lines outside the pack levers are not modeled.
+- Modeled Maine AGI is a proxy: not every §5122 modification is representable in the plan model.
+- Pre-2026 Maine inputs use the sole 2026 state pack as a parameter stand-in; those dollars are not certified historical Maine amounts.
+- Brackets and the Maine basic are CPI-adjusted under Maine law; the engine holds pack-year nominals for the basic ($15,700 / $31,400 published, no COLA reconciliation claimed here) and scales only the borrowed federal age addition with assumed plan inflation, not a statutory COLA oracle. Phase-out starts are pack-year Maine figures and are not federally inflation-scaled.
+- Part-year residency remains month proration of income, deductions, and brackets — not certified statutory nonresident apportionment.
 
 ## Citations
-- https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/ind_tax_rate_sched_2025.pdf — Maine Revenue Services 2025 rate schedules (single $26,800/$63,450; MFJ $53,600/$126,900; standard deduction $15,000/$30,000).
-- https://www.pressherald.com/2026/02/02/what-are-the-maine-income-tax-brackets-for-2025/ — 2025 brackets 5.8%/6.75%/7.15%.
-- https://blog.turbotax.intuit.com/income-tax-by-state/maine-108205/ — $48,216 max non-military pension deduction (2025), reduced by SS/RR; SS not taxed.
-- Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — ME 5.8%–7.15%.
+- https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf — MRS 2026 rate schedules (basic $15,700/$31,400; age/blindness addition $2,050 unmarried / $1,650 married; brackets and surcharge).
+- https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf — MRS 2026 phase-out worksheet (rev. December 2025).
+- https://legislature.maine.gov/statutes/36/title36sec5124-C.html — 36 M.R.S. §5124-C(1-B) basic + IRC 63(c)(3) additional; subsection 2 phase-out.
+- https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim — IRC 63(c)(3), 63(f)(1).
+- https://www.irs.gov/irb/2025-45_IRB — Rev. Proc. 2025-32 §4.14(3) (2026 age-65 addition amounts).
+- https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/ind_tax_rate_sched_2025.pdf — 2025 schedules (historical).
+- Tax Foundation, State Individual Income Tax Rates and Brackets — ME rates context.

@@ -6,14 +6,23 @@
   [state-tax-research/](../state-tax-research/).
 - Eight jurisdictions — CO, DC, IA, ID, MO, MT, ND, NM — define their standard deduction by reference to the
   federal one rather than publishing their own. Their packs carry a copy of the federal figure tagged
-  `standardDeductionConformity: 'federal'`, and `indexConformedStateStandardDeduction` moves that copy by exactly
+  `standardDeductionConformity: 'federal'`, and `conformStateStandardDeduction` moves that copy by exactly
   the factor `indexFederalTaxPack` applied to the original, so one engine never holds two values for one statutory
-  amount in a projected year (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`). Nothing else in the pack
-  moves: brackets and retirement-exclusion caps are state figures under state law. ME and SC decoupled for 2026
-  and are deliberately untagged; AZ left the list on 2026-08-05, because A.R.S. §43-1041(A) sets Arizona's own
-  amounts and (H) borrows only the federal indexation *method*, and the tag was additionally attaching an IRC
-  63(c)(3) age-65 addition Arizona does not grant (`ars-43-1041-standard-deduction-published-amount`; Arizona's
-  own age-65 relief is the unmodelled $2,100 exemption of `ars-43-1023-e-age-65-exemption`).
+  amount in a projected year (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`). Whole-federal adoption
+  also implies the IRC 63(c)(3) age-65 addition. Nothing else in the pack moves: brackets and retirement-exclusion
+  caps are state figures under state law. SC decoupled for 2026 and is deliberately untagged for both basic and
+  age-addition conformity. Maine decoupled the basic for 2026 — published **$15,700 / $31,400** without the
+  whole-federal tag — but separately tags `standardDeductionAge65AdditionConformity: 'federal'` so only the federal
+  age-65 additional amount ($2,050 unmarried / $1,650 per eligible person married) is attached without federally
+  scaling Maine's basic (`mrs-36-5124-c-1-b-decoupled-standard-deduction`). Maine's §5124-C(2)
+  proportional phase-out of the combined basic-plus-age total is modeled through
+  `standardDeductionPhaseout` and `phaseOutStandardDeduction`
+  (`mrs-36-5124-c-2-standard-deduction-phaseout`), using a modeled Maine-AGI proxy rather than
+  certified Form 1040ME AGI. AZ left the whole-federal list on
+  2026-08-05, because A.R.S. §43-1041(A) sets Arizona's own amounts and (H) borrows only the federal indexation
+  *method*, and the tag was additionally attaching an IRC 63(c)(3) age-65 addition Arizona does not grant
+  (`ars-43-1041-standard-deduction-published-amount`; Arizona's own age-65 relief is the unmodelled $2,100
+  exemption of `ars-43-1023-e-age-65-exemption`).
 - Capital gains default to federal conformity unless a state pack says otherwise. CA, MN, and NJ document
   ordinary state taxation of capital gains. PA uses current-year-only capital-loss conformity: federal
   prior-year carryforward losses do not offset PA-taxable current-year gains in the planning model. The raw
