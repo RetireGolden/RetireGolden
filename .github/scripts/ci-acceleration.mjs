@@ -47,6 +47,17 @@ function trustedLedger(body, { repository, pullNumber, headSha, workflowRunUrls 
   const payload = marker && decodeLedgerPayload(marker[1])
 
   const verdict = /^\*\*Verdict:\*\* `(clean|issues)`$/.exec(lines[3] ?? '')?.[1]
+  // Upstream review-loop keeps disputed history in the ledger; `fixed` removes
+  // the entry, and clean means zero open findings (all-disputed is valid).
+  const cleanFindings =
+    Array.isArray(payload?.findings) &&
+    payload.findings.every(
+      (finding) =>
+        finding !== null &&
+        typeof finding === 'object' &&
+        !Array.isArray(finding) &&
+        finding.st === 'disputed',
+    )
   const validPayload =
     payload?.lv === 1 &&
     payload.repo === repository.full_name &&
@@ -55,7 +66,7 @@ function trustedLedger(body, { repository, pullNumber, headSha, workflowRunUrls 
     typeof payload.gen === 'string' && /^[a-f0-9]{12}$/.test(payload.gen) &&
     Number.isSafeInteger(payload.round) && payload.round > 0 &&
     Array.isArray(payload.findings) &&
-    ((verdict === 'clean' && payload.findings.length === 0) ||
+    ((verdict === 'clean' && cleanFindings) ||
       (verdict === 'issues' && payload.findings.length > 0))
 
   return (

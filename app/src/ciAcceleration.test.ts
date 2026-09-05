@@ -50,8 +50,24 @@ const payload = {
   round: 1,
   findings: [],
 }
+const disputedFinding = {
+  id: 'r1-1',
+  sev: 'risk',
+  file: 'packages/engine/src/example.ts',
+  line: 42,
+  title: 'Historical finding retained after dispute',
+  ev: 'Producer keeps disputed history; fixed removes the entry.',
+  st: 'disputed',
+  m: ['openai/gpt-5.6-luna'],
+}
+const cleanDisputedPayload = {
+  ...payload,
+  round: 2,
+  findings: [disputedFinding],
+}
 const encodePayload = (value: object) => btoa(JSON.stringify(value))
 const encodedPayload = encodePayload(payload)
+const encodedCleanDisputedPayload = encodePayload(cleanDisputedPayload)
 const encodedIssuesPayload = encodePayload({ ...payload, findings: [{ rule: 'injected-test-finding' }] })
 
 const cleanReviewBody = [
@@ -74,6 +90,9 @@ const cleanReviewBody = [
   '',
   `[Workflow run](${workflowUrl})`,
 ].join('\n')
+const cleanDisputedReviewBody = cleanReviewBody
+  .replace(encodedPayload, encodedCleanDisputedPayload)
+  .replace('**Mode:** `initial`', '**Mode:** `verify`')
 
 const reviewContext = { repository, pullNumber, headSha: sha, workflowRunUrl: workflowUrl }
 
@@ -193,6 +212,13 @@ describe('OpenRouter CI authorization contract', () => {
     })
   })
 
+  it('accepts exact-head clean round2 with retained disputed ledger history', () => {
+    expect(findTrustedCleanReview([review({ body: cleanDisputedReviewBody })], reviewContext)).toMatchObject({
+      commit_id: sha,
+      body: cleanDisputedReviewBody,
+    })
+  })
+
   it.each([
     ['issues verdict', review({ body: cleanReviewBody.replace('`clean`', '`issues`') })],
     ['stale visible Commit line', review({ body: cleanReviewBody.replace(`**Commit:** \`${sha}\``, `**Commit:** \`${'b'.repeat(40)}\``) })],
@@ -200,7 +226,14 @@ describe('OpenRouter CI authorization contract', () => {
     ['forged marker', review({ body: cleanReviewBody.replace('<!-- openrouter-review-ledger:v1:', '<!--openrouter-review-ledger:v1:') })],
     ['wrong heading', review({ body: cleanReviewBody.replace('## OpenRouter pull-request review', '## A different heading') })],
     ['reordered visible fields', review({ body: cleanReviewBody.replace('**Verdict:** `clean`\n**Scope:**', '**Scope:**\n**Verdict:** `clean`') })],
-    ['payload with findings', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{}] })) })],
+    ['payload with missing-state finding', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{}] })) })],
+    ['payload with open finding', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, st: 'open' }] })) })],
+    ['payload with mixed open and disputed findings', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [disputedFinding, { ...disputedFinding, id: 'r1-2', st: 'open' }] })) })],
+    ['payload with fixed finding state', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, st: 'fixed' }] })) })],
+    ['payload with unknown finding state', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, st: 'resolved' }] })) })],
+    ['payload with null finding', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [null] })) })],
+    ['payload with array finding', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [[disputedFinding]] })) })],
+    ['payload with primitive finding', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: ['disputed'] })) })],
     ['payload for a different repository', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, repo: 'other/repo' })) })],
     ['payload for a different PR', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, pr: 621 })) })],
     ['payload for a different SHA', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, sha: 'b'.repeat(40) })) })],
@@ -372,6 +405,32 @@ describe('OpenRouter CI authorization contract', () => {
       runAttempt: 1,
     })
     expect(result).toMatchObject({ authorized: true, failJob: false })
+  })
+
+  it('authorizes exact-head clean reviews that retain disputed ledger history', async () => {
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listReviews')) return [review({ body: cleanDisputedReviewBody })]
+        return mockGithub().paginate(request, params)
+      },
+    })
+    const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden',
+      repo: 'RetireGolden',
+      repository,
+      defaultBranch: 'main',
+      eventPr: {
+        number: pullNumber,
+        head: { sha },
+        labels: [{ name: 'run-ci' }],
+      },
+      runAttempt: 1,
+    })
+    expect(result).toMatchObject({
+      authorized: true,
+      failJob: false,
+      reason: `exact-head trusted clean review for ${sha}`,
+    })
   })
 
   it('fails the requested path when authorization cannot be proven', async () => {
