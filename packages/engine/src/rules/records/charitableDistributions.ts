@@ -256,7 +256,7 @@ export const charitableDistributionRecords = {
   'irc-408-d-8-beneficiary-ira-source': {
     title: 'Inherited IRA as a QCD source',
     statement:
-      'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary’s own age, not the decedent’s. Not modelled in v1: separate beneficiary basis history is required and is never borrowed from the donor’s own pool, so an inherited source is classification-only and non-actionable.',
+      'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary’s own age, not the decedent’s. Publication 590-B keeps inherited-IRA basis out of the owner’s own traditional IRA pool unless the decedent’s spouse chooses to treat the IRA as their own. Treas. Reg. 1.408-8(e)(2)(i) is the parallel owner-versus-beneficiary split for required-minimum-distribution aggregation, not the basis rule. Not modelled in v1: the engine does not carry separate beneficiary basis history, so an inherited source is classification-only and non-actionable. Eligibility and the identity allocator both refuse qcd-inherited-basis-unsupported; the allocator keys off the inherited marker and does not honor treat-as-own.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
@@ -268,10 +268,16 @@ export const charitableDistributionRecords = {
       citation: 'IRS Notice 2007-7, Q&A-37',
       url: 'https://www.irs.gov/pub/irs-drop/n-07-07.pdf',
       quotedText:
-        'The exclusion from gross income for qualified charitable distributions is available for distributions from an IRA maintained for the benefit of a beneficiary after the death of the IRA owner if the beneficiary has attained age 70 1/2 before the distribution is made.',
+        'The exclusion from gross income for qualified charitable distributions is available for distributions from an IRA maintained for the benefit of a beneficiary after the death of the IRA owner if the beneficiary has attained age 70½ before the distribution is made.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B, inherited IRA basis',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'Unless you are the decedent\'s spouse and choose to treat the IRA as your own, you can\'t combine this basis with any basis you have in your own traditional IRA(s) or any basis in traditional IRA(s) you inherited from other decedents.',
     }, {
       kind: 'regulation',
-      citation: 'Treas. Reg. 1.408-8(e)(2)(i)',
+      citation: 'Treas. Reg. 1.408-8(e)(2)(i), owner-versus-beneficiary RMD aggregation',
       url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
       quotedText:
         'IRAs for which the individual is the IRA owner are not aggregated with IRAs for which the individual is a beneficiary.',
@@ -279,7 +285,7 @@ export const charitableDistributionRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       // The replay enforces the same confinement structurally rather than by
@@ -289,19 +295,21 @@ export const charitableDistributionRecords = {
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdPhysicalExecution.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
       'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#qcdSourceIssue',
     ],
   },
 
   'irc-408-d-8-roth-ira-source': {
     title: 'Roth IRA as a QCD source',
     statement:
-      'A QCD may legally be made from a Roth IRA, but only to the extent the distribution would otherwise be includible in gross income. Not modelled in v1: the engine cannot prove the Roth tax character that would make any part otherwise includible, so a Roth source is unsupported rather than refused.',
+      'A QCD may legally be made from a Roth IRA, but only to the extent the distribution would be includible in gross income without regard to subparagraph (A). The engine does not prove Roth tax character, so a Roth source is outside product-supported scope and fails closed rather than being priced: eligibility refuses qcd-roth-source-unsupported, and the identity allocator refuses qcd-source-not-ira because a Roth account is not a traditional IRA. Both are typed refusals of a legally possible source; neither computes a partly excludable Roth QCD.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
@@ -313,12 +321,18 @@ export const charitableDistributionRecords = {
       citation: 'IRS Notice 2007-7, Q&A-36',
       url: 'https://www.irs.gov/pub/irs-drop/n-07-07.pdf',
       quotedText:
-        'Generally, the exclusion for qualified charitable distributions is available for distributions from any type of IRA (including a Roth IRA described in section 408A and a deemed IRA described in section 408(q)) that is neither an ongoing SEP IRA described in section 408(k) nor an ongoing SIMPLE IRA described in section 408(p).',
+        'Generally, the exclusion for qualified charitable distributions is available for distributions from any type of IRA (including a Roth IRA described in § 408A and a deemed IRA described in § 408(q)) that is neither an ongoing SEP IRA described in § 408(k) nor an ongoing SIMPLE IRA described in § 408(p).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(8)(B), flush text',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'A distribution shall be treated as a qualified charitable distribution only to the extent that the distribution would be includible in gross income without regard to subparagraph (A).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       // The same structural confinement: the replay's source-compatibility
@@ -327,12 +341,14 @@ export const charitableDistributionRecords = {
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdPhysicalExecution.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
       'packages/engine/src/actions/annualQcdPhysicalExecution.ts#stageAnnualQcdPhysicalExecution',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#qcdSourceIssue',
     ],
   },
 
@@ -383,7 +399,7 @@ export const charitableDistributionRecords = {
   'irc-408-d-8-B-employer-plan-source-exclusion': {
     title: 'An employer-plan distribution is not a QCD source',
     statement:
-      'A QCD is a distribution from an individual retirement plan as defined in section 7701(a)(37) — an individual retirement account described in section 408(a) or an individual retirement annuity described in section 408(b). An employer plan is neither, so a distribution from an employer-plan account is never a QCD. The engine refuses a named QCD whose source is an employer-plan account before any charitable exclusion is calculated.',
+      'A QCD is a distribution from an individual retirement plan as defined in section 7701(a)(37) — an individual retirement account described in section 408(a) or an individual retirement annuity described in section 408(b). An employer-plan account is neither, so the engine refuses a named QCD whose source is an employer-plan account before any charitable exclusion is calculated. The identity allocator raises that refusal as qcd-source-not-ira on the account kind; it does not inspect employer-contribution activity.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -405,16 +421,18 @@ export const charitableDistributionRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-25',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts',
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts#finalizeAnnualQcdDerivedTaxCharacter',
       'packages/engine/src/actions/annualQcdExecutionPrerequisite.ts#evaluateAnnualQcdExecutionPrerequisites',
       'packages/engine/src/strategies/accountEligibility.ts#evaluateQcd',
+      'packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts#qcdSourceIssue',
     ],
   },
 

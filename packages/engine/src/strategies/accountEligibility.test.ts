@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  allocateRetirementActionCandidateIdentity,
   asAccountId,
   asActionId,
   asAllocationId,
@@ -11,6 +12,7 @@ import {
   retirementActionRequestSchema,
   rothConversionRequestSchema,
   type OrdinaryWithdrawalRequest,
+  type QcdCandidateIdentityIntent,
   type QualifiedCharitableDistributionRequest,
   type RetirementActionRequest,
   type RothConversionRequest,
@@ -1690,6 +1692,32 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
     return { status: outcome.status, codes: outcome.reasons.map((reason) => reason.code) }
   }
 
+  function qcdIntentFromRequest(
+    request: QualifiedCharitableDistributionRequest,
+  ): QcdCandidateIdentityIntent {
+    return {
+      kind: request.kind,
+      year: request.year,
+      executionDate: request.executionDate,
+      executionSequence: request.executionSequence,
+      requestedAmount: request.requestedAmount,
+      donorPersonId: request.donorPersonId,
+      provenance: request.provenance,
+      charity: request.charity,
+      sourceAllocation: {
+        sourceAccountId: request.allocation.sourceAccountId,
+        requestedAmount: request.allocation.requestedAmount,
+      },
+    }
+  }
+
+  function allocateQcdIdentity(accounts: Account[]) {
+    return allocateRetirementActionCandidateIdentity(
+      refusalPlan(accounts),
+      qcdIntentFromRequest(qcdRequest()),
+    )
+  }
+
   describeRefusal('irc-408-d-3-C-i-inherited-ira-rollover-bar', {
     entryPoint: 'packages/engine/src/strategies/accountEligibility.ts#evaluateConversion',
     outOfScopeInput: 'a Roth conversion whose only source allocation is a nonspouse inherited IRA',
@@ -1726,6 +1754,22 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
       // distinction would hide which statute is unimplemented.
       const outcome = refuse(qcdRequest(), [rothIra('ira')])
       expect(outcome.codes).not.toContain('qcd-source-not-ira')
+    })
+
+    it('allocates an owned traditional IRA and blocks a Roth source as qcd-source-not-ira', () => {
+      const ordinary = allocateQcdIdentity([ownedIra()])
+      expect(ordinary.status).toBe('allocated')
+      expect(ordinary.request).not.toBeNull()
+
+      const roth = allocateQcdIdentity([rothIra('ira')])
+      expect(roth.status).toBe('blocked')
+      expect(roth.request).toBeNull()
+      if (roth.status !== 'blocked') return
+      const codes = roth.issues.flatMap((issue) => issue.reason?.code ?? [])
+      expect(codes).toContain('qcd-source-not-ira')
+      expect(codes).not.toContain('person-not-found')
+      expect(codes).not.toContain('source-account-not-found')
+      expect(codes).not.toContain('required-facts-missing')
     })
   })
 
@@ -1840,6 +1884,23 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
 
     it('accepts the same request from the donor own IRA, so the refusal is the inherited fact', () => {
       expect(refuse(qcdRequest(), [ownedIra()])).toEqual({ status: 'accepted', codes: [] })
+    })
+
+    it('allocates an owned traditional IRA and blocks an inherited source as qcd-inherited-basis-unsupported', () => {
+      const ordinary = allocateQcdIdentity([ownedIra()])
+      expect(ordinary.status).toBe('allocated')
+      expect(ordinary.request).not.toBeNull()
+
+      const inherited = allocateQcdIdentity([inheritedIra()])
+      expect(inherited.status).toBe('blocked')
+      expect(inherited.request).toBeNull()
+      if (inherited.status !== 'blocked') return
+      const codes = inherited.issues.flatMap((issue) => issue.reason?.code ?? [])
+      expect(codes).toContain('qcd-inherited-basis-unsupported')
+      expect(codes).not.toContain('qcd-source-not-ira')
+      expect(codes).not.toContain('person-not-found')
+      expect(codes).not.toContain('source-account-not-found')
+      expect(codes).not.toContain('required-facts-missing')
     })
   })
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { describeRule } from '../rules/describeRule.js'
 
 import type { Plan } from '../model/plan.js'
+import { buildSimulatorOwnedNonRothIraAnnualObservation } from '../projection/ownedNonRothIraAnnualObservation.js'
 import {
   cashAccount,
   singlePersonPlan,
@@ -326,11 +327,12 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
     note: 'the basis pool is owner-wide, not per-account and not household-wide',
     readings: {
       ownerWideSingleContract: ['ira-requested', 'ira-sibling'],
+      requestedAccountOnly: ['ira-requested'],
       householdWideMergedPool: ['ira-requested', 'ira-sibling', 'ira-spouse'],
     },
     accepted: 'ownerWideSingleContract',
-  }, ({ accepted }) => {
-    it('aggregates both owner IRAs and excludes the spouse account', () => {
+  }, ({ accepted, readings }) => {
+    function inputWithSpouseIra() {
       const value = input()
       const valuePlan = value.plan as Plan
       valuePlan.household.people = [
@@ -348,12 +350,59 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
         ...valuePlan.accounts,
         traditionalAccount(asAccountId('ira-spouse'), 5_000, asPersonId('spouse')),
       ]
+      return { value, valuePlan }
+    }
+
+    it('aggregates both owner IRAs and excludes the spouse account', () => {
+      const { value, valuePlan } = inputWithSpouseIra()
       const result = successful(value)
       expect(
         result.annualEvidence.characterization.annualBasisEvidence.poolMembers
           .map((member) => String(member.sourceAccountId))
           .sort(),
       ).toEqual([...accepted].sort())
+
+      // Observation balances are Plan dollars (900 / 0); coordinator evidence
+      // is cents (90_000 / 0). This pin is the selector IDs, not measurement.
+      const observation = buildSimulatorOwnedNonRothIraAnnualObservation({
+        plan: valuePlan,
+        ownerPersonId,
+        taxYear: 2030,
+        ledgerRunId: 'pool-selector-observation-2030',
+        observationBoundary: 'sealedAfterAllAnnualTransactionsAndGrowth',
+        startOfTaxYearIraBasis: 0,
+        yearEndBalances: [
+          { sourceAccountId: 'ira-requested', balance: 900 },
+          { sourceAccountId: 'ira-sibling', balance: 0 },
+        ],
+      })
+      expect(observation.status).toBe('annualObservationBuilt')
+      if (observation.status !== 'annualObservationBuilt') return
+      const observedIds = observation.observation.yearEndApplicableBalances
+        .map((entry) => String(entry.sourceAccountId))
+        .sort()
+      expect(observedIds).toEqual([...accepted].sort())
+      expect(observedIds).not.toEqual(readings.requestedAccountOnly)
+      expect(observedIds).not.toEqual(readings.householdWideMergedPool)
+    })
+
+    it('fails closed when the zero sibling is omitted from the December 31 observation', () => {
+      const { valuePlan } = inputWithSpouseIra()
+      const missingSibling = buildSimulatorOwnedNonRothIraAnnualObservation({
+        plan: valuePlan,
+        ownerPersonId,
+        taxYear: 2030,
+        ledgerRunId: 'pool-selector-observation-2030',
+        observationBoundary: 'sealedAfterAllAnnualTransactionsAndGrowth',
+        startOfTaxYearIraBasis: 0,
+        yearEndBalances: [
+          { sourceAccountId: 'ira-requested', balance: 900 },
+        ],
+      })
+      expect(missingSibling.status).toBe('annualObservationBlocked')
+      if (missingSibling.status !== 'annualObservationBlocked') return
+      expect(missingSibling.issues.map((issue) => issue.kind))
+        .toContain('yearEndBalanceMissing')
     })
   })
 
