@@ -213,9 +213,11 @@ describe('OpenRouter CI authorization contract', () => {
       `RetireGolden/.github/.github/workflows/openrouter-code-review.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`,
     )
     expect(reviewCaller).toContain(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW}`)
-    const policyLinks = [...reviewCaller.matchAll(/https:\/\/github\.com\/RetireGolden\/\.github\/blob\/([a-f0-9]{40})\/README\.md/g)]
-    expect(policyLinks.length).toBeGreaterThan(0)
-    for (const link of policyLinks) expect(link[1]).toBe(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA)
+    for (const source of [reviewCaller, ciRunbook]) {
+      const policyLinks = [...source.matchAll(/https:\/\/github\.com\/RetireGolden\/\.github\/blob\/([a-f0-9]{40})\//g)]
+      expect(policyLinks.length).toBeGreaterThan(0)
+      for (const link of policyLinks) expect(link[1]).toBe(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA)
+    }
   })
 
   it('rejects a stale referenced reusable SHA even when its path matches', () => {
@@ -300,6 +302,7 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it.each([
+    ['Python whitespace-only file path', { file: '\u0085\u00a0' }],
     ['301-codepoint emoji title', { title: '😀'.repeat(301) }],
     ['617-codepoint emoji evidence', { ev: '🙂'.repeat(617) }],
     ['501-codepoint file path', { file: '📁'.repeat(501) }],

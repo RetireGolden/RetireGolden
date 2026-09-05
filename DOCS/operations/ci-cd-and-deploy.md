@@ -100,8 +100,8 @@ predicate therefore remains unchanged. The retained compatibility fixtures inclu
 paths, Python-strip whitespace and BOM handling. This finite comparison is migration evidence, not
 a proof over every possible string.
 
-The temporary Astra Flex lane is owned by the central reusable, not this caller. At pinned org revision
-`133c4a1a7e48c1e416784f69988d7d42d1866c44`, its [first-pass condition](https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/.github/workflows/openrouter-code-review.yml#L273-L279)
+The temporary Astra Flex lane is owned by the central reusable, not this caller. At the linked immutable
+org revision, its [first-pass condition](https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/.github/workflows/openrouter-code-review.yml#L273-L279)
 and [follow-up condition](https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/.github/workflows/openrouter-code-review.yml#L704-L709)
 select Astra only for RetireGolden and RetireGolden-Pro before `2026-09-06T04:00:00Z`.
 Both Bash policy steps were executed with an injected clock immediately before and exactly at that
