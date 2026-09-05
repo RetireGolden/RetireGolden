@@ -79,10 +79,10 @@ function expectCostVector(actual: readonly number[], expected: readonly number[]
 }
 
 // Planning combined surcharge at held 2026 prices (one person, 12 months):
-// Part B increment = 202.90 × (applicablePct − 25) / 25
-// Part D = pack monthly surcharge
 // tier 1: 202.90 × 0.40 + 14.50 = 95.66/mo → 1,147.92  (CMS published combined 95.70)
-// tier 4 cumulative 6,356.16; tier 5 cumulative 6,935.52
+// tier 4: (202.90 × (80 − 25) / 25 + 83.30) × 12 = 6,356.16
+// tier 5: (202.90 × (85 − 25) / 25 + 91.00) × 12 = 6,935.52
+const TIER1_ANNUAL = 1_147.92
 const TIER4_ANNUAL = 6_356.16
 const TIER5_ANNUAL = 6_935.52
 
@@ -93,9 +93,10 @@ describeRule('usc-42-1395r-i-5-optimizer-uniform-threshold-indexing', {
     // 2028/530k/1.04²: resumed 520k → 5; uniform 540,800 → 4
     // 2028/510k/1.04²: resumed 520k → 4; uniform 540,800 → 4; freeze-forever → 5
     // 2027/490k/0.96: freeze 500k → 4; uniform 480k → 5
-    statute: [TIER5_ANNUAL, TIER5_ANNUAL, TIER4_ANNUAL, TIER4_ANNUAL],
-    uniformlyScaled: [TIER4_ANNUAL, TIER4_ANNUAL, TIER4_ANNUAL, TIER5_ANNUAL],
-    freezeForever: [TIER5_ANNUAL, TIER5_ANNUAL, TIER5_ANNUAL, TIER4_ANNUAL],
+    // 2027/113.2k/1.04: statutory 109k×1.04→113360 rounds 113k → tier 1; uniform 113360 → tier 0
+    statute: [TIER5_ANNUAL, TIER5_ANNUAL, TIER4_ANNUAL, TIER4_ANNUAL, TIER1_ANNUAL],
+    uniformlyScaled: [TIER4_ANNUAL, TIER4_ANNUAL, TIER4_ANNUAL, TIER5_ANNUAL, 0],
+    freezeForever: [TIER5_ANNUAL, TIER5_ANNUAL, TIER5_ANNUAL, TIER4_ANNUAL, TIER1_ANNUAL],
   },
   accepted: 'statute',
   produced: 'uniformlyScaled',
@@ -105,10 +106,12 @@ describeRule('usc-42-1395r-i-5-optimizer-uniform-threshold-indexing', {
     { premiumYear: 2028, sourceMagi: 530_000, premiumScale: 1.04 ** 2 },
     { premiumYear: 2028, sourceMagi: 510_000, premiumScale: 1.04 ** 2 },
     { premiumYear: 2027, sourceMagi: 490_000, premiumScale: 0.96 },
+    { premiumYear: 2027, sourceMagi: 113_200, premiumScale: 1.04 },
   ]
 
   it('uniformly scales every MAGI floor, including the frozen top row', async () => {
     const costs: number[] = []
+    const tiers: number[] = []
     for (const c of cases) {
       const sourceYear = c.premiumYear - 2
       const result = await solve(input([
@@ -121,12 +124,14 @@ describeRule('usc-42-1395r-i-5-optimizer-uniform-threshold-indexing', {
           inflationScale: c.premiumScale,
         }),
       ]))
+      tiers.push(result.schedule[2]!.irmaaTier)
       costs.push(result.lifetimeTax)
     }
+    expect(tiers).toEqual([4, 4, 4, 5, 0])
     expectCostVector(costs, produced as readonly number[])
     expect(costs).not.toEqual(accepted)
     expect(costs).not.toEqual(readings.freezeForever)
-  })
+  }, 60_000)
 })
 
 describeRule('usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure', {
@@ -165,5 +170,5 @@ describeRule('usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposur
     expect(costs).not.toEqual(accepted)
     expect(costs).not.toEqual(readings.fullYearPerPerson)
     expect(costs).not.toEqual(readings.anyEligibleHousehold)
-  })
+  }, 60_000)
 })

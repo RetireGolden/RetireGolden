@@ -390,6 +390,10 @@ Each sharpens the same withdrawal/conversion engine:
   (`usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure`). Both gaps are the local LP Medicare
   surcharge at held 2026 planning prices (first-tier combined $95.66, not CMS's published $95.70); they are
   not a claim about recommendation quality, a complete household premium, or a future CMS promulgation.
+- **IRMAA MAGI feed (exact ledger residual).** The two-year lookback feed adds tax-exempt interest but omits the
+  §135/§911/§931/§933 without-regard addback registered at
+  `usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback`; the optimizer inherits that omission. The
+  in-solve provisional-income scalar affects taxable SS, not the IRMAA MAGI base directly.
 - Inherited traditional accounts are not owner-convertible and are excluded from optimizer conversion
   supply; the exact ledger also refuses to convert them.
 - Permanent-life cash value is not an optimizer drawdown source.

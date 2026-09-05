@@ -758,12 +758,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/optimizerIrmaa.approximation.test.ts",
-          "line": 132,
+          "line": 137,
           "note": null,
           "tests": [
             {
               "title": "prices one 12-month household coefficient regardless of stipulated months",
-              "line": 147
+              "line": 152
             }
           ]
         }
@@ -1123,7 +1123,7 @@
       "title": "The optimizer uniformly scales every IRMAA MAGI threshold, including the frozen top row",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "The LP carries one inflationScale per premium year and has no separate top-row path. The exact-ledger helper already implements the freeze and the one-year-earlier resumed base (usc-42-1395r-i-5-C-top-irmaa-threshold-frozen); this record pins only buildOptimizerModel's uniform multiply and does not add a formula to that helper. The fixture holds 2026 pack prices and compares local LP surcharge cost, not recommendation quality, a complete household premium, or a promulgated future table.",
+      "conventionRationale": "The LP carries one inflationScale per premium year and has no separate top-row path. The exact-ledger helper already implements the freeze and the one-year-earlier resumed base (usc-42-1395r-i-5-C-top-irmaa-threshold-frozen); this record pins only buildOptimizerModel's uniform multiply and does not add a formula to that helper. Uniform scaling omits lower-row (i)(5)(B) rounding: when statutory rounding lowers a floor the unrounded LP can understate surcharge, and when it raises a floor it can overstate surcharge. The fixture's 113,200/1.04 case demonstrates the former; existing top-freeze cases establish both directions. The fixture does not cover every possible threshold boundary. The fixture holds 2026 pack prices and compares local LP surcharge cost, not recommendation quality, a complete household premium, or a promulgated future table.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -1156,7 +1156,7 @@
           "tests": [
             {
               "title": "uniformly scales every MAGI floor, including the frozen top row",
-              "line": 110
+              "line": 112
             }
           ]
         }

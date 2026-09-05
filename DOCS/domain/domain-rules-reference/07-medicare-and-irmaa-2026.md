@@ -18,6 +18,10 @@
   first-tier combined surcharge ($95.66) rather than CMS's published $95.70, the same 4¢ residual named on
   the standard-premium sibling; prices are not re-derived here. Both optimizer gaps are the local LP Medicare
   surcharge at held planning prices, not recommendation quality or a complete household premium.
+- **IRMAA MAGI feed (exact ledger residual).** The lookback feed adds tax-exempt interest but omits the
+  §135/§911/§931/§933 without-regard addback (`usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback`);
+  the optimizer inherits that omission. The in-solve provisional-income scalar affects taxable SS, not the IRMAA
+  MAGI base directly.
 - Engine notes: (a) two-year lookback means conversions at 63+ hit Medicare pricing; (b) brackets are cliffs — $1 over costs hundreds; (c) store full bracket tables per year in parameter data; (d) IRMAA's filing categories differ from the income-tax tables — SSA groups **qualifying surviving spouses with single/HOH filers** on the individual threshold table ([POMS HI 01101.020](https://secure.ssa.gov/poms.nsf/lnx/0601101020)), so QSS years price premiums at single thresholds even though their income tax uses the joint tables.
 - **SSA-44 redetermination (opt-in, `expenses.healthcare.ssa44`):** after a qualifying life-changing event —
   death of spouse, and optionally each person's work stoppage (retirement year) — the beneficiary can ask SSA
