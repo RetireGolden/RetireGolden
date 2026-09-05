@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T10:52:59.015Z",
+  "generatedAt": "2026-09-05T11:18:21.521Z",
   "recordCount": 432,
   "urlCount": 321,
   "fetched": 9,
   "cached": 312,
-  "entryCount": 1164,
+  "entryCount": 1165,
   "counts": {
-    "EXACT": 802,
+    "EXACT": 803,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
@@ -1763,6 +1763,16 @@
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/current/title-26/section-1.408A-4",
       "quoteSha256": "f63a39f777dbaa92",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959",
+      "citation": "IRC 401(a)(9)(C)(i)-(ii)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm",
+      "quoteSha256": "70c9e731e7baf454",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

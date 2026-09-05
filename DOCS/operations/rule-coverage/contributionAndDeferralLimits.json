@@ -2209,12 +2209,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 497,
+          "line": 533,
           "note": null,
           "tests": [
             {
               "title": "carries the adjusted threshold on a five-thousand-dollar step",
-              "line": 501
+              "line": 537
             }
           ]
         },
@@ -2398,16 +2398,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 511,
+          "line": 547,
           "note": null,
           "tests": [
             {
               "title": "moves the annual additions limit on a thousand-dollar step",
-              "line": 515
+              "line": 551
             },
             {
               "title": "leaves every borrowing limit on the step its own provision names",
-              "line": 521
+              "line": 557
             }
           ]
         }
