@@ -1556,8 +1556,10 @@ export const formerSpouseSchema = z.object({
   marriageYears: nonNegative,
   /**
    * Deceased only: the claimant's age when they remarried after this death, if
-   * they did. Remarriage before 60 forfeits the survivor benefit; at/after 60
-   * preserves it. null = did not remarry after this spouse's death.
+   * they did. null = did not remarry after this spouse's death. The engine
+   * treats a value below 60 as a permanent forfeiture even when the claimant is
+   * now single, and preserves a value at or after 60 even when the claimant is
+   * still married.
    */
   remarriedAtAge: z.number().int().min(0).max(120).nullable(),
   /**

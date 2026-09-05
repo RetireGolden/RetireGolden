@@ -250,7 +250,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming the worker has already filed so the spouse is eligible.',
+      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming on the current-spouse path that the worker has already filed so the spouse is eligible. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -267,11 +267,13 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/socialSecurity/claimFactor.ts',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor',
     ],
   },
   'usc-42-402-worker-claim-window-62-to-70': {

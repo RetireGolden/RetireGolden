@@ -39,6 +39,7 @@ import { contributionAndDeferralLimitRecords } from './records/contributionAndDe
 import { healthSavingsAccountRecords } from './records/healthSavingsAccounts.js'
 import { medicareAndHealthCoverageRecords } from './records/medicareAndHealthCoverage.js'
 import { socialSecurityRecords } from './records/socialSecurity.js'
+import { socialSecurityMaritalEligibilityRecords } from './records/socialSecurityMaritalEligibility.js'
 import { investmentIncomeAndBasisRecords } from './records/investmentIncomeAndBasis.js'
 import { individualIncomeTaxRecords } from './records/individualIncomeTax.js'
 import { transferAndUnmodeledRegimeRecords } from './records/transfersAndUnmodeledRegimes.js'
@@ -391,6 +392,7 @@ const registry = {
   ...healthSavingsAccountRecords,
   ...medicareAndHealthCoverageRecords,
   ...socialSecurityRecords,
+  ...socialSecurityMaritalEligibilityRecords,
   ...investmentIncomeAndBasisRecords,
   ...individualIncomeTaxRecords,
   ...transferAndUnmodeledRegimeRecords,
@@ -450,6 +452,7 @@ export const TAX_RULE_RECORD_MODULES: readonly (readonly [
   ['requiredMinimumDistributions', requiredMinimumDistributionRecords],
   ['rothAccounts', rothAccountRecords],
   ['socialSecurity', socialSecurityRecords],
+  ['socialSecurityMaritalEligibility', socialSecurityMaritalEligibilityRecords],
   ['statesMidwest', midwestStateRecords],
   ['statesNortheast', northeastStateRecords],
   ['statesSouthAtlantic', southAtlanticStateRecords],

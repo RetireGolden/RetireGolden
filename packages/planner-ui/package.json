@@ -90,7 +90,7 @@
     "benchmark:documents": "node scripts/document-benchmark.mjs"
   },
   "dependencies": {
-    "@retiregolden/engine": "^0.3.0",
+    "@retiregolden/engine": "^0.3.1",
     "highs": "^1.15.2",
     "idb": "^8.0.3",
     "recharts": "^3.10.1"

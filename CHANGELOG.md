@@ -4,6 +4,20 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Prepared **`@retiregolden/engine` 0.3.1** — a **patch** bump exporting the
+  shared `passesModeledOrdinaryWidowRecordGates` helper so modeled ordinary
+  widow record gates are not duplicated across callers. **Not yet published.**
+- **The planner-ui range moves to `^0.3.1`**, same coordinated-floor pattern as
+  the 0.3.0 entry in **2026-09-04** — `@retiregolden/planner-ui` now declares
+  `^0.3.1`. Its own version is not bumped here. The new floor stops packaged
+  UI from resolving engine 0.3.0, which never exported that helper. Pack
+  smoke's `auto` mode still detects the minimum is not on npm, asserts the
+  local engine version equals the declared minimum, and packs the exact local
+  unpublished minimum.
+- **Downstream to coordinate:** publish engine 0.3.1 to npm before any
+  planner-ui release that depends on it. Neither package is published by this
+  change.
+
 **`@retiregolden/engine` boundary notes, relocated from the package README**
 
 These describe the shape of five `actions/` and `projection/` boundaries as

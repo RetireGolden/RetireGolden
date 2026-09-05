@@ -29,6 +29,7 @@ import { medicareAndHealthCoverageRecords } from './records/medicareAndHealthCov
 import { requiredMinimumDistributionRecords } from './records/requiredMinimumDistributions.js'
 import { rothAccountRecords } from './records/rothAccounts.js'
 import { socialSecurityRecords } from './records/socialSecurity.js'
+import { socialSecurityMaritalEligibilityRecords } from './records/socialSecurityMaritalEligibility.js'
 import { midwestStateRecords } from './records/statesMidwest.js'
 import { northeastStateRecords } from './records/statesNortheast.js'
 import { southAtlanticStateRecords } from './records/statesSouthAtlantic.js'
@@ -54,6 +55,7 @@ const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknow
   ['healthSavingsAccounts', healthSavingsAccountRecords],
   ['medicareAndHealthCoverage', medicareAndHealthCoverageRecords],
   ['socialSecurity', socialSecurityRecords],
+  ['socialSecurityMaritalEligibility', socialSecurityMaritalEligibilityRecords],
   ['investmentIncomeAndBasis', investmentIncomeAndBasisRecords],
   ['individualIncomeTax', individualIncomeTaxRecords],
   ['transfersAndUnmodeledRegimes', transferAndUnmodeledRegimeRecords],
