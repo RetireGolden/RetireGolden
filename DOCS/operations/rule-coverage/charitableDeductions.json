@@ -135,11 +135,11 @@
       "title": "The 60 percent ceiling on cash gifts is not applied to the projected charitable deduction",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "This is the timing case the errorDirection doc comment describes, and the sign really does turn on the year rather than being undetermined. In the gift year the engine’s deduction is too large and tax is understated; in each of the five succeeding years it is too small, because the carryforward the statute grants is not there, and tax is overstated. It does not net to nothing even in principle: a carryforward the taxpayer never has the income to absorb expires unused, which for a household drawing down in retirement is the likely outcome, and in that case the engine’s year-one generosity is a permanent understatement. Nor is an annual projection indifferent to which year a deduction lands in, since the year decides the bracket it offsets, the capital-gain stacking threshold, and the modified AGI that sets the Medicare premium adjustment two years later. The sixty-percent rate for cash gifts dates from taxable years beginning after December 31, 2017. The amendment note quoted below shows that clause (G)(i) formerly capped such contributions at 60 percent of contribution base through taxable years beginning before January 1, 2026; the operative (G)(i) text in the first authority below expresses the net-of-(A) combined formula and applies for taxable years beginning after December 31, 2025 under section 70425(c). effectiveFrom is 2026 because this record states that post-amendment combined reading. The correct implementation lives in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts and is registered at irc-170-b-1-G-cash-percentage-ceiling; the live path does not reach it.",
+      "conventionRationale": "This is the timing case the errorDirection doc comment describes, and the sign really does turn on the year rather than being undetermined. In the gift year the engine’s deduction is too large and tax is understated; in a succeeding year when the statutory carryforward is usable, the engine’s deduction is too small because the carryforward is absent, and tax is overstated. It need not net to zero: if a carryforward remains unused through expiry, the engine’s year-one generosity is a permanent understatement. Nor is an annual projection indifferent to which year a deduction lands in, since the year decides the bracket it offsets and the capital-gain stacking threshold. Itemized deductions do not directly reduce AGI or IRMAA MAGI. effectiveFrom is 2018 because the projection gap — no percentage ceiling and no carryforward — predates the 2025 amendment: packForYear supports earlier years via a first-pack stand-in, and computeFederalTax for 2025 returns the raw gift without applying any (G)(i) cap even under the pre-amendment 60-percent-of-base reading. The amendment note quoted below preserves that historical reading without pretending the post-amendment net-of-(A) formula governed 2018. The sibling settled record irc-170-b-1-G-cash-percentage-ceiling keeps effectiveFrom 2026 because it states the current combined ceiling only; this approximated record’s broader date reflects the wider temporal scope of the live omission, not a different claim about the statute. The correct implementation lives in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts and is registered at irc-170-b-1-G-cash-percentage-ceiling; the live path does not reach it.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
-      "effectiveFrom": 2026,
+      "effectiveFrom": 2018,
       "effectiveThrough": null,
       "verifiedOn": "2026-09-05",
       "dueOn": "2027-09-05",
@@ -163,20 +163,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/charitableAndSection68.approximation.test.ts",
-          "line": 400,
+          "line": 398,
           "note": "an $80,000 gift against a $100,000 contribution base",
           "tests": [
             {
               "title": "deducts a gift above the ceiling in full in the year it is made",
-              "line": 417
+              "line": 416
             },
             {
               "title": "understates tax in the gift year",
-              "line": 429
+              "line": 428
             },
             {
               "title": "overstates tax in the following year, which is why the direction is bothDirections",
-              "line": 444
+              "line": 442
             },
             {
               "title": "has nowhere to put a carryforward, however it is supplied",
@@ -321,20 +321,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/charitableAndSection68.approximation.test.ts",
-          "line": 332,
+          "line": 330,
           "note": null,
           "tests": [
             {
               "title": "allows only the excess over the floor",
-              "line": 344
+              "line": 342
             },
             {
               "title": "allows nothing for a gift that does not clear the floor",
-              "line": 361
+              "line": 359
             },
             {
               "title": "does not reach a year the floor does not govern",
-              "line": 374
+              "line": 372
             }
           ]
         }
@@ -364,7 +364,7 @@
       "title": "Category order in which the 0.5% floor is absorbed",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "The stable record id retains its historical I-ii suffix. The operative citation is IRC 170(b)(1)(I), clauses (i) through (vi), as quoted below; clause (ii) alone supplies only the second category.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -527,24 +527,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/charitableAndSection68.approximation.test.ts",
-          "line": 273,
+          "line": 271,
           "note": "a gift far above the cap, with percentage-ceiling capacity to spare",
           "tests": [
             {
               "title": "claims the statutory cap and not the CARES-era figure",
-              "line": 281
+              "line": 279
             },
             {
               "title": "adds the capped amount to the standard deduction rather than replacing it",
-              "line": 295
+              "line": 293
             },
             {
               "title": "doubles the cap on a joint return and only there",
-              "line": 303
+              "line": 301
             },
             {
               "title": "loses the excess over the cap outright, because 170(p) is not a carryover rule",
-              "line": 310
+              "line": 308
             }
           ]
         }
