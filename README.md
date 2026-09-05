@@ -133,6 +133,12 @@ Runs on pull-request open, sync, reopen, and ready-for-review (and manually from
 
 Cutover requires this ordered operation: first merge the pinned OpenRouter action and central `RetireGolden/.github` reusable; then merge the product caller change while the existing Grok gate is still satisfied; immediately replace Main Guard's required context `review / grok-first-pass-gate` with `review / openrouter-first-pass-gate`. GitHub cannot make the workflow merge and ruleset edit atomic, so operators should expect a short controlled interval in which open PRs may wait for the old context. Keep that interval brief, verify the new context on an active PR, and manually dispatch OpenRouter for any existing PR that needs a seed. The old Grok workflow remains available only for explicit emergency dispatches and is never an OpenRouter fallback.
 
+### OpenRouter review recovery
+
+[`.github/workflows/openrouter-review-recovery.yml`](.github/workflows/openrouter-review-recovery.yml)
+
+For caller-pin migrations with an existing review ledger, dispatch this workflow from the default branch after other reviews finish. It verifies the full PR while retaining previous review decisions. CI accepts it only after checking the registered workflow identity and pinned workflow contents; a clean result still requires `run-ci` and a successful exact-head Azure run. See the [recovery procedure](DOCS/operations/ci-cd-and-deploy.md).
+
 ### Engine package release
 
 [`.github/workflows/publish-engine.yml`](.github/workflows/publish-engine.yml)

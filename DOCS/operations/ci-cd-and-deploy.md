@@ -123,6 +123,39 @@ the canonical ledger link, the fetched run passes the same workflow/repository/c
 run succeeds. The human label and exact-head Azure rerun remain required after dispatch; the broker never
 auto-labels or reruns a Dependabot PR.
 
+For a caller-pin migration with an existing review ledger, use
+`gh workflow run openrouter-review-recovery.yml --ref main -f pr_number=<PR>`.
+This dedicated workflow runs explicit verify mode instead of restarting the initial review.
+It retains the ledger but examines the full PR, including when that ledger already names
+the current head. Earlier commits are not omitted based on the prior ledger. It refuses forks and
+closed PRs, uses a pinned action against the resolved PR head, and fails
+unless verification reports `clean`; the action refuses verification without an existing ledger.
+Normal pull-request review and first-pass gates are unchanged.
+
+The recovery producer is action commit `956b494594d8c7969ec9b355fd11d8e39b3b6161`,
+distinct from the regular producer in the table above. Its
+[`_resolve_loop` guard](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/cli.py#L645-L653)
+rejects verify mode without an existing ledger. Both producers emit ledger v1 with the same
+envelope fields, marker, states and compatibility limits; their pinned source was compared for this
+rollout. Recovery fixes the baseline Grok/GLM lanes and Luna judge locally, with the existing follow-up
+budget of low effort, 30 tool turns and 600 KB. It changes coverage to full PR and retains prior
+ledger decisions; it does not claim to be an independent first-pass review or inherit future central
+policy changes. Changes to those choices require review and a new workflow blob pin.
+
+Wait for other reviews before dispatching. Recovery rejects active ordinary reviews of the target
+head before invoking the action. CI additionally refuses a recovery created before an ordinary
+exact-head review completed, including an ordinary run that later posts issues; dispatch a new
+recovery after all reviews finish in that case. Ordinary follow-up jobs share recovery's concurrency
+group. Off-default dispatches fail explicitly and cannot authorize CI.
+
+CI admits this recovery only when its workflow ID matches GitHub's registered recovery workflow,
+the dispatch came from the default branch in this repository, and the workflow files at both the
+run commit and current default branch match the helper's pinned recovery Git blob SHA. The usual
+exact-head bot ledger, successful-run, live-label and PR-state checks still apply. After recovery,
+apply `run-ci` and rerun the existing exact-head Azure workflow, then wait for every required job.
+The broker does not initiate this recovery or grant CI automatically from it. When changing the
+recovery workflow, update its blob pin in the helper and the helper's Azure bootstrap pin together.
+
 ## Build and SPA routing
 
 - The web app lives under **`app/`** (the engine package under `packages/engine/`); production output
