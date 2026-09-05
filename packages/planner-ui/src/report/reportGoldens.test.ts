@@ -13,6 +13,11 @@
  * Everything is pinned (fixed clock, fixed start year, deterministic example
  * ids), so any diff in these files is a real contract change and must be
  * reviewed as one.
+ *
+ * 2026-09-05: state-income-tax provenance figures in the committed goldens
+ * were updated to match packages/engine/src/params/provenance.ts (Maine 2026
+ * basic/age/phase-out appendix text). Report calculation values are unchanged;
+ * Maine law oracle coverage lives in engine goldens and DOCS/domain.
  */
 import { describe, expect, it } from 'vitest'
 
