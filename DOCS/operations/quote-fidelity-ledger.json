@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T21:55:46.141Z",
-  "recordCount": 433,
-  "urlCount": 323,
-  "fetched": 10,
-  "cached": 313,
-  "entryCount": 1184,
+  "generatedAt": "2026-09-05T22:45:54.356Z",
+  "recordCount": 434,
+  "urlCount": 324,
+  "fetched": 9,
+  "cached": 315,
+  "entryCount": 1187,
   "counts": {
-    "EXACT": 816,
+    "EXACT": 819,
     "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 215,
     "ELISION-EXACT": 62,
@@ -10265,6 +10265,36 @@
       "host": "code.wvlegislature.gov",
       "url": "https://code.wvlegislature.gov/11-21-12/",
       "quoteSha256": "3766d9e829842bad",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-4j-graduated-income-tax-rate-schedule",
+      "citation": "W. Va. Code §11-21-4j(a)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-4J/",
+      "quoteSha256": "837646c885e846b9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-4j-graduated-income-tax-rate-schedule",
+      "citation": "W. Va. Code §11-21-4j(a)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-4J/",
+      "quoteSha256": "a76491fcc8a83fa4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-4j-graduated-income-tax-rate-schedule",
+      "citation": "W. Va. Code §11-21-4j(e)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-4J/",
+      "quoteSha256": "6daca44827d63b05",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

@@ -519,18 +519,37 @@ describeRule('fl-const-7-5-a-income-tax-prohibited', {
   })
 })
 
-// WV brackets, single and joint alike: 2.22% to 10k, 2.96% to 25k, 3.33% to
-// 40k, 4.44% to 60k, 4.82% above. No standard deduction.
+// §11-21-4j (2026) worksheet helper for the Social Security fixture below.
 function westVirginiaTax(taxable: number): number {
   const bands: readonly [number, number, number][] = [
-    [0, 10_000, 2.22], [10_000, 25_000, 2.96], [25_000, 40_000, 3.33],
-    [40_000, 60_000, 4.44], [60_000, Infinity, 4.82],
+    [0, 10_000, 2.11], [10_000, 25_000, 2.81], [25_000, 40_000, 3.16],
+    [40_000, 60_000, 4.22], [60_000, Infinity, 4.58],
   ]
   return bands.reduce(
     (tax, [lower, upper, ratePct]) =>
       tax + Math.max(0, Math.min(taxable, upper) - lower) * (ratePct / 100),
     0,
   )
+}
+
+const WV_2026_RATES = [2.11, 2.81, 3.16, 4.22, 4.58] as const
+const WV_STALE_RATES = [2.22, 2.96, 3.33, 4.44, 4.82] as const
+const WV_BRACKET_BOUNDS = [0, 10_000, 25_000, 40_000, 60_000] as const
+
+function wvBrackets(
+  rates: readonly number[],
+  bounds: readonly number[] = WV_BRACKET_BOUNDS,
+): StateTaxParams['brackets']['single'] {
+  return bounds.map((lowerBound, index) => ({ lowerBound, ratePct: rates[index]! }))
+}
+
+function wvPackWithBrackets(
+  rates: readonly number[],
+  mfjBounds?: readonly number[],
+): StateTaxParams {
+  const single = wvBrackets(rates)
+  const marriedFilingJointly = wvBrackets(rates, mfjBounds ?? WV_BRACKET_BOUNDS)
+  return { ...pack('WV'), brackets: { single, marriedFilingJointly } }
 }
 
 const WV_OTHER_INCOME = 90_000
@@ -563,6 +582,77 @@ describeRule('wv-code-11-21-12-social-security-full-modification', {
       .toBeCloseTo(readings.federallyTaxableSocialSecurityStillInTheBase, 6)
     expect(computeStateTaxableIncome(taxing, scenario))
       .toBeCloseTo(WV_OTHER_INCOME + WV_FEDERALLY_TAXABLE_SS, 6)
+  })
+})
+
+// §11-21-4j (2026), W. Va. Code §11-21-4j(a): 2.11% through $10,000; $211 plus
+// 2.81% of excess over $10,000 through $25,000; $632.50 plus 3.16% of excess
+// over $25,000 through $40,000; $1,106.50 plus 4.22% of excess over $40,000
+// through $60,000; $1,950.50 plus 4.58% of excess over $60,000. Single and MFJ
+// share the same thresholds under (a). Modeled base only (standardDeduction 0;
+// no SS, retirement, or age-65 modification in these scenarios).
+//   $10,000 single → 2.11% × $10,000 = $211.00
+//   $100,000 single or joint → $3,782.50 (top band: $1,950.50 + 4.58% × $40,000)
+// Rejected prior §11-21-4i schedule: $222.00 / $3,981.50.
+// Naive 5% haircut on those prior rates (×0.95) lands at $210.90 / $3,782.425 —
+// close to but not equal to the published §11-21-4j rates because the legislature
+// rounded each bracket rate independently. Doubled MFJ bounds at $100,000 joint
+// → $3,057.00.
+const WV_RATE_SCENARIOS = [
+  input({ state: 'WV', ordinaryIncome: 10_000 }),
+  input({ state: 'WV', ordinaryIncome: 100_000 }),
+  input({
+    state: 'WV',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: 100_000,
+    agesAlive: [50, 50],
+  }),
+] as const
+
+describeRule('wv-code-11-21-4j-graduated-income-tax-rate-schedule', {
+  readings: {
+    accepted: [211, 3782.50, 3782.50],
+    stalePre4iPack: [222, 3981.50, 3981.50],
+    naiveFivePercentHaircut: [210.90, 3782.425, 3782.425],
+    doubledMfjBracketBounds: [211, 3782.50, 3057],
+  },
+  accepted: 'accepted',
+}, ({ accepted, readings }) => {
+  it('prices modeled single and joint filers on the §11-21-4j schedule', () => {
+    WV_RATE_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTax(pack('WV'), scenario))
+        .toBeCloseTo(accepted[index]!, 2)
+    })
+  })
+
+  it('would over-tax on the rejected prior §11-21-4i schedule', () => {
+    const stale = wvPackWithBrackets(WV_STALE_RATES)
+    WV_RATE_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTax(stale, scenario))
+        .toBeCloseTo(readings.stalePre4iPack[index]!, 2)
+    })
+  })
+
+  it('is not a flat 5% rate cut of the prior schedule', () => {
+    const naive = wvPackWithBrackets(WV_STALE_RATES.map((rate) => rate * 0.95))
+    WV_RATE_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTax(naive, scenario))
+        .toBeCloseTo(readings.naiveFivePercentHaircut[index]!, 2)
+      expect(computeStateTax(naive, scenario))
+        .not.toBeCloseTo(accepted[index]!, 2)
+    })
+  })
+
+  it('is not what doubled MFJ break points would price at $100,000 joint', () => {
+    const wrongJoint = wvPackWithBrackets(
+      WV_2026_RATES,
+      WV_BRACKET_BOUNDS.map((bound) => bound * 2),
+    )
+    const joint = WV_RATE_SCENARIOS[2]!
+    expect(computeStateTax(wrongJoint, joint))
+      .toBeCloseTo(readings.doubledMfjBracketBounds[2]!, 2)
+    expect(computeStateTax(wrongJoint, joint))
+      .not.toBeCloseTo(accepted[2]!, 2)
   })
 })
 

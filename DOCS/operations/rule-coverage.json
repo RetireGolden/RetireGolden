@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 433,
+    "total": 434,
     "byClassification": {
       "approximated": 120,
       "outOfScope": 75,
-      "settled": 233,
+      "settled": 234,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 61,
       "awaitingGuidance": 11,
-      "staticStatute": 355,
+      "staticStatute": 356,
       "sunsetting": 6
     },
     "byJurisdiction": {
@@ -67,10 +67,10 @@
         "VT": 1,
         "WA": 2,
         "WI": 2,
-        "WV": 1,
+        "WV": 2,
         "WY": 1
       },
-      "stateTotal": 107
+      "stateTotal": 108
     }
   },
   "attestations": {
@@ -209,7 +209,7 @@
     {
       "path": "params/state/data/year2026.ts",
       "sweptOn": "2026-09-05",
-      "note": "existing law records name this pack; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, and non-ME gaps unchanged"
+      "note": "Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, and WV personal exemptions / senior any-income / disability / pension-subtype modifications. Not complete law coverage."
     },
     {
       "path": "projection/annualCashFlowCapture.ts",
@@ -623,7 +623,7 @@
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 10
+      "ruleCount": 11
     },
     {
       "module": "statesSouthCentral",
@@ -642,14 +642,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T21:55:46.141Z",
-    "entryCount": 1184,
-    "fetched": 10,
-    "cached": 313,
+    "generatedAt": "2026-09-05T22:45:54.356Z",
+    "entryCount": 1187,
+    "fetched": 9,
+    "cached": 315,
     "counts": {
       "ELISION-EXACT": 62,
       "ELISION-PUNCTUATION": 5,
-      "EXACT": 816,
+      "EXACT": 819,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 215,
       "PUNCTUATION": 42,

@@ -22,6 +22,16 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   deduction $8,875, modeled state tax $8,837.8625 (pack taxable-income component
   only). Evidence: discriminating fixtures and goldens updated; example-case
   impact counts deferred to maintainer verification.
+- **Corrected West Virginia 2026 personal income tax rates** to W. Va. Code
+  §11-21-4j(a)/(e) (SB 392; signed 2026-03-31, effective 2026-06-12, retroactive
+  to 2026-01-01): **2.11% / 2.81% / 3.16% / 4.22% / 4.58%** at shared
+  **$0 / $10,000 / $25,000 / $40,000 / $60,000** bounds for single and MFJ.
+  Prior pack still carried §11-21-4i rates (2.22%–4.82%). Modeled taxable-base
+  examples: $10,000 → $211 (−$11 vs $222); $100,000 → $3,782.50 (−$199 vs
+  $3,981.50). No deduction, exemption, or retirement-bucket changes. Full IT-140
+  not certified (personal exemptions and senior any-income/disability/pension
+  subtypes remain unmodeled). The sole state pack also stands in outside 2026
+  under the existing fallback; statutory authority is 2026+.
 - Prepared **`@retiregolden/engine` 0.3.1** — a **patch** bump exporting the
   shared `passesModeledOrdinaryWidowRecordGates` helper so modeled ordinary
   widow record gates are not duplicated across callers. **Not yet published.**

@@ -149,4 +149,12 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     publisher: 'Tax Foundation / state revenue departments',
     url: 'https://taxfoundation.org/data/all/state/state-income-tax-rates/',
   },
+  {
+    id: 'wv-2026-income-tax-rates',
+    label: 'West Virginia 2026 income tax rates',
+    figures:
+      '§11-21-4j(a): 2.11% / 2.81% / 3.16% / 4.22% / 4.58% at $0 / $10,000 / $25,000 / $40,000 / $60,000; single and MFJ share the subsection (a) table (MFS uses subsection (b), out of pack scope).',
+    publisher: 'West Virginia Legislature',
+    url: 'https://code.wvlegislature.gov/11-21-4J/',
+  },
 ]
