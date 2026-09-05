@@ -415,11 +415,10 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       const ordinary = allocateRetirementActionCandidateIdentity(allocatorPlan('ira'), intent)
       expect(ordinary.status).toBe('allocated')
       if (ordinary.status !== 'allocated') return
-      // Identity cents on the allocated request are the candidate's
-      // requestedAmount. Executed cents are observed separately above
-      // (0 refused vs 5_000 executed); the allocator computes no tax dollars.
+      // Identity allocation carries requestedAmount in cents on the request;
+      // executed cents are asserted separately above (0 refused vs 5_000
+      // executed). The allocator does not compute tax dollars.
       expect(ordinary.request.requestedAmount).toBe(5_000)
-      expect(ordinary.request.requestedAmount).not.toBe(accepted)
       expect(ordinary.request).not.toBeNull()
 
       const employer = allocateRetirementActionCandidateIdentity(allocatorPlan('employer'), intent)

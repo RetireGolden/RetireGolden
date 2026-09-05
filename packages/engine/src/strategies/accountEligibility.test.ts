@@ -1749,9 +1749,11 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
     })
 
     it('does not confuse the Roth source with the generic not-an-IRA refusal', () => {
-      // A Roth IRA has its own code; a Roth designated employer subaccount and
-      // every other non-IRA source fall to qcd-source-not-ira. Losing the
-      // distinction would hide which statute is unimplemented.
+      // evaluateQcd: a Roth IRA source gets qcd-roth-source-unsupported —
+      // distinct from qcd-source-not-ira. The allocator test below exercises
+      // the intentionally coarser qcd-source-not-ira guard (Roth is not a
+      // traditional IRA); losing the evaluateQcd distinction would hide which
+      // statute is unimplemented.
       const outcome = refuse(qcdRequest(), [rothIra('ira')])
       expect(outcome.codes).not.toContain('qcd-source-not-ira')
     })

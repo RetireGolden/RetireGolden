@@ -568,12 +568,8 @@
           "note": "the basis pool is owner-wide, not per-account and not household-wide",
           "tests": [
             {
-              "title": "aggregates both owner IRAs and excludes the spouse account",
-              "line": 356
-            },
-            {
-              "title": "fails closed when the zero sibling is omitted from the December 31 observation",
-              "line": 389
+              "title": "aggregates owner IRAs including effective treat-as-own and refuses a missing zero sibling",
+              "line": 409
             }
           ]
         },

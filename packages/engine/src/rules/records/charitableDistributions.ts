@@ -261,7 +261,8 @@ export const charitableDistributionRecords = {
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'The Form 8606 projection basis pool may honor an effective spouse treat-as-own election, folding an inherited source into the owner’s traditional IRA pool. QCD eligibility and the identity allocator still refuse inherited markers even when that election is effective. This narrower unsupported QCD path is not a legal bar; the cited authority still records inherited IRAs as eligible when the beneficiary has attained age 70½.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
@@ -399,7 +400,7 @@ export const charitableDistributionRecords = {
   'irc-408-d-8-B-employer-plan-source-exclusion': {
     title: 'An employer-plan distribution is not a QCD source',
     statement:
-      'A QCD is a distribution from an individual retirement plan as defined in section 7701(a)(37) — an individual retirement account described in section 408(a) or an individual retirement annuity described in section 408(b). An employer-plan account is neither, so the engine refuses a named QCD whose source is an employer-plan account before any charitable exclusion is calculated. The identity allocator raises that refusal as qcd-source-not-ira on the account kind; it does not inspect employer-contribution activity.',
+      'A QCD is a distribution from an individual retirement plan as defined in section 7701(a)(37) — an individual retirement account described in section 408(a) or an individual retirement annuity described in section 408(b). A traditional employer-plan account is neither, so the engine refuses a named QCD whose source is one before any charitable exclusion is calculated. For a traditional employer-plan source, qcdSourceIssue raises qcd-source-not-ira on account kind. Its combined type/kind guard also rejects a Roth source with that same code, as the Roth-source record describes; inherited traditional IRAs reach a separate later guard. Employer-contribution activity is checked elsewhere under the ongoing SEP/SIMPLE rule.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

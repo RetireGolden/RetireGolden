@@ -781,42 +781,42 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 434,
+          "line": 433,
           "note": "DAF / supporting organization",
           "tests": [
             {
               "title": "executes an attested public charity and refuses without the no-DAF attestation",
-              "line": 442
+              "line": 441
             },
             {
               "title": "refuses an explicitly designated donor-advised fund even with affirmative attestations",
-              "line": 456
+              "line": 455
             },
             {
               "title": "refuses an explicitly designated supporting organization even with affirmative attestations",
-              "line": 465
+              "line": 464
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 475,
+          "line": 474,
           "note": "direct-from-custodian attestation",
           "tests": [
             {
               "title": "refuses a QCD without the direct-from-custodian attestation",
-              "line": 483
+              "line": 482
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 496,
+          "line": 495,
           "note": "eligible-organization attestation",
           "tests": [
             {
               "title": "refuses a QCD without the eligible-organization attestation",
-              "line": 504
+              "line": 503
             }
           ]
         }
@@ -899,23 +899,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 555,
+          "line": 554,
           "note": "month-end birth",
           "tests": [
             {
               "title": "clamps a nonexistent target day to the last day of that month",
-              "line": 560
+              "line": 559
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 581,
+          "line": 580,
           "note": "leap-day birth",
           "tests": [
             {
               "title": "adds 846 months in one step rather than clamping the 70th anniversary first",
-              "line": 590
+              "line": 589
             }
           ]
         }
@@ -1352,16 +1352,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 517,
+          "line": 516,
           "note": null,
           "tests": [
             {
               "title": "lets the non-excluded portion proceed to section 170 treatment",
-              "line": 524
+              "line": 523
             },
             {
               "title": "pins notApplicable treatment on a wholly excluded QCD",
-              "line": 537
+              "line": 536
             }
           ]
         }
@@ -1436,20 +1436,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1821,
+          "line": 1823,
           "note": "the direct-payment limb, not the missing attestation",
           "tests": [
             {
               "title": "refuses a direct trustee payment to a split-interest entity",
-              "line": 1847
+              "line": 1849
             },
             {
               "title": "does not let the direct-payment attestation buy the entity class back",
-              "line": 1853
+              "line": 1855
             },
             {
               "title": "accepts the same transfer to an ordinary public charity, so the refusal is the entity class",
-              "line": 1861
+              "line": 1863
             }
           ]
         }
@@ -1527,20 +1527,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1776,
+          "line": 1778,
           "note": null,
           "tests": [
             {
               "title": "requires the affirmative not-a-split-interest attestation the record describes",
-              "line": 1782
+              "line": 1784
             },
             {
               "title": "refuses a destination the request itself names as a split-interest entity",
-              "line": 1800
+              "line": 1802
             },
             {
               "title": "stays quiet on an ordinary public charity with the attestation given",
-              "line": 1816
+              "line": 1818
             }
           ]
         }
@@ -1563,7 +1563,7 @@
       "title": "Inherited IRA as a QCD source",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "The Form 8606 projection basis pool may honor an effective spouse treat-as-own election, folding an inherited source into the owner’s traditional IRA pool. QCD eligibility and the identity allocator still refuse inherited markers even when that election is effective. This narrower unsupported QCD path is not a legal bar; the cited authority still records inherited IRAs as eligible when the beneficiary has attained age 70½.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1633,24 +1633,24 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1866,
+          "line": 1868,
           "note": null,
           "tests": [
             {
               "title": "refuses an inherited source rather than borrowing the donor own-IRA basis pool",
-              "line": 1872
+              "line": 1874
             },
             {
               "title": "does not mistake the inherited IRA for a non-IRA source",
-              "line": 1878
+              "line": 1880
             },
             {
               "title": "accepts the same request from the donor own IRA, so the refusal is the inherited fact",
-              "line": 1885
+              "line": 1887
             },
             {
               "title": "allocates an owned traditional IRA and blocks an inherited source as qcd-inherited-basis-unsupported",
-              "line": 1889
+              "line": 1891
             }
           ]
         }
@@ -1819,7 +1819,7 @@
             },
             {
               "title": "allocates an owned traditional IRA and blocks a Roth source as qcd-source-not-ira",
-              "line": 1759
+              "line": 1761
             }
           ]
         }
@@ -1892,16 +1892,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1907,
+          "line": 1909,
           "note": null,
           "tests": [
             {
               "title": "refuses a QCD below age 70½ instead of pricing an early distribution",
-              "line": 1918
+              "line": 1920
             },
             {
               "title": "accepts the same request once the donor is past 70½, which is also past 59½",
-              "line": 1924
+              "line": 1926
             }
           ]
         }
