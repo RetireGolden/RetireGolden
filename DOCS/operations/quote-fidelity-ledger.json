@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T09:19:33.532Z",
+  "generatedAt": "2026-09-05T09:58:15.167Z",
   "recordCount": 432,
   "urlCount": 320,
   "fetched": 9,
   "cached": 311,
-  "entryCount": 1159,
+  "entryCount": 1163,
   "counts": {
-    "EXACT": 797,
+    "EXACT": 801,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
@@ -592,14 +592,24 @@
       "citation": "IRS Notice 2007-7, Q&A-37",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-drop/n-07-07.pdf",
-      "quoteSha256": "ea2c017c933c3fa6",
+      "quoteSha256": "5c0e06ac1e946388",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
       "id": "irc-408-d-8-beneficiary-ira-source",
-      "citation": "Treas. Reg. 1.408-8(e)(2)(i)",
+      "citation": "IRS Publication 590-B, inherited IRA basis",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/publications/p590b",
+      "quoteSha256": "eb1944adb50db3e5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-8-beneficiary-ira-source",
+      "citation": "Treas. Reg. 1.408-8(e)(2)(i), owner-versus-beneficiary RMD aggregation",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
       "quoteSha256": "31b6d2cb17a0a44a",
@@ -612,9 +622,19 @@
       "citation": "IRS Notice 2007-7, Q&A-36",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-drop/n-07-07.pdf",
-      "quoteSha256": "3f706ba03090915f",
+      "quoteSha256": "8847a64976453cb8",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-8-roth-ira-source",
+      "citation": "IRC 408(d)(8)(B), flush text",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm",
+      "quoteSha256": "e5a67ea851839452",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -1079,12 +1099,32 @@
     },
     {
       "id": "irc-408-d-2-A-owner-wide-non-inherited-ira-pool",
+      "citation": "IRC 408A(d)(4)(A)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm",
+      "quoteSha256": "3f231766323848e6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-A-owner-wide-non-inherited-ira-pool",
       "citation": "Instructions for Form 8606 (2025)",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf",
       "quoteSha256": "804dbb2065287b8c",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-A-owner-wide-non-inherited-ira-pool",
+      "citation": "IRS Publication 590-B, inherited IRA basis",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/publications/p590b",
+      "quoteSha256": "eb1944adb50db3e5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {

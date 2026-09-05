@@ -9,6 +9,8 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   input builder, and the decision generators all consume it, so the inherited-IRA convertibility rule
   (`irc-408-d-3-C-i-inherited-ira-rollover-bar`) (and the
   Rule-of-55 / pre-59½ penalty logic) lives in exactly one place.
+  A Roth IRA and an inherited beneficiary IRA can legally fund a QCD; product-supported scope fails closed
+  (`irc-408-d-8-roth-ira-source`, `irc-408-d-8-beneficiary-ira-source`).
 - **Explicit equity-compensation actions.** An individually owned equity-compensation ordinary withdrawal
   executes only when its persisted `final` status proves it already vested or its exact action date is on or
   after the persisted cliff vest date. `final` evidence deliberately carries no invented vest date. Under the
@@ -83,7 +85,11 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   non-Roth IRA pool stage as Form 8606 line 7 distribution candidates
   (`form-8606-line-7-owned-ira-movement-staging`). The pool itself is owner-wide and
   excludes inherited accounts, per filing person
-  (`irc-408-d-2-A-owner-wide-non-inherited-ira-pool`). Line 7 and line 8 remain distinct
+  (`irc-408-d-2-A-owner-wide-non-inherited-ira-pool`). The projection selector includes
+  every owned traditional IRA, including zero-balance and unrequested siblings, and
+  delegates spouse-treat-as-own to the existing helper; that selection is not filing-grade
+  completeness, rollover/repayment, or exact measurement.
+  Line 7 and line 8 remain distinct
   (`form-8606-lines-7-and-8-distinct-distribution-staging`); if their
   independently required rounding would recover more than the annual basis, classification fails closed
   instead of emitting contradictory evidence. The pure penalty-prerequisite boundary then considers only

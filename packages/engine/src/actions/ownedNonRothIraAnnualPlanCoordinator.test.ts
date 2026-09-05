@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { describeRule } from '../rules/describeRule.js'
 
 import type { Plan } from '../model/plan.js'
+import { buildSimulatorOwnedNonRothIraAnnualObservation } from '../projection/ownedNonRothIraAnnualObservation.js'
 import {
   cashAccount,
   singlePersonPlan,
@@ -319,18 +320,45 @@ function qualifiedSeppRoute(
 }
 
 describe('Plan-owned non-Roth IRA annual coordinator', () => {
-  // The pool-scope record's composition pair: both of the owner's IRAs enter
-  // ONE pool (408(d)(2)(A)-(B) one-contract aggregation) while the spouse's
-  // IRA stays out - the pool is per filing person, never household-wide.
+  // Owner-wide one-contract pool (408(d)(2)(A)-(B)): both owned IRAs plus an
+  // effective spouse treat-as-own IRA. Spouse and Roth stay out. Projection
+  // honors the election; the coordinator inventory remains requested+sibling.
   describeRule('irc-408-d-2-A-owner-wide-non-inherited-ira-pool', {
     note: 'the basis pool is owner-wide, not per-account and not household-wide',
     readings: {
-      ownerWideSingleContract: ['ira-requested', 'ira-sibling'],
-      householdWideMergedPool: ['ira-requested', 'ira-sibling', 'ira-spouse'],
+      ownerWideSingleContract: {
+        status: 'annualObservationBuilt',
+        ids: ['ira-requested', 'ira-sibling', 'ira-treated-as-own'],
+      },
+      requestedAccountOnly: {
+        status: 'annualObservationBlocked',
+        issues: [
+          { kind: 'yearEndBalanceForeign', sourceAccountId: 'ira-sibling' },
+          { kind: 'yearEndBalanceForeign', sourceAccountId: 'ira-treated-as-own' },
+        ],
+      },
+      householdWideMergedPool: {
+        status: 'annualObservationBlocked',
+        issues: [
+          { kind: 'yearEndBalanceMissing', sourceAccountId: 'ira-spouse' },
+        ],
+      },
+      rothIncluded: {
+        status: 'annualObservationBlocked',
+        issues: [
+          { kind: 'yearEndBalanceMissing', sourceAccountId: 'ira-roth-excluded' },
+        ],
+      },
+      effectiveTreatAsOwnDropped: {
+        status: 'annualObservationBlocked',
+        issues: [
+          { kind: 'yearEndBalanceForeign', sourceAccountId: 'ira-treated-as-own' },
+        ],
+      },
     },
     accepted: 'ownerWideSingleContract',
-  }, ({ accepted }) => {
-    it('aggregates both owner IRAs and excludes the spouse account', () => {
+  }, ({ accepted, readings }) => {
+    function inputWithSpouseIra() {
       const value = input()
       const valuePlan = value.plan as Plan
       valuePlan.household.people = [
@@ -348,12 +376,125 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
         ...valuePlan.accounts,
         traditionalAccount(asAccountId('ira-spouse'), 5_000, asPersonId('spouse')),
       ]
+      return { value, valuePlan }
+    }
+
+    function publicObservationOutcome(
+      result: ReturnType<typeof buildSimulatorOwnedNonRothIraAnnualObservation>,
+    ) {
+      if (result.status === 'annualObservationBuilt') {
+        return {
+          status: result.status,
+          ids: result.observation.yearEndApplicableBalances
+            .map((entry) => String(entry.sourceAccountId))
+            .sort(),
+        }
+      }
+      return {
+        status: result.status,
+        issues: result.issues
+          .map((issue) => ({
+            kind: issue.kind,
+            sourceAccountId: issue.sourceAccountId,
+          }))
+          .sort((left, right) =>
+            String(left.sourceAccountId) < String(right.sourceAccountId)
+              ? -1
+              : String(left.sourceAccountId) > String(right.sourceAccountId)
+                ? 1
+                : 0),
+      }
+    }
+
+    it('aggregates owner IRAs including effective treat-as-own and refuses a missing zero sibling', () => {
+      const { value, valuePlan } = inputWithSpouseIra()
       const result = successful(value)
       expect(
         result.annualEvidence.characterization.annualBasisEvidence.poolMembers
           .map((member) => String(member.sourceAccountId))
           .sort(),
-      ).toEqual([...accepted].sort())
+      ).toEqual(['ira-requested', 'ira-sibling'])
+
+      const observationPlan = structuredClone(valuePlan)
+      const treatedAsOwn = traditionalAccount(
+        'ira-treated-as-own',
+        300,
+        ownerPersonId,
+      )
+      if (treatedAsOwn.type !== 'traditional') {
+        throw new Error('fixture drift')
+      }
+      treatedAsOwn.inherited = {
+        ownerDeathYear: 2028,
+        decedentHadStartedRmds: true,
+        beneficiary: {
+          beneficiaryClass: 'designated-individual',
+          beneficiaryBirthYear: 1950,
+          edbCategory: 'surviving-spouse',
+          soleBeneficiary: true,
+          election: 'treat-as-own',
+          treatAsOwnElectionYear: 2029,
+          spouseUnlimitedWithdrawalRight: true,
+          ownerBirthYear: 1940,
+          ownerBirthMonth: 1,
+          ownerBirthDay: 2,
+          provenance: { source: 'test', asOf: '2030-01-01' },
+        },
+      }
+      observationPlan.accounts = [
+        ...observationPlan.accounts,
+        {
+          type: 'roth',
+          id: 'ira-roth-excluded',
+          name: 'ira-roth-excluded',
+          ownerPersonId,
+          annualReturnPct: 0,
+          kind: 'ira',
+          balance: 700,
+          annualContribution: 0,
+        },
+        treatedAsOwn,
+      ]
+
+      const observation = buildSimulatorOwnedNonRothIraAnnualObservation({
+        plan: observationPlan,
+        ownerPersonId,
+        taxYear: 2030,
+        ledgerRunId: 'pool-selector-observation-2030',
+        observationBoundary: 'sealedAfterAllAnnualTransactionsAndGrowth',
+        startOfTaxYearIraBasis: 0,
+        yearEndBalances: [
+          { sourceAccountId: 'ira-requested', balance: 900 },
+          { sourceAccountId: 'ira-sibling', balance: 0 },
+          { sourceAccountId: 'ira-treated-as-own', balance: 300 },
+        ],
+      })
+      const observed = publicObservationOutcome(observation)
+      expect(observed).toEqual(accepted)
+      for (const [name, reading] of Object.entries(readings)) {
+        if (name === 'ownerWideSingleContract') continue
+        expect(observed).not.toEqual(reading)
+      }
+
+      const missingSibling = buildSimulatorOwnedNonRothIraAnnualObservation({
+        plan: observationPlan,
+        ownerPersonId,
+        taxYear: 2030,
+        ledgerRunId: 'pool-selector-observation-2030',
+        observationBoundary: 'sealedAfterAllAnnualTransactionsAndGrowth',
+        startOfTaxYearIraBasis: 0,
+        yearEndBalances: [
+          { sourceAccountId: 'ira-requested', balance: 900 },
+          { sourceAccountId: 'ira-treated-as-own', balance: 300 },
+        ],
+      })
+      expect(publicObservationOutcome(missingSibling)).toEqual({
+        status: 'annualObservationBlocked',
+        issues: [{
+          kind: 'yearEndBalanceMissing',
+          sourceAccountId: 'ira-sibling',
+        }],
+      })
     })
   })
 

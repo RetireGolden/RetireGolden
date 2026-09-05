@@ -341,9 +341,14 @@ The donor's age-70½
 threshold is the exact civil date 846 calendar months from the birth date with a month-end clamp
 (`irc-408-d-8-B-ii-age-70-half`, registered `unsettled` — no provision addressed to 408(d)(8)(B)(ii) resolves a
 month-end or leap-day birth), and the gift's scheduled date must fall in the action year and on or after it. The
-source must resolve as an owned, non-inherited IRA with a recorded classification fact; an employer plan is
-refused (`irc-408-d-8-B-employer-plan-source-exclusion`), an ongoing SEP or SIMPLE IRA is refused
-(`irc-408-d-8-B-ongoing-sep-simple-source-exclusion`), and an inherited IRA is structurally excluded. The charity
+source must resolve as an owned, non-inherited traditional IRA with a recorded classification fact. An employer
+plan is refused (`irc-408-d-8-B-employer-plan-source-exclusion`); an ongoing SEP or SIMPLE IRA is refused
+(`irc-408-d-8-B-ongoing-sep-simple-source-exclusion`) — those are legal source distinctions. Inherited and Roth
+IRAs are legally possible QCD sources under the recorded limits but unsupported in the current product; they fail
+closed with typed refusals (`irc-408-d-8-beneficiary-ira-source`, `irc-408-d-8-roth-ira-source`), and structural
+replay confinement to owned, traditional IRAs is the implementation. An effective spouse treat-as-own election may
+fold an inherited source into the projection basis pool, but QCD eligibility still refuses every inherited marker
+(see `irc-408-d-8-beneficiary-ira-source`). The charity
 must be designated `eligiblePublicCharity` with the direct-transfer, eligible-organization, and
 not-a-DAF-or-supporting-organization attestations all true (`irc-408-d-8-B-i-qualified-recipient`), or the
 action is refused `qcd-direct-charity-unconfirmed`; a split-interest designation is separately refused

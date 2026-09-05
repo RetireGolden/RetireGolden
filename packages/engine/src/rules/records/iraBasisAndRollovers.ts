@@ -160,12 +160,12 @@ export const iraBasisAndRolloverRecords = {
   'irc-408-d-2-A-owner-wide-non-inherited-ira-pool': {
     title: 'The annual basis pool is all of the owner\'s own IRAs, and only those',
     statement:
-      'For the annual pro-rata basis computation, all of an individual\'s individual retirement plans are treated as one contract and all of a year\'s distributions as one distribution, so the engine builds one basis pool per person. The pool\'s boundaries follow the Form 8606 filing unit as the IRS administers it: a spouse\'s IRAs are a separate pool with a separate form, and inherited IRAs are excluded from the owned pool, their basis handled under the separately registered inherited regime.',
+      'For the annual pro-rata basis computation, all of an individual\'s individual retirement plans are treated as one contract and all of a year\'s distributions as one distribution, so the engine builds one basis pool per person. Section 408A(d)(4)(A) applies that aggregation separately to Roth IRAs and other individual retirement plans, so the owned pool is the non-Roth IRAs. The remaining boundaries follow the Form 8606 filing unit as the IRS administers it: a spouse\'s IRAs are a separate pool with a separate form, and inherited-IRA basis is not combined with the owner\'s own traditional IRA basis unless the decedent\'s spouse chooses to treat the IRA as their own. The projection selector includes every owned traditional IRA, including zero-balance and unrequested siblings, and delegates spouse-treat-as-own to the existing helper. This election-aware fold is projection-only today: the pinned Plan/action pool boundaries structurally exclude every inherited marker, even when the spouse election is effective; that is the current supported implementation scope, not a legal exclusion. That selector does not establish filing-grade completeness, outstanding rollovers or repayments, or exact measurement.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The one-contract aggregation is statutory. The exclusions are not: as the sibling 408(d)(2) fraction record already records, 408(d)(2)(A) says "all individual retirement plans" without qualification, and the spousal and inherited separations rest on the Form 8606 instructions and Publication 590-B - uniform administrative practice, publication-level authority. The engine follows the IRS position; the pinned gates are where that composition is enforced.',
+      'The one-contract aggregation is statutory. Roth IRAs are carved out of that contract by 408A(d)(4)(A), which is also statutory. The remaining exclusions are not: as the sibling 408(d)(2) fraction record already records, 408(d)(2)(A) says "all individual retirement plans" without qualification, and the spousal and inherited separations rest on the Form 8606 instructions and Publication 590-B - uniform administrative practice, publication-level authority. The engine follows the IRS position; the pinned gates are where that composition is enforced.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -174,16 +174,28 @@ export const iraBasisAndRolloverRecords = {
       quotedText:
         'For purposes of applying section 72 to any amount described in paragraph (1)- (A) all individual retirement plans shall be treated as 1 contract, (B) all distributions during any taxable year shall be treated as 1 distribution \u2026',
     }, {
+      kind: 'statute',
+      citation: 'IRC 408A(d)(4)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408A.htm',
+      quotedText:
+        'Section 408(d)(2) shall be applied separately with respect to Roth IRAs and other individual retirement plans.',
+    }, {
       kind: 'formInstruction',
       citation: 'Instructions for Form 8606 (2025)',
       url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
       quotedText:
         'If both you and your spouse are required to file 2025 Form 8606, file a separate 2025 Form 8606 for each of you. If you are required to file 2025 Form 8606 for IRAs inherited from more than one decedent, file a separate 2025 Form 8606 for the IRA from each decedent.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B, inherited IRA basis',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'Unless you are the decedent\'s spouse and choose to treat the IRA as your own, you can\'t combine this basis with any basis you have in your own traditional IRA(s) or any basis in traditional IRA(s) you inherited from other decedents.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-29',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualPlanCoordinator.ts',
@@ -191,6 +203,7 @@ export const iraBasisAndRolloverRecords = {
       'packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
+      'packages/engine/src/projection/ownedNonRothIraAnnualObservation.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/ownedNonRothIraMovementCandidate.ts#stageOwnedNonRothIraOrdinaryWithdrawalMovements',
@@ -199,6 +212,7 @@ export const iraBasisAndRolloverRecords = {
       'packages/engine/src/actions/ownedNonRothIraAnnualCandidateTransaction.ts#preparePlanOwnedNonRothIraAnnualCandidateTransaction',
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingSourceResolver.ts#resolvePlanOwnedNonRothIraAnnualFilingSources',
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts#buildPlanOwnedNonRothIraAnnualFilingEvidence',
+      'packages/engine/src/projection/ownedNonRothIraAnnualObservation.ts#ownedIraSourceIds',
     ],
   },
 

@@ -15,6 +15,10 @@ import type { FinalizeAnnualQcdUnifiedTransactionInput } from './annualQcdUnifie
 import type { ClassifyOwnedNonRothIraAnnualWithdrawalsInput } from './ownedNonRothIraWithdrawalCharacter.js'
 import { asAccountId, asActionId, asAllocationId, asPersonId, asPlanId } from './identity.js'
 import { asPositiveUsdCents, asUsdCents } from './money.js'
+import {
+  allocateRetirementActionCandidateIdentity,
+  type QcdCandidateIdentityIntent,
+} from './retirementActionCandidateIdentityAllocator.js'
 import type { PreparePlanOwnedNonRothIraAnnualPhysicalTransactionInput } from './ownedNonRothIraAnnualPhysicalTransaction.js'
 import * as structuralId from './structuralId.js'
 
@@ -375,6 +379,54 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsAnEmployerPlanAsAnIraSource)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-source-not-ira')
+    })
+
+    it('allocates identity for an ordinary IRA and blocks an employer-kind source that differs only in kind', () => {
+      const request = qcd('qcd-p1', p1, ira1, '2026-04-01', 10)
+      const intent: QcdCandidateIdentityIntent = {
+        kind: request.kind,
+        year: request.year,
+        executionDate: request.executionDate,
+        executionSequence: request.executionSequence,
+        requestedAmount: request.requestedAmount,
+        donorPersonId: request.donorPersonId,
+        provenance: request.provenance,
+        charity: request.charity,
+        sourceAllocation: {
+          sourceAccountId: request.allocation.sourceAccountId,
+          requestedAmount: request.allocation.requestedAmount,
+        },
+      }
+      function allocatorPlan(kind: 'ira' | 'employer'): Plan {
+        const plan = couplePlan({
+          p1Dob: '1955-01-01',
+          p2Dob: '1955-01-01',
+          p1PlanningAge: 100,
+          p2PlanningAge: 100,
+        })
+        plan.id = asPlanId('joint-qcd-plan')
+        plan.accounts = [
+          traditionalAccount(ira1, 100, p1, kind),
+          traditionalAccount(ira2, 100, p2),
+        ]
+        return plan
+      }
+
+      const ordinary = allocateRetirementActionCandidateIdentity(allocatorPlan('ira'), intent)
+      expect(ordinary.status).toBe('allocated')
+      if (ordinary.status !== 'allocated') return
+      // Identity allocation carries requestedAmount in cents on the request;
+      // executed cents are asserted separately above (0 refused vs 5_000
+      // executed). The allocator does not compute tax dollars.
+      expect(ordinary.request.requestedAmount).toBe(5_000)
+      expect(ordinary.request).not.toBeNull()
+
+      const employer = allocateRetirementActionCandidateIdentity(allocatorPlan('employer'), intent)
+      expect(employer.status).toBe('blocked')
+      expect(employer.request).toBeNull()
+      if (employer.status !== 'blocked') return
+      expect(employer.issues.flatMap((issue) => issue.reason?.code ?? []))
+        .toContain('qcd-source-not-ira')
     })
   })
 

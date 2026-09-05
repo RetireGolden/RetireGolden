@@ -116,8 +116,13 @@
   scheduled date must fall in the action year and on or after that threshold. The source must be an owned,
   non-inherited IRA carrying a recorded classification fact; employer plans are excluded
   (`irc-408-d-8-B-employer-plan-source-exclusion`), an ongoing SEP or SIMPLE IRA is refused
-  (`irc-408-d-8-B-ongoing-sep-simple-source-exclusion`), and inherited and Roth IRAs are excluded
-  structurally (`irc-408-d-8-beneficiary-ira-source`, `irc-408-d-8-roth-ira-source`). The charity must be
+  (`irc-408-d-8-B-ongoing-sep-simple-source-exclusion`) — those are legal source distinctions. Inherited and
+  Roth IRAs are legally possible QCD sources under the recorded limits but unsupported in the current product;
+  they fail closed with typed refusals (`irc-408-d-8-beneficiary-ira-source`,
+  `irc-408-d-8-roth-ira-source`), and structural replay confinement to owned, traditional IRAs is the
+  implementation, not the statutory test. An effective spouse treat-as-own election may fold an inherited source
+  into the projection basis pool, but QCD paths still refuse every inherited marker (see that record). The
+  charity must be
   designated an eligible public charity with the direct-transfer, eligible-organization, and
   not-a-DAF-or-supporting-organization attestations all true (`irc-408-d-8-B-i-qualified-recipient`); a
   split-interest designation is refused on its own reason (`irc-408-d-8-F-split-interest-sublimit`,
