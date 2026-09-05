@@ -15,6 +15,15 @@ export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
   'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
+/** Primary ledger producer: openrouter-pr-review-action@146a516683d3af34c1b9e403f02e6e02ccabc567. */
+const LEDGER_FINDING_ID_RE = /^r\p{Decimal_Number}{1,3}-\p{Decimal_Number}{1,3}$/u
+// Mirrors Python str.strip(); U+FEFF (BOM) is not whitespace there (schema.py valid_review_path).
+const PYTHON_STRIP_RE = /^[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+|[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+$/gu
+const LEDGER_SEVERITIES = new Set(['bug', 'risk', 'nit'])
+const LEDGER_MAX_TITLE = 300
+const LEDGER_MAX_EVIDENCE = 616
+const LEDGER_MAX_MODELS = 8
+const LEDGER_MAX_FILE = 500
 export const EXPENSIVE_AZURE_JOB_NAMES = new Set([
   'lint',
   'test engine',
@@ -25,6 +34,56 @@ export const EXPENSIVE_AZURE_JOB_NAMES = new Set([
   'build',
   'deploy',
 ])
+
+function codepointLength(value) {
+  return Array.from(value).length
+}
+
+function pythonStrip(value) {
+  return value.replace(PYTHON_STRIP_RE, '')
+}
+
+function posixPathParts(path) {
+  const parts = []
+  for (const segment of path.split('/')) {
+    if (segment === '' || segment === '.') continue
+    parts.push(segment)
+  }
+  return parts
+}
+
+function validFindingId(ident) {
+  const match = LEDGER_FINDING_ID_RE.exec(ident)
+  return match !== null && match[0] === ident
+}
+
+function validReviewPath(value) {
+  const path = pythonStrip(value)
+  if (!path || codepointLength(path) > LEDGER_MAX_FILE) return false
+  if (path.includes('\\') || path.includes('`')) return false
+  for (const character of path) {
+    const code = character.codePointAt(0)
+    if (code < 32 || code === 127) return false
+  }
+  if (path.startsWith('/')) return false
+  return posixPathParts(path).every((part) => part !== '..')
+}
+
+function isValidLedgerFinding(item) {
+  if (item === null || typeof item !== 'object' || Array.isArray(item)) return false
+  const { id: ident, sev: severity, file: fileValue, line, title, ev: evidence, st: status, m: models } = item
+  if (typeof ident !== 'string' || !validFindingId(ident)) return false
+  if (!LEDGER_SEVERITIES.has(severity)) return false
+  if (fileValue !== undefined && fileValue !== null &&
+    (typeof fileValue !== 'string' || !validReviewPath(fileValue))) return false
+  if (line !== undefined && line !== null &&
+    (typeof line === 'boolean' || !Number.isInteger(line) || line <= 0)) return false
+  if (typeof title !== 'string' || !pythonStrip(title) || codepointLength(title) > LEDGER_MAX_TITLE) return false
+  if (typeof evidence !== 'string' || codepointLength(evidence) > LEDGER_MAX_EVIDENCE) return false
+  if (status !== 'open' && status !== 'disputed') return false
+  if (!Array.isArray(models) || models.length > LEDGER_MAX_MODELS) return false
+  return models.every((model) => typeof model === 'string' && codepointLength(model) <= 100)
+}
 
 function decodeLedgerPayload(encoded) {
   if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) {
@@ -47,17 +106,11 @@ function trustedLedger(body, { repository, pullNumber, headSha, workflowRunUrls 
   const payload = marker && decodeLedgerPayload(marker[1])
 
   const verdict = /^\*\*Verdict:\*\* `(clean|issues)`$/.exec(lines[3] ?? '')?.[1]
-  // Upstream review-loop keeps disputed history in the ledger; `fixed` removes
-  // the entry, and clean means zero open findings (all-disputed is valid).
+  // Producer: openrouter-pr-review-action@146a516683d3af34c1b9e403f02e6e02ccabc567
+  // apply_round drops fixed entries; clean means zero open findings (_decode_finding shape).
   const cleanFindings =
     Array.isArray(payload?.findings) &&
-    payload.findings.every(
-      (finding) =>
-        finding !== null &&
-        typeof finding === 'object' &&
-        !Array.isArray(finding) &&
-        finding.st === 'disputed',
-    )
+    payload.findings.every((finding) => isValidLedgerFinding(finding) && finding.st === 'disputed')
   const validPayload =
     payload?.lv === 1 &&
     payload.repo === repository.full_name &&

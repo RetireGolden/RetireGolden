@@ -66,10 +66,26 @@ URL. The lane section is intentionally variable-length:
 ```
 
 The marker JSON must have ledger version `1`, this repository, PR number, head SHA, a 12-character
-generation id, a positive round, and an empty `findings` array. Both authorization paths also prove the
+generation id, a positive round, and a `findings` array that is either empty or contains only valid
+`disputed` entries with zero `open` findings (a clean **Verdict** therefore means no open findings,
+not necessarily an empty ledger). Ledger finding states are only `open` and `disputed`; a `fixed`
+resolution removes the entry rather than storing a settled state. Both authorization paths also prove the
 successful `pull_request` review run came from the same repository and that its caller workflow blob at
 the reviewed head exactly equals the caller blob on the default branch. They read GitHub APIs only and
 never check out or execute PR code.
+
+#### Ledger producer contract
+
+The embedded ledger is produced by the pinned upstream review action
+[`FlyOverCoderKY/openrouter-pr-review-action@146a516683d3af34c1b9e403f02e6e02ccabc567`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/146a516683d3af34c1b9e403f02e6e02ccabc567).
+RetireGolden authorization validates decoded markers against that producer, not a vendored copy:
+
+| Contract | Source |
+|----------|--------|
+| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/146a516683d3af34c1b9e403f02e6e02ccabc567/src/or_pr_review/loop.py#L425-L465) |
+| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/146a516683d3af34c1b9e403f02e6e02ccabc567/src/or_pr_review/schema.py#L188-L201) |
+| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/146a516683d3af34c1b9e403f02e6e02ccabc567/src/or_pr_review/loop.py#L188-L235) (`open_issue_count` at L227–L233) |
+| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/146a516683d3af34c1b9e403f02e6e02ccabc567/src/or_pr_review/loop.py#L321-L347) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/146a516683d3af34c1b9e403f02e6e02ccabc567/src/or_pr_review/loop.py#L384-L422) |
 
 - The broker serializes review/Azure completion events for a head, finds the newest eligible skipped Azure
   `pull_request` run before it mutates the PR, rechecks live PR state, adds `run-ci`, rechecks again, then

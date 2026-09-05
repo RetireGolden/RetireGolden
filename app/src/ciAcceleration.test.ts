@@ -60,12 +60,22 @@ const disputedFinding = {
   st: 'disputed',
   m: ['openai/gpt-5.6-luna'],
 }
+const disputedNullLocationFinding = {
+  id: 'r2-1',
+  sev: 'nit',
+  file: null,
+  line: null,
+  title: 'General concern without file anchor',
+  ev: 'Producer allows null file and line on ledger findings.',
+  st: 'disputed',
+  m: ['openai/gpt-5.6-luna'],
+}
 const cleanDisputedPayload = {
   ...payload,
   round: 2,
   findings: [disputedFinding],
 }
-const encodePayload = (value: object) => btoa(JSON.stringify(value))
+const encodePayload = (value: object) => Buffer.from(JSON.stringify(value), 'utf8').toString('base64')
 const encodedPayload = encodePayload(payload)
 const encodedCleanDisputedPayload = encodePayload(cleanDisputedPayload)
 const encodedIssuesPayload = encodePayload({ ...payload, findings: [{ rule: 'injected-test-finding' }] })
@@ -219,6 +229,52 @@ describe('OpenRouter CI authorization contract', () => {
     })
   })
 
+  it('accepts exact-head clean reviews with producer-shaped disputed findings at null file and line', () => {
+    const nullLocationBody = cleanReviewBody
+      .replace(encodedPayload, encodePayload({ ...cleanDisputedPayload, findings: [disputedNullLocationFinding] }))
+      .replace('**Mode:** `initial`', '**Mode:** `verify`')
+    expect(findTrustedCleanReview([review({ body: nullLocationBody })], reviewContext)).toMatchObject({
+      commit_id: sha,
+    })
+  })
+
+  it.each([
+    ['normalized dotted path', './packages//engine/./src/example.ts'],
+    ['trailing slash path', 'path/'],
+    ['Unicode decimal digit id', 'r۱-۲'],
+    ['160-codepoint emoji title and 600-codepoint emoji evidence', {
+      id: 'r1-3',
+      title: '😀'.repeat(160),
+      ev: '🙂'.repeat(600),
+    }],
+    ['500-codepoint file path', { file: '📁'.repeat(500) }],
+    ['100-codepoint model id', { m: ['🤖'.repeat(100)] }],
+    ['FEFF-only title', { title: '\uFEFF' }],
+  ])('accepts producer compatibility case: %s', (_label, pathOrOverrides) => {
+    const overrides = typeof pathOrOverrides === 'string'
+      ? (pathOrOverrides.startsWith('r') ? { id: pathOrOverrides } : { file: pathOrOverrides })
+      : pathOrOverrides
+    const finding = { ...disputedFinding, ...overrides }
+    const body = cleanReviewBody
+      .replace(encodedPayload, encodePayload({ ...cleanDisputedPayload, findings: [finding] }))
+      .replace('**Mode:** `initial`', '**Mode:** `verify`')
+    expect(findTrustedCleanReview([review({ body })], reviewContext)).toMatchObject({ commit_id: sha })
+  })
+
+  it.each([
+    ['301-codepoint emoji title', { title: '😀'.repeat(301) }],
+    ['617-codepoint emoji evidence', { ev: '🙂'.repeat(617) }],
+    ['501-codepoint file path', { file: '📁'.repeat(501) }],
+    ['101-codepoint model id', { m: ['🤖'.repeat(101)] }],
+  ])('rejects producer compatibility bound violation: %s', (_label, overrides) => {
+    expect(findTrustedCleanReview([review({
+      body: cleanReviewBody.replace(
+        encodedPayload,
+        encodePayload({ ...payload, findings: [{ ...disputedFinding, ...overrides }] }),
+      ),
+    })], reviewContext)).toBeUndefined()
+  })
+
   it.each([
     ['issues verdict', review({ body: cleanReviewBody.replace('`clean`', '`issues`') })],
     ['stale visible Commit line', review({ body: cleanReviewBody.replace(`**Commit:** \`${sha}\``, `**Commit:** \`${'b'.repeat(40)}\``) })],
@@ -227,6 +283,24 @@ describe('OpenRouter CI authorization contract', () => {
     ['wrong heading', review({ body: cleanReviewBody.replace('## OpenRouter pull-request review', '## A different heading') })],
     ['reordered visible fields', review({ body: cleanReviewBody.replace('**Verdict:** `clean`\n**Scope:**', '**Scope:**\n**Verdict:** `clean`') })],
     ['payload with missing-state finding', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{}] })) })],
+    ['payload with missing finding id', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, id: undefined }] })) })],
+    ['payload with missing finding severity', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, sev: undefined }] })) })],
+    ['payload with missing finding title', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, title: undefined }] })) })],
+    ['payload with missing finding evidence', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, ev: undefined }] })) })],
+    ['payload with missing finding models', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, m: undefined }] })) })],
+    ['payload with invalid finding id', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, id: 'finding-1' }] })) })],
+    ['payload with invalid finding severity', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, sev: 'critical' }] })) })],
+    ['payload with non-string finding severity', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, sev: 2 }] })) })],
+    ['payload with empty finding title', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, title: '   ' }] })) })],
+    ['payload with oversized finding title', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, title: 'x'.repeat(301) }] })) })],
+    ['payload with oversized finding evidence', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, ev: 'x'.repeat(617) }] })) })],
+    ['payload with too many finding models', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, m: Array.from({ length: 9 }, (_, index) => `model-${index}`) }] })) })],
+    ['payload with invalid finding file path', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, file: '../secret.ts' }] })) })],
+    ['payload with finding id trailing newline', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, id: 'r1-1\n' }] })) })],
+    ['payload with malformed finding id', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, id: 'r1-' }] })) })],
+    ['payload with Python-only whitespace title', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, title: '\u0085' }] })) })],
+    ['payload with non-positive finding line', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, line: 0 }] })) })],
+    ['payload with boolean finding line', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, line: true }] })) })],
     ['payload with open finding', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, st: 'open' }] })) })],
     ['payload with mixed open and disputed findings', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [disputedFinding, { ...disputedFinding, id: 'r1-2', st: 'open' }] })) })],
     ['payload with fixed finding state', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, findings: [{ ...disputedFinding, st: 'fixed' }] })) })],
@@ -237,7 +311,7 @@ describe('OpenRouter CI authorization contract', () => {
     ['payload for a different repository', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, repo: 'other/repo' })) })],
     ['payload for a different PR', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, pr: 621 })) })],
     ['payload for a different SHA', review({ body: cleanReviewBody.replace(encodedPayload, encodePayload({ ...payload, sha: 'b'.repeat(40) })) })],
-    ['malformed payload JSON', review({ body: cleanReviewBody.replace(encodedPayload, btoa('not JSON')) })],
+    ['malformed payload JSON', review({ body: cleanReviewBody.replace(encodedPayload, Buffer.from('not JSON', 'utf8').toString('base64')) })],
     ['malformed payload base64', review({ body: cleanReviewBody.replace(encodedPayload, 'AAAA=') })],
     ['noncanonical payload base64', review({ body: cleanReviewBody.replace(encodedPayload, `${encodedPayload}=`) })],
     ['wrong workflow run URL and id', review({ body: cleanReviewBody.replace('/123)', '/456)') })],
