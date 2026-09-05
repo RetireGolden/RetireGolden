@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { deriveRbdComparison } from '../rmd/applicableAge.js'
 import { describeRule } from '../rules/describeRule.js'
 import { SGA_ANNUAL_MONTHS, ssdiSuspendedBySga } from '../socialSecurity/disability.js'
 
@@ -158,26 +159,70 @@ describe('standardDeduction', () => {
   })
 })
 
+function compare1959(ownerDeathYear: number, decedentHadStartedRmds: boolean): string {
+  const result = deriveRbdComparison({
+    ownerBirthYear: 1959,
+    ownerDeathYear,
+    decedentHadStartedRmds,
+  })
+  if (result.kind === 'resolved') return result.comparison
+  if (
+    result.reason === 'born-1959-applicable-age-contested' ||
+    result.reason === 'assertion-contradicts-derivation'
+  ) {
+    return `needs-review:${result.reason}`
+  }
+  throw new Error(`unexpected needs-review reason in 1959 fixture: ${result.reason}`)
+}
+
 describe('applicable age for the 1959 cohort', () => {
-  // IRC 401(a)(9)(C)(v) catches a 1959 birth twice over: such a person attains
-  // age 73 in 2032, inside clause (I)'s window, and age 74 in 2033, inside
-  // clause (II)'s. The enacted text resolves nothing, the final regulation
-  // reserved Treas. Reg. 1.401(a)(9)-2(b)(2)(v), and only a proposed rule fills
-  // it with age 73. This fixture pins the reading the engine took so a later
-  // reader cannot "correct" it to 75 without noticing the question was
-  // researched. Two distribution calendar years of forced ordinary income for
-  // the whole cohort ride on it.
+  // IRC 401(a)(9)(C)(v) catches a 1959 birth twice: clause (I) attains 73 in 2032
+  // (before 1 January 2033), clause (II) attains 74 in 2033 (after 31 December 2032).
+  // No final regulation expressly resolves the overlap; Prop. Treas. Reg. would choose 73.
+  // Owner living-RMD calculator emits one start age (73); inherited deriveRbdComparison keeps
+  // both candidate RBD years and emits born-1959-applicable-age-contested only where they disagree on before versus on-or-after.
+  // Collapsing onto 73 leaves death 2034 on assertion-contradicts-derivation; collapsing onto 75
+  // treats death 2034 as before-rbd; blanket born-1959 refusal rejects all three death years.
   describeRule('treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959', {
-    readings: { proposedRegulationAgeSeventyThree: 73, clauseTwoOnItsOwnTermsAgeSeventyFive: 75 },
-    accepted: 'proposedRegulationAgeSeventyThree',
+    readings: {
+      proposedRegulationAgeSeventyThreeConditionalInheritedRefusal: {
+        selectedOwnerRmdAge: 73,
+        deathBeforeBothCandidateRbds: 'before-rbd',
+        deathBetweenCandidateRbds: 'needs-review:born-1959-applicable-age-contested',
+        deathAfterBothCandidateRbds: 'on-or-after-rbd',
+      },
+      seventyThreeCollapsedEverywhere: {
+        selectedOwnerRmdAge: 73,
+        deathBeforeBothCandidateRbds: 'before-rbd',
+        deathBetweenCandidateRbds: 'needs-review:assertion-contradicts-derivation',
+        deathAfterBothCandidateRbds: 'on-or-after-rbd',
+      },
+      seventyFiveCollapsedEverywhere: {
+        selectedOwnerRmdAge: 75,
+        deathBeforeBothCandidateRbds: 'before-rbd',
+        deathBetweenCandidateRbds: 'before-rbd',
+        deathAfterBothCandidateRbds: 'on-or-after-rbd',
+      },
+      blanketBorn1959Refusal: {
+        selectedOwnerRmdAge: 73,
+        deathBeforeBothCandidateRbds: 'needs-review:born-1959-applicable-age-contested',
+        deathBetweenCandidateRbds: 'needs-review:born-1959-applicable-age-contested',
+        deathAfterBothCandidateRbds: 'needs-review:born-1959-applicable-age-contested',
+      },
+    },
+    accepted: 'proposedRegulationAgeSeventyThreeConditionalInheritedRefusal',
   }, ({ accepted, readings }) => {
     it('takes the proposed regulation reading for a 1959 birth', () => {
-      expect(rmdStartAgeForBirthYear(1959)).toBe(accepted)
-      expect(rmdStartAgeForBirthYear(1959)).not.toBe(readings.clauseTwoOnItsOwnTermsAgeSeventyFive)
-      // The neighbours are unambiguous: 1958 is caught by clause (I) alone and
-      // 1960 by clause (II) alone, so only 1959 is doubly covered.
-      expect(rmdStartAgeForBirthYear(1958)).toBe(73)
-      expect(rmdStartAgeForBirthYear(1960)).toBe(75)
+      const observed = {
+        selectedOwnerRmdAge: rmdStartAgeForBirthYear(1959),
+        deathBeforeBothCandidateRbds: compare1959(2032, false),
+        deathBetweenCandidateRbds: compare1959(2034, false),
+        deathAfterBothCandidateRbds: compare1959(2036, true),
+      }
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.seventyThreeCollapsedEverywhere)
+      expect(observed).not.toEqual(readings.seventyFiveCollapsedEverywhere)
+      expect(observed).not.toEqual(readings.blanketBorn1959Refusal)
     })
   })
 })

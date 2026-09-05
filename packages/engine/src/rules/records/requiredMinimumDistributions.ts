@@ -490,12 +490,13 @@ export const requiredMinimumDistributionRecords = {
   'treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959': {
     title: 'Applicable age for an owner born in 1959',
     statement:
-      'A person born in 1959 satisfies both prongs of the SECURE 2.0 applicable-age definition at once, so the statute names age 73 and age 75 for the same individual. The engine uses 73, following the proposed regulation that would fill the paragraph the final regulation left reserved.',
+      'A person born in 1959 satisfies both prongs of the SECURE 2.0 applicable-age definition at once, so the statute names age 73 and age 75 for the same individual. The owner living-RMD path uses 73, following the proposed regulation that would fill the paragraph the final regulation left reserved. The inherited RBD comparison retains both candidate RBD years and refuses with born-1959-applicable-age-contested only where those candidates disagree on whether death is before or on-or-after the required beginning date; it resolves when both candidates and the asserted fact agree, including deaths outside both candidate RBD years.',
     classification: 'unsettled',
     contraryReading:
-      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. The nearest current guidance, Announcement 2026-7 (2026-11 I.R.B. 697), defers the anticipated applicability of final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so the contest stands with no guidance selecting either age.',
+      'IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, and Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved: no final regulation or primary published guidance expressly resolves the overlap; the proposed paragraph would choose 73. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. Announcement 2026-7 section III (2026-11 I.R.B. 697) anticipates final regulations amending 1.401(a)(9)-4, 1.401(a)(9)-5, and 1.401(a)(9)-6, issued pursuant to the 2024 proposed regulations, for distribution calendar years beginning no earlier than six months after those final regulations are issued; it does not supply a final 1.401(a)(9)-2(b)(2)(v) resolution.',
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'OWNER VERSUS INHERITED. The owner living-RMD path has to select one start age and follows the proposed 73. The inherited deriveRbdComparison path keeps both candidate RBD years (April 1 of 2033 if 73, April 1 of 2035 if 75) and fails closed with born-1959-applicable-age-contested only where those years disagree on before versus on-or-after; deaths outside both candidate RBD years resolve when the asserted fact agrees. The two paths are independent: collapsing the inherited candidates onto the owner\'s 73 would change the between-RBD-years outcome from the contest refusal into the ordinary assertion-contradicts-derivation guard, and collapsing onto 75 would treat that same death year as before-rbd. This record does not pin applicableAgeAttainYears; irc-401-a-9-C-v-applicable-age owns that listing.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -515,17 +516,25 @@ export const requiredMinimumDistributionRecords = {
       url: 'https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14543.htm',
       quotedText:
         '(v) Employees born in 1959. In the case of an employee born in 1959, the applicable age is age 73.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Announcement 2026-7 section III, 2026-11 I.R.B. 697',
+      url: 'https://www.irs.gov/irb/2026-11_IRB',
+      quotedText:
+        'Final regulations amending \u00a7\u00a7 1.401(a)(9)-4, 1.401(a)(9)-5, and 1.401(a)(9)-6, issued pursuant to the 2024 proposed regulations, are anticipated to apply for purposes of determining required minimum distributions for the distribution calendar year that begins no earlier than 6 months after the date that final regulations are issued in the Federal Register.',
     }],
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-29',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/params/index.ts',
+      'packages/engine/src/rmd/applicableAge.ts',
       'packages/engine/src/rmd/rmd.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/index.ts#rmdStartAgeForBirthYear',
+      'packages/engine/src/rmd/applicableAge.ts#deriveRbdComparison',
       'packages/engine/src/rmd/rmd.ts#requiredMinimumDistribution',
     ],
   },
