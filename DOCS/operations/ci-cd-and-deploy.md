@@ -164,12 +164,10 @@ closed PRs, uses a pinned action against the resolved PR head, and fails
 unless verification reports `clean`; the action refuses verification without an existing ledger.
 Normal pull-request review and first-pass gates are unchanged.
 
-The recovery producer is action commit `956b494594d8c7969ec9b355fd11d8e39b3b6161`,
-distinct from the regular producer in the table above. Its
+The recovery workflow uses the same action producer as the regular caller in the table above. Its
 [`_resolve_loop` guard](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/cli.py#L645-L653)
-rejects verify mode without an existing ledger. Both producers emit ledger v1 with the same
-envelope fields, marker, states and compatibility limits; their pinned source was compared for this
-rollout. Recovery fixes the baseline Grok/GLM lanes and Luna judge locally, with the existing follow-up
+rejects verify mode without an existing ledger. Recovery fixes the baseline Grok/GLM lanes and Luna
+judge locally, with the existing follow-up
 budget of low effort, 30 tool turns and 600 KB. It changes coverage to full PR and retains prior
 ledger decisions; it does not claim to be an independent first-pass review or inherit future central
 policy changes. Changes to those choices require review and a new workflow blob pin.
