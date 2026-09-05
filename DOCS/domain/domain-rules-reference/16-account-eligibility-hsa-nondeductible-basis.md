@@ -111,7 +111,7 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   every allocation in the same bucket remains unresolved while complete buckets at other rates may
   finalize independently. Malformed, contradictory, duplicate, or foreign records fail closed. Each
   final member penalty is its deterministic allocation of the once-rounded bucket total, and member
-  amounts exactly conserve that total. This pure prerequisite
+  amounts exactly conserve that total.   This pure prerequisite
   does not infer disability, death, SEPP, or other exceptions from plan data. A third pure owner/year
   finalization gate
   composes those two canonical boundaries over staged executed-gross line-7 entries. It publishes one
@@ -123,6 +123,12 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   The finalization evidence ID binds the owner, pool, year, annual basis record, both line allocations,
   every coverage record, and every final evaluation. This gate is still `movement: notCommitted`: it
   does not establish eligibility or action readiness, or execute or simulate an IRA action.
+  For traditional
+  employer-plan distributions, a separate pure penalty prerequisite applies 10% to the accepted
+  taxable treatment amount from the employer-plan withdrawal-character path — single-distribution
+  pro rata after-tax employee basis against the pre-distribution account balance under section 72,
+  not the owner-wide Form 8606 IRA pool. Nearest-cent-half-up quantization is an engine
+  convention, not statutory text.
   A separate pure movement-candidate seam now stages one explicitly dated owner/tax-year batch of
   owned traditional/SEP/SIMPLE IRA ordinary-withdrawal requests against exact-cent opening balances.
   Valid actions require unique civil-date/sequence slots and are ordered by that chronology;
