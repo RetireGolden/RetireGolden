@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T03:51:33.991Z",
-  "recordCount": 426,
-  "urlCount": 315,
+  "generatedAt": "2026-09-05T05:15:32.102Z",
+  "recordCount": 427,
+  "urlCount": 317,
   "fetched": 9,
-  "cached": 306,
-  "entryCount": 1134,
+  "cached": 308,
+  "entryCount": 1140,
   "counts": {
-    "EXACT": 771,
+    "EXACT": 777,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
@@ -1085,6 +1085,66 @@
       "quoteSha256": "804dbb2065287b8c",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-estate-household-basis-allocation",
+      "citation": "IRC 408(d)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim",
+      "quoteSha256": "a0cf572b29a7af17",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-estate-household-basis-allocation",
+      "citation": "IRC 408(d)(2)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim",
+      "quoteSha256": "720615e4bda061a3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-estate-household-basis-allocation",
+      "citation": "IRC 7701(a)(37)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleF-chap79-sec7701.htm",
+      "quoteSha256": "9af186cf9a2db661",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-estate-household-basis-allocation",
+      "citation": "Instructions for Form 8606 (2025), More than one Form 8606 required",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/instructions/i8606",
+      "quoteSha256": "804dbb2065287b8c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-estate-household-basis-allocation",
+      "citation": "IRS Publication 590-B (2025), Inherited from someone other than spouse",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/publications/p590b",
+      "quoteSha256": "ed42678af71584bb",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-2-estate-household-basis-allocation",
+      "citation": "IRS Publication 590-B (2025), IRA with basis",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/publications/p590b",
+      "quoteSha256": "53b1c266e5415114",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
