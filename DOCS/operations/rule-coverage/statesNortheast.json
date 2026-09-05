@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "CT",
-              "line": 242
+              "line": 246
             }
           ]
         },
@@ -56,23 +56,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1796,
+          "line": 1858,
           "note": "low-income Social Security limb",
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 1812
+              "line": 1874
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1828,
+          "line": 1890,
           "note": "high-income pension limb",
           "tests": [
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 1844
+              "line": 1906
             }
           ]
         }
@@ -115,7 +115,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 57
+              "line": 61
             }
           ]
         },
@@ -195,7 +195,7 @@
           "functions": [
             {
               "name": "states.MA",
-              "line": 443
+              "line": 451
             }
           ]
         },
@@ -215,16 +215,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2236,
+          "line": 2298,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 2250
+              "line": 2312
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 2255
+              "line": 2317
             }
           ]
         }
@@ -246,17 +246,17 @@
     },
     {
       "id": "mrs-36-5124-c-1-b-decoupled-standard-deduction",
-      "title": "Maine’s standard deduction decoupled from the federal figure in 2026",
+      "title": "Maine’s 2026 standard deduction uses Maine’s basic plus the federal age-65 addition",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "This record settles only the published-basic-plus-age-65-addition component for tax years beginning 2026 at Maine AGI below the §5124-C(2) phase-out. The runtime field is not income-gated: because the phase-out formula remains absent, the age addition attaches at every modeled Maine income, so high-income age-65 rows receive an unconditional age addition that statute would reduce or eliminate and can further understate Maine tax there. The unmodeled personal exemption can move complete-return tax the other way, so this record does not assert a net Form 1040ME tax direction. Pre-2026 inputs use the sole 2026 state pack as a parameter stand-in and are not certified historical Maine dollar amounts; projected future age amounts scale with assumed plan inflation rather than a statutory COLA oracle. It does not register Maine's personal exemption, the deduction phase-out formula itself, blindness (not modeled — the engine's age counter drives only IRC 63(f) age relief, not blindness), head-of-household amounts, or any other return line. A fixture taxable income in this subset is pack taxable income, not Form 1040ME taxable income. The statutory $12,000 basic in §5124-C(1-B)(A) is the statutory base subject to index; the pack's $15,700 / $31,400 are the MRS-published figures for 2026 — reconciling that indexed statutory base to the published table is separate research beyond this record. Maine must NOT be tagged `standardDeductionConformity: 'federal'`: that tag federally scales a borrowed basic amount and is not how Maine adopts only the federal age additional amount while setting its own basic. The federal conformity sibling (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`) does not decide Maine's roster; decoupling the basic is untagging, while Maine's IRC 63(c)(3)/63(f)(1) age adoption is registered here.",
       "contraryReading": null,
       "jurisdiction": "state:ME",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/params/state/index.ts",
@@ -268,7 +268,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 405
+              "line": 409
             }
           ]
         },
@@ -277,7 +277,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 90
+              "line": 65
             }
           ]
         },
@@ -301,12 +301,20 @@
           "note": null,
           "tests": [
             {
-              "title": "holds Maine’s deduction still as the federal figure is projected upward",
-              "line": 680
+              "title": "subtracts Maine published basic plus the IRC 63(c)(3) age-65 addition at 65",
+              "line": 704
             },
             {
-              "title": "would inflate it every projected year if it were tagged as conforming",
-              "line": 687
+              "title": "would leave taxable income flat at 65 if the age addition were omitted",
+              "line": 723
+            },
+            {
+              "title": "would substitute the whole federal basic and additional amounts if Maine were tagged conforming",
+              "line": 732
+            },
+            {
+              "title": "holds Maine’s basic deduction still as the federal figure is projected upward",
+              "line": 742
             }
           ]
         }
@@ -331,8 +339,28 @@
         },
         {
           "kind": "statute",
+          "citation": "IRC 63(c)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(f)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
           "citation": "36 M.R.S. 5124-C(1-A)",
           "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "MRS 2026 individual income tax rate schedule (rev. May 20, 2026), Standard Deduction",
+          "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "MRS 2026 individual income tax rate schedule (rev. May 20, 2026), Additional Amount for Age or Blindness",
+          "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf"
         }
       ]
     },
@@ -359,7 +387,7 @@
           "functions": [
             {
               "name": "NH",
-              "line": 568
+              "line": 576
             }
           ]
         },
@@ -379,16 +407,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2453,
+          "line": 2515,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 2474
+              "line": 2536
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 2479
+              "line": 2541
             }
           ]
         }
@@ -431,7 +459,7 @@
           "functions": [
             {
               "name": "NJ",
-              "line": 574
+              "line": 582
             }
           ]
         },
@@ -521,7 +549,7 @@
           "functions": [
             {
               "name": "states.NY",
-              "line": 608
+              "line": 616
             }
           ]
         },
@@ -602,7 +630,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 706
+              "line": 714
             }
           ]
         },
@@ -674,7 +702,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 706
+              "line": 714
             }
           ]
         },
@@ -754,7 +782,7 @@
           "functions": [
             {
               "name": "RI",
-              "line": 715
+              "line": 723
             }
           ]
         },
@@ -778,34 +806,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2641,
+          "line": 2703,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 2656
+              "line": 2718
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2663,
+          "line": 2725,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 2682
+              "line": 2744
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2689,
+          "line": 2751,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 2709
+              "line": 2771
             }
           ]
         }
@@ -868,7 +896,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 759
+              "line": 767
             }
           ]
         },
@@ -888,12 +916,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2716,
+          "line": 2778,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 2729
+              "line": 2791
             }
           ]
         }

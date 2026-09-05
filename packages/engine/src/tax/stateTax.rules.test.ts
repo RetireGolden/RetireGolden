@@ -22,7 +22,7 @@ import { packForYear } from '../params/index.js'
 import { conformStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
 import type { StateTaxParams } from '../params/state/types.js'
 import type { TaxYearInput } from '../projection/types.js'
-import { computeStateTax, computeStateTaxableIncome } from './stateTax.js'
+import { computeStateTax, computeStateTaxableIncome, computeStateTaxYearTotal } from './stateTax.js'
 
 const TAX_YEAR = 2026
 
@@ -672,22 +672,84 @@ describeRule('iowa-code-422-7-19-a-retirement-income-exclusion', {
 
 describeRule('mrs-36-5124-c-1-b-decoupled-standard-deduction', {
   readings: {
-    maineSetsItsOwnAmountFrom2026: 15_700,
-    federalDeductionCarriedForward: 15_700 * INFLATION_SCALE,
+    maineBasicPlusFederalAdditional: { age64: 14_300, age65: 12_250 },
+    basicOnlyNoAgeAddition: { age64: 14_300, age65: 14_300 },
+    wholeFederalSubstitution: { age64: 13_900, age65: 11_850 },
   },
-  accepted: 'maineSetsItsOwnAmountFrom2026',
+  accepted: 'maineBasicPlusFederalAdditional',
 }, ({ accepted, readings }) => {
-  it('holds Maine’s deduction still as the federal figure is projected upward', () => {
-    // Untagged, so the conformity indexer must pass it through untouched.
-    expect(pack('ME').standardDeductionConformity).toBeUndefined()
-    expect(conformStateStandardDeduction(pack('ME'), FEDERAL_AGE65_ADDITION, INFLATION_SCALE).standardDeduction.single)
-      .toBe(accepted)
+  const ME_WAGES = 30_000
+  const ME_BASIC_SINGLE = 15_700
+  const FED_BASIC_SINGLE_2026 = 16_100
+
+  function scenario(age: number, peopleAged65Plus: number): TaxYearInput {
+    return input({
+      state: 'ME',
+      ordinaryIncome: ME_WAGES,
+      inflationScale: 1,
+      peopleAged65Plus,
+      agesAlive: [age],
+    })
+  }
+
+  function resolved(params: StateTaxParams): StateTaxParams {
+    const { pack: yearPack } = packForYear(TAX_YEAR)
+    return conformStateStandardDeduction(params, yearPack.federalTax.age65Addition, 1)
+  }
+
+  function taxable(params: StateTaxParams, age: number, peopleAged65Plus: number): number {
+    return computeStateTaxableIncome(resolved(params), scenario(age, peopleAged65Plus))
+  }
+
+  it('subtracts Maine published basic plus the IRC 63(c)(3) age-65 addition at 65', () => {
+    // Independent worksheet (MRS 2026 rate schedule rev. 2026-05-20,
+    // https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf;
+    // 36 M.R.S. §5124-C(1-B); IRC 63(c)(3)/(f)(1)). Single wages $30,000;
+    // Maine AGI below §5124-C(2) phase-out; inflationScale 1.
+    // Modeled component only — personal exemption, phase-out, and blindness
+    // are unmodeled (statutory full-return tax with the $5,300 exemption alone
+    // would be 403.10 at age 65; this fixture does not claim that).
+    //   age 64: 30,000 − 15,700 = 14,300 taxable → 829.40 at 5.8%
+    //   age 65: 30,000 − 15,700 − 2,050 = 12,250 taxable → 710.50 at 5.8%
+    //   tax delta: 829.40 − 710.50 = 118.90
+    const me = pack('ME')
+    expect(me.standardDeductionAge65AdditionConformity).toBe('federal')
+    expect(taxable(me, 64, 0)).toBe(accepted.age64)
+    expect(taxable(me, 65, 1)).toBe(accepted.age65)
+    expect(computeStateTaxYearTotal(scenario(64, 0)) - computeStateTaxYearTotal(scenario(65, 1)))
+      .toBeCloseTo(118.9, 6)
   })
 
-  it('would inflate it every projected year if it were tagged as conforming', () => {
+  it('would leave taxable income flat at 65 if the age addition were omitted', () => {
+    // Runtime-driven counterfactual: resolve Maine normally, then drop the
+    // attached age-addition field so computeStateTaxableIncome sees basic only.
+    const withoutAgeAddition = { ...resolved(pack('ME')) }
+    delete withoutAgeAddition.standardDeductionAge65Addition
+    expect(computeStateTaxableIncome(withoutAgeAddition, scenario(64, 0))).toBe(readings.basicOnlyNoAgeAddition.age64)
+    expect(computeStateTaxableIncome(withoutAgeAddition, scenario(65, 1))).toBe(readings.basicOnlyNoAgeAddition.age65)
+  })
+
+  it('would substitute the whole federal basic and additional amounts if Maine were tagged conforming', () => {
+    const mistagged = {
+      ...pack('ME'),
+      standardDeduction: { single: FED_BASIC_SINGLE_2026, marriedFilingJointly: 32_200 },
+      standardDeductionConformity: 'federal' as const,
+    }
+    expect(taxable(mistagged, 64, 0)).toBe(readings.wholeFederalSubstitution.age64)
+    expect(taxable(mistagged, 65, 1)).toBe(readings.wholeFederalSubstitution.age65)
+  })
+
+  it('holds Maine’s basic deduction still as the federal figure is projected upward', () => {
+    expect(pack('ME').standardDeductionConformity).toBeUndefined()
+    const projected = conformStateStandardDeduction(pack('ME'), FEDERAL_AGE65_ADDITION, INFLATION_SCALE)
+    expect(projected.standardDeduction.single).toBe(ME_BASIC_SINGLE)
+    expect(projected.standardDeductionAge65Addition).toEqual({
+      single: FEDERAL_AGE65_ADDITION.single * INFLATION_SCALE,
+      marriedFilingJointly: FEDERAL_AGE65_ADDITION.marriedFilingJointly * INFLATION_SCALE,
+    })
     const mistagged = { ...pack('ME'), standardDeductionConformity: 'federal' as const }
     expect(conformStateStandardDeduction(mistagged, FEDERAL_AGE65_ADDITION, INFLATION_SCALE).standardDeduction.single)
-      .toBeCloseTo(readings.federalDeductionCarriedForward, 6)
+      .toBeCloseTo(ME_BASIC_SINGLE * INFLATION_SCALE, 6)
   })
 })
 

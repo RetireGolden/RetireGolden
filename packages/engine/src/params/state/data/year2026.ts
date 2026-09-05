@@ -26,15 +26,19 @@
  * `standardDeductionConformity: 'federal'`. That tag is load-bearing, not
  * documentation: IRC 63(c)(7)(B)(ii) raises the federal amount every year
  * after 2025 and the engine projects it forward, so a copy left frozen at the
- * pack year would disagree with the original inside one projected year. ME and
- * SC decoupled from the federal deduction for 2026 (ME §5124-C 1-B; SC H.4216)
- * and carry their own published amounts, so they are deliberately untagged.
- * Arizona left that list on 2026-08-05: A.R.S. §43-1041(A) sets Arizona's own
- * dollar amounts and (H) borrows only the federal indexation METHOD, so the
- * identity between the two was administrative practice rather than a rule of
- * Arizona law, and the tag was additionally attaching an IRC 63(c)(3) age-65
- * addition Arizona does not grant. Only the deduction is tagged — state
- * BRACKETS stay nominal for every state (see ../index.ts).
+ * pack year would disagree with the original inside one projected year. Whole-
+ * federal tagging also attaches the IRC 63(c)(3) age-65 addition. ME and SC
+ * decoupled from the federal BASIC for 2026 (ME §5124-C 1-B; SC H.4216) and
+ * carry their own published basic amounts, so they are deliberately untagged
+ * for basic conformity. Maine separately adopts the federal age-65 addition
+ * via `standardDeductionAge65AdditionConformity: 'federal'` while preserving
+ * its published basic. Arizona left the whole-federal list on 2026-08-05:
+ * A.R.S. §43-1041(A) sets Arizona's own dollar amounts and (H) borrows only
+ * the federal indexation METHOD, so the identity between the two was
+ * administrative practice rather than a rule of Arizona law, and the tag was
+ * additionally attaching an IRC 63(c)(3) age-65 addition Arizona does not
+ * grant. Only the deduction is tagged — state BRACKETS stay nominal for every
+ * state (see ../index.ts).
  *
  * State taxable income in the engine starts from gross ordinary income (plus
  * gains, plus the federally taxable SS amount where the state taxes SS), minus
@@ -403,12 +407,16 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 12000, minAge: 65 },
     },
     ME: {
-      // 2026 per MRS revised schedule (2026-05-20): ME decoupled from the
-      // federal standard deduction (36 M.R.S. §5124-C 1-B) — own $15,700/
-      // $31,400 amounts — and added a 2% surcharge on taxable income over
-      // $1M single / $1.5M MFJ, encoded as an equivalent 9.15% top bracket.
+      // 2026 per MRS revised schedule (2026-05-20): ME publishes its own basic
+      // standard deduction ($15,700 / $31,400) under 36 M.R.S. §5124-C(1-B)(A)
+      // and adopts the IRC 63(c)(3) additional amount for age 65 under (1-B)(B)
+      // — tagged only for the age addition, not whole-federal basic conformity.
+      // 2% surcharge on taxable income over $1M single / $1.5M MFJ is encoded
+      // as an equivalent 9.15% top bracket. Phase-out, personal exemption, and
+      // blindness remain unmodeled.
       code: 'ME', name: 'Maine', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 15700, marriedFilingJointly: 31400 },
+      standardDeductionAge65AdditionConformity: 'federal',
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 5.8 }, { lowerBound: 27400, ratePct: 6.75 }, { lowerBound: 64850, ratePct: 7.15 },

@@ -38,74 +38,58 @@ export function stateParamsFor(code: string, year: number): StateTaxParams | und
 }
 
 /**
- * The FEDERAL standard deduction, carried forward inside the state pack for the
- * jurisdictions that define their own by reference to it, resolved to what the
- * federal figure actually is for the year being priced.
+ * Resolve borrowed federal standard-deduction components onto a state pack for
+ * the year being priced.
  *
- * Eight packs — CO, DC, IA, ID, MO, MT, ND, NM — do not carry a state figure
- * in `standardDeduction` at all. (Arizona was a ninth until 2026-08-05, when
- * A.R.S. 43-1041 turned out to borrow the federal indexation METHOD rather than
- * the amount; see `ars-43-1041-standard-deduction-published-amount`.) They
- * carry a copy of the federal one, because
- * that is what their law points at (and, for CO and ND, because their brackets
- * run on federal taxable income and this field is what converts the engine's
- * gross base into it). Two things follow, and this function does both.
+ * Two independent adoption policies:
  *
- * FIRST, the copy has to move when the original moves. IRC 63(c)(7)(B)(ii)
- * increases the federal amount for every taxable year beginning after 2025, and
- * `indexFederalTaxPack` projects that increase onto years the pack only stands
- * in for. Leaving the copy at the pack year would put two different values on
- * one statutory amount inside a single projected year, and every dollar of the
- * widening gap would be taxed at the state's rate — an error that grows with
- * the horizon and that did not exist while both figures were frozen together.
+ * - `standardDeductionConformity: 'federal'` — the pack's `standardDeduction`
+ *   is the federal BASIC amount (eight packs: CO, DC, IA, ID, MO, MT, ND, NM;
+ *   Arizona left that list on 2026-08-05). IRC 63(c)(7)(B)(ii) moves that
+ *   amount after 2025, so the copy is scaled by the caller's inflation factor.
+ *   Whole-federal adoption also implies the IRC 63(c)(3) age-65 addition,
+ *   because 63(c)(1) makes "the standard deduction" the basic plus additional.
+ * - `standardDeductionAge65AdditionConformity: 'federal'` — the state keeps its
+ *   own published basic and adopts only the federal age-65 additional amount.
+ *   Maine is the type case (36 M.R.S. §5124-C(1-B)). The basic is left alone;
+ *   only the addition is attached and scaled.
  *
- * SECOND, the copy has to be the WHOLE federal standard deduction. IRC 63(c)(1)
- * defines "the standard deduction" as the basic standard deduction plus the
- * additional standard deduction, and 63(c)(3)/63(f)(1) is where the additional
- * amount for age 65 or older comes from. A state pointing at "the federal
- * standard deduction" is pointing at that sum. Five of the nine (CO, IA, ID,
- * MT, ND) start from federal TAXABLE income, which is already net of the whole
- * thing; MO adopts the allowable federal standard deduction by name; NM
- * excludes an amount equal to the deduction allowed by Section 63. Carrying
- * only the basic amount over-stated state tax for every 65-and-over household
- * in all nine, in every projected year — so `standardDeductionAge65Addition`
- * carries the per-person additional amount alongside.
+ * When neither policy applies, params are returned unchanged. Blindness under
+ * 63(f)(2) is not modeled. Nothing else in the pack is touched: not brackets,
+ * and not retirement-exclusion caps.
  *
- * Neither is the per-state indexing question the brackets pose. Nothing here
- * decides how a state adjusts a figure of its own; it keeps a borrowed federal
- * figure equal to the federal figure. `standardDeductionConformity` marks
- * exactly which packs borrow it, so a state that decouples (ME and SC did for
- * 2026) simply loses the tag, keeps its own amount, and gets no age-65 addition
- * from here — its own law decides whether it has one.
- *
- * `inflationScale` is the caller's cumulative factor from the pack year, the
- * same one `computeFederalTax` hands `indexFederalTaxPack` — and the same
- * guard: a non-finite or non-positive factor is ignored, and a factor of
- * exactly 1 (what a year with its own published pack gets) leaves both amounts
- * at their pack values. A deflating factor carries them down for the reason it
- * carries the federal ones down. Nothing else in the pack is touched: not the
- * brackets, and not the retirement exclusion caps, which are state dollar
- * figures under state law.
+ * `inflationScale` is the caller's cumulative factor from the pack year — the
+ * same guard as elsewhere: a non-finite or non-positive factor is ignored, and
+ * a factor of exactly 1 leaves pack-year dollars untouched.
  */
 export function conformStateStandardDeduction(
   params: StateTaxParams,
   federalAge65Addition: PerStatus<number>,
   inflationScale: number,
 ): StateTaxParams {
-  if (params.standardDeductionConformity !== 'federal') return params
+  const federalBasic = params.standardDeductionConformity === 'federal'
+  const federalAdditional =
+    federalBasic || params.standardDeductionAge65AdditionConformity === 'federal'
+  if (!federalBasic && !federalAdditional) return params
   // Multiplying by exactly 1 is exact in IEEE-754, so a published year comes
   // through with its pack values untouched rather than needing a second branch.
   const scale = Number.isFinite(inflationScale) && inflationScale > 0 ? inflationScale : 1
   return {
     ...params,
-    standardDeduction: {
-      single: params.standardDeduction.single * scale,
-      marriedFilingJointly: params.standardDeduction.marriedFilingJointly * scale,
-    },
-    standardDeductionAge65Addition: {
-      single: federalAge65Addition.single * scale,
-      marriedFilingJointly: federalAge65Addition.marriedFilingJointly * scale,
-    },
+    standardDeduction: federalBasic
+      ? {
+          single: params.standardDeduction.single * scale,
+          marriedFilingJointly: params.standardDeduction.marriedFilingJointly * scale,
+        }
+      : params.standardDeduction,
+    ...(federalAdditional
+      ? {
+          standardDeductionAge65Addition: {
+            single: federalAge65Addition.single * scale,
+            marriedFilingJointly: federalAge65Addition.marriedFilingJointly * scale,
+          },
+        }
+      : {}),
   }
 }
 

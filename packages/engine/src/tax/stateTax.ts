@@ -125,12 +125,14 @@ export function computeStateTaxableIncome(
   taxable -= params.standardDeduction[taxStatus]
   // The federal additional standard deduction for age 65 or older, per person.
   // Its presence on the params IS the eligibility test: only
-  // `conformStateStandardDeduction` attaches the field, and only to a state
-  // whose deduction is the federal one. A state that publishes its own carries
-  // no such field, and whatever age relief its law gives is already inside its
-  // own figures. The amount arrives already indexed and already prorated for
-  // part-year residency where either applied, so all that is left here is the
-  // head count, which is the household's rather than the state's.
+  // `conformStateStandardDeduction` attaches the field, and only when the state
+  // adopts that federal additional amount — either because its whole deduction
+  // is federal, or because an independent age-addition policy (Maine) adopts
+  // IRC 63(c)(3) while keeping a state-published basic. A state with neither
+  // policy carries no such field. The amount arrives already indexed and
+  // already prorated for part-year residency where either applied, so all that
+  // is left here is the head count, which is the household's rather than the
+  // state's. Blindness is not modeled; the age counter drives age relief only.
   if (params.standardDeductionAge65Addition) {
     taxable -= age65StandardDeductionAddition(
       params.standardDeductionAge65Addition,
@@ -269,19 +271,17 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
   const resolveParams = (code: string): StateTaxParams | undefined => {
     const published = stateParamsFor(code, input.year)
     if (!published) return undefined
-    // The nine conforming packs carry the FEDERAL standard deduction rather
-    // than a state figure, and `computeFederalTax` projects that federal
-    // figure past the pack year under IRC 63(c)(7)(B)(ii). The copy has to
-    // travel with it, or one engine holds two values for one amount in the
-    // same year and taxes the gap at the state rate — and it has to be the
-    // whole federal deduction, additional age-65 amount included, which is
-    // what IRC 63(c)(1) means by "the standard deduction" those states adopt.
-    // Everything else in the pack — brackets included — stays nominal.
+    // Resolve borrowed federal deduction components before pricing. Whole-
+    // federal packs carry a federal basic that must move with IRC
+    // 63(c)(7)(B)(ii) projection, plus the 63(c)(3) age-65 addition that
+    // 63(c)(1) includes in "the standard deduction." Maine keeps its own
+    // published basic and adopts only the age addition through the independent
+    // policy. Everything else in the pack — brackets included — stays nominal.
     //
-    // Conforming here rather than later is deliberate: the params returned
-    // from this point on already hold both figures, so the split-year path
-    // below hands `prorateParams` a conformed pair and residency scales them
-    // together instead of only the basic half.
+    // Resolving here rather than later is deliberate: the params returned from
+    // this point on already hold any attached age addition, so the split-year
+    // path below hands `prorateParams` a resolved pair and residency scales
+    // basic and addition together instead of only the basic half.
     const { pack } = packForYear(input.year)
     const params = conformStateStandardDeduction(
       published,

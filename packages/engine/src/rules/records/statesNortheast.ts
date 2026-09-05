@@ -129,13 +129,14 @@ export const northeastStateRecords = {
   },
 
   'mrs-36-5124-c-1-b-decoupled-standard-deduction': {
-    title: 'Maine’s standard deduction decoupled from the federal figure in 2026',
+    title: 'Maine’s 2026 standard deduction uses Maine’s basic plus the federal age-65 addition',
     statement:
-      'For tax years beginning on or after January 1, 2026 a Maine resident\'s standard deduction is Maine\'s own basic amount plus the additional deduction under IRC 63(c)(3) — no longer the federal standard deduction that subsection 1-A carried through 2025. Maine must therefore NOT be tagged `standardDeductionConformity: \'federal\'`: the tag exists to keep a borrowed federal figure equal to the federal one as IRC 63(c)(7)(B)(ii) raises it each year, and applying it to a figure Maine now sets for itself would inflate the deduction, and shrink Maine tax, further with every projected year.',
+      'For tax years beginning on or after January 1, 2026, and for Maine adjusted gross income below the §5124-C(2) phase-out, a Maine resident\'s standard deduction uses Maine\'s published basic standard deduction amount plus the IRC 63(f)(1) age additional amount incorporated through IRC 63(c)(3) for a taxpayer — and, on a joint return, an eligible spouse — who has attained age 65 before the close of the taxable year, and is no longer the whole federal standard deduction that subsection 1-A carried through 2025. This settled component is age-only and filing-status-scoped to the single and married amounts the engine models; it does not settle blindness under IRC 63(f)(2) or head-of-household basic amounts.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'This record settles only the published-basic-plus-age-65-addition component for tax years beginning 2026 at Maine AGI below the §5124-C(2) phase-out. The runtime field is not income-gated: because the phase-out formula remains absent, the age addition attaches at every modeled Maine income, so high-income age-65 rows receive an unconditional age addition that statute would reduce or eliminate and can further understate Maine tax there. The unmodeled personal exemption can move complete-return tax the other way, so this record does not assert a net Form 1040ME tax direction. Pre-2026 inputs use the sole 2026 state pack as a parameter stand-in and are not certified historical Maine dollar amounts; projected future age amounts scale with assumed plan inflation rather than a statutory COLA oracle. It does not register Maine\'s personal exemption, the deduction phase-out formula itself, blindness (not modeled — the engine\'s age counter drives only IRC 63(f) age relief, not blindness), head-of-household amounts, or any other return line. A fixture taxable income in this subset is pack taxable income, not Form 1040ME taxable income. The statutory $12,000 basic in §5124-C(1-B)(A) is the statutory base subject to index; the pack\'s $15,700 / $31,400 are the MRS-published figures for 2026 — reconciling that indexed statutory base to the published table is separate research beyond this record. Maine must NOT be tagged `standardDeductionConformity: \'federal\'`: that tag federally scales a borrowed basic amount and is not how Maine adopts only the federal age additional amount while setting its own basic. The federal conformity sibling (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`) does not decide Maine\'s roster; decoupling the basic is untagging, while Maine\'s IRC 63(c)(3)/63(f)(1) age adoption is registered here.',
     jurisdiction: 'state:ME',
     authority: [{
       kind: 'statute',
@@ -157,15 +158,39 @@ export const northeastStateRecords = {
         'The additional standard deduction is the amount allowed under the Code, Section 63(c)(3).',
     }, {
       kind: 'statute',
+      citation: 'IRC 63(c)(3)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'For purposes of paragraph (1), the additional standard deduction is the sum of each additional amount to which the taxpayer is entitled under subsection (f).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(f)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'The taxpayer shall be entitled to an additional amount of $600- (A) for himself if he has attained age 65 before the close of his taxable year, and (B) for the spouse of the taxpayer if the spouse has attained age 65 before the close of the taxable year and an additional exemption is allowable to the taxpayer for such spouse under section 151(b).',
+    }, {
+      kind: 'statute',
       citation: '36 M.R.S. 5124-C(1-A)',
       url: 'https://legislature.maine.gov/statutes/36/title36sec5124-C.html',
       quotedText:
         'Amount; before January 1, 2026. For tax years beginning on or after January 1, 2020 and before January 1, 2026, the standard deduction of a resident individual is equal to the federal standard deduction, subject to the phase-out under subsection 2.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'MRS 2026 individual income tax rate schedule (rev. May 20, 2026), Standard Deduction',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf',
+      quotedText:
+        'Standard Deduction: Single - $15,700 Married Filing Jointly - $31,400',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'MRS 2026 individual income tax rate schedule (rev. May 20, 2026), Additional Amount for Age or Blindness',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf',
+      quotedText:
+        'Additional Amount for Age or Blindness: $1,650 if married … $2,050 if unmarried (single or head of household)',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
