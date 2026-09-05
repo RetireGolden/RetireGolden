@@ -180,6 +180,84 @@ export const requiredMinimumDistributionRecords = {
     ],
   },
 
+  'treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72': {
+    title: 'Applicable age 70½ before July 1, 1949 and age 72 through 1950',
+    statement:
+      'An IRA owner born before July 1, 1949 has applicable age 70½; an owner born on or after July 1, 1949 and before January 1, 1951 has applicable age 72. For the 70½ cohort the attain year is the calendar year in which age 70½ falls: birth months January–June place it in birthYear+70, and birth months July–December place it in birthYear+71. The IRA required beginning date is April 1 of the calendar year after that attain year; historical 401(a)(9)(C)(ii)(II) and former Treas. Reg. 1.408-8 Q&A-3 keep the retirement limb off IRAs. SECURE Act §114 moved the statutory age from 70½ to 72 for distributions required after December 31, 2019 with respect to individuals who attain age 70½ after that date, which is why the July 1, 1949 birth-date cut exists. When year-only 1949 precision leaves both the 70½ and age-72 candidates open and they disagree on death-versus-RBD for a given death year, the engine refuses rather than guessing. The year-granular comparison consumes an asserted RBD-status fact when death falls in the RBD calendar year; it does not observe an exact death date inside that year. This record does not settle the born-1959 73/75 contest, the SECURE 2.0 73/75 tiers, or QCD day-level 70½ month-end arithmetic.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'YEAR-GRANULAR 70½ PLACEMENT. Former Treas. Reg. 1.401(a)(9)-2 Q&A-3 (T.D. 8987) states that age 70½ is attained six calendar months after the 70th anniversary of birth and works the June 30, 1933 → December 30, 2003 → April 1, 2004 and July 1, 1933 → January 1, 2004 → April 1, 2005 examples. Former 1.408-8 Q&A-1(a)–(b) incorporates those general RMD rules into IRAs and substitutes the IRA owner for the employee; former 1.408-8 Q&A-3 then fixes the IRA RBD as April 1 following the 70½ year. At month granularity the engine therefore places a January–June birth\'s 70½ attain year at birthYear+70 and a July–December birth\'s at birthYear+71. The unsettled QCD record (irc-408-d-8-B-ii-age-70-half) keeps month-end and leap-day day-resolution; this record does not claim day-level QCD eligibility. HISTORICAL APPLICABILITY. T.D. 10001\'s preamble states that the final regulations under section 401(a)(9) apply for distribution calendar years beginning on or after January 1, 2025, and that for earlier distribution calendar years taxpayers must apply the 2002 final regulations and 2004 final regulations, taking into account a reasonable, good faith interpretation of the amendments made by sections 114 and 401 of the SECURE Act. Current 1.401(a)(9)-2(b)(2)(ii)–(iii) and 1.408-8(b)(1)(i) corroborate the cohort cut and IRA April-1 form under present numbering; they are not claimed to have governed distribution year 2020. BOUNDARY VERSUS SIBLINGS. irc-401-a-9-C-v-applicable-age and treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 own the 73/75 tiers and the 1959 contest; first-distribution-calendar-year booking and April 1 deferral elections stay on their existing C(i) / 1.401(a)(9)-5(a)(2) records; the employer-plan still-working exception stays on irc-401-a-9-C-i-II-still-working-exception. EFFECTIVE SCOPE. effectiveFrom is 2020 as the first distribution-applicability year of the SECURE §114 transition: both §114(d) conditions must hold — distributions required after December 31, 2019, and individuals attaining 70½ after that date. It is not the enactment date of the older 70½ rule, not T.D. 10001\'s 2025 applicability, and not the first required-distribution year of the age-72 cohort (a July 1949 birth attains 72 in 2021 with IRA RBD April 1, 2022; a July 1948 birth attains 70½ in 2019 and retains the historical IRA RBD of April 1, 2020). Dating this record 2026 would invent a represented-horizon convention the authority does not use.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(i) (2011 ed., pre-SECURE)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2011-title26/html/USCODE-2011-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm',
+      quotedText:
+        'The term “required beginning date” means April 1 of the calendar year following the later of— (I) the calendar year in which the employee attains age 70½, or (II) the calendar year in which the employee retires.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(C)(ii) (2011 ed., pre-SECURE)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2011-title26/html/USCODE-2011-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm',
+      quotedText:
+        'Subclause (II) of clause (i) shall not apply— (I) except as provided in section 409(d), in the case of an employee who is a 5-percent owner (as defined in section 416) with respect to the plan year ending in the calendar year in which the employee attains age 70½, or (II) for purposes of section 408(a)(6) or (b)(3).',
+    }, {
+      kind: 'statute',
+      citation: 'Pub. L. 116-94, div. O, sec. 114(a), (d) (SECURE Act)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-116publ94/html/PLAW-116publ94.htm',
+      quotedText:
+        '(a) In General.--Section 401(a)(9)(C)(i)(I) of the Internal Revenue Code of 1986 <<NOTE: 26 USC 401.>> is amended by striking ``age 70\\1/ 2\\\'\' and inserting ``age 72\'\'.…(d) <<NOTE: 26 USC 401 note.>> Effective Date.--The amendments made by this section shall apply to distributions required to be made after December 31, 2019, with respect to individuals who attain age 70\\1/2\\ after such date.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-2, Q&A-3 (T.D. 8987, 67 FR 18988, 18996)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm',
+      quotedText:
+        'An employee attains age 70\\1/2\\ as of the date six calendar months after the 70th anniversary of the employee\'s birth. For example, if an employee\'s date of birth was June 30, 1933, the 70th anniversary of such employee\'s birth is June 30, 2003. Such employee attains age 70\\1/2\\ on December 30, 2003. Consequently, if the employee is a 5- percent owner or retired, such employee\'s required beginning date is April 1, 2004. However, if the employee\'s date of birth was July 1, 1933, the 70th anniversary of such employee\'s birth would be July 1, 2003. Such employee would then attain age 70\\1/2\\ on January 1, 2004 and such employee\'s required beginning date would be April 1, 2005.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8, Q&A-1(a)-(b) (T.D. 8987, 67 FR 18988, 19024)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm',
+      quotedText:
+        '(a) Yes, an IRA is subject to the required minimum distribution rules provided in section 401(a)(9). In order to satisfy section 401(a)(9) for purposes of determining required minimum distributions for calendar years beginning on or after January 1, 2003, the rules of Secs. 1.401(a)(9)-1 through 1.401(a)(9)-9 and 1.401(a)(9)- 6T for defined contribution plans must be applied, except as otherwise provided in this section. For example, whether the 5-year rule or the life expectancy rule applies to distributions after death occurring before the IRA owner\'s required beginning date is determined in accordance with Sec. 1.401(a)(9)-3 and the rules of Sec. 1.401(a)(9)-4 apply for purposes of determining an IRA owner\'s designated beneficiary. Similarly, the amount of the minimum distribution required for each calendar year from an individual account is determined in accordance with Sec. 1.401(a)(9)-5. For purposes of this section, the term IRA means an individual retirement account or annuity described in section 408(a) or (b). The IRA owner is the individual for whom an IRA is originally established by contributions for the benefit of that individual and that individual\'s beneficiaries. (b) For purposes of applying the required minimum distribution rules in Secs. 1.401(a)(9)-1 through 1.401(a)(9)-9 and 1.401(a)(9)-6T for qualified plans, the IRA trustee, custodian, or issuer is treated as the plan administrator, and the IRA owner is substituted for the employee.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8, Q&A-3 (T.D. 8987, 67 FR 18988, 19025)',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm',
+      quotedText:
+        'In the case of distributions from an IRA, the term required beginning date means April 1 of the calendar year following the calendar year in which the individual attains age 70\\1/2\\.',
+    }, {
+      kind: 'regulation',
+      citation: 'T.D. 10001, preamble on distribution-calendar-year applicability',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14542.htm',
+      quotedText:
+        'In response to these comments, the final regulations under section 401(a)(9) apply for distribution calendar years beginning on or after January 1, 2025. For earlier distribution calendar years, taxpayers must apply the 2002 final regulations and 2004 final regulations, but taking into account a reasonable, good faith interpretation of the amendments made by sections 114 and 401 of the SECURE Act.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-2(b)(2)(ii), (iii) (current corroboration; T.D. 10001 numbering)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-2',
+      quotedText:
+        '(ii) Employees born before July 1, 1949. In the case of an employee born before July 1, 1949, the applicable age is age 701⁄2. (iii) Other employees born before 1951. In the case of an employee born on or after July 1, 1949, but before January 1, 1951, the applicable age is age 72;',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(b)(1)(i) (current corroboration)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'An IRA owner\'s required beginning date is determined using the rules for employees who are 5-percent owners under § 1.401(a)(9)-2(b)(3). Thus, the IRA owner\'s required beginning date is April 1 of the calendar year following the calendar year in which the individual attains the applicable age.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2020,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-04',
+    implementedBy: [
+      'packages/engine/src/rmd/applicableAge.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/rmd/applicableAge.ts#applicableAgeAttainYears',
+      'packages/engine/src/rmd/applicableAge.ts#deriveRbdComparison',
+    ],
+  },
+
   'irc-401-a-9-C-v-applicable-age': {
     title: 'The RMD applicable age steps 72 to 73 to 75, never 74',
     statement:

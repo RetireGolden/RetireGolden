@@ -15,8 +15,14 @@
  *
  * For a non-70½ tier the RBD is April 1 of the year after the calendar year the
  * owner attains the applicable age. For the 70½ tier the owner attains age 70½
- * six calendar months after the 70th birthday, and the RBD is April 1 of the
- * year after that attain year.
+ * six calendar months after the 70th birthday (former Treas. Reg. §1.401(a)(9)-2
+ * Q&A-3, T.D. 8987), and the IRA RBD is April 1 of the year after that attain
+ * year (former Treas. Reg. §1.408-8 Q&A-3). IRA owners never take the
+ * employer-plan retirement limb (historical §401(a)(9)(C)(ii)(II)).
+ *
+ * Registry: treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72
+ * covers the 70½ / July-1949 / age-72 limbs enforced here; the 1959 contest
+ * and SECURE 2.0 73/75 tiers stay on their sibling records.
  *
  * @see DOCS/domain/inherited-ira-regime-matrix.md §1–§2
  */

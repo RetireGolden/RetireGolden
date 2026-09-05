@@ -1,6 +1,6 @@
 ## 6. RMDs (SECURE 2.0)
 
-- Start age: **73** for born 1951–1959; **75** for born 1960+ (i.e., from 2033).
+- Start age / applicable age: **70½** for born before July 1, 1949; **72** for born July 1, 1949–December 31, 1950 (`treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72`); **73** for born 1951–1958; **75** for born 1960+ (i.e., from 2033). Born-1959 remains contested between 73 and 75.
 - Annual RMD = prior Dec 31 balance ÷ Uniform Lifetime Table divisor (Joint Life Table II when a sole-beneficiary spouse is >10 yrs younger).
 - Joint Life Table II is 26 CFR 1.401(a)(9)-9(d), Table 3. It includes spouse-beneficiary ages below 20; do not regenerate it from Pub 590-B displays that only show the age 20+ slice (`treas-reg-1-401-a-9-9-d-joint-life-table-divisor-literals`).
 - Applies to traditional IRA/401(k)/403(b); **Roth 401(k) exempt since 2024** (IRC §402A(d)(5); `irc-402A-d-5-designated-roth-account-no-lifetime-rmd`); Roth IRA exempt (`irc-408A-c-4-roth-ira-no-lifetime-rmd`).
