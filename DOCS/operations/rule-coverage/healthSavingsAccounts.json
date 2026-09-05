@@ -930,12 +930,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/estateHsa.approximation.test.ts",
-          "line": 66,
+          "line": 68,
           "note": null,
           "tests": [
             {
               "title": "taxes ending HSA gross at the heir rate and omits the predeath-expense reduction",
-              "line": 84
+              "line": 86
             }
           ]
         }

@@ -270,7 +270,7 @@ export function estateNodeId(destination: EstateDestinationId): string {
 }
 
 const ESTATE_LABELS: Record<EstateDestinationId, string> = {
-  spouse: 'Surviving spouse (rollover)',
+  spouse: 'Surviving spouse',
   heir: 'Non-spouse heirs',
   charity: 'Charity',
   estate: 'Estate',

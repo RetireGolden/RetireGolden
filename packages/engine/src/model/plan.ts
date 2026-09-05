@@ -1007,7 +1007,7 @@ export const hsaAccountSchema = z.object({
    * `nonSpouse` uses ending gross, omitting the (f)(8)(B)(ii)(I) expense reduction;
    * legal beneficiary classes and death-year facts are not expressible here.
    * Omitted means legacy spouse-equivalent valuation, not legal designation.
-   * `estateBeneficiary` overrides this field; see the estateHsaIncomeBase record.
+   * `estateBeneficiary` overrides this field; see estateHsaIncome.ts / irc-223-f-8-B-estate-predeath-expense-reduction.
    */
   beneficiary: z.enum(['spouse', 'nonSpouse']).optional(),
   /** Opt-in class allocation; supersedes annualReturnPct. Rebalancing here is tax-free. */

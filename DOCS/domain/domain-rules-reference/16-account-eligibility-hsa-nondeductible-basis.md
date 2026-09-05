@@ -55,7 +55,7 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 - **HSA beneficiary treatment.** The after-tax estate metric is assumed terminal income-tax exposure, not an
   annual HSA tax computation. A spouse-designated HSA continues under IRC §223(f)(8)(A) (zero inclusion).
   A designated non-spouse natural-person destination uses the ending gross balance as the inclusion base
-  (`estateHsaIncomeBase`; IRC §223(f)(8)(B)(i)) and does not apply the §223(f)(8)(B)(ii)(I) reduction for
+  ([`estateHsaIncomeBase`](../../../packages/engine/src/projection/estateHsaIncome.ts); IRC §223(f)(8)(B)(i)) and does not apply the §223(f)(8)(B)(ii)(I) reduction for
   qualified medical expenses incurred by the decedent before death and paid by that person within one year
   (`irc-223-f-8-B-estate-predeath-expense-reduction`, approximated / overstatesTax in that stipulated case).
   The Plan cannot express legal beneficiary class, death date or date-of-death value, or those qualifying
@@ -332,5 +332,6 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/tax/propertySale.ts](../../../packages/engine/src/tax/propertySale.ts),
 [engine/projection/internal/annualAggregateRothConversionTargetPlan.ts](../../../packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts), threaded through
 [engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts), the after-tax estate metric in
-[engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts), and the household-basis helper in
-[engine/projection/estateTraditionalBasis.ts](../../../packages/engine/src/projection/estateTraditionalBasis.ts).
+[engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts), the household-basis helper in
+[engine/projection/estateTraditionalBasis.ts](../../../packages/engine/src/projection/estateTraditionalBasis.ts), and the HSA terminal-inclusion helper in
+[engine/projection/estateHsaIncome.ts](../../../packages/engine/src/projection/estateHsaIncome.ts).

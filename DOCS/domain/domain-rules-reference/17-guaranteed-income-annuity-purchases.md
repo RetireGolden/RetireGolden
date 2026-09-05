@@ -57,5 +57,6 @@ in `simulate.ts` and [engine/rmd/](../../../packages/engine/src/rmd/); annual ex
 qualified-payment planning in
 [engine/projection/internal/annualPensionAndAnnuityIncome.ts](../../../packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts);
 after-tax estate depth in
-[engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts); candidates in
+[engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts); HSA terminal inclusion in
+[engine/projection/estateHsaIncome.ts](../../../packages/engine/src/projection/estateHsaIncome.ts); candidates in
 [engine/decisions/generators.ts](../../../packages/engine/src/decisions/generators.ts).

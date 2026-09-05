@@ -554,7 +554,7 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference/16-acc
   (`assumeAllQualified`), or keep the legacy behavior; `reimburseLater` accumulates unreimbursed out-of-pocket
   medical costs as a carryover future withdrawals can draw tax-free. A spouse-designated HSA continues under
   IRC §223(f)(8)(A) in the after-tax estate metric (zero inclusion). A designated non-spouse destination uses
-  ending gross as the terminal inclusion base and omits the §223(f)(8)(B)(ii)(I) predeath-expense reduction;
+  ending gross as the terminal inclusion base ([`estateHsaIncomeBase`](../../packages/engine/src/projection/estateHsaIncome.ts)) and omits the §223(f)(8)(B)(ii)(I) predeath-expense reduction;
   omitted `beneficiary` is a legacy convention mapped to the spouse-equivalent default, not a statutory
   designation. The HSA account still does not establish HDHP coverage, Medicare Part A
   enrollment, or retroactive entitlement; those facts can make a contribution excess, and the §4973 6% excise on

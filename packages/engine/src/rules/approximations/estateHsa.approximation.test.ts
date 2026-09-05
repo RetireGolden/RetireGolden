@@ -43,7 +43,7 @@ function validate(plan: Plan): Plan {
   return parsed.plan
 }
 
-function hsaEstatePlan(destination: 'nonSpouse' | 'spouse'): Plan {
+function hsaEstatePlan(destination: 'nonSpouse' | 'spouse' | 'charity'): Plan {
   const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 60 })
   plan.assumptions.heirTaxRatePct = HEIR_RATE_PCT
   plan.accounts = [{
@@ -54,7 +54,9 @@ function hsaEstatePlan(destination: 'nonSpouse' | 'spouse'): Plan {
     annualReturnPct: null,
     balance: HSA_BALANCE,
     annualContribution: 0,
-    estateBeneficiary: { destination },
+    estateBeneficiary: destination === 'charity'
+      ? { destination: 'charity', charityPct: 100 }
+      : { destination },
   }]
   return validate(plan)
 }
@@ -125,5 +127,22 @@ describeRule('irc-223-f-8-B-estate-predeath-expense-reduction', {
       heirTax: 0,
     }))
     expect(spouseSummary.endingEstateHeirTax).toBe(0)
+
+    const charityPlan = hsaEstatePlan('charity')
+    const charityResult = simulatePlan(charityPlan, { startYear: 2026, taxCalculator: noTax })
+    const charitySummary = summarizeProjection(charityPlan, charityResult)
+    const charityHsaRow = charitySummary.estateBreakdown.find((row) => row.accountId === 'hsa')
+
+    expect(charityResult.years[charityResult.years.length - 1]?.balances.hsa).toBe(HSA_BALANCE)
+    expect(charityHsaRow).toEqual(expect.objectContaining({
+      accountId: 'hsa',
+      category: 'hsa',
+      destination: 'charity',
+      grossBalance: HSA_BALANCE,
+      taxablePretaxBase: HSA_BALANCE,
+      charityAmount: HSA_BALANCE,
+      heirTax: 0,
+    }))
+    expect(charitySummary.endingEstateHeirTax).toBe(0)
   })
 })

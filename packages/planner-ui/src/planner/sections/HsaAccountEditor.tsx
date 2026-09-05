@@ -39,12 +39,12 @@ export function HsaAccountEditor({
       ) : null}
       <SelectField
         label="Beneficiary"
-        help="Who inherits this HSA. A spouse inherits it as their own HSA and it passes untaxed. Any other beneficiary (child, estate, single-person plans) receives a fully taxable distribution of the balance in the year of death, so the after-tax estate metric taxes the remaining HSA at your assumed heir tax rate, like a traditional account."
+        help="Shorthand for the after-tax estate estimate at the planning horizon. Spouse assumes HSA continuation with no estimated heir tax. Non-spouse applies your assumed heir tax rate to the ending balance and does not reduce it for qualifying pre-death medical expenses paid within one year. Actual death value, beneficiary class, and payment facts are not modeled. The default Spouse selection uses this estimate; it does not establish a legal beneficiary designation."
         hint="Spouse / non-spouse shorthand. An Estate beneficiary set below overrides it."
         value={account.beneficiary ?? 'spouse'}
         options={[
-          { value: 'spouse', label: 'Spouse (inherits as HSA, untaxed)' },
-          { value: 'nonSpouse', label: 'Non-spouse (fully taxable to heir)' },
+          { value: 'spouse', label: 'Spouse (no estimated heir tax)' },
+          { value: 'nonSpouse', label: 'Non-spouse (estimated heir tax)' },
         ]}
         onCommit={(value) => onCommit('beneficiary', value === 'spouse' ? undefined : 'nonSpouse')}
       />

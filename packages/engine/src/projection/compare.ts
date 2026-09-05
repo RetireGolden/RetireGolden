@@ -74,8 +74,10 @@ export interface ProjectionSummary {
    * convention independently maps to the same zero and does not prove a
    * statutory designation. Any other modeled destination uses the ending gross as the
    * terminal inclusion base under IRC §223(f)(8)(B)(i); the
-   * §223(f)(8)(B)(ii)(I) predeath-expense reduction is not applied. That figure
-   * is assumed terminal exposure at the horizon, not a death-year return.
+   * §223(f)(8)(B)(ii)(I) predeath-expense reduction is not applied. Charity
+   * carve-outs are applied separately; the gross base for charity is the
+   * pre-carveout model value, not a claim that charity owes income under the
+   * HSA statute. That figure is assumed terminal exposure at the horizon, not a death-year return.
    */
   endingAfterTaxEstate: number
   /** Total heir income tax discounted from the estate (sum of the breakdown's heirTax). */
