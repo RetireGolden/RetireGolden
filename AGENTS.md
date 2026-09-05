@@ -176,8 +176,10 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   `openrouter-review-recovery.yml` may be dispatched from `main` after other
   review runs finish, even when a completed review exists for that head. It
   verifies the full PR while retaining the ledger; it does not restart the
-  initial review. This is the migration exception to the manual-dispatch rule
-  above. A clean successful recovery, `run-ci`, and an exact-head Azure rerun
+  initial review. This is an exception specifically to "Never dispatch on top of
+  a completed review of the same SHA" in the shared Automated review section;
+  the ordinary review workflow must not be dispatched to perform this recovery.
+  A clean successful recovery, `run-ci`, and an exact-head Azure rerun
   are still required before merge. See the CI/CD runbook for provenance checks.
 - `main` also requires every review thread resolved and a post-push approval
   by someone other than the pusher. Resolve the threads yourself; the

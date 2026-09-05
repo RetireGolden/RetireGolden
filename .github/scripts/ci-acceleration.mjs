@@ -13,7 +13,7 @@ export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
-export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'eb63c8557ac11a4a4ce0ba71a58580bfbc41beed'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'ad759fe8b124ba2a3d16a61ed1a47808e361c31a'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
   'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
@@ -328,7 +328,7 @@ async function proveRecoveryWorkflow(github, owner, repo, run, repository, defau
       !/^[a-f0-9]{40}$/.test(run.head_sha ?? '')) return false
   try {
     const [workflow, defaultFile, runFile] = await Promise.all([
-      github.rest.actions.getWorkflow({ owner, repo, workflow_id: TRUSTED_RECOVERY_WORKFLOW_PATH }),
+      github.rest.actions.getWorkflow({ owner, repo, workflow_id: 'openrouter-review-recovery.yml' }),
       github.rest.repos.getContent({ owner, repo, path: TRUSTED_RECOVERY_WORKFLOW_PATH, ref: defaultBranch }),
       github.rest.repos.getContent({ owner, repo, path: TRUSTED_RECOVERY_WORKFLOW_PATH, ref: run.head_sha }),
     ])
@@ -409,6 +409,14 @@ export async function collectProvenanceReviewRuns(github, {
       try {
         if (run.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
           if (!(await proveRecoveryWorkflow(github, owner, repo, run, repository, defaultBranch))) continue
+          const started = Date.parse(run.created_at ?? '')
+          if (!Number.isFinite(started) || pullRequestRuns.some((ordinary) =>
+            ordinary.head_sha === expectedHeadSha && ordinary.workflow_id === TRUSTED_REVIEW_WORKFLOW_ID &&
+            (ordinary.status !== 'completed' || !Number.isFinite(Date.parse(ordinary.updated_at ?? '')) ||
+              Date.parse(ordinary.updated_at) > started))) {
+            return { provenanceReviewRuns: [], defaultCaller,
+              error: 'recovery started before the exact-head OpenRouter review completed; dispatch recovery again after reviews finish' }
+          }
         } else {
           if (reviewDispatchRunSkipReason(run, repository)) continue
           if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
@@ -417,7 +425,9 @@ export async function collectProvenanceReviewRuns(github, {
         return {
           provenanceReviewRuns: [],
           defaultCaller,
-          error: 'cannot inspect the linked OpenRouter caller',
+          error: run.path === TRUSTED_RECOVERY_WORKFLOW_PATH
+            ? 'cannot inspect the linked OpenRouter recovery workflow'
+            : 'cannot inspect the linked OpenRouter caller',
         }
       }
       provenanceReviewRuns.push(run)

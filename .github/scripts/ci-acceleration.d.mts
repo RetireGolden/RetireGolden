@@ -44,6 +44,7 @@ export interface WorkflowRun {
   readonly status?: string
   readonly conclusion?: string | null
   readonly created_at?: string
+  readonly updated_at?: string
   readonly run_number?: number
   readonly run_attempt?: number
   readonly path?: string

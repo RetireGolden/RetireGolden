@@ -2,6 +2,7 @@
 
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
+import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw'
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
@@ -28,6 +29,7 @@ import {
 } from '../../.github/scripts/ci-acceleration.mjs'
 import type {
   GetContentRequest,
+  GetWorkflowRequest,
   GetWorkflowRunRequest,
   PaginatedRequest,
   PaginatedRequestParameters,
@@ -135,6 +137,7 @@ function trustedRun(overrides: Record<string, unknown> = {}) {
       sha: 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
     }],
     created_at: '2026-09-04T12:00:00Z',
+    updated_at: '2026-09-04T12:10:00Z',
     run_number: 1,
     run_attempt: 1,
     ...overrides,
@@ -167,7 +170,10 @@ function mockGithub(overrides: Record<string, unknown> = {}) {
       },
     },
     actions: {
-      getWorkflow: async () => ({ data: { id: 999, path: TRUSTED_RECOVERY_WORKFLOW_PATH, state: 'active' } }),
+      getWorkflow: async (args: GetWorkflowRequest) => {
+        expect(args.workflow_id).toBe('openrouter-review-recovery.yml')
+        return { data: { id: 999, path: TRUSTED_RECOVERY_WORKFLOW_PATH, state: 'active' } }
+      },
       listWorkflowRuns: async function listWorkflowRuns() {},
       getWorkflowRun: async ({ run_id }: { run_id: number }) => ({
         data: trustedRun({ id: run_id, event: 'workflow_dispatch', head_sha: 'b'.repeat(40) }),
@@ -256,6 +262,82 @@ describe('trusted default-branch review verification recovery', () => {
     expect(recoveryWorkflow).toContain('fail_on: any')
     expect(recoveryWorkflow).toContain('run: test "$VERDICT" = clean')
     expect(recoveryWorkflow).toContain('persist-credentials: false')
+    expect(recoveryWorkflow).toContain("if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)")
+    expect(recoveryWorkflow).toContain("if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)")
+    expect(recoveryWorkflow).toContain('Dispatch recovery from the default branch.')
+    expect(recoveryWorkflow).toContain('uses: FlyOverCoderKY/openrouter-pr-review-action@956b494594d8c7969ec9b355fd11d8e39b3b6161')
+    expect(recoveryWorkflow).toContain('effort: low')
+    expect(recoveryWorkflow).toContain("max_tool_turns: '30'")
+    expect(recoveryWorkflow).toContain("max_diff_kb: '600'")
+    const triggers = recoveryWorkflow.split('on:')[1]?.split('\npermissions:')[0]
+    expect(triggers?.match(/^ {2}\w+:/gm)).toEqual(['  workflow_dispatch:'])
+  })
+
+  it.each([
+    ['valid PR', '643', 'open', 'main', repository.full_name, 'completed', true],
+    ['invalid number', '643x', 'open', 'main', repository.full_name, 'completed', false],
+    ['closed PR', '643', 'closed', 'main', repository.full_name, 'completed', false],
+    ['other base', '643', 'open', 'develop', repository.full_name, 'completed', false],
+    ['fork', '643', 'open', 'main', 'other/repo', 'completed', false],
+    ['active review', '643', 'open', 'main', repository.full_name, 'in_progress', false],
+  ])('runs the actual workflow preflight for %s', async (_name, number, state, base, headRepo, status, allowed) => {
+    const block = recoveryWorkflow.match(/ {10}script: \|\r?\n((?: {12}[^\n]*\n)+)/)?.[1]
+    expect(block).toBeDefined()
+    const script = (block ?? '').replace(/^ {12}/gm, '')
+    const outputs: Record<string, string> = {}
+    const result = runInNewContext(`(async () => {${script}\n})()`, {
+      process: { env: { PR_NUMBER: number } },
+      context: { repo: { owner: 'RetireGolden', repo: 'RetireGolden' }, payload: {
+        repository: { full_name: repository.full_name, default_branch: 'main' },
+      } },
+      core: { setOutput: (key: string, value: string) => { outputs[key] = value } },
+      github: {
+        rest: { pulls: { get: async () => ({ data: { number: 643, state, base: { ref: base },
+          head: { sha, repo: { full_name: headRepo } } } }) }, actions: { listWorkflowRuns: () => undefined } },
+        paginate: async () => [{ status }],
+      },
+    }) as Promise<void>
+    if (allowed) {
+      await result
+      expect(outputs).toEqual({ number: '643', head: sha })
+    } else {
+      await expect(result).rejects.toThrow()
+      expect(outputs).toEqual({})
+    }
+  })
+
+  it('authorizes recovery as the sole trusted run when the PR caller differs from main', async () => {
+    const github = recoveryGithub()
+    const original = github.rest.repos.getContent
+    github.rest.repos.getContent = async (args: GetContentRequest) => {
+      if (args.path === '.github/workflows/openrouter-code-review.yml' && args.ref === sha) {
+        return { data: { type: 'file', sha: 'changed-pr-caller' } }
+      }
+      return original(args)
+    }
+    const result = await collectProvenanceReviewRuns(github, recoveryContext)
+    expect(result.provenanceReviewRuns.map((run) => run.id)).toEqual([456])
+    const broker = await collectProvenanceReviewRuns(github, { ...recoveryContext, allowDispatch: false })
+    expect(broker.provenanceReviewRuns).toEqual([])
+    expect(await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] }, runAttempt: 2,
+    })).toMatchObject({ authorized: true })
+  })
+
+  it.each([
+    ['queued review', { status: 'queued', conclusion: null }],
+    ['running review', { status: 'in_progress', conclusion: null }],
+    ['review completed after recovery started', { updated_at: '2026-09-04T13:10:00Z' }],
+    ['missing completion evidence', { updated_at: undefined }],
+  ])('refuses recovery overlapping a %s', async (_name, overrides) => {
+    const github = recoveryGithub()
+    const original = github.paginate
+    github.paginate = async (request: PaginatedRequest, params: PaginatedRequestParameters) =>
+      request.name.includes('listWorkflowRuns') ? [trustedRun(overrides)] : original(request, params)
+    const result = await collectProvenanceReviewRuns(github, recoveryContext)
+    expect(result.provenanceReviewRuns).toEqual([])
+    expect(result.error).toMatch(/before the exact-head OpenRouter review completed/)
   })
 
   it('admits the registered, pinned main dispatch only in manual recovery', async () => {
@@ -305,7 +387,7 @@ describe('trusted default-branch review verification recovery', () => {
     github.rest.actions.getWorkflow = async () => { throw Object.assign(new Error('unavailable'), { status: 503 }) }
     const result = await collectProvenanceReviewRuns(github, recoveryContext)
     expect(result.provenanceReviewRuns).toEqual([])
-    expect(result.error).toMatch(/cannot inspect/)
+    expect(result.error).toBe('cannot inspect the linked OpenRouter recovery workflow')
   })
 
   it.each([
