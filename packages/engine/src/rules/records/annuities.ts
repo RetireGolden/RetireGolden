@@ -152,7 +152,8 @@ export const annuityRecords = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'The statute supplies the investment-to-account-balance ratio and is silent on rounding. Exact bigint nearest-cent half-up is the engine currency convention; the exact-cent fixture lands on whole cents independently of that rounding. The penalty-side validator recomputes that same ratio against an already-accepted characterization; it does not adjudicate external qualification.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -173,9 +174,11 @@ export const annuityRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: [
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts#classifyTraditionalEmployerPlanWithdrawal',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#characterCoverage',
     ],
   },
 
