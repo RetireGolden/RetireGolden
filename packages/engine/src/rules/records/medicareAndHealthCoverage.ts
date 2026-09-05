@@ -693,4 +693,108 @@ export const medicareAndHealthCoverageRecords = {
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
   },
+
+  'usc-42-1395r-i-5-optimizer-uniform-threshold-indexing': {
+    title: 'The optimizer uniformly scales every IRMAA MAGI threshold, including the frozen top row',
+    statement:
+      '1839(i)(5)(A) indexes the IRMAA dollar amounts subject to (C): (C)(i) keeps each $500,000 amount out of that adjustment through 2027, (C)(ii) indexes those amounts only after 2027 from the August 2026 base, and (B) rounds an amount increased under (A) or (C) to the nearest $1,000. 1860D-13(a)(7)(A) and (B)(i)(I) apply the same paragraph (5) amounts to the Part D adjustment. The optimizer instead multiplies every pack MAGI floor, including the $500,000 row, by the premium year\'s inflationScale, so the local LP combined Part B and Part D surcharge at held planning prices understates when MAGI is above the statutory top and below the uniformly scaled top, and overstates when MAGI is above a scaled-down top the freeze still holds.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The LP carries one inflationScale per premium year and has no separate top-row path. The exact-ledger helper already implements the freeze and the one-year-earlier resumed base (usc-42-1395r-i-5-C-top-irmaa-threshold-frozen); this record pins only buildOptimizerModel\'s uniform multiply and does not add a formula to that helper. The fixture holds 2026 pack prices and compares local LP surcharge cost, not recommendation quality, a complete household premium, or a promulgated future table.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(5)(A)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1839.htm',
+      quotedText:
+        'Subject to subparagraph (C), in the case of any calendar year beginning after 2007 (other than 2018 and 2019), each dollar amount in paragraph (2) or (3) shall be increased by an amount equal to',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(5)(B)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1839.htm',
+      quotedText:
+        'If any dollar amount after being increased under subparagraph (A) or (C) is not a multiple of $1,000, such dollar amount shall be rounded to the nearest multiple of $1,000.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(5)(C)(i)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1839.htm',
+      quotedText:
+        'Subparagraph (A) shall not apply with respect to each dollar amount in paragraph (3) of $500,000.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(5)(C)(ii)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1839.htm',
+      quotedText:
+        'In the case of any calendar year beginning after 2027, each dollar amount in paragraph (3) of $500,000 shall be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the percentage (if any) by which the average of the Consumer Price Index for all urban consumers (United States city average) for the 12- month period ending with August of the preceding calendar year exceeds such average for the 12- month period ending with August 2026.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395w-113(a)(7)(A)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1860D-13.htm',
+      quotedText:
+        'In the case of an individual whose modified adjusted gross income exceeds the threshold amount applicable under paragraph (2) of section 1839(i) (including application of paragraph (5) of such section) for the calendar year, the monthly amount of the beneficiary premium applicable under this section for a month after December 2010 shall be increased by the monthly adjustment amount specified in subparagraph (B).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395w-113(a)(7)(B)(i)(I)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1860D-13.htm',
+      quotedText:
+        'the applicable percentage determined under paragraph (3)(C) of section 1839(i) (including application of paragraph (5) of such section) for the individual for the calendar year reduced by 25.5 percent',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-05',
+    implementedBy: ['packages/engine/src/strategies/optimizer.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/optimizer.ts#buildOptimizerModel',
+    ],
+  },
+
+  'usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure': {
+    title: 'The optimizer prices IRMAA as one full-year household coefficient, not per enrolled individual-month',
+    statement:
+      '1839(a)(2) prices the monthly premium of each individual enrolled for each month; 1839(i)(3)(A) sets the income-related adjustment for an individual for a month; 1860D-13(a)(7)(A) and (B) raise that individual\'s monthly Part D beneficiary premium by an individual-for-a-month amount. The optimizer annualizes one household coefficient of 12 months of the pack\'s combined Part B increment and Part D surcharge and applies that same coefficient in the premium year and in the lifetimeTax readout, so a MAGI trip is always priced as 12 beneficiary-months at held planning prices. It has no beneficiary-month input; peopleAged65Plus sizes the age-65 deduction, not IRMAA exposure. Relative to stipulated Part B and Part D months the local LP surcharge therefore overstates a year with no enrollee or a mid-year start and understates a two-enrollee year.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'irmaaIncrements builds one 12-month combined increment from the pack standard Part B premium scaled by the applicable-percentage step plus the Part D monthly surcharge. That planning first-tier combined $95.66 (202.90 × (35 − 25) / 25 + 14.50) is the 4¢-under CMS published $95.70 residual already named on usc-42-1395r-a-3-part-b-standard-premium; this record preserves it and does not change prices. buildOptimizerModel applies that coefficient once per premium year; irmaaSurchargeFor reads the same sum into lifetimeTax. Holding the price isolates the month-count omission from premium-table rounding. The stipulated month counts are fixture metadata the engine cannot express. Referent is local LP surcharge cost, not recommendation quality or a complete household premium. Age 65 is not asserted as legal enrollment.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(a)(2)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1839.htm',
+      quotedText:
+        'The monthly premium of each individual enrolled under this part for each month after December 1983 shall be the amount determined under paragraph (3). adjusted as required in accordance with subsections (b), (c), (f), and (i) of this section, and to reflect any credit provided under section 1854(b)(1)(C)(ii)(III).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(3)(A)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1839.htm',
+      quotedText:
+        'Subject to subparagraph (B), the monthly adjustment amount specified in this paragraph for an individual for a month in a year is equal to the product of the following',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395w-113(a)(7)(A)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1860D-13.htm',
+      quotedText:
+        'In the case of an individual whose modified adjusted gross income exceeds the threshold amount applicable under paragraph (2) of section 1839(i) (including application of paragraph (5) of such section) for the calendar year, the monthly amount of the beneficiary premium applicable under this section for a month after December 2010 shall be increased by the monthly adjustment amount specified in subparagraph (B).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395w-113(a)(7)(B)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title18/1860D-13.htm',
+      quotedText:
+        'The monthly adjustment amount specified in this subparagraph for an individual for a month in a year is equal to the product of',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-05',
+    implementedBy: ['packages/engine/src/strategies/optimizer.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/optimizer.ts#irmaaIncrements',
+      'packages/engine/src/strategies/optimizer.ts#buildOptimizerModel',
+      'packages/engine/src/strategies/optimizer.ts#irmaaSurchargeFor',
+    ],
+  },
 } satisfies Record<string, TaxRuleRecord>

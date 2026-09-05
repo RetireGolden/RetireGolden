@@ -4,10 +4,20 @@
 - IRMAA based on **MAGI from 2 years prior** (2026 premiums ← 2024 MAGI). Cliff brackets (single / MFJ MAGI): $109k/$218k, then ~$137k, ~$171k, ~$205k single tiers, top tier $500k/$750k. 2026 Part B totals range $284.10–$689.90/mo; Part D surcharges $14.50–$91.00/mo.
 - **Top-tier freeze.** 42 USC 1395r(i)(5)(C) freezes the **top** threshold ($500,000 individual / $750,000 joint)
   through premium year **2027**, then resumes indexing it off an August **2026** base; the four tiers beneath it
-  index without interruption under (i)(5)(A). The engine implements exactly that — premium years through 2027
-  return the pack figure unscaled, and later years scale the 2026 base by the general inflation factor read one
-  year early and round to the nearest $1,000 (`usc-42-1395r-i-5-C-top-irmaa-threshold-frozen`). A future pack whose
-  year is not 2026 raises rather than silently mis-basing the resumption.
+  index without interruption under (i)(5)(A). The exact-ledger helper `irmaaTierThreshold` implements exactly
+  that (`usc-42-1395r-i-5-C-top-irmaa-threshold-frozen`): premium years through 2027 return the pack figure
+  unscaled, and later years scale the 2026 base by the general inflation factor read one year early and round
+  to the nearest $1,000. A future pack whose year is not 2026 raises rather than silently mis-basing the
+  resumption. The optimizer LP is a local approximation of those same amounts: `buildOptimizerModel` multiplies
+  every pack MAGI floor, including the frozen top row, by the premium year's `inflationScale`
+  (`usc-42-1395r-i-5-optimizer-uniform-threshold-indexing`).
+- **Optimizer beneficiary-month exposure.** 1839(a)(2), 1839(i)(3)(A), and 1860D-13(a)(7) price Part B and
+  Part D IRMAA per enrolled individual per month. The LP annualizes one household coefficient of 12 months of
+  the planning combined increment and applies it once per premium year
+  (`usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure`). That coefficient uses the planning
+  first-tier combined surcharge ($95.66) rather than CMS's published $95.70, the same 4¢ residual named on
+  the standard-premium sibling; prices are not re-derived here. Both optimizer gaps are the local LP Medicare
+  surcharge at held planning prices, not recommendation quality or a complete household premium.
 - Engine notes: (a) two-year lookback means conversions at 63+ hit Medicare pricing; (b) brackets are cliffs — $1 over costs hundreds; (c) store full bracket tables per year in parameter data; (d) IRMAA's filing categories differ from the income-tax tables — SSA groups **qualifying surviving spouses with single/HOH filers** on the individual threshold table ([POMS HI 01101.020](https://secure.ssa.gov/poms.nsf/lnx/0601101020)), so QSS years price premiums at single thresholds even though their income tax uses the joint tables.
 - **SSA-44 redetermination (opt-in, `expenses.healthcare.ssa44`):** after a qualifying life-changing event —
   death of spouse, and optionally each person's work stoppage (retirement year) — the beneficiary can ask SSA
