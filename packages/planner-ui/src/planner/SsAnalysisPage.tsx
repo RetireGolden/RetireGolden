@@ -25,6 +25,7 @@ import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
 import type { TipsLadder } from '@retiregolden/engine/model/plan'
 import { computeBreakEven } from '../socialSecurity/breakEven'
 import { rankSwitchStrategies } from '../socialSecurity/survivorSwitching'
+import { passesModeledOrdinaryWidowRecordGates } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { survivorBenefitMonthly } from '@retiregolden/engine/socialSecurity/survivorBenefit'
 import { ficaOasdiPaidIn } from '../socialSecurity/ficaReturn'
 import { expectedPvSingle } from '../socialSecurity/expectedPv'
@@ -1033,13 +1034,16 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   const best = ranking.ranked[0]
   const current = currentClaim(plan, personIds)
   const keyOf = (claim: Record<string, number>) => personIds.map((id) => claim[id]).join('-')
+  const hasLivingDivorcedRecord = plan.incomes.some(
+    (s) => s.type === 'socialSecurity' && (s.formerSpouses ?? []).some((r) => r.relationship === 'divorced'),
+  )
 
   return (
     <div>
       <p className="card-hint">
         The actuarial view: expected lifetime benefits weighted by the chance of being alive to receive them (SSA
         mortality), ignoring your portfolio and taxes{' '}
-        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, the gap is how much taxes and growth are pulling your answer.
+        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, differences can also reflect eligibility assumptions — not only taxes and portfolio growth.
       </p>
       <div className="form-grid" style={{ maxWidth: '22rem' }}>
         <div className="field">
@@ -1059,6 +1063,14 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
           />
         </div>
       </div>
+
+      {hasLivingDivorcedRecord ? (
+        <div className="callout callout--note" role="note">
+          This ranking assumes each living ex-spouse meets the ex-worker condition from your selected claim age onward—it
+          does not wait for the ex to turn 62. Marriage-length and currently-unmarried gates still apply. The In-your-plan
+          tab uses its documented calendar-year age-62 approximation, not full SSA entitlement rules.
+        </div>
+      ) : null}
 
       {best ? (
         <div className="callout callout--info">
@@ -1203,9 +1215,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
   const people = claimingPeople(plan)
   if (plan.household.people.length !== 1 || people.length !== 1) return null
   const { person, pia, stream } = people[0]!
-  const eligible = (stream.formerSpouses ?? []).filter(
-    (r) => r.relationship === 'deceased' && r.marriageYears >= 0.75 && (r.remarriedAtAge === null || r.remarriedAtAge >= 60),
-  )
+  const eligible = (stream.formerSpouses ?? []).filter(passesModeledOrdinaryWidowRecordGates)
   if (eligible.length === 0) return null
   // Pick the deceased ex whose **payable** survivor benefit is highest (not raw
   // PIA): after RIB-LIM + the deceased's claim-age factor, a lower-PIA ex who

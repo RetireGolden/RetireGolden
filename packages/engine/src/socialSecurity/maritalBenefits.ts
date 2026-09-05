@@ -72,12 +72,23 @@ function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitConte
   return true
 }
 
-/** Ordinary-widow gates actually applied here; fully-insured and application facts are absent. */
-function isWidowEligible(record: FormerSpouse, ctx: MaritalBenefitContext): boolean {
+/**
+ * Modeled ordinary-widow record gates on a deceased former-spouse record:
+ * relationship, 9-month duration, and historical remarriage before 60. Does not
+ * test current marital status, statutory duration/remarriage exceptions, or
+ * complete claimant eligibility; isWidowEligible owns the age-60 gate.
+ */
+export function passesModeledOrdinaryWidowRecordGates(record: FormerSpouse): boolean {
   if (record.relationship !== 'deceased') return false
   if (record.marriageYears < SURVIVOR_MIN_MARRIAGE_YEARS) return false
-  if (ctx.claimantAge < SURVIVOR_MIN_AGE) return false
   if (record.remarriedAtAge !== null && record.remarriedAtAge < REMARRIAGE_SURVIVOR_PRESERVE_AGE) return false
+  return true
+}
+
+/** Ordinary-widow gates actually applied here; fully-insured and application facts are absent. */
+function isWidowEligible(record: FormerSpouse, ctx: MaritalBenefitContext): boolean {
+  if (!passesModeledOrdinaryWidowRecordGates(record)) return false
+  if (ctx.claimantAge < SURVIVOR_MIN_AGE) return false
   return true
 }
 

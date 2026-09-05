@@ -258,7 +258,7 @@ export function FormerSpousesEditor({
               {r.relationship === 'deceased' ? (
                 <NumberField
                   label="Age you remarried"
-                  help="Remarrying before 60 forfeits this survivor benefit; at or after 60 preserves it. Leave blank if you didn't remarry after this spouse died."
+                  help="Entering a remarriage before age 60 excludes the survivor benefit here even if that marriage later ended. Leaving this blank can still include a survivor benefit in your estimate—even in a coupled household—and does not mean you are actually eligible. Leave blank only if you did not remarry after this spouse died."
                   path={`incomes.${streamIndex}.formerSpouses.${i}.remarriedAtAge`}
                   value={r.remarriedAtAge}
                   allowNull

@@ -164,6 +164,7 @@ export const socialSecurityMaritalEligibilityRecords = {
     verifiedOn: '2026-09-04',
     implementedBy: ['packages/engine/src/socialSecurity/maritalBenefits.ts'],
     implementedByFunctions: [
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#passesModeledOrdinaryWidowRecordGates',
       'packages/engine/src/socialSecurity/maritalBenefits.ts#isWidowEligible',
     ],
   },

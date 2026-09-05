@@ -236,7 +236,11 @@
           "functions": [
             {
               "name": "isWidowEligible",
-              "line": 76
+              "line": 89
+            },
+            {
+              "name": "passesModeledOrdinaryWidowRecordGates",
+              "line": 81
             }
           ]
         }

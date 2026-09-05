@@ -283,9 +283,12 @@ function claimantInput(person: Person, pia: number, claimYears: number, startYea
 
 /**
  * Best divorced-spousal monthly benefit (0.5 × ex PIA, reduced for the claim age)
- * across eligible ex-spouses, for a currently-unmarried claimant. The actuarial
- * view assumes the ex is eligible; survivor benefits are handled separately by
- * the survivor-switching analysis.
+ * across ex-spouses meeting the marriage-duration gate, for a currently-unmarried claimant.
+ * Benefits-only assumes each ex meets the ex-worker condition from the selected claim age; it does not
+ * wait for the ex to reach 62. Marriage-length and currently-unmarried gates still apply. The ledger
+ * In-your-plan path uses its documented calendar-year age-62 approximation instead. A year-varying floor
+ * keyed to availability year is follow-up work. Survivor benefits are handled separately by the
+ * survivor-switching analysis.
  */
 function divorcedSpousalFloorMonthly(person: Person, stream: SsStream, claimYears: number, householdSingle: boolean): number {
   if (!householdSingle) return 0

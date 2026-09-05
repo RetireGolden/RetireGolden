@@ -86,7 +86,7 @@ Benefits-only analysis separately illustrates survivor switching
   be met under 404.335(b)(1)–(4) without a new application — and the 404.335(d) own-old-age-benefit
   restriction); the candidate menu does not adjudicate own PIA or own benefit. Historical remarriage before
   60 is treated as an unconditional forfeiture even when the claimant is now single. A schema-valid coupled
-  household with remarriedAtAge omitted still receives a candidate without establishing a 404.335(e)
+  household with `remarriedAtAge: null` still receives a candidate without establishing a 404.335(e)
   remarriage exception (`cfr-20-404-335-ordinary-widow-eligibility`). The 9-month statutory duration
   exceptions, the alternative 404.335(a)(3)/(a)(4) relationship qualifications, and the divorced-spouse
   remarriage-continuation exception are outside the Plan
@@ -129,7 +129,12 @@ The headline capability. Two complementary views, mirroring the two questions in
   claim age, each future month weighted by survival probability (SSA period tables, optionally the
   longevity multiplier) and discounted at a user-set **real** rate (~long TIPS yield)
   ([socialSecurity/expectedPv.ts](../../packages/planner-ui/src/socialSecurity/expectedPv.ts)). It needs no
-  accounts and serves as the cross-check against Open Social Security.
+  accounts and serves as the cross-check against Open Social Security. For a currently unmarried household with
+  a living divorced ex on the plan, the ranking floor assumes each ex meets the ex-worker condition from your
+  selected claim age onward—it does not wait for the ex to turn 62—and still applies marriage-length and
+  currently-unmarried gates. The In-your-plan sweep uses its documented calendar-year age-62 approximation, not
+  full SSA entitlement adjudication. A follow-up actuarial floor must vary by availability year, not assume
+  eligibility once at claim year.
 
 When the two views disagree, that gap *is* the insight: how far tax and portfolio effects pull the answer
 away from the actuarially fair claim age.
@@ -190,7 +195,7 @@ Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-
   divorced-spouse eligibility uses a calendar-year age-62 blanket and omits worker entitlement, fully-insured status,
   and the two-year independently entitled path (`cfr-20-404-331-living-divorced-spouse-eligibility`); ordinary-widow
   eligibility treats remarriage before 60 as an unconditional historical forfeiture even when the claimant is now
-  single, and a coupled household with remarriedAtAge omitted still receives a candidate without establishing a
+  single, and a coupled household with `remarriedAtAge: null` still receives a candidate without establishing a
   404.335(e) exception (`cfr-20-404-335-ordinary-widow-eligibility`); the 9-month statutory duration exceptions,
   the alternative 404.335(a)(3)/(a)(4) relationship qualifications, and the divorced-spouse
   remarriage-continuation exception are outside the Plan
