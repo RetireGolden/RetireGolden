@@ -33,6 +33,9 @@
 # `git diff base...head` when GitHub rejects a patch over 20,000 lines;
 # the complete patch then enters the same dense-diff packing above.
 #
+# The roster is selected per repo inside the pinned reusable, keyed by
+# GITHUB_REPOSITORY. On future pin bumps, update these notes when the lane
+# roster or judge defaults change.
 # September 5 trial: Grok 4.6 + GLM 5.3 Flash + Astra via pinned OpenAI Flex.
 # Both initial and follow-up reviews add Astra; effort settings are unchanged.
 # The central policy automatically returns to Grok + GLM at midnight Eastern
@@ -63,7 +66,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
     # Central independent-review workflow pinned to the .github#36 merge commit.
     # Action#31 adds per-model routing; existing independent gate is unchanged.
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44 # .github#36 (action#31@956b494594d8c7969ec9b355fd11d8e39b3b6161; Astra Flex trial)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44 # .github#36 (unreleased changes after action v1.3.1; action#31@956b494594d8c7969ec9b355fd11d8e39b3b6161; Astra Flex trial)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
