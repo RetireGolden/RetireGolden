@@ -10,6 +10,9 @@ import {
   positiveUsdCentsSchema,
   usdCentsSchema,
 } from '../actions/money.js'
+import { ordinaryFederalFilingDeadline } from '../tax/ordinaryFederalFilingDeadline.js'
+
+export { ordinaryFederalFilingDeadline }
 
 const nonblankIdSchema = z.string().refine(
   (value) => value.trim().length > 0,
@@ -30,46 +33,6 @@ const exactZeroSchema = z.literal(0).refine(
 )
 
 const filingTaxYearSchema = z.number().int().min(2006).max(9998)
-
-function dayOfWeek(year: number, month: number, day: number): number {
-  const offsets = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]
-  const adjustedYear = month < 3 ? year - 1 : year
-  return (
-    adjustedYear +
-    Math.floor(adjustedYear / 4) -
-    Math.floor(adjustedYear / 100) +
-    Math.floor(adjustedYear / 400) +
-    offsets[month - 1]! +
-    day
-  ) % 7
-}
-
-/**
- * Exact ordinary federal individual filing deadline used by both persisted
- * source validation and annual evidence construction. Disaster relief is
- * deliberately outside this calendar.
- */
-export function ordinaryFederalFilingDeadline(taxYear: number): string | null {
-  // The District of Columbia holiday began affecting the nationwide federal
-  // deadline in filing season 2007. Older years need historical calendars.
-  if (!Number.isInteger(taxYear) || taxYear < 2006 || taxYear >= 9999) {
-    return null
-  }
-  const deadlineYear = taxYear + 1
-  const april16Weekday = dayOfWeek(deadlineYear, 4, 16)
-  const observedEmancipationDay = april16Weekday === 6
-    ? 15
-    : april16Weekday === 0
-      ? 17
-      : 16
-  let day = 15
-  while (
-    dayOfWeek(deadlineYear, 4, day) === 0 ||
-    dayOfWeek(deadlineYear, 4, day) === 6 ||
-    day === observedEmancipationDay
-  ) day++
-  return `${String(deadlineYear).padStart(4, '0')}-04-${String(day).padStart(2, '0')}`
-}
 
 // `z.tuple([])` emits an invalid empty `prefixItems` array in Zod's JSON
 // Schema conversion. This has the same runtime contract while preserving the

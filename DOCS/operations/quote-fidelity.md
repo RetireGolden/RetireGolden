@@ -93,6 +93,11 @@ The ledger is split into three buckets so the serious findings are not buried un
 | `ELISION-BROKEN` | A quote uses `...` markers, but at least one segment between them is not in the source. | The elision is not the problem; the segment is. Treat as `ABSENT` for that segment. |
 | `UNFETCHABLE` | The page could not be retrieved, or returned a challenge/stub instead of the document. Only the network request can produce this — a cache or temp-directory failure warns and carries on, because it is a fact about your machine and this verdict is an accusation against a publisher. | Not a registry defect on its own, but the citation is unverified until it resolves. `www.jct.gov` sits behind a Cloudflare challenge and is expected here; the script does not attempt to defeat it. Consider citing a mirror that serves the same text. |
 
+Each committed ledger records the **latest** verifier observation for that run, not cumulative
+evidence across refreshes. A failed refreshed retrieval therefore replaces an earlier match with
+`UNFETCHABLE` for that citation; prior successful results remain only in Git history and must not
+be carried forward as though the current refresh verified the source.
+
 ### ADVISORY — faithful, but not literally character-exact
 
 `PUNCTUATION` and `ELISION-PUNCTUATION` mean the quote matched only after one or more ladder rungs, and the

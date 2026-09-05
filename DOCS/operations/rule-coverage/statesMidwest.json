@@ -615,8 +615,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -671,12 +671,12 @@
         {
           "kind": "statute",
           "citation": "35 ILCS 5/203(a)(2)(F)",
-          "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm"
+          "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm"
         },
         {
           "kind": "statute",
           "citation": "35 ILCS 5/203(a)(2)",
-          "url": "https://www.ilga.gov/Legislation/ilcs/documents/003500050K203.htm"
+          "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm"
         }
       ]
     },

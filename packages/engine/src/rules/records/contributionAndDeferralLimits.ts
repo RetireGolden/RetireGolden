@@ -1,6 +1,8 @@
 /**
- * Contribution and deferral limit records: the section 219 IRA ceilings, the section
- * 402(g) elective deferral aggregate, the section 414(v) catch-up regime, the section
+ * Contribution and deferral limit records: the section 219 IRA ceilings, the
+ * 219(f)(3) prior-year contribution window and its ordinary nationwide filing
+ * calendar under 6072(a)/7503 (placed next to that window), the section 402(g)
+ * elective deferral aggregate, the section 414(v) catch-up regime, the section
  * 415 annual additions cap, and the excise taxes on excess contributions.
  *
  * One slice of the tax rule registry. `../taxRuleRegistry.ts` composes every
@@ -767,12 +769,63 @@ export const contributionAndDeferralLimitRecords = {
     implementedBy: [
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
-      'packages/engine/src/model/retirementActionAnnualTaxFacts.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts#buildPlanOwnedNonRothIraAnnualFilingEvidence',
       'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput',
-      'packages/engine/src/model/retirementActionAnnualTaxFacts.ts#ordinaryFederalFilingDeadline',
+    ],
+  },
+
+  'irc-6072-a-7503-ordinary-federal-filing-deadline': {
+    title: 'Ordinary nationwide April federal filing deadline with weekend and D.C. holiday adjustments',
+    statement:
+      'For calendar-year individual income-tax returns under sections 6012, 6013, or 6017 that are subject to the IRC 6072(a) general rule, the ordinary due date is April 15 of the following year. When that day, or a succeeding day reached under IRC 7503, falls on Saturday, Sunday, or a District of Columbia legal holiday, the act is timely on the next succeeding day that is not Saturday, Sunday, or such a holiday. Notice 2011-17 treats Emancipation Day (April 16) as that D.C. legal holiday for taxpayers nationwide and states the April 16 weekday cases: Saturday => observed Friday April 15 => deadline Monday April 18; Sunday => observed Monday April 17 => deadline Tuesday April 18; Monday => deadline Tuesday April 17. This record covers only that ordinary nationwide April calendar; it does not adjudicate taxpayer-specific deadlines.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The helper returns the ordinary nationwide April date only. It does not apply return-filing extensions, disaster-relief postponements, or state-office statewide holiday adjustments under the second clause of IRC 7503. Integer tax years 2006 through 9998 are the engine\'s supported calendar scope for this arithmetic. Announcement 2007-16 demonstrates the 2006-return deadline under that calendar; it does not establish holiday enactment.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 6072(a)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6072&num=0&edition=prelim',
+      quotedText:
+        'In the case of returns under section 6012, 6013, or 6017 (relating to income tax under subtitle A), returns made on the basis of the calendar year shall be filed on or before the 15th day of April following the close of the calendar year and returns made on the basis of a fiscal year shall be filed on or before the 15th day of the fourth month following the close of the fiscal year, except as otherwise provided in the following subsections of this section.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 7503',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7503&num=0&edition=prelim',
+      quotedText:
+        'When the last day prescribed under authority of the internal revenue laws for performing any act falls on Saturday, Sunday, or a legal holiday, the performance of such act shall be considered timely if it is performed on the next succeeding day which is not a Saturday, Sunday, or a legal holiday. For purposes of this section, the last day for the performance of any act shall be determined by including any authorized extension of time; the term "legal holiday" means a legal holiday in the District of Columbia; and in the case of any return, statement, or other document required to be filed, or any other act required under authority of the internal revenue laws to be performed, at any office of the Secretary or at any other office of the United States or any agency thereof, located outside the District of Columbia but within an internal revenue district, the term "legal holiday" also means a Statewide legal holiday in the State where such office is located.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2011-17',
+      url: 'https://www.irs.gov/irb/2011-10_IRB',
+      quotedText:
+        'Under District of Columbia law, Emancipation Day, April 16, is a legal holiday. D.C. Code \u00a7 28-2701 (2010). When April 16 falls on a Saturday, the preceding day is the observed holiday, and when it falls on a Sunday, the succeeding day is the observed holiday. Id. Because Emancipation Day is a legal holiday in the District of Columbia, in certain years it will have implications for taxpayers nationwide with respect to the filing deadlines for all tax forms and payments required to be filed or completed on or before April 15, including the Form 1040 series tax returns.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Notice 2011-17',
+      url: 'https://www.irs.gov/irb/2011-10_IRB',
+      quotedText:
+        'For taxpayers nationwide, when Emancipation Day, April 16, falls on a: \u2026 Saturday: Friday, April 15 is the observed date and the filing deadline for all tax forms and payments required to be filed or completed on or before April 15, is Monday, April 18. \u2026 Sunday: Monday, April 17 is the observed date and the filing deadline for all tax forms and payments required to be filed or completed on or before April 15, is Tuesday, April 18. \u2026 Monday: Monday, April 16 is the holiday and the filing deadline for all forms and payments required to be filed or completed on or before April 15, is Tuesday, April 17.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'IRS Announcement 2007-16',
+      url: 'https://www.irs.gov/irb/2007-08_IRB',
+      quotedText:
+        'Taxpayers across the nation have until Tuesday, April 17, 2007, to file their 2006 returns and pay any taxes due. Taxpayers have extra time to file and pay because April 15 falls on a Sunday in 2007, and the following day, Monday, April 16, is Emancipation Day, a legal holiday in the District of Columbia. This means the entire country has an April 17 deadline.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2006,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-04',
+    implementedBy: [
+      'packages/engine/src/tax/ordinaryFederalFilingDeadline.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/tax/ordinaryFederalFilingDeadline.ts#ordinaryFederalFilingDeadline',
     ],
   },
 

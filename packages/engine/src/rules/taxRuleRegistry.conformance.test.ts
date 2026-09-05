@@ -1172,15 +1172,14 @@ describe('tax rule registry conformance', () => {
   })
 
   it('covers every typedRefusal rule with a refusal fixture', () => {
-    // The classification with no coverage obligation at all until recently: a
-    // slice of the registry (73 of 417 records, under a fifth) that says "we
-    // will not answer this". A typedRefusal record claims the engine fails
-    // closed at a named site; nothing checked that the refusal existed, still
-    // existed, or still had the shape the record describes. That is the same rot
-    // `produced` was invented to stop on the approximated records, in the
-    // direction that reads as the most responsible: "we refuse this" keeps
-    // sounding careful long after the refusal was replaced by a number, or
-    // deleted.
+    // The classification with no coverage obligation at all until recently: the
+    // outOfScope slice of the registry that says "we will not answer this". A
+    // typedRefusal record claims the engine fails closed at a named site; nothing
+    // checked that the refusal existed, still existed, or still had the shape the
+    // record describes. That is the same rot `produced` was invented to stop on
+    // the approximated records, in the direction that reads as the most
+    // responsible: "we refuse this" keeps sounding careful long after the
+    // refusal was replaced by a number, or deleted.
     //
     // Scoped to `typedRefusal` because the other shape has nothing to drive.
     // That is not a loosening: an `inexpressibleInput` record trades the fixture

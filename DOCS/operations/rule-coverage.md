@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 417 |
+| Total rules | 418 |
 | Classification: approximated | 110 |
 | Classification: outOfScope | 73 |
-| Classification: settled | 229 |
+| Classification: settled | 230 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 60 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 340 |
+| Volatility: staticStatute | 341 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 311 |
+| Federal jurisdiction | 312 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -81,11 +81,11 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 367 |
+| Engine source files | 368 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 55 |
-| registered | 104 |
+| registered | 105 |
 | rule-free | 208 |
 | unswept | 0 |
 
@@ -112,7 +112,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | socialSecurity | 10 | 2 | 7 | 1 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
-| tax | 7 | 2 | 4 | 1 | 0 |
+| tax | 8 | 2 | 5 | 1 | 0 |
 | testing | 4 | 1 | 0 | 3 | 0 |
 
 ## Unswept files
@@ -147,7 +147,7 @@ None.
 | model/migrations.ts | 2026-08-24 | Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records |
 | model/plan.ts | 2026-08-24 | Inherited IRA regime parse rules; spouse J&S RMD gate; 403(b) aggregation; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates |
 | model/planCrossFieldChecks.ts | 2026-09-03 | The cross-field validator, moved verbatim out of the superRefine body in model/plan.ts and unchanged in rule, message, or order; it carries the same residual claims the model/plan.ts entry names for cross-field rules: inherited IRA regime parse rules; spouse J&S RMD gate; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates. The qualified-annuity start-age bounds it applies come from the latestNonQlacQualifiedAnnuityStartAge and latestQlacAnnuityStartAge helpers that stay in model/plan.ts |
-| model/retirementActionAnnualTaxFacts.ts | 2026-08-24 | April filing deadline w/ weekend & Emancipation Day adjustments; post-year IRA contribution window invariants; record names other files |
+| model/retirementActionAnnualTaxFacts.ts | 2026-09-04 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; persisted prior-year contribution-window and opening-basis/completeness invariants still enforced here without matching function pins |
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-08-27 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain |
@@ -167,7 +167,7 @@ None.
 | projection/optimizePlan.ts | 2026-08-27 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
-| projection/ownedNonRothIraAnnualObservation.ts | 2026-08-24 | April-15/weekend/Emancipation-Day filing deadline; no record |
+| projection/ownedNonRothIraAnnualObservation.ts | 2026-09-04 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selection and December 31 complete-pool observation remain locally enforced and sibling pool records name other files |
 | projection/simulate.ts | 2026-09-02 | ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, the thin live-state application adapters for earlier pure coordinators, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly. Those retained responsibilities are the orchestration and cross-year state boundary; substantive annual funding and settlement policy no longer lives inline |
 | rmd/applicableAge.ts | 2026-08-29 | Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy; the born-1959 record's contraryReading now records what the full IRB text of Announcement 2026-7 shows - it defers final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so no current guidance addresses the contest; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact) and the 70½/July-1949 cohort tiers pending a pre-SECURE historical-edition record |
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
@@ -188,7 +188,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/annuities.json | 6 |
 | rule-coverage/charitableDeductions.json | 14 |
 | rule-coverage/charitableDistributions.json | 22 |
-| rule-coverage/contributionAndDeferralLimits.json | 37 |
+| rule-coverage/contributionAndDeferralLimits.json | 38 |
 | rule-coverage/earlyDistributionsAndSepp.json | 28 |
 | rule-coverage/healthSavingsAccounts.json | 18 |
 | rule-coverage/individualIncomeTax.json | 19 |
@@ -207,7 +207,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (417 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (418 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -247,19 +247,19 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-04T17:47:16.011Z over 1071 authority entries (0 fetched live, 305 from cache).
+Committed ledger generated at 2026-09-04T23:50:56.180Z over 1076 authority entries (9 fetched live, 300 from cache).
 
-3 serious, 50 advisory, 1018 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 989 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 64 |
+| ELISION-EXACT | ok | 63 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 742 |
+| EXACT | ok | 714 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |
-| UNFETCHABLE | serious | 3 |
+| UNFETCHABLE | serious | 37 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.

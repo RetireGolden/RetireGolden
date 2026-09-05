@@ -368,8 +368,7 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
-        "packages/engine/src/model/retirementActionAnnualTaxFacts.ts"
+        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts"
       ],
       "implementations": [
         {
@@ -387,15 +386,6 @@
             {
               "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
               "line": 437
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/model/retirementActionAnnualTaxFacts.ts",
-          "functions": [
-            {
-              "name": "ordinaryFederalFilingDeadline",
-              "line": 52
             }
           ]
         }
@@ -2605,6 +2595,78 @@
           "kind": "formInstruction",
           "citation": "2025 Form 5329, Part IV, line 25",
           "url": "https://www.irs.gov/pub/irs-pdf/f5329.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-6072-a-7503-ordinary-federal-filing-deadline",
+      "title": "Ordinary nationwide April federal filing deadline with weekend and D.C. holiday adjustments",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The helper returns the ordinary nationwide April date only. It does not apply return-filing extensions, disaster-relief postponements, or state-office statewide holiday adjustments under the second clause of IRC 7503. Integer tax years 2006 through 9998 are the engine's supported calendar scope for this arithmetic. Announcement 2007-16 demonstrates the 2006-return deadline under that calendar; it does not establish holiday enactment.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2006,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/tax/ordinaryFederalFilingDeadline.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/ordinaryFederalFilingDeadline.ts",
+          "functions": [
+            {
+              "name": "ordinaryFederalFilingDeadline",
+              "line": 20
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/ordinaryFederalFilingDeadline.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/ordinaryFederalFilingDeadline.test.ts",
+          "line": 8,
+          "note": null,
+          "tests": [
+            {
+              "title": "moves the 2027 tax-year deadline past the Monday-observed Emancipation Day",
+              "line": 21
+            },
+            {
+              "title": "covers an ordinary weekday, Friday-observed Saturday holiday, Monday holiday, and the 2006 floor",
+              "line": 27
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 6072(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6072&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 7503",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section7503&num=0&edition=prelim"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Notice 2011-17",
+          "url": "https://www.irs.gov/irb/2011-10_IRB"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "IRS Announcement 2007-16",
+          "url": "https://www.irs.gov/irb/2007-08_IRB"
         }
       ]
     },
