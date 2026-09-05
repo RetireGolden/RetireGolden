@@ -128,8 +128,8 @@ function trustedRun(overrides: Record<string, unknown> = {}) {
     path: '.github/workflows/openrouter-code-review.yml',
     head_repository: repository,
     referenced_workflows: [{
-      path: 'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
-      sha: 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
+      path: 'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44',
+      sha: '133c4a1a7e48c1e416784f69988d7d42d1866c44',
     }],
     created_at: '2026-09-04T12:00:00Z',
     run_number: 1,
