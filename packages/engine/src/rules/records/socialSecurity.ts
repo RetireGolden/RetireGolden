@@ -250,7 +250,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming on the current-spouse path that the worker has already filed so the spouse is eligible. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`.',
+      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming on the current-spouse path that the worker has already filed so the spouse is eligible. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -264,12 +264,14 @@ export const socialSecurityRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts',
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/socialSecurity/claimFactor.ts',
       'packages/engine/src/socialSecurity/maritalBenefits.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts#resolveCurrentSpouseSpousalAnnualPriorYear',
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
