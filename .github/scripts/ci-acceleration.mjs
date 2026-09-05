@@ -15,9 +15,9 @@ export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'ad759fe8b124ba2a3d16a61ed1a47808e361c31a'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
-  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
-export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
-/** Primary ledger producer: openrouter-pr-review-action@146a516683d3af34c1b9e403f02e6e02ccabc567. */
+  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44'
+export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '133c4a1a7e48c1e416784f69988d7d42d1866c44'
+/** Primary ledger producer: openrouter-pr-review-action@956b494594d8c7969ec9b355fd11d8e39b3b6161. */
 const LEDGER_FINDING_ID_RE = /^r\p{Decimal_Number}{1,3}-\p{Decimal_Number}{1,3}$/u
 // Mirrors Python str.strip(); U+FEFF (BOM) is not whitespace there (schema.py valid_review_path).
 const PYTHON_STRIP_RE = /^[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+|[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+$/gu
@@ -108,7 +108,7 @@ function trustedLedger(body, { repository, pullNumber, headSha, workflowRunUrls 
   const payload = marker && decodeLedgerPayload(marker[1])
 
   const verdict = /^\*\*Verdict:\*\* `(clean|issues)`$/.exec(lines[3] ?? '')?.[1]
-  // Producer: openrouter-pr-review-action@146a516683d3af34c1b9e403f02e6e02ccabc567
+  // Producer: openrouter-pr-review-action@956b494594d8c7969ec9b355fd11d8e39b3b6161
   // apply_round drops fixed entries; clean means zero open findings (_decode_finding shape).
   const cleanFindings =
     Array.isArray(payload?.findings) &&
