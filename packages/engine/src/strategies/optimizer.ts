@@ -16,21 +16,23 @@
  * (nonlinear) ledger with the emitted schedule for exact numbers and surface
  * any gap (V8 §3.1).
  *
- * Modeled exactly (the "big levers", V8 §6):
+ * Primary modeled levers (V8 §6 — not every in-solve term is exact; see
+ * DOCS/features/optimizer.md §"Documented simplifications"):
  *   - Graduated federal ordinary tax as a CONVEX piecewise-linear cost from the
- *     pack's real brackets — minimising tax fills the cheap band first with no
- *     integer variables.
+ *     pack's real brackets at marginal rates conditional on supplied taxable
+ *     ordinary income — minimising tax fills the cheap band first with no integers.
  *   - IRMAA tier surcharges as binary step thresholds (the non-convex part that
- *     makes this a MILP, not an LP).
- *   - RMD floors as a linear lower bound on each year's taxable distribution
- *     (floor = start-of-year traditional balance ÷ divisor).
+ *     makes this a MILP, not an LP; other linearization residuals remain).
+ *   - RMD floors as a linear lower bound on each year's traditional withdrawal
+ *     (pooled balance ÷ baseline effective divisor — not per-owner Uniform Lifetime
+ *     table; see DOCS/features/optimizer.md §"Documented simplifications").
  *   - Three-bucket balances (owner traditional, inherited traditional, and
  *     "other" = Roth + taxable + cash) with per-year growth and scheduled
  *     contribution / employer-match inflows from the baseline probe, so a
  *     plan whose solvency depends on future deposits is not misread as
  *     infeasible.
  *
- * The optimizer-exact-ledger-convergence plan (Track 1) closed the
+ * The optimizer-exact-ledger-convergence plan (Track 1) narrowed the
  * original v1 simplifications, each opt-in via `OptimizerInput` so absent
  * fields reproduce the v1 LP byte-for-byte:
  *   - Taxable-gain realization (Step 2): `openingTaxable`/`taxableInflow` split
@@ -43,8 +45,9 @@
  *     (non-flat-override) states are priced with real brackets rather than
  *     zero; a flat `stateEffectiveTaxPct` override keeps the flat `stateRate`.
  *   - Taxable-SS phase-in (Step 3): `ssTaxability` swaps the fixed taxable-SS
- *     constant for an in-solve convex PWL over provisional income, so the
- *     solver sees the *marginal* tax torpedo (see `taxss` constraints below).
+ *     constant for an in-solve convex PWL when benefits exceed $1 and baseline
+ *     share is below 84.5% (see `irc-86-a-optimizer-taxable-social-security-linearization`;
+ *     `taxss` constraints below).
  *   - IRMAA 2-year lookback (Step 4): `irmaaLookback` drives each premium
  *     year's binaries off MAGI(year−2), matching the ledger's causality.
  *   - OBBBA senior deduction (ground-truth 2026 law sync, Step 2):
@@ -57,8 +60,7 @@
  * `simulate`, and by the exact-ledger convergence loop — Step 1, in
  * projection/optimizePlan.ts — which recaptures the exogenous inputs at the
  * incumbent schedule and re-solves to a fixed point): a single LTCG rate and
- * opening basis ratio for the taxable stack, the omitted 85%-of-benefit
- * taxable-SS cap (conservative), unscaled stand-in packs for future years
+ * opening basis ratio for the taxable stack, unscaled stand-in packs for future years
  * (matching the ledger's convention), and state retirement-income exclusions.
  */
 
@@ -180,7 +182,15 @@ export interface OptimizerYear {
   spendingNeed: number
   /** Net non-withdrawal cash already in hand (e.g. surplus SS/pension). Nominal. */
   exogenousCash: number
-  /** Uniform-Lifetime (or joint) RMD divisor when age-eligible; null = no RMD. */
+  /**
+   * Effective pooled owner-traditional divisor (baseline opening trad ÷ baseline
+   * owner RMD) when age-eligible; null = no floor. Generic callers may supply a
+   * real table divisor for one pool; the plan bridge recovers a pooled baseline
+   * divisor that can differ from any single table divisor in a mixed household.
+   * Exact at that baseline composition and under proportional balance changes;
+   * owner/plan/denominator mix can distort the raw MILP floor. See
+   * DOCS/features/optimizer.md §"Documented simplifications".
+   */
   rmdDivisor: number | null
   /** Forced inherited-traditional distribution from the baseline ledger. */
   inheritedDistribution: number
@@ -241,19 +251,20 @@ export interface OptimizerYear {
    */
   taxableInflow?: number
   /**
-   * In-solve taxable-SS PWL inputs (Step 3). When present with `ssBenefits > 0`,
-   * the LP replaces the fixed taxable-SS constant baked into
-   * `ordinaryIncomeBase` with a variable derived from provisional income, so
-   * the solver sees the *marginal* tax torpedo (each conversion dollar dragging
-   * 50–85¢ of SS into taxability) instead of the incumbent's average. Absent →
-   * the fixed-constant behavior (byte-identical LP).
+   * In-solve taxable-SS PWL inputs (Step 3). Active when present with
+   * `ssBenefits > 1` and `taxableSsBase < 0.845 * ssBenefits`; otherwise the
+   * baseline constant in `ordinaryIncomeBase` is retained (byte-identical LP).
+   * When active, replaces that constant with a PI-derived variable so the solver
+   * sees the marginal torpedo (50–85¢ per conversion dollar), not the incumbent
+   * average. Omits half-benefit plateau and 85% cap (can overstate); near-cap
+   * freeze can understate — `irc-86-a-optimizer-taxable-social-security-linearization`.
    */
   ssTaxability?: {
     /** Gross Social Security benefits this year (nominal). */
     ssBenefits: number
     /** Taxable-SS portion already folded into `ordinaryIncomeBase` (subtracted out when the PWL is active). */
     taxableSsBase: number
-    /** Fixed §86 provisional-income addbacks (tax-exempt interest + foreign exclusions). */
+    /** Generic scalar for the year's fixed §86(b)(2) provisional-income addbacks; buildOptimizerModel sums it verbatim into PI. The production plan→optimizer adapter currently supplies tax-exempt interest plus the §911/§931/§933 foreign exclusions only — omitted addbacks are an adapter/schema gap, not a solver limit. */
     provisionalIncomeAddbacks?: number
   }
   /**
@@ -273,9 +284,19 @@ export interface OptimizerYear {
    */
   magiTaxExemptInterest?: number
   /**
-   * Maximum modeled total MAGI that preserves the actionable current-year ACA
-   * result. This constrains the same MAGI expression used by the optimizer's
-   * IRMAA model, including taxable-SS phase-in and taxable withdrawals.
+   * Generic caller contract: maximum modeled total MAGI for the ACA cap constraint
+   * in this year's LP (nominal). When set, the MILP bounds the same MAGI expression
+   * used by IRMAA, including taxable-SS phase-in and taxable withdrawals. In
+   * production, `buildOptimizerInput` sets this only when modeled PTC is positive
+   * and cliff state is below-cliff or at-cliff — not every actionable year. The
+   * absolute cap is the incumbent value of the optimizer's modeled MAGI expression
+   * (including the gain-weighted incumbent taxable withdrawal) plus exact-ledger
+   * ACA headroom. That is not exact statutory household MAGI plus headroom: static
+   * ACA addbacks distinguish them. In-solve taxable-SS movement can still restrict
+   * apparent room in that calibrated use — a documented policy/model residual that
+   * does not establish taxpayer-tax direction (DOCS/features/optimizer.md
+   * §"Documented simplifications"). This is a modeled MAGI ceiling for the LP, not
+   * a claim of exact statutory ACA MAGI.
    */
   acaMagiMax?: number
   /**
@@ -427,8 +448,8 @@ export interface OptimizerInput {
    * solver sees the phase-out band's marginal-rate spike (each conversion
    * dollar clawing back 6¢ of deduction ⇒ bracket rate × 1.06) instead of
    * ignoring the deduction entirely. The concave full-phase-out cap is omitted
-   * (same treatment and direction as the taxable-SS 85% cap: overstates the
-   * cost of mega-conversions, which the exact ledger refines), and years whose
+   * (overstates cost for cap-crossing conversions, which the exact ledger
+   * refines), and years whose
    * baseline MAGI is already past full phase-out skip the deduction exactly.
    * `buildOptimizerInput` always enables this in production; absent, the v1
    * LP is byte-identical.
@@ -653,9 +674,9 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // `wt`/`wi` so `ordinaryIncomeBase` excludes them, but the ledger's MAGI
     // counts them, and a high-RMD year can be fully phased out on forced
     // income alone. The concave full-phase-out cap is otherwise omitted — a
-    // conservative overstatement for cap-crossing conversions, like the SS 85%
-    // cap (a hard `srd ≤ base` bound would instead make cap-crossing MAGI
-    // infeasible against the floor constraint, and an exact cap needs a binary).
+    // conservative overstatement for cap-crossing conversions (a hard `srd ≤ base`
+    // bound would instead make cap-crossing MAGI infeasible against the floor
+    // constraint, and an exact cap needs a binary).
     const srdRule = input.seniorDeduction ? y.pack.federalTax.seniorDeduction : null
     const srdEligible = srdRule !== null && y.peopleAged65Plus > 0 && y.year <= srdRule.lastApplicableYear
     // Clawback slope against the household total, not the statutory rate:
@@ -688,12 +709,13 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     const irmaaVars = irmaa.map((_, k) => `irmaa${t}_${k}`)
 
     // In-solve taxable-SS PWL (Step 3): active when the year carries SS inputs
-    // and the incumbent is not already saturated at the 85% cap (a saturated
-    // year's marginal effect is zero, so the fixed constant is exactly right).
-    // Convex max-affine underestimate of the 0/50/85% phase-in over provisional
-    // income PI = PI0 + x (x = conv + wt + wi + gain-weighted wtax); the 0.85·B
-    // cap is omitted (concave), so past the cap the LP overestimates the
-    // marginal cost — a conservative direction the exact ledger refines.
+    // and the incumbent taxable share is below 84.5% of benefits (an
+    // implementation shortcut, not statutory; above that band the baseline share
+    // is frozen and can understate further inclusion toward the cap). Convex
+    // max-affine proxy for the 0/50/85% phase-in over provisional
+    // income PI = PI0 + x; both the half-benefit plateau and 0.85·B cap are
+    // omitted, so an active PWL can overstate taxable SS — no universal signed
+    // direction on recommendations (see registry record).
     const ssB = y.ssTaxability
     const ssPwlActive =
       ssB !== undefined && ssB.ssBenefits > 1 && ssB.taxableSsBase < 0.845 * ssB.ssBenefits
@@ -739,19 +761,14 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
         [wi]: 1,
       }
       if (hasTaxable && taxableGainWeight > 0) piVars[wtax] = taxableGainWeight
-      // taxSS ≥ max(0, 0.5·(PI−T1), tier1Cap + 0.85·(PI−T2)) — the convex
-      // phase-in mirroring the ledger's `taxableSocialSecurity`: above T2 the
-      // 50% tier's contribution is capped at min(0.5·B, 0.5·(T2−T1)) and each
-      // marginal dollar adds 0.85 (never 0.5+0.85 — the tiers do not stack at
-      // the margin). Expressed as ≥-constraints (the tax terms are increasing
-      // in taxSS, so minimization pins taxSS to the max). The concave 0.85·B
-      // cap is deliberately NOT modeled: a binary per SS year makes the MILP
-      // intractably slow (measured), and omitting the cap only OVERSTATES the
-      // tax on conversions large enough to blow past it — a conservative
-      // direction. Mega-conversion shapes still reach the recommendation
-      // through the tournament candidates and local search, all priced on the
-      // exact ledger, and saturated-at-the-incumbent years skip the PWL
-      // entirely (their marginal effect is zero, so the constant is exact).
+      // taxSS ≥ max(0, 0.5·(PI−T1), tier1Cap + 0.85·(PI−T2)) — convex max-affine
+      // pieces mirroring the ledger's tier slopes; the half-benefit plateau and
+      // concave 0.85·B cap are deliberately NOT modeled (a binary per SS year
+      // makes the MILP intractably slow). Active PWL can overstate inclusion;
+      // the ≥84.5% skipped branch freezes baseline share and can understate
+      // further inclusion — neither branch is exact, and recommendation quality
+      // has no universal signed direction. Tournament/local search re-prices on
+      // the exact ledger.
       const tier1Cap = Math.min(0.5 * B, 0.5 * (t2 - t1))
       const pieces: { slope: number; constant: number; name: string }[] = [
         { slope: 0.5, constant: 0.5 * (pi0 - t1), name: 'a' },
@@ -885,7 +902,8 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
       )}`,
     )
 
-    // RMD floor: discretionary+forced taxable distribution ≥ balance ÷ divisor.
+    // RMD floor: wt ≥ trad ÷ rmdDivisor; the plan bridge supplies an effective
+    // pooled divisor recovered at baseline (may differ from any single table divisor).
     if (y.rmdDivisor && y.rmdDivisor > 0) {
       const rmd: Terms = { [wt]: 1, [`trad${t}`]: -1 / y.rmdDivisor }
       constraints.push(` rmd${t}: ${expr(rmd)} >= 0`)
@@ -898,12 +916,15 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     }
 
     if (y.acaMagiMax !== undefined) {
-      // `acaMagiMax` embeds the exact ledger's remaining MAGI headroom before
-      // the cliff — incumbent ledger MAGI (which already includes exempt
-      // interest) minus the same LP `magiBase`. The constraint stays correct
-      // because that headroom is measured on the ledger's MAGI, not because
-      // exempt interest cancels out of `magiBase`. If the LP's MAGI expression
-      // later gains an explicit exempt term, this constraint must be reconciled.
+      // `acaMagiMax` is the absolute cap: the incumbent value of this modeled
+      // MAGI expression (including the gain-weighted incumbent taxable
+      // withdrawal) plus exact-ledger ACA headroom. That is not exact statutory
+      // household MAGI plus headroom: static ACA addbacks distinguish them. The
+      // inequality subtracts `magiBase` so it bounds only the variable terms.
+      // In-solve taxable-SS movement can still shrink apparent room; that
+      // restriction is a documented policy/model residual that does not
+      // establish taxpayer-tax direction (optimizer.md). If the LP's MAGI
+      // expression later gains an explicit exempt term, reconcile.
       constraints.push(
         ` acamagi${t}: ${expr(myMagiTerms)} <= ${fmt(Math.max(0, y.acaMagiMax) - magiBase[t]!)}`,
       )

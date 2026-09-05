@@ -238,7 +238,7 @@ Annual computation inside the projection loop ([tax/federalTax.ts](../../package
 [tax/stateTax.ts](../../packages/engine/src/tax/stateTax.ts)); full detail in [taxes.md](taxes.md):
 
 - Ordinary income stack: wages, interest, non-qualified dividends, traditional withdrawals/conversions,
-  pension/annuity taxable parts, taxable SS (provisional-income 0/50/85% tiers, unindexed).
+  pension/annuity taxable parts, taxable SS (exact ledger: provisional-income 0/50/85% tiers, unindexed; optimizer proxy `irc-86-a-optimizer-taxable-social-security-linearization` omits statutory benefit caps and freezes near-cap baselines — exact ledger re-prices).
 - **LTCG + qualified dividends** stack at 0/15/20% on top of ordinary income; the 0% bracket surfaces a
   gain-harvesting opportunity.
 - Deductions: standard + age-65 additions + **$6,000/person senior deduction (2025–2028, MAGI phase-out)**;
@@ -281,7 +281,7 @@ Conversions are taxable ordinary income with no early-withdrawal penalty; intera
 explicitly (SS taxation, IRMAA +2yr, ACA PTC, NIIT, senior-deduction phase-out, widow's penalty, future
 RMD reduction). A convert-vs-don't view compares lifetime taxes and ending after-tax wealth. Beyond the
 strategies, a true MILP **optimizer** co-optimizes conversions and withdrawals — wrapped in an exact-ledger
-convergence loop with in-solve taxable-gain, state-bracket, taxable-SS phase-in, and IRMAA-lookback fidelity,
+convergence loop with in-solve taxable-gain, state-bracket, taxable-SS phase-in (`irc-86-a-optimizer-taxable-social-security-linearization` — omitted caps and near-cap freeze; exact ledger re-prices), and IRMAA-lookback fidelity,
 plus an opt-in **co-optimized Social Security claim age**; the strict Owl parity gate (§13) proves the result
 meets or beats Owl on every parity fixture — see [optimizer.md](optimizer.md).
 

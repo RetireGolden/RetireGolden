@@ -8,7 +8,7 @@
       "title": "Ordinary rate schedule is marginal, and permanent after OBBBA",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Two things about the 2026 tables are easy to get wrong from memory. First, the 37 percent bracket begins at the same figure for unmarried individuals and for heads of household ($640,600), while the married-filing-separately table diverges from the unmarried table only at the top, at $384,350. Second, OBBBA gave the boundaries of the 10 and 12 percent brackets one extra year of indexing by confining the 2017-base substitution in 1(j)(3)(B)(i) to brackets above 12 percent, so those two thresholds move on a different base than the rest of the table. The engine models only unmarried and married-filing-jointly, mapping every other status onto one of the two.",
+      "conventionRationale": "Two things about the 2026 tables are easy to get wrong from memory. First, the 37 percent bracket begins at the same figure for unmarried individuals and for heads of household ($640,600), while the married-filing-separately table diverges from the unmarried table only at the top, at $384,350. Second, OBBBA gave the boundaries of the 10 and 12 percent brackets one extra year of indexing by confining the 2017-base substitution in 1(j)(3)(B)(i) to brackets above 12 percent, so those two thresholds move on a different base than the rest of the table. The engine models only unmarried and married-filing-jointly, mapping every other status onto one of the two. The optimizer prices that same marginal schedule: bracketSegments supplies the widths and rates, buildOptimizerModel allocates taxable ordinary income across those convex segments, and federalTaxOn is the readout. That pricing is exact only for the taxable ordinary income supplied to the model; it does not certify section 86 inclusion, the deduction stack, AMT, or projection indexing as exact. optimizeSchedule is a caller of those functions, not a separate implementation of the table.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -18,6 +18,7 @@
       "dueOn": "2026-12-01",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/strategies/optimizer.ts",
         "packages/engine/src/tax/federalTax.ts"
       ],
       "implementations": [
@@ -27,6 +28,23 @@
             {
               "name": "year2026",
               "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/optimizer.ts",
+          "functions": [
+            {
+              "name": "bracketSegments",
+              "line": 529
+            },
+            {
+              "name": "buildOptimizerModel",
+              "line": 557
+            },
+            {
+              "name": "federalTaxOn",
+              "line": 1172
             }
           ]
         },
@@ -46,12 +64,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1682,
+          "line": 1688,
           "note": null,
           "tests": [
             {
               "title": "taxes each bracket slice at its own rate",
-              "line": 1686
+              "line": 1717
             }
           ]
         }
@@ -134,16 +152,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1944,
+          "line": 1991,
           "note": null,
           "tests": [
             {
               "title": "prices nominal wages on the rate tables prescribed for that year",
-              "line": 1948
+              "line": 1995
             },
             {
               "title": "leaves a published year exactly as published",
-              "line": 1963
+              "line": 2010
             }
           ]
         }
@@ -206,7 +224,7 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 536
+              "line": 557
             }
           ]
         },
@@ -246,16 +264,16 @@
         },
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1288,
+          "line": 1293,
           "note": "the exact ledger amount",
           "tests": [
             {
               "title": "reduces each qualified individual amount, not the combined total",
-              "line": 1293
+              "line": 1298
             },
             {
               "title": "exhausts two shares at the same modified AGI as one share",
-              "line": 1303
+              "line": 1308
             }
           ]
         }
@@ -323,12 +341,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2024,
+          "line": 2071,
           "note": null,
           "tests": [
             {
               "title": "holds the amount and the phase-out threshold flat in a projected year",
-              "line": 2028
+              "line": 2075
             }
           ]
         }
@@ -396,24 +414,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1172,
+          "line": 1177,
           "note": "qualifying PMI omitted from itemized total for a household already itemizing",
           "tests": [
             {
               "title": "omits qualifying PMI from the itemized total",
-              "line": 1190
+              "line": 1195
             },
             {
               "title": "ignores PMI however it is supplied under plausible field names",
-              "line": 1203
+              "line": 1208
             },
             {
               "title": "reaches the statutory deduction only when the premium is smuggled in as mortgage interest",
-              "line": 1217
+              "line": 1222
             },
             {
               "title": "overstates tax, by the deduction it cannot see at the marginal rate",
-              "line": 1227
+              "line": 1232
             }
           ]
         }
@@ -566,20 +584,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1086,
+          "line": 1091,
           "note": "2026 MAGI $705,000 reaches the $10,000 SALT floor; mid-phase locks 30%",
           "tests": [
             {
               "title": "keeps the full scheduled cap rather than applying the high-MAGI floor",
-              "line": 1118
+              "line": 1123
             },
             {
               "title": "keeps the full scheduled cap mid-phase rather than the 30% reduction",
-              "line": 1135
+              "line": 1140
             },
             {
               "title": "understates tax compared with the itemized return using the statutory floor",
-              "line": 1146
+              "line": 1151
             }
           ]
         }
@@ -667,20 +685,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1024,
+          "line": 1029,
           "note": null,
           "tests": [
             {
               "title": "drops the cap to ten thousand for years after 2029",
-              "line": 1028
+              "line": 1033
             },
             {
               "title": "compounds the one percent steps on the preceding year through 2029",
-              "line": 1044
+              "line": 1049
             },
             {
               "title": "does not carry the 2025 figure back before the schedule begins",
-              "line": 1059
+              "line": 1064
             }
           ]
         }
@@ -747,12 +765,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 525,
+          "line": 530,
           "note": null,
           "tests": [
             {
               "title": "owes nothing when the regular tax already exceeds the tentative amount",
-              "line": 529
+              "line": 534
             }
           ]
         }
@@ -805,12 +823,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1852,
+          "line": 1899,
           "note": null,
           "tests": [
             {
               "title": "caps the tentative minimum tax on capital gain at the preferential rates",
-              "line": 1856
+              "line": 1903
             }
           ]
         }
@@ -873,12 +891,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 544,
+          "line": 549,
           "note": null,
           "tests": [
             {
               "title": "reduces the exemption by fifty cents per dollar above the threshold",
-              "line": 548
+              "line": 553
             }
           ]
         }
@@ -946,12 +964,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1818,
+          "line": 1865,
           "note": null,
           "tests": [
             {
               "title": "adds back capped state and local taxes but leaves charitable gifts alone",
-              "line": 1826
+              "line": 1873
             }
           ]
         }
@@ -1004,16 +1022,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1393,
+          "line": 1398,
           "note": null,
           "tests": [
             {
               "title": "adds the senior deduction back on a return that itemizes",
-              "line": 1397
+              "line": 1402
             },
             {
               "title": "adds it back on a return that takes the standard deduction too",
-              "line": 1413
+              "line": 1418
             }
           ]
         }
@@ -1071,12 +1089,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1905,
+          "line": 1952,
           "note": null,
           "tests": [
             {
               "title": "adds no tax-exempt interest to AMTI, even when it is all PAB interest",
-              "line": 1910
+              "line": 1957
             }
           ]
         }
@@ -1129,12 +1147,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1761,
+          "line": 1808,
           "note": null,
           "tests": [
             {
               "title": "itemizes when larger and adds the senior deduction on top",
-              "line": 1769
+              "line": 1816
             }
           ]
         }
@@ -1202,12 +1220,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 966,
+          "line": 971,
           "note": null,
           "tests": [
             {
               "title": "keeps the joint amount at exactly twice the unmarried one",
-              "line": 970
+              "line": 975
             }
           ]
         }
@@ -1419,12 +1437,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1253,
+          "line": 1258,
           "note": null,
           "tests": [
             {
               "title": "takes the addition once for each person who has attained 65",
-              "line": 1257
+              "line": 1262
             }
           ]
         }
@@ -1477,12 +1495,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1789,
+          "line": 1836,
           "note": null,
           "tests": [
             {
               "title": "offers no channel by which a miscellaneous itemized deduction is allowed",
-              "line": 1793
+              "line": 1840
             }
           ]
         }
@@ -1504,6 +1522,79 @@
           "kind": "legislativeHistory",
           "citation": "Amendment note to IRC 67, P.L. 119-21 sec. 70110(a), (b)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "irc-86-a-optimizer-taxable-social-security-linearization",
+      "title": "The optimizer linearizes taxable Social Security without the statutory benefit caps",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The 2026 modeled year matches the exact two-tier and modified-AGI siblings; this is not a claim that section 86 was enacted in 2026, and the unindexed 1994 threshold sibling is unchanged. The one-dollar activation floor and the 84.5 percent near-cap shortcut are implementation conventions, not statutory thresholds. OptimizerYear.ssTaxability.provisionalIncomeAddbacks is a generic scalar that can carry the full supplied fixed 86(b)(2) addback total, and buildOptimizerModel adds it verbatim into provisional income. The production plan-to-optimizer adapter and schema currently supply only tax-exempt interest and the section 911, 931, and 933 foreign exclusions, so the narrower addback set is an adapter and schema limitation, not a solver capability limit; omitted statutory addbacks such as the section 85(c) exclusion, education-savings-bond interest, adoption assistance, and student-loan interest are disclosed here rather than folded into that scalar by fiat. The fixture households have none of those, and none of the benefit-definition, repayment, lump-sum, married-filing-separately, railroad, or workers-compensation cases this record does not certify. A conversion versus withdrawal-to-save tie-break of 1e-6 in the objective is a production preference, not law. The linearized figure is a candidate-model quantity; the exact ledger re-prices proposed schedules, and this record carries bothDirections because the active PWL can overstate taxable benefits when caps are omitted while the 84.5-to-85 percent baseline freeze can understate further inclusion.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/strategies/optimizer.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/optimizer.ts",
+          "functions": [
+            {
+              "name": "buildOptimizerModel",
+              "line": 557
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/optimizerFederal.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/optimizerFederal.approximation.test.ts",
+          "line": 41,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices the uncapped affine proxy, freezing a near-cap baseline",
+              "line": 52
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 86(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 86(a)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 86(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 86(b)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 86(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim"
         }
       ]
     }

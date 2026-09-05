@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 428 |
-| Classification: approximated | 117 |
+| Total rules | 429 |
+| Classification: approximated | 118 |
 | Classification: outOfScope | 75 |
 | Classification: settled | 231 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 60 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 351 |
+| Volatility: staticStatute | 352 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 322 |
+| Federal jurisdiction | 323 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -164,7 +164,7 @@ None.
 | projection/internal/annualQcdExecutionInput.ts | 2026-09-02 | the immutable named-QCD preparation coordinator composes the registered annual prerequisite and physical-staging producers. It owns donor alive/prior-offset evidence assembly, including the same registered 846-calendar-month threshold-year convention, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, and complete owned-IRA Form 8606 pool-capacity inputs. These are evidence, transaction-snapshot, and projection-composition semantics; the underlying QCD eligibility, section 219 offset, RMD coordination, and Form 8606 rules remain in their registered action producers. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies post-forced-distribution balances plus owner RMD/basis/offset state and retains the executor call, all gift debits, basis/RMD character, runtime journaling, warnings, cash-flow writes, settlement, and publication |
 | projection/internal/annualRothConversionExecutionInput.ts | 2026-09-02 | the immutable named Roth-conversion preparation coordinator owns request-keyed alive, annual owner-RMD satisfaction, and aggregated-IRA basis evidence; exact-cent floored source-capacity and half-up destination snapshots; and withdrawal-result narrowing of a provisional linked-group release. It composes the registered conversion eligibility producers and already-attested linked-group assessment rather than introducing a new filing-grade rule. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies live post-RMD and post-ordinary-withdrawal balances plus settled owner RMD/basis facts, and retains the named-conversion executor, every debit and credit, Form 8606 and Roth-basis mutation, runtime/application journaling, warnings, settlement, cash-flow publication, and typed result publication to simulatePlan |
 | projection/internal/annualSocialSecurity.ts | 2026-08-31 | the annual Social Security phase moved out of simulatePlan and is linked to genuine rule records covering the retirement earnings test and its annual month-credit proxies, current-spouse/deemed-filing and survivor dual-entitlement behavior, deceased-worker DRC pass-through, and the modeled SSDI amount, timing, family-maximum, spouse-auxiliary, work-window, and SGA surfaces. The registry is the mechanical inventory; this note deliberately does not duplicate its changing count. Residual rule-bearing behavior is the former-spouse eligibility delegated to socialSecurity/maritalBenefits.ts: the 10-year divorced-spouse marriage, 9-month survivor marriage, claimant/former-spouse age gates, and remarriage forfeiture still have no rule records. Per-stream publication and application of the caller-resolved Plan COLA and haircut factors are rule-free plumbing |
-| projection/optimizePlan.ts | 2026-08-27 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); other optimizer linearizations remain unregistered |
+| projection/optimizePlan.ts | 2026-09-05 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); ACA MAGI cap and pooled RMD divisor recovery are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection; taxpayer-tax direction has not been established); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-09-04 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selection and December 31 complete-pool observation remain locally enforced and sibling pool records name other files |
@@ -173,7 +173,7 @@ None.
 | socialSecurity/maritalBenefits.ts | 2026-09-04 | Living-divorced and ordinary-widow eligibility gates, plus half-PIA pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
 | socialSecurity/piaFromEarnings.ts | 2026-09-04 | Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard. |
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
-| strategies/optimizer.ts | 2026-08-24 | MILP prices brackets, IRMAA, ACA MAGI cap, RMD floors, §86 SS phase-in, LTCG; not registered here |
+| strategies/optimizer.ts | 2026-09-05 | Ordinary-bracket PWL registered (irc-1-j-2-progressive-ordinary-rate-schedule); §86 in-solve linearization registered as approximated (irc-86-a-optimizer-taxable-social-security-linearization); senior-deduction phase-out slope registered (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out) with its omitted cap still outside that record; flat 15% LTCG is registered on projection/optimizePlan.ts (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate). Residual (non-exhaustive): IRMAA binaries and other unlisted linearizations/constraints (e.g. state-bracket PWL) remain unregistered here; ACA MAGI cap and RMD floor divisor are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection — headroom restriction and floor distortion proved; taxpayer-tax direction has not been established) |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
@@ -191,7 +191,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/contributionAndDeferralLimits.json | 38 |
 | rule-coverage/earlyDistributionsAndSepp.json | 28 |
 | rule-coverage/healthSavingsAccounts.json | 19 |
-| rule-coverage/individualIncomeTax.json | 19 |
+| rule-coverage/individualIncomeTax.json | 20 |
 | rule-coverage/investmentIncomeAndBasis.json | 30 |
 | rule-coverage/iraBasisAndRollovers.json | 15 |
 | rule-coverage/medicareAndHealthCoverage.json | 16 |
@@ -209,7 +209,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (428 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (429 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -249,16 +249,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T06:08:02.335Z over 1143 authority entries (9 fetched live, 308 from cache).
+Committed ledger generated at 2026-09-05T07:12:24.852Z over 1148 authority entries (9 fetched live, 308 from cache).
 
-37 serious, 50 advisory, 1056 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 1061 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 64 |
+| ELISION-EXACT | ok | 63 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 780 |
+| EXACT | ok | 786 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |

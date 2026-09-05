@@ -8,6 +8,11 @@ import { buildLadder } from '../ladder/ladderMath.js'
 import { summarizeProjection } from '../projection/compare.js'
 import { buildOptimizerInput } from '../projection/optimizePlan.js'
 import { simulatePlan } from '../projection/simulate.js'
+import {
+  optimizeSchedule,
+  type OptimizerInput,
+  type OptimizerYear,
+} from '../strategies/optimizer.js'
 import type { TaxCalculator, TaxYearInput } from '../projection/types.js'
 import {
   applyCapitalLossCarryforward,
@@ -1673,23 +1678,65 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
   // IRC 1(j)(2) is a bracket table, so each rate reaches only the slice of
   // taxable income inside its own bracket. Applying the top applicable rate to
   // the whole amount is the natural misreading and overstates tax by two
-  // thirds here.
+  // thirds here. Treating the second cumulative bound 50,400 as the 12%
+  // segment width never reaches 22%: 12,400 x 10% + 47,600 x 12% = 6,952.
   //
   // Single, 76,100 ordinary less the 16,100 standard deduction = 60,000.
   //   12,400 x 10% = 1,240; 38,000 x 12% = 4,560; 9,600 x 22% = 2,112 -> 7,912
   //   which is also the revenue procedure shortcut 5,800 + 22% over 50,400.
   //   Top rate on the whole amount: 60,000 x 22% = 13,200.
   describeRule('irc-1-j-2-progressive-ordinary-rate-schedule', {
-    readings: { eachSliceAtItsOwnRate: 7_912, topRateOnTheWholeAmount: 13_200 },
+    readings: {
+      eachSliceAtItsOwnRate: 7_912,
+      topRateOnTheWholeAmount: 13_200,
+      secondCumulativeBoundAsWidth: 6_952,
+    },
     accepted: 'eachSliceAtItsOwnRate',
   }, ({ accepted, readings }) => {
-    it('taxes each bracket slice at its own rate', () => {
+    const PACK = packForYear(2026).pack
+    const OPENING_OTHER = 1_000_000
+    function optimizerYear(over: Partial<OptimizerYear> = {}): OptimizerYear {
+      return {
+        year: 2026, pack: PACK, filingStatus: 'single', ordinaryIncomeBase: 0,
+        spendingNeed: 0, exogenousCash: 0, rmdDivisor: null,
+        inheritedDistribution: 0, inheritedDistributionDivisor: null,
+        peopleAged65Plus: 0, inflationScale: 1, growth: 0, stateRate: 0,
+        tradInflow: 0, otherInflow: 0, ...over,
+      }
+    }
+    function optimizerInput(y: OptimizerYear, openingTrad = 0): OptimizerInput {
+      return {
+        years: [y], openingTrad, openingInheritedTrad: 0, openingOther: OPENING_OTHER,
+        openingTaxable: 0, taxableBasisRatio: 1, ltcgRate: 0,
+        irmaaLookback: true, seniorDeduction: false,
+        liquidationRate: 1, realDollarFactor: 1,
+        options: { timeLimitSec: 5, maxConversionPerYear: openingTrad },
+      }
+    }
+
+    it('taxes each bracket slice at its own rate', async () => {
       const result = computeFederalTax(input({ ordinaryIncome: 76_100 }))
 
       expect(result.taxableIncome).toBe(60_000)
       expect(result.ordinaryTax).toBeCloseTo(accepted, 6)
       expect(result.ordinaryTax).not.toBeCloseTo(readings.topRateOnTheWholeAmount, 6)
-    })
+      expect(result.ordinaryTax).not.toBeCloseTo(readings.secondCumulativeBoundAsWidth, 6)
+
+      // Same 76,100 ordinary / 16,100 standard / TI 60,000 facts through the
+      // genuine one-year optimizeSchedule entry. Cash tax paid from openingOther
+      // is 7,912 (ending 992,088 is exactly six-digit representable), so this
+      // checks LP bracket cash pricing, not only the federalTaxOn readout.
+      const inpt = optimizerInput(optimizerYear({ ordinaryIncomeBase: 76_100 }), 0)
+      const sol = await optimizeSchedule(inpt)
+      expect(sol.status).toBe('optimal')
+      expect(sol.schedule).toHaveLength(1)
+      const row = sol.schedule[0]!
+      expect(row.taxableOrdinary).toBe(60_000)
+      expect(row.conversion).toBeCloseTo(0, 8)
+      expect(row.withdrawTraditional).toBeCloseTo(0, 8)
+      expect(sol.lifetimeTax).toBe(accepted)
+      expect(OPENING_OTHER - row.endOther).toBe(accepted)
+    }, 60_000)
   })
 
   // IRC 1(h)(11)(A) folds qualified dividend income into net capital gain for

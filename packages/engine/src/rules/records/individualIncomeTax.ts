@@ -1,12 +1,13 @@
 /**
  * Individual income tax records: the ordinary rate schedule and its annual
  * adjustment, the standard deduction and its additions, the senior and SALT
- * deductions, qualified residence interest, and the alternative minimum tax.
+ * deductions, qualified residence interest, the alternative minimum tax, and
+ * the optimizer's section 86 taxable-Social-Security proxy; exact benefit-
+ * taxation siblings live in `socialSecurity.ts`.
  *
- * One slice of the tax rule registry. `../taxRuleRegistry.ts` composes every
- * slice into `TAX_RULE_REGISTRY`; read it for what a record must carry and why.
- * Records and the commentary attached to them were moved here verbatim, so a
- * block that says "above" or "below" may now point across a module boundary.
+ * One slice of the tax rule registry — `../taxRuleRegistry.ts` composes every
+ * slice into `TAX_RULE_REGISTRY`. Records and commentary were moved here
+ * verbatim, so "above" or "below" may point across a module boundary.
  */
 import type { TaxRuleRecord } from '../taxRuleRegistry.js'
 
@@ -407,7 +408,7 @@ export const individualIncomeTaxRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Two things about the 2026 tables are easy to get wrong from memory. First, the 37 percent bracket begins at the same figure for unmarried individuals and for heads of household ($640,600), while the married-filing-separately table diverges from the unmarried table only at the top, at $384,350. Second, OBBBA gave the boundaries of the 10 and 12 percent brackets one extra year of indexing by confining the 2017-base substitution in 1(j)(3)(B)(i) to brackets above 12 percent, so those two thresholds move on a different base than the rest of the table. The engine models only unmarried and married-filing-jointly, mapping every other status onto one of the two.',
+      'Two things about the 2026 tables are easy to get wrong from memory. First, the 37 percent bracket begins at the same figure for unmarried individuals and for heads of household ($640,600), while the married-filing-separately table diverges from the unmarried table only at the top, at $384,350. Second, OBBBA gave the boundaries of the 10 and 12 percent brackets one extra year of indexing by confining the 2017-base substitution in 1(j)(3)(B)(i) to brackets above 12 percent, so those two thresholds move on a different base than the rest of the table. The engine models only unmarried and married-filing-jointly, mapping every other status onto one of the two. The optimizer prices that same marginal schedule: bracketSegments supplies the widths and rates, buildOptimizerModel allocates taxable ordinary income across those convex segments, and federalTaxOn is the readout. That pricing is exact only for the taxable ordinary income supplied to the model; it does not certify section 86 inclusion, the deduction stack, AMT, or projection indexing as exact. optimizeSchedule is a caller of those functions, not a separate implementation of the table.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -420,19 +421,19 @@ export const individualIncomeTaxRecords = {
       citation: 'IRC 1(j)(2)(C)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
       quotedText:
-        'The following table shall be applied in lieu of the table contained in subsection (c): ... Not over $9,525 ... 10% of taxable income. Over $9,525 but not over $38,700 ... $952.50, plus 12% of the excess over $9,525. ...',
+        'The following table shall be applied in lieu of the table contained in subsection (c): If taxable income is: The tax is: Not over $9,525 10% of taxable income. Over $9,525 but not over $38,700 $952.50, plus 12% of the excess over $9,525. Over $38,700 but not over $82,500 $4,453.50, plus 22% of the excess over $38,700.',
     }, {
       kind: 'legislativeHistory',
       citation: 'Amendment note to IRC 1, P.L. 119-21 sec. 70101(a)(1), (b)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim',
       quotedText:
-        'Subsec. (j)(1). ... struck out ", and before January 1, 2026" after "December 31, 2017" in introductory provisions. Subsec. (j)(3)(B)(i). ... inserted "solely for purposes of determining the dollar amounts at which any rate bracket higher than 12 percent ends and at which any rate bracket higher than 22 percent begins," before "subsection (f)(3)".',
+        'Subsec. (j)(1). … struck out ", and before January 1, 2026" after "December 31, 2017" in introductory provisions. Subsec. (j)(3)(B)(i). … inserted "solely for purposes of determining the dollar amounts at which any rate bracket higher than 12 percent ends and at which any rate bracket higher than 22 percent begins," before "subsection (f)(3)".',
     }, {
       kind: 'irsNotice',
       citation: 'Rev. Proc. 2025-32, section 4.01, Table 3',
       url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
       quotedText:
-        'For taxable years beginning in 2026, the tax rate tables under § 1 are as follows: ... Not over $12,400 ... 10% of the taxable income ... Over $12,400 but not over $50,400 ... $1,240 plus 12% of the excess over $12,400 ... Over $50,400 but not over $105,700 ... $5,800 plus 22% of the excess over $50,400 ... Over $640,600 ... $192,979.25 plus 37% of the excess over $640,600',
+        'For taxable years beginning in 2026, the tax rate tables under § 1 are as follows: … Not over $12,400 … 10% of the taxable income … Over $12,400 but not over $50,400 … $1,240 plus 12% of the excess over $12,400 … Over $50,400 but not over $105,700 … $5,800 plus 22% of the excess over $50,400 … Over $640,600 … $192,979.25 plus 37% of the excess over $640,600',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -441,10 +442,64 @@ export const individualIncomeTaxRecords = {
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/strategies/optimizer.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/tax/federalTax.ts#bracketTax',
+      'packages/engine/src/strategies/optimizer.ts#bracketSegments',
+      'packages/engine/src/strategies/optimizer.ts#buildOptimizerModel',
+      'packages/engine/src/strategies/optimizer.ts#federalTaxOn',
+    ],
+  },
+  'irc-86-a-optimizer-taxable-social-security-linearization': {
+    title: 'The optimizer linearizes taxable Social Security without the statutory benefit caps',
+    statement:
+      'No Social Security benefit is included under this section when modified adjusted gross income plus one-half of the benefits does not exceed the base amount. Between the base amount and the adjusted base amount the inclusion is the lesser of one-half of the benefits or one-half of the excess over the base. Above the adjusted base amount it is the lesser of 85 percent of the benefits or 85 percent of the excess over the adjusted base plus the lesser of the paragraph (1) amount or one-half of the difference between the adjusted base amount and the base amount. The single thresholds are 25,000 and 34,000; the joint thresholds are 32,000 and 44,000; the base and adjusted base amounts are zero only for a married taxpayer who does not file a joint return and does not live apart from his spouse at all times during the taxable year. Conditional on supplied income and benefit facts, the optimizer prices that inclusion as the maximum of zero and two affine lines when supplied benefits exceed one dollar and the baseline taxable share is below 84.5 percent of benefits, retaining neither statutory benefit cap; otherwise it freezes the supplied baseline taxable share. Omitting the half-benefit plateau and the 85-percent-of-benefits cap can overstate modeled taxable benefits and tax; freezing a baseline already in the 84.5-to-85 percent band can understate inclusion when additional ordinary income would still raise the statutory amount up to the cap.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The 2026 modeled year matches the exact two-tier and modified-AGI siblings; this is not a claim that section 86 was enacted in 2026, and the unindexed 1994 threshold sibling is unchanged. The one-dollar activation floor and the 84.5 percent near-cap shortcut are implementation conventions, not statutory thresholds. OptimizerYear.ssTaxability.provisionalIncomeAddbacks is a generic scalar that can carry the full supplied fixed 86(b)(2) addback total, and buildOptimizerModel adds it verbatim into provisional income. The production plan-to-optimizer adapter and schema currently supply only tax-exempt interest and the section 911, 931, and 933 foreign exclusions, so the narrower addback set is an adapter and schema limitation, not a solver capability limit; omitted statutory addbacks such as the section 85(c) exclusion, education-savings-bond interest, adoption assistance, and student-loan interest are disclosed here rather than folded into that scalar by fiat. The fixture households have none of those, and none of the benefit-definition, repayment, lump-sum, married-filing-separately, railroad, or workers-compensation cases this record does not certify. A conversion versus withdrawal-to-save tie-break of 1e-6 in the objective is a production preference, not law. The linearized figure is a candidate-model quantity; the exact ledger re-prices proposed schedules, and this record carries bothDirections because the active PWL can overstate taxable benefits when caps are omitted while the 84.5-to-85 percent baseline freeze can understate further inclusion.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 86(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in paragraph (2), gross income for the taxable year of any taxpayer described in subsection (b) (notwithstanding section 207 of the Social Security Act) includes social security benefits in an amount equal to the lesser of- (A) one-half of the social security benefits received during the taxable year, or (B) one-half of the excess described in subsection (b)(1).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(a)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxpayer with respect to whom the amount determined under subsection (b)(1)(A) exceeds the adjusted base amount, the amount included in gross income under this section shall be equal to the lesser of- (A) the sum of- (i) 85 percent of such excess, plus (ii) the lesser of the amount determined under paragraph (1) or an amount equal to one-half of the difference between the adjusted base amount and the base amount of the taxpayer, or (B) 85 percent of the social security benefits received during the taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim',
+      quotedText:
+        'A taxpayer is described in this subsection if- (A) the sum of- (i) the modified adjusted gross income of the taxpayer for the taxable year, plus (ii) one-half of the social security benefits received during the taxable year, exceeds (B) the base amount.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(b)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the term "modified adjusted gross income" means adjusted gross income- (A) determined without regard to this section and sections 85(c), 135, 137, 221, 911, 931, and 933, and (B) increased by the amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim',
+      quotedText:
+        'Base amount and adjusted base amount For purposes of this section- (1) Base amount The term "base amount" means- (A) except as otherwise provided in this paragraph, $25,000, (B) $32,000 in the case of a joint return, and (C) zero in the case of a taxpayer who- (i) is married as of the close of the taxable year (within the meaning of section 7703) but does not file a joint return for such year, and (ii) does not live apart from his spouse at all times during the taxable year. (2) Adjusted base amount The term "adjusted base amount" means- (A) except as otherwise provided in this paragraph, $34,000, (B) $44,000 in the case of a joint return, and (C) zero in the case of a taxpayer described in paragraph (1)(C).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-04',
+    implementedBy: ['packages/engine/src/strategies/optimizer.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/optimizer.ts#buildOptimizerModel',
     ],
   },
   'irc-1-j-3-B-rate-tables-adjusted-each-year': {
