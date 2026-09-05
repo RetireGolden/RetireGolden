@@ -5,21 +5,25 @@
  *
  * Eligibility rules (from the gap analysis):
  *  - Divorced-spousal: marriage lasted ≥10 years, the claimant is currently
- *    unmarried, and the ex is eligible (≥62) — the ex need not have filed. Worth
- *    up to 50% of the ex's PIA, reduced for the claimant's own (early) claim age,
- *    with no delayed credits (same factor as current-spousal).
+ *    unmarried, and the ex is calendar-year age ≥62 — the ex need not have filed.
+ *    Worth up to 50% of the ex's PIA, reduced for the claimant's own (early)
+ *    claim age, with no delayed credits (same factor as current-spousal). Worker
+ *    entitlement, fully-insured status, and years since divorce are unmodeled
+ *    (`cfr-20-404-331-living-divorced-spouse-eligibility`).
  *  - Survivor: marriage lasted ≥9 months, the claimant is ≥60, and remarriage
- *    rules are satisfied (remarrying before 60 forfeits it; at/after 60 preserves
- *    it). Survivor benefit is based on the deceased's actual benefit, with the
- *    early-claim widow(er) reduction and the RIB-LIM widow's-limit cap applied by
- *    the shared `survivorBenefitMonthly` helper (cited in domain rules §4).
+ *    before 60 is treated as an unconditional historical forfeiture even when
+ *    the claimant is now single; at/after 60 preserves it. Ordinary-widow
+ *    20 CFR 404.335, not surviving-divorced 404.336
+ *    (`cfr-20-404-335-ordinary-widow-eligibility`). Survivor benefit is based
+ *    on the deceased's actual benefit, with the early-claim widow(er) reduction
+ *    and the RIB-LIM widow's-limit cap applied by the shared
+ *    `survivorBenefitMonthly` helper (cited in domain rules §4).
  *
  * Simplifications (spec §6): survivor is modeled at the claimant's own claim age
  * (the ledger doesn't model separate survivor-vs-own claim ages here — that
- * sequencing lives in the actuarial `survivorSwitching` view); the
- * 2-years-since-divorce "independently entitled" rule for divorced-spousal on a
- * living ex is ignored (rarely binds in planning). Here a person receives the
- * larger of own vs the best marital benefit at their single claim age.
+ * sequencing lives in the actuarial `survivorSwitching` view). Here a person
+ * receives the larger of own vs the best marital benefit at their single claim
+ * age.
  */
 
 import type { FormerSpouse } from '../model/plan.js'
@@ -59,15 +63,31 @@ function birthYear(dob: string): number {
   return Number(dob.slice(0, 4))
 }
 
+/** Living-divorced gates actually applied here; worker entitlement/insured/divorce-date facts are absent. */
+function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitContext): boolean {
+  if (record.relationship !== 'divorced') return false
+  if (!ctx.claimantIsSingle) return false
+  if (record.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) return false
+  if (ctx.year - birthYear(record.dob) < DIVORCED_EX_MIN_AGE) return false
+  return true
+}
+
+/** Ordinary-widow gates actually applied here; fully-insured and application facts are absent. */
+function isWidowEligible(record: FormerSpouse, ctx: MaritalBenefitContext): boolean {
+  if (record.relationship !== 'deceased') return false
+  if (record.marriageYears < SURVIVOR_MIN_MARRIAGE_YEARS) return false
+  if (ctx.claimantAge < SURVIVOR_MIN_AGE) return false
+  if (record.remarriedAtAge !== null && record.remarriedAtAge < REMARRIAGE_SURVIVOR_PRESERVE_AGE) return false
+  return true
+}
+
 /** Eligibility + monthly amount for one former-spouse record; null if not eligible this year. */
 export function maritalBenefitFor(record: FormerSpouse, ctx: MaritalBenefitContext): MaritalBenefitCandidate | null {
   // A benefit on someone else's record only starts once the claimant has claimed.
   if (ctx.claimantAge < ctx.claimantClaimAge.years) return null
 
   if (record.relationship === 'divorced') {
-    if (!ctx.claimantIsSingle) return null
-    if (record.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) return null
-    if (ctx.year - birthYear(record.dob) < DIVORCED_EX_MIN_AGE) return null
+    if (!isDivorcedSpouseEligible(record, ctx)) return null
     const factor = spousalBenefitFactor(
       ctx.claimantDob.year,
       ctx.claimantDob.month,
@@ -78,9 +98,7 @@ export function maritalBenefitFor(record: FormerSpouse, ctx: MaritalBenefitConte
   }
 
   // Deceased former spouse → survivor.
-  if (record.marriageYears < SURVIVOR_MIN_MARRIAGE_YEARS) return null
-  if (ctx.claimantAge < SURVIVOR_MIN_AGE) return null
-  if (record.remarriedAtAge !== null && record.remarriedAtAge < REMARRIAGE_SURVIVOR_PRESERVE_AGE) return null
+  if (!isWidowEligible(record, ctx)) return null
   // Survivor base = the deceased ex's actual (claim-age-adjusted) benefit, with
   // the RIB-LIM widow's-limit cap and the early-claim widow(er) reduction — both
   // computed by the shared helper (cited in domain rules §4). The deceased's

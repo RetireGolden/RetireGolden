@@ -76,10 +76,23 @@ Benefits-only analysis separately illustrates survivor switching
   (`usc-42-402-i-lump-sum-death-payment`). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
   withheld for a working survivor and credited back through the same ARF path. The former-spouse survivor path
   takes the deceased ex's claim age as a user input.
-- **Divorced-spousal** (10-year marriage, currently unmarried, ex eligible at 62+ — the ex need not have
-  filed), **survivor benefits for already-widowed single users**, and their remarriage-before/after-60
-  rules through that former-spouse input. A current spouse's later remarriage after the worker dies has no
-  Plan input and is out of scope (`usc-42-402-e-1-a-current-survivor-remarriage-before-60`). A benefits-only
+- **Divorced-spousal** (10-year marriage, currently unmarried, ex calendar-year age 62+ — the ex need not
+  have filed). The engine does not carry worker entitlement, fully-insured status, or years since divorce,
+  so an already-disability-entitled ex under 62 is refused and a not-yet-entitled age-62 ex divorced only
+  one year is admitted (`cfr-20-404-331-living-divorced-spouse-eligibility`). **Former-spouse survivor
+  benefits** use the ordinary-widow 9-month duration, age-60, and remarriage gates (not the surviving-divorced
+  10-year gate), including after a remarriage at or after 60 while still married. Those gates are subject to
+  the other 404.335 entitlement requirements (fully insured, relationship, application — which may already
+  be met under 404.335(b)(1)–(4) without a new application — and the 404.335(d) own-old-age-benefit
+  restriction); the candidate menu does not adjudicate own PIA or own benefit. Historical remarriage before
+  60 is treated as an unconditional forfeiture even when the claimant is now single. A schema-valid coupled
+  household with remarriedAtAge omitted still receives a candidate without establishing a 404.335(e)
+  remarriage exception (`cfr-20-404-335-ordinary-widow-eligibility`). The 9-month statutory duration
+  exceptions, the alternative 404.335(a)(3)/(a)(4) relationship qualifications, and the divorced-spouse
+  remarriage-continuation exception are outside the Plan
+  (`cfr-20-404-335-a-widow-duration-exceptions`,
+  `cfr-20-404-332-b-3-divorced-spouse-remarriage-continuation`). A current spouse's later remarriage after
+  the worker dies has no Plan input and is out of scope (`usc-42-402-e-1-a-current-survivor-remarriage-before-60`). A benefits-only
   **survivor↔personal switching** illustration (claim one benefit early, switch to the other
   later). The whole-plan ledger has one stream `claimAge`, so it does not price that separate-date sequence.
   Survivors are exempt from deemed filing, so the switch is legally available; its absence from the Plan is
@@ -173,9 +186,17 @@ Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-
 - Deemed-filing nuances are simplified; the family maximum is modeled for the current-spouse auxiliary only
   because child/dependent auxiliaries are not yet modeled.
 - Survivor-benefit **documented simplifications** (the early-claim reduction, RIB-LIM — subject to the ordering
-  approximation noted above — and the deceased's claim-age-adjusted base are all modeled; what remains simplified): the 2-years-since-divorce
-  "independently entitled" rule for divorced-spousal on a living ex; separate survivor-vs-own claim ages for a
+  approximation noted above — and the deceased's claim-age-adjusted base are all modeled; what remains simplified): living
+  divorced-spouse eligibility uses a calendar-year age-62 blanket and omits worker entitlement, fully-insured status,
+  and the two-year independently entitled path (`cfr-20-404-331-living-divorced-spouse-eligibility`); ordinary-widow
+  eligibility treats remarriage before 60 as an unconditional historical forfeiture even when the claimant is now
+  single, and a coupled household with remarriedAtAge omitted still receives a candidate without establishing a
+  404.335(e) exception (`cfr-20-404-335-ordinary-widow-eligibility`); the 9-month statutory duration exceptions,
+  the alternative 404.335(a)(3)/(a)(4) relationship qualifications, and the divorced-spouse
+  remarriage-continuation exception are outside the Plan
+  (`cfr-20-404-335-a-widow-duration-exceptions`,
+  `cfr-20-404-332-b-3-divorced-spouse-remarriage-continuation`); separate survivor-vs-own claim ages for a
   current spouse (the step-up uses the survivor's own claim age); the disabled-widow(er) age-50 entry point.
 
-(The original social-security research audit flagged divorced-spousal and survivor-for-widowed-singles
-as missing; both have since shipped.)
+(The original social-security research audit flagged divorced-spousal and former-spouse survivor
+benefits as missing; both have since shipped.)
