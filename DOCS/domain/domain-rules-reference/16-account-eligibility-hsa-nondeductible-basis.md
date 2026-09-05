@@ -111,7 +111,7 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   every allocation in the same bucket remains unresolved while complete buckets at other rates may
   finalize independently. Malformed, contradictory, duplicate, or foreign records fail closed. Each
   final member penalty is its deterministic allocation of the once-rounded bucket total, and member
-  amounts exactly conserve that total.   This pure prerequisite
+  amounts exactly conserve that total. This pure prerequisite
   does not infer disability, death, SEPP, or other exceptions from plan data. A third pure owner/year
   finalization gate
   composes those two canonical boundaries over staged executed-gross line-7 entries. It publishes one
