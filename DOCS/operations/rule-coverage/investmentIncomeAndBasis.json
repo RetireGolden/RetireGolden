@@ -36,11 +36,11 @@
       "fixtures": [
         {
           "path": "packages/engine/src/ladder/ladderMath.test.ts",
-          "line": 110,
+          "line": 109,
           "note": null,
           "tests": [
             {
-              "title": "floors synthetic rung coupons at the regulatory minimum when interpolated yields are negative",
+              "title": "floors synthetic rung coupons at the regulatory minimum for negative and positive sub-minimum curve yields across two payout rungs",
               "line": 118
             }
           ]

@@ -104,31 +104,48 @@ describe('buildLadder', () => {
     const totalFace = build.rungs.reduce((s, r) => s + r.face, 0)
     expect(build.totalCost).toBeCloseTo(totalFace, 6)
   })
-
 })
 
 describeRule('cfr-31-356-20-b-tips-minimum-coupon', {
   readings: {
-    regulatoryMinimum: 0.125,
-    noMinimum: -0.5,
-    zeroMinimum: 0,
+    regulatoryMinimum: [[0.125, 0.125], [0.125, 0.125]],
+    noMinimum: [[-0.5, -0.5], [0.05, 0.05]],
+    zeroMinimum: [[0, 0], [0.05, 0.05]],
+    negativeOnlyMinimum: [[0.125, 0.125], [0.05, 0.05]],
   },
   accepted: 'regulatoryMinimum',
 }, ({ accepted, readings }) => {
-  it('floors synthetic rung coupons at the regulatory minimum when interpolated yields are negative', () => {
-    const build = buildLadder({
-      annualRealIncome: 10_000,
-      firstPayoutOffset: 5,
-      payoutYears: 1,
-      curve: flatCurve(-0.5),
-    })
-    expect(build.rungs).toHaveLength(1)
-    expect(build.rungs[0]!.maturityOffset).toBe(5)
-    expect(build.rungs[0]!.couponRatePct).toBe(accepted)
-    expect(build.rungs[0]!.couponRatePct).not.toBe(readings.noMinimum)
-    expect(build.rungs[0]!.couponRatePct).not.toBe(readings.zeroMinimum)
-    // Back-solver uses the floored coupon: face × (1 + 0.125%) = target income.
-    expect(build.rungs[0]!.face).toBeCloseTo(10_000 / 1.00125, 8)
+  it('floors synthetic rung coupons at the regulatory minimum for negative and positive sub-minimum curve yields across two payout rungs', () => {
+    // Offset 5 is a curve knot; offset 6 lies between curve knots 5 and 30. It
+    // is the second payout rung, not the second curve knot. CFR 356.20(b)
+    // supplies the coupon floor; face and pricing checks are model consistency.
+    const curves = [-0.5, 0.05]
+    const builds = curves.map((pct) =>
+      buildLadder({
+        annualRealIncome: 10_000,
+        firstPayoutOffset: 5,
+        payoutYears: 2,
+        curve: flatCurve(pct),
+      }),
+    )
+    const observed = builds.map((build) => build.rungs.map((r) => r.couponRatePct))
+    expect(observed).toEqual(accepted)
+    for (const [key, reading] of Object.entries(readings)) {
+      if (key !== 'regulatoryMinimum') expect(observed).not.toEqual(reading)
+    }
+    for (let i = 0; i < builds.length; i++) {
+      const build = builds[i]!
+      expect(build.rungs.map((r) => r.maturityOffset)).toEqual([5, 6])
+      const totalFace = build.rungs.reduce((s, r) => s + r.face, 0)
+      for (const rung of build.rungs) expect(rung.cost).toBeGreaterThan(rung.face)
+      expect(build.totalCost).toBeGreaterThan(totalFace)
+
+      const c = accepted[i]![0]! / 100
+      const lateFace = 10_000 / (1 + c)
+      const earlyFace = (10_000 - lateFace * c) / (1 + c)
+      expect(build.rungs[1]!.face).toBeCloseTo(lateFace, 6)
+      expect(build.rungs[0]!.face).toBeCloseTo(earlyFace, 6)
+    }
   })
 })
 
