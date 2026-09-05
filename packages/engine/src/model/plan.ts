@@ -350,9 +350,7 @@ export type AssetClassParamOverrides = z.infer<typeof assetClassParamOverridesSc
  * metric. Absent = the legacy default: pre-tax (traditional) and non-spouse HSA
  * balances are taxed at the flat heir rate, everything else passes untaxed.
  * When set:
- *  - 'spouse'    — spouse destination: no terminal income-tax haircut under the
- *                  comparison convention; establishes neither an eligible rollover
- *                  nor a permanent exemption.
+ *  - 'spouse' — no terminal tax haircut (valuation convention, not rollover adjudication).
  *  - 'nonSpouse' — a non-spouse heir; pre-tax balances (traditional, non-spouse
  *                  HSA) are taxed at the account class's heir rate, while Roth,
  *                  taxable (stepped-up at death), and cash pass untaxed.
@@ -1005,15 +1003,11 @@ export const hsaAccountSchema = z.object({
    */
   reimburseLater: z.boolean().optional(),
   /**
-   * Who inherits this HSA, for the after-tax estate metric. `spouse` maps to
-   * IRC 223(f)(8)(A) continuation (zero inclusion). `nonSpouse` is the modeled
-   * non-spouse destination for that metric; the enum also covers unmodeled
-   * legal classes (estate, trust, and others the Plan cannot name). Omitted is
-   * a legacy convention that maps to the spouse-equivalent default — it is not
-   * a statutory designation. A non-spouse destination uses ending gross as the
-   * terminal inclusion base and does not apply the 223(f)(8)(B)(ii)(I)
-   * predeath-expense reduction; that is not a claim that every death is a fully
-   * taxable distribution. When `estateBeneficiary` is also set, that field wins.
+   * Terminal HSA destination: `spouse` models IRC 223(f)(8)(A) continuation.
+   * `nonSpouse` uses ending gross, omitting the (f)(8)(B)(ii)(I) expense reduction;
+   * legal beneficiary classes and death-year facts are not expressible here.
+   * Omitted means legacy spouse-equivalent valuation, not legal designation.
+   * `estateBeneficiary` overrides this field; see the estateHsaIncomeBase record.
    */
   beneficiary: z.enum(['spouse', 'nonSpouse']).optional(),
   /** Opt-in class allocation; supersedes annualReturnPct. Rebalancing here is tax-free. */

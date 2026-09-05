@@ -898,6 +898,74 @@
       ]
     },
     {
+      "id": "irc-223-f-8-B-estate-predeath-expense-reduction",
+      "title": "Terminal HSA inclusion omits the 223(f)(8)(B)(ii)(I) predeath-expense reduction",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "The helper preserves the existing spouse-zero versus gross-for-other decision. Overstatement is claimed only for the omitted (B)(ii)(I) expense reduction at a stipulated death value, a fixed comparison heir rate, and a designated non-spouse natural-person case. A spouse destination follows (A) and is a zero inclusion. Charity exemption, generic default destination, and Form 8606 basis remain outside this helper. The nonSpouse enum also stands in for unmodeled legal classes, including an estate, for which (B)(ii)(I) does not reduce the inclusion. Missing legal beneficiary class, death date or value, and qualifying predeath expense and payment facts stay disclosed rather than inferred from healthcare spending or reimburseLater, which debit a different household cost. The companion fixture stipulates no relevant estate tax, so the (B)(ii)(II) section 691(c) deduction is zero and does not move the delta. The 223(f)(4)(B) additional-tax death exception remains a separate out-of-scope record; this metric is not that waiver.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/projection/estateHsaIncome.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/estateHsaIncome.ts",
+          "functions": [
+            {
+              "name": "estateHsaIncomeBase",
+              "line": 12
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/estateHsa.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/estateHsa.approximation.test.ts",
+          "line": 66,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes ending HSA gross at the heir rate and omits the predeath-expense reduction",
+              "line": 84
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(8)(A)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(8)(B)(i)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(8)(B)(ii)(I)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(8)(B)(ii)(II)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm"
+        }
+      ]
+    },
+    {
       "id": "irc-4973-a-g-hsa-excess-contribution-excise",
       "title": "Uncorrected HSA excess contributions incur the section 4973 excise",
       "classification": "approximated",

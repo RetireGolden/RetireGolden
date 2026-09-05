@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 427,
+    "total": 428,
     "byClassification": {
-      "approximated": 116,
+      "approximated": 117,
       "outOfScope": 75,
       "settled": 231,
       "unsettled": 5
@@ -12,11 +12,11 @@
     "byVolatility": {
       "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 350,
+      "staticStatute": 351,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 321,
+      "federal": 322,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 371,
+    "totalFiles": 372,
     "byStatus": {
       "partial": 55,
-      "registered": 108,
+      "registered": 109,
       "rule-free": 208,
       "unswept": 0
     },
@@ -224,7 +224,7 @@
     {
       "path": "projection/compare.ts",
       "sweptOn": "2026-09-04",
-      "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; spousal rollover, HSA non-spouse income, and other unrelated residuals remain"
+      "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; HSA terminal inclusion base delegated to estateHsaIncome.ts (irc-223-f-8-B-estate-predeath-expense-reduction); terminal zero-haircut spouse destination convention (not rollover or treat-as-own adjudication), charity carve-out, default destination, and other class residuals remain"
     },
     {
       "path": "projection/internal/annualAcaResultPublication.ts",
@@ -454,10 +454,10 @@
     },
     {
       "directory": "projection",
-      "files": 102,
+      "files": 103,
       "byStatus": {
         "partial": 20,
-        "registered": 16,
+        "registered": 17,
         "rule-free": 66
       }
     },
@@ -562,7 +562,7 @@
     {
       "module": "healthSavingsAccounts",
       "path": "rule-coverage/healthSavingsAccounts.json",
-      "ruleCount": 18
+      "ruleCount": 19
     },
     {
       "module": "individualIncomeTax",
@@ -641,14 +641,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T05:45:32.083Z",
-    "entryCount": 1139,
+    "generatedAt": "2026-09-05T06:08:02.335Z",
+    "entryCount": 1143,
     "fetched": 9,
     "cached": 308,
     "counts": {
       "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 6,
-      "EXACT": 776,
+      "EXACT": 780,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 37,

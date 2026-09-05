@@ -43,7 +43,7 @@ function validate(plan: Plan): Plan {
   return parsed.plan
 }
 
-function nonSpouseHsaPlan(): Plan {
+function hsaEstatePlan(destination: 'nonSpouse' | 'spouse'): Plan {
   const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 60 })
   plan.assumptions.heirTaxRatePct = HEIR_RATE_PCT
   plan.accounts = [{
@@ -54,9 +54,13 @@ function nonSpouseHsaPlan(): Plan {
     annualReturnPct: null,
     balance: HSA_BALANCE,
     annualContribution: 0,
-    estateBeneficiary: { destination: 'nonSpouse' },
+    estateBeneficiary: { destination },
   }]
   return validate(plan)
+}
+
+function nonSpouseHsaPlan(): Plan {
+  return hsaEstatePlan('nonSpouse')
 }
 
 describeRule('irc-223-f-8-B-estate-predeath-expense-reduction', {
@@ -104,5 +108,22 @@ describeRule('irc-223-f-8-B-estate-predeath-expense-reduction', {
     expect(hsaRow?.heirTax).not.toBe(accepted.heirTax)
     expect(hsaRow?.taxablePretaxBase).not.toBe(readings.wholeBalanceExcluded.taxablePretaxBase)
     expect(hsaRow?.heirTax).not.toBe(readings.wholeBalanceExcluded.heirTax)
+
+    const spousePlan = hsaEstatePlan('spouse')
+    const spouseResult = simulatePlan(spousePlan, { startYear: 2026, taxCalculator: noTax })
+    const spouseSummary = summarizeProjection(spousePlan, spouseResult)
+    const spouseHsaRow = spouseSummary.estateBreakdown.find((row) => row.accountId === 'hsa')
+
+    expect(spouseResult.years).toHaveLength(1)
+    expect(spouseResult.years[spouseResult.years.length - 1]?.balances.hsa).toBe(HSA_BALANCE)
+    expect(spouseHsaRow).toEqual(expect.objectContaining({
+      accountId: 'hsa',
+      category: 'hsa',
+      destination: 'spouse',
+      grossBalance: HSA_BALANCE,
+      taxablePretaxBase: 0,
+      heirTax: 0,
+    }))
+    expect(spouseSummary.endingEstateHeirTax).toBe(0)
   })
 })
