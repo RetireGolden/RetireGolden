@@ -123,6 +123,49 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'wv-code-11-21-4j-graduated-income-tax-rate-schedule': {
+    title: 'West Virginia’s 2026 graduated rates run on the modeled taxable base',
+    statement:
+      'For taxable years beginning on or after January 1, 2026, §11-21-4j applies in lieu of §11-21-4i. Subsection (a) sets a five-band schedule on West Virginia taxable income for every individual except a married individual filing separately — including heads of household, joint filers, surviving spouses, and estates and trusts (with a stated trust exception). The pack models single and married filing jointly against the same (a) table; subsection (b)\'s separate married-filing-separately schedule is out of scope. Subsection (e) makes the section apply for all such taxable years. The pack\'s `brackets` carry the rates and shared break points; `bracketTax` applies them to the modeled West Virginia taxable base.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Personal exemptions under §11-21-16, the age-65 or disability modification under §11-21-12(c)(9), military and other listed subtractions, and a full return reconciliation are not certified here. This record registers only the progressive rates and shared break points the pack carries as a stand-in for 2026.',
+    jurisdiction: 'state:WV',
+    authority: [{
+      kind: 'statute',
+      citation: 'W. Va. Code §11-21-4j(a)',
+      url: 'https://code.wvlegislature.gov/11-21-4J/',
+      quotedText:
+        '(a) Rate of tax on individuals (except married individuals filing separate returns), individuals filing joint returns, heads of households, and estates and trusts. — For taxable years beginning on and after January 1, 2026, the tax imposed by §11-21-3 of this code on the West Virginia taxable income of every individual (except married individuals filing separate returns); every individual who is a head of a household in the determination of his or her federal income tax for the taxable year; every husband and wife who file a joint return under this article; every individual who is entitled to file his or her federal income tax return for the taxable year as a surviving spouse; and every estate and trust (except non-grantor trusts administered by licensed private trust companies created pursuant to the provisions of §31I-1-1 et seq. of this code) shall be determined in accordance with the following table:',
+    }, {
+      kind: 'statute',
+      citation: 'W. Va. Code §11-21-4j(a)',
+      url: 'https://code.wvlegislature.gov/11-21-4J/',
+      quotedText:
+        'If the West Virginia taxable income is: The tax is: Not over $10,000 2.11% of the taxable income Over $10,000 but not over $25,000 $211 plus 2.81% of excess over $10,000 Over $25,000 but not over $40,000 $632.50 plus 3.16% of excess over $25,000 Over $40,000 but not over $60,000 $1,106.50 plus 4.22% of excess over $40,000 Over $60,000 $1,950.50 plus 4.58% of excess over $60,000',
+    }, {
+      kind: 'statute',
+      citation: 'W. Va. Code §11-21-4j(e)',
+      url: 'https://code.wvlegislature.gov/11-21-4J/',
+      quotedText:
+        '(e) Applicability of this section. — The provisions of this section shall be applicable in determining the rates of tax imposed by this article and shall apply for all taxable years beginning on and after January 1, 2026, and shall be in lieu of the rates of tax specified in §11-21-4i of this code.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#WV',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'sc-code-12-6-1170-retirement-income-deduction': {
     title: 'South Carolina’s retirement deduction has a tier below age 65',
     statement:

@@ -56,23 +56,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1937,
+          "line": 2028,
           "note": "low-income Social Security limb",
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 1953
+              "line": 2044
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1969,
+          "line": 2060,
           "note": "high-income pension limb",
           "tests": [
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 1985
+              "line": 2076
             }
           ]
         }
@@ -215,16 +215,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2377,
+          "line": 2468,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 2391
+              "line": 2482
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 2396
+              "line": 2487
             }
           ]
         }
@@ -277,7 +277,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 66
+              "line": 74
             }
           ]
         },
@@ -297,16 +297,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 673,
+          "line": 764,
           "note": null,
           "tests": [
             {
               "title": "subtracts Maine published basic plus the IRC 63(c)(3) age-65 addition",
-              "line": 769
+              "line": 860
             },
             {
               "title": "holds Maine’s basic deduction still as the federal figure is projected upward",
-              "line": 820
+              "line": 911
             }
           ]
         }
@@ -487,16 +487,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2594,
+          "line": 2685,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 2615
+              "line": 2706
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 2620
+              "line": 2711
             }
           ]
         }
@@ -886,34 +886,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2782,
+          "line": 2873,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 2797
+              "line": 2888
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2804,
+          "line": 2895,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 2823
+              "line": 2914
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2830,
+          "line": 2921,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 2850
+              "line": 2941
             }
           ]
         }
@@ -996,12 +996,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2857,
+          "line": 2948,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 2870
+              "line": 2961
             }
           ]
         }

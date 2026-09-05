@@ -89,6 +89,11 @@
   instead of being silently capped at zero. Full sales explicitly exhaust both fair market value and remaining
   aggregate basis. Pennsylvania's current-year-only input receives this raw signed annual result before its
   state-specific zero floor.
+- West Virginia’s 2026 pack rates are **§11-21-4j(a)** — **2.11% / 2.81% / 3.16% / 4.22% / 4.58%** at shared
+  **$0 / $10,000 / $25,000 / $40,000 / $60,000** bounds for single and MFJ (`wv-code-11-21-4j-graduated-income-tax-rate-schedule`).
+  The sole pack also stands in outside 2026 under the existing fallback; statutory authority is 2026+, not a
+  historical §11-21-4i proof. Personal exemptions and senior any-income/disability/pension-subtype items remain
+  unmodeled.
 - Mid-year state moves prorate state taxable income, deductions, brackets, and retirement caps by months in
   each state segment. Taxable Social Security is computed once on the full-year federal base and then
   apportioned by months.

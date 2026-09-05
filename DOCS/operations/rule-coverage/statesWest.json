@@ -46,16 +46,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 853,
+          "line": 944,
           "note": null,
           "tests": [
             {
               "title": "leaves an Alaska individual outside the chapter that does impose a tax",
-              "line": 875
+              "line": 966
             },
             {
               "title": "would carry the whole of it if the exclusion in 43.20.012(a) were not there",
-              "line": 880
+              "line": 971
             }
           ]
         }
@@ -118,16 +118,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1284,
+          "line": 1375,
           "note": null,
           "tests": [
             {
               "title": "charges one rate on the whole Arizona base",
-              "line": 1298
+              "line": 1389
             },
             {
               "title": "applies the same rate to a joint return, since the paragraph is status-blind",
-              "line": 1303
+              "line": 1394
             }
           ]
         }
@@ -195,16 +195,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1360,
+          "line": 1451,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income Arizonan’s Social Security out of the state base",
-              "line": 1375
+              "line": 1466
             },
             {
               "title": "would pull the federally taxable share in if Arizona taxed it",
-              "line": 1379
+              "line": 1470
             }
           ]
         }
@@ -450,16 +450,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1389,
+          "line": 1480,
           "note": null,
           "tests": [
             {
               "title": "takes the whole military pension out of an Arizona base",
-              "line": 1403
+              "line": 1494
             },
             {
               "title": "would tax all 45,000 of it if the public bucket carried no exclusion",
-              "line": 1408
+              "line": 1499
             }
           ]
         }
@@ -526,16 +526,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1414,
+          "line": 1505,
           "note": null,
           "tests": [
             {
               "title": "taxes an Arizona IRA or private pension distribution in full",
-              "line": 1430
+              "line": 1521
             },
             {
               "title": "does not let the public bucket’s exclusion spill onto it",
-              "line": 1435
+              "line": 1526
             }
           ]
         }
@@ -588,7 +588,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 66
+              "line": 74
             }
           ]
         },
@@ -675,7 +675,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 66
+              "line": 74
             }
           ]
         },
@@ -695,16 +695,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1314,
+          "line": 1405,
           "note": null,
           "tests": [
             {
               "title": "deducts Arizona’s published amount and adds no federal age-65 amount",
-              "line": 1332
+              "line": 1423
             },
             {
               "title": "would take the federal figure and the federal age-65 addition if it were tagged",
-              "line": 1340
+              "line": 1431
             }
           ]
         }
@@ -777,12 +777,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1778,
+          "line": 1869,
           "note": null,
           "tests": [
             {
               "title": "omits California Social Security from the taxable base",
-              "line": 1794
+              "line": 1885
             }
           ]
         }
@@ -831,7 +831,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 66
+              "line": 74
             }
           ]
         },
@@ -860,12 +860,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1840,
+          "line": 1931,
           "note": "age-55-through-64 pension-and-annuity limb",
           "tests": [
             {
               "title": "pins the missing Colorado age-60 retirement subtraction",
-              "line": 1857
+              "line": 1948
             }
           ]
         }
@@ -938,12 +938,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1872,
+          "line": 1963,
           "note": "age-65 Social Security limb",
           "tests": [
             {
               "title": "pins the Colorado age-65 Social Security subtraction the pack misses",
-              "line": 1889
+              "line": 1980
             }
           ]
         }
@@ -1015,12 +1015,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2056,
+          "line": 2147,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 2071
+              "line": 2162
             }
           ]
         }
@@ -1083,12 +1083,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2082,
+          "line": 2173,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 2098
+              "line": 2189
             }
           ]
         }
@@ -1146,27 +1146,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2488,
+          "line": 2579,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 2508
+              "line": 2599
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 2513
+              "line": 2604
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2531,
+          "line": 2622,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 2549
+              "line": 2640
             }
           ]
         }
@@ -1224,7 +1224,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 66
+              "line": 74
             }
           ]
         },
@@ -1244,20 +1244,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2444,
+          "line": 2535,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 2463
+              "line": 2554
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 2469
+              "line": 2560
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 2475
+              "line": 2566
             }
           ]
         }
@@ -1325,7 +1325,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 66
+              "line": 74
             }
           ]
         },
@@ -1345,12 +1345,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2628,
+          "line": 2719,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 2643
+              "line": 2734
             }
           ]
         }
@@ -1475,12 +1475,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2762,
+          "line": 2853,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 2774
+              "line": 2865
             }
           ]
         }
@@ -1538,12 +1538,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2739,
+          "line": 2830,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 2755
+              "line": 2846
             }
           ]
         }
@@ -1606,12 +1606,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2924,
+          "line": 3015,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 2943
+              "line": 3034
             }
           ]
         }
@@ -1733,7 +1733,7 @@
           "functions": [
             {
               "name": "WY",
-              "line": 838
+              "line": 839
             }
           ]
         },
@@ -1753,16 +1753,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 976,
+          "line": 1067,
           "note": null,
           "tests": [
             {
               "title": "leaves a Wyoming retiree with no state base at all",
-              "line": 995
+              "line": 1086
             },
             {
               "title": "would build a base if chapter 12 imposed as well as preempted",
-              "line": 1000
+              "line": 1091
             }
           ]
         }

@@ -1,8 +1,12 @@
 /**
- * Typed access to per-state tax packs. Future years use the latest published
- * pack with its brackets left nominal, so state bracket creep is modeled.
- * States with no entry return undefined — the caller falls back to the flat
- * effective-rate override.
+ * Typed access to per-state tax packs. `stateParamsFor` resolves a year as:
+ * the exact published pack when present; otherwise the latest pack for future
+ * years (brackets left nominal, so state bracket creep is modeled); otherwise
+ * the earliest published pack for every year before that earliest pack. There
+ * is no supported-year guard and no validity marker — earlier years receive a
+ * current-pack historical approximation, not enforcement of individual law
+ * record `effectiveFrom` metadata. States with no entry return undefined —
+ * the caller falls back to the flat effective-rate override.
  *
  * This no longer mirrors the federal engine, which now projects its
  * annually-indexed figures past the pack year (`indexFederalTaxPack`) because
@@ -33,7 +37,11 @@ function statesPackForYear(year: number): StateTaxPack {
   return packs[0]!
 }
 
-/** Tax parameters for a state in a year, or undefined if that state isn't modeled yet. */
+/**
+ * Tax parameters for a state in a year, or undefined if that state isn't modeled
+ * yet. Year resolution follows the exact / latest / earliest pack convention
+ * above with no supported-year guard or stand-in marker.
+ */
 export function stateParamsFor(code: string, year: number): StateTaxParams | undefined {
   return statesPackForYear(year).states[code.toUpperCase()]
 }

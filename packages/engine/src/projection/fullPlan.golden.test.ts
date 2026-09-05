@@ -270,4 +270,28 @@ describe('full-plan golden fixtures', () => {
     expectMoney(year.tax, federalTax + stateTax)
     expectMoney(year.incomes.recurring, 139_750)
   })
+
+  it('Plan J: full-plan tax applies West Virginia §11-21-4j to the modeled $10,000 state-tax base', () => {
+    // Independent worksheet (§11-21-4j(a); not taken from app output):
+    // Model-component integration on the engine WV pack taxable base — not a full IT-140 liability.
+    // Single, age 60 in 2026, WV, $10,000 ordinary non-retirement income,
+    // $100,000 cash, $0 expenses, zero growth/inflation, no SS/gains/contributions.
+    // Federal: 10,000 < 16,100 standard deduction → federal tax $0.
+    // Engine WV base: standard deduction $0; age-65 retirement cap does not apply → modeled taxable base $10,000.
+    // Pack omits W. Va. Code §11-21-16 personal exemptions; expected $211 is the modeled pack-base value.
+    // Tax = 10,000 × 2.11% = $211.00. YearResult exposes total `tax` only (no separate stateTax field).
+    // Surplus = 10,000 − 211 = 9,789 → ending cash 100,000 + 9,789 = 109,789.
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 60, state: 'WV' })
+    plan.accounts = [cashAccount('cash', 100_000)]
+    plan.incomes = [recurringOrdinaryIncome('ordinary', 10_000, 2026)]
+    plan.expenses.baseAnnual = 0
+
+    const result = runPlan(plan, productionTaxCalculator(), 2026)
+    const year = result.years[0]!
+
+    expect(year.year).toBe(2026)
+    expectMoney(year.tax, 211)
+    expectMoney(year.surplusInvested, 9_789)
+    expectMoney(year.balances['cash']!, 109_789)
+  })
 })

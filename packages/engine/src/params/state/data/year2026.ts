@@ -806,16 +806,17 @@ const rawStateYear2026 = {
     },
     WV: {
       // Social Security fully exempt from 2026 (phase-out complete).
+      // §11-21-4j(a)/(e): 2026 rates; single and MFJ share the subsection (a) table.
       code: 'WV', name: 'West Virginia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 2.22 }, { lowerBound: 10000, ratePct: 2.96 }, { lowerBound: 25000, ratePct: 3.33 },
-          { lowerBound: 40000, ratePct: 4.44 }, { lowerBound: 60000, ratePct: 4.82 },
+          { lowerBound: 0, ratePct: 2.11 }, { lowerBound: 10000, ratePct: 2.81 }, { lowerBound: 25000, ratePct: 3.16 },
+          { lowerBound: 40000, ratePct: 4.22 }, { lowerBound: 60000, ratePct: 4.58 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 2.22 }, { lowerBound: 10000, ratePct: 2.96 }, { lowerBound: 25000, ratePct: 3.33 },
-          { lowerBound: 40000, ratePct: 4.44 }, { lowerBound: 60000, ratePct: 4.82 },
+          { lowerBound: 0, ratePct: 2.11 }, { lowerBound: 10000, ratePct: 2.81 }, { lowerBound: 25000, ratePct: 3.16 },
+          { lowerBound: 40000, ratePct: 4.22 }, { lowerBound: 60000, ratePct: 4.58 },
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 8000, minAge: 65 },

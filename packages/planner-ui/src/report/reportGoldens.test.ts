@@ -16,8 +16,9 @@
  *
  * 2026-09-05: state-income-tax provenance figures in the committed goldens
  * were updated to match packages/engine/src/params/provenance.ts (Maine 2026
- * basic/age/phase-out appendix text). Report calculation values are unchanged;
- * Maine law oracle coverage lives in engine goldens and DOCS/domain.
+ * basic/age/phase-out appendix text; West Virginia 2026 §11-21-4j rate range
+ * folded into the all-states group). Report calculation values are unchanged;
+ * state law oracle coverage lives in engine goldens and DOCS/domain.
  */
 import { describe, expect, it } from 'vitest'
 

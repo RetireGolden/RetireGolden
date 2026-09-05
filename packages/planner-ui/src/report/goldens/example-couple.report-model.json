@@ -703,9 +703,9 @@
           "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"
         },
         {
-          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges.",
+          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges. West Virginia 2026: §11-21-4j(a) 2.11%–4.58% at $0/$10k/$25k/$40k/$60k (single and MFJ share the table).",
           "label": "State income tax",
-          "publisher": "Tax Foundation / state revenue departments",
+          "publisher": "Tax Foundation / state revenue departments / state legislatures",
           "url": "https://taxfoundation.org/data/all/state/state-income-tax-rates/"
         }
       ]
