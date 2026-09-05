@@ -36,7 +36,8 @@
 # The roster is selected per repo inside the pinned reusable, keyed by
 # GITHUB_REPOSITORY. On future pin bumps, update these notes when the lane
 # roster or judge defaults change.
-# The standing roster is Grok + GLM with the recall-safe Luna judge. Temporary
+# The standing roster is x-ai/grok-4.6 + z-ai/glm-5.3-flash with the recall-safe
+# openai/gpt-5.6-luna judge. Temporary
 # trial windows are documented in the central README at the same pinned revision;
 # the policy applies their time limits at runtime.
 # Policy and trial dates: https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/README.md

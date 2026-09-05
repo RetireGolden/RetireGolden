@@ -443,7 +443,7 @@ describe('OpenRouter CI authorization contract', () => {
     )
     expect(reviewCaller).toContain(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW}`)
     for (const source of [reviewCaller, ciRunbook]) {
-      const policyLinks = [...source.matchAll(/https:\/\/github\.com\/RetireGolden\/\.github\/blob\/([a-f0-9]{40})\//g)]
+      const policyLinks = [...source.matchAll(/https:\/\/github\.com\/RetireGolden\/\.github\/(?:blob|tree)\/([a-f0-9]{40})\//g)]
       expect(policyLinks.length).toBeGreaterThan(0)
       for (const link of policyLinks) expect(link[1]).toBe(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA)
     }
@@ -457,7 +457,9 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it('keeps documented producer revisions synchronized with the caller action reference', () => {
-    const callerReferences = [...reviewCaller.matchAll(/action#\d+@([a-f0-9]{40})/g)]
+    const currentCaller = reviewCaller.split('\n').find((line) => line.trimStart().startsWith(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW} `))
+    expect(currentCaller).toBeDefined()
+    const callerReferences = [...(currentCaller ?? '').matchAll(/action#\d+@([a-f0-9]{40})/g)]
     expect(callerReferences).toHaveLength(1)
     const producerSha = callerReferences[0]?.[1]
     expect(producerSha).toMatch(/^[a-f0-9]{40}$/)

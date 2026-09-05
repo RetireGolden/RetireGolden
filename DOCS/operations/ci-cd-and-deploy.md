@@ -93,6 +93,9 @@ When advancing the action, verify the new source spans as well as the producer r
 the local contract test checks revision consistency across the caller, helper comments and this table.
 The SHA checks treat links in this runbook as active pins. Historical full-SHA citations belong in a
 separate history document, or require deliberately narrowing the guard when adding that history here.
+The caller's action reference is read only from the active `uses:` line, so its historical pin notes
+may name other action revisions. Guards recognize the documented action references and GitHub
+`blob`/`tree` links; bare SHAs in prose remain subject to review, not a claim of exhaustive detection.
 
 For the September 5, 2026 pin update, direct comparison of the pinned Python predicate and the local
 JavaScript predicate passed 4,247 path inputs (separator and dot normalization, Python whitespace,
