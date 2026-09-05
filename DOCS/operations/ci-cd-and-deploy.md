@@ -83,9 +83,14 @@ RetireGolden authorization validates decoded markers against that producer, not 
 | Contract | Source |
 |----------|--------|
 | Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L429-L469) |
-| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L255-L257) |
+| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L255-L257) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L230-L252); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L26). |
 | Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L194-L241) (including `open_issue_count`) |
 | Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L327-L351) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L388-L426) |
+
+These function spans were checked against the source at the linked immutable action revision.
+The path predicate's short span is intentional: normalization contains the validation logic.
+When advancing the action, verify the new source spans as well as the producer revision;
+the local contract test checks revision consistency across the caller, helper comments and this table.
 
 - The broker serializes review/Azure completion events for a head, finds the newest eligible skipped Azure
   `pull_request` run before it mutates the PR, rechecks live PR state, adds `run-ci`, rechecks again, then
