@@ -1285,7 +1285,7 @@
       "title": "A spousal benefit is half the PIA and earns no delayed credits",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming on the current-spouse path that the worker has already filed so the spouse is eligible. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`.",
+      "conventionRationale": "Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming on the current-spouse path that the worker has already filed so the spouse is eligible. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1294,12 +1294,22 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
+        "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/claimFactor.ts",
         "packages/engine/src/socialSecurity/maritalBenefits.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
+          "functions": [
+            {
+              "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
+              "line": 152
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
           "functions": [
@@ -1343,12 +1353,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
-          "line": 19,
+          "line": 121,
           "note": null,
           "tests": [
             {
               "title": "stops growing at full retirement age",
-              "line": 23
+              "line": 129
             }
           ]
         }
@@ -2188,12 +2198,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
-          "line": 79,
+          "line": 189,
           "note": "claim ages outside 62y0m-70y0m are refused, not priced",
           "tests": [
             {
               "title": "refuses one month below the floor and one month above the ceiling",
-              "line": 87
+              "line": 197
             }
           ]
         }

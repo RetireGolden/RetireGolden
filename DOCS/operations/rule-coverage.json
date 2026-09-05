@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 372,
     "byStatus": {
-      "partial": 54,
-      "registered": 110,
+      "partial": 53,
+      "registered": 111,
       "rule-free": 208,
       "unswept": 0
     },
@@ -103,8 +103,8 @@
     },
     {
       "path": "actions/annualRetirementPhysicalEventInventory.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record"
+      "sweptOn": "2026-09-05",
+      "note": "Form 8606 line 7/8 and employer-SEPP annual proxy already name this inventory; remaining source-route, completeness, chronology, and legacy S2 consistency are inventory contracts. Labels do not decide charity custody or tax character"
     },
     {
       "path": "actions/beneficiaryTraditionalIraAnnualPlanApplication.ts",
@@ -125,11 +125,6 @@
       "path": "actions/ownedNonRothIraAnnualFilingEvidence.ts",
       "sweptOn": "2026-08-29",
       "note": "Prior-year contribution window covered and the ownedIraPool filter is now pinned by the pool-scope record; the January-1 opening-basis anchor stays an engine convention (408(d)(2)(C) computes values as of the close of the year) and is the sole residual"
-    },
-    {
-      "path": "actions/ownedNonRothIraAnnualPhysicalTransaction.ts",
-      "sweptOn": "2026-08-29",
-      "note": "Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B, and line-7/line-8 categorization under form-8606-lines-7-and-8-distinct-distribution-staging; QCD charitable-debit scope remains unregistered"
     },
     {
       "path": "actions/ownedNonRothIraAnnualPlanCoordinator.ts",
@@ -168,8 +163,8 @@
     },
     {
       "path": "insights/detectors/ssClaimMilestone.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra"
+      "sweptOn": "2026-09-05",
+      "note": "former-spouse eligibility delegates to registered bestMaritalBenefit; claim-factor, payable-month, and family-max are delegated. Statutory half-PIA numerical base (0.5 * PIA * spousalBenefitFactor) in the current-spouse prior-year comparator is now covered on usc-42-402-b-2-spousal-half-of-pia. Residuals: pre-horizon payable-month reconstruction, gate-stream selection, own/former/current winner ordering and family-maximum composition, enabling-event timing, and missing-PIA fallback"
     },
     {
       "path": "internal/ownedNonRothIraAnnualAttemptSettlement.ts",
@@ -193,18 +188,18 @@
     },
     {
       "path": "model/plan.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Inherited IRA regime parse rules; spouse J&S RMD gate; 403(b) aggregation; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates"
+      "sweptOn": "2026-09-05",
+      "note": "latestNonQlacQualifiedAnnuityStartAge and latestQlacAnnuityStartAge helpers covered; inherited/election contradiction checks are law-sensitive mirrored validation with missing-fact/year-granular limits; 403(b)/spouse/SEPP carriers are not calculators"
     },
     {
       "path": "model/planCrossFieldChecks.ts",
-      "sweptOn": "2026-09-03",
-      "note": "The cross-field validator, moved verbatim out of the superRefine body in model/plan.ts and unchanged in rule, message, or order; it carries the same residual claims the model/plan.ts entry names for cross-field rules: inherited IRA regime parse rules; spouse J&S RMD gate; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates. The qualified-annuity start-age bounds it applies come from the latestNonQlacQualifiedAnnuityStartAge and latestQlacAnnuityStartAge helpers that stay in model/plan.ts"
+      "sweptOn": "2026-09-05",
+      "note": "qualified-annuity start-age ceilings covered; checkAccountCrossFieldRules still directly enforces uncovered Form 8606 basis placement/exclusion on inherited IRAs, qualified-annuity funding from owned traditional funds, QLAC qualification, and other cross-field gates"
     },
     {
       "path": "model/retirementActionAnnualTaxFacts.ts",
-      "sweptOn": "2026-09-04",
-      "note": "ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; persisted prior-year contribution-window and opening-basis/completeness invariants still enforced here without matching function pins"
+      "sweptOn": "2026-09-05",
+      "note": "IRC 219(f)(3) designated post-year contribution window now covered via persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema; remaining persistence contracts are opening-basis, completeness, finalization, identity, and safe-cent totals"
     },
     {
       "path": "montecarlo/mortality.ts",
@@ -283,8 +278,8 @@
     },
     {
       "path": "projection/internal/annualSocialSecurity.ts",
-      "sweptOn": "2026-08-31",
-      "note": "the annual Social Security phase moved out of simulatePlan and is linked to genuine rule records covering the retirement earnings test and its annual month-credit proxies, current-spouse/deemed-filing and survivor dual-entitlement behavior, deceased-worker DRC pass-through, and the modeled SSDI amount, timing, family-maximum, spouse-auxiliary, work-window, and SGA surfaces. The registry is the mechanical inventory; this note deliberately does not duplicate its changing count. Residual rule-bearing behavior is the former-spouse eligibility delegated to socialSecurity/maritalBenefits.ts: the 10-year divorced-spouse marriage, 9-month survivor marriage, claimant/former-spouse age gates, and remarriage forfeiture still have no rule records. Per-stream publication and application of the caller-resolved Plan COLA and haircut factors are rule-free plumbing"
+      "sweptOn": "2026-09-05",
+      "note": "former-spouse marital gates now sit on socialSecurityMaritalEligibility records and maritalBenefits helpers. This caller composes candidate/payable months, COLA, haircut, and streams and is not a caller pin. Other genuine surfaces remain on their existing records"
     },
     {
       "path": "projection/optimizePlan.ts",
@@ -369,8 +364,8 @@
       "directory": "actions",
       "files": 78,
       "byStatus": {
-        "partial": 14,
-        "registered": 34,
+        "partial": 13,
+        "registered": 35,
         "rule-free": 30
       }
     },

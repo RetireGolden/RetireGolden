@@ -24,6 +24,7 @@ describe('spousal benefit and delayed credits', () => {
       retirementAge: null,
       longevity: { planningAge: 69, source: 'manual' },
     })
+    plan.household.filingStatus = 'marriedFilingJointly'
     plan.incomes = [
       {
         id: 'ss-claimant',
@@ -39,7 +40,7 @@ describe('spousal benefit and delayed credits', () => {
             dob: '1950-01-01',
             piaMonthly: 1025,
             marriageYears: 15,
-            remarriedAtAge: null,
+            remarriedAtAge: 60,
           },
         ],
       },
@@ -110,8 +111,8 @@ describe('spousal benefit and delayed credits', () => {
   //   worker own 2000 × (1 + 10×2/3%) = 2133.333
   // Statutory current-spouse base 0.5 × 2000 × 1 = 1000; wrong worker-actual
   // base 0.5 × 2133.333 = 1066.667. Former deceased survivor PIA 1025 (DOB
-  // 1950-01-01, marriage 15, remarriedAtAge null — ordinary-widow 9-month
-  // path) lies between. Family maximum 3553.70 leaves 1420.366 worker room,
+  // 1950-01-01, marriage 15, remarried at 60 — ordinary-widow 9-month path
+  // preserved) lies between. Family maximum 3553.70 leaves 1420.366 worker room,
   // so caps do not bind either auxiliary. Readings: statutory half-PIA prior
   // winner is former (deathAtStart false); worker-actual base makes current-
   // spouse the prior winner (deathAtStart true). Published 2026 p1 survivor
