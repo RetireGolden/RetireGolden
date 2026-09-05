@@ -4,12 +4,15 @@ Shipped 2026-07-08 (social-security-bridge-and-tips-ladder). All additive: `plan
 and absent means no behavior change (feature-off byte-identical, `cases:diff` clean).
 
 - **Ladder construction.** A ladder (`tipsLadderSchema`) is a target level real income over a calendar
-  window. Rungs are solved back-to-front — the last payout year is funded by its maturing principal alone,
-  earlier years by principal plus the coupons of every still-outstanding rung (the standard
-  tipsladder.com/Bogleheads construction). Each rung is a par TIPS whose coupon is the interpolated par real
-  yield at its maturity, floored at the statutory 0.125% minimum; rungs are priced by discounting real cash
-  flows on the same curve (par-yields-as-spot, planning grade). On a flat curve the total cost equals the
-  level-annuity PV exactly (golden-tested).
+  window. Rungs are solved back-to-front — the last payout year is funded by its maturing principal plus its
+  own coupon, earlier years by principal plus the coupons of every still-outstanding rung (the standard
+  tipsladder.com/Bogleheads construction). Each rung is a synthetic TIPS whose coupon is the interpolated par real
+  yield at its maturity, floored at the regulatory 0.125% minimum
+  ([`cfr-31-356-20-b-tips-minimum-coupon`](../../../packages/engine/src/rules/records/investmentIncomeAndBasis.ts);
+  primary: [31 CFR 356.20(b), 87 FR 40438, 40440 (July 7, 2022), amendment 9](https://www.govinfo.gov/content/pkg/FR-2022-07-07/html/2022-13409.htm));
+  rungs are priced by discounting real cash flows on the same curve (par-yields-as-spot, planning grade). On
+  a flat curve where coupon equals yield and the regulatory floor is nonbinding, each rung prices at face and
+  the total cost equals the level-annuity PV exactly (golden-tested).
 - **Real-yield curve.** Embedded snapshot of the U.S. Treasury Daily Par Real Yield Curve Rates
   (`params/data/realYieldCurve2026.ts`; 5y 1.85 / 7y 2.05 / 10y 2.25 / 20y 2.55 / 30y 2.70 as of
   2026-06-30), linear interpolation, flat endpoints. Provenance id `real-yield-curve`; annual refresh per the

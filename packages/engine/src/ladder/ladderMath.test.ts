@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import type { RealYieldCurve } from '../params/types.js'
+import { describeRule } from '../rules/describeRule.js'
 import {
-  MIN_TIPS_COUPON_PCT,
   buildLadder,
   ladderRealFlowsAtOffset,
   ladderRemainingFace,
@@ -104,16 +104,62 @@ describe('buildLadder', () => {
     const totalFace = build.rungs.reduce((s, r) => s + r.face, 0)
     expect(build.totalCost).toBeCloseTo(totalFace, 6)
   })
+})
 
-  it('floors coupons at the statutory minimum when yields are negative', () => {
-    const build = buildLadder({ annualRealIncome: 10_000, firstPayoutOffset: 1, payoutYears: 5, curve: flatCurve(-0.5) })
-    for (const rung of build.rungs) {
-      expect(rung.couponRatePct).toBe(MIN_TIPS_COUPON_PCT)
-      // Coupon above the (negative) yield ⇒ the rung prices above face.
-      expect(rung.cost).toBeGreaterThan(rung.face)
+describeRule('cfr-31-356-20-b-tips-minimum-coupon', {
+  readings: {
+    regulatoryMinimum: [[0.125, 0.125], [0.125, 0.125]],
+    noMinimum: [[-0.5, -0.5], [0.05, 0.05]],
+    zeroMinimum: [[0, 0], [0.05, 0.05]],
+    negativeOnlyMinimum: [[0.125, 0.125], [0.05, 0.05]],
+  },
+  accepted: 'regulatoryMinimum',
+}, ({ accepted, readings }) => {
+  it('floors synthetic rung coupons at the regulatory minimum for negative and positive sub-minimum curve yields across two payout rungs', () => {
+    // Offset 5 is a curve knot; offset 6 lies between curve knots 5 and 30. It
+    // is the second payout rung, not the second curve knot. CFR 356.20(b)
+    // supplies the coupon floor; face and pricing checks are model consistency.
+    const curves = [-0.5, 0.05]
+    const builds = curves.map((pct) =>
+      buildLadder({
+        annualRealIncome: 10_000,
+        firstPayoutOffset: 5,
+        payoutYears: 2,
+        curve: flatCurve(pct),
+      }),
+    )
+    const observed = builds.map((build) => build.rungs.map((r) => r.couponRatePct))
+    expect(observed).toEqual(accepted)
+    for (const [key, reading] of Object.entries(readings)) {
+      if (key !== 'regulatoryMinimum') expect(observed).not.toEqual(reading)
     }
-    // Negative real yields make guaranteed real income cost more than face value.
-    expect(build.totalCost).toBeGreaterThan(10_000 * 5 * 0.98)
+    for (let i = 0; i < builds.length; i++) {
+      const build = builds[i]!
+      expect(build.rungs.map((r) => r.maturityOffset)).toEqual([5, 6])
+      const totalFace = build.rungs.reduce((s, r) => s + r.face, 0)
+      for (const rung of build.rungs) expect(rung.cost).toBeGreaterThan(rung.face)
+      expect(build.totalCost).toBeGreaterThan(totalFace)
+
+      const y = curves[i]! / 100
+      const c = accepted[i]![0]! / 100
+      const lateFace = 10_000 / (1 + c)
+      const earlyFace = (10_000 - lateFace * c) / (1 + c)
+      expect(build.rungs[1]!.face).toBeCloseTo(lateFace, 6)
+      expect(build.rungs[0]!.face).toBeCloseTo(earlyFace, 6)
+
+      // Closed-form annual-coupon PV is a model-consistency worksheet; the
+      // authority record still covers the coupon floor only.
+      const expectedFaces = [earlyFace, lateFace]
+      const maturities = [5, 6]
+      const expectedCosts = expectedFaces.map((expectedFace, j) => {
+        const discountFactor = Math.pow(1 + y, -maturities[j]!)
+        return expectedFace * ((c * (1 - discountFactor)) / y + discountFactor)
+      })
+      for (let j = 0; j < build.rungs.length; j++) {
+        expect(build.rungs[j]!.cost).toBeCloseTo(expectedCosts[j]!, 6)
+      }
+      expect(build.totalCost).toBeCloseTo(expectedCosts.reduce((s, v) => s + v, 0), 6)
+    }
   })
 })
 

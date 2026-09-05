@@ -969,6 +969,33 @@ export const investmentIncomeAndBasisRecords = {
     ],
   },
 
+  'cfr-31-356-20-b-tips-minimum-coupon': {
+    title: 'New TIPS issues carry a one-eighth percent minimum coupon when auction yield is below 0.125%',
+    statement:
+      'For a new Treasury inflation-protected note or bond issue, if the auction yield is below 0.125 percent the interest rate is set at one eighth of one percent (0.125%). The synthetic TIPS ladder applies that minimum to each rung\'s supplied interpolated par real yield.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The supported model applies the floor to interpolated par-yield proxies on synthetic rungs, not to actual Treasury auction award prices or full coupon-setting mechanics, and does not reset coupons on outstanding securities. Annual coupons, linear interpolation, and par-yields-as-spot pricing remain planning-grade conventions.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '31 CFR 356.20(b), 87 FR 40438, 40440 (July 7, 2022), amendment 9',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2022-07-07/html/2022-13409.htm',
+      quotedText:
+        'Determining the interest rate for new non-indexed and inflation-protected note and bond issues. If a Treasury non-indexed or inflation-protected note or bond auction results in a yield lower than 0.125 percent, the interest rate will be set at \\1/8\\ of one percent, and successful bidders\' award prices will be calculated accordingly. (See appendix B to this part for formulas.)',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-05',
+    implementedBy: ['packages/engine/src/ladder/ladderMath.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/ladder/ladderMath.ts#tipsCouponRatePct',
+    ],
+  },
+
   'treas-reg-1-1275-7-d-4-positive-inflation-adjustment-oid': {
     title: 'A positive TIPS inflation adjustment is annual OID',
     statement:

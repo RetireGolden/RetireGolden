@@ -164,7 +164,7 @@ maturing principal is a tax-free return; unmatured face rides in net worth. A **
 years on the TIPS curve — Pfau's pension-accounting lens; `ss-bridge-gap` / `income-floor-funded`
 Insights detectors surface the levers. Opt-in FedInvest CUSIP prices (the app's only cross-origin request;
 cache-first; zero-network CSV import fallback) sanity-check quotes. Simplifications documented in
-`engine/ladder/ladderMath.ts` (annual coupons, par rungs, planning-grade OID).
+`engine/ladder/ladderMath.ts` (annual coupons, synthetic rungs (coupon floor can price above face), planning-grade OID).
 
 ## 4. Spending model
 
