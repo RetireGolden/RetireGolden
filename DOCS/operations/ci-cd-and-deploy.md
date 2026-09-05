@@ -123,6 +123,23 @@ the canonical ledger link, the fetched run passes the same workflow/repository/c
 run succeeds. The human label and exact-head Azure rerun remain required after dispatch; the broker never
 auto-labels or reruns a Dependabot PR.
 
+For a caller-pin migration with an existing review ledger, use
+`gh workflow run openrouter-review-recovery.yml --ref main -f pr_number=<PR>`.
+This dedicated workflow performs the usual follow-up verification instead of restarting the initial
+review. It retains the ledger but examines the full PR, including when that ledger already names
+the current head. Earlier commits are not omitted based on the prior ledger. It refuses forks and
+closed PRs, uses a pinned action against the resolved PR head, and fails
+unless verification reports `clean`; the action refuses verification without an existing ledger.
+Normal pull-request review and first-pass gates are unchanged.
+
+CI admits this recovery only when its workflow ID matches GitHub's registered recovery workflow,
+the dispatch came from the default branch in this repository, and the workflow files at both the
+run commit and current default branch match the helper's pinned recovery Git blob SHA. The usual
+exact-head bot ledger, successful-run, live-label and PR-state checks still apply. After recovery,
+apply `run-ci` and rerun the existing exact-head Azure workflow, then wait for every required job.
+The broker does not initiate this recovery or grant CI automatically from it. When changing the
+recovery workflow, update its blob pin in the helper and the helper's Azure bootstrap pin together.
+
 ## Build and SPA routing
 
 - The web app lives under **`app/`** (the engine package under `packages/engine/`); production output

@@ -12,6 +12,8 @@ export const TRUSTED_REVIEW_AUTHOR_TYPE = 'Bot'
 export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
+export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'eb63c8557ac11a4a4ce0ba71a58580bfbc41beed'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
   'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294'
@@ -318,6 +320,27 @@ async function proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCa
   }
 }
 
+async function proveRecoveryWorkflow(github, owner, repo, run, repository, defaultBranch) {
+  if (run.name !== 'OpenRouter review recovery' || run.path !== TRUSTED_RECOVERY_WORKFLOW_PATH ||
+      run.event !== 'workflow_dispatch' || run.head_branch !== defaultBranch ||
+      run.head_repository?.full_name !== repository.full_name ||
+      !Number.isSafeInteger(run.workflow_id) || run.workflow_id <= 0 ||
+      !/^[a-f0-9]{40}$/.test(run.head_sha ?? '')) return false
+  try {
+    const [workflow, defaultFile, runFile] = await Promise.all([
+      github.rest.actions.getWorkflow({ owner, repo, workflow_id: TRUSTED_RECOVERY_WORKFLOW_PATH }),
+      github.rest.repos.getContent({ owner, repo, path: TRUSTED_RECOVERY_WORKFLOW_PATH, ref: defaultBranch }),
+      github.rest.repos.getContent({ owner, repo, path: TRUSTED_RECOVERY_WORKFLOW_PATH, ref: run.head_sha }),
+    ])
+    return workflow.data?.id === run.workflow_id && workflow.data?.path === TRUSTED_RECOVERY_WORKFLOW_PATH &&
+      workflow.data?.state === 'active' && defaultFile?.data?.sha === TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA &&
+      workflowBlobMatchesDefaultBranch(runFile, defaultFile)
+  } catch (error) {
+    if (error !== null && typeof error === 'object' && error.status === 404) return false
+    throw error
+  }
+}
+
 export async function collectProvenanceReviewRuns(github, {
   owner,
   repo,
@@ -383,9 +406,13 @@ export async function collectProvenanceReviewRuns(github, {
         }
       }
       if (!Number.isSafeInteger(run.id) || run.id !== runId) continue
-      if (reviewDispatchRunSkipReason(run, repository)) continue
       try {
-        if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
+        if (run.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
+          if (!(await proveRecoveryWorkflow(github, owner, repo, run, repository, defaultBranch))) continue
+        } else {
+          if (reviewDispatchRunSkipReason(run, repository)) continue
+          if (!(await proveCallerBlobMatchesDefault(github, owner, repo, run, defaultCaller))) continue
+        }
       } catch {
         return {
           provenanceReviewRuns: [],

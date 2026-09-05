@@ -40,6 +40,7 @@ export interface WorkflowRun {
   readonly name?: string
   readonly event?: string
   readonly head_sha?: string
+  readonly head_branch?: string
   readonly status?: string
   readonly conclusion?: string | null
   readonly created_at?: string
@@ -128,6 +129,12 @@ export interface GetWorkflowRunRequest {
   readonly run_id: number
 }
 
+export interface GetWorkflowRequest {
+  readonly owner: string
+  readonly repo: string
+  readonly workflow_id: string
+}
+
 export type NamedRequest<TRequest> = ((request: TRequest) => Promise<unknown>) & {
   readonly name: string
 }
@@ -160,6 +167,9 @@ export interface GitHubLike {
     readonly actions: {
       listWorkflowRuns: NamedRequest<ListWorkflowRunsRequest>
       getWorkflowRun: (request: GetWorkflowRunRequest) => Promise<{ readonly data: WorkflowRun }>
+      getWorkflow: (request: GetWorkflowRequest) => Promise<{
+        readonly data: { readonly id?: number; readonly path?: string; readonly state?: string }
+      }>
     }
   }
   paginate: (request: PaginatedRequest, parameters: PaginatedRequestParameters) => Promise<unknown[]>
@@ -178,6 +188,8 @@ export const TRUSTED_REVIEW_AUTHOR_TYPE: string
 export const DEPENDABOT_LOGIN: string
 export const TRUSTED_REVIEW_WORKFLOW_ID: number
 export const TRUSTED_OPENROUTER_CALLER_PATH: string
+export const TRUSTED_RECOVERY_WORKFLOW_PATH: string
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA: string
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW: string
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA: string
 export const EXPENSIVE_AZURE_JOB_NAMES: ReadonlySet<string>

@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw'
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
+import recoveryWorkflow from '../../.github/workflows/openrouter-review-recovery.yml?raw'
 import {
   authorizeExactHeadPullRequest,
   collectProvenanceReviewRuns,
@@ -21,6 +22,8 @@ import {
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
   terminalSameRepositoryWorkflowRunUrl,
+  TRUSTED_RECOVERY_WORKFLOW_PATH,
+  TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA,
   workflowBlobMatchesDefaultBranch,
 } from '../../.github/scripts/ci-acceleration.mjs'
 import type {
@@ -164,6 +167,7 @@ function mockGithub(overrides: Record<string, unknown> = {}) {
       },
     },
     actions: {
+      getWorkflow: async () => ({ data: { id: 999, path: TRUSTED_RECOVERY_WORKFLOW_PATH, state: 'active' } }),
       listWorkflowRuns: async function listWorkflowRuns() {},
       getWorkflowRun: async ({ run_id }: { run_id: number }) => ({
         data: trustedRun({ id: run_id, event: 'workflow_dispatch', head_sha: 'b'.repeat(40) }),
@@ -201,6 +205,149 @@ function mockGithub(overrides: Record<string, unknown> = {}) {
     ...topLevelOverrides,
   }
 }
+
+function recoveryGithub(runOverrides: Record<string, unknown> = {}, bodyOverride?: string) {
+  const base = mockGithub()
+  return mockGithub({
+    paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+      if (request.name.includes('listWorkflowRuns')) return [trustedRun()]
+      if (request.name.includes('listReviews')) return [
+        review({ id: 1, submitted_at: '2026-09-04T12:00:00Z' }),
+        review({ id: 2, submitted_at: '2026-09-04T13:00:00Z',
+          body: bodyOverride ?? cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl) }),
+      ]
+      return base.paginate(request, params)
+    },
+    rest: {
+      repos: {
+        getContent: async (args: GetContentRequest) => {
+          if (args.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
+            return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+          }
+          return base.rest.repos.getContent(args)
+        },
+      },
+      actions: {
+        getWorkflowRun: async () => ({ data: trustedRun({
+          id: 456, workflow_id: 999, name: 'OpenRouter review recovery',
+          path: TRUSTED_RECOVERY_WORKFLOW_PATH, event: 'workflow_dispatch',
+          head_branch: 'main', head_sha: 'c'.repeat(40), referenced_workflows: [],
+          created_at: '2026-09-04T13:00:00Z', ...runOverrides,
+        }) }),
+      },
+    },
+  })
+}
+
+const recoveryContext = {
+  owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+  expectedHeadSha: sha, pullNumber,
+  reviews: [review({ body: cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl) })],
+  allowDispatch: true,
+}
+
+describe('trusted default-branch review verification recovery', () => {
+  it('pins the complete recovery workflow Git blob', () => {
+    const content = recoveryWorkflow.replace(/\r\n/g, '\n')
+    const blob = createHash('sha1').update(`blob ${Buffer.byteLength(content)}\0${content}`).digest('hex')
+    expect(TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA).toBe(blob)
+    expect(recoveryWorkflow).toContain('review_mode: verify')
+    expect(recoveryWorkflow).toContain('review_scope: full-pr')
+    expect(recoveryWorkflow).toContain('fail_on: any')
+    expect(recoveryWorkflow).toContain('run: test "$VERDICT" = clean')
+    expect(recoveryWorkflow).toContain('persist-credentials: false')
+  })
+
+  it('admits the registered, pinned main dispatch only in manual recovery', async () => {
+    const result = await collectProvenanceReviewRuns(recoveryGithub(), recoveryContext)
+    expect(result.provenanceReviewRuns.map((run) => run.id)).toEqual([123, 456])
+    const broker = await collectProvenanceReviewRuns(recoveryGithub(), { ...recoveryContext, allowDispatch: false })
+    expect(broker.provenanceReviewRuns.map((run) => run.id)).toEqual([123])
+  })
+
+  it.each([
+    ['branch dispatch', { head_branch: 'codex/other' }],
+    ['other event', { event: 'pull_request' }],
+    ['other repository', { head_repository: { full_name: 'other/repo' } }],
+    ['other workflow ID', { workflow_id: 998 }],
+    ['other workflow name', { name: 'Untrusted recovery' }],
+    ['other workflow path', { path: '.github/workflows/other.yml' }],
+    ['non-commit ref', { head_sha: 'main' }],
+  ])('rejects recovery provenance with %s', async (_name, overrides) => {
+    const result = await collectProvenanceReviewRuns(recoveryGithub(overrides), recoveryContext)
+    expect(result.provenanceReviewRuns.map((run) => run.id)).toEqual([123])
+  })
+
+  it.each(['main', 'c'.repeat(40)])('rejects a changed recovery blob at %s', async (ref) => {
+    const github = recoveryGithub()
+    const original = github.rest.repos.getContent
+    github.rest.repos.getContent = async (args: GetContentRequest) => {
+      if (args.path === TRUSTED_RECOVERY_WORKFLOW_PATH && args.ref === ref) {
+        return { data: { type: 'file', sha: 'd'.repeat(40) } }
+      }
+      return original(args)
+    }
+    const result = await collectProvenanceReviewRuns(github, recoveryContext)
+    expect(result.provenanceReviewRuns.map((run) => run.id)).toEqual([123])
+  })
+
+  it('rejects an unpinned workflow even when run and default blobs agree', async () => {
+    const github = recoveryGithub()
+    const original = github.rest.repos.getContent
+    github.rest.repos.getContent = async (args: GetContentRequest) => args.path === TRUSTED_RECOVERY_WORKFLOW_PATH
+      ? { data: { type: 'file', sha: 'd'.repeat(40) } } : original(args)
+    const result = await collectProvenanceReviewRuns(github, recoveryContext)
+    expect(result.provenanceReviewRuns.map((run) => run.id)).toEqual([123])
+  })
+
+  it('fails closed when recovery metadata cannot be inspected', async () => {
+    const github = recoveryGithub()
+    github.rest.actions.getWorkflow = async () => { throw Object.assign(new Error('unavailable'), { status: 503 }) }
+    const result = await collectProvenanceReviewRuns(github, recoveryContext)
+    expect(result.provenanceReviewRuns).toEqual([])
+    expect(result.error).toMatch(/cannot inspect/)
+  })
+
+  it.each([
+    ['disabled workflow', { id: 999, path: TRUSTED_RECOVERY_WORKFLOW_PATH, state: 'disabled_manually' }],
+    ['wrong registered path', { id: 999, path: '.github/workflows/other.yml', state: 'active' }],
+  ])('rejects registration metadata for %s', async (_name, data) => {
+    const github = recoveryGithub()
+    github.rest.actions.getWorkflow = async () => ({ data })
+    const result = await collectProvenanceReviewRuns(github, recoveryContext)
+    expect(result.provenanceReviewRuns.map((run) => run.id)).toEqual([123])
+  })
+
+  it('rejects a non-file response even with the pinned blob SHA', async () => {
+    const github = recoveryGithub()
+    const original = github.rest.repos.getContent
+    github.rest.repos.getContent = async (args: GetContentRequest) => args.path === TRUSTED_RECOVERY_WORKFLOW_PATH
+      ? { data: { type: 'symlink', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } } : original(args)
+    const result = await collectProvenanceReviewRuns(github, recoveryContext)
+    expect(result.provenanceReviewRuns.map((run) => run.id)).toEqual([123])
+  })
+
+  it.each([
+    ['failed run', { conclusion: 'failure' }, undefined],
+    ['pending run', { status: 'in_progress', conclusion: null }, undefined],
+    ['issues review', {}, cleanReviewBody.replace(workflowUrl, dispatchWorkflowUrl).replace('`clean`', '`issues`')],
+    ['malformed review', {}, `malformed\n[Workflow run](${dispatchWorkflowUrl})`],
+  ])('does not fall back to an older clean run after a newer recovery with %s', async (_name, run, body) => {
+    const result = await authorizeExactHeadPullRequest(recoveryGithub(run, body), { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] }, runAttempt: 2,
+    })
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+  })
+
+  it('authorizes the exact-head clean ledger from the pinned recovery', async () => {
+    const result = await authorizeExactHeadPullRequest(recoveryGithub(), { setFailed: () => undefined }, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository, defaultBranch: 'main',
+      eventPr: { number: pullNumber, head: { sha }, labels: [{ name: 'run-ci' }] }, runAttempt: 2,
+    })
+    expect(result).toMatchObject({ authorized: true, failJob: false })
+  })
+})
 
 describe('OpenRouter CI authorization contract', () => {
   it('pins the Azure bootstrap helper blob to the final helper content', () => {
