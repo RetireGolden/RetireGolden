@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T09:58:15.167Z",
+  "generatedAt": "2026-09-05T10:52:59.015Z",
   "recordCount": 432,
-  "urlCount": 320,
+  "urlCount": 321,
   "fetched": 9,
-  "cached": 311,
-  "entryCount": 1163,
+  "cached": 312,
+  "entryCount": 1164,
   "counts": {
-    "EXACT": 801,
+    "EXACT": 802,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
@@ -1793,6 +1793,16 @@
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14543.htm",
       "quoteSha256": "b0f9dd8de55c8acf",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959",
+      "citation": "Announcement 2026-7 section III, 2026-11 I.R.B. 697",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2026-11_IRB",
+      "quoteSha256": "c9cc035331f48e60",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

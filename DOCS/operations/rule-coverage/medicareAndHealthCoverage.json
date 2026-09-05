@@ -613,12 +613,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 356,
+          "line": 401,
           "note": "The twenty cents between them is the repayment amount, which the promulgated figure carries and a re-derivation from the actuarial rate drops.",
           "tests": [
             {
               "title": "carries the promulgated premium rather than half the actuarial rate",
-              "line": 363
+              "line": 408
             }
           ]
         }
@@ -1064,36 +1064,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 249,
+          "line": 294,
           "note": "Values are the top-tier MAGI floor for a single filer in a 2032 premium year at 2 percent inflation.",
           "tests": [
             {
               "title": "resumes indexing after 2027 from a base one year behind the general one",
-              "line": 264
+              "line": 309
             },
             {
               "title": "separates the three readings by the tier a household lands in",
-              "line": 275
+              "line": 320
             },
             {
               "title": "holds the top tier still for every premium year through 2027",
-              "line": 282
+              "line": 327
             },
             {
               "title": "never stops indexing the rows beneath the top one",
-              "line": 290
+              "line": 335
             },
             {
               "title": "carves out the 150 percent joint figure with the individual one",
-              "line": 301
+              "line": 346
             },
             {
               "title": "keeps rounding the top row once a post-freeze pack carries it forward",
-              "line": 319
+              "line": 364
             },
             {
               "title": "refuses a pack year that cannot measure from the August 2026 base",
-              "line": 336
+              "line": 381
             }
           ]
         }

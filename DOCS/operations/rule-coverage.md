@@ -168,7 +168,7 @@ None.
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-09-05 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selector registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool (ownedIraSourceIds); December 31 measurement and filing-grade completeness/rollover contracts remain residual |
 | projection/simulate.ts | 2026-09-02 | ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, the thin live-state application adapters for earlier pure coordinators, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly. Those retained responsibilities are the orchestration and cross-year state boundary; substantive annual funding and settlement policy no longer lives inline |
-| rmd/applicableAge.ts | 2026-09-04 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest remains on treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959; SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: deriveRbdComparison born-1959 conditional comparison/refusal (the 70½/72 rule excludes 1959; irc-401-a-9-C-v pins only applicableAgeAttainYears; treas-reg-1-401-a-9-2-b-2-v pins params/rmd); year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
+| rmd/applicableAge.ts | 2026-09-05 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest, including deriveRbdComparison's conditional comparison/refusal, is now registered at treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 (enforcing deriveRbdComparison; applicableAgeAttainYears stays on irc-401-a-9-C-v-applicable-age). SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
 | socialSecurity/maritalBenefits.ts | 2026-09-04 | Living-divorced and ordinary-widow eligibility gates, plus half-PIA pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
 | socialSecurity/piaFromEarnings.ts | 2026-09-04 | Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard. |
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
@@ -222,7 +222,6 @@ The 25 earliest due dates are shown below (432 rules total). Comparing dueOn to 
 | irc-6433-f-6-savers-match-early-distribution-recovery-tax | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-72-t-2-J-plesa-withdrawal-early-distribution-exception | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | al-form40-age-65-retirement-exclusion-cap | awaitingGuidance | 2026-08-28 | 2026-11-26 |
-| treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 | awaitingGuidance | 2026-08-29 | 2026-11-27 |
 | irc-408-d-8-A-annual-qcd-limit | annuallyIndexed | 2026-08-02 | 2026-11-30 |
 | cfr-20-404-1574-b-2-sga-non-blind-monthly-amount | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-1-h-capital-gain-stacked-on-ordinary | annuallyIndexed | 2026-08-03 | 2026-12-01 |
@@ -237,6 +236,7 @@ The 25 earliest due dates are shown below (432 rules total). Comparing dueOn to 
 | usc-42-430-b-contribution-and-benefit-base | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-223-b-2-7-projection-coverage-proration-and-medicare | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-414-v-2-E-super-catch-up-window | annuallyIndexed | 2026-08-04 | 2026-12-02 |
+| irc-415-c-1-annual-additions-lesser-of | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 
 ## Manifest contract
 
@@ -248,16 +248,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T09:58:15.167Z over 1163 authority entries (9 fetched live, 311 from cache).
+Committed ledger generated at 2026-09-05T10:52:59.015Z over 1164 authority entries (9 fetched live, 312 from cache).
 
-37 serious, 50 advisory, 1076 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 1077 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 63 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 801 |
+| EXACT | ok | 802 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |
