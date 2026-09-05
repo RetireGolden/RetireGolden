@@ -104,9 +104,10 @@ function aimeOf(
 function aimeOfReportedEarnings(
   dob: { dobYear: number; dobMonth: number; dobDay: number },
   earnings: YearEarning[],
+  projection?: Parameters<typeof piaInputFromEarnings>[4],
 ): number {
   const result = computePiaFromEarnings(
-    piaInputFromEarnings(dob.dobYear, dob.dobMonth, dob.dobDay, earnings),
+    piaInputFromEarnings(dob.dobYear, dob.dobMonth, dob.dobDay, earnings, projection),
   )
   if (isPiaFromEarningsError(result)) throw new Error(`expected PIA result, received ${result.code}`)
   return result.aime
@@ -121,30 +122,40 @@ describeRule('usc-42-415-b-2-b-ii-iii-initial-computation-base-window', {
     statuteIncludesAge21AndPreEntitlementAge62: [
       aimeFromCents(ELEVEN_INDEXED_CENTS, 35),
       aimeFromCents(TEN_INDEXED_CENTS + PRE_ENTITLEMENT_2024_CENTS, 35),
+      aimeFromCents(TEN_INDEXED_CENTS + PRE_ENTITLEMENT_2024_CENTS, 35),
     ],
-    engineAge22ThroughYearBefore62: [1518, 1518],
+    engineAge22ThroughYearBefore62: [1518, 1518, 1518],
     lowerBoundaryAge21Only: [
       aimeFromCents(ELEVEN_INDEXED_CENTS, 35),
+      aimeFromCents(TEN_INDEXED_CENTS, 35),
       aimeFromCents(TEN_INDEXED_CENTS, 35),
     ],
   },
   accepted: 'statuteIncludesAge21AndPreEntitlementAge62',
   produced: 'engineAge22ThroughYearBefore62',
-  note: 'age-21 year vs age-62 pre-entitlement year',
+  note: 'three cells: age-21, explicit 2024, projected 2024 via throughAge63',
 }, ({ accepted, produced, readings }) => {
-  it('omits both the age-21 year and the age-62 pre-entitlement year from initial AIME', () => {
+  it('omits age-21 and age-62 pre-entitlement years; three cells pin input clamp and compute loop independently', () => {
     const common = awiEarnings(COMMON_2013_2022)
+    // Cell 1: age-21 year (1983) in reported earnings.
     const withAge21 = aimeOfReportedEarnings(MODERN_DOB, [
       ...common,
       { year: 1983, amount: AWI[1983] },
     ])
+    // Cell 2: explicit 2024 earnings pin piaInputFromEarnings lastEarningsYear clamp.
     const withAge62 = aimeOfReportedEarnings(MODERN_DOB, [
       ...common,
       { year: 2024, amount: 42_000 },
     ])
-    expect([withAge21, withAge62]).toEqual(produced)
-    expect([withAge21, withAge62]).not.toEqual(accepted)
-    expect([withAge21, withAge62]).not.toEqual(readings.lowerBoundaryAge21Only)
+    // Cell 3: zero 2023, projection through age 63 (only 2024) pins computePiaFromEarnings loop upper bound.
+    const withProjectedAge62 = aimeOfReportedEarnings(
+      MODERN_DOB,
+      [...common, { year: 2023, amount: 0 }],
+      { assumedAnnualEarnings: 42_000, throughAge: 63 },
+    )
+    expect([withAge21, withAge62, withProjectedAge62]).toEqual(produced)
+    expect([withAge21, withAge62, withProjectedAge62]).not.toEqual(accepted)
+    expect([withAge21, withAge62, withProjectedAge62]).not.toEqual(readings.lowerBoundaryAge21Only)
   })
 })
 

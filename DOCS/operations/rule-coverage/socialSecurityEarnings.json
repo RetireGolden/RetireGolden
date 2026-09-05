@@ -40,12 +40,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 153,
+          "line": 164,
           "note": "2020 AWI year plus 2023 cents",
           "tests": [
             {
               "title": "floors the indexed 2020 year to a whole dollar and drops AIME from 152 to 151",
-              "line": 163
+              "line": 174
             }
           ]
         }
@@ -118,12 +118,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 200,
+          "line": 211,
           "note": "modern 35-year vs 1951-floor 34-year",
           "tests": [
             {
               "title": "uses 35 computation years even when elapsed years start at the 1951 floor",
-              "line": 220
+              "line": 231
             }
           ]
         }
@@ -168,7 +168,7 @@
       "title": "Initial-computation AIME can include years outside the age-22-to-61 elapsed span",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "A 1962-06-15 worker has first entitlement in 2029 at FRA 67 on the stream, which this helper projects out and treats as 2024 age-62 eligibility; indexing year 2022 AWI is 63,795.13. Ten published-AWI years 2013-2022 plus 1983 (age 21, AWI 15,239.24) give authority AIME floor(11 × 63,795.13 / 420) = 1,670; the same ten years plus 2024 (age 62, pre-entitlement) at 42,000 unindexed give floor((10 × 63,795.13 + 42,000) / 420) = 1,618. piaInputFromEarnings derives lastEarningsYear from reported earnings and clamps it to the age-61 year (2023 here), and computePiaFromEarnings iterates only 1984-2023; both clamps exclude age-21 and age-62 pre-entitlement earnings, so both cases observably return 1,518. A competing lower-boundary-only reading includes 1983 but still ends at the year before 62, predicting 1,670 then 1,518. claimAge is expressible on the stream and unused by this helper. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
+      "conventionRationale": "A 1962-06-15 worker has first entitlement in 2029 at FRA 67 on the stream, which this helper projects out and treats as 2024 age-62 eligibility; indexing year 2022 AWI is 63,795.13. One three-cell fixture shares ten published-AWI years 2013-2022. Cell 1 adds 1983 (age 21, AWI 15,239.24) for authority AIME floor(11 × 63,795.13 / 420) = 1,670. Cell 2 adds explicit 2024 (age 62, pre-entitlement) at 42,000 unindexed for floor((10 × 63,795.13 + 42,000) / 420) = 1,618 and pins piaInputFromEarnings, which clamps lastEarningsYear to the age-61 year (2023) even when reported earnings include 2024. Cell 3 keeps last reported year 2023 with zero 2023 earnings and projects 42,000 through age 63 (only 2024), giving the same authority 1,618 while independently pinning computePiaFromEarnings, which iterates only 1984-2023 and ignores projected 2024 unless lastBaseYear is widened (mutation to 2028 yields 1,618 with projectedYearCount 1). Both clamps exclude age-21 and age-62 pre-entitlement earnings, so all three cells observably return 1,518. A competing lower-boundary-only reading includes 1983 but still ends at the year before 62, predicting 1,670, 1,518, 1,518. claimAge is expressible on the stream and unused by this helper. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -200,12 +200,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 119,
-          "note": "age-21 year vs age-62 pre-entitlement year",
+          "line": 120,
+          "note": "three cells: age-21, explicit 2024, projected 2024 via throughAge63",
           "tests": [
             {
-              "title": "omits both the age-21 year and the age-62 pre-entitlement year from initial AIME",
-              "line": 135
+              "title": "omits age-21 and age-62 pre-entitlement years; three cells pin input clamp and compute loop independently",
+              "line": 138
             }
           ]
         }

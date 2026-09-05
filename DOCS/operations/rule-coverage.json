@@ -329,7 +329,7 @@
     {
       "path": "socialSecurity/piaFromEarnings.ts",
       "sweptOn": "2026-09-04",
-      "note": "Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled — onsetAge is expressible so those are not inexpressible. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard."
+      "note": "Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard."
     },
     {
       "path": "strategies/accountEligibility.ts",
