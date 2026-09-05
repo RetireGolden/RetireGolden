@@ -74,18 +74,31 @@ successful `pull_request` review run came from the same repository and that its 
 the reviewed head exactly equals the caller blob on the default branch. They read GitHub APIs only and
 never check out or execute PR code.
 
+#### Review continuity on manual reruns
+
+The pinned reusable workflow now treats manual dispatch as a full-PR recheck
+that retains the existing ledger, finding IDs, and rebuttals. It requires both
+file coverage and finding resolutions. With no ledger it seeds an initial
+review. `reset_review: true` explicitly starts a new initial review; leave it
+false for normal recovery. Pushes retain latest-commit verification scope.
+Do not dispatch redundantly over a completed exact-head review.
+
+Agents must paginate reviews, inline comments, and issue comments, and read
+every continuation part of a multipart review. The first API page or first
+published part can omit the latest verdict or remaining findings.
+
 #### Ledger producer contract
 
 The embedded ledger is produced by the pinned upstream review action
-[`FlyOverCoderKY/openrouter-pr-review-action@956b494594d8c7969ec9b355fd11d8e39b3b6161`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/956b494594d8c7969ec9b355fd11d8e39b3b6161).
+[`FlyOverCoderKY/openrouter-pr-review-action@481069edae02298d4069f03b24ad1cdc67c5f348`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/481069edae02298d4069f03b24ad1cdc67c5f348).
 RetireGolden authorization validates decoded markers against that producer, not a vendored copy:
 
 | Contract | Source |
 |----------|--------|
-| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L429-L469) |
-| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L255-L257) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L230-L252); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L26). |
-| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L194-L241) (including `open_issue_count`) |
-| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L327-L351) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L388-L426) |
+| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py) |
+| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py). |
+| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py) (including `open_issue_count`) |
+| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py) |
 
 These function spans were checked against the source at the linked immutable action revision.
 The path predicate's short span is intentional: normalization contains the validation logic.
@@ -106,8 +119,8 @@ paths, Python-strip whitespace and BOM handling. This finite comparison is migra
 a proof over every possible string.
 
 The temporary Astra Flex lane is owned by the central reusable, not this caller. At the linked immutable
-org revision, its [first-pass condition](https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/.github/workflows/openrouter-code-review.yml#L273-L279)
-and [follow-up condition](https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/.github/workflows/openrouter-code-review.yml#L704-L709)
+org revision, its [first-pass condition](https://github.com/RetireGolden/.github/blob/47aa4ad1572f943becd63e0173dbc31e6b945f5d/.github/workflows/openrouter-code-review.yml#L273-L279)
+and [follow-up condition](https://github.com/RetireGolden/.github/blob/47aa4ad1572f943becd63e0173dbc31e6b945f5d/.github/workflows/openrouter-code-review.yml#L704-L709)
 select Astra only for RetireGolden and RetireGolden-Pro before `2026-09-06T04:00:00Z`.
 Both Bash policy steps were executed with an injected clock immediately before and exactly at that
 cutoff for seven repository names: all 28 cases passed, including baseline-only selection at expiry.
@@ -165,7 +178,7 @@ unless verification reports `clean`; the action refuses verification without an 
 Normal pull-request review and first-pass gates are unchanged.
 
 The recovery workflow uses the same action producer as the regular caller in the table above. Its
-[`_resolve_loop` guard](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/cli.py#L645-L653)
+[`_resolve_loop` guard](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/cli.py)
 rejects verify mode without an existing ledger. Recovery fixes the baseline Grok/GLM lanes and Luna
 judge locally, with the existing follow-up
 budget of low effort, 30 tool turns and 600 KB. It changes coverage to full PR and retains prior

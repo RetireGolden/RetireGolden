@@ -63,7 +63,7 @@ jobs:
           persist-credentials: false
       - name: Verify the existing review ledger
         id: review
-        uses: FlyOverCoderKY/openrouter-pr-review-action@956b494594d8c7969ec9b355fd11d8e39b3b6161 # action PR31
+        uses: FlyOverCoderKY/openrouter-pr-review-action@481069edae02298d4069f03b24ad1cdc67c5f348 # action PR33
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         with:
