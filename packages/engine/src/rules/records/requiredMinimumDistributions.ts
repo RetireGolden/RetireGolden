@@ -1176,14 +1176,15 @@ export const requiredMinimumDistributionRecords = {
     verifiedOn: '2026-08-07',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/model/planCrossFieldChecks.ts',
       'packages/engine/src/model/migrations.ts',
       'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/migrations.ts#migratePlanToCurrent',
-      'packages/engine/src/model/plan.ts#annuitySchema',
       'packages/engine/src/model/plan.ts#latestNonQlacQualifiedAnnuityStartAge',
+      'packages/engine/src/model/planCrossFieldChecks.ts#checkAccountCrossFieldRules',
       'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
@@ -1224,6 +1225,7 @@ export const requiredMinimumDistributionRecords = {
     verifiedOn: '2026-08-07',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
+      'packages/engine/src/model/planCrossFieldChecks.ts',
       'packages/engine/src/model/migrations.ts',
       'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -1231,8 +1233,8 @@ export const requiredMinimumDistributionRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/migrations.ts#migratePlanToCurrent',
-      'packages/engine/src/model/plan.ts#annuitySchema',
       'packages/engine/src/model/plan.ts#latestQlacAnnuityStartAge',
+      'packages/engine/src/model/planCrossFieldChecks.ts#checkAccountCrossFieldRules',
       'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/decisions/generators.ts#annuityPurchaseGenerator',

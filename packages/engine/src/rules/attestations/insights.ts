@@ -23,7 +23,7 @@ export const insightsAttestations: Readonly<Record<string, CoverageAttestation>>
   'insights/detectors/spendingGuardrails.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/spendingHeadroom.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/ssBridgeGap.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'insights/detectors/ssClaimMilestone.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-24', note: 'Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra' }),
+  'insights/detectors/ssClaimMilestone.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-05', note: 'former-spouse eligibility delegates to registered bestMaritalBenefit; claim-factor, payable-month, and family-max are delegated. Current-spouse prior-year reconstruction re-derives statutory half-PIA (0.5 * PIA * spousalBenefitFactor) without a record pin. Pre-horizon own/former amount reconstruction plus enabling-event and missing-PIA fallback remain insight timing conventions' }),
   'insights/detectors/stalePlanData.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/stateRelocation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/widowsPenalty.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

@@ -18,6 +18,7 @@ import {
 } from './ownedNonRothIraAnnualFilingEvidence.js'
 import * as structuralId from './structuralId.js'
 import type { Plan } from '../model/plan.js'
+import { persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema } from '../model/retirementActionAnnualTaxFacts.js'
 import {
   singlePersonPlan,
   traditionalAccount,
@@ -780,6 +781,14 @@ describeRule('irc-219-f-3-prior-year-contribution-window', {
     // 250,000 the rejected reading would have admitted on this date reaches no
     // year's basis at all.
     expect(issueKinds(value)).toContain(accepted)
+
+    const persisted =
+      persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema.safeParse(source)
+    expect(persisted.success).toBe(false)
+    if (!persisted.success) {
+      expect(persisted.error.issues.map((entry) => entry.path.join('/')))
+        .toContain('nondeductibleContributionFacts/contributions/0/contributionDate')
+    }
   })
 
   it('counts a contribution made inside the window toward that year basis', () => {
@@ -793,5 +802,9 @@ describeRule('irc-219-f-3-prior-year-contribution-window', {
     expect(window.contributions[0]!.contributionDate).toBe('2031-02-01')
     expect(window.contributions[0]!.nondeductibleContributionAmount)
       .toBe(readings.rejectedExtensionsCarryTheWindow)
+    expect(
+      persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema.safeParse(sourceRecord())
+        .success,
+    ).toBe(true)
   })
 })
