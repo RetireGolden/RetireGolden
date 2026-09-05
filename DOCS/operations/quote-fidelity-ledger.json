@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T05:15:32.102Z",
+  "generatedAt": "2026-09-05T05:45:32.083Z",
   "recordCount": 427,
   "urlCount": 317,
   "fetched": 9,
   "cached": 308,
-  "entryCount": 1140,
+  "entryCount": 1139,
   "counts": {
-    "EXACT": 777,
+    "EXACT": 776,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
@@ -1133,16 +1133,6 @@
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/publications/p590b",
       "quoteSha256": "ed42678af71584bb",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
-      "diagnosis": null
-    },
-    {
-      "id": "irc-408-d-2-estate-household-basis-allocation",
-      "citation": "IRS Publication 590-B (2025), IRA with basis",
-      "host": "www.irs.gov",
-      "url": "https://www.irs.gov/publications/p590b",
-      "quoteSha256": "53b1c266e5415114",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

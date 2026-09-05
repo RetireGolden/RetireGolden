@@ -59,11 +59,15 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   across an owner's own IRAs; every withdrawal and conversion is part tax-free basis and part taxable in the
   ratio of basis to the aggregated pre-distribution balance (IRC §408(d)(2)). Employer plans and inherited
   IRAs are excluded from the aggregation. Basis is historical cost (never indexed).
-  The terminal after-tax estate metric does not reuse that owner-wide pool. It spreads the household
-  remaining-basis scalar across every traditional account by gross balance, ignoring owner and IRA/employer
-  boundaries, as a disclosed approximation of assumed future income-tax exposure rather than a death-year
-  Form 8606 (`irc-408-d-2-estate-household-basis-allocation`). Inheritance itself is not an IRA taxable
-  distribution. Separately, the pure
+  The terminal after-tax estate metric does not reuse that owner-wide pool. Compare calls
+  `estateTraditionalTaxableBase` for every traditional gross, including inherited balances, with the
+  household traditional total as denominator. The helper is a pure formula: each account's taxable pretax
+  base is its gross minus the household remaining-basis scalar times that gross over the supplied
+  traditional total (`irc-408-d-2-estate-household-basis-allocation`). That registered claim covers only
+  the cross-owner owned-IRA and IRA/employer misallocation the formula produces when owner and vehicle
+  boundaries are ignored, not inherited-pool separation or unavailable inherited nondeductible basis;
+  those interactions remain a compare residual. The public fixture isolates the owned-account slice by
+  carrying no inherited traditional balances. Inheritance itself is not an IRA taxable distribution. Separately, the pure
   action-character substrate accepts exact-cent complete-pool evidence and complete annual Form 8606
   inputs, derives the capped line-5/line-9 ratio with bigint intermediates, and allocates each line's
   once-rounded basis total across positive actions in canonical date/sequence/action/allocation order.
@@ -319,5 +323,6 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/internal/ownedNonRothIraRuntimeSourceSeries.ts](../../../packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts),
 [engine/tax/propertySale.ts](../../../packages/engine/src/tax/propertySale.ts),
 [engine/projection/internal/annualAggregateRothConversionTargetPlan.ts](../../../packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts), threaded through
-[engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts) and the after-tax estate metric in
-[engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts).
+[engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts), the after-tax estate metric in
+[engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts), and the household-basis helper in
+[engine/projection/estateTraditionalBasis.ts](../../../packages/engine/src/projection/estateTraditionalBasis.ts).
