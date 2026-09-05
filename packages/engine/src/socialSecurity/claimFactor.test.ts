@@ -11,10 +11,15 @@ import { claimFactor, spousalBenefitFactor } from './claimFactor.js'
 const dob = { y: 1960, m: 6, d: 15 }
 
 describe('spousal benefit and delayed credits', () => {
+  // Same claimant/worker DOB and claim age as the public-screen household below.
+  const halfPiaDob = { y: 1956, m: 1, d: 1 }
+  const halfPiaClaimAge = { years: 67, months: 0 }
+  const formerPiaBracket = [999.99, 1_000, 1_000.01] as const
+
   // Compact prior-year comparator context for the public screen observation.
   // One 2026 row; published survivor amount is a given insight input (event
   // metadata), not an amount claimed as computed by the half-PIA helper.
-  function halfPiaInsightContext(): DetectorContext {
+  function halfPiaInsightContext(formerPIAMonthly: number): DetectorContext {
     const plan = singlePersonPlan({ dob: '1956-01-01', planningAge: 95 })
     plan.household.people.push({
       id: 'p2',
@@ -32,13 +37,13 @@ describe('spousal benefit and delayed credits', () => {
         personId: 'p1',
         piaMonthly: 500,
         earnings: null,
-        claimAge: { years: 67, months: 0 },
+        claimAge: halfPiaClaimAge,
         formerSpouses: [
           {
             id: 'ex-deceased',
             relationship: 'deceased',
             dob: '1950-01-01',
-            piaMonthly: 1025,
+            piaMonthly: formerPIAMonthly,
             marriageYears: 15,
             remarriedAtAge: 60,
           },
@@ -50,7 +55,7 @@ describe('spousal benefit and delayed credits', () => {
         personId: 'p2',
         piaMonthly: 2_000,
         earnings: null,
-        claimAge: { years: 67, months: 0 },
+        claimAge: halfPiaClaimAge,
       },
     ]
     return {
@@ -98,47 +103,72 @@ describe('spousal benefit and delayed credits', () => {
   // The PIA does not grow with delay, so a spouse claiming after their own full
   // retirement age gains nothing -- the factor tops out at 1.
   //
-  // Born 1960 (full retirement age 67), claiming at 70 is 36 months late:
+  // Same household DOB/claim age as the public screen below. SSA Jan-1 rule →
+  // effective birth 1955 → FRA 66y2m. Claim 67 is 10 DRC months at 2/3%/mo:
   //   spousal:                        1.00
-  //   retirement-style credits:  1 + 36 x 2/3 percent = 1.24
+  //   retirement-style credits:  1 + 10×2/3 percent = 1.0666666666666667
   //
   // Independent worksheet for the prior-year current-spouse comparator (same
   // statute: half of worker PIA, not worker actual). Both claimant p1 and
   // current worker p2 DOB 1956-01-01, age 70 in 2026, claim 67; p1 alive /
-  // life 95, p2 dead-at-start / life 69. SSA Jan-1 rule → effective birth 1955
-  // → FRA 66y2m. Own claim 67 is 10 DRC months at 2/3%/mo:
+  // life 95, p2 dead-at-start / life 69. Prior year = 12 payable months.
   //   claimant own 500 × (1 + 10×2/3%) = 533.333
   //   worker own 2000 × (1 + 10×2/3%) = 2133.333
   // Statutory current-spouse base 0.5 × 2000 × 1 = 1000; wrong worker-actual
-  // base 0.5 × 2133.333 = 1066.667. Former deceased survivor PIA 1025 (DOB
+  // base 0.5 × 2133.333 = 1066.667; understated PIA base 0.5 × 1600 = 800.
+  // Former deceased survivor PIA bracketed at [999.99, 1000, 1000.01] (DOB
   // 1950-01-01, marriage 15, remarried at 60 — ordinary-widow 9-month path
-  // preserved) lies between. Family maximum 3553.70 leaves 1420.366 worker room,
-  // so caps do not bind either auxiliary. Readings: statutory half-PIA prior
-  // winner is former (deathAtStart false); worker-actual base makes current-
-  // spouse the prior winner (deathAtStart true). Published 2026 p1 survivor
-  // stream is a given insight input (triggering-event metadata), not claimed
-  // as computed by the half-PIA helper; p2 publishes none.
+  // preserved) to bound the statutory base at cent precision. Family maximum
+  // 3553.70 leaves 1420.366 worker room, so caps do not bind either auxiliary.
+  // Public boundary test: screen presence at those former PIAs under the
+  // accepted half-PIA base — not certification of payment, timing, or full
+  // winner/month/family-max pipeline. Published 2026 p1 survivor stream is a
+  // given insight input (triggering-event metadata), not claimed as computed by
+  // the half-PIA helper; p2 publishes none.
   describeRule('usc-42-402-b-2-spousal-half-of-pia', {
     readings: {
-      noDelayedCreditsOnSpousal: { lateSpouseFactor: 1, deathAtStart: false },
-      retirementCreditsApplied: { lateSpouseFactor: 1.24, deathAtStart: false },
-      workerActualBenefitAsBase: { lateSpouseFactor: 1, deathAtStart: true },
+      noDelayedCreditsOnSpousal: {
+        lateSpouseFactor: 1,
+        screenPresence: [true, false, false],
+      },
+      retirementCreditsApplied: {
+        lateSpouseFactor: 1.0666666666666667,
+        screenPresence: [true, true, true],
+      },
+      workerActualBenefitAsBase: {
+        lateSpouseFactor: 1,
+        screenPresence: [true, true, true],
+      },
+      understatedPIABase: {
+        lateSpouseFactor: 1,
+        screenPresence: [false, false, false],
+      },
     },
     accepted: 'noDelayedCreditsOnSpousal',
   }, ({ accepted, readings }) => {
-    it('stops growing at full retirement age', () => {
-      const late = spousalBenefitFactor(dob.y, dob.m, dob.d, { years: 70, months: 0 })
+    it('holds spousal at FRA with no delayed credits and brackets the current-spouse half-PIA comparator', () => {
+      const late = spousalBenefitFactor(
+        halfPiaDob.y,
+        halfPiaDob.m,
+        halfPiaDob.d,
+        halfPiaClaimAge,
+      )
+      const screenPresence = formerPiaBracket.map(
+        (formerPIA) => ssClaimMilestone.screen(halfPiaInsightContext(formerPIA)) !== null,
+      )
+      const observation = { lateSpouseFactor: late, screenPresence }
 
+      expect(observation).toEqual(accepted)
       expect(late).toBeCloseTo(accepted.lateSpouseFactor, 10)
       expect(late).not.toBeCloseTo(readings.retirementCreditsApplied.lateSpouseFactor, 6)
       // The worker's own benefit does grow over the same span, which is what
       // makes the difference a rule rather than a rounding artefact.
-      expect(claimFactor(dob.y, dob.m, dob.d, { years: 70, months: 0 }))
+      expect(claimFactor(halfPiaDob.y, halfPiaDob.m, halfPiaDob.d, halfPiaClaimAge))
         .toBeCloseTo(readings.retirementCreditsApplied.lateSpouseFactor, 6)
 
-      const deathAtStart = ssClaimMilestone.screen(halfPiaInsightContext()) !== null
-      expect(deathAtStart).toBe(accepted.deathAtStart)
-      expect(deathAtStart).not.toBe(readings.workerActualBenefitAsBase.deathAtStart)
+      expect(screenPresence).not.toEqual(readings.retirementCreditsApplied.screenPresence)
+      expect(screenPresence).not.toEqual(readings.workerActualBenefitAsBase.screenPresence)
+      expect(screenPresence).not.toEqual(readings.understatedPIABase.screenPresence)
     })
   })
 })

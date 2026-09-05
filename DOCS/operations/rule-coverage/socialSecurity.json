@@ -1353,12 +1353,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
-          "line": 121,
+          "line": 128,
           "note": null,
           "tests": [
             {
-              "title": "stops growing at full retirement age",
-              "line": 129
+              "title": "holds spousal at FRA with no delayed credits and brackets the current-spouse half-PIA comparator",
+              "line": 149
             }
           ]
         }
@@ -2198,12 +2198,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
-          "line": 189,
+          "line": 219,
           "note": "claim ages outside 62y0m-70y0m are refused, not priced",
           "tests": [
             {
               "title": "refuses one month below the floor and one month above the ceiling",
-              "line": 197
+              "line": 227
             }
           ]
         }
