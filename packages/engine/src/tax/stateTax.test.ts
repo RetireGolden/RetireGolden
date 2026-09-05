@@ -449,8 +449,9 @@ describe('a conformed state standard deduction in a stand-in year', () => {
 
   it('leaves a state that publishes its own deduction where its legislature left it', () => {
     // North Carolina's 12,750 is a North Carolina figure on a legislated ramp;
-    // no federal provision reaches it, and ME and SC decoupled from the federal
-    // amount for 2026 precisely so theirs would not move with it either.
+    // no federal provision reaches it. SC decoupled from the federal basic for
+    // 2026 so its published amount would not move with federal indexing; Maine
+    // also decoupled the basic but separately adopts the federal age-65 addition.
     const tax = calc.compute(input({
       state: 'NC', year: PROJECTED_YEAR, ordinaryIncome: 100_000, inflationScale: DOUBLED,
     }))

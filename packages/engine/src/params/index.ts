@@ -371,10 +371,12 @@ export function partBMonthlyPremium(
  * `standardDeductionConformity: 'federal'` define their standard deduction by
  * reference to the federal one, and "the standard deduction" in IRC 63(c)(1) is
  * the basic amount PLUS this one — a conformed copy that carried only the basic
- * amount would over-tax every 65-and-over household in those states. The state
- * copy is passed in rather than read from a pack here because it may have been
- * prorated for part-year residency first; the multiplication by head count is
- * the part that must not be reimplemented.
+ * amount would over-tax every 65-and-over household in those states. Maine is
+ * the independent second case: it keeps its own published basic and adopts only
+ * this addition through `standardDeductionAge65AdditionConformity: 'federal'`.
+ * The state copy is passed in rather than read from a pack here because it may
+ * have been prorated for part-year residency first; the multiplication by head
+ * count is the part that must not be reimplemented.
  */
 export function age65StandardDeductionAddition(
   perPerson: PerStatus<number>,

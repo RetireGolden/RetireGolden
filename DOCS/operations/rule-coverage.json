@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 432,
+    "total": 433,
     "byClassification": {
       "approximated": 120,
       "outOfScope": 75,
-      "settled": 232,
+      "settled": 233,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 61,
       "awaitingGuidance": 11,
-      "staticStatute": 354,
+      "staticStatute": 355,
       "sunsetting": 6
     },
     "byJurisdiction": {
@@ -39,7 +39,7 @@
         "LA": 2,
         "MA": 2,
         "MD": 2,
-        "ME": 1,
+        "ME": 2,
         "MI": 2,
         "MN": 1,
         "MO": 1,
@@ -70,14 +70,14 @@
         "WV": 1,
         "WY": 1
       },
-      "stateTotal": 106
+      "stateTotal": 107
     }
   },
   "attestations": {
-    "totalFiles": 372,
+    "totalFiles": 373,
     "byStatus": {
       "partial": 55,
-      "registered": 109,
+      "registered": 110,
       "rule-free": 208,
       "unswept": 0
     },
@@ -209,7 +209,7 @@
     {
       "path": "params/state/data/year2026.ts",
       "sweptOn": "2026-09-05",
-      "note": "existing law records name this pack; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, and ME phase-out/personal exemption still unmodeled"
+      "note": "existing law records name this pack; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, and non-ME gaps unchanged"
     },
     {
       "path": "projection/annualCashFlowCapture.ts",
@@ -354,7 +354,7 @@
     {
       "path": "tax/stateTax.ts",
       "sweptOn": "2026-09-05",
-      "note": "existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, and ME phase-out/personal exemption still unmodeled"
+      "note": "existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, and non-ME gaps unchanged"
     },
     {
       "path": "testing/flatTax.ts",
@@ -518,10 +518,10 @@
     },
     {
       "directory": "tax",
-      "files": 8,
+      "files": 9,
       "byStatus": {
         "partial": 3,
-        "registered": 4,
+        "registered": 5,
         "rule-free": 1
       }
     },
@@ -618,7 +618,7 @@
     {
       "module": "statesNortheast",
       "path": "rule-coverage/statesNortheast.json",
-      "ruleCount": 11
+      "ruleCount": 12
     },
     {
       "module": "statesSouthAtlantic",
@@ -642,16 +642,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T18:38:39.432Z",
-    "entryCount": 1178,
+    "generatedAt": "2026-09-05T21:55:46.141Z",
+    "entryCount": 1184,
     "fetched": 10,
-    "cached": 312,
+    "cached": 313,
     "counts": {
       "ELISION-EXACT": 62,
       "ELISION-PUNCTUATION": 5,
-      "EXACT": 812,
+      "EXACT": 816,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 213,
+      "PDF-WORD-LEVEL": 215,
       "PUNCTUATION": 42,
       "UNFETCHABLE": 37
     }

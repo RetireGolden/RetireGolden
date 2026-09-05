@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-05T18:38:39.432Z",
-  "recordCount": 432,
-  "urlCount": 322,
+  "generatedAt": "2026-09-05T21:55:46.141Z",
+  "recordCount": 433,
+  "urlCount": 323,
   "fetched": 10,
-  "cached": 312,
-  "entryCount": 1178,
+  "cached": 313,
+  "entryCount": 1184,
   "counts": {
-    "EXACT": 812,
+    "EXACT": 816,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 213,
+    "PDF-WORD-LEVEL": 215,
     "ELISION-EXACT": 62,
     "ELISION-PUNCTUATION": 5,
     "PDF-NOT-VERIFIABLE": 7,
@@ -9035,6 +9035,66 @@
       "host": "www.maine.gov",
       "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf",
       "quoteSha256": "b8ce5472e13b1c9f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
+      "citation": "36 M.R.S. 5124-C(1-B)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html",
+      "quoteSha256": "34d61199b995678e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
+      "citation": "36 M.R.S. 5124-C(2)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html",
+      "quoteSha256": "59ef0bc3ddacf0c1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
+      "citation": "36 M.R.S. 5124-C(2)(A)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html",
+      "quoteSha256": "00614402d041ca8c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
+      "citation": "36 M.R.S. 5124-C(2)(C)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5124-C.html",
+      "quoteSha256": "7267014c36496e23",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
+      "citation": "MRS 2026 Estimated Tax Worksheet, Line 6a — Phaseout of Itemized / Standard Deductions Worksheet (rev. December 2025)",
+      "host": "www.maine.gov",
+      "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf",
+      "quoteSha256": "dfb24bb4ebe63c95",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
+      "citation": "MRS 2026 Estimated Tax Worksheet, Line 6a — Phaseout worksheet lines 7–8 (rev. December 2025)",
+      "host": "www.maine.gov",
+      "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf",
+      "quoteSha256": "0a9d4bcd94311185",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "2 elision segments, all present in the extracted text",
       "diagnosis": null

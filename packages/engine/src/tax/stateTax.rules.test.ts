@@ -672,23 +672,74 @@ describeRule('iowa-code-422-7-19-a-retirement-income-exclusion', {
 
 describeRule('mrs-36-5124-c-1-b-decoupled-standard-deduction', {
   readings: {
-    maineBasicPlusFederalAdditional: { age64: 14_300, age65: 12_250 },
-    basicOnlyNoAgeAddition: { age64: 14_300, age65: 14_300 },
-    wholeFederalSubstitution: { age64: 13_900, age65: 11_850 },
+    maineBasicPlusFederalAdditional: {
+      singleAge64: 14_300,
+      singleAge65: 12_250,
+      mfjUnder65: 28_600,
+      mfjOneEligible: 26_950,
+      mfjTwoEligible: 25_300,
+    },
+    basicOnlyNoAgeAddition: {
+      singleAge64: 14_300,
+      singleAge65: 14_300,
+      mfjUnder65: 28_600,
+      mfjOneEligible: 28_600,
+      mfjTwoEligible: 28_600,
+    },
+    wholeFederalSubstitution: {
+      singleAge64: 13_900,
+      singleAge65: 11_850,
+      mfjUnder65: 27_800,
+      mfjOneEligible: 26_150,
+      mfjTwoEligible: 24_500,
+    },
   },
   accepted: 'maineBasicPlusFederalAdditional',
 }, ({ accepted, readings }) => {
-  const ME_WAGES = 30_000
-  const ME_BASIC_SINGLE = 15_700
-  const FED_BASIC_SINGLE_2026 = 16_100
+  type MaineCaseKey =
+    | 'singleAge64'
+    | 'singleAge65'
+    | 'mfjUnder65'
+    | 'mfjOneEligible'
+    | 'mfjTwoEligible'
+  type MaineCase = {
+    key: MaineCaseKey
+    filingStatus: TaxYearInput['filingStatus']
+    wages: number
+    age: number
+    spouseAge?: number
+    peopleAged65Plus: number
+  }
+  type MaineVector = Record<MaineCaseKey, number>
 
-  function scenario(age: number, peopleAged65Plus: number): TaxYearInput {
+  const ME_WAGES_SINGLE = 30_000
+  const ME_WAGES_MFJ = 60_000
+  const ME_BASIC_SINGLE = 15_700
+  const ME_BASIC_MFJ = 31_400
+  const FED_BASIC_SINGLE_2026 = 16_100
+  const FED_BASIC_MFJ_2026 = 32_200
+  const MRS_ADDITION_UNMARRIED = 2_050
+
+  const ME_CASES: MaineCase[] = [
+    { key: 'singleAge64', filingStatus: 'single', wages: ME_WAGES_SINGLE, age: 64, peopleAged65Plus: 0 },
+    { key: 'singleAge65', filingStatus: 'single', wages: ME_WAGES_SINGLE, age: 65, peopleAged65Plus: 1 },
+    { key: 'mfjUnder65', filingStatus: 'marriedFilingJointly', wages: ME_WAGES_MFJ, age: 64, spouseAge: 64, peopleAged65Plus: 0 },
+    { key: 'mfjOneEligible', filingStatus: 'marriedFilingJointly', wages: ME_WAGES_MFJ, age: 65, spouseAge: 64, peopleAged65Plus: 1 },
+    { key: 'mfjTwoEligible', filingStatus: 'marriedFilingJointly', wages: ME_WAGES_MFJ, age: 65, spouseAge: 65, peopleAged65Plus: 2 },
+  ]
+
+  function scenarioFromCase(c: MaineCase): TaxYearInput {
+    const agesAlive =
+      c.filingStatus === 'marriedFilingJointly' && c.spouseAge !== undefined
+        ? [c.age, c.spouseAge]
+        : [c.age]
     return input({
       state: 'ME',
-      ordinaryIncome: ME_WAGES,
+      filingStatus: c.filingStatus,
+      ordinaryIncome: c.wages,
       inflationScale: 1,
-      peopleAged65Plus,
-      agesAlive: [age],
+      peopleAged65Plus: c.peopleAged65Plus,
+      agesAlive,
     })
   }
 
@@ -697,52 +748,80 @@ describeRule('mrs-36-5124-c-1-b-decoupled-standard-deduction', {
     return conformStateStandardDeduction(params, yearPack.federalTax.age65Addition, 1)
   }
 
-  function taxable(params: StateTaxParams, age: number, peopleAged65Plus: number): number {
-    return computeStateTaxableIncome(resolved(params), scenario(age, peopleAged65Plus))
+  function taxable(params: StateTaxParams, scen: TaxYearInput): number {
+    return computeStateTaxableIncome(resolved(params), scen)
   }
 
-  it('subtracts Maine published basic plus the IRC 63(c)(3) age-65 addition at 65', () => {
+  function expectTaxableVector(
+    params: StateTaxParams,
+    expected: MaineVector,
+    opts?: { alreadyResolved?: boolean },
+  ): void {
+    for (const c of ME_CASES) {
+      const scen = scenarioFromCase(c)
+      const result = opts?.alreadyResolved
+        ? computeStateTaxableIncome(params, scen)
+        : taxable(params, scen)
+      expect(result).toBe(expected[c.key])
+    }
+  }
+
+  it('subtracts Maine published basic plus the IRC 63(c)(3) age-65 addition', () => {
     // Independent worksheet (MRS 2026 rate schedule rev. 2026-05-20,
     // https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf;
-    // 36 M.R.S. §5124-C(1-B); IRC 63(c)(3)/(f)(1)). Single wages $30,000;
-    // Maine AGI below §5124-C(2) phase-out; inflationScale 1.
-    // Modeled component only — personal exemption, phase-out, and blindness
-    // are unmodeled (statutory full-return tax with the $5,300 exemption alone
-    // would be 403.10 at age 65; this fixture does not claim that).
-    //   age 64: 30,000 − 15,700 = 14,300 taxable → 829.40 at 5.8%
-    //   age 65: 30,000 − 15,700 − 2,050 = 12,250 taxable → 710.50 at 5.8%
-    //   tax delta: 829.40 − 710.50 = 118.90
+    // 36 M.R.S. §5124-C(1-B); IRC 63(c)(3)/(f)(1)). Maine AGI below
+    // §5124-C(2) phase-out; inflationScale 1. Modeled component only —
+    // personal exemption and blindness are unmodeled; the phase-out fraction is
+    // zero below the published start.
+    //
+    // Single $30,000 wages: age 64 → 14,300; age 65 → 12,250 (tax delta 118.90).
+    // MFJ $60,000 wages ($1,650 married addition per eligible person):
+    //   under 65 → 28,600; one eligible → 26,950; two eligible → 25,300.
     const me = pack('ME')
     expect(me.standardDeductionAge65AdditionConformity).toBe('federal')
-    expect(taxable(me, 64, 0)).toBe(accepted.age64)
-    expect(taxable(me, 65, 1)).toBe(accepted.age65)
-    expect(computeStateTaxYearTotal(scenario(64, 0)) - computeStateTaxYearTotal(scenario(65, 1)))
-      .toBeCloseTo(118.9, 6)
-  })
+    expect(me.standardDeductionConformity).toBeUndefined()
 
-  it('would leave taxable income flat at 65 if the age addition were omitted', () => {
-    // Runtime-driven counterfactual: resolve Maine normally, then drop the
-    // attached age-addition field so computeStateTaxableIncome sees basic only.
-    const withoutAgeAddition = { ...resolved(pack('ME')) }
+    expectTaxableVector(me, accepted)
+    expect(
+      computeStateTaxYearTotal(scenarioFromCase(ME_CASES[0]))
+        - computeStateTaxYearTotal(scenarioFromCase(ME_CASES[1])),
+    ).toBeCloseTo(118.9, 6)
+    expect(taxable(me, scenarioFromCase(ME_CASES[4]))).not.toBe(readings.basicOnlyNoAgeAddition.mfjTwoEligible)
+    expect(taxable(me, scenarioFromCase(ME_CASES[3]))).not.toBe(readings.wholeFederalSubstitution.mfjOneEligible)
+
+    const withoutAgeAddition = { ...resolved(me) }
     delete withoutAgeAddition.standardDeductionAge65Addition
-    expect(computeStateTaxableIncome(withoutAgeAddition, scenario(64, 0))).toBe(readings.basicOnlyNoAgeAddition.age64)
-    expect(computeStateTaxableIncome(withoutAgeAddition, scenario(65, 1))).toBe(readings.basicOnlyNoAgeAddition.age65)
-  })
+    expectTaxableVector(withoutAgeAddition, readings.basicOnlyNoAgeAddition, { alreadyResolved: true })
 
-  it('would substitute the whole federal basic and additional amounts if Maine were tagged conforming', () => {
     const mistagged = {
-      ...pack('ME'),
-      standardDeduction: { single: FED_BASIC_SINGLE_2026, marriedFilingJointly: 32_200 },
+      ...me,
+      standardDeduction: { single: FED_BASIC_SINGLE_2026, marriedFilingJointly: FED_BASIC_MFJ_2026 },
       standardDeductionConformity: 'federal' as const,
     }
-    expect(taxable(mistagged, 64, 0)).toBe(readings.wholeFederalSubstitution.age64)
-    expect(taxable(mistagged, 65, 1)).toBe(readings.wholeFederalSubstitution.age65)
+    expectTaxableVector(mistagged, readings.wholeFederalSubstitution)
+
+    const wrongMarriedAmount = {
+      ...resolved(me),
+      standardDeductionAge65Addition: {
+        single: MRS_ADDITION_UNMARRIED,
+        marriedFilingJointly: MRS_ADDITION_UNMARRIED,
+      },
+    }
+    const mfjOne = scenarioFromCase(ME_CASES[3])
+    expect(computeStateTaxableIncome(wrongMarriedAmount, mfjOne))
+      .toBe(ME_WAGES_MFJ - ME_BASIC_MFJ - MRS_ADDITION_UNMARRIED)
+    expect(computeStateTaxableIncome(wrongMarriedAmount, mfjOne)).not.toBe(accepted.mfjOneEligible)
+
+    const lostSpouse = scenarioFromCase({ ...ME_CASES[4], peopleAged65Plus: 1 })
+    expect(taxable(me, lostSpouse)).toBe(accepted.mfjOneEligible)
+    expect(taxable(me, lostSpouse)).not.toBe(accepted.mfjTwoEligible)
   })
 
   it('holds Maine’s basic deduction still as the federal figure is projected upward', () => {
     expect(pack('ME').standardDeductionConformity).toBeUndefined()
     const projected = conformStateStandardDeduction(pack('ME'), FEDERAL_AGE65_ADDITION, INFLATION_SCALE)
     expect(projected.standardDeduction.single).toBe(ME_BASIC_SINGLE)
+    expect(projected.standardDeduction.marriedFilingJointly).toBe(ME_BASIC_MFJ)
     expect(projected.standardDeductionAge65Addition).toEqual({
       single: FEDERAL_AGE65_ADDITION.single * INFLATION_SCALE,
       marriedFilingJointly: FEDERAL_AGE65_ADDITION.marriedFilingJointly * INFLATION_SCALE,

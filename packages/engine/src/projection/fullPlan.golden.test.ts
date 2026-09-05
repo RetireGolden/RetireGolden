@@ -243,4 +243,31 @@ describe('full-plan golden fixtures', () => {
     expectMoney(afterMove.tax, 16_552.4)
     expectMoney(afterMove.tax - beforeMove.tax, 3_382.4)
   })
+
+  it('Plan I: Maine wages at the §5124-C(2) halfway point flow through the full plan', () => {
+    const plan = singlePersonPlan({ dob: '1961-01-01', planningAge: 65, state: 'ME' })
+    plan.accounts = [cashAccount('cash', 100_000)]
+    plan.incomes = [recurringOrdinaryIncome('wages', 139_750, 2026)]
+
+    const result = runPlan(plan, productionTaxCalculator())
+    const year = result.years[0]!
+
+    // Independent worksheet — federal (2026 pack, single age 65):
+    // AGI 139,750; basic standard 16,100 (irc-63-c-7-B-ii) + age addition 2,050
+    // (IRC 63(c)(3)/(f)(1)); section 151(d)(5)(C) senior 6,000 − 6% × (139,750 −
+    // 75,000) = 2,115 (irc-151-d-5-C-iii-I); taxable 119,485.
+    // Tax = 12,400×10% + 38,000×12% + 55,300×22% + 13,785×24% = 21,274.40.
+    const federalTax = 21_274.4
+
+    // Maine modeled component (MRS 2026 worksheet + rate schedule):
+    // Modeled Maine AGI proxy 139,750; raw SD 15,700 + 2,050 = 17,750;
+    // fraction (139,750 − 102,250) / 75,000 = 0.5 → allowed SD 8,875;
+    // taxable 130,875; tax = 27,400×5.8% + 37,450×6.75% + 66,025×7.15% = 8,837.8625.
+    const stateTax = 8_837.8625
+
+    // Personal exemption and other Form 1040ME lines remain unmodeled; this is
+    // the pack taxable-income / state-tax component only.
+    expectMoney(year.tax, federalTax + stateTax)
+    expectMoney(year.incomes.recurring, 139_750)
+  })
 })

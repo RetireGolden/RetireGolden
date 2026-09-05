@@ -12,8 +12,9 @@
  * so holding them nominal stays the convention until each state's rule is
  * researched. It is a modeling gap, not a federal-law parallel.
  *
- * The standard deduction of a conforming state is the one exception, and it is
- * not a state-law question at all — see `conformStateStandardDeduction`.
+ * Borrowed federal standard-deduction components are the exception to nominal
+ * pack-year brackets — see `conformStateStandardDeduction` for the two
+ * independent adoption policies (whole-federal basic vs age-only addition).
  */
 
 import type { PerStatus } from '../types.js'

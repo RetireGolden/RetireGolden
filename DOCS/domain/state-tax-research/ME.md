@@ -2,7 +2,7 @@
 
 Tax year: 2026. Researched 2026-06-13; standard-deduction correction 2026-09-05.
 
-> **2026 update (PR #23 review, 2026-07-17; age-addition correction 2026-09-05):**
+> **2026 update (PR #23 review, 2026-07-17; age-addition and phase-out correction 2026-09-05):**
 > Maine **decoupled from the federal basic standard deduction** for tax years
 > from 2026 (36 M.R.S. §5124-C(1-B)). Per the MRS revised 2026 rate schedule
 > (rev. 2026-05-20): **basic** standard deduction **$15,700 / $31,400**; brackets
@@ -21,26 +21,24 @@ Tax year: 2026. Researched 2026-06-13; standard-deduction correction 2026-09-05.
 > `standardDeductionAge65AdditionConformity: 'federal'` so the resolver attaches
 > the federal age-65 addition without federally scaling Maine’s basic.
 >
-> **Impact disclosure:** the legally verified class is 2026+ below the
-> §5124-C(2) phase-out. Actual modeled reach is wider because the phase-out is
-> unmodeled (high-income age-65 rows also change), the sole 2026 pack is the
-> stand-in for earlier years (not certified historical amounts), and future age
-> amounts scale with assumed plan inflation rather than a statutory COLA oracle.
-> Unmodeled phase-out can further understate high-income Maine tax; the
-> unmodeled personal exemption can offset on a complete return, so no net Form
-> 1040ME tax direction is asserted. Observed 1,224-case regression vector:
-> nine changed rows, all Maine age-65+.
+> **§5124-C(2) phase-out:** the engine now phases out the **combined** basic
+> plus age total once modeled Maine AGI exceeds **$102,250** single /
+> **$204,550** MFJ (over **$75,000 / $150,000** ranges; fully out at
+> **$177,250 / $354,550**). Phase-out income is a **modeled Maine-AGI proxy**
+> (wages plus represented modifications), not certified Form 1040ME AGI. Split-
+> year residency uses the annual fraction before month proration — still the
+> existing month approximation, not statutory apportionment.
 >
 > Source (primary): MRS 2026 rate schedule PDF (rev. May 20, 2026),
 > https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf;
-> 36 M.R.S. §5124-C(1-B).
+> MRS 2026 phase-out worksheet (rev. December 2025); 36 M.R.S. §5124-C(1-B) and (2).
 
 ## Summary
 - Broad individual income tax: **yes** (graduated, 5.8%–7.15%, plus surcharge bracket)
 - Taxes Social Security benefits: no (fully exempt)
 - Long-term capital gains: taxed as ordinary income
 - Retirement income (pension, IRA, 401k): excluded up to $48,216 per person (2025 figure carried), reduced by Social Security/Railroad Retirement received
-- Standard deduction (2026): Maine basic **$15,700 / $31,400** plus IRC 63(c)(3) age-65 addition (**$2,050 / $1,650** per eligible person)
+- Standard deduction (2026): Maine basic **$15,700 / $31,400** plus IRC 63(c)(3) age-65 addition (**$2,050 / $1,650** per eligible person), with §5124-C(2) proportional phase-out above the published starts
 
 ## Proposed StateTaxParams (2026 pack)
 - code: "ME"
@@ -50,6 +48,7 @@ Tax year: 2026. Researched 2026-06-13; standard-deduction correction 2026-09-05.
 - capitalGainsAsOrdinary: true
 - standardDeduction: { single: 15700, marriedFilingJointly: 31400 }
 - standardDeductionAge65AdditionConformity: "federal"
+- standardDeductionPhaseout: { startsAt: { single: 102250, marriedFilingJointly: 204550 }, range: { single: 75000, marriedFilingJointly: 150000 } }
 - brackets.single:
   - { lowerBound: 0, ratePct: 5.8 }
   - { lowerBound: 27400, ratePct: 6.75 }
@@ -76,33 +75,35 @@ received. Mapped to `retirement: { kind: "capped", capPerPerson: 48216 }`, no
 age gate (Maine's pension deduction is not strictly age-conditioned for the
 general non-military deduction).
 
-## Modeled standard-deduction example (below phase-out)
+## Modeled standard-deduction examples
 
-Independent worksheet, single Maine resident, wages/ordinary income $30,000,
-inflation scale 1, AGI below §5124-C(2) phase-out — **modeled pack taxable
-income only** (personal exemption not subtracted):
+Independent worksheet, single Maine resident, wages/ordinary income, inflation
+scale 1 — **modeled pack taxable income only** (personal exemption not
+subtracted):
 
-| Age | Modeled taxable base | Modeled tax at 5.8% |
-|---|---:|---:|
-| 64 | $30,000 − $15,700 = **$14,300** | **$829.40** |
-| 65 | $30,000 − $15,700 − $2,050 = **$12,250** | **$710.50** |
+| Wages | Age | Modeled taxable base | Modeled tax |
+|---:|---:|---:|---:|
+| $30,000 | 65 | $12,250 | $710.50 |
+| $139,750 | 65 | $130,875 | $8,837.8625 |
 
-Age benefit: **$118.90**. If the $5,300 personal exemption alone were also
-modeled, the age-65 first-bracket tax would be **$403.10**; that line remains
-unmodeled and is not a certified Form 1040ME liability.
+At $139,750 the §5124-C(2) fraction is 0.5 on the combined $17,750 deduction
+(allowed $8,875). Age benefit at that income is $1,025 of deduction and
+$73.2875 of tax, not the full $2,050 / $146.575.
 
 ## Simplifications / not modeled
 - The pension deduction's reduction by SS/Railroad Retirement received is not modeled — modeling the full $48,216 cap understates Maine tax for retirees with large SS benefits.
 - Military retirement pay is fully exempt (separate, uncapped); approximated by the $48,216 cap (conservative for military retirees).
-- Standard deduction **phase-out** for high earners (§5124-C(2)) not modeled. The settled legal component is limited to 2026+ below phase-out, but the runtime age addition is unconditional, so high-income age-65 rows also change and can further understate Maine tax there.
-- **Personal exemption** ($5,300 on the MRS 2026 schedule) not modeled; that omission can offset the age-addition effect on a complete return, so no net Form 1040ME tax direction is asserted.
+- **Personal exemption** ($5,300 on the MRS 2026 schedule) not modeled; that omission can offset modeled tax on a complete return, so no net Form 1040ME tax direction is asserted.
 - **Blindness** additional amount not modeled — the engine age counter drives IRC 63(f) age relief only.
 - Head-of-household basic amounts and other Form 1040ME lines outside the pack levers are not modeled.
+- Modeled Maine AGI is a proxy: not every §5122 modification is representable in the plan model.
 - Pre-2026 Maine inputs use the sole 2026 state pack as a parameter stand-in; those dollars are not certified historical Maine amounts.
-- Brackets and the Maine basic are CPI-adjusted under Maine law; the engine holds pack-year nominals for the basic ($15,700 / $31,400 published, no COLA reconciliation claimed here) and scales only the borrowed federal age addition with assumed plan inflation, not a statutory COLA oracle.
+- Brackets and the Maine basic are CPI-adjusted under Maine law; the engine holds pack-year nominals for the basic ($15,700 / $31,400 published, no COLA reconciliation claimed here) and scales only the borrowed federal age addition with assumed plan inflation, not a statutory COLA oracle. Phase-out starts are pack-year Maine figures and are not federally inflation-scaled.
+- Part-year residency remains month proration of income, deductions, and brackets — not certified statutory nonresident apportionment.
 
 ## Citations
 - https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf — MRS 2026 rate schedules (basic $15,700/$31,400; age/blindness addition $2,050 unmarried / $1,650 married; brackets and surcharge).
+- https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf — MRS 2026 phase-out worksheet (rev. December 2025).
 - https://legislature.maine.gov/statutes/36/title36sec5124-C.html — 36 M.R.S. §5124-C(1-B) basic + IRC 63(c)(3) additional; subsection 2 phase-out.
 - https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim — IRC 63(c)(3), 63(f)(1).
 - https://www.irs.gov/irb/2025-45_IRB — Rev. Proc. 2025-32 §4.14(3) (2026 age-65 addition amounts).

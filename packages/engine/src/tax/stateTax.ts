@@ -24,6 +24,7 @@ import {
 import { taxableSocialSecurity } from './federalTax.js'
 import { age65StandardDeductionAddition, packForYear } from '../params/index.js'
 import { taxParameterFilingStatus, type TaxCalculator, type TaxYearInput } from '../projection/types.js'
+import { phaseOutStandardDeduction } from './stateStandardDeduction.js'
 
 function bracketTax(brackets: StateTaxBracket[], taxable: number): number {
   let tax = 0
@@ -63,6 +64,20 @@ export interface ComputeStateTaxOptions {
    * `computeStateTaxDetail`.
    */
   localRatePct?: number
+  /**
+   * Annual modeled income for standard-deduction phase-out when the segment
+   * income is prorated but the published thresholds are annual (split-year
+   * residency). The phase-out fraction is chosen from this proxy; prorated
+   * pack parameters supply the scaled raw deduction.
+   */
+  standardDeductionPhaseoutIncomeOverride?: number
+  /**
+   * Segment standard deduction to subtract instead of computing from pack
+   * parameters. The only production use is `0` on a full-year input to observe
+   * modeled income before the standard deduction (split-year phase-out proxy);
+   * it is not a legal input claim for a completed return.
+   */
+  standardDeductionAllowedOverride?: number
 }
 
 export interface StateTaxDetail {
@@ -122,26 +137,30 @@ export function computeStateTaxableIncome(
     taxable -= retirementExclusion(params.retirementPrivate, privateRetirement, agesAlive)
     taxable -= retirementExclusion(params.retirementPublic, publicPension, agesAlive)
   }
-  taxable -= params.standardDeduction[taxStatus]
-  // The federal additional standard deduction for age 65 or older, per person.
-  // Its presence on the params IS the eligibility test: only
-  // `conformStateStandardDeduction` attaches the field, and only when the state
-  // adopts that federal additional amount — either because its whole deduction
-  // is federal, or because an independent age-addition policy (Maine) adopts
-  // IRC 63(c)(3) while keeping a state-published basic. A state with neither
-  // policy carries no such field. The amount arrives already indexed and
-  // already prorated for part-year residency where either applied, so all that
-  // is left here is the head count, which is the household's rather than the
-  // state's. Blindness is not modeled; the age counter drives age relief only.
+
+  if (opts.standardDeductionAllowedOverride !== undefined) {
+    return Math.max(0, taxable - opts.standardDeductionAllowedOverride)
+  }
+
+  let rawTotal = params.standardDeduction[taxStatus]
   if (params.standardDeductionAge65Addition) {
-    taxable -= age65StandardDeductionAddition(
+    rawTotal += age65StandardDeductionAddition(
       params.standardDeductionAge65Addition,
       taxStatus,
       Math.max(0, input.peopleAged65Plus),
     )
   }
+  const phaseout = params.standardDeductionPhaseout
+  const allowed = phaseout
+    ? phaseOutStandardDeduction(
+        rawTotal,
+        opts.standardDeductionPhaseoutIncomeOverride ?? taxable,
+        phaseout.startsAt[taxStatus],
+        phaseout.range[taxStatus],
+      )
+    : rawTotal
 
-  return Math.max(0, taxable)
+  return Math.max(0, taxable - allowed)
 }
 
 export function computeStateTaxDetail(
@@ -321,10 +340,18 @@ export function computeStateTaxYearTotal(input: TaxYearInput, opts: StateTaxYear
       const params = resolveParams(segment.state)
       if (!params) return sum
       const scale = months / 12
-      const detail = computeStateTaxDetail(prorateParams(params, scale), prorateInput(input, scale, segment.state), {
+      const segmentOpts: ComputeStateTaxOptions = {
         taxableSocialSecurityOverride: annualTaxableSs * scale,
         localRatePct,
-      })
+      }
+      if (params.standardDeductionPhaseout) {
+        const annualPreDeduction = computeStateTaxableIncome(params, input, {
+          taxableSocialSecurityOverride: annualTaxableSs,
+          standardDeductionAllowedOverride: 0,
+        })
+        segmentOpts.standardDeductionPhaseoutIncomeOverride = annualPreDeduction
+      }
+      const detail = computeStateTaxDetail(prorateParams(params, scale), prorateInput(input, scale, segment.state), segmentOpts)
       return sum + detail.totalTax
     }, 0)
   }

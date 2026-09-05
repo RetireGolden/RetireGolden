@@ -1295,19 +1295,19 @@
             },
             {
               "name": "MO",
-              "line": 521
+              "line": 525
             },
             {
               "name": "MT",
-              "line": 545
+              "line": 549
             },
             {
               "name": "NM",
-              "line": 601
+              "line": 605
             },
             {
               "name": "states.ND",
-              "line": 645
+              "line": 649
             }
           ]
         },
@@ -1316,7 +1316,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 65
+              "line": 66
             }
           ]
         },
@@ -1325,7 +1325,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 75
+              "line": 90
             }
           ]
         }
@@ -1413,11 +1413,11 @@
           "functions": [
             {
               "name": "age65StandardDeductionAddition",
-              "line": 379
+              "line": 381
             },
             {
               "name": "standardDeduction",
-              "line": 387
+              "line": 389
             }
           ]
         },

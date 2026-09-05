@@ -412,11 +412,15 @@ const rawStateYear2026 = {
       // and adopts the IRC 63(c)(3) additional amount for age 65 under (1-B)(B)
       // — tagged only for the age addition, not whole-federal basic conformity.
       // 2% surcharge on taxable income over $1M single / $1.5M MFJ is encoded
-      // as an equivalent 9.15% top bracket. Phase-out, personal exemption, and
-      // blindness remain unmodeled.
+      // as an equivalent 9.15% top bracket. Personal exemption and blindness
+      // remain unmodeled.
       code: 'ME', name: 'Maine', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 15700, marriedFilingJointly: 31400 },
       standardDeductionAge65AdditionConformity: 'federal',
+      standardDeductionPhaseout: {
+        startsAt: { single: 102_250, marriedFilingJointly: 204_550 },
+        range: { single: 75_000, marriedFilingJointly: 150_000 },
+      },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 5.8 }, { lowerBound: 27400, ratePct: 6.75 }, { lowerBound: 64850, ratePct: 7.15 },

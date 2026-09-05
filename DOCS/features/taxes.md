@@ -443,13 +443,23 @@ Eight jurisdictions - CO, DC, IA, ID, MO, MT, ND, NM - do not publish a standard
 Their packs carry a copy of the **federal** figure, tagged `standardDeductionConformity: 'federal'` (for CO
 and ND the brackets run on federal taxable income, so the field is what converts the engine's gross base into
 that base). Because `indexFederalTaxPack` projects the federal original past the pack year under IRC
-63(c)(7)(B)(ii), `indexConformedStateStandardDeduction` moves the copy by exactly the same factor - otherwise
+63(c)(7)(B)(ii), `conformStateStandardDeduction` moves that copy by exactly the same factor - otherwise
 one engine would hold two values for one statutory amount in a single projected year and tax the whole
-widening gap at the state rate. This is not state indexing: nothing else in the pack moves, including the
-brackets and the retirement-exclusion caps, which are state figures under state law. ME and SC decoupled from
-the federal deduction for 2026 and are deliberately untagged, and AZ left the list on 2026-08-05: A.R.S.
-§43-1041(A) sets Arizona's own amounts and (H) borrows only the federal indexation *method*, so the pack now
-carries Arizona's published figure untagged (`ars-43-1041-standard-deduction-published-amount`).
+widening gap at the state rate. Whole-federal adoption also implies the IRC 63(c)(3) age-65 addition,
+because 63(c)(1) makes "the standard deduction" the basic plus additional. This is not state indexing:
+nothing else in the pack moves, including the brackets and the retirement-exclusion caps, which are state
+figures under state law. SC decoupled from the federal deduction for 2026 and is deliberately untagged for
+both basic and age-addition conformity. Maine also decoupled the **basic** for 2026 — its pack carries
+Maine's published **$15,700 / $31,400** without `standardDeductionConformity: 'federal'` — but separately
+tags `standardDeductionAge65AdditionConformity: 'federal'` so the resolver attaches only the federal
+age-65 additional amount ($2,050 unmarried / $1,650 per eligible person married) without federally scaling
+Maine's basic (`mrs-36-5124-c-1-b-decoupled-standard-deduction`). Maine's §5124-C(2) proportional
+phase-out of the combined basic-plus-age total is modeled through `standardDeductionPhaseout` on the
+pack and `phaseOutStandardDeduction` (`mrs-36-5124-c-2-standard-deduction-phaseout`), using a modeled
+Maine-AGI proxy rather than certified Form 1040ME AGI. AZ left the whole-federal list on
+2026-08-05: A.R.S. §43-1041(A) sets Arizona's own amounts and (H) borrows only the federal indexation
+*method*, so the pack now carries Arizona's published figure untagged
+(`ars-43-1041-standard-deduction-published-amount`).
 
 That field never holds a state **personal exemption**, in any pack entry. IN publishes no standard deduction
 at all and subtracts flat per-person exemptions instead - $1,000 per filer, $1,000 per person aged 65+, $1,000

@@ -145,7 +145,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'state-income-tax',
     label: 'State income tax',
     figures:
-      'Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department.',
+      'Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges.',
     publisher: 'Tax Foundation / state revenue departments',
     url: 'https://taxfoundation.org/data/all/state/state-income-tax-rates/',
   },

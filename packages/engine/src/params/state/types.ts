@@ -112,6 +112,16 @@ export interface StateTaxParams {
    * of the addition, not all of it.
    */
   standardDeductionAge65Addition?: PerStatus<number>
+  /**
+   * Optional proportional phase-out of the total standard deduction (basic plus
+   * any modeled additional amounts) once annual income exceeds a published
+   * start. Thresholds are pack-year Maine figures — not scaled with federal
+   * inflation projection or residency proration.
+   */
+  standardDeductionPhaseout?: {
+    startsAt: PerStatus<number>
+    range: PerStatus<number>
+  }
   brackets: PerStatus<StateTaxBracket[]>
   /** Private pensions, annuities, traditional IRA/401(k), RMD, SEPP, and inherited distributions. */
   retirementPrivate: StateRetirementExclusion
