@@ -36,10 +36,9 @@
 # The roster is selected per repo inside the pinned reusable, keyed by
 # GITHUB_REPOSITORY. On future pin bumps, update these notes when the lane
 # roster or judge defaults change.
-# September 5 trial: Grok 4.6 + GLM 5.3 Flash + Astra via pinned OpenAI Flex.
-# Both initial and follow-up reviews add Astra; effort settings are unchanged.
-# The central policy automatically returns to Grok + GLM at midnight Eastern
-# (2026-09-06 04:00 UTC). The recall-safe Luna judge keeps its existing routing.
+# The standing roster is Grok + GLM with the recall-safe Luna judge. Temporary
+# trial windows are documented in the central README at the same pinned revision;
+# the policy applies their time limits at runtime.
 
 name: OpenRouter code review
 
