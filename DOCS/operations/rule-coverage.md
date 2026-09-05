@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 423 |
-| Classification: approximated | 112 |
+| Total rules | 426 |
+| Classification: approximated | 115 |
 | Classification: outOfScope | 75 |
 | Classification: settled | 231 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 60 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 346 |
+| Volatility: staticStatute | 349 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 317 |
+| Federal jurisdiction | 320 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -81,11 +81,11 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 369 |
+| Engine source files | 370 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 55 |
-| registered | 106 |
+| registered | 107 |
 | rule-free | 208 |
 | unswept | 0 |
 
@@ -106,7 +106,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | params | 9 | 0 | 7 | 2 | 0 |
 | projection | 101 | 20 | 15 | 66 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
-| rules | 48 | 0 | 21 | 27 | 0 |
+| rules | 49 | 0 | 22 | 27 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
 | schema | 9 | 0 | 0 | 9 | 0 |
 | socialSecurity | 10 | 2 | 7 | 1 | 0 |
@@ -171,7 +171,7 @@ None.
 | projection/simulate.ts | 2026-09-02 | ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, the thin live-state application adapters for earlier pure coordinators, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly. Those retained responsibilities are the orchestration and cross-year state boundary; substantive annual funding and settlement policy no longer lives inline |
 | rmd/applicableAge.ts | 2026-09-04 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest remains on treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959; SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: deriveRbdComparison born-1959 conditional comparison/refusal (the 70½/72 rule excludes 1959; irc-401-a-9-C-v pins only applicableAgeAttainYears; treas-reg-1-401-a-9-2-b-2-v pins params/rmd); year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
 | socialSecurity/maritalBenefits.ts | 2026-09-04 | Living-divorced and ordinary-widow eligibility gates, plus half-PIA pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
-| socialSecurity/piaFromEarnings.ts | 2026-08-27 | AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations |
+| socialSecurity/piaFromEarnings.ts | 2026-09-04 | Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled — onsetAge is expressible so those are not inexpressible. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard. |
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
 | strategies/optimizer.ts | 2026-08-24 | MILP prices brackets, IRMAA, ACA MAGI cap, RMD floors, §86 SS phase-in, LTCG; not registered here |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
@@ -198,6 +198,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/requiredMinimumDistributions.json | 41 |
 | rule-coverage/rothAccounts.json | 13 |
 | rule-coverage/socialSecurity.json | 48 |
+| rule-coverage/socialSecurityEarnings.json | 3 |
 | rule-coverage/socialSecurityMaritalEligibility.json | 4 |
 | rule-coverage/statesMidwest.json | 29 |
 | rule-coverage/statesNortheast.json | 11 |
@@ -208,7 +209,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (423 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (426 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -248,16 +249,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T02:13:29.194Z over 1115 authority entries (9 fetched live, 306 from cache).
+Committed ledger generated at 2026-09-05T03:14:13.672Z over 1134 authority entries (9 fetched live, 306 from cache).
 
-37 serious, 50 advisory, 1028 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 1047 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 64 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 752 |
+| EXACT | ok | 771 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |

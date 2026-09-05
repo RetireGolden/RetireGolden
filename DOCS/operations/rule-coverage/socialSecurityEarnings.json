@@ -1,0 +1,244 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "socialSecurityEarnings",
+  "rules": [
+    {
+      "id": "cfr-20-404-211-d-3-indexed-earnings-nearer-penny",
+      "title": "Each year's indexed earnings are rounded to the nearer penny",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "A 1962-06-15 worker with 2020 earnings of 55,628.60 (that year's AWI) and 2023 earnings of 44.88, last year 2023, indexes 2020 to 63,795.13 and leaves 2023 nominal. Authority AIME is floor((63,795.13 + 44.88) / 420) = floor(63,840.01 / 420) = 152. The annual whole-dollar floor yields 63,795 + 44.88 = 63,839.88 and observably 151. Using unindexed nominals instead predicts floor((55,628.60 + 44.88) / 420) = 132. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+          "functions": [
+            {
+              "name": "computePiaFromEarnings",
+              "line": 137
+            },
+            {
+              "name": "indexCoveredEarnings",
+              "line": 126
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 153,
+          "note": "2020 AWI year plus 2023 cents",
+          "tests": [
+            {
+              "title": "floors the indexed 2020 year to a whole dollar and drops AIME from 152 to 151",
+              "line": 163
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(d)(3)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(e)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(f)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "title": "Old-age computation years are elapsed years reduced by five, starting at 1951",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "A 1962-06-15 worker with official AWI in 1984-2023 except zeros in 1984, 1992, 2000, 2008, and 2016 has 35 positive years: 34 index to 63,795.13 and 2023 stays 66,621.80, so authority and the always-35 path both give floor((34 × 63,795.13 + 66,621.80) / 420) = 5,322. A 1928-06-15 worker with 1979-1988 AWI has 39 elapsed years 1951-1989 and 34 computation years: floor(10 × 19,334.04 / 408) = 473, while the engine still uses 35 years and observably 460. Dropping no years predicts floor(2,235,656.22 / 480) = 4,657 and floor(193,340.40 / 468) = 413. Dropping the first five calendar years of each elapsed span predicts 4,715 and 473. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+          "functions": [
+            {
+              "name": "computePiaFromEarnings",
+              "line": 137
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 200,
+          "note": "modern 35-year vs 1951-floor 34-year",
+          "tests": [
+            {
+              "title": "uses 35 computation years even when elapsed years start at the 1951 floor",
+              "line": 220
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(A), (b)(2)(A)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(e)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(e)(2)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211"
+        }
+      ]
+    },
+    {
+      "id": "usc-42-415-b-2-b-ii-iii-initial-computation-base-window",
+      "title": "Initial-computation AIME can include years outside the age-22-to-61 elapsed span",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "A 1962-06-15 worker has first entitlement in 2029 at FRA 67 on the stream, which this helper projects out and treats as 2024 age-62 eligibility; indexing year 2022 AWI is 63,795.13. Ten published-AWI years 2013-2022 plus 1983 (age 21, AWI 15,239.24) give authority AIME floor(11 × 63,795.13 / 420) = 1,670; the same ten years plus 2024 (age 62, pre-entitlement) at 42,000 unindexed give floor((10 × 63,795.13 + 42,000) / 420) = 1,618. piaInputFromEarnings derives lastEarningsYear from reported earnings and clamps it to the age-61 year (2023 here), and computePiaFromEarnings iterates only 1984-2023; both clamps exclude age-21 and age-62 pre-entitlement earnings, so both cases observably return 1,518. A competing lower-boundary-only reading includes 1983 but still ends at the year before 62, predicting 1,670 then 1,518. claimAge is expressible on the stream and unused by this helper. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/piaFromEarnings.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
+          "functions": [
+            {
+              "name": "computePiaFromEarnings",
+              "line": 137
+            },
+            {
+              "name": "piaInputFromEarnings",
+              "line": 272
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 119,
+          "note": "age-21 year vs age-62 pre-entitlement year",
+          "tests": [
+            {
+              "title": "omits both the age-21 year and the age-62 pre-entitlement year from initial AIME",
+              "line": 135
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(b)(2)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(e)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211"
+        }
+      ]
+    }
+  ]
+}
