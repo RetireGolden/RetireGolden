@@ -202,6 +202,65 @@ export const iraBasisAndRolloverRecords = {
     ],
   },
 
+  'irc-408-d-2-estate-household-basis-allocation': {
+    title: 'Terminal estate basis is spread across the household traditional pool',
+    statement:
+      'Section 408(d)(1) includes in gross income any amount paid or distributed out of an individual retirement plan, in the manner provided under section 72. Section 408(d)(2) applies only for purposes of applying section 72 to any amount described in paragraph (1): all individual retirement plans are treated as one contract and all distributions during a taxable year as one distribution. An individual retirement plan is an individual retirement account or an individual retirement annuity under section 7701(a)(37), so an employer plan is outside that contract. 408(d)(2) itself does not state the spouse or inherited-IRA separations; those rest on the Form 8606 instructions, which require a separate form for each spouse, and on Publication 590-B, which keeps inherited traditional-IRA basis with that IRA and forbids combining it with the beneficiary\'s own traditional IRA basis or with basis inherited from other decedents. Inheritance of an IRA is not itself an amount paid or distributed: Publication 590-B states that a beneficiary generally will not owe tax on the assets until receiving distributions. The engine\'s terminal after-tax estate metric is not a death-year section 72 computation. It is a planning figure of assumed future income-tax exposure. The helper that produces each traditional account\'s taxable pretax base spreads one household remaining-basis scalar across every traditional balance by gross, ignoring owner and IRA/employer boundaries.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'THE REFERENT IS PER-ACCOUNT ASSUMED FUTURE INCOME-TAX EXPOSURE, not the household aggregate haircut and not a death-year filing tax. Inheritance is not a section 408(d)(1) distribution, so this terminal metric is a planning stand-in for later section 72 recovery, not Form 8606 in the year of death. The helper spreads one household remaining-basis scalar across every traditional gross, so an owner\'s IRA that holds the basis is assigned too little of it and a spouse IRA or an employer plan is assigned some of it. On the public-path couple fixture (one year 2026, both age 60, zero growth and spending, 25 percent heir rate, three 120,000 non-spouse traditional accounts, 90,000 of basis on p1\'s IRA only) the authority worksheet is taxable bases 30,000 / 120,000 / 120,000 and haircuts 7,500 / 30,000 / 30,000. The helper returns 90,000 / 90,000 / 90,000 and haircuts 22,500 / 22,500 / 22,500. p1\'s IRA overstates assumed future exposure; the spouse IRA and the 401(k) understate it. The three haircuts sum to 67,500 under both readings because the rate and destination are common; that cancellation is a fact of this fixture and is not an aggregate error, and this record does not claim one. An IRA-only cross-owner reading (75,000 / 75,000 / 120,000) and an ignore-basis reading (120,000 / 120,000 / 120,000) are the other candidate allocations the fixture rejects. The exclusions 408(d)(2) does not state in its own words — spouses file separate Forms 8606; inherited basis stays with that IRA; an employer plan is not an individual retirement plan under 7701(a)(37) — are the publication-level and definitional boundaries the helper ignores, not a second reading of 408(d)(2) alone.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 408(d)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'Except as otherwise provided in this subsection, any amount paid or distributed out of an individual retirement plan shall be included in gross income by the payee or distributee, as the case may be, in the manner provided under section 72.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 408(d)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
+      quotedText:
+        'For purposes of applying section 72 to any amount described in paragraph (1)- (A) all individual retirement plans shall be treated as 1 contract, (B) all distributions during any taxable year shall be treated as 1 distribution, and (C) the value of the contract, income on the contract, and investment in the contract shall be computed as of the close of the calendar year in which the taxable year begins.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 7701(a)(37)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleF-chap79-sec7701.htm',
+      quotedText:
+        'The term "individual retirement plan" means\u2014 (A) an individual retirement account described in section 408(a), and (B) an individual retirement annuity described in section 408(b).',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), More than one Form 8606 required',
+      url: 'https://www.irs.gov/instructions/i8606',
+      quotedText:
+        'If both you and your spouse are required to file 2025 Form 8606, file a separate 2025 Form 8606 for each of you. If you are required to file 2025 Form 8606 for IRAs inherited from more than one decedent, file a separate 2025 Form 8606 for the IRA from each decedent.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B (2025), Inherited from someone other than spouse',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'Like the original owner, you generally won\'t owe tax on the assets in the IRA until you receive distributions from it.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B (2025), IRA with basis',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'If you inherit a traditional IRA from a person who had basis in the IRA because of nondeductible contributions, that basis remains with the IRA. Unless you are the decedent\'s spouse and choose to treat the IRA as your own, you can\'t combine this basis with any basis you have in your own traditional IRA(s) or any basis in traditional IRA(s) you inherited from other decedents. If you take distributions from both an inherited IRA and your IRA, and each has basis, you must complete separate Forms 8606 to determine the taxable and nontaxable portions of those distributions.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-04',
+    implementedBy: [
+      'packages/engine/src/projection/estateTraditionalBasis.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/estateTraditionalBasis.ts#estateTraditionalTaxableBase',
+    ],
+  },
+
   'irc-408-d-3-C-i-inherited-ira-rollover-bar': {
     title: 'A nonspouse inherited IRA cannot be rolled over or converted',
     statement:

@@ -58,7 +58,12 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 - **Nondeductible IRA basis (Form 8606 pro-rata).** `nondeductibleBasis` on a traditional IRA aggregates
   across an owner's own IRAs; every withdrawal and conversion is part tax-free basis and part taxable in the
   ratio of basis to the aggregated pre-distribution balance (IRC §408(d)(2)). Employer plans and inherited
-  IRAs are excluded from the aggregation. Basis is historical cost (never indexed). Separately, the pure
+  IRAs are excluded from the aggregation. Basis is historical cost (never indexed).
+  The terminal after-tax estate metric does not reuse that owner-wide pool. It spreads the household
+  remaining-basis scalar across every traditional account by gross balance, ignoring owner and IRA/employer
+  boundaries, as a disclosed approximation of assumed future income-tax exposure rather than a death-year
+  Form 8606 (`irc-408-d-2-estate-household-basis-allocation`). Inheritance itself is not an IRA taxable
+  distribution. Separately, the pure
   action-character substrate accepts exact-cent complete-pool evidence and complete annual Form 8606
   inputs, derives the capped line-5/line-9 ratio with bigint intermediates, and allocates each line's
   once-rounded basis total across positive actions in canonical date/sequence/action/allocation order.
