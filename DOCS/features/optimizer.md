@@ -54,9 +54,12 @@ floors once age-eligible; non-negativity; balances ≥ 0.
 **The kink problem:** federal tax, taxable-SS phase-in, IRMAA tiers, and the ACA cliff are
 piecewise-linear / step, not linear. The MILP handles federal tax with convex segments and IRMAA with
 binary thresholds. For each ACA probe year with positive modeled PTC and cliff state below-cliff or
-at-cliff — not every actionable year — it also applies a conservative absolute MAGI cap: the incumbent
-value of the optimizer's modeled MAGI expression (including the gain-weighted incumbent taxable
-withdrawal) plus exact-ledger ACA headroom. That is not exact statutory household MAGI plus headroom:
+at-cliff — not every actionable year — it also applies an incumbent-calibrated
+absolute MAGI ceiling: the incumbent value of the optimizer's modeled MAGI
+expression (including the gain-weighted incumbent taxable withdrawal) plus
+exact-ledger ACA headroom, restricting apparent conversion/withdrawal headroom
+inside the compressed model; taxpayer-tax direction has not been established.
+That is not exact statutory household MAGI plus headroom:
 static ACA addbacks distinguish them. The constraint subtracts the year's MAGI constant so only the
 variable terms are bounded. Withdrawals and premium reconciliation remain nonlinear and are refined by
 the exact ledger. This is the bulk of the engineering and why the optimizer was spiked

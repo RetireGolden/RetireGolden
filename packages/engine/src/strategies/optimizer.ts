@@ -16,23 +16,23 @@
  * (nonlinear) ledger with the emitted schedule for exact numbers and surface
  * any gap (V8 §3.1).
  *
- * Modeled exactly (the "big levers", V8 §6):
+ * Primary modeled levers (V8 §6 — not every in-solve term is exact; see
+ * DOCS/features/optimizer.md §"Documented simplifications"):
  *   - Graduated federal ordinary tax as a CONVEX piecewise-linear cost from the
- *     pack's real brackets — minimising tax fills the cheap band first with no
- *     integer variables.
+ *     pack's real brackets at marginal rates conditional on supplied taxable
+ *     ordinary income — minimising tax fills the cheap band first with no integers.
  *   - IRMAA tier surcharges as binary step thresholds (the non-convex part that
- *     makes this a MILP, not an LP).
+ *     makes this a MILP, not an LP; other linearization residuals remain).
  *   - RMD floors as a linear lower bound on each year's traditional withdrawal
- *     (floor = start-of-year pooled traditional balance ÷ rmdDivisor; the plan
- *     bridge supplies an effective pooled divisor recovered at baseline — see
- *     DOCS/features/optimizer.md §"Documented simplifications").
+ *     (pooled balance ÷ baseline effective divisor — not per-owner Uniform Lifetime
+ *     table; see DOCS/features/optimizer.md §"Documented simplifications").
  *   - Three-bucket balances (owner traditional, inherited traditional, and
  *     "other" = Roth + taxable + cash) with per-year growth and scheduled
  *     contribution / employer-match inflows from the baseline probe, so a
  *     plan whose solvency depends on future deposits is not misread as
  *     infeasible.
  *
- * The optimizer-exact-ledger-convergence plan (Track 1) closed the
+ * The optimizer-exact-ledger-convergence plan (Track 1) narrowed the
  * original v1 simplifications, each opt-in via `OptimizerInput` so absent
  * fields reproduce the v1 LP byte-for-byte:
  *   - Taxable-gain realization (Step 2): `openingTaxable`/`taxableInflow` split
@@ -45,8 +45,9 @@
  *     (non-flat-override) states are priced with real brackets rather than
  *     zero; a flat `stateEffectiveTaxPct` override keeps the flat `stateRate`.
  *   - Taxable-SS phase-in (Step 3): `ssTaxability` swaps the fixed taxable-SS
- *     constant for an in-solve convex PWL over provisional income, so the
- *     solver sees the *marginal* tax torpedo (see `taxss` constraints below).
+ *     constant for an in-solve convex PWL when benefits exceed $1 and baseline
+ *     share is below 84.5% (see `irc-86-a-optimizer-taxable-social-security-linearization`;
+ *     `taxss` constraints below).
  *   - IRMAA 2-year lookback (Step 4): `irmaaLookback` drives each premium
  *     year's binaries off MAGI(year−2), matching the ledger's causality.
  *   - OBBBA senior deduction (ground-truth 2026 law sync, Step 2):
@@ -59,8 +60,7 @@
  * `simulate`, and by the exact-ledger convergence loop — Step 1, in
  * projection/optimizePlan.ts — which recaptures the exogenous inputs at the
  * incumbent schedule and re-solves to a fixed point): a single LTCG rate and
- * opening basis ratio for the taxable stack, the omitted 85%-of-benefit
- * taxable-SS cap (conservative), unscaled stand-in packs for future years
+ * opening basis ratio for the taxable stack, unscaled stand-in packs for future years
  * (matching the ledger's convention), and state retirement-income exclusions.
  */
 
@@ -251,12 +251,13 @@ export interface OptimizerYear {
    */
   taxableInflow?: number
   /**
-   * In-solve taxable-SS PWL inputs (Step 3). When present with `ssBenefits > 0`,
-   * the LP replaces the fixed taxable-SS constant baked into
-   * `ordinaryIncomeBase` with a variable derived from provisional income, so
-   * the solver sees the *marginal* tax torpedo (each conversion dollar dragging
-   * 50–85¢ of SS into taxability) instead of the incumbent's average. Absent →
-   * the fixed-constant behavior (byte-identical LP).
+   * In-solve taxable-SS PWL inputs (Step 3). Active when present with
+   * `ssBenefits > 1` and `taxableSsBase < 0.845 * ssBenefits`; otherwise the
+   * baseline constant in `ordinaryIncomeBase` is retained (byte-identical LP).
+   * When active, replaces that constant with a PI-derived variable so the solver
+   * sees the marginal torpedo (50–85¢ per conversion dollar), not the incumbent
+   * average. Omits half-benefit plateau and 85% cap (can overstate); near-cap
+   * freeze can understate — `irc-86-a-optimizer-taxable-social-security-linearization`.
    */
   ssTaxability?: {
     /** Gross Social Security benefits this year (nominal). */

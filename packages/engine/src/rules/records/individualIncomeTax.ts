@@ -1,12 +1,13 @@
 /**
  * Individual income tax records: the ordinary rate schedule and its annual
  * adjustment, the standard deduction and its additions, the senior and SALT
- * deductions, qualified residence interest, and the alternative minimum tax.
+ * deductions, qualified residence interest, the alternative minimum tax, and
+ * the optimizer's section 86 taxable-Social-Security proxy; exact benefit-
+ * taxation siblings live in `socialSecurity.ts`.
  *
- * One slice of the tax rule registry. `../taxRuleRegistry.ts` composes every
- * slice into `TAX_RULE_REGISTRY`; read it for what a record must carry and why.
- * Records and the commentary attached to them were moved here verbatim, so a
- * block that says "above" or "below" may now point across a module boundary.
+ * One slice of the tax rule registry — `../taxRuleRegistry.ts` composes every
+ * slice into `TAX_RULE_REGISTRY`. Records and commentary were moved here
+ * verbatim, so "above" or "below" may point across a module boundary.
  */
 import type { TaxRuleRecord } from '../taxRuleRegistry.js'
 
