@@ -368,7 +368,8 @@
       "dueOn": "2027-08-04",
       "implementedBy": [
         "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts",
-        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts"
+        "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
+        "packages/engine/src/model/retirementActionAnnualTaxFacts.ts"
       ],
       "implementations": [
         {
@@ -388,6 +389,15 @@
               "line": 437
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/model/retirementActionAnnualTaxFacts.ts",
+          "functions": [
+            {
+              "name": "persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema",
+              "line": 114
+            }
+          ]
         }
       ],
       "fixtureFiles": [
@@ -396,16 +406,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.test.ts",
-          "line": 762,
+          "line": 763,
           "note": null,
           "tests": [
             {
               "title": "refuses a prior-year contribution made after the unextended deadline",
-              "line": 774
+              "line": 775
             },
             {
               "title": "counts a contribution made inside the window toward that year basis",
-              "line": 785
+              "line": 794
             }
           ]
         }

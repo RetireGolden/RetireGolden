@@ -190,6 +190,10 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   collision-checked structural transaction ID. The transaction is applied to detached evidence only:
   `movement` remains `notCommitted`, `actionability` remains `notEstablished`, and it publishes no
   December 31 snapshot, basis allocation, tax character, penalty, finalization, or simulator mutation.
+  The unified annual physical transaction
+  (`actions/ownedNonRothIraAnnualPhysicalTransaction.ts`) stages QCD charity credits only as detached
+  equal debit/credit accounting evidence after rebuilt `evaluateAnnualQcdExecutionPrerequisites`;
+  `movement` remains `notCommitted` and the staging does not prove actual custodian payment.
   Runtime activity, mixed owners, conversions/QCDs, and non-owned sources retain the inventory's typed
   unified-ledger requirement; incomplete activity and malformed chronology pass through fail-closed.
   The pure `buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput` boundary consumes only the
@@ -207,6 +211,12 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   2007-16 for the supported tax-year 2006 floor), enforced by
   `tax/ordinaryFederalFilingDeadline.ts#ordinaryFederalFilingDeadline`, and covers only that calendar —
   not extensions, disaster relief, state-office holidays, or taxpayer-specific deadline adjudication.
+  The IRC 219(f)(3) designated post-year contribution window — made on account of the prior taxable year
+  and not later than the unextended return due date — is independently enforced by
+  `model/retirementActionAnnualTaxFacts.ts#persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema`
+  before the filing-evidence builder (`irc-219-f-3-prior-year-contribution-window`). That schema also
+  recomputes the supported calendar date to validate the stored deadline but does not manufacture the
+  underlying filing-evidence authority.
   This leaves line 5 equal to the exact opening basis; contributions in that following-calendar-year window do
   not recover basis in the current distribution fraction
   (`form-8606-line-4-post-year-contribution-exclusion`). Rollover

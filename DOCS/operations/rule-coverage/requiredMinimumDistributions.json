@@ -1992,6 +1992,7 @@
       "implementedBy": [
         "packages/engine/src/model/migrations.ts",
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/model/planCrossFieldChecks.ts",
         "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
@@ -2009,12 +2010,17 @@
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
             {
-              "name": "annuitySchema",
-              "line": 1128
-            },
-            {
               "name": "latestNonQlacQualifiedAnnuityStartAge",
               "line": 64
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/planCrossFieldChecks.ts",
+          "functions": [
+            {
+              "name": "checkAccountCrossFieldRules",
+              "line": 820
             }
           ]
         },
@@ -2107,6 +2113,7 @@
         "packages/engine/src/decisions/generators.ts",
         "packages/engine/src/model/migrations.ts",
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/model/planCrossFieldChecks.ts",
         "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts",
         "packages/engine/src/projection/simulate.ts"
       ],
@@ -2133,12 +2140,17 @@
           "path": "packages/engine/src/model/plan.ts",
           "functions": [
             {
-              "name": "annuitySchema",
-              "line": 1128
-            },
-            {
               "name": "latestQlacAnnuityStartAge",
               "line": 116
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/model/planCrossFieldChecks.ts",
+          "functions": [
+            {
+              "name": "checkAccountCrossFieldRules",
+              "line": 820
             }
           ]
         },

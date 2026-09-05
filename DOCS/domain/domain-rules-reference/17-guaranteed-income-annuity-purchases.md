@@ -20,6 +20,19 @@ and after-tax estate.
   **excluded from the RMD base** until payouts begin, capped at the SECURE 2.0 statutory limit (**$210,000
   for 2026**, sourced in `year2026.ts`); a warning fires if the entered premium exceeds the cap, and `qlac`
   requires `taxQualification: 'qualified'`.
+- **Qualified start-age ceilings.** Legal refusals live in
+  `model/planCrossFieldChecks.ts#checkAccountCrossFieldRules`, not in `annuitySchema`. That schema stores
+  only the model's product range (`ANNUITY_MIN_START_AGE`–`ANNUITY_MAX_START_AGE`). Statute first: a
+  non-QLAC qualified annuity's payments must commence on or before the owner's required beginning date
+  (`treas-reg-1-401-a-9-6-a-3-i-annuity-payments-commence-by-the-required-beginning-date`). A late
+  purchase after that date remains a supported modeling case when the contract starts paying in the
+  purchase year — the account was already distributing under the account rules, so an immediate start
+  postpones nothing. A QLAC must provide a specified annuity starting date no later than the first day
+  of the month after the owner's 85th birthday
+  (`treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday`). The engine's January-1 annual
+  commencement convention then translates those deadlines into the model age ceilings
+  `latestNonQlacQualifiedAnnuityStartAge` and `latestQlacAnnuityStartAge`; those helper ages are the
+  annual-model translation, not a statutory age-86 deadline.
 - **Estate beneficiary destinations.** `estateBeneficiary` on any account (`estateBeneficiarySchema`) sets
   where its ending balance passes in the after-tax estate metric: `spouse` (no terminal income-tax haircut —
   assumes continued deferral at the horizon; does not establish a valid rollover/treat-as-own election and
@@ -51,7 +64,10 @@ and after-tax estate.
 annuity products; estate/inheritance tax, probate, trusts, and legal-planning precision are out of scope.
 
 **Code:** schema in [engine/model/plan.ts](../../../packages/engine/src/model/plan.ts) (`annuityPurchaseSchema`,
-`estateBeneficiarySchema`, `heirTaxByClass`, `survivorReserveTarget`); purchase execution in
+`estateBeneficiarySchema`, `heirTaxByClass`, `survivorReserveTarget`; `annuitySchema` product range;
+`latestNonQlacQualifiedAnnuityStartAge` / `latestQlacAnnuityStartAge`); legal start-age refusals in
+[engine/model/planCrossFieldChecks.ts](../../../packages/engine/src/model/planCrossFieldChecks.ts)
+(`checkAccountCrossFieldRules`); purchase execution in
 [engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts); QLAC RMD-base exclusion
 in `simulate.ts` and [engine/rmd/](../../../packages/engine/src/rmd/); annual exclusion-ratio and
 qualified-payment planning in

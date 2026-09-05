@@ -767,10 +767,12 @@ export const contributionAndDeferralLimitRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
     implementedBy: [
+      'packages/engine/src/model/retirementActionAnnualTaxFacts.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts',
       'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/model/retirementActionAnnualTaxFacts.ts#persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema',
       'packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.ts#buildPlanOwnedNonRothIraAnnualFilingEvidence',
       'packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput',
     ],
