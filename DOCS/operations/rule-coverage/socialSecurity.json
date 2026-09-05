@@ -815,12 +815,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 156,
+          "line": 161,
           "note": null,
           "tests": [
             {
               "title": "carries the capped tier-one amount into the 85 percent band",
-              "line": 160
+              "line": 165
             }
           ]
         }
@@ -873,12 +873,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1733,
+          "line": 1780,
           "note": null,
           "tests": [
             {
               "title": "counts tax-exempt interest in provisional income",
-              "line": 1737
+              "line": 1784
             }
           ]
         }

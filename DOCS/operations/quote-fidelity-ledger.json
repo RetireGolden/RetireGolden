@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-05T06:08:02.335Z",
-  "recordCount": 428,
+  "generatedAt": "2026-09-05T07:12:24.852Z",
+  "recordCount": 429,
   "urlCount": 317,
   "fetched": 9,
   "cached": 308,
-  "entryCount": 1143,
+  "entryCount": 1148,
   "counts": {
-    "EXACT": 780,
+    "EXACT": 786,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
-    "ELISION-EXACT": 64,
+    "ELISION-EXACT": 63,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
   },
@@ -8024,9 +8024,9 @@
       "citation": "IRC 1(j)(2)(C)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim",
-      "quoteSha256": "d3732dc9cc90a575",
-      "verdict": "ELISION-EXACT",
-      "detail": "4 segments, every one a literal substring",
+      "quoteSha256": "4d7cdfbad481884a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -8034,7 +8034,7 @@
       "citation": "Amendment note to IRC 1, P.L. 119-21 sec. 70101(a)(1), (b)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim",
-      "quoteSha256": "17a05d80b1bfa9d9",
+      "quoteSha256": "bacb76cddac85204",
       "verdict": "ELISION-EXACT",
       "detail": "3 segments, every one a literal substring",
       "diagnosis": null
@@ -8044,9 +8044,59 @@
       "citation": "Rev. Proc. 2025-32, section 4.01, Table 3",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf",
-      "quoteSha256": "4854cf9d00bce35b",
+      "quoteSha256": "74f8ad1bb14def3a",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "9 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-86-a-optimizer-taxable-social-security-linearization",
+      "citation": "IRC 86(a)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim",
+      "quoteSha256": "d719e03c668474b9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-86-a-optimizer-taxable-social-security-linearization",
+      "citation": "IRC 86(a)(2)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim",
+      "quoteSha256": "3d6fe1e356d5de86",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-86-a-optimizer-taxable-social-security-linearization",
+      "citation": "IRC 86(b)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim",
+      "quoteSha256": "57810449fe6a3eef",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-86-a-optimizer-taxable-social-security-linearization",
+      "citation": "IRC 86(b)(2)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim",
+      "quoteSha256": "392cc7ffe74398e8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-86-a-optimizer-taxable-social-security-linearization",
+      "citation": "IRC 86(c)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim",
+      "quoteSha256": "61be873f90f9c662",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {

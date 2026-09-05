@@ -85,12 +85,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 591,
+          "line": 596,
           "note": null,
           "tests": [
             {
               "title": "moves modeled preferential gain into the 20 percent layer above the second breakpoint",
-              "line": 595
+              "line": 600
             }
           ]
         }
@@ -233,12 +233,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1705,
+          "line": 1752,
           "note": null,
           "tests": [
             {
               "title": "runs qualified dividends through the preferential stack",
-              "line": 1709
+              "line": 1756
             }
           ]
         }
@@ -306,23 +306,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 567,
+          "line": 572,
           "note": null,
           "tests": [
             {
               "title": "measures the preferential bands from the top of ordinary income",
-              "line": 571
+              "line": 576
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1980,
+          "line": 2027,
           "note": null,
           "tests": [
             {
               "title": "starts the 15% layer at the breakpoint prescribed for that year",
-              "line": 1984
+              "line": 2031
             }
           ]
         }
@@ -374,23 +374,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 665,
+          "line": 670,
           "note": "zero-percent layer dollar",
           "tests": [
             {
               "title": "prices a zero-layer marginal dollar at 15 percent inside the linearized solve",
-              "line": 671
+              "line": 676
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 721,
+          "line": 726,
           "note": "twenty-percent layer dollar",
           "tests": [
             {
               "title": "prices a twenty-percent-layer marginal dollar at 15 percent inside the linearized solve",
-              "line": 727
+              "line": 732
             }
           ]
         }
@@ -458,12 +458,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 925,
+          "line": 930,
           "note": null,
           "tests": [
             {
               "title": "keeps original basis on a post-death taxable sale while the estate metric assumes step-up",
-              "line": 934
+              "line": 939
             }
           ]
         }
@@ -536,16 +536,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 327,
+          "line": 332,
           "note": null,
           "tests": [
             {
               "title": "keeps municipal-bond interest out of federal AGI and taxable income by direct inclusion",
-              "line": 334
+              "line": 339
             },
             {
               "title": "raises AGI only by the taxable-Social-Security increment when munis enter provisional income",
-              "line": 351
+              "line": 356
             }
           ]
         }
@@ -613,12 +613,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 820,
+          "line": 825,
           "note": null,
           "tests": [
             {
               "title": "deducts a realized taxable-sale loss without a replacement-purchase fact",
-              "line": 834
+              "line": 839
             }
           ]
         }
@@ -847,12 +847,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 386,
+          "line": 391,
           "note": null,
           "tests": [
             {
               "title": "deducts only the annual cap and carries the rest forward",
-              "line": 390
+              "line": 395
             }
           ]
         }
@@ -900,12 +900,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 499,
+          "line": 504,
           "note": null,
           "tests": [
             {
               "title": "burns the annual allowance from the pool even when ordinary income is zero",
-              "line": 504
+              "line": 509
             }
           ]
         }
@@ -978,12 +978,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 469,
+          "line": 474,
           "note": null,
           "tests": [
             {
               "title": "threads the unabsorbed pool through simulatePlan into year-two capital-gains tax",
-              "line": 473
+              "line": 478
             }
           ]
         }
@@ -1169,12 +1169,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 223,
+          "line": 228,
           "note": null,
           "tests": [
             {
               "title": "taxes the smaller of investment income and the threshold excess",
-              "line": 227
+              "line": 232
             }
           ]
         }
@@ -1227,12 +1227,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1878,
+          "line": 1925,
           "note": null,
           "tests": [
             {
               "title": "leaves plan distributions out of net investment income but not out of modified AGI",
-              "line": 1882
+              "line": 1929
             }
           ]
         }
@@ -1285,16 +1285,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 253,
+          "line": 258,
           "note": null,
           "tests": [
             {
               "title": "counts excluded foreign earned income against both limits",
-              "line": 260
+              "line": 265
             },
             {
               "title": "leaves a return with no excluded foreign income at its AGI",
-              "line": 278
+              "line": 283
             }
           ]
         }
@@ -1352,12 +1352,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 298,
+          "line": 303,
           "note": null,
           "tests": [
             {
               "title": "keeps tax-exempt interest out of investment income and out of the threshold leg",
-              "line": 302
+              "line": 307
             }
           ]
         }
@@ -1757,12 +1757,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2140,
+          "line": 2187,
           "note": "2027 positive indexation is a phantom OID character",
           "tests": [
             {
               "title": "records positive inflation accretion as OID in the cash-flow ledger",
-              "line": 2148
+              "line": 2195
             }
           ]
         }
@@ -1855,12 +1855,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2208,
+          "line": 2255,
           "note": "paired positive-inflation then deflation path; 2027 non-maturity",
           "tests": [
             {
               "title": "pins the engine output while distinguishing the deflation reading",
-              "line": 2217
+              "line": 2264
             }
           ]
         }
