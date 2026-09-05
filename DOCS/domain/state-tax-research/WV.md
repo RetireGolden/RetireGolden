@@ -52,6 +52,15 @@ Tax year: 2026. Researched 2026-09-05 (rates); Social Security full exemption pr
   above AGI thresholds; full exemption below $50,000 single / $100,000 MFJ, phasing to full exemption in 2026.
 - Keep 2025 figures for historical comparison only; do not treat them as current pack authority.
 
+The exported selector resolves requested WV TY2025 to the sole 2026 pack, so a modeled taxable base of
+$100,000 yields **$3,782.50** under current pack rates — not the enacted 2025
+[§11-21-4i(a)](https://code.wvlegislature.gov/11-21-4I/) rate-only figure of **$3,981.50** (a **$199.00**
+understatement on rates alone; statute freshly verified in independent adjudication). The current-pack
+historical approximation remains uncorrected; exact historical pack resolution is unimplemented. Correcting
+only the rate schedule would not certify other 2025 base modifications, including partial Social Security
+taxation. No test freezes this incorrect 2025 dollar result; this paragraph does not assert a legal TY2025
+tax liability.
+
 ## Retirement-income detail
 West Virginia taxes income at graduated rates. For 2026, §11-21-4j(a) uses **2.11%–4.58%** with
 bracket thresholds **the same for single and MFJ** (not doubled). Subsection (b) publishes a separate
