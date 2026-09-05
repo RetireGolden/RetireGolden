@@ -63,7 +63,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
     # Central independent-review workflow pinned to the .github#36 merge commit.
     # Action#31 adds per-model routing; existing independent gate is unchanged.
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44 # .github#36 (action#31; Astra Flex third-lane trial today)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44 # .github#36 (action#31@956b494594d8c7969ec9b355fd11d8e39b3b6161; Astra Flex trial)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
