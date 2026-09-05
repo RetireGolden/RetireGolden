@@ -140,11 +140,25 @@ describeRule('cfr-31-356-20-b-tips-minimum-coupon', {
       for (const rung of build.rungs) expect(rung.cost).toBeGreaterThan(rung.face)
       expect(build.totalCost).toBeGreaterThan(totalFace)
 
+      const y = curves[i]! / 100
       const c = accepted[i]![0]! / 100
       const lateFace = 10_000 / (1 + c)
       const earlyFace = (10_000 - lateFace * c) / (1 + c)
       expect(build.rungs[1]!.face).toBeCloseTo(lateFace, 6)
       expect(build.rungs[0]!.face).toBeCloseTo(earlyFace, 6)
+
+      // Closed-form annual-coupon PV is a model-consistency worksheet; the
+      // authority record still covers the coupon floor only.
+      const expectedFaces = [earlyFace, lateFace]
+      const maturities = [5, 6]
+      const expectedCosts = expectedFaces.map((expectedFace, j) => {
+        const discountFactor = Math.pow(1 + y, -maturities[j]!)
+        return expectedFace * ((c * (1 - discountFactor)) / y + discountFactor)
+      })
+      for (let j = 0; j < build.rungs.length; j++) {
+        expect(build.rungs[j]!.cost).toBeCloseTo(expectedCosts[j]!, 6)
+      }
+      expect(build.totalCost).toBeCloseTo(expectedCosts.reduce((s, v) => s + v, 0), 6)
     }
   })
 })
