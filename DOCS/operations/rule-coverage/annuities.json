@@ -250,7 +250,7 @@
       "title": "Employer-plan after-tax basis comes out pro rata, not first",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "The statute supplies the investment-to-account-balance ratio and is silent on rounding. Exact bigint nearest-cent half-up is the engine currency convention; the exact-cent fixture lands on whole cents independently of that rounding. The penalty-side validator recomputes that same ratio against an already-accepted characterization; it does not adjudicate external qualification.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -259,9 +259,19 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
         "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "characterCoverage",
+              "line": 250
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.ts",
           "functions": [
@@ -278,16 +288,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/traditionalEmployerPlanWithdrawalCharacter.test.ts",
-          "line": 397,
+          "line": 428,
           "note": null,
           "tests": [
             {
               "title": "recovers basis in the investment-to-account-balance ratio",
-              "line": 406
+              "line": 441
             },
             {
               "title": "leaves a distribution smaller than the basis partly taxable",
-              "line": 419
+              "line": 491
             }
           ]
         }

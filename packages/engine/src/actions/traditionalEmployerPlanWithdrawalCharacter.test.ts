@@ -9,8 +9,10 @@ import {
   asPersonId,
 } from './identity.js'
 import { asPositiveUsdCents, asUsdCents } from './money.js'
+import { evaluateTraditionalEmployerPlanPenaltyPrerequisite } from './traditionalEmployerPlanPenaltyPrerequisite.js'
 import {
   classifyTraditionalEmployerPlanWithdrawal,
+  type AcceptedTraditionalEmployerPlanWithdrawalClassification,
   type ClassifyTraditionalEmployerPlanWithdrawalInput,
   type TraditionalEmployerPlanDistributableEventKind,
 } from './traditionalEmployerPlanWithdrawalCharacter.js'
@@ -58,6 +60,35 @@ function input(
       basisEvidenceId: 'employer-basis',
     },
   }
+}
+
+function evaluateAcceptedCharacterPenalty(
+  characterization: AcceptedTraditionalEmployerPlanWithdrawalClassification,
+) {
+  const accepted = characterization.acceptedSourceEligibility
+  const actionId = accepted.actionId ?? characterization.taxCharacter[0]?.actionId
+  if (actionId === undefined) {
+    throw new Error('accepted character must carry action identity')
+  }
+  return evaluateTraditionalEmployerPlanPenaltyPrerequisite({
+    actionId,
+    allocationId: accepted.allocationId,
+    sourceAccountId: accepted.sourceAccountId,
+    participantPersonId: accepted.participantPersonId,
+    evaluationDate: accepted.evaluationDate,
+    characterization,
+    taxableTreatmentAmount: accepted.basisEvidence.ordinaryIncomeAmount,
+    participantEvidence: {
+      predicate: 'employerPlanParticipantBirthDateForPenalty',
+      participantPersonId: accepted.participantPersonId,
+      birthDate: '1960-06-15',
+      birthDateEvidenceId: 'birth-record',
+    },
+    separationEvidence: null,
+    disabilityEvidence: null,
+    seppEvidence: null,
+    otherExceptionAttestation: null,
+  })
 }
 
 describe('traditional employer-plan withdrawal character', () => {
@@ -399,21 +430,62 @@ describeRule('irc-72-e-8-B-employer-plan-pro-rata-basis', {
   // basis. IRC 72(e)(8)(B) allocates basis in the ratio of investment to
   // account balance, so 60 * 40/100 = 24 comes back as basis and 36 is ordinary
   // income. The reading that basis is recovered first returns all 40 and leaves
-  // only 20 of ordinary income.
-  readings: { statute: 24, rejectedBasisFirst: 40 },
+  // only 20 of ordinary income. A fully internally coherent 40/20 clone is
+  // RangeError at the penalty validator, which recomputes that same ratio.
+  readings: {
+    statute: { basisRecovered: 24, coherentBasisFirstAtPenalty: 'RangeError' },
+    rejectedBasisFirst: { basisRecovered: 40, coherentBasisFirstAtPenalty: 'accepted' },
+  },
   accepted: 'statute',
 }, ({ accepted, readings }) => {
   it('recovers basis in the investment-to-account-balance ratio', () => {
     const result = classifyTraditionalEmployerPlanWithdrawal(input(60, 100, 40))
 
     expect(result.status).toBe('accepted')
-    if (result.status !== 'accepted') return
+    if (result.status !== 'accepted') throw new Error('expected acceptance')
     expect(result.acceptedSourceEligibility.basisEvidence.basisRecoveredAmount)
-      .toBe(accepted)
+      .toBe(accepted.basisRecovered)
     expect(result.acceptedSourceEligibility.basisEvidence.basisRecoveredAmount)
-      .not.toBe(readings.rejectedBasisFirst)
+      .not.toBe(readings.rejectedBasisFirst.basisRecovered)
     expect(result.acceptedSourceEligibility.basisEvidence.ordinaryIncomeAmount)
       .toBe(36)
+
+    expect(evaluateAcceptedCharacterPenalty(result)).toMatchObject({
+      status: 'accepted',
+      evidence: {
+        characterCoverage: {
+          executedAmount: 60,
+          basisReturnExcludedAmount: accepted.basisRecovered,
+          taxableTreatmentAmount: 36,
+        },
+      },
+    })
+
+    const forged = structuredClone(result)
+    const basisFirst = readings.rejectedBasisFirst.basisRecovered
+    Object.assign(forged.acceptedSourceEligibility.basisEvidence, {
+      basisRecoveredAmount: asUsdCents(basisFirst),
+      ordinaryIncomeAmount: asUsdCents(20),
+    })
+    for (const segment of forged.taxCharacter) {
+      const amount = asPositiveUsdCents(
+        segment.kind === 'basisReturn' ? basisFirst : 20,
+      )
+      Object.assign(segment, { amount })
+      Object.assign(segment.characterEvidence, { segmentAmount: amount })
+    }
+    let coherentBasisFirstAtPenalty: 'accepted' | 'RangeError'
+    try {
+      evaluateAcceptedCharacterPenalty(forged)
+      coherentBasisFirstAtPenalty = 'accepted'
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error
+      coherentBasisFirstAtPenalty = 'RangeError'
+    }
+    expect(coherentBasisFirstAtPenalty).toBe(accepted.coherentBasisFirstAtPenalty)
+    expect(coherentBasisFirstAtPenalty).not.toBe(
+      readings.rejectedBasisFirst.coherentBasisFirstAtPenalty,
+    )
   })
 
   it('leaves a distribution smaller than the basis partly taxable', () => {

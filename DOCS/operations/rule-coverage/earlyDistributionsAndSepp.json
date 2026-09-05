@@ -8,7 +8,7 @@
       "title": "The 10 percent additional tax falls on the includible portion",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "The includible portion is whatever the annual section 408(d)(2) pro-rata calculation produces, so this rule sits downstream of the basis-recovery rule rather than restating it. That is also why the additional tax cannot be computed from the distribution alone.",
+      "conventionRationale": "The includible portion is whatever character the upstream path produces. For owned IRAs that is the annual section 408(d)(2) pro-rata calculation against the owner-wide Form 8606 IRA pool, so this rule sits downstream of the basis-recovery rule rather than restating it. Employer plans are not in that pool: the accepted traditional-employer-plan character path recovers after-tax employee basis by single-distribution pro rata against the pre-distribution account balance under section 72, so the taxable treatment amount bound into the penalty evaluator is the ordinary-income segment of that accepted character. That is also why the additional tax cannot be computed from the distribution amount alone.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -17,7 +17,8 @@
       "verifiedOn": "2026-08-03",
       "dueOn": "2027-08-03",
       "implementedBy": [
-        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts"
+        "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts",
+        "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts"
       ],
       "implementations": [
         {
@@ -28,6 +29,15 @@
               "line": 1129
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
+          "functions": [
+            {
+              "name": "evaluateTraditionalEmployerPlanPenaltyPrerequisite",
+              "line": 559
+            }
+          ]
         }
       ],
       "fixtureFiles": [
@@ -36,12 +46,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
-          "line": 1269,
+          "line": 1379,
           "note": null,
           "tests": [
             {
               "title": "charges the additional tax on the taxable half of a basis-bearing distribution",
-              "line": 1273
+              "line": 1387
             }
           ]
         }
@@ -222,12 +232,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
-          "line": 420,
+          "line": 529,
           "note": null,
           "tests": [
             {
               "title": "accepts a distribution taken exactly on the 59.5 threshold",
-              "line": 427
+              "line": 536
             }
           ]
         }
@@ -487,12 +497,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
-          "line": 498,
+          "line": 607,
           "note": null,
           "tests": [
             {
               "title": "keeps the distribution in income while waiving the additional tax",
-              "line": 502
+              "line": 611
             }
           ]
         }
@@ -1154,16 +1164,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
-          "line": 645,
+          "line": 754,
           "note": null,
           "tests": [
             {
               "title": "lets a 72(t)(2) exception zero the tax inside the two-year window",
-              "line": 654
+              "line": 763
             },
             {
               "title": "applies 25 percent only where no exception reaches the distribution",
-              "line": 670
+              "line": 779
             }
           ]
         }

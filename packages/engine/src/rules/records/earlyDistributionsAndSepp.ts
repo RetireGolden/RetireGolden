@@ -252,7 +252,7 @@ export const earlyDistributionAndSeppRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The includible portion is whatever the annual section 408(d)(2) pro-rata calculation produces, so this rule sits downstream of the basis-recovery rule rather than restating it. That is also why the additional tax cannot be computed from the distribution alone.',
+      'The includible portion is whatever character the upstream path produces. For owned IRAs that is the annual section 408(d)(2) pro-rata calculation against the owner-wide Form 8606 IRA pool, so this rule sits downstream of the basis-recovery rule rather than restating it. Employer plans are not in that pool: the accepted traditional-employer-plan character path recovers after-tax employee basis by single-distribution pro rata against the pre-distribution account balance under section 72, so the taxable treatment amount bound into the penalty evaluator is the ordinary-income segment of that accepted character. That is also why the additional tax cannot be computed from the distribution amount alone.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -265,9 +265,13 @@ export const earlyDistributionAndSeppRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts'],
+    implementedBy: [
+      'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.ts#evaluateOwnedNonRothIraPenaltyPrerequisites',
+      'packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.ts#evaluateTraditionalEmployerPlanPenaltyPrerequisite',
     ],
   },
 

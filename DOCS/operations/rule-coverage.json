@@ -76,8 +76,8 @@
   "attestations": {
     "totalFiles": 372,
     "byStatus": {
-      "partial": 55,
-      "registered": 109,
+      "partial": 54,
+      "registered": 110,
       "rule-free": 208,
       "unswept": 0
     },
@@ -155,11 +155,6 @@
       "path": "actions/rothConversionExecution.ts",
       "sweptOn": "2026-08-29",
       "note": "ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual"
-    },
-    {
-      "path": "actions/traditionalEmployerPlanPenaltyPrerequisite.ts",
-      "sweptOn": "2026-08-29",
-      "note": "Rule of 55, employer-SEPP, permitted methods, public-safety, recapture and the age-59½ threshold are registered records naming this file, and irc-72-t-2-A-iii now names the disability arm; the 10% rate application site for employer plans remains the residual"
     },
     {
       "path": "decisions/rothConversionCandidateAdapter.ts",
@@ -374,8 +369,8 @@
       "directory": "actions",
       "files": 78,
       "byStatus": {
-        "partial": 15,
-        "registered": 33,
+        "partial": 14,
+        "registered": 34,
         "rule-free": 30
       }
     },
@@ -641,7 +636,7 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T08:04:49.243Z",
+    "generatedAt": "2026-09-05T08:43:57.264Z",
     "entryCount": 1158,
     "fetched": 9,
     "cached": 310,

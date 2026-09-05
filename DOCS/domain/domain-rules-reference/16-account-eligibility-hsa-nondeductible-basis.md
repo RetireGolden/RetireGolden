@@ -268,6 +268,15 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   modification/recapture consequences.
   Source: [IRS early-distribution exception
   matrix](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-exceptions-to-tax-on-early-distributions).
+- **Traditional employer-plan early-distribution penalty.** A separate pure penalty prerequisite applies 10%
+  only when the evaluator outcome is `penaltyApplies`, charging the accepted taxable treatment amount from
+  the employer-plan withdrawal-character path — single-distribution pro rata after-tax employee basis against
+  the pre-distribution account balance under section 72, not the owner-wide Form 8606 IRA pool.
+  Nearest-cent-half-up quantization is an engine convention, not statutory text. `noTaxableExposure`, age
+  59½ reached, Rule-of-55 qualification, and disability qualification each yield `finalPenaltyAmount` 0;
+  only `penaltyApplies` constructs rate evidence and computes the 10% penalty. Employer-plan SEPP assessment with
+  provisional disposition does not finalize zero penalty — annual reconciliation evidence remains required;
+  refused SEPP assessment is not itself a zero-penalty qualification.
 - **What the annual projection actually runs, and what is still standalone.** The identity-bearing paths the
   simulator calls are the exact-cent ordinary-withdrawal executor and, since the named-conversion slice, the Roth
   conversion executor. Both debit their named sources inside the year's ledger and outside the legacy withdrawal

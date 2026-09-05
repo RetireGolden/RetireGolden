@@ -7,7 +7,9 @@ import {
   asAllocationId,
   asPersonId,
 } from './identity.js'
-import { asUsdCents } from './money.js'
+import { asPositiveUsdCents, asUsdCents } from './money.js'
+import { classifyTraditionalEmployerPlanWithdrawal } from './traditionalEmployerPlanWithdrawalCharacter.js'
+import { evaluateTraditionalEmployerPlanPenaltyPrerequisite } from './traditionalEmployerPlanPenaltyPrerequisite.js'
 import {
   classifyOwnedNonRothIraAnnualWithdrawals,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsResult,
@@ -269,6 +271,113 @@ function completeNegativeEvidence(
     rejectedDisabilityEvidence,
     iraSeppStatusEvidence,
     noOtherExceptionAttestations,
+  }
+}
+
+// Cross-boundary IRC 72(t)(1) fixture: the real withdrawal-character classifier supplies
+// accepted, bound employer character here so the penalty enforcer stays reachable; schema or
+// availability changes require updating this construction. The statutory oracle (10% of
+// includible portion) remains independent of that binding.
+function employerIncludiblePortionPenaltyInput() {
+  const actionId = asActionId('employer-rate-withdrawal')
+  const allocationId = asAllocationId('employer-rate-allocation')
+  const sourceAccountId = asAccountId('employer-rate-plan')
+  const participantPersonId = asPersonId('employer-rate-participant')
+  const evaluationDate = '2030-06-15'
+  const separationDate = '2029-12-31'
+  const character = classifyTraditionalEmployerPlanWithdrawal({
+    actionId,
+    allocationId,
+    sourceAccountId,
+    participantPersonId,
+    evaluationDate,
+    executedAmount: asUsdCents(100),
+    availabilityEvidence: {
+      predicate: 'employerDistributionEligibility',
+      actionId,
+      allocationId,
+      sourceAccountId,
+      participantPersonId,
+      evaluationDate,
+      availabilityEvidence: {
+        kind: 'distributableEvent',
+        eventKind: 'separationFromService',
+        eventDate: separationDate,
+        planTermsEvidenceId: 'employer-rate-plan-terms',
+        availableOnEvaluationDate: true,
+      },
+    },
+    basisSnapshot: {
+      predicate: 'traditionalEmployerPlanBasisSnapshot',
+      actionId,
+      allocationId,
+      sourceAccountId,
+      participantPersonId,
+      evaluationDate,
+      preDistributionAccountValue: asPositiveUsdCents(100),
+      afterTaxEmployeeBasisBeforeDistribution: asUsdCents(50),
+      basisEvidenceId: 'employer-rate-basis-evidence',
+    },
+  })
+  if (character.status !== 'accepted') {
+    throw new Error('employer includible-portion fixture character must be accepted')
+  }
+  return {
+    actionId,
+    allocationId,
+    sourceAccountId,
+    participantPersonId,
+    evaluationDate,
+    characterization: character,
+    taxableTreatmentAmount: asUsdCents(
+      character.acceptedSourceEligibility.basisEvidence.ordinaryIncomeAmount,
+    ),
+    participantEvidence: {
+      predicate: 'employerPlanParticipantBirthDateForPenalty' as const,
+      participantPersonId,
+      birthDate: '1975-06-15',
+      birthDateEvidenceId: 'employer-rate-birth-record',
+    },
+    separationEvidence: {
+      predicate: 'sponsoringEmployerSeparationForPenalty' as const,
+      sourceAccountId,
+      participantPersonId,
+      separationDate,
+      authoritative: true as const,
+      separationEvidenceId: 'employer-rate-separation-record',
+    },
+    disabilityEvidence: {
+      kind: 'disability' as const,
+      disabledPersonId: participantPersonId,
+      disabilityQualificationDate: null,
+      evaluationDate,
+      qualifiedOnEvaluationDate: false as const,
+      disabilityEvidenceId: 'employer-rate-not-disabled',
+    },
+    seppEvidence: {
+      predicate: 'employerPlanSeppStatusForWithdrawal' as const,
+      actionId,
+      allocationId,
+      sourceAccountId,
+      participantPersonId,
+      evaluationDate,
+      status: 'none' as const,
+      electionId: null,
+      scheduleId: null,
+      seppStatusEvidenceId: 'employer-rate-no-sepp',
+    },
+    otherExceptionAttestation: {
+      predicate: 'otherEmployerPlanPenaltyExceptionAttestation' as const,
+      actionId,
+      allocationId,
+      sourceAccountId,
+      participantPersonId,
+      evaluationDate,
+      otherExceptionClaimed: false,
+      exceptionDescription: null,
+      evidenceScope: 'planningEvidenceNotFilingGradeLegalAdjudication' as const,
+      attestationEvidenceId: 'employer-rate-other-exception-attestation',
+    },
   }
 }
 
@@ -1260,27 +1369,51 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
   // IRC 72(t)(1) increases the tax by 10 percent of "the portion of such amount
   // which is includible in gross income" -- not of the amount distributed.
   //
-  // The expected value comes from the rule, not from running the code. A 100
-  // distribution against 100 of opening basis has a section 408(d)(2)
-  // denominator of 100 year-end plus 100 line-7 = 200, so the nontaxable
-  // fraction is 100/200 and half the distribution comes back as basis. The
-  // includible half is 50, and 10 percent of that is 5. Charging the gross
-  // instead would be 10 -- double.
+  // The expected value comes from the rule, not from running the code.
+  // Employer arm (section 72, single distribution): distribution 100c,
+  // pre-distribution account 100c, after-tax employee basis 50c →
+  // 100×50/100 = 50c basis recovered, 50c includible → 5c penalty.
+  // IRA arm (Form 8606 owner pool): 100c opening basis, 100c year-end plus
+  // 100c line-7 = 200c denominator → 100/200 nontaxable fraction, same
+  // 50c includible and 5c penalty. Charging gross would be 10c — double.
   describeRule('irc-72-t-1-additional-tax-on-includible-portion', {
-    readings: { tenPercentOfIncludible: 5, tenPercentOfGross: 10 },
+    readings: {
+      // [ownedIRA, traditionalEmployerPlan], all amounts cents
+      tenPercentOfIncludible: [5, 5],
+      tenPercentOfGross: [10, 10],
+    },
     accepted: 'tenPercentOfIncludible',
   }, ({ accepted, readings }) => {
     it('charges the additional tax on the taxable half of a basis-bearing distribution', () => {
-      const result = evaluateOwnedNonRothIraPenaltyPrerequisites(
+      const employerResult = evaluateTraditionalEmployerPlanPenaltyPrerequisite(
+        employerIncludiblePortionPenaltyInput(),
+      )
+      const iraResult = evaluateOwnedNonRothIraPenaltyPrerequisites(
         completeNegativeEvidence(input({ basisAmount: 100 })),
       )
+      const iraEvaluation = first(iraResult)
 
-      expect(first(result)).toMatchObject({
+      expect(employerResult.status).toBe('accepted')
+      if (employerResult.status !== 'accepted') return
+      expect(employerResult.evidence.outcome).toBe('penaltyApplies')
+      expect(employerResult.evidence.characterCoverage).toMatchObject({
+        executedAmount: 100,
+        basisReturnExcludedAmount: 50,
+        taxableTreatmentAmount: 50,
+      })
+
+      expect(iraEvaluation).toMatchObject({
         outcome: 'penaltyApplies',
         evaluatedOrdinaryIncomeExposureAmount: 50,
-        finalPenaltyAmount: accepted,
       })
-      expect(first(result)).not.toMatchObject({ finalPenaltyAmount: readings.tenPercentOfGross })
+      if (iraEvaluation.outcome !== 'penaltyApplies') return
+
+      const actual = [
+        iraEvaluation.finalPenaltyAmount,
+        employerResult.evidence.finalPenaltyAmount,
+      ]
+      expect(actual).toEqual(accepted)
+      expect(actual).not.toEqual(readings.tenPercentOfGross)
     })
   })
 
