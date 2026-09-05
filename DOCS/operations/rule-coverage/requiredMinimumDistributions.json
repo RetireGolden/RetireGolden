@@ -536,12 +536,12 @@
         },
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 104,
+          "line": 105,
           "note": null,
           "tests": [
             {
               "title": "sends the first post-window cohort straight to 75",
-              "line": 108
+              "line": 109
             }
           ]
         }
@@ -1437,16 +1437,17 @@
       "title": "Applicable age for an owner born in 1959",
       "classification": "unsettled",
       "errorDirection": null,
-      "conventionRationale": null,
-      "contraryReading": "IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. Nothing in the enacted text resolves the overlap, Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is reserved, and the only source choosing 73 is a notice of proposed rulemaking that has not been finalised. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. The nearest current guidance, Announcement 2026-7 (2026-11 I.R.B. 697), defers the anticipated applicability of final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so the contest stands with no guidance selecting either age.",
+      "conventionRationale": "OWNER VERSUS INHERITED. The owner living-RMD path has to select one start age and follows the proposed 73. The inherited deriveRbdComparison path keeps both candidate RBD dates (April 1, 2033 at age 73; April 1, 2035 at age 75) and refuses with born-1959-applicable-age-contested only where those candidates disagree on before versus on-or-after; deaths outside both candidate RBD years resolve when the asserted fact agrees, and at the same candidate RBD year the existing year-only asserted-status tie-break applies. The applicable age remains legally contested even when a particular comparison resolves. The two paths are independent: collapsing the inherited candidates onto the owner's 73 would change the between-RBD-years outcome from the contest refusal into the ordinary assertion-contradicts-derivation guard, and collapsing onto 75 would treat that same death year as before-rbd. This slice registers only deriveRbdComparison for born 1959; applicableAgeAttainYears stays listed on treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72, irc-401-a-9-C-v-applicable-age, and treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy unchanged.",
+      "contraryReading": "IRC 401(a)(9)(C)(v)(II) applies on its own terms to a 1959 birth, because such a person attains age 74 in 2033, after December 31, 2032. Read alone it makes the applicable age 75 and defers the first distribution calendar year by two years. The enacted text leaves both prongs in force for the same individual; Treas. Reg. 1.401(a)(9)-2(b)(2)(v) is [Reserved]; Prop. Treas. Reg. 1.401(a)(9)-2(b)(2)(v) (REG-103529-23) would choose 73. The two readings differ by two distribution calendar years of forced ordinary income for the whole 1959 cohort. The quoted sentence from Announcement 2026-7 section III (2026-11 I.R.B. 697) gives the anticipated applicability for final amendments to 1.401(a)(9)-4, -5, and -6.",
       "jurisdiction": "federal",
       "volatility": "awaitingGuidance",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-29",
-      "dueOn": "2026-11-27",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2026-12-04",
       "implementedBy": [
         "packages/engine/src/params/index.ts",
+        "packages/engine/src/rmd/applicableAge.ts",
         "packages/engine/src/rmd/rmd.ts"
       ],
       "implementations": [
@@ -1456,6 +1457,15 @@
             {
               "name": "rmdStartAgeForBirthYear",
               "line": 137
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/rmd/applicableAge.ts",
+          "functions": [
+            {
+              "name": "deriveRbdComparison",
+              "line": 207
             }
           ]
         },
@@ -1475,12 +1485,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 170,
+          "line": 196,
           "note": null,
           "tests": [
             {
-              "title": "takes the proposed regulation reading for a 1959 birth",
-              "line": 174
+              "title": "fixes owner RMD at 73 and refuses inherited comparison only when contested candidates disagree",
+              "line": 249
             }
           ]
         }
@@ -1488,6 +1498,11 @@
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(i)-(ii)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm"
+        },
         {
           "kind": "statute",
           "citation": "IRC 401(a)(9)(C)(v)",
@@ -1502,6 +1517,11 @@
           "kind": "regulation",
           "citation": "Prop. Treas. Reg. 1.401(a)(9)-2(b)(2)(v), REG-103529-23, 89 FR 58644",
           "url": "https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14543.htm"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Announcement 2026-7 section III, 2026-11 I.R.B. 697",
+          "url": "https://www.irs.gov/irb/2026-11_IRB"
         }
       ]
     },
@@ -2328,12 +2348,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 486,
+          "line": 567,
           "note": null,
           "tests": [
             {
               "title": "carries the published cap on a ten-thousand-dollar step",
-              "line": 490
+              "line": 571
             }
           ]
         }

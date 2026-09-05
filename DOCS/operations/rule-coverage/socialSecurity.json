@@ -66,16 +66,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 209,
+          "line": 290,
           "note": "Values are the annual gate the projection uses, twelve times the published monthly amount.",
           "tests": [
             {
               "title": "derives the monthly amount from the wage index the regulation names",
-              "line": 214
+              "line": 295
             },
             {
               "title": "gates SSDI on the 2026 substantial gainful activity amount",
-              "line": 223
+              "line": 304
             }
           ]
         }
@@ -762,12 +762,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 500,
+          "line": 581,
           "note": null,
           "tests": [
             {
               "title": "carries the employee side rather than the combined rate",
-              "line": 504
+              "line": 585
             }
           ]
         }
@@ -941,16 +941,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 429,
+          "line": 510,
           "note": "Values are the joint adjusted base amount, above which up to 85 percent of the benefit is included.",
           "tests": [
             {
               "title": "keeps the joint amounts at the figures the statute states",
-              "line": 434
+              "line": 515
             },
             {
               "title": "is the opposite of the standard deduction, which does double",
-              "line": 443
+              "line": 524
             }
           ]
         }
@@ -1203,12 +1203,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 518,
+          "line": 599,
           "note": null,
           "tests": [
             {
               "title": "defaults to the combined-OASDI depletion projection",
-              "line": 525
+              "line": 606
             }
           ]
         }
@@ -2547,16 +2547,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 395,
+          "line": 476,
           "note": "Values are the lower annual exempt amount, twelve times the monthly one.",
           "tests": [
             {
               "title": "derives the lower exempt amount from the wage index rather than from prices",
-              "line": 400
+              "line": 481
             },
             {
               "title": "derives the higher exempt amount from its own base and reference year",
-              "line": 413
+              "line": 494
             }
           ]
         }
@@ -3308,12 +3308,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 374,
+          "line": 455,
           "note": "The price reading takes the 2025 base of 176,100 and the benefit increase the same notice announces for 2026.",
           "tests": [
             {
               "title": "derives the base from the wage index rather than from prices",
-              "line": 379
+              "line": 460
             }
           ]
         }

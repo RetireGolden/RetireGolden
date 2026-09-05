@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { deriveRbdComparison } from '../rmd/applicableAge.js'
 import { describeRule } from '../rules/describeRule.js'
 import { SGA_ANNUAL_MONTHS, ssdiSuspendedBySga } from '../socialSecurity/disability.js'
 
@@ -158,24 +159,104 @@ describe('standardDeduction', () => {
   })
 })
 
+function compare1959(ownerDeathYear: number, decedentHadStartedRmds: boolean): string {
+  const result = deriveRbdComparison({
+    ownerBirthYear: 1959,
+    ownerDeathYear,
+    decedentHadStartedRmds,
+  })
+  if (result.kind === 'resolved') return result.comparison
+  if (
+    result.reason === 'born-1959-applicable-age-contested' ||
+    result.reason === 'assertion-contradicts-derivation'
+  ) {
+    return `needs-review:${result.reason}`
+  }
+  throw new Error(`unexpected needs-review reason in 1959 fixture: ${result.reason}`)
+}
+
+const born1959DeriveCases = [
+  [2032, false],
+  [2033, false],
+  [2033, true],
+  [2034, false],
+  [2035, false],
+  [2035, true],
+  [2036, true],
+] as const
+
 describe('applicable age for the 1959 cohort', () => {
-  // IRC 401(a)(9)(C)(v) catches a 1959 birth twice over: such a person attains
-  // age 73 in 2032, inside clause (I)'s window, and age 74 in 2033, inside
-  // clause (II)'s. The enacted text resolves nothing, the final regulation
-  // reserved Treas. Reg. 1.401(a)(9)-2(b)(2)(v), and only a proposed rule fills
-  // it with age 73. This fixture pins the reading the engine took so a later
-  // reader cannot "correct" it to 75 without noticing the question was
-  // researched. Two distribution calendar years of forced ordinary income for
-  // the whole cohort ride on it.
+  // IRC §401(a)(9)(C)(v) clause (I) attains 73 in 2032 (before 1 January 2033); clause (II)
+  // attains 74 in 2033 (after 31 December 2032). The cited final paragraph leaves this contest
+  // reserved; the proposed-regulation reading selects 73 for owner living RMD.
+  // Worksheet: 1959 + 73 = 2032 attain year → IRC §401(a)(9)(C)(i) RBD April 1, 2033.
+  // Worksheet: 1959 + 75 = 2034 attain year → RBD April 1, 2035.
+  // At equal candidate RBD year, this input model uses asserted decedentHadStartedRmds to break
+  // year-only ties (model convention, not exact death date); cases at 2033 and 2035 exercise both assertions.
   describeRule('treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959', {
-    readings: { proposedRegulationAgeSeventyThree: 73, clauseTwoOnItsOwnTermsAgeSeventyFive: 75 },
-    accepted: 'proposedRegulationAgeSeventyThree',
+    readings: {
+      proposedRegulationAgeSeventyThreeConditionalInheritedRefusal: {
+        selectedOwnerRmdAge: 73,
+        deriveRbdComparison: [
+          'before-rbd',
+          'before-rbd',
+          'needs-review:born-1959-applicable-age-contested',
+          'needs-review:born-1959-applicable-age-contested',
+          'needs-review:born-1959-applicable-age-contested',
+          'on-or-after-rbd',
+          'on-or-after-rbd',
+        ],
+      },
+      seventyThreeCollapsedEverywhere: {
+        selectedOwnerRmdAge: 73,
+        deriveRbdComparison: [
+          'before-rbd',
+          'before-rbd',
+          'on-or-after-rbd',
+          'needs-review:assertion-contradicts-derivation',
+          'needs-review:assertion-contradicts-derivation',
+          'on-or-after-rbd',
+          'on-or-after-rbd',
+        ],
+      },
+      seventyFiveCollapsedEverywhere: {
+        selectedOwnerRmdAge: 75,
+        deriveRbdComparison: [
+          'before-rbd',
+          'before-rbd',
+          'needs-review:assertion-contradicts-derivation',
+          'before-rbd',
+          'before-rbd',
+          'on-or-after-rbd',
+          'on-or-after-rbd',
+        ],
+      },
+      blanketBorn1959Refusal: {
+        selectedOwnerRmdAge: 73,
+        deriveRbdComparison: [
+          'needs-review:born-1959-applicable-age-contested',
+          'needs-review:born-1959-applicable-age-contested',
+          'needs-review:born-1959-applicable-age-contested',
+          'needs-review:born-1959-applicable-age-contested',
+          'needs-review:born-1959-applicable-age-contested',
+          'needs-review:born-1959-applicable-age-contested',
+          'needs-review:born-1959-applicable-age-contested',
+        ],
+      },
+    },
+    accepted: 'proposedRegulationAgeSeventyThreeConditionalInheritedRefusal',
   }, ({ accepted, readings }) => {
-    it('takes the proposed regulation reading for a 1959 birth', () => {
-      expect(rmdStartAgeForBirthYear(1959)).toBe(accepted)
-      expect(rmdStartAgeForBirthYear(1959)).not.toBe(readings.clauseTwoOnItsOwnTermsAgeSeventyFive)
-      // The neighbours are unambiguous: 1958 is caught by clause (I) alone and
-      // 1960 by clause (II) alone, so only 1959 is doubly covered.
+    it('fixes owner RMD at 73 and refuses inherited comparison only when contested candidates disagree', () => {
+      const observed = {
+        selectedOwnerRmdAge: rmdStartAgeForBirthYear(1959),
+        deriveRbdComparison: born1959DeriveCases.map(([year, started]) =>
+          compare1959(year, started),
+        ),
+      }
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.seventyThreeCollapsedEverywhere)
+      expect(observed).not.toEqual(readings.seventyFiveCollapsedEverywhere)
+      expect(observed).not.toEqual(readings.blanketBorn1959Refusal)
       expect(rmdStartAgeForBirthYear(1958)).toBe(73)
       expect(rmdStartAgeForBirthYear(1960)).toBe(75)
     })
