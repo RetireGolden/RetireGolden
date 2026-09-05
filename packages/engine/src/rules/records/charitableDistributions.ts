@@ -256,7 +256,7 @@ export const charitableDistributionRecords = {
   'irc-408-d-8-beneficiary-ira-source': {
     title: 'Inherited IRA as a QCD source',
     statement:
-      'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary’s own age, not the decedent’s. Publication 590-B keeps inherited-IRA basis out of the owner’s own traditional IRA pool unless the decedent’s spouse chooses to treat the IRA as their own. Treas. Reg. 1.408-8(e)(2)(i) is the parallel owner-versus-beneficiary split for required-minimum-distribution aggregation, not the basis rule. Not modelled in v1: the engine does not carry separate beneficiary basis history, so an inherited source is classification-only and non-actionable. Eligibility and the identity allocator both refuse qcd-inherited-basis-unsupported; the allocator keys off the inherited marker and does not honor treat-as-own.',
+      'A beneficiary who has personally attained age 70.5 may make a QCD from an inherited IRA; the controlling fact is the beneficiary’s own age, not the decedent’s. Publication 590-B keeps inherited-IRA basis out of the owner’s own traditional IRA pool unless the decedent’s spouse chooses to treat the IRA as their own. Treas. Reg. 1.408-8(e)(2)(i) is the parallel owner-versus-beneficiary split for required-minimum-distribution aggregation, not the basis rule. Not modelled in v1: the Plan-backed QCD path does not carry separate beneficiary basis history, so an inherited source is classification-only and non-actionable. Eligibility and the identity allocator both refuse qcd-inherited-basis-unsupported; the allocator keys off the inherited marker and does not honor treat-as-own.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
@@ -309,7 +309,7 @@ export const charitableDistributionRecords = {
   'irc-408-d-8-roth-ira-source': {
     title: 'Roth IRA as a QCD source',
     statement:
-      'A QCD may legally be made from a Roth IRA, but only to the extent the distribution would be includible in gross income without regard to subparagraph (A). The engine does not prove Roth tax character, so a Roth source is outside product-supported scope and fails closed rather than being priced: eligibility refuses qcd-roth-source-unsupported, and the identity allocator refuses qcd-source-not-ira because a Roth account is not a traditional IRA. Both are typed refusals of a legally possible source; neither computes a partly excludable Roth QCD.',
+      'A QCD may legally be made from a Roth IRA, but only to the extent the distribution would be includible in gross income without regard to subparagraph (A). The QCD source path does not prove Roth tax character, so a Roth source is outside product-supported scope and fails closed rather than being priced: eligibility refuses qcd-roth-source-unsupported, and the identity allocator refuses qcd-source-not-ira because a Roth account is not a traditional IRA. Both are typed refusals of a legally possible source; neither computes a partly excludable Roth QCD.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,

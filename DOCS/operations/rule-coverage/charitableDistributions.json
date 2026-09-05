@@ -657,11 +657,12 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-25",
-      "dueOn": "2027-08-25",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdDerivedTaxCharacter.ts",
         "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
       "implementations": [
@@ -684,6 +685,15 @@
           ]
         },
         {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "qcdSourceIssue",
+              "line": 376
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/strategies/accountEligibility.ts",
           "functions": [
             {
@@ -699,12 +709,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 361,
+          "line": 365,
           "note": null,
           "tests": [
             {
               "title": "executes an IRA source and refuses an employer-plan source",
-              "line": 368
+              "line": 372
+            },
+            {
+              "title": "allocates identity for an ordinary IRA and blocks an employer-kind source that differs only in kind",
+              "line": 384
             }
           ]
         }
@@ -767,42 +781,42 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 381,
+          "line": 434,
           "note": "DAF / supporting organization",
           "tests": [
             {
               "title": "executes an attested public charity and refuses without the no-DAF attestation",
-              "line": 389
+              "line": 442
             },
             {
               "title": "refuses an explicitly designated donor-advised fund even with affirmative attestations",
-              "line": 403
+              "line": 456
             },
             {
               "title": "refuses an explicitly designated supporting organization even with affirmative attestations",
-              "line": 412
+              "line": 465
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 422,
+          "line": 475,
           "note": "direct-from-custodian attestation",
           "tests": [
             {
               "title": "refuses a QCD without the direct-from-custodian attestation",
-              "line": 430
+              "line": 483
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 443,
+          "line": 496,
           "note": "eligible-organization attestation",
           "tests": [
             {
               "title": "refuses a QCD without the eligible-organization attestation",
-              "line": 451
+              "line": 504
             }
           ]
         }
@@ -885,23 +899,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 502,
+          "line": 555,
           "note": "month-end birth",
           "tests": [
             {
               "title": "clamps a nonexistent target day to the last day of that month",
-              "line": 507
+              "line": 560
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 528,
+          "line": 581,
           "note": "leap-day birth",
           "tests": [
             {
               "title": "adds 846 months in one step rather than clamping the 70th anniversary first",
-              "line": 537
+              "line": 590
             }
           ]
         }
@@ -1067,27 +1081,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 317,
+          "line": 321,
           "note": "inactive SEP",
           "tests": [
             {
               "title": "executes a QCD from an inactive SEP IRA under Notice 2007-7",
-              "line": 325
+              "line": 329
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 336,
+          "line": 340,
           "note": "ongoing SEP",
           "tests": [
             {
               "title": "does not execute a QCD from a SEP IRA whose activity is unknown",
-              "line": 344
+              "line": 348
             },
             {
               "title": "does not execute a QCD from an ongoing SEP IRA",
-              "line": 351
+              "line": 355
             }
           ]
         }
@@ -1338,16 +1352,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 464,
+          "line": 517,
           "note": null,
           "tests": [
             {
               "title": "lets the non-excluded portion proceed to section 170 treatment",
-              "line": 471
+              "line": 524
             },
             {
               "title": "pins notApplicable treatment on a wholly excluded QCD",
-              "line": 484
+              "line": 537
             }
           ]
         }
@@ -1422,20 +1436,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1777,
+          "line": 1821,
           "note": "the direct-payment limb, not the missing attestation",
           "tests": [
             {
               "title": "refuses a direct trustee payment to a split-interest entity",
-              "line": 1803
+              "line": 1847
             },
             {
               "title": "does not let the direct-payment attestation buy the entity class back",
-              "line": 1809
+              "line": 1853
             },
             {
               "title": "accepts the same transfer to an ordinary public charity, so the refusal is the entity class",
-              "line": 1817
+              "line": 1861
             }
           ]
         }
@@ -1513,20 +1527,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1732,
+          "line": 1776,
           "note": null,
           "tests": [
             {
               "title": "requires the affirmative not-a-split-interest attestation the record describes",
-              "line": 1738
+              "line": 1782
             },
             {
               "title": "refuses a destination the request itself names as a split-interest entity",
-              "line": 1756
+              "line": 1800
             },
             {
               "title": "stays quiet on an ordinary public charity with the attestation given",
-              "line": 1772
+              "line": 1816
             }
           ]
         }
@@ -1555,11 +1569,12 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
         "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -1579,6 +1594,15 @@
             {
               "name": "stageAnnualQcdPhysicalExecution",
               "line": 513
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "qcdSourceIssue",
+              "line": 376
             }
           ]
         },
@@ -1609,20 +1633,24 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1822,
+          "line": 1866,
           "note": null,
           "tests": [
             {
               "title": "refuses an inherited source rather than borrowing the donor own-IRA basis pool",
-              "line": 1828
+              "line": 1872
             },
             {
               "title": "does not mistake the inherited IRA for a non-IRA source",
-              "line": 1834
+              "line": 1878
             },
             {
               "title": "accepts the same request from the donor own IRA, so the refusal is the inherited fact",
-              "line": 1841
+              "line": 1885
+            },
+            {
+              "title": "allocates an owned traditional IRA and blocks an inherited source as qcd-inherited-basis-unsupported",
+              "line": 1889
             }
           ]
         }
@@ -1634,8 +1662,13 @@
           "url": "https://www.irs.gov/pub/irs-drop/n-07-07.pdf"
         },
         {
+          "kind": "irsPublication",
+          "citation": "IRS Publication 590-B, inherited IRA basis",
+          "url": "https://www.irs.gov/publications/p590b"
+        },
+        {
           "kind": "regulation",
-          "citation": "Treas. Reg. 1.408-8(e)(2)(i)",
+          "citation": "Treas. Reg. 1.408-8(e)(2)(i), owner-versus-beneficiary RMD aggregation",
           "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
         }
       ]
@@ -1709,11 +1742,12 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdExecutionPrerequisite.ts",
         "packages/engine/src/actions/annualQcdPhysicalExecution.ts",
+        "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
         "packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts",
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -1733,6 +1767,15 @@
             {
               "name": "stageAnnualQcdPhysicalExecution",
               "line": 513
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/actions/retirementActionCandidateIdentityAllocator.ts",
+          "functions": [
+            {
+              "name": "qcdSourceIssue",
+              "line": 376
             }
           ]
         },
@@ -1763,16 +1806,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1712,
+          "line": 1740,
           "note": null,
           "tests": [
             {
               "title": "refuses a Roth source instead of proving how much would otherwise be includible",
-              "line": 1717
+              "line": 1745
             },
             {
               "title": "does not confuse the Roth source with the generic not-an-IRA refusal",
-              "line": 1723
+              "line": 1751
+            },
+            {
+              "title": "allocates an owned traditional IRA and blocks a Roth source as qcd-source-not-ira",
+              "line": 1759
             }
           ]
         }
@@ -1782,6 +1829,11 @@
           "kind": "irsNotice",
           "citation": "IRS Notice 2007-7, Q&A-36",
           "url": "https://www.irs.gov/pub/irs-drop/n-07-07.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 408(d)(8)(B), flush text",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm"
         }
       ]
     },
@@ -1840,16 +1892,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1846,
+          "line": 1907,
           "note": null,
           "tests": [
             {
               "title": "refuses a QCD below age 70½ instead of pricing an early distribution",
-              "line": 1857
+              "line": 1918
             },
             {
               "title": "accepts the same request once the donor is past 70½, which is also past 59½",
-              "line": 1863
+              "line": 1924
             }
           ]
         }

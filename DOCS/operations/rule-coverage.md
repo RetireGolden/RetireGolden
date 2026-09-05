@@ -124,7 +124,7 @@ None.
 | Path | Swept on | Residual claims |
 | --- | --- | --- |
 | actions/aggregateRothConversionOwnerAllocation.ts | 2026-08-29 | same-owner pro-rata allocation long registered under irc-408-d-3-A-i; the RMD-before-conversion ordering it relies on is enforced upstream (resolveOwnerIraRmdSatisfaction), and this file consumes the post-RMD snapshot as a contract rather than enforcing it - that contract stays the residual |
-| actions/annualOwnedNonRothIraPoolCapacity.ts | 2026-08-24 | QCD pool restricted to donor-owned non-Roth IRAs; no record |
+| actions/annualOwnedNonRothIraPoolCapacity.ts | 2026-09-05 | delegated owner-wide non-Roth IRA pool scope; residual min(basis, denominator) / otherwise-taxable-capacity arithmetic |
 | actions/annualQcdDerivedTaxCharacter.ts | 2026-08-29 | Owned-source eligibility arrives as typed AcceptedQcdSourceEligibilityEvidence - this module consumes what the QCD execution prerequisite evaluator enforces, and the 408(d)(8) source records are registered at that evaluator; the taxable/excludable/basis partition is registered under the composition-order and taxable-first records |
 | actions/annualRetirementPhysicalEventInventory.ts | 2026-08-24 | Inherited-RMD regime; owner-RMD start age; spouse-as-own transition; annuity/Form 8606 treatment; direct-trustee QCD origin; no record |
 | actions/beneficiaryTraditionalIraAnnualPlanApplication.ts | 2026-08-24 | Beneficiary-owned inherited traditional-IRA/death-year source gate; no record |
@@ -134,7 +134,7 @@ None.
 | actions/ownedNonRothIraAnnualPhysicalTransaction.ts | 2026-08-29 | Same-owner Roth destination and designated-Roth vehicle refusal registered under irc-408-d-3-A-i and irc-408A-d-3-B, and line-7/line-8 categorization under form-8606-lines-7-and-8-distinct-distribution-staging; QCD charitable-debit scope remains unregistered |
 | actions/ownedNonRothIraAnnualPlanCoordinator.ts | 2026-08-29 | The owner-wide non-inherited pool filter and the out-of-pool line-8 refusal are registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool; the line-7/line-8 stacking composition and the exact age-59½ threshold representation remain the residuals |
 | actions/ownedNonRothIraAnnualPostCandidateEvidence.ts | 2026-08-29 | Pool completeness (every owned non-inherited sibling, employer/inherited/foreign refused) is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool and the contribution window was already covered; the line 1/4/6/9 staging composition and the path's type-level explicit-zero line 8 remain the residuals |
-| actions/retirementActionCandidateIdentityAllocator.ts | 2026-08-29 | conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); QCD source-IRA restrictions remain open |
+| actions/retirementActionCandidateIdentityAllocator.ts | 2026-09-05 | conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); qcdSourceIssue covers the three QCD source gates as identity-only (employer qcd-source-not-ira, Roth qcd-source-not-ira, inherited qcd-inherited-basis-unsupported); residual qcd-source-owner-mismatch and other conversion, withdrawal, and identity contracts |
 | actions/retirementActionManualReview.ts | 2026-08-29 | replacement source-owner and Roth-destination identity checks registered under irc-408-d-3-A-i; the type gate here does not discriminate a designated Roth (that vehicle refusal lives in the identity allocator), and the QCD source-owner clause remains open |
 | actions/rothConversionExecution.ts | 2026-08-29 | ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual |
 | decisions/rothConversionCandidateAdapter.ts | 2026-08-29 | same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered |
@@ -166,7 +166,7 @@ None.
 | projection/optimizePlan.ts | 2026-09-05 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); ACA MAGI cap and pooled RMD divisor recovery are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection; taxpayer-tax direction has not been established); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
-| projection/ownedNonRothIraAnnualObservation.ts | 2026-09-04 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selection and December 31 complete-pool observation remain locally enforced and sibling pool records name other files |
+| projection/ownedNonRothIraAnnualObservation.ts | 2026-09-05 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selector registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool (ownedIraSourceIds); December 31 measurement and filing-grade completeness/rollover contracts remain residual |
 | projection/simulate.ts | 2026-09-02 | ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, the thin live-state application adapters for earlier pure coordinators, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly. Those retained responsibilities are the orchestration and cross-year state boundary; substantive annual funding and settlement policy no longer lives inline |
 | rmd/applicableAge.ts | 2026-09-04 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest remains on treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959; SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: deriveRbdComparison born-1959 conditional comparison/refusal (the 70½/72 rule excludes 1959; irc-401-a-9-C-v pins only applicableAgeAttainYears; treas-reg-1-401-a-9-2-b-2-v pins params/rmd); year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
 | socialSecurity/maritalBenefits.ts | 2026-09-04 | Living-divorced and ordinary-widow eligibility gates, plus half-PIA pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
@@ -248,16 +248,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T09:19:33.532Z over 1159 authority entries (9 fetched live, 311 from cache).
+Committed ledger generated at 2026-09-05T09:58:15.167Z over 1163 authority entries (9 fetched live, 311 from cache).
 
-37 serious, 50 advisory, 1072 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 1076 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 63 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 797 |
+| EXACT | ok | 801 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |
