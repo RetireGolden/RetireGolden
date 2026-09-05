@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T05:45:32.083Z",
-  "recordCount": 427,
+  "generatedAt": "2026-09-05T06:08:02.335Z",
+  "recordCount": 428,
   "urlCount": 317,
   "fetched": 9,
   "cached": 308,
-  "entryCount": 1139,
+  "entryCount": 1143,
   "counts": {
-    "EXACT": 776,
+    "EXACT": 780,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
@@ -4933,6 +4933,46 @@
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/publications/p969",
       "quoteSha256": "44c480195f7f29b1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-223-f-8-B-estate-predeath-expense-reduction",
+      "citation": "IRC 223(f)(8)(A)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm",
+      "quoteSha256": "72fa5f38e7636355",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-223-f-8-B-estate-predeath-expense-reduction",
+      "citation": "IRC 223(f)(8)(B)(i)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm",
+      "quoteSha256": "4b39addfcbb1937a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-223-f-8-B-estate-predeath-expense-reduction",
+      "citation": "IRC 223(f)(8)(B)(ii)(I)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm",
+      "quoteSha256": "8465281964d7957c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-223-f-8-B-estate-predeath-expense-reduction",
+      "citation": "IRC 223(f)(8)(B)(ii)(II)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm",
+      "quoteSha256": "25afbdfac8cc1f75",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

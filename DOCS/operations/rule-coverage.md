@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 427 |
-| Classification: approximated | 116 |
+| Total rules | 428 |
+| Classification: approximated | 117 |
 | Classification: outOfScope | 75 |
 | Classification: settled | 231 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 60 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 350 |
+| Volatility: staticStatute | 351 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 321 |
+| Federal jurisdiction | 322 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -81,11 +81,11 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 371 |
+| Engine source files | 372 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 55 |
-| registered | 108 |
+| registered | 109 |
 | rule-free | 208 |
 | unswept | 0 |
 
@@ -104,7 +104,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 4 | 4 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 9 | 0 | 7 | 2 | 0 |
-| projection | 102 | 20 | 16 | 66 | 0 |
+| projection | 103 | 20 | 17 | 66 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
 | rules | 49 | 0 | 22 | 27 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -150,7 +150,7 @@ None.
 | model/retirementActionAnnualTaxFacts.ts | 2026-09-04 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; persisted prior-year contribution-window and opening-basis/completeness invariants still enforced here without matching function pins |
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
-| projection/compare.ts | 2026-09-04 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; spousal rollover, HSA non-spouse income, and other unrelated residuals remain |
+| projection/compare.ts | 2026-09-04 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; HSA terminal inclusion base delegated to estateHsaIncome.ts (irc-223-f-8-B-estate-predeath-expense-reduction); terminal zero-haircut spouse destination convention (not rollover or treat-as-own adjudication), charity carve-out, default destination, and other class residuals remain |
 | projection/internal/annualAcaResultPublication.ts | 2026-09-02 | the pure annual ACA publication coordinator consumes the accepted fixed-point quote and household-MAGI evidence from projection/internal/annualFundingCandidateEvaluation.ts and composes the registered federal-poverty-line producer in tax/aca.ts. It preserves the established evidence contract: ordered support-code deduplication and informational-code treatment, actionable versus gross-premium-fallback readiness, dependent-MAGI inclusion, contract or fallback covered-member publication, applicable-SLCSP folding, FPL and cliff classification, convergence diagnostics, and ordered warning intents. These are result/evidence composition conventions around the registered ACA arithmetic, not a new filing-grade eligibility or premium-tax-credit implementation. The helper mutates no caller-owned value and returns fresh result and warning containers. annualFundingApplicationAndClosePhase retains the active-year gate, recursively detached annual contract/evaluation snapshots, warning-set insertion, downstream optimizer-field consumption, core YearResult publication, and MAGI history |
 | projection/internal/annualAggregateRothConversionPhase.ts | 2026-09-02 | effectful annual aggregate Roth-conversion phase relocated from simulatePlan. It composes the separately attested aggregate target and allocation planners, federal/state tax inputs, ACA sizing evidence, Form 8606 character callbacks, and registered conversion execution rules, then applies the resulting source/destination balances, IRA basis, Roth layers, runtime journal rows, warnings, and optional cash-flow capture in the original order. No calculation or chronology changed; simulatePlan supplies grouped facts, live ledgers, callbacks, and capture sinks and consumes the typed annual result |
 | projection/internal/annualAggregateRothConversionTargetPlan.ts | 2026-09-02 | the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. internal/annualAggregateRothConversionPhase.ts retains source-context construction and lazy current-balance readers, every aggregate conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer inputs, and all live aggregate-conversion commits; simulatePlan supplies the surrounding annual facts and consumes the typed phase result |
@@ -190,7 +190,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/charitableDistributions.json | 22 |
 | rule-coverage/contributionAndDeferralLimits.json | 38 |
 | rule-coverage/earlyDistributionsAndSepp.json | 28 |
-| rule-coverage/healthSavingsAccounts.json | 18 |
+| rule-coverage/healthSavingsAccounts.json | 19 |
 | rule-coverage/individualIncomeTax.json | 19 |
 | rule-coverage/investmentIncomeAndBasis.json | 30 |
 | rule-coverage/iraBasisAndRollovers.json | 15 |
@@ -209,7 +209,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (427 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (428 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -249,16 +249,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T05:45:32.083Z over 1139 authority entries (9 fetched live, 308 from cache).
+Committed ledger generated at 2026-09-05T06:08:02.335Z over 1143 authority entries (9 fetched live, 308 from cache).
 
-37 serious, 50 advisory, 1052 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 1056 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 64 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 776 |
+| EXACT | ok | 780 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |

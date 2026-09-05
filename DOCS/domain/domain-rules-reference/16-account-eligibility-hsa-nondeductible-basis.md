@@ -52,9 +52,17 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   penalized 20% before 65 — IRS Pub 969), or omitted (legacy: tax-free but conservatively penalized before 65).
   With `reimburseLater`, modeled medical costs paid out of pocket accumulate a carryover that later withdrawals
   draw against tax-free (the "pay now, reimburse later" strategy).
-- **HSA beneficiary treatment.** `beneficiary: 'nonSpouse'` makes the ending HSA fully taxable to the heir
-  (IRC §223(f)(8)(B)), so the after-tax estate metric taxes it at the heir tax rate; `spouse` (or omitted)
-  passes untaxed like a Roth.
+- **HSA beneficiary treatment.** The after-tax estate metric is assumed terminal income-tax exposure, not an
+  annual HSA tax computation. A spouse-designated HSA continues under IRC §223(f)(8)(A) (zero inclusion).
+  A designated non-spouse natural-person destination uses the ending gross balance as the inclusion base
+  ([`estateHsaIncomeBase`](../../../packages/engine/src/projection/estateHsaIncome.ts); IRC §223(f)(8)(B)(i)) and does not apply the §223(f)(8)(B)(ii)(I) reduction for
+  qualified medical expenses incurred by the decedent before death and paid by that person within one year
+  (`irc-223-f-8-B-estate-predeath-expense-reduction`, approximated / overstatesTax in that stipulated case).
+  The Plan cannot express legal beneficiary class, death date or date-of-death value, or those qualifying
+  expense and payment facts; `nonSpouse` also stands in for unmodeled legal classes. A charitable estate
+  carve-out is applied outside that helper. Omitting the older HSA `beneficiary` field is a legacy convention
+  that maps to the spouse-equivalent default; it is not a statutory designation. Do not read every death as a
+  fully taxable HSA distribution.
 - **Nondeductible IRA basis (Form 8606 pro-rata).** `nondeductibleBasis` on a traditional IRA aggregates
   across an owner's own IRAs; every withdrawal and conversion is part tax-free basis and part taxable in the
   ratio of basis to the aggregated pre-distribution balance (IRC §408(d)(2)). Employer plans and inherited
@@ -324,5 +332,6 @@ additive with a no-op default, so plans saved before it stay byte-identical.
 [engine/tax/propertySale.ts](../../../packages/engine/src/tax/propertySale.ts),
 [engine/projection/internal/annualAggregateRothConversionTargetPlan.ts](../../../packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts), threaded through
 [engine/projection/simulate.ts](../../../packages/engine/src/projection/simulate.ts), the after-tax estate metric in
-[engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts), and the household-basis helper in
-[engine/projection/estateTraditionalBasis.ts](../../../packages/engine/src/projection/estateTraditionalBasis.ts).
+[engine/projection/compare.ts](../../../packages/engine/src/projection/compare.ts), the household-basis helper in
+[engine/projection/estateTraditionalBasis.ts](../../../packages/engine/src/projection/estateTraditionalBasis.ts), and the HSA terminal-inclusion helper in
+[engine/projection/estateHsaIncome.ts](../../../packages/engine/src/projection/estateHsaIncome.ts).

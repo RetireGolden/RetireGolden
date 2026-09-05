@@ -21,7 +21,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'The basic idea' },
   {
     type: 'prose',
-    md: 'A pre-tax account can look larger than a Roth account, but some of that balance may really belong to future tax. For estate comparison, RetireGolden treats leftover traditional dollars as partly taxable to heirs, while Roth, taxable, cash, HSA, property, and life-insurance death benefit use simpler pass-through assumptions.',
+    md: 'A pre-tax account can look larger than a Roth account, but some of that balance may really belong to future tax. For estate comparison, RetireGolden treats leftover traditional dollars as partly taxable to heirs, while Roth, taxable, cash, property, and life-insurance death benefit use simpler pass-through assumptions. A spouse-designated HSA (or the legacy default) gets no estate haircut; a non-spouse HSA is estimated at your heir tax rate on the ending gross, without the qualifying pre-death medical expense reduction — a terminal comparison, not an actual death return.',
   },
   {
     type: 'figure',
@@ -40,7 +40,7 @@ export const blocks: ArticleBlock[] = [
       { symbol: 'heir tax rate', meaning: 'the assumed income-tax rate heirs pay on inherited pre-tax dollars' },
     ],
     basis: 'nominal',
-    note: 'This is a planning simplification for comparing strategies. The optimizer uses the assumption you set, then RetireGolden re-runs the full ledger and applies only a cleaned schedule that the ledger can execute.',
+    note: 'A simplified illustration for fully pre-tax traditional dollars left to a non-spouse heir, without HSA, basis, spouse, or charity adjustments — the full comparison handles those separately. The optimizer uses the assumption you set, then RetireGolden re-runs the full ledger and applies only a cleaned schedule that the ledger can execute.',
   },
   { type: 'heading', text: 'Why conversions can help the estate' },
   {
@@ -54,7 +54,8 @@ export const blocks: ArticleBlock[] = [
     rows: [
       ['Traditional', 'Haircut by the heir tax rate at the end', 'A larger balance may not all belong to heirs'],
       ['Roth', 'Kept whole in the estate comparison', 'Future qualified Roth dollars are more flexible'],
-      ['Taxable, cash, HSA, property', 'Simplified as passing through untaxed in the estate comparison', 'Keeps the optimizer focused on the pre-tax vs Roth trade'],
+      ['HSA', 'Spouse/default: no estate haircut; non-spouse: heir rate on ending gross (pre-death expense reduction omitted)', 'Terminal comparison, not an actual death return'],
+      ['Taxable, cash, property', 'Simplified as passing through untaxed in the estate comparison', 'Keeps the optimizer focused on the pre-tax vs Roth trade'],
       ['Current taxes', 'Counted through the full projection re-run', 'A good schedule must survive the real plan math'],
     ],
   },

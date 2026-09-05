@@ -188,7 +188,7 @@ They use part of their savings to purchase a SPIA (non-qualified, cash-funded) t
 
 The QLAC premium is excluded from future RMD calculations up to the limit.
 
-Each account has its own beneficiary designation: some go to the surviving spouse (rollover treatment), others to charity (untaxed), and some to non-spouse heirs (with tax).`,
+Each account has its own beneficiary designation: some go to the surviving spouse with no income tax deducted in this comparison, others to charity (untaxed), and some to non-spouse heirs (with tax).`,
   'Look at the annuity income streams and purchase cash flows in Results, the reduced RMDs from the QLAC, and how the after-tax estate changes based on the beneficiary choices.',
   {
     name: 'The Jordan & Taylor household',
@@ -196,8 +196,8 @@ Each account has its own beneficiary designation: some go to the surviving spous
       { label: 'Filing status', value: 'Married Filing Jointly' },
       { label: 'SPIA purchase', value: '$220,000 at age 66 (non-qualified)' },
       { label: 'QLAC purchase', value: '$135,000 at age 65 (qualified, deferred)' },
-      { label: 'Beneficiary setup', value: 'Mixed: spouse rollover, charity, non-spouse' },
-      { label: 'Key goal', value: 'Secure lifetime income + control estate tax treatment' },
+      { label: 'Beneficiary setup', value: 'Mixed: spouse destination, charity, non-spouse' },
+      { label: 'Key goal', value: 'Secure lifetime income + compare after-tax inheritance' },
     ],
     summary: 'Illustrates trading liquidity for guaranteed income and using per-account beneficiaries to shape the after-tax estate.',
   },

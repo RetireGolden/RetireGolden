@@ -350,7 +350,7 @@ export type AssetClassParamOverrides = z.infer<typeof assetClassParamOverridesSc
  * metric. Absent = the legacy default: pre-tax (traditional) and non-spouse HSA
  * balances are taxed at the flat heir rate, everything else passes untaxed.
  * When set:
- *  - 'spouse'    — passes to a surviving spouse untaxed (rollover); no heir tax.
+ *  - 'spouse' — no terminal tax haircut (valuation convention, not rollover adjudication).
  *  - 'nonSpouse' — a non-spouse heir; pre-tax balances (traditional, non-spouse
  *                  HSA) are taxed at the account class's heir rate, while Roth,
  *                  taxable (stepped-up at death), and cash pass untaxed.
@@ -392,7 +392,7 @@ const accountBase = {
   /** When null, assumptions.defaultReturnPct applies. Superseded by an account's opt-in `allocation`. */
   annualReturnPct: pct.nullable(),
   /**
-   * Optional estate destination (spouse rollover / non-spouse heir / charity)
+   * Optional estate destination (spouse destination / non-spouse heir / charity)
    * for the after-tax estate metric. Absent = legacy flat-haircut treatment.
    * @see estateBeneficiarySchema
    */
@@ -1003,11 +1003,11 @@ export const hsaAccountSchema = z.object({
    */
   reimburseLater: z.boolean().optional(),
   /**
-   * Who inherits this HSA, for the after-tax estate metric: a spouse inherits
-   * it as their own HSA (passes untaxed, like Roth); any other beneficiary
-   * receives a fully taxable distribution in the death year, so the estate
-   * metric taxes the remaining balance at the heir tax rate. Omitted = legacy
-   * untaxed pass-through (same as 'spouse').
+   * Terminal HSA destination: `spouse` models IRC 223(f)(8)(A) continuation.
+   * `nonSpouse` uses ending gross, omitting the (f)(8)(B)(ii)(I) expense reduction;
+   * legal beneficiary classes and death-year facts are not expressible here.
+   * Omitted means legacy spouse-equivalent valuation, not legal designation.
+   * `estateBeneficiary` overrides this field; see estateHsaIncome.ts / irc-223-f-8-B-estate-predeath-expense-reduction.
    */
   beneficiary: z.enum(['spouse', 'nonSpouse']).optional(),
   /** Opt-in class allocation; supersedes annualReturnPct. Rebalancing here is tax-free. */
