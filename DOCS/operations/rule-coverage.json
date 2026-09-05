@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 419,
+    "total": 423,
     "byClassification": {
-      "approximated": 110,
-      "outOfScope": 73,
+      "approximated": 112,
+      "outOfScope": 75,
       "settled": 231,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 342,
+      "staticStatute": 346,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 313,
+      "federal": 317,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 368,
+    "totalFiles": 369,
     "byStatus": {
       "partial": 55,
-      "registered": 105,
+      "registered": 106,
       "rule-free": 208,
       "unswept": 0
     },
@@ -323,8 +323,8 @@
     },
     {
       "path": "socialSecurity/maritalBenefits.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records"
+      "sweptOn": "2026-09-04",
+      "note": "Living-divorced and ordinary-widow eligibility gates, plus half-PIA pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
     },
     {
       "path": "socialSecurity/piaFromEarnings.ts",
@@ -471,9 +471,9 @@
     },
     {
       "directory": "rules",
-      "files": 47,
+      "files": 48,
       "byStatus": {
-        "registered": 20,
+        "registered": 21,
         "rule-free": 27
       }
     },
@@ -600,6 +600,11 @@
       "ruleCount": 48
     },
     {
+      "module": "socialSecurityMaritalEligibility",
+      "path": "rule-coverage/socialSecurityMaritalEligibility.json",
+      "ruleCount": 4
+    },
+    {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
       "ruleCount": 29
@@ -631,14 +636,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T01:05:42.614Z",
-    "entryCount": 1085,
+    "generatedAt": "2026-09-05T02:13:29.194Z",
+    "entryCount": 1115,
     "fetched": 9,
-    "cached": 304,
+    "cached": 306,
     "counts": {
       "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 6,
-      "EXACT": 722,
+      "EXACT": 752,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 37,

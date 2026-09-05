@@ -1,0 +1,321 @@
+{
+  "kind": "retiregolden.rules-coverage.shard",
+  "version": 5,
+  "module": "socialSecurityMaritalEligibility",
+  "rules": [
+    {
+      "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+      "title": "A living divorced spouse is entitled on a disability-entitled worker under 62, and independently only after two years when the worker is not entitled",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. 20 CFR 404.331 splits the worker-entitled path (paragraphs (a) through (e), including a disability-entitled worker under 62) from the independently entitled path (paragraphs (a) through (f), worker at least 62 and not yet entitled, two years divorced). formerSpouseSchema carries relationship, dob, piaMonthly, and marriageYears, and has no worker-entitlement, fully-insured, or divorce-date fact, so isDivorcedSpouseEligible substitutes a calendar-year age-62 blanket. The companion fixture holds the claimant at FRA so the half-PIA amount is 1,500; worksheet-only facts projected out of the schema are an already-disability-entitled ex at 61 and a not-yet-entitled ex at 62 divorced one year. The claimant age-62 condition is supplied by a valid Plan claimAge and by spousalBenefitFactor, not by an explicit 62 predicate here, and the own-PIA restriction is a dual-entitlement offset this menu does not adjudicate.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/maritalBenefits.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
+          "functions": [
+            {
+              "name": "isDivorcedSpouseEligible",
+              "line": 67
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
+          "line": 34,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the calendar-year age-62 blanket against worker entitlement and the two-year independently entitled path",
+              "line": 56
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.331",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.331"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.331(a)(2)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.331"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.331(c)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.331"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.331(f)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.331"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(b)(4)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(c)(4)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(d)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-332-b-3-divorced-spouse-remarriage-continuation",
+      "title": "A divorced-spouse benefit can continue after remarriage to another entitled beneficiary",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence-record surface is model/plan.ts: claimantIsSingle is derived from household size, and formerSpouseSchema has no prior-entitlement or new-spouse-beneficiary fact. 404.331(c) still requires a new divorced-spouse claim to start from currently unmarried; this record is only the 404.332(b)(3) / 402(b)(3) continuation exception after entitlement already exists. Treating a currently-married household as a refused new claim is the living-divorced eligibility gate, not this exception.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "formerSpouseSchema",
+              "line": 1547
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.332(b)(3)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.332"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(b)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(c)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-335-a-widow-duration-exceptions",
+      "title": "The statutory alternatives to the ordinary widow nine-month duration are outside the Plan",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Absence-record surface is model/plan.ts: formerSpouseSchema has marriageYears and no accident, life-expectancy, active-duty, prior-marriage, institutionalization, legal-impediment, 60-day-marriage-timing, child-in-common, adoption, prior-entitlement, or could-have-been-entitled fact. An 8-month marriage with no exception is already refused by the ordinary duration gate; an 8-month marriage that would qualify only through one of these 404.335(a)(2) exceptions, or a marriage that would qualify only through the (a)(3) or (a)(4) alternative relationship qualifications, cannot be represented. The disabled-widow age-50 limb is a different record.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "formerSpouseSchema",
+              "line": 1547
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(a)(2)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(a)(2)(i)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(a)(2)(ii)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(a)(2)(iii)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(a)(2)(iv)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(a)(3)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(a)(4)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(k)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-335-ordinary-widow-eligibility",
+      "title": "Ordinary widow nine-month duration, age-60, and remarriage gates, including currently unmarried after an intervening marriage ends",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. 20 CFR 404.335(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in. isWidowEligible instead rejects whenever remarriedAtAge is below 60, including when claimantIsSingle is true. Independently, isWidowEligible never reads claimantIsSingle, so a schema-valid coupled context with remarriedAtAge null still receives a candidate; a null remarriedAtAge lacks the facts of any 404.335(e) exception and does not prove a marriage before 60. maritalBenefits.test.ts already characterizes that coupled-null admission. The companion fixture holds the deceased at FRA so RIB-LIM and the survivor-FRA cohort error are not in play: 9-month ordinary, 8-month with no duration exception, remarried at 59 now single, remarried at 60 still married, the same 9-month no-remarriage facts at claimant age 59 and 60, then the same FRA-67 9-month facts with claimantIsSingle false and remarriedAtAge null where the worksheet current pre-60 marriage is projected out. The age-60 gate is the helper's own claimantAge test. The age-59 and age-60 cells use a direct helper contract (claimantClaimAge equal to claimantAge so the claim-age guard passes and age 59 is refused by isWidowEligible); a whole-plan stream claimAge is clamped to 62–70 and is outside this fixture. Fully-insured status, application (including the 404.335(b)(1) through (4) exceptions), and the 404.335(d) own-old-age-benefit restriction have no formerSpouse or stream fields and are not adjudicated here; the dual-entitlement offset is a pricing comparison elsewhere. The disabled-widow age-50 limb is `usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period`; the 9-month statutory exceptions are `cfr-20-404-335-a-widow-duration-exceptions`.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/maritalBenefits.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
+          "functions": [
+            {
+              "name": "isWidowEligible",
+              "line": 76
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
+          "line": 76,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the ordinary nine-month widow path, including currently-single after a pre-60 intervening marriage and coupled null remarriage timing",
+              "line": 118
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(a)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(b)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(c)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(d)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.335(e), (e)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(1)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(3)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 416(c)(1)(E)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim"
+        }
+      ]
+    }
+  ]
+}
