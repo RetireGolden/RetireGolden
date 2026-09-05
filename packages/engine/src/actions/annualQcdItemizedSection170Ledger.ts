@@ -26,7 +26,8 @@ export interface AnnualQcdItemizedSection170TaxUnitInput {
   /**
    * Floor already absorbed by contribution categories this ledger cannot see.
    *
-   * IRC 170(b)(1)(I)(ii) consumes the 0.5% floor in a fixed category order:
+   * IRC 170(b)(1)(I) consumes the 0.5% floor in a fixed category order under
+   * clauses (i) through (vi):
    * (D) 20% capital-gain gifts to private foundations, then (C) 30%
    * capital-gain gifts to public charities, then (B), then (E) qualified
    * conservation, then (A) 50% general, and only sixth (G) 60% cash to public
@@ -67,10 +68,11 @@ export interface AnnualQcdItemizedSection170ActionEvidence {
   readonly floorCarryforwardCents: UsdCents
   readonly floorPermanentlyDisallowedCents: UsdCents
   /**
-   * The contribution "otherwise allowable ... without regard to" the 0.5% floor
-   * (IRC 170(b)(1)(I)(i)) — i.e. the amount surviving the 170(b)(1)(G) cash
-   * percentage ceiling, before the floor reduces it. This is the amount that
-   * consumes percentage capacity; the floor is applied to it afterwards.
+   * The contribution "otherwise allowable" under IRC 170(b)(1)(I) — i.e. the
+   * amount surviving the 170(b)(1)(G) cash percentage ceiling, before the floor
+   * reduces it. The parenthetical in the statute excepts only the floor itself.
+   * This is the amount that consumes percentage capacity; the floor is applied
+   * to it afterwards.
    */
   readonly percentageAllowableBeforeFloorCents: UsdCents
   readonly cashPercentageLimitUsedByActionCents: UsdCents
@@ -256,12 +258,12 @@ function taxUnit(
     const eligible = application.charitableDeductionEligibleAmount
     if (BigInt(eligible) !== BigInt(application.taxableQcdAmount) + BigInt(application.nonQcdCharitableRemainder) ||
         BigInt(eligible) !== BigInt(application.charitableDistributionAmount) - BigInt(application.excludableQcdAmount)) fail('postPassInvalid', 'Post-pass charitable amount did not reconcile.')
-    // IRC 170(b)(1)(I)(i): the floor reduces "any charitable contribution
-    // otherwise allowable (without regard to this subparagraph) as a deduction
-    // under this section". The parenthetical excepts only the floor itself, so
-    // every other 170 limitation — including the 170(b)(1)(G) percentage
-    // ceiling — is applied first and the floor reduces what survives it.
-    // The order is min(C, L) - F, never min(C - F, L); for a single-category
+    // IRC 170(b)(1)(I): the floor reduces any charitable contribution
+    // "otherwise allowable" as a deduction under this section. The parenthetical
+    // in the statute excepts only the floor itself, so every other 170
+    // limitation — including the 170(b)(1)(G) percentage ceiling — is applied
+    // first and the floor reduces what survives it.
+    // The order is max(0, min(C, L) - F), never min(C - F, L); for a single-category
     // cash gift the effective ceiling is therefore 59.5% of the contribution
     // base, not 60%. Percentage capacity is consumed by the pre-floor allowable
     // amount, because that is what the ceiling actually limited.

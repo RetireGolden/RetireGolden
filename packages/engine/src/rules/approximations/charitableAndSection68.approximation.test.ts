@@ -6,17 +6,13 @@
  * The engine holds an exact implementation of these rules under
  * `packages/engine/src/actions`: a section 170 ledger for itemizers, a section
  * 170(p) ledger for everyone else, a section 68 attribution chain, and the
- * exact-law parameters all three read. Nothing under
- * `packages/engine/src/projection` or in `packages/engine/src/tax/federalTax.ts`
- * refers to any of it. The deduction a plan actually shows comes from
- * `itemizedTotal` (federalTax.ts:111-119), which is capped SALT plus mortgage
- * interest plus the charitable figure at face value:
+ * exact-law parameters all three read. The live projection uses shared
+ * parameters but does not call those staged ledgers. Its itemized deduction
+ * comes from `itemizedTotal` in `tax/federalTax.ts`.
  *
- *     return salt + Math.max(0, items.mortgageInterest) + Math.max(0, items.charitable)
- *
- * No 0.5 percent floor, no 60 percent ceiling, no carryforward, no section 68
- * reduction, and nothing at all for a household that takes the standard
- * deduction. So the first fixture below drives the shelved ledger to show the
+ * The live path now applies the 0.5 percent floor and section 68 reduction but
+ * still omits the 60 percent ceiling, carryforward, and the nonitemizer
+ * allowance. So the first fixture below drives the shelved ledger to show the
  * rule IS implemented, and the other four drive `computeFederalTax` to show
  * that the number a user sees does not come from there.
  *
@@ -44,14 +40,16 @@ import {
 } from '../../actions/annualQcdStandardSection170pLedger.js'
 
 const TAX_YEAR = 2026
+const PROJECTION_YEARS = [2025, 2026] as const
 
 function taxpayer(
   ordinaryIncome: number,
   itemizedDeductions: TaxYearInput['itemizedDeductions'],
   filingStatus: TaxYearInput['filingStatus'] = 'single',
+  year: number = TAX_YEAR,
 ): TaxYearInput {
   return {
-    year: TAX_YEAR,
+    year,
     filingStatus,
     ordinaryIncome,
     capitalGains: 0,
@@ -384,21 +382,24 @@ describe('charitable and section 68 rules', () => {
   })
 
   // IRC 170(b)(1)(G)(i) caps cash gifts to public charities at 60 percent of
-  // the contribution base and (G)(ii) carries the excess forward five years.
-  // The engine deducts the whole gift at once and holds no carryforward state.
+  // the contribution base — the pre-2026 reading is 60 percent of base alone;
+  // from 2026 the amended reading is 60 percent of base reduced by (A) gifts.
+  // (G)(ii) carries the excess forward five years. The engine deducts the
+  // whole gift at once and holds no carryforward state.
   //
   // $100,000 of AGI puts the ceiling at $60,000, so an $80,000 gift leaves
-  // $20,000 to carry. The 0.5 percent floor is now applied by the live path and
-  // takes a further $500 from BOTH readings, so it cancels out of the gap and
-  // the readings still isolate the ceiling.
+  // $20,000 to carry. From 2026 the 0.5 percent floor takes a further $500
+  // from BOTH readings; in 2025 the floor does not govern, so the gap is
+  // $20,000 in each year but the absolute figures differ.
   //
-  // Statute, in the order 170(b)(1)(I) settles at irc-170-b-1-I-floor-ordering
-  // -- min(C, L) first, floor second, never min(C - F, L): min(80,000, 60,000)
-  // = 60,000, less the 500 floor = 59,500 allowed, plus 10,000 of SALT =
-  // 69,500. The engine applies the floor but no ceiling: 80,000 - 500 = 79,500,
-  // plus 10,000 = 89,500. The $20,000 gap between them is the ceiling alone.
+  // A 2025 call uses packForYear's first-pack stand-in only to isolate the
+  // static charitable ceiling omission — it is not filing-grade tax-rate
+  // validation for that year.
   describeRule('irc-170-b-1-G-projection-cash-ceiling-not-applied', {
-    readings: { ceilingApplied: 69_500, engineAllowsTheWholeGift: 89_500 },
+    readings: {
+      ceilingApplied: [70_000, 69_500],
+      engineAllowsTheWholeGift: [90_000, 89_500],
+    },
     accepted: 'ceilingApplied',
     produced: 'engineAllowsTheWholeGift',
     note: 'an $80,000 gift against a $100,000 contribution base',
@@ -406,53 +407,52 @@ describe('charitable and section 68 rules', () => {
     const agi = 100_000
     const gift = 80_000
     const salt = 10_000
+    const items = { stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift }
     // 60 percent as an exact ratio, for the same reason as the floor above.
     const ceiling = (agi * 6) / 10
     const carriedForward = gift - ceiling
-    // The live path now applies the 0.5 percent floor to whatever reaches the
-    // charitable line, including the figures this fixture uses to synthesise
-    // the statutory readings, so it appears on both sides.
-    const floor = (agi * 5) / 1_000
+    const floorFor = (year: number): number => year >= 2026 ? (agi * 5) / 1_000 : 0
 
     it('deducts a gift above the ceiling in full in the year it is made', () => {
-      const detail = computeFederalTax(taxpayer(agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift,
-      }))
+      for (const [index, year] of PROJECTION_YEARS.entries()) {
+        const detail = computeFederalTax(taxpayer(agi, items, 'single', year))
 
-      expect(ceiling).toBe(60_000)
-      expect(detail.itemized).toBe(true)
-      expect(detail.deduction).toBe(produced)
-      expect(detail.deduction).not.toBe(accepted)
-      expect(detail.deduction - accepted).toBe(carriedForward)
+        expect(ceiling).toBe(60_000)
+        expect(detail.itemized).toBe(true)
+        expect(detail.deduction).toBe(produced[index])
+        expect(detail.deduction).not.toBe(accepted[index])
+        expect(detail.deduction - accepted[index]).toBe(carriedForward)
+      }
     })
 
     it('understates tax in the gift year', () => {
-      const engine = computeFederalTax(taxpayer(agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: gift,
-      }))
-      const statutory = computeFederalTax(taxpayer(agi, {
-        stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: ceiling,
-      }))
+      for (const [index, year] of PROJECTION_YEARS.entries()) {
+        const engine = computeFederalTax(taxpayer(agi, items, 'single', year))
+        const statutory = computeFederalTax(taxpayer(agi, {
+          stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: ceiling,
+        }, 'single', year))
 
-      expect(statutory.deduction).toBe(accepted)
-      // 100,000 AGI less the deduction on each side: 89,500 and 69,500.
-      expect(engine.taxableIncome).toBe(10_500)
-      expect(statutory.taxableIncome).toBe(30_500)
-      expect(engine.totalTax).toBeLessThan(statutory.totalTax)
+        expect(statutory.deduction).toBe(accepted[index])
+        expect(engine.taxableIncome).toBe(agi - produced[index])
+        expect(statutory.taxableIncome).toBe(agi - accepted[index])
+        expect(engine.totalTax).toBeLessThan(statutory.totalTax)
+      }
     })
 
     it('overstates tax in the following year, which is why the direction is bothDirections', () => {
-      // Same household, next year, no new gift. The statute deducts the
-      // $20,000 carried forward and the engine deducts nothing, so the sign
-      // flips. errorDirection: 'bothDirections' — and it does not net to zero,
+      // Same household, 2027, no new gift. The statute deducts the $20,000
+      // carried forward and the engine deducts nothing, so the sign flips.
+      // errorDirection: 'bothDirections' — and it does not net to zero,
       // because a carryforward the household never has income to absorb simply
       // expires after five years and the year-one generosity becomes permanent.
+      const nextYear = 2027
+      const floor = floorFor(nextYear)
       const engineNextYear = computeFederalTax(taxpayer(agi, {
         stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: 0,
-      }))
+      }, 'single', nextYear))
       const statutoryNextYear = computeFederalTax(taxpayer(agi, {
         stateAndLocalTaxes: salt, mortgageInterest: 0, charitable: carriedForward,
-      }))
+      }, 'single', nextYear))
 
       expect(engineNextYear.itemized).toBe(false)
       expect(engineNextYear.deduction).toBe(16_100)

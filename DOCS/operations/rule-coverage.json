@@ -339,7 +339,7 @@
     {
       "path": "tax/federalTax.ts",
       "sweptOn": "2026-08-26",
-      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names"
+      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names"
     },
     {
       "path": "tax/medicare.ts",
@@ -631,17 +631,17 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T11:18:21.521Z",
-    "entryCount": 1165,
+    "generatedAt": "2026-09-05T14:46:46.772Z",
+    "entryCount": 1174,
     "fetched": 9,
     "cached": 312,
     "counts": {
-      "ELISION-EXACT": 63,
-      "ELISION-PUNCTUATION": 6,
-      "EXACT": 803,
+      "ELISION-EXACT": 62,
+      "ELISION-PUNCTUATION": 5,
+      "EXACT": 810,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 212,
-      "PUNCTUATION": 37,
+      "PDF-WORD-LEVEL": 211,
+      "PUNCTUATION": 42,
       "UNFETCHABLE": 37
     }
   }
