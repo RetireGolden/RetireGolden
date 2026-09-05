@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import type { RealYieldCurve } from '../params/types.js'
+import { describeRule } from '../rules/describeRule.js'
 import {
-  MIN_TIPS_COUPON_PCT,
   buildLadder,
   ladderRealFlowsAtOffset,
   ladderRemainingFace,
@@ -105,15 +105,30 @@ describe('buildLadder', () => {
     expect(build.totalCost).toBeCloseTo(totalFace, 6)
   })
 
-  it('floors coupons at the statutory minimum when yields are negative', () => {
-    const build = buildLadder({ annualRealIncome: 10_000, firstPayoutOffset: 1, payoutYears: 5, curve: flatCurve(-0.5) })
-    for (const rung of build.rungs) {
-      expect(rung.couponRatePct).toBe(MIN_TIPS_COUPON_PCT)
-      // Coupon above the (negative) yield ⇒ the rung prices above face.
-      expect(rung.cost).toBeGreaterThan(rung.face)
-    }
-    // Negative real yields make guaranteed real income cost more than face value.
-    expect(build.totalCost).toBeGreaterThan(10_000 * 5 * 0.98)
+})
+
+describeRule('cfr-31-356-20-b-tips-minimum-coupon', {
+  readings: {
+    regulatoryMinimum: 0.125,
+    noMinimum: -0.5,
+    zeroMinimum: 0,
+  },
+  accepted: 'regulatoryMinimum',
+}, ({ accepted, readings }) => {
+  it('floors synthetic rung coupons at the regulatory minimum when interpolated yields are negative', () => {
+    const build = buildLadder({
+      annualRealIncome: 10_000,
+      firstPayoutOffset: 5,
+      payoutYears: 1,
+      curve: flatCurve(-0.5),
+    })
+    expect(build.rungs).toHaveLength(1)
+    expect(build.rungs[0]!.maturityOffset).toBe(5)
+    expect(build.rungs[0]!.couponRatePct).toBe(accepted)
+    expect(build.rungs[0]!.couponRatePct).not.toBe(readings.noMinimum)
+    expect(build.rungs[0]!.couponRatePct).not.toBe(readings.zeroMinimum)
+    // Back-solver uses the floored coupon: face × (1 + 0.125%) = target income.
+    expect(build.rungs[0]!.face).toBeCloseTo(10_000 / 1.00125, 8)
   })
 })
 

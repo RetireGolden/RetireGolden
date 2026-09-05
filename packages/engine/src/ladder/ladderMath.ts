@@ -8,9 +8,10 @@
  * (principal and coupons both index to CPI).
  *
  * Planning-grade model (documented simplifications):
- *  - Each rung is a par TIPS: coupon rate = the interpolated par real yield at
- *    its maturity (floored at the 0.125% statutory minimum TIPS coupon), so a
- *    rung on a flat curve prices exactly at face.
+ *  - Each rung is a synthetic TIPS: coupon rate = the interpolated par real yield at
+ *    its maturity (floored at the 0.125% regulatory minimum TIPS coupon), so a
+ *    rung on a flat curve where coupon equals yield and the floor is nonbinding
+ *    prices at face.
  *  - Rungs are priced by discounting their real cash flows on the same par
  *    curve (par-yields-as-spot approximation, fine at planning grade).
  *  - Coupons pay annually; real-world semiannual timing is ignored.
@@ -20,8 +21,12 @@
 
 import type { RealYieldCurve } from '../params/types.js'
 
-/** Statutory minimum TIPS coupon rate (percent). */
+/** Regulatory minimum TIPS coupon rate (percent). */
 export const MIN_TIPS_COUPON_PCT = 0.125
+
+function tipsCouponRatePct(realYieldPct: number): number {
+  return Math.max(MIN_TIPS_COUPON_PCT, realYieldPct)
+}
 
 /** Interpolated par real yield (percent) at a maturity; endpoints held flat. */
 export function realYieldAt(curve: RealYieldCurve, maturityYears: number): number {
@@ -103,7 +108,7 @@ export function buildLadder(input: LadderBuildInput): LadderBuild {
 
   const offsets: number[] = []
   for (let m = firstPayoutOffset; m <= lastOffset; m++) offsets.push(m)
-  const couponRate = (m: number) => Math.max(MIN_TIPS_COUPON_PCT, realYieldAt(curve, m)) / 100
+  const couponRate = (m: number) => tipsCouponRatePct(realYieldAt(curve, m)) / 100
 
   // Back-substitution: the last rung funds its year alone; earlier rungs fund
   // the target net of the coupons every later (still-outstanding) rung pays.
@@ -120,7 +125,7 @@ export function buildLadder(input: LadderBuildInput): LadderBuild {
 
   const rungs: LadderRung[] = offsets.map((m) => {
     const face = faces.get(m) ?? 0
-    const couponRatePct = Math.max(MIN_TIPS_COUPON_PCT, realYieldAt(curve, m))
+    const couponRatePct = tipsCouponRatePct(realYieldAt(curve, m))
     return { maturityOffset: m, face, couponRatePct, cost: priceRung(face, couponRatePct, m, curve) }
   })
 
