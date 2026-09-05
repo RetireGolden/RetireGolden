@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-04T23:50:56.180Z",
-  "recordCount": 418,
-  "urlCount": 309,
+  "generatedAt": "2026-09-05T01:05:42.614Z",
+  "recordCount": 419,
+  "urlCount": 313,
   "fetched": 9,
-  "cached": 300,
-  "entryCount": 1076,
+  "cached": 304,
+  "entryCount": 1085,
   "counts": {
-    "EXACT": 714,
+    "EXACT": 722,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
-    "ELISION-EXACT": 63,
+    "ELISION-EXACT": 64,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
   },
@@ -10808,6 +10808,96 @@
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "IRC 401(a)(9)(C)(i) (2011 ed., pre-SECURE)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2011-title26/html/USCODE-2011-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm",
+      "quoteSha256": "9e969186ecb6f922",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "IRC 401(a)(9)(C)(ii) (2011 ed., pre-SECURE)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2011-title26/html/USCODE-2011-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm",
+      "quoteSha256": "a9ebbbfcf4882b49",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "Pub. L. 116-94, div. O, sec. 114(a), (d) (SECURE Act)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/PLAW-116publ94/html/PLAW-116publ94.htm",
+      "quoteSha256": "9c9b035159aef7f2",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "Treas. Reg. 1.401(a)(9)-2, Q&A-3 (T.D. 8987, 67 FR 18988, 18996)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm",
+      "quoteSha256": "2fd4e6ed8cccd827",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "Treas. Reg. 1.408-8, Q&A-1(a)-(b) (T.D. 8987, 67 FR 18988, 19024)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm",
+      "quoteSha256": "e0dfcea23f16821e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "Treas. Reg. 1.408-8, Q&A-3 (T.D. 8987, 67 FR 18988, 19025)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm",
+      "quoteSha256": "6388938e936dead3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "T.D. 10001, preamble on distribution-calendar-year applicability",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14542.htm",
+      "quoteSha256": "0a62cc2cdf8cda3d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "Treas. Reg. 1.401(a)(9)-2(b)(2)(ii), (iii) (current corroboration; T.D. 10001 numbering)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-2",
+      "quoteSha256": "cafdc7caef24cf2b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "Treas. Reg. 1.408-8(b)(1)(i) (current corroboration)",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
+      "quoteSha256": "f9da40f884131de2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     }
   ],
   "apostropheStyle": [
@@ -10850,6 +10940,12 @@
     {
       "id": "treas-reg-1-401-a-9-5-joint-life-spouse-sole-beneficiary",
       "citation": "Treas. Reg. 1.401(a)(9)-5",
+      "host": "www.law.cornell.edu",
+      "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
+    },
+    {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "citation": "Treas. Reg. 1.408-8(b)(1)(i) (current corroboration)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },

@@ -489,7 +489,7 @@
           "functions": [
             {
               "name": "applicableAgeAttainYears",
-              "line": 295
+              "line": 301
             }
           ]
         }
@@ -1336,6 +1336,103 @@
       ]
     },
     {
+      "id": "treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72",
+      "title": "Applicable age 70½ before July 1, 1949 and age 72 through 1950",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "YEAR-GRANULAR 70½ PLACEMENT. Former Treas. Reg. 1.401(a)(9)-2 Q&A-3 (T.D. 8987) states that age 70½ is attained six calendar months after the 70th anniversary of birth and works the June 30, 1933 → December 30, 2003 → April 1, 2004 and July 1, 1933 → January 1, 2004 → April 1, 2005 examples. Former 1.408-8 Q&A-1(a)–(b) incorporates those general RMD rules into IRAs and substitutes the IRA owner for the employee; former 1.408-8 Q&A-3 then fixes the IRA RBD as April 1 following the 70½ year. At month granularity the engine therefore places a January–June birth's 70½ attain year at birthYear+70 and a July–December birth's at birthYear+71. The unsettled QCD record (irc-408-d-8-B-ii-age-70-half) keeps month-end and leap-day day-resolution; this record does not claim day-level QCD eligibility. HISTORICAL APPLICABILITY. T.D. 10001's preamble states that the final regulations under section 401(a)(9) apply for distribution calendar years beginning on or after January 1, 2025, and that for earlier distribution calendar years taxpayers must apply the 2002 final regulations and 2004 final regulations, taking into account a reasonable, good faith interpretation of the amendments made by sections 114 and 401 of the SECURE Act. Current 1.401(a)(9)-2(b)(2)(ii)–(iii) and 1.408-8(b)(1)(i) corroborate the cohort cut and IRA April-1 form under present numbering; they are not claimed to have governed distribution year 2020. BOUNDARY VERSUS SIBLINGS. irc-401-a-9-C-v-applicable-age and treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 own the 73/75 tiers and the 1959 contest; first-distribution-calendar-year booking and April 1 deferral elections stay on their existing C(i) / 1.401(a)(9)-5(a)(2) records; the employer-plan still-working exception stays on irc-401-a-9-C-i-II-still-working-exception. EFFECTIVE SCOPE. effectiveFrom is 2020 as the first distribution-applicability year of the SECURE §114 transition: both §114(d) conditions must hold — distributions required after December 31, 2019, and individuals attaining 70½ after that date. It is not the enactment date of the older 70½ rule, not T.D. 10001's 2025 applicability, and not the first required-distribution year of the age-72 cohort (a July 1949 birth attains 72 in 2021 with IRA RBD April 1, 2022; a July 1948 birth attains 70½ in 2019 and retains the historical IRA RBD of April 1, 2020). Dating this record 2026 would invent a represented-horizon convention the authority does not use.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2020,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-04",
+      "dueOn": "2027-09-04",
+      "implementedBy": [
+        "packages/engine/src/rmd/applicableAge.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/rmd/applicableAge.ts",
+          "functions": [
+            {
+              "name": "applicableAgeAttainYears",
+              "line": 301
+            },
+            {
+              "name": "deriveRbdComparison",
+              "line": 207
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rmd/applicableAge.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rmd/applicableAge.test.ts",
+          "line": 127,
+          "note": null,
+          "tests": [
+            {
+              "title": "keeps the June 30 / July 1, 1949 cut, 70½ attain years, and IRA RBD-year placement",
+              "line": 174
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(i) (2011 ed., pre-SECURE)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2011-title26/html/USCODE-2011-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(C)(ii) (2011 ed., pre-SECURE)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2011-title26/html/USCODE-2011-title26-subtitleA-chap1-subchapD-partI-subpartA-sec401.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "Pub. L. 116-94, div. O, sec. 114(a), (d) (SECURE Act)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-116publ94/html/PLAW-116publ94.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-2, Q&A-3 (T.D. 8987, 67 FR 18988, 18996)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8, Q&A-1(a)-(b) (T.D. 8987, 67 FR 18988, 19024)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8, Q&A-3 (T.D. 8987, 67 FR 18988, 19025)",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2002-04-17/html/02-8963.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "T.D. 10001, preamble on distribution-calendar-year applicability",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2024-07-19/html/2024-14542.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-2(b)(2)(ii), (iii) (current corroboration; T.D. 10001 numbering)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-2"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(b)(1)(i) (current corroboration)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        }
+      ]
+    },
+    {
       "id": "treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959",
       "title": "Applicable age for an owner born in 1959",
       "classification": "unsettled",
@@ -1636,7 +1733,7 @@
           "functions": [
             {
               "name": "applicableAgeAttainYears",
-              "line": 295
+              "line": 301
             }
           ]
         },

@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 418,
+    "total": 419,
     "byClassification": {
       "approximated": 110,
       "outOfScope": 73,
-      "settled": 230,
+      "settled": 231,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 341,
+      "staticStatute": 342,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 312,
+      "federal": 313,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -318,8 +318,8 @@
     },
     {
       "path": "rmd/applicableAge.ts",
-      "sweptOn": "2026-08-29",
-      "note": "Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy; the born-1959 record's contraryReading now records what the full IRB text of Announcement 2026-7 shows - it defers final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so no current guidance addresses the contest; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact) and the 70½/July-1949 cohort tiers pending a pre-SECURE historical-edition record"
+      "sweptOn": "2026-09-04",
+      "note": "Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest remains on treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959; SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: deriveRbdComparison born-1959 conditional comparison/refusal (the 70½/72 rule excludes 1959; irc-401-a-9-C-v pins only applicableAgeAttainYears; treas-reg-1-401-a-9-2-b-2-v pins params/rmd); year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year"
     },
     {
       "path": "socialSecurity/maritalBenefits.ts",
@@ -587,7 +587,7 @@
     {
       "module": "requiredMinimumDistributions",
       "path": "rule-coverage/requiredMinimumDistributions.json",
-      "ruleCount": 40
+      "ruleCount": 41
     },
     {
       "module": "rothAccounts",
@@ -631,14 +631,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-04T23:50:56.180Z",
-    "entryCount": 1076,
+    "generatedAt": "2026-09-05T01:05:42.614Z",
+    "entryCount": 1085,
     "fetched": 9,
-    "cached": 300,
+    "cached": 304,
     "counts": {
-      "ELISION-EXACT": 63,
+      "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 6,
-      "EXACT": 714,
+      "EXACT": 722,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 37,
