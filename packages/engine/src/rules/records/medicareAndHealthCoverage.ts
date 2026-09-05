@@ -727,7 +727,7 @@ export const medicareAndHealthCoverageRecords = {
       citation: '42 U.S.C. 1395r(i)(5)(C)(ii)',
       url: 'https://www.ssa.gov/OP_Home/ssact/title18/1839.htm',
       quotedText:
-        'In the case of any calendar year beginning after 2027, each dollar amount in paragraph (3) of $500,000 shall be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the percentage (if any) by which the average of the Consumer Price Index for all urban consumers (United States city average) for the 12- month period ending with August of the preceding calendar year exceeds such average for the 12- month period ending with August 2026.',
+        'In the case of any calendar year beginning after 2027, each dollar amount in paragraph (3) of $500,000 shall be increased by an amount equal to— (I) such dollar amount, multiplied by (II) the percentage (if any) by which the average of the Consumer Price Index for all urban consumers (United States city average) for the 12- month period ending with August of the preceding calendar year exceeds such average for the 12- month period ending with August 2026.',
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 1395w-113(a)(7)(A)',
