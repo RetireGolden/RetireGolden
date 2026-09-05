@@ -132,8 +132,8 @@ function trustedRun(overrides: Record<string, unknown> = {}) {
     path: '.github/workflows/openrouter-code-review.yml',
     head_repository: repository,
     referenced_workflows: [{
-      path: 'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44',
-      sha: '133c4a1a7e48c1e416784f69988d7d42d1866c44',
+      path: TRUSTED_REUSABLE_REVIEW_WORKFLOW,
+      sha: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
     }],
     created_at: '2026-09-04T12:00:00Z',
     run_number: 1,
@@ -213,6 +213,9 @@ describe('OpenRouter CI authorization contract', () => {
       `RetireGolden/.github/.github/workflows/openrouter-code-review.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`,
     )
     expect(reviewCaller).toContain(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW}`)
+    const policyLinks = [...reviewCaller.matchAll(/https:\/\/github\.com\/RetireGolden\/\.github\/blob\/([a-f0-9]{40})\/README\.md/g)]
+    expect(policyLinks.length).toBeGreaterThan(0)
+    for (const link of policyLinks) expect(link[1]).toBe(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA)
   })
 
   it('rejects a stale referenced reusable SHA even when its path matches', () => {
@@ -223,7 +226,9 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it('keeps documented producer revisions synchronized with the caller action reference', () => {
-    const producerSha = reviewCaller.match(/action#\d+@([a-f0-9]{40})/)?.[1]
+    const callerReferences = [...reviewCaller.matchAll(/action#\d+@([a-f0-9]{40})/g)]
+    expect(callerReferences).toHaveLength(1)
+    const producerSha = callerReferences[0]?.[1]
     expect(producerSha).toMatch(/^[a-f0-9]{40}$/)
     for (const source of [helperContent, ciRunbook]) {
       const references = [...source.matchAll(/openrouter-pr-review-action(?:@|\/(?:blob|tree)\/)([a-f0-9]{40})/g)]
@@ -268,7 +273,11 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it.each([
+    // Confirmed against schema.py valid_review_path at the documented producer revision.
     ['normalized dotted path', './packages//engine/./src/example.ts'],
+    ['current directory path normalized to dot', './/.'],
+    ['Python-strip whitespace around a relative path', '\u0085 folder/file.ts \u00a0'],
+    ['BOM is preserved by Python strip', '\uFEFF'],
     ['trailing slash path', 'path/'],
     ['Unicode decimal digit id', 'r۱-۲'],
     ['160-codepoint emoji title and 600-codepoint emoji evidence', {

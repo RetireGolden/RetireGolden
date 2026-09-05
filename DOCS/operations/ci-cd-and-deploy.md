@@ -92,6 +92,22 @@ The path predicate's short span is intentional: normalization contains the valid
 When advancing the action, verify the new source spans as well as the producer revision;
 the local contract test checks revision consistency across the caller, helper comments and this table.
 
+For the September 5, 2026 pin update, direct comparison of the pinned Python predicate and the local
+JavaScript predicate passed 4,247 path inputs (separator and dot normalization, Python whitespace,
+control characters, Unicode, and the 499/500/501-codepoint boundaries). The upstream refactor changes
+the normalization API, but did not change the validity result in these cases; the local authorization
+predicate therefore remains unchanged. The retained compatibility fixtures include normalized dot
+paths, Python-strip whitespace and BOM handling. This finite comparison is migration evidence, not
+a proof over every possible string.
+
+The temporary Astra Flex lane is owned by the central reusable, not this caller. At pinned org revision
+`133c4a1a7e48c1e416784f69988d7d42d1866c44`, its [first-pass condition](https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/.github/workflows/openrouter-code-review.yml#L273-L279)
+and [follow-up condition](https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/.github/workflows/openrouter-code-review.yml#L704-L709)
+select Astra only for RetireGolden and RetireGolden-Pro before `2026-09-06T04:00:00Z`.
+Both Bash policy steps were executed with an injected clock immediately before and exactly at that
+cutoff for seven repository names: all 28 cases passed, including baseline-only selection at expiry.
+That check belongs to the upstream policy rollout; this consumer's tests check pin consistency.
+
 - The broker serializes review/Azure completion events for a head, finds the newest eligible skipped Azure
   `pull_request` run before it mutates the PR, rechecks live PR state, adds `run-ci`, rechecks again, then
   reruns that run through the Actions API. It does nothing when live work is queued/running or a
