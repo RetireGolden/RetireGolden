@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T02:13:29.194Z",
-  "recordCount": 423,
+  "generatedAt": "2026-09-05T03:51:33.991Z",
+  "recordCount": 426,
   "urlCount": 315,
   "fetched": 9,
   "cached": 306,
-  "entryCount": 1115,
+  "entryCount": 1134,
   "counts": {
-    "EXACT": 752,
+    "EXACT": 771,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
@@ -6795,6 +6795,196 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
       "quoteSha256": "96d5fbab11066e77",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-b-ii-iii-initial-computation-base-window",
+      "citation": "42 U.S.C. 415(b)(2)(B)(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "77bb3410a691d7a8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-b-ii-iii-initial-computation-base-window",
+      "citation": "42 U.S.C. 415(b)(2)(B)(iii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "3796338e367b0ee5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-b-ii-iii-initial-computation-base-window",
+      "citation": "42 U.S.C. 415(b)(2)(B)(i)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "7a3288f14cf68103",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-b-ii-iii-initial-computation-base-window",
+      "citation": "20 CFR 404.211(b)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211",
+      "quoteSha256": "e4db952173b69c59",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-b-ii-iii-initial-computation-base-window",
+      "citation": "20 CFR 404.211(e)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211",
+      "quoteSha256": "af90dcf383630b87",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-211-d-3-indexed-earnings-nearer-penny",
+      "citation": "42 U.S.C. 415(b)(3)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "60d29163b50540ad",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-211-d-3-indexed-earnings-nearer-penny",
+      "citation": "42 U.S.C. 415(b)(3)(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "193227642f93b1c8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-211-d-3-indexed-earnings-nearer-penny",
+      "citation": "20 CFR 404.211(d)(3)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211",
+      "quoteSha256": "57622956167b5ad4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-211-d-3-indexed-earnings-nearer-penny",
+      "citation": "42 U.S.C. 415(b)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "0a2facf8994eac39",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-211-d-3-indexed-earnings-nearer-penny",
+      "citation": "42 U.S.C. 415(e)(2)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "dab75801644da1cf",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-211-d-3-indexed-earnings-nearer-penny",
+      "citation": "20 CFR 404.211(f)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211",
+      "quoteSha256": "1ac326063c01fb08",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "citation": "42 U.S.C. 415(b)(2)(A), (b)(2)(A)(i)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "21b954c41e2ae94e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "citation": "42 U.S.C. 415(b)(2)(B)(i)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "7a3288f14cf68103",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "citation": "42 U.S.C. 415(b)(2)(B)(iii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "3796338e367b0ee5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "citation": "42 U.S.C. 415(b)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "0a2facf8994eac39",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "citation": "20 CFR 404.211(e)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211",
+      "quoteSha256": "af90dcf383630b87",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "citation": "20 CFR 404.211(e)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211",
+      "quoteSha256": "467304de4331eae2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "citation": "20 CFR 404.211(e)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211",
+      "quoteSha256": "289897d1c97bd22c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-a-i-computation-years-five-year-dropout",
+      "citation": "20 CFR 404.211(e)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-C/subject-group-ECFR7fa0e3667334188/section-404.211",
+      "quoteSha256": "870470416761cd93",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

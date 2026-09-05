@@ -120,6 +120,18 @@ function capEarnings(year: number, amount: number): number {
 }
 
 /**
+ * Wage-index one year's capped covered earnings: AWI_indexing / AWI_year,
+ * floored to a whole dollar. 20 CFR 404.211(d)(3) instead rounds to the nearer penny.
+ */
+function indexCoveredEarnings(
+  cappedEarnings: number,
+  yearAwi: number,
+  indexingYearAwi: number,
+): number {
+  return Math.floor((cappedEarnings * indexingYearAwi) / yearAwi)
+}
+
+/**
  * Full earnings-history → AIME → PIA path for a retirement benefit illustration.
  */
 export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarningsResult | PiaFromEarningsError {
@@ -135,6 +147,8 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
   }
 
   const effBirth = effectiveBirthYear(dobYear, dobMonth, dobDay)
+  // Elapsed-year span (year age 22 through year before 62), not computation-base
+  // years through the year before first entitlement, and not floored at 1951.
   const firstBaseYear = effBirth + 22
   const lastBaseYear = eligibilityYear - 1
 
@@ -195,7 +209,7 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
     let indexedAnnual = capped
     if (wageIndexed) {
       const awiY = awiForYearOrLatest(year)
-      indexedAnnual = Math.floor((capped * indexingAwi) / awiY)
+      indexedAnnual = indexCoveredEarnings(capped, awiY, indexingAwi)
     }
     indexedDetails.push({
       year,
@@ -208,6 +222,8 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
     annualIndexedList.push(indexedAnnual)
   }
 
+  // Five lowest of the elapsed span, then at most 35 remaining years — not
+  // elapsed-count minus 5 (34 when elapsed years start at the 1951 floor).
   annualIndexedList.sort((a, b) => a - b)
   const afterDropout = annualIndexedList.slice(5)
   if (afterDropout.length === 0) {
@@ -263,6 +279,7 @@ export function piaInputFromEarnings(
   const effBirth = effectiveBirthYear(dobYear, dobMonth, dobDay)
   const firstBaseYear = effBirth + 22
   const lastBaseYear = effBirth + 61
+  // Same elapsed-year clamp computePiaFromEarnings iterates; years outside it are ignored.
   const lastEarningsYear = Math.min(Math.max(...earnings.map((e) => e.year), firstBaseYear), lastBaseYear)
   return { dobYear, dobMonth, dobDay, earnings, lastEarningsYear, projection: projection ?? null }
 }

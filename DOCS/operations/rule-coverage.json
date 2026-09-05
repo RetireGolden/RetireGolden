@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 423,
+    "total": 426,
     "byClassification": {
-      "approximated": 112,
+      "approximated": 115,
       "outOfScope": 75,
       "settled": 231,
       "unsettled": 5
@@ -12,11 +12,11 @@
     "byVolatility": {
       "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 346,
+      "staticStatute": 349,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 317,
+      "federal": 320,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 369,
+    "totalFiles": 370,
     "byStatus": {
       "partial": 55,
-      "registered": 106,
+      "registered": 107,
       "rule-free": 208,
       "unswept": 0
     },
@@ -328,8 +328,8 @@
     },
     {
       "path": "socialSecurity/piaFromEarnings.ts",
-      "sweptOn": "2026-08-27",
-      "note": "AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations"
+      "sweptOn": "2026-09-04",
+      "note": "Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard."
     },
     {
       "path": "strategies/accountEligibility.ts",
@@ -471,9 +471,9 @@
     },
     {
       "directory": "rules",
-      "files": 48,
+      "files": 49,
       "byStatus": {
-        "registered": 21,
+        "registered": 22,
         "rule-free": 27
       }
     },
@@ -600,6 +600,11 @@
       "ruleCount": 48
     },
     {
+      "module": "socialSecurityEarnings",
+      "path": "rule-coverage/socialSecurityEarnings.json",
+      "ruleCount": 3
+    },
+    {
       "module": "socialSecurityMaritalEligibility",
       "path": "rule-coverage/socialSecurityMaritalEligibility.json",
       "ruleCount": 4
@@ -636,14 +641,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T02:13:29.194Z",
-    "entryCount": 1115,
+    "generatedAt": "2026-09-05T03:51:33.991Z",
+    "entryCount": 1134,
     "fetched": 9,
     "cached": 306,
     "counts": {
       "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 6,
-      "EXACT": 752,
+      "EXACT": 771,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 37,

@@ -26,15 +26,25 @@ Each person's Primary Insurance Amount is entered one of two ways (a per-person 
 
 Methodology that matters for accuracy:
 
-- **AIME** uses up to **35 years** of indexed covered earnings; fewer than 35 inserts **zeros**, lowering
-  the average — the whole point of modeling early retirement honestly.
+- **AIME** for an ordinary initial old-age benefit with no disability period or prior disability
+  entitlement selects high years from an age-22-through-year-before-62 window, drops the five lowest, and
+  averages at most **35** remaining years of indexed covered earnings; fewer than 35 inserts **zeros**,
+  lowering the average — the whole point of modeling early retirement honestly. That window is the
+  elapsed-year span, not the statutory computation-base years through the year before first entitlement,
+  so age-21 and age-62-through-pre-entitlement earnings do not enter
+  (`usc-42-415-b-2-b-ii-iii-initial-computation-base-window`). The always-35 count also remains 35 when
+  elapsed years start at the 1951 floor (`usc-42-415-b-2-a-i-computation-years-five-year-dropout`).
 - **Wage indexing** uses SSA's national Average Wage Index, with the numerator from the year **two years
   before eligibility**; bend points and wage bases are data-driven ([ssaWageData.ts](../../packages/engine/src/socialSecurity/ssaWageData.ts)).
-  If a required AWI year isn't in the table the engine returns a `missing_awi` error rather than guessing.
+  Each indexed year is floored to a whole dollar rather than rounded to the nearer penny
+  (`cfr-20-404-211-d-3-indexed-earnings-nearer-penny`). If a required AWI or bend-point year is not in
+  the published tables the engine uses the latest published figure as a stand-in and sets
+  `usesStandInForFutureTables`; the `missing_awi` error code is unused.
 - **Early-retirement projection:** future years between the last earnings year and the declared retirement
-  age are projected at an assumed salary (default: most recent year, wage-indexed/capped), then zeroed —
-  so a worker retiring at 55 vs 62 vs working-to-FRA gets three visibly different PIAs from the same
-  history. (The SSA statement overstates by assuming work to FRA; a naive zero-fill understates.)
+  age are projected at an assumed salary (default: most recent year, wage-indexed/capped), then zeroed,
+  but only inside the same age-22-through-year-before-62 window. Stopping at 62 and working through FRA
+  currently fill the same years; retiring before 62 still zeros the remaining pre-62 years and yields a
+  lower PIA. (The SSA statement overstates by assuming work to FRA; a naive zero-fill understates.)
 - **Eligibility gate:** a 40-quarter / 10-year covered-work check warns when a worker may not qualify.
 
 PIA has a **single source of truth** — it is managed only in the dedicated Social Security section; the
