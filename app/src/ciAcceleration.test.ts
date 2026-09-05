@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw'
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
 import reviewCaller from '../../.github/workflows/openrouter-code-review.yml?raw'
+import ciRunbook from '../../DOCS/operations/ci-cd-and-deploy.md?raw'
 import {
   authorizeExactHeadPullRequest,
   collectProvenanceReviewRuns,
@@ -219,6 +220,16 @@ describe('OpenRouter CI authorization contract', () => {
       referenced_workflows: [{ path: TRUSTED_REUSABLE_REVIEW_WORKFLOW, sha: '0'.repeat(40) }],
     })
     expect(reviewRunSkipReason(stale, repository)).toMatch(/trusted reusable OpenRouter workflow/)
+  })
+
+  it('keeps documented producer revisions synchronized with the caller action reference', () => {
+    const producerSha = reviewCaller.match(/action#\d+@([a-f0-9]{40})/)?.[1]
+    expect(producerSha).toMatch(/^[a-f0-9]{40}$/)
+    for (const source of [helperContent, ciRunbook]) {
+      const references = [...source.matchAll(/openrouter-pr-review-action(?:@|\/(?:blob|tree)\/)([a-f0-9]{40})/g)]
+      expect(references.length).toBeGreaterThan(0)
+      for (const reference of references) expect(reference[1]).toBe(producerSha)
+    }
   })
 
   it('pins the Azure bootstrap helper blob to the final helper content', () => {
