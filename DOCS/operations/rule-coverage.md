@@ -173,7 +173,7 @@ None.
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
 | strategies/optimizer.ts | 2026-09-05 | Ordinary-bracket PWL registered (irc-1-j-2-progressive-ordinary-rate-schedule); §86 in-solve linearization registered as approximated (irc-86-a-optimizer-taxable-social-security-linearization); senior-deduction phase-out slope registered (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out) with its omitted cap still outside that record; flat 15% LTCG is registered on projection/optimizePlan.ts (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate). IRMAA uniform threshold indexing and beneficiary-month exposure are registered as approximated (usc-42-1395r-i-5-optimizer-uniform-threshold-indexing; usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure). Residual (non-exhaustive): SSA-44 numerical proxy, projected premium-price scaling, top-tier equality handling, and other unlisted linearizations/constraints (e.g. state-bracket PWL) remain unregistered here; IRMAA MAGI omits the direct §135/§911/§931/§933 without-regard addbacks (ledger-feed gap registered at usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback, not pinned here); the provisional-income scalar affects taxable SS, not the IRMAA MAGI base directly; ACA MAGI cap and RMD floor divisor are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection — headroom restriction and floor distortion proved; taxpayer-tax direction has not been established) |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
-| tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
+| tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
 | testing/flatTax.ts | 2026-08-30 | flat-rate test double injected only by test suites - the sole non-test importers are the deprecated projection/flatTax shim that republishes it on the published subpath and the pack-smoke script that verifies that subpath - so no RetireGolden code path injects it outside tests and the IRC 86 85 percent inclusion it applies never reaches a user-facing number; it is published, at testing/flatTax and through the deprecated projection/flatTax subpath, so an external consumer can call it directly; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
 
@@ -247,19 +247,19 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T11:18:21.521Z over 1165 authority entries (9 fetched live, 312 from cache).
+Committed ledger generated at 2026-09-05T14:46:46.772Z over 1174 authority entries (9 fetched live, 312 from cache).
 
-37 serious, 50 advisory, 1078 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 54 advisory, 1083 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 63 |
-| ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 803 |
+| ELISION-EXACT | ok | 62 |
+| ELISION-PUNCTUATION | advisory | 5 |
+| EXACT | ok | 810 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 212 |
-| PUNCTUATION | advisory | 37 |
+| PDF-WORD-LEVEL | ok | 211 |
+| PUNCTUATION | advisory | 42 |
 | UNFETCHABLE | serious | 37 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.

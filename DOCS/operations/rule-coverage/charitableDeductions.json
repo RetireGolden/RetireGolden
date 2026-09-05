@@ -47,14 +47,14 @@
       "title": "Sixty percent ceiling for cash gifts to public charities",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Effective from 2018 rather than 2026, aligned with irc-170-b-1-G-projection-cash-ceiling-not-applied on 2026-08-04 after the two records disagreed about the same clause. This field means the first tax year the rule governs, and (G)(i) fixes that in its own words: for taxable years beginning after December 31, 2017. Pub. L. 119-21 section 70425(b)(1) rewrote the clause for years beginning after 2025, but what it removed was the pre-OBBBA expiry scheduled for the end of 2025; the 60 percent figure and the 2018 start survived it unchanged. Reading the rewrite as a new start date would imply the ceiling did not govern 2018 through 2025, which is false, and would make a year filter over this registry answer wrongly for those years.",
+      "conventionRationale": "The sixty-percent rate for cash gifts to public charities dates from taxable years beginning after December 31, 2017. The amendment note quoted below shows that clause (G)(i) formerly capped such contributions at 60 percent of contribution base for taxable years beginning after December 31, 2017, and before January 1, 2026; the operative (G)(i) text in the first authority below expresses the net-of-(A) combined formula and applies for taxable years beginning after December 31, 2025 under section 70425(c). effectiveFrom is 2026 because this record states that post-amendment combined reading.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
-      "effectiveFrom": 2018,
+      "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts",
         "packages/engine/src/tax/annualCharitableDeductionParameters.ts"
@@ -65,7 +65,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 368
+              "line": 370
             }
           ]
         },
@@ -105,7 +105,27 @@
         },
         {
           "kind": "statute",
-          "citation": "IRC 170(b)(1)(G)(iii)",
+          "citation": "IRC 170(b)(1)(G)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170(b)(1)(G)(iii)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170(b)(1)(G)(iii)(II)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170(b)(1)(G)(i), Editorial Notes, Amendments, 2025, prior text",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
         }
       ]
@@ -115,14 +135,14 @@
       "title": "The 60 percent ceiling on cash gifts is not applied to the projected charitable deduction",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "This is the timing case the errorDirection doc comment describes, and the sign really does turn on the year rather than being undetermined. In the gift year the engine’s deduction is too large and tax is understated; in each of the five succeeding years it is too small, because the carryforward the statute grants is not there, and tax is overstated. It does not net to nothing even in principle: a carryforward the taxpayer never has the income to absorb expires unused, which for a household drawing down in retirement is the likely outcome, and in that case the engine’s year-one generosity is a permanent understatement. Nor is an annual projection indifferent to which year a deduction lands in, since the year decides the bracket it offsets, the capital-gain stacking threshold, and the modified AGI that sets the Medicare premium adjustment two years later. The effectiveFrom is 2018 rather than 2026 because the clause quoted below says so in its own words; Pub. L. 119-21 section 70425(b)(1) rewrote (G)(i) effective for taxable years beginning after 2025, but what it removed was the pre-OBBBA expiry, leaving both the 60 percent figure and the 2018 start date intact. The correct implementation lives in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts and is registered at irc-170-b-1-G-cash-percentage-ceiling; the live path does not reach it.",
+      "conventionRationale": "This is the timing case the errorDirection doc comment describes, and the sign really does turn on the year rather than being undetermined. In the gift year the engine’s deduction is too large and tax is understated; in each of the five succeeding years it is too small, because the carryforward the statute grants is not there, and tax is overstated. It does not net to nothing even in principle: a carryforward the taxpayer never has the income to absorb expires unused, which for a household drawing down in retirement is the likely outcome, and in that case the engine’s year-one generosity is a permanent understatement. Nor is an annual projection indifferent to which year a deduction lands in, since the year decides the bracket it offsets, the capital-gain stacking threshold, and the modified AGI that sets the Medicare premium adjustment two years later. The sixty-percent rate for cash gifts dates from taxable years beginning after December 31, 2017. The amendment note quoted below shows that clause (G)(i) formerly capped such contributions at 60 percent of contribution base through taxable years beginning before January 1, 2026; the operative (G)(i) text in the first authority below expresses the net-of-(A) combined formula and applies for taxable years beginning after December 31, 2025 under section 70425(c). effectiveFrom is 2026 because this record states that post-amendment combined reading. The correct implementation lives in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts and is registered at irc-170-b-1-G-cash-percentage-ceiling; the live path does not reach it.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
-      "effectiveFrom": 2018,
+      "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/tax/federalTax.ts"
       ],
@@ -177,6 +197,16 @@
           "kind": "statute",
           "citation": "IRC 170(b)(1)(G)(ii)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170(b)(1)(G)(i), Editorial Notes, Amendments, 2025, prior text",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
         }
       ]
     },
@@ -191,8 +221,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-02",
-      "dueOn": "2027-08-02",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts"
       ],
@@ -202,7 +232,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 368
+              "line": 370
             }
           ]
         }
@@ -228,13 +258,13 @@
       "authorities": [
         {
           "kind": "statute",
-          "citation": "IRC 170(b)(1)(I)(i)",
+          "citation": "IRC 170(b)(1)(I)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
         },
         {
-          "kind": "legislativeHistory",
-          "citation": "JCT, General Explanation of P.L. 119-21 (JCS-1-26)",
-          "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf"
+          "kind": "statute",
+          "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
         }
       ]
     },
@@ -249,8 +279,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts",
         "packages/engine/src/tax/annualCharitableDeductionParameters.ts",
@@ -262,7 +292,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 368
+              "line": 370
             }
           ]
         },
@@ -314,12 +344,17 @@
       "authorities": [
         {
           "kind": "statute",
-          "citation": "IRC 170(b)(1)(I)(i)",
+          "citation": "IRC 170(b)(1)(I)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
         },
         {
           "kind": "statute",
           "citation": "IRC 170(b)(1)(H)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
         }
       ]
@@ -335,8 +370,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-02",
-      "dueOn": "2027-08-02",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts"
       ],
@@ -346,7 +381,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 368
+              "line": 370
             }
           ]
         }
@@ -372,7 +407,12 @@
       "authorities": [
         {
           "kind": "statute",
-          "citation": "IRC 170(b)(1)(I)(ii)",
+          "citation": "IRC 170(b)(1)(I)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
         }
       ]
@@ -388,8 +428,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-02",
-      "dueOn": "2027-08-02",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts"
       ],
@@ -399,7 +439,7 @@
           "functions": [
             {
               "name": "stageAnnualQcdItemizedSection170Ledger",
-              "line": 368
+              "line": 370
             }
           ]
         }
@@ -436,6 +476,11 @@
           "kind": "legislativeHistory",
           "citation": "JCT, General Explanation of P.L. 119-21 (JCS-1-26)",
           "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim"
         }
       ]
     },

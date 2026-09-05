@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-05T11:18:21.521Z",
+  "generatedAt": "2026-09-05T14:46:46.772Z",
   "recordCount": 432,
   "urlCount": 321,
   "fetched": 9,
   "cached": 312,
-  "entryCount": 1165,
+  "entryCount": 1174,
   "counts": {
-    "EXACT": 803,
-    "PUNCTUATION": 37,
-    "PDF-WORD-LEVEL": 212,
-    "ELISION-PUNCTUATION": 6,
-    "ELISION-EXACT": 63,
+    "EXACT": 810,
+    "PUNCTUATION": 42,
+    "PDF-WORD-LEVEL": 211,
+    "ELISION-EXACT": 62,
+    "ELISION-PUNCTUATION": 5,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
   },
@@ -49,7 +49,7 @@
   "results": [
     {
       "id": "irc-170-b-1-I-half-percent-floor",
-      "citation": "IRC 170(b)(1)(I)(i)",
+      "citation": "IRC 170(b)(1)(I)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
       "quoteSha256": "657018be074e16c0",
@@ -68,23 +68,33 @@
       "diagnosis": null
     },
     {
-      "id": "irc-170-b-1-I-floor-ordering",
-      "citation": "IRC 170(b)(1)(I)(i)",
+      "id": "irc-170-b-1-I-half-percent-floor",
+      "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "aa362b825f7830e8",
+      "quoteSha256": "c789c139e1e80695",
       "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "detail": "matches only after: whitespace",
       "diagnosis": null
     },
     {
       "id": "irc-170-b-1-I-floor-ordering",
-      "citation": "JCT, General Explanation of P.L. 119-21 (JCS-1-26)",
-      "host": "www.jct.gov",
-      "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf",
-      "quoteSha256": "c74d046627f38801",
-      "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "citation": "IRC 170(b)(1)(I)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "657018be074e16c0",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-I-floor-ordering",
+      "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "c789c139e1e80695",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
       "diagnosis": null
     },
     {
@@ -108,13 +118,33 @@
       "diagnosis": null
     },
     {
-      "id": "irc-170-b-1-I-ii-category-waterfall",
-      "citation": "IRC 170(b)(1)(I)(ii)",
+      "id": "irc-170-d-1-C-floor-carryforward-gate",
+      "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "f192f3e1dbf7da90",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "c789c139e1e80695",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-I-ii-category-waterfall",
+      "citation": "IRC 170(b)(1)(I)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "06b342586fb0025f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-I-ii-category-waterfall",
+      "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "c789c139e1e80695",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
       "diagnosis": null
     },
     {
@@ -199,12 +229,52 @@
     },
     {
       "id": "irc-170-b-1-G-cash-percentage-ceiling",
-      "citation": "IRC 170(b)(1)(G)(iii)",
+      "citation": "IRC 170(b)(1)(G)(ii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "83465796e3cf8ec2",
-      "verdict": "ELISION-EXACT",
-      "detail": "2 segments, every one a literal substring",
+      "quoteSha256": "dae926239749ee57",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-G-cash-percentage-ceiling",
+      "citation": "IRC 170(b)(1)(G)(iii)(I)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "d28f4728a9f92b50",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-G-cash-percentage-ceiling",
+      "citation": "IRC 170(b)(1)(G)(iii)(II)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "9c3eb1073b513986",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-G-cash-percentage-ceiling",
+      "citation": "IRC 170(b)(1)(G)(i), Editorial Notes, Amendments, 2025, prior text",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "80e68a8ffcca7317",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-G-cash-percentage-ceiling",
+      "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "c789c139e1e80695",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
       "diagnosis": null
     },
     {
@@ -355,6 +425,26 @@
       "quoteSha256": "dae926239749ee57",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-G-projection-cash-ceiling-not-applied",
+      "citation": "IRC 170(b)(1)(G)(i), Editorial Notes, Amendments, 2025, prior text",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "80e68a8ffcca7317",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-170-b-1-G-projection-cash-ceiling-not-applied",
+      "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
+      "quoteSha256": "c789c139e1e80695",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
       "diagnosis": null
     },
     {
@@ -11711,12 +11801,6 @@
     }
   ],
   "apostropheStyle": [
-    {
-      "id": "irc-170-b-1-I-floor-ordering",
-      "citation": "IRC 170(b)(1)(I)(i)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
     {
       "id": "treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd",
       "citation": "Treas. Reg. 1.408-8(b)(3)",

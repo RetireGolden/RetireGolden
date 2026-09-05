@@ -176,10 +176,10 @@ function staged(input: StageAnnualQcdItemizedSection170LedgerInput) {
 }
 
 describe('stageAnnualQcdItemizedSection170Ledger', () => {
-  // IRC 170(b)(1)(I)(i) allows a contribution "otherwise allowable (without
+  // IRC 170(b)(1)(I) allows a contribution "otherwise allowable (without
   // regard to this subparagraph)" only above 0.5% of the contribution base. The
   // parenthetical excepts only the floor itself, so the 170(b)(1)(G) percentage
-  // ceiling applies first and the floor reduces what survives it: min(C, L) - F.
+  // ceiling applies first and the floor reduces what survives it: max(0, min(C, L) - F).
   //
   // This fixture is chosen so the two candidate orderings disagree. Base 10,000c
   // gives a 50c floor and a 6,000c ceiling; 5,500c of prior use leaves 500c of
@@ -242,10 +242,10 @@ describe('stageAnnualQcdItemizedSection170Ledger', () => {
   })
 
   describeRule('irc-170-b-1-I-ii-category-waterfall', {
-    // Cash gifts to public charities are category (G) and absorb the floor
-    // sixth. Whether this single-category ledger charges the floor to the QCD
-    // depends entirely on the floor the caller reports already consumed by
-    // categories (D) through (A).
+    // Cash gifts to public charities are category (G), clause (vi) of the
+    // IRC 170(b)(1)(I) waterfall, and absorb the floor last. Whether the
+    // ledger charges this cash gift the floor depends on prior floor use
+    // the caller reports for categories (D) through (A).
     readings: { earlierCategoriesAbsorbedIt: 1_000, chargedToCashCategory: 950 },
     accepted: 'earlierCategoriesAbsorbedIt',
   }, ({ accepted, readings }) => {

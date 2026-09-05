@@ -25,7 +25,7 @@ export const charitableDeductionRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 170(b)(1)(I)(i)',
+      citation: 'IRC 170(b)(1)(I)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
         'Any charitable contribution otherwise allowable (without regard to this subparagraph) as a deduction under this section shall be allowed only to the extent that the aggregate of such contributions exceeds 0.5 percent of the taxpayer\'s contribution base for the taxable year.',
@@ -35,11 +35,17 @@ export const charitableDeductionRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
         'For purposes of this section, the term "contribution base" means adjusted gross income (computed without regard to any net operating loss carryback to the taxable year under section 172).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts',
       'packages/engine/src/tax/annualCharitableDeductionParameters.ts',
@@ -55,7 +61,7 @@ export const charitableDeductionRecords = {
   'irc-170-b-1-I-floor-ordering': {
     title: 'Order of the 0.5% floor and the percentage ceiling',
     statement:
-      'The 0.5% itemizer floor reduces the contribution otherwise allowable after the percentage ceiling has been applied: min(C, L) - F, never min(C - F, L).',
+      'The 0.5% itemizer floor reduces the contribution otherwise allowable after the percentage ceiling has been applied: max(0, min(C, L) - F), never min(C - F, L).',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -63,21 +69,21 @@ export const charitableDeductionRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 170(b)(1)(I)(i)',
+      citation: 'IRC 170(b)(1)(I)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Any charitable contribution otherwise allowable (without regard to this subparagraph) as a deduction under this section shall be allowed only to the extent that the aggregate of such contributions exceeds 0.5 percent of the taxpayer’s contribution base for the taxable year.',
+        'Any charitable contribution otherwise allowable (without regard to this subparagraph) as a deduction under this section shall be allowed only to the extent that the aggregate of such contributions exceeds 0.5 percent of the taxpayer\'s contribution base for the taxable year.',
     }, {
-      kind: 'legislativeHistory',
-      citation: 'JCT, General Explanation of P.L. 119-21 (JCS-1-26)',
-      url: 'https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf',
+      kind: 'statute',
+      citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Charitable contributions that exceed the applicable percentage limit generally may be carried forward for up to five years.',
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-02',
+    verifiedOn: '2026-09-05',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
@@ -105,11 +111,17 @@ export const charitableDeductionRecords = {
       url: 'https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf',
       quotedText:
         'If a taxpayer has excess contributions in a taxable year, the taxpayer is permitted to carry forward the amount disallowed by the 0.5 percent floor.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-02',
+    verifiedOn: '2026-09-05',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
@@ -119,7 +131,7 @@ export const charitableDeductionRecords = {
   'irc-170-b-1-I-ii-category-waterfall': {
     title: 'Category order in which the 0.5% floor is absorbed',
     statement:
-      'The floor is consumed against contribution categories in the fixed order (D), (C), (B), (E), (A), (G), so 60% cash gifts to public charities absorb it last. A single-category ledger must be told the floor already consumed by earlier categories.',
+      'The floor is consumed against contribution categories in the fixed order (D), (C), (B), (E), (A), (G), so subparagraph (G) contributions absorb it last. A single-category ledger must be told the floor already consumed by earlier categories.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -127,15 +139,21 @@ export const charitableDeductionRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 170(b)(1)(I)(ii)',
+      citation: 'IRC 170(b)(1)(I)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'The preceding sentence shall be applied— (i) first, by taking into account charitable contributions to which subparagraph (D) applies to the extent thereof, (ii) second, ... subparagraph (C) ..., (iii) third, ... subparagraph (B) ..., (iv) fourth, ... subparagraph (E) ..., (v) fifth, ... subparagraph (A) ..., and (vi) sixth, by taking into account charitable contributions to which subparagraph (G) applies to the extent thereof.',
+        'Any charitable contribution otherwise allowable (without regard to this subparagraph) as a deduction under this section shall be allowed only to the extent that the aggregate of such contributions exceeds 0.5 percent of the taxpayer\'s contribution base for the taxable year. The preceding sentence shall be applied- (i) first, by taking into account charitable contributions to which subparagraph (D) applies to the extent thereof, (ii) second, by taking into account charitable contributions to which subparagraph (C) applies to the extent thereof, (iii) third, by taking into account charitable contributions to which subparagraph (B) applies to the extent thereof, (iv) fourth, by taking into account charitable contributions to which subparagraph (E) applies to the extent thereof, (v) fifth, by taking into account charitable contributions to which subparagraph (A) applies to the extent thereof, and (vi) sixth, by taking into account charitable contributions to which subparagraph (G) applies to the extent thereof.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-02',
+    verifiedOn: '2026-09-05',
     implementedBy: ['packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts'],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts#stageAnnualQcdItemizedSection170Ledger',
@@ -272,7 +290,7 @@ export const charitableDeductionRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Effective from 2018 rather than 2026, aligned with irc-170-b-1-G-projection-cash-ceiling-not-applied on 2026-08-04 after the two records disagreed about the same clause. This field means the first tax year the rule governs, and (G)(i) fixes that in its own words: for taxable years beginning after December 31, 2017. Pub. L. 119-21 section 70425(b)(1) rewrote the clause for years beginning after 2025, but what it removed was the pre-OBBBA expiry scheduled for the end of 2025; the 60 percent figure and the 2018 start survived it unchanged. Reading the rewrite as a new start date would imply the ceiling did not govern 2018 through 2025, which is false, and would make a year filter over this registry answer wrongly for those years.',
+      'The sixty-percent rate for cash gifts to public charities dates from taxable years beginning after December 31, 2017. The amendment note quoted below shows that clause (G)(i) formerly capped such contributions at 60 percent of contribution base for taxable years beginning after December 31, 2017, and before January 1, 2026; the operative (G)(i) text in the first authority below expresses the net-of-(A) combined formula and applies for taxable years beginning after December 31, 2025 under section 70425(c). effectiveFrom is 2026 because this record states that post-amendment combined reading.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -282,15 +300,39 @@ export const charitableDeductionRecords = {
         'For taxable years beginning after December 31, 2017, any contribution of cash to an organization described in subparagraph (A) shall be allowed as a deduction under subsection (a) to the extent that the aggregate of such contributions does not exceed the excess of- (I) 60 percent of the taxpayer\'s contribution base for the taxable year, over (II) the aggregate amount of contributions taken into account under subparagraph (A) for such taxable year.',
     }, {
       kind: 'statute',
-      citation: 'IRC 170(b)(1)(G)(iii)',
+      citation: 'IRC 170(b)(1)(G)(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Contributions taken into account under this subparagraph shall not be taken into account under subparagraph (A). ... subparagraph (A) shall be applied by reducing (but not below zero) the contribution limitation allowed for the taxable year under such subparagraph by the aggregate contributions allowed under this subparagraph for such taxable year.',
+        'If the aggregate amount of contributions described in clause (i) exceeds the applicable limitation under clause (i) for any taxable year described in such clause, such excess shall be treated (in a manner consistent with the rules of subsection (d)(1)) as a charitable contribution to which clause (i) applies in each of the 5 succeeding years in order of time.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(G)(iii)(I)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Contributions taken into account under this subparagraph shall not be taken into account under subparagraph (A).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(G)(iii)(II)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'For each taxable year described in clause (i), and each taxable year to which any contribution under this subparagraph is carried over under clause (ii), subparagraph (A) shall be applied by reducing (but not below zero) the contribution limitation allowed for the taxable year under such subparagraph by the aggregate contributions allowed under this subparagraph for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(G)(i), Editorial Notes, Amendments, 2025, prior text',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Pub. L. 119–21, §70425(b)(1), amended cl. (i) generally. Prior to amendment, text read as follows: "In the case of any contribution of cash to an organization described in subparagraph (A), the total amount of such contributions which may be taken into account under subsection (a) for any taxable year beginning after December 31, 2017, and before January 1, 2026, shall not exceed 60 percent of the taxpayer\'s contribution base for such year."',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2018,
+    effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts',
       'packages/engine/src/tax/annualCharitableDeductionParameters.ts',
@@ -489,7 +531,7 @@ export const charitableDeductionRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'This is the timing case the errorDirection doc comment describes, and the sign really does turn on the year rather than being undetermined. In the gift year the engine’s deduction is too large and tax is understated; in each of the five succeeding years it is too small, because the carryforward the statute grants is not there, and tax is overstated. It does not net to nothing even in principle: a carryforward the taxpayer never has the income to absorb expires unused, which for a household drawing down in retirement is the likely outcome, and in that case the engine’s year-one generosity is a permanent understatement. Nor is an annual projection indifferent to which year a deduction lands in, since the year decides the bracket it offsets, the capital-gain stacking threshold, and the modified AGI that sets the Medicare premium adjustment two years later. The effectiveFrom is 2018 rather than 2026 because the clause quoted below says so in its own words; Pub. L. 119-21 section 70425(b)(1) rewrote (G)(i) effective for taxable years beginning after 2025, but what it removed was the pre-OBBBA expiry, leaving both the 60 percent figure and the 2018 start date intact. The correct implementation lives in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts and is registered at irc-170-b-1-G-cash-percentage-ceiling; the live path does not reach it.',
+      'This is the timing case the errorDirection doc comment describes, and the sign really does turn on the year rather than being undetermined. In the gift year the engine’s deduction is too large and tax is understated; in each of the five succeeding years it is too small, because the carryforward the statute grants is not there, and tax is overstated. It does not net to nothing even in principle: a carryforward the taxpayer never has the income to absorb expires unused, which for a household drawing down in retirement is the likely outcome, and in that case the engine’s year-one generosity is a permanent understatement. Nor is an annual projection indifferent to which year a deduction lands in, since the year decides the bracket it offsets, the capital-gain stacking threshold, and the modified AGI that sets the Medicare premium adjustment two years later. The sixty-percent rate for cash gifts dates from taxable years beginning after December 31, 2017. The amendment note quoted below shows that clause (G)(i) formerly capped such contributions at 60 percent of contribution base through taxable years beginning before January 1, 2026; the operative (G)(i) text in the first authority below expresses the net-of-(A) combined formula and applies for taxable years beginning after December 31, 2025 under section 70425(c). effectiveFrom is 2026 because this record states that post-amendment combined reading. The correct implementation lives in packages/engine/src/actions/annualQcdItemizedSection170Ledger.ts and is registered at irc-170-b-1-G-cash-percentage-ceiling; the live path does not reach it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -503,11 +545,23 @@ export const charitableDeductionRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
         'If the aggregate amount of contributions described in clause (i) exceeds the applicable limitation under clause (i) for any taxable year described in such clause, such excess shall be treated (in a manner consistent with the rules of subsection (d)(1)) as a charitable contribution to which clause (i) applies in each of the 5 succeeding years in order of time.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170(b)(1)(G)(i), Editorial Notes, Amendments, 2025, prior text',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Pub. L. 119–21, §70425(b)(1), amended cl. (i) generally. Prior to amendment, text read as follows: "In the case of any contribution of cash to an organization described in subparagraph (A), the total amount of such contributions which may be taken into account under subsection (a) for any taxable year beginning after December 31, 2017, and before January 1, 2026, shall not exceed 60 percent of the taxpayer\'s contribution base for such year."',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
+      quotedText:
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2018,
+    effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-05',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
       'packages/engine/src/tax/federalTax.ts#itemizedTotal',

@@ -154,7 +154,7 @@ function itemizedTotal(
  *
  * Two things this deliberately does not do.
  *
- * It does not apply the §170(b)(1)(I)(ii) category waterfall, which consumes
+ * It does not apply the §170(b)(1)(I)(i)-(vi) category waterfall, which consumes
  * the floor against the (D) through (A) categories before it reaches (G) cash
  * gifts. `itemizedDeductions.charitable` is one undifferentiated figure, so
  * there are no categories to walk and the whole floor lands on the only line
