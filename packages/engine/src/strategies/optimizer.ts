@@ -22,8 +22,10 @@
  *     integer variables.
  *   - IRMAA tier surcharges as binary step thresholds (the non-convex part that
  *     makes this a MILP, not an LP).
- *   - RMD floors as a linear lower bound on each year's taxable distribution
- *     (floor = start-of-year traditional balance ÷ divisor).
+ *   - RMD floors as a linear lower bound on each year's traditional withdrawal
+ *     (floor = start-of-year pooled traditional balance ÷ rmdDivisor; the plan
+ *     bridge supplies an effective pooled divisor recovered at baseline — see
+ *     DOCS/features/optimizer.md §"Documented simplifications").
  *   - Three-bucket balances (owner traditional, inherited traditional, and
  *     "other" = Roth + taxable + cash) with per-year growth and scheduled
  *     contribution / employer-match inflows from the baseline probe, so a
@@ -180,7 +182,15 @@ export interface OptimizerYear {
   spendingNeed: number
   /** Net non-withdrawal cash already in hand (e.g. surplus SS/pension). Nominal. */
   exogenousCash: number
-  /** Uniform-Lifetime (or joint) RMD divisor when age-eligible; null = no RMD. */
+  /**
+   * Effective pooled owner-traditional divisor (baseline opening trad ÷ baseline
+   * owner RMD) when age-eligible; null = no floor. Generic callers may supply a
+   * real table divisor for one pool; the plan bridge recovers a pooled baseline
+   * divisor that can differ from any single table divisor in a mixed household.
+   * Exact at that baseline composition and under proportional balance changes;
+   * owner/plan/denominator mix can distort the raw MILP floor. See
+   * DOCS/features/optimizer.md §"Documented simplifications".
+   */
   rmdDivisor: number | null
   /** Forced inherited-traditional distribution from the baseline ledger. */
   inheritedDistribution: number
@@ -273,9 +283,19 @@ export interface OptimizerYear {
    */
   magiTaxExemptInterest?: number
   /**
-   * Maximum modeled total MAGI that preserves the actionable current-year ACA
-   * result. This constrains the same MAGI expression used by the optimizer's
-   * IRMAA model, including taxable-SS phase-in and taxable withdrawals.
+   * Generic caller contract: maximum modeled total MAGI for the ACA cap constraint
+   * in this year's LP (nominal). When set, the MILP bounds the same MAGI expression
+   * used by IRMAA, including taxable-SS phase-in and taxable withdrawals. In
+   * production, `buildOptimizerInput` sets this only when modeled PTC is positive
+   * and cliff state is below-cliff or at-cliff — not every actionable year. The
+   * absolute cap is the incumbent value of the optimizer's modeled MAGI expression
+   * (including the gain-weighted incumbent taxable withdrawal) plus exact-ledger
+   * ACA headroom. That is not exact statutory household MAGI plus headroom: static
+   * ACA addbacks distinguish them. In-solve taxable-SS movement can still restrict
+   * apparent room in that calibrated use — a documented policy/model residual that
+   * does not establish taxpayer-tax direction (DOCS/features/optimizer.md
+   * §"Documented simplifications"). This is a modeled MAGI ceiling for the LP, not
+   * a claim of exact statutory ACA MAGI.
    */
   acaMagiMax?: number
   /**
@@ -881,7 +901,8 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
       )}`,
     )
 
-    // RMD floor: discretionary+forced taxable distribution ≥ balance ÷ divisor.
+    // RMD floor: wt ≥ trad ÷ rmdDivisor; the plan bridge supplies an effective
+    // pooled divisor recovered at baseline (may differ from any single table divisor).
     if (y.rmdDivisor && y.rmdDivisor > 0) {
       const rmd: Terms = { [wt]: 1, [`trad${t}`]: -1 / y.rmdDivisor }
       constraints.push(` rmd${t}: ${expr(rmd)} >= 0`)
@@ -894,12 +915,15 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     }
 
     if (y.acaMagiMax !== undefined) {
-      // `acaMagiMax` embeds the exact ledger's remaining MAGI headroom before
-      // the cliff — incumbent ledger MAGI (which already includes exempt
-      // interest) minus the same LP `magiBase`. The constraint stays correct
-      // because that headroom is measured on the ledger's MAGI, not because
-      // exempt interest cancels out of `magiBase`. If the LP's MAGI expression
-      // later gains an explicit exempt term, this constraint must be reconciled.
+      // `acaMagiMax` is the absolute cap: the incumbent value of this modeled
+      // MAGI expression (including the gain-weighted incumbent taxable
+      // withdrawal) plus exact-ledger ACA headroom. That is not exact statutory
+      // household MAGI plus headroom: static ACA addbacks distinguish them. The
+      // inequality subtracts `magiBase` so it bounds only the variable terms.
+      // In-solve taxable-SS movement can still shrink apparent room; that
+      // restriction is a documented policy/model residual that does not
+      // establish taxpayer-tax direction (optimizer.md). If the LP's MAGI
+      // expression later gains an explicit exempt term, reconcile.
       constraints.push(
         ` acamagi${t}: ${expr(myMagiTerms)} <= ${fmt(Math.max(0, y.acaMagiMax) - magiBase[t]!)}`,
       )

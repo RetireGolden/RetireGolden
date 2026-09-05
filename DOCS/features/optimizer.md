@@ -53,9 +53,13 @@ floors once age-eligible; non-negativity; balances ≥ 0.
 
 **The kink problem:** federal tax, taxable-SS phase-in, IRMAA tiers, and the ACA cliff are
 piecewise-linear / step, not linear. The MILP handles federal tax with convex segments and IRMAA with
-binary thresholds. For each actionable ACA probe year it also applies a conservative absolute conversion
-bound equal to the incumbent conversion plus remaining exact-ledger MAGI room to the cliff. Withdrawals
-and premium reconciliation remain nonlinear and are refined by the exact ledger. This is the bulk of the engineering and why the optimizer was spiked
+binary thresholds. For each ACA probe year with positive modeled PTC and cliff state below-cliff or
+at-cliff — not every actionable year — it also applies a conservative absolute MAGI cap: the incumbent
+value of the optimizer's modeled MAGI expression (including the gain-weighted incumbent taxable
+withdrawal) plus exact-ledger ACA headroom. That is not exact statutory household MAGI plus headroom:
+static ACA addbacks distinguish them. The constraint subtracts the year's MAGI constant so only the
+variable terms are bounded. Withdrawals and premium reconciliation remain nonlinear and are refined by
+the exact ledger. This is the bulk of the engineering and why the optimizer was spiked
 before commit. If the MILP had proven impractical, the strategy-provider seam allowed a multi-year
 heuristic fallback (forward search / local improvement over the bisection sizers).
 
@@ -351,12 +355,29 @@ Each sharpens the same withdrawal/conversion engine:
   omits the half-benefit plateau and the 85-percent-of-benefits cap and freezes a near-cap baseline, so
   modeled inclusion can miss in either direction. IRMAA tiers (on the two-year MAGI lookback, Step 4),
   taxable capital-gain realization (Step 2), progressive state brackets (Step 3), and the OBBBA senior
-  deduction with its 6% MAGI phase-out (ground-truth 2026 law sync) are also modeled in-solve. Actionable ACA
-  years add a bounded conversion ceiling, but the compressed solve does not reproduce the full
-  premium/withdrawal fixed point. A single LTCG rate and a single opening basis ratio linearize the taxable
-  stack; the senior-deduction PWL still omits its concave cap. The exact ledger, convergence loop, and
-  tournament refine the candidate model without implying that a published recommendation must err in one
-  signed direction. State retirement-income exclusions are left to the exact ledger.
+  deduction with its 6% MAGI phase-out (ground-truth 2026 law sync) are also modeled in-solve. A single LTCG
+  rate and a single opening basis ratio linearize the taxable stack; the senior-deduction PWL still omits its
+  concave cap. The exact ledger, convergence loop, and tournament refine the candidate model without
+  implying that a published recommendation must err in one signed direction. State retirement-income
+  exclusions are left to the exact ledger.
+- **ACA MAGI conversion cap (policy/model residual).** Years with positive modeled PTC and cliff state
+  below-cliff or at-cliff — not every actionable year — apply a ceiling equal to the incumbent value of
+  the optimizer's modeled MAGI expression (including the gain-weighted incumbent taxable withdrawal)
+  plus exact-ledger ACA headroom, not a static 400% FPL cliff alone and not exact statutory household
+  MAGI plus headroom: static ACA addbacks distinguish them. The constraint subtracts the year's MAGI
+  constant to bound the variable terms. The LP cap does not reproduce the full premium-tax-credit /
+  withdrawal fixed point, and the in-solve taxable-SS PWL can shrink apparent headroom when modeled
+  inclusion rises inside the solve even though statutory ACA MAGI would still remain at or below the
+  cliff. That proves headroom restriction inside the compressed model; taxpayer-tax direction has not been
+  established. No approximated registry record or `errorDirection` without fiscal evidence.
+- **RMD floor divisor (policy/model residual).** The MILP enforces `trad ÷ rmdDivisor` using an **effective
+  pooled owner-traditional divisor** the plan→optimizer bridge recovers at baseline as pooled opening
+  traditional balance ÷ baseline owner RMD — exact at that composition and when balances change
+  proportionally, but not when owner, plan, or denominator mix shifts; it can differ from any single Uniform
+  Lifetime table divisor in a mixed household. The exact ledger's settled RMD rules are not defective.
+  Post-processing installs only raw conversions; the ledger recomputes legal RMDs and withdrawals. Constraint
+  distortion inside the MILP; taxpayer-tax direction has not been established. No approximated registry
+  record or `errorDirection`.
 - Inherited traditional accounts are not owner-convertible and are excluded from optimizer conversion
   supply; the exact ledger also refuses to convert them.
 - Permanent-life cash value is not an optimizer drawdown source.
