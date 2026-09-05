@@ -215,7 +215,8 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   and not later than the unextended return due date — is independently enforced by
   `model/retirementActionAnnualTaxFacts.ts#persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema`
   before the filing-evidence builder (`irc-219-f-3-prior-year-contribution-window`). That schema also
-  requires the stored deadline date to match the ordinary calendar; it does not re-derive it.
+  recomputes the supported calendar date to validate the stored deadline but does not manufacture the
+  underlying filing-evidence authority.
   This leaves line 5 equal to the exact opening basis; contributions in that following-calendar-year window do
   not recover basis in the current distribution fraction
   (`form-8606-line-4-post-year-contribution-exclusion`). Rollover
