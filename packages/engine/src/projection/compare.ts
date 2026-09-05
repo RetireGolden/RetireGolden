@@ -5,6 +5,7 @@
 
 import { selectedLogicalBalanceAccounts, type Account, type Plan } from '../model/plan.js'
 import { estateTraditionalTaxableBase } from './estateTraditionalBasis.js'
+import { estateHsaIncomeBase } from './estateHsaIncome.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { ProjectionResult } from './types.js'
 
@@ -67,10 +68,14 @@ export interface ProjectionSummary {
    * approximation of assumed future income-tax exposure, not a death-year
    * Form 8606. Roth, taxable
    * (stepped-up at death), cash, and property are treated as passing through
-   * untaxed — the standard simplification for an estate comparison. An HSA
-   * left to a non-spouse beneficiary is fully taxable in the death year (IRC
-   * §223(f)(8)(B)), so its ending balance is also taxed at the heir rate; an
-   * HSA inherited by a spouse (or with no beneficiary set) passes untaxed.
+   * untaxed — the standard simplification for an estate comparison.
+   * Designated surviving-spouse HSA continuation under IRC §223(f)(8)(A)
+   * contributes a zero inclusion; the legacy omitted-`beneficiary`
+   * convention independently maps to the same zero and does not prove a
+   * statutory designation. Any other modeled destination uses the ending gross as the
+   * terminal inclusion base under IRC §223(f)(8)(B)(i); the
+   * §223(f)(8)(B)(ii)(I) predeath-expense reduction is not applied. That figure
+   * is assumed terminal exposure at the horizon, not a death-year return.
    */
   endingAfterTaxEstate: number
   /** Total heir income tax discounted from the estate (sum of the breakdown's heirTax). */
@@ -152,15 +157,17 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
           endingByCategory.traditional,
           result.endingNondeductibleIraBasis,
         )
-      } else if (category === 'hsa' && destination !== 'spouse') {
-        // An HSA passing to anyone but a spouse is a fully taxable distribution.
-        taxablePretaxBase = grossBalance
+      } else if (category === 'hsa') {
+        // Spouse continuation is a zero inclusion; any other modeled destination
+        // uses ending gross as the terminal base (expense reduction omitted).
+        taxablePretaxBase = estateHsaIncomeBase(grossBalance, destination)
       }
       const heirTaxRatePct = heirRateFor(category) * 100
       const charityFraction = destination === 'charity' ? Math.min(1, charityPct / 100) : 0
       const charityAmount = grossBalance * charityFraction
-      // A spouse rollover is untaxed; otherwise the non-charity slice of the
-      // pre-tax base is taxed at the class heir rate.
+      // Spouse destinations carry no terminal income-tax haircut under the
+      // valuation convention; other destinations apply the assumed class rate to
+      // the non-charity slice of the pre-tax base.
       const heirTax = destination === 'spouse' ? 0 : taxablePretaxBase * (1 - charityFraction) * heirRateFor(category)
       estateBreakdown.push({
         accountId: account.id,

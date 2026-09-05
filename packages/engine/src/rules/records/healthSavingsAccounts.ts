@@ -1,7 +1,8 @@
 /**
  * Health savings account records: the section 223 contribution limits and proration,
  * the qualified-medical exclusion and its reimbursement conditions, the age-65 and
- * Medicare boundaries, and the section 4973 excise on excess contributions.
+ * Medicare boundaries, the section 4973 excise on excess contributions, and the
+ * terminal-estate inclusion approximation.
  *
  * One slice of the tax rule registry. `../taxRuleRegistry.ts` composes every
  * slice into `TAX_RULE_REGISTRY`; read it for what a record must carry and why.
@@ -697,6 +698,51 @@ export const healthSavingsAccountRecords = {
       'packages/engine/src/model/plan.ts#hsaAccountSchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
+    ],
+  },
+
+  'irc-223-f-8-B-estate-predeath-expense-reduction': {
+    title: 'Terminal HSA inclusion omits the 223(f)(8)(B)(ii)(I) predeath-expense reduction',
+    statement:
+      'When the designated beneficiary of an HSA is the account beneficiary\'s surviving spouse, section 223(f)(8)(A) treats that health savings account as if the spouse were the account beneficiary, so the helper\'s spouse destination is a zero inclusion rather than a death-year distribution. In a case to which subparagraph (A) does not apply, section 223(f)(8)(B)(i) provides that the account ceases to be a health savings account as of the date of death and that an amount equal to the fair market value of the assets on that date is includible: in the acquiring person\'s gross income for the taxable year that includes that date if that person is not the decedent\'s estate, or in the decedent\'s gross income for the decedent\'s last taxable year if that person is the estate. For an acquiring person other than the estate, section 223(f)(8)(B)(ii)(I) then reduces that inclusion by the amount of qualified medical expenses incurred by the decedent before the date of death and paid by that person within 1 year after that date. Section 223(f)(8)(B)(ii)(II) allows an appropriate section 691(c) deduction to a person other than the decedent or the decedent\'s spouse with respect to amounts included in gross income under clause (i) by such person. estateHsaIncomeBase is assumed terminal income-tax exposure at a stipulated death-horizon value and a fixed comparison heir rate; it is not an annual tax computation and not a return adjudication. For a designated non-spouse natural-person destination it returns the ending gross balance without the (B)(ii)(I) reduction, which overstates that assumed exposure when qualifying predeath expenses were incurred and paid in time. The Plan cannot express legal beneficiary class, death date or date-of-death value, or qualifying predeath expense and payment facts, so those remain disclosed; the nonSpouse destination also covers unmodeled legal classes, and a charitable bequest haircut is applied outside this helper. This record does not claim that every HSA death is a fully taxable distribution, and it does not claim overstatement for every account, recipient, or default.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'The helper preserves the existing spouse-zero versus gross-for-other decision. Overstatement is claimed only for the omitted (B)(ii)(I) expense reduction at a stipulated death value, a fixed comparison heir rate, and a designated non-spouse natural-person case. A spouse destination follows (A) and is a zero inclusion. Charity exemption, generic default destination, and Form 8606 basis remain outside this helper. The nonSpouse enum also stands in for unmodeled legal classes, including an estate, for which (B)(ii)(I) does not reduce the inclusion. Missing legal beneficiary class, death date or value, and qualifying predeath expense and payment facts stay disclosed rather than inferred from healthcare spending or reimburseLater, which debit a different household cost. The companion fixture stipulates no relevant estate tax, so the (B)(ii)(II) section 691(c) deduction is zero and does not move the delta. The 223(f)(4)(B) additional-tax death exception remains a separate out-of-scope record; this metric is not that waiver.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 223(f)(8)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      quotedText:
+        'If the account beneficiary\'s surviving spouse acquires such beneficiary\'s interest in a health savings account by reason of being the designated beneficiary of such account at the death of the account beneficiary, such health savings account shall be treated as if the spouse were the account beneficiary.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(f)(8)(B)(i)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      quotedText:
+        'If, by reason of the death of the account beneficiary, any person acquires the account beneficiary\'s interest in a health savings account in a case to which subparagraph (A) does not apply— (I) such account shall cease to be a health savings account as of the date of death, and (II) an amount equal to the fair market value of the assets in such account on such date shall be includible if such person is not the estate of such beneficiary, in such person\'s gross income for the taxable year which includes such date, or if such person is the estate of such beneficiary, in such beneficiary\'s gross income for the last taxable year of such beneficiary.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(f)(8)(B)(ii)(I)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      quotedText:
+        'The amount includible in gross income under clause (i) by any person (other than the estate) shall be reduced by the amount of qualified medical expenses which were incurred by the decedent before the date of the decedent\'s death and paid by such person within 1 year after such date.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(f)(8)(B)(ii)(II)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      quotedText:
+        'An appropriate deduction shall be allowed under section 691(c) to any person (other than the decedent or the decedent\'s spouse) with respect to amounts included in gross income under clause (i) by such person.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-04',
+    implementedBy: ['packages/engine/src/projection/estateHsaIncome.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/estateHsaIncome.ts#estateHsaIncomeBase',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

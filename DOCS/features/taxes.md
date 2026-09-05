@@ -552,8 +552,11 @@ rules and citations: [domain rules §16](../domain/domain-rules-reference/16-acc
 - **HSA medical-expense subledger.** An HSA can cap qualified (tax- and penalty-free) withdrawals at the
   household's modeled medical costs (`capByMedicalExpenses`), assume every withdrawal qualifies
   (`assumeAllQualified`), or keep the legacy behavior; `reimburseLater` accumulates unreimbursed out-of-pocket
-  medical costs as a carryover future withdrawals can draw tax-free. A non-spouse HSA `beneficiary` makes the
-  ending balance taxable to the heir in the after-tax estate. It does not establish HDHP coverage, Medicare Part A
+  medical costs as a carryover future withdrawals can draw tax-free. A spouse-designated HSA continues under
+  IRC §223(f)(8)(A) in the after-tax estate metric (zero inclusion). A designated non-spouse destination uses
+  ending gross as the terminal inclusion base and omits the §223(f)(8)(B)(ii)(I) predeath-expense reduction;
+  omitted `beneficiary` is a legacy convention mapped to the spouse-equivalent default, not a statutory
+  designation. The HSA account still does not establish HDHP coverage, Medicare Part A
   enrollment, or retroactive entitlement; those facts can make a contribution excess, and the §4973 6% excise on
   that excess is not included in `YearResult.penalties` (domain rules §5).
 - **Nondeductible IRA basis.** `nondeductibleBasis` (Form 8606) makes withdrawals and conversions part
@@ -681,7 +684,9 @@ rules and citations: [domain rules §17](../domain/domain-rules-reference/17-gua
   traditional balance shrinks future RMDs; a **QLAC** additionally defers the premium out of the RMD base
   until payouts begin (capped at the SECURE 2.0 statutory limit).
 - **Estate beneficiary + heir tax by class.** The after-tax estate no longer applies one flat traditional
-  haircut: each account's `estateBeneficiary` routes its ending balance to a spouse (rollover, untaxed), a
+  haircut: each account's `estateBeneficiary` routes its ending balance to a spouse (no terminal income-tax
+  haircut under the comparison convention — assumes continued deferral at the horizon; does not establish a
+  valid rollover/treat-as-own election or estimate spouse later distribution taxes), a
   non-spouse heir (pre-tax classes taxed at the class heir rate; Roth/taxable-stepped-up/cash untaxed), or
   charity (`charityPct` untaxed). `assumptions.heirTaxByClass` can price the `traditional` and `hsa` classes
   at different heir brackets; an omitted class falls back to the flat `heirTaxRatePct`.

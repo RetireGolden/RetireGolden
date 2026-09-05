@@ -21,12 +21,17 @@ and after-tax estate.
   for 2026**, sourced in `year2026.ts`); a warning fires if the entered premium exceeds the cap, and `qlac`
   requires `taxQualification: 'qualified'`.
 - **Estate beneficiary destinations.** `estateBeneficiary` on any account (`estateBeneficiarySchema`) sets
-  where its ending balance passes in the after-tax estate metric: `spouse` (spousal rollover, untaxed),
+  where its ending balance passes in the after-tax estate metric: `spouse` (no terminal income-tax haircut —
+  assumes continued deferral at the horizon; does not establish a valid rollover/treat-as-own election and
+  does not estimate spouse later distribution taxes; actual inherited-IRA/action paths apply their own explicit facts),
   `nonSpouse` (pre-tax classes — traditional and non-spouse HSA — taxed at the class's heir rate; Roth,
   taxable stepped-up at death, and cash pass untaxed), or `charity` (`charityPct` passes to charity fully
   untaxed, the remainder following the non-spouse rules). Absent the field, the legacy flat treatment applies.
   The HSA's older `beneficiary` field remains a spouse/non-spouse shorthand; when both are present,
-  `estateBeneficiary` wins. A pension and an annuity are **not** logical balance accounts, so
+  `estateBeneficiary` wins. Omitting that shorthand is a legacy convention mapped to the spouse-equivalent
+  default, not a statutory designation. The HSA non-spouse haircut is the terminal-inclusion approximation
+  in §16 (`irc-223-f-8-B-estate-predeath-expense-reduction`), not a claim that every death is a fully
+  taxable HSA distribution. A pension and an annuity are **not** logical balance accounts, so
   `estateBreakdown` never reads the field on either: what a guaranteed-income contract leaves behind is its
   survivor benefit, its period certain, or a lump-sum election. The schema still accepts the field on both
   (an imported plan round-trips unchanged) and neither editor offers it, with a card note saying why (#486).
