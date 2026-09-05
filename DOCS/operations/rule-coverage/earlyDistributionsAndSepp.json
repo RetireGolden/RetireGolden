@@ -46,12 +46,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
-          "line": 1375,
+          "line": 1379,
           "note": null,
           "tests": [
             {
               "title": "charges the additional tax on the taxable half of a basis-bearing distribution",
-              "line": 1382
+              "line": 1387
             }
           ]
         }
@@ -232,12 +232,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
-          "line": 525,
+          "line": 529,
           "note": null,
           "tests": [
             {
               "title": "accepts a distribution taken exactly on the 59.5 threshold",
-              "line": 532
+              "line": 536
             }
           ]
         }
@@ -497,12 +497,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
-          "line": 603,
+          "line": 607,
           "note": null,
           "tests": [
             {
               "title": "keeps the distribution in income while waiving the additional tax",
-              "line": 607
+              "line": 611
             }
           ]
         }
@@ -1164,16 +1164,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraPenaltyPrerequisite.test.ts",
-          "line": 750,
+          "line": 754,
           "note": null,
           "tests": [
             {
               "title": "lets a 72(t)(2) exception zero the tax inside the two-year window",
-              "line": 759
+              "line": 763
             },
             {
               "title": "applies 25 percent only where no exception reaches the distribution",
-              "line": 775
+              "line": 779
             }
           ]
         }

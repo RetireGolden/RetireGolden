@@ -274,6 +274,10 @@ function completeNegativeEvidence(
   }
 }
 
+// Cross-boundary IRC 72(t)(1) fixture: the real withdrawal-character classifier supplies
+// accepted, bound employer character here so the penalty enforcer stays reachable; schema or
+// availability changes require updating this construction. The statutory oracle (10% of
+// includible portion) remains independent of that binding.
 function employerIncludiblePortionPenaltyInput() {
   const actionId = asActionId('employer-rate-withdrawal')
   const allocationId = asAllocationId('employer-rate-allocation')
@@ -1365,15 +1369,16 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
   // IRC 72(t)(1) increases the tax by 10 percent of "the portion of such amount
   // which is includible in gross income" -- not of the amount distributed.
   //
-  // The expected value comes from the rule, not from running the code. A 100
-  // distribution against 100 of opening basis has a section 408(d)(2)
-  // denominator of 100 year-end plus 100 line-7 = 200, so the nontaxable
-  // fraction is 100/200 and half the distribution comes back as basis. The
-  // includible half is 50, and 10 percent of that is 5. Charging the gross
-  // instead would be 10 -- double. The employer arm uses accepted section-72
-  // character on the same 100/50 gross/basis split rather than the Form 8606 pool.
+  // The expected value comes from the rule, not from running the code.
+  // Employer arm (section 72, single distribution): distribution 100c,
+  // pre-distribution account 100c, after-tax employee basis 50c →
+  // 100×50/100 = 50c basis recovered, 50c includible → 5c penalty.
+  // IRA arm (Form 8606 owner pool): 100c opening basis, 100c year-end plus
+  // 100c line-7 = 200c denominator → 100/200 nontaxable fraction, same
+  // 50c includible and 5c penalty. Charging gross would be 10c — double.
   describeRule('irc-72-t-1-additional-tax-on-includible-portion', {
     readings: {
+      // [ownedIRA, traditionalEmployerPlan], all amounts cents
       tenPercentOfIncludible: [5, 5],
       tenPercentOfGross: [10, 10],
     },
