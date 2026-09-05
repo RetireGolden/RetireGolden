@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 426,
+    "total": 427,
     "byClassification": {
-      "approximated": 115,
+      "approximated": 116,
       "outOfScope": 75,
       "settled": 231,
       "unsettled": 5
@@ -12,11 +12,11 @@
     "byVolatility": {
       "annuallyIndexed": 60,
       "awaitingGuidance": 11,
-      "staticStatute": 349,
+      "staticStatute": 350,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 320,
+      "federal": 321,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 370,
+    "totalFiles": 371,
     "byStatus": {
       "partial": 55,
-      "registered": 107,
+      "registered": 108,
       "rule-free": 208,
       "unswept": 0
     },
@@ -223,8 +223,8 @@
     },
     {
       "path": "projection/compare.ts",
-      "sweptOn": "2026-08-27",
-      "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); Form 8606 basis exclusion, spousal rollover, HSA non-spouse income remain"
+      "sweptOn": "2026-09-04",
+      "note": "after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; spousal rollover, HSA non-spouse income, and other unrelated residuals remain"
     },
     {
       "path": "projection/internal/annualAcaResultPublication.ts",
@@ -454,10 +454,10 @@
     },
     {
       "directory": "projection",
-      "files": 101,
+      "files": 102,
       "byStatus": {
         "partial": 20,
-        "registered": 15,
+        "registered": 16,
         "rule-free": 66
       }
     },
@@ -577,7 +577,7 @@
     {
       "module": "iraBasisAndRollovers",
       "path": "rule-coverage/iraBasisAndRollovers.json",
-      "ruleCount": 14
+      "ruleCount": 15
     },
     {
       "module": "medicareAndHealthCoverage",
@@ -641,14 +641,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T03:51:33.991Z",
-    "entryCount": 1134,
+    "generatedAt": "2026-09-05T05:45:32.083Z",
+    "entryCount": 1139,
     "fetched": 9,
-    "cached": 306,
+    "cached": 308,
     "counts": {
       "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 6,
-      "EXACT": 771,
+      "EXACT": 776,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 37,

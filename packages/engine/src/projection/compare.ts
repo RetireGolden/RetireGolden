@@ -4,6 +4,7 @@
  */
 
 import { selectedLogicalBalanceAccounts, type Account, type Plan } from '../model/plan.js'
+import { estateTraditionalTaxableBase } from './estateTraditionalBasis.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { ProjectionResult } from './types.js'
 
@@ -20,7 +21,7 @@ export interface EstateAccountBreakdown {
   category: 'cash' | 'taxable' | 'traditional' | 'roth' | 'hsa'
   grossBalance: number
   destination: EstateDestination
-  /** Pre-tax portion exposed to heir income tax (traditional net of 8606 basis; non-spouse HSA). */
+  /** Pre-tax portion exposed to heir income tax (traditional net of allocated household remaining basis; non-spouse HSA). */
   taxablePretaxBase: number
   heirTaxRatePct: number
   /** Portion passing to charity, untaxed. */
@@ -59,9 +60,12 @@ export interface ProjectionSummary {
   endingNetWorth: number
   /**
    * Ending net worth net of the income tax heirs owe on inherited pre-tax
-   * (traditional) balances, at the plan's assumed heir tax rate. Nondeductible
-   * (after-tax) IRA basis remaining at the horizon is excluded — the heir
-   * inherits it tax-free and files a separate Form 8606. Roth, taxable
+   * (traditional) balances, at the plan's assumed heir tax rate. Remaining
+   * nondeductible IRA basis is excluded from each traditional taxable pretax
+   * base by estateTraditionalTaxableBase, which spreads the household
+   * remaining-basis scalar across traditional accounts by gross — a disclosed
+   * approximation of assumed future income-tax exposure, not a death-year
+   * Form 8606. Roth, taxable
    * (stepped-up at death), cash, and property are treated as passing through
    * untaxed — the standard simplification for an estate comparison. An HSA
    * left to a non-spouse beneficiary is fully taxable in the death year (IRC
@@ -124,9 +128,11 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
     if (category === 'hsa' && byClass?.hsa !== undefined) return byClass.hsa / 100
     return flatHeirRate
   }
-  // Nondeductible IRA basis passes to the heir tax-free (Form 8606); allocate it
-  // across traditional accounts by balance so per-account heir tax nets it out.
-  const basisTotal = Math.min(result.endingNondeductibleIraBasis, endingByCategory.traditional)
+  // Nondeductible IRA basis is excluded from the taxable pretax base.
+  // estateTraditionalTaxableBase spreads the household remaining-basis scalar
+  // across traditional accounts by gross; that allocation is the registered
+  // approximation of assumed future income-tax exposure, not a death-year
+  // owner-wide IRA computation.
   const estateBreakdown: EstateAccountBreakdown[] = []
   if (last) {
     for (const account of selectedLogicalBalanceAccounts(plan.accounts)) {
@@ -141,8 +147,11 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
       const { destination, charityPct } = resolveEstateDestination(account)
       let taxablePretaxBase = 0
       if (category === 'traditional') {
-        const allocatedBasis = endingByCategory.traditional > 0 ? basisTotal * (grossBalance / endingByCategory.traditional) : 0
-        taxablePretaxBase = Math.max(0, grossBalance - allocatedBasis)
+        taxablePretaxBase = estateTraditionalTaxableBase(
+          grossBalance,
+          endingByCategory.traditional,
+          result.endingNondeductibleIraBasis,
+        )
       } else if (category === 'hsa' && destination !== 'spouse') {
         // An HSA passing to anyone but a spouse is a fully taxable distribution.
         taxablePretaxBase = grossBalance
