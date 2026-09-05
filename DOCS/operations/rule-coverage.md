@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 429 |
-| Classification: approximated | 118 |
+| Total rules | 431 |
+| Classification: approximated | 120 |
 | Classification: outOfScope | 75 |
 | Classification: settled | 231 |
 | Classification: unsettled | 5 |
-| Volatility: annuallyIndexed | 60 |
+| Volatility: annuallyIndexed | 61 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 352 |
+| Volatility: staticStatute | 353 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 323 |
+| Federal jurisdiction | 325 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -173,7 +173,7 @@ None.
 | socialSecurity/maritalBenefits.ts | 2026-09-04 | Living-divorced and ordinary-widow eligibility gates, plus half-PIA pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
 | socialSecurity/piaFromEarnings.ts | 2026-09-04 | Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard. |
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
-| strategies/optimizer.ts | 2026-09-05 | Ordinary-bracket PWL registered (irc-1-j-2-progressive-ordinary-rate-schedule); §86 in-solve linearization registered as approximated (irc-86-a-optimizer-taxable-social-security-linearization); senior-deduction phase-out slope registered (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out) with its omitted cap still outside that record; flat 15% LTCG is registered on projection/optimizePlan.ts (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate). Residual (non-exhaustive): IRMAA binaries and other unlisted linearizations/constraints (e.g. state-bracket PWL) remain unregistered here; ACA MAGI cap and RMD floor divisor are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection — headroom restriction and floor distortion proved; taxpayer-tax direction has not been established) |
+| strategies/optimizer.ts | 2026-09-05 | Ordinary-bracket PWL registered (irc-1-j-2-progressive-ordinary-rate-schedule); §86 in-solve linearization registered as approximated (irc-86-a-optimizer-taxable-social-security-linearization); senior-deduction phase-out slope registered (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out) with its omitted cap still outside that record; flat 15% LTCG is registered on projection/optimizePlan.ts (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate). IRMAA uniform threshold indexing and beneficiary-month exposure are registered as approximated (usc-42-1395r-i-5-optimizer-uniform-threshold-indexing; usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure). Residual (non-exhaustive): SSA-44 numerical proxy, projected premium-price scaling, top-tier equality handling, and other unlisted linearizations/constraints (e.g. state-bracket PWL) remain unregistered here; IRMAA MAGI omits the direct §135/§911/§931/§933 without-regard addbacks (ledger-feed gap registered at usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback, not pinned here); the provisional-income scalar affects taxable SS, not the IRMAA MAGI base directly; ACA MAGI cap and RMD floor divisor are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection — headroom restriction and floor distortion proved; taxpayer-tax direction has not been established) |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(ii) category waterfall is applied only in the ledger file its record names |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
@@ -194,7 +194,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/individualIncomeTax.json | 20 |
 | rule-coverage/investmentIncomeAndBasis.json | 30 |
 | rule-coverage/iraBasisAndRollovers.json | 15 |
-| rule-coverage/medicareAndHealthCoverage.json | 16 |
+| rule-coverage/medicareAndHealthCoverage.json | 18 |
 | rule-coverage/requiredMinimumDistributions.json | 41 |
 | rule-coverage/rothAccounts.json | 13 |
 | rule-coverage/socialSecurity.json | 48 |
@@ -209,7 +209,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (429 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (431 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -249,16 +249,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T07:12:24.852Z over 1148 authority entries (9 fetched live, 308 from cache).
+Committed ledger generated at 2026-09-05T08:04:49.243Z over 1158 authority entries (9 fetched live, 310 from cache).
 
-37 serious, 50 advisory, 1061 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 1071 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 63 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 786 |
+| EXACT | ok | 796 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |

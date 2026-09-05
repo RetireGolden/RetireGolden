@@ -381,6 +381,19 @@ Each sharpens the same withdrawal/conversion engine:
   Post-processing installs only raw conversions; the ledger recomputes legal RMDs and withdrawals. Constraint
   distortion inside the MILP; taxpayer-tax direction has not been established. No approximated registry
   record or `errorDirection`.
+- **IRMAA in the LP is local, not the exact-ledger helper.** `buildOptimizerModel` multiplies every pack MAGI
+  floor — including the $500,000 row that 1839(i)(5)(C) freezes through 2027 and then indexes from August 2026 —
+  by the premium year's `inflationScale` (`usc-42-1395r-i-5-optimizer-uniform-threshold-indexing`). The
+  exact-ledger helper `irmaaTierThreshold` still implements the freeze
+  (`usc-42-1395r-i-5-C-top-irmaa-threshold-frozen`). Separately, the LP annualizes one household coefficient of
+  12 months of the planning combined Part B+D increment and does not take beneficiary-months
+  (`usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure`). Both gaps are the local LP Medicare
+  surcharge at held 2026 planning prices (first-tier combined $95.66, not CMS's published $95.70); they are
+  not a claim about recommendation quality, a complete household premium, or a future CMS promulgation.
+- **IRMAA MAGI feed (exact ledger residual).** The two-year lookback feed adds tax-exempt interest but omits the
+  §135/§911/§931/§933 without-regard addback registered at
+  `usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback`; the optimizer inherits that omission. The
+  in-solve provisional-income scalar affects taxable SS, not the IRMAA MAGI base directly.
 - Inherited traditional accounts are not owner-convertible and are excluded from optimizer conversion
   supply; the exact ledger also refuses to convert them.
 - Permanent-life cash value is not an optimizer drawdown source.
