@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw'
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
+import reviewCaller from '../../.github/workflows/openrouter-code-review.yml?raw'
 import {
   authorizeExactHeadPullRequest,
   collectProvenanceReviewRuns,
@@ -21,6 +22,8 @@ import {
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
   terminalSameRepositoryWorkflowRunUrl,
+  TRUSTED_REUSABLE_REVIEW_WORKFLOW,
+  TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
   workflowBlobMatchesDefaultBranch,
 } from '../../.github/scripts/ci-acceleration.mjs'
 import type {
@@ -203,6 +206,21 @@ function mockGithub(overrides: Record<string, unknown> = {}) {
 }
 
 describe('OpenRouter CI authorization contract', () => {
+  it('keeps the caller and trusted reusable revision synchronized', () => {
+    expect(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA).toMatch(/^[a-f0-9]{40}$/)
+    expect(TRUSTED_REUSABLE_REVIEW_WORKFLOW).toBe(
+      `RetireGolden/.github/.github/workflows/openrouter-code-review.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`,
+    )
+    expect(reviewCaller).toContain(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW}`)
+  })
+
+  it('rejects a stale referenced reusable SHA even when its path matches', () => {
+    const stale = trustedRun({
+      referenced_workflows: [{ path: TRUSTED_REUSABLE_REVIEW_WORKFLOW, sha: '0'.repeat(40) }],
+    })
+    expect(reviewRunSkipReason(stale, repository)).toMatch(/trusted reusable OpenRouter workflow/)
+  })
+
   it('pins the Azure bootstrap helper blob to the final helper content', () => {
     expect(swaWorkflow).toContain(`const helperPin = '${expectedHelperBlobSha}'`)
     expect(helperContent).not.toContain('gitBlobSha')

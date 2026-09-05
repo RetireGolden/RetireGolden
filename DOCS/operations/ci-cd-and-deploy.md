@@ -82,10 +82,10 @@ RetireGolden authorization validates decoded markers against that producer, not 
 
 | Contract | Source |
 |----------|--------|
-| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L429) |
-| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L255) |
-| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L194) (including `open_issue_count`) |
-| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L327) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L388) |
+| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L429-L469) |
+| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/schema.py#L255-L257) |
+| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L194-L241) (including `open_issue_count`) |
+| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L327-L351) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/956b494594d8c7969ec9b355fd11d8e39b3b6161/src/or_pr_review/loop.py#L388-L426) |
 
 - The broker serializes review/Azure completion events for a head, finds the newest eligible skipped Azure
   `pull_request` run before it mutates the PR, rechecks live PR state, adds `run-ci`, rechecks again, then
