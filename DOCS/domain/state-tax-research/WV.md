@@ -20,7 +20,7 @@ Tax year: 2026. Researched 2026-09-05 (rates); Social Security full exemption pr
 - Broad individual income tax: **yes** (graduated, **2.11%–4.58%** for 2026 under §11-21-4j(a))
 - Taxes Social Security benefits: **no** from 2026 — full exemption at every income level
   (`wv-code-11-21-12-social-security-full-modification`; pack `taxesSocialSecurity: false`)
-- Long-term capital gains: taxed as ordinary income
+- Long-term capital gains: modeled as ordinary income (`capitalGainsAsOrdinary: true`; preferential treatment not verified in this rate review)
 - Retirement income (pension, IRA, 401k): generally taxed; age-65+ may deduct up to $8,000 per person
   from any income (pack maps this as a capped retirement exclusion — see simplifications)
 
@@ -90,9 +90,10 @@ pension-subtype subtractions remain unmodeled.
   2.11%–4.58% at $0/$10k/$25k/$40k/$60k; applies in lieu of §11-21-4i for TY beginning on/after 2026-01-01.
 - brackets (Tax Division restatement) — https://tax.wv.gov/Individuals/Pages/PersonalIncomeTaxReductionBill.aspx
   — SB 392 signed 2026-03-31; effective 2026-06-12; retroactive to 2026-01-01; same non-MFS table.
-- Social Security — https://code.wvlegislature.gov/11-21-12/ — §11-21-12(c)(8) full modification from 2026.
+- Social Security — https://code.wvlegislature.gov/11-21-12/ — §11-21-12(c)(8) full modification from 2026 (prior citation retained; not re-verified in this rate review).
 - standard deduction — none published; personal exemptions under §11-21-16 are unmodeled (`standardDeduction: 0`).
-- retirement exclusion — age-65/disability modification under §11-21-12(c)(9) (pack maps capped retirement).
+- capital gains — **NOT SOURCED** for separate preferential-rate treatment in this bounded rate review — current ordinary-income treatment (`capitalGainsAsOrdinary: true`) remains an existing modeled assumption pending primary reconciliation.
+- retirement exclusion — age-65/disability modification under §11-21-12(c)(9) (pack maps capped retirement; prior citation retained).
 
 ## Cross-checks (not authority)
 Aggregators may be used only as change-detectors. **Do not cite Tax Foundation (or any aggregator) as

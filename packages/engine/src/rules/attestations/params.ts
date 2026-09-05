@@ -16,14 +16,14 @@ export const paramsAttestations: Readonly<Record<string, CoverageAttestation>> =
   'params/provenance.ts': Object.freeze({
     status: 'rule-free',
     sweptOn: '2026-09-05',
-    note: 'Display-only parameter provenance metadata; WV 2026 rate entry cites the Legislature §11-21-4j URL. Not a statute registry and not an authority claim for other states.',
+    note: 'Display-only aggregate parameter provenance metadata; corrected WV 2026 rate summary is part of the state-income-tax group, not a dedicated entry. Primary authority for WV rates belongs to the WV domain note and law record, not this display layer. Not a statute registry and not an authority claim for other states.',
   }),
   'params/state/data/year2026.ts': Object.freeze({
     status: 'partial',
     sweptOn: '2026-09-05',
     note: 'Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, and WV personal exemptions / senior any-income / disability / pension-subtype modifications. Not complete law coverage.',
   }),
-  'params/state/index.ts': Object.freeze({ status: 'registered', sweptOn: '2026-09-05', note: 'conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic' }),
+  'params/state/index.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-05', note: 'conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata' }),
   'params/state/types.ts': Object.freeze({ status: 'registered', sweptOn: '2026-09-05', note: 'types only; named by records for the shapes they define, including standardDeductionAge65AdditionConformity and standardDeductionPhaseout' }),
   'params/types.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: 'types only; named by records for the shapes they define' }),
 })

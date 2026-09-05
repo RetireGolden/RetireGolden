@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 66
+              "line": 74
             }
           ]
         },
@@ -56,12 +56,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1899,
+          "line": 1900,
           "note": null,
           "tests": [
             {
               "title": "omits the District Social Security subtraction from the taxable base",
-              "line": 1915
+              "line": 1916
             }
           ]
         }
@@ -128,23 +128,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2086,
+          "line": 2087,
           "note": "Social Security limb",
           "tests": [
             {
               "title": "subtracts Delaware Social Security included in federal AGI",
-              "line": 2102
+              "line": 2103
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2112,
+          "line": 2113,
           "note": "retirement-age limb",
           "tests": [
             {
               "title": "subtracts the $12,500 Delaware retirement cap from age 60",
-              "line": 2128
+              "line": 2129
             }
           ]
         }
@@ -299,12 +299,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1995,
+          "line": 1996,
           "note": "age-62-through-64 retirement-income limb",
           "tests": [
             {
               "title": "pins the missing Georgia age-63 retirement exclusion",
-              "line": 2012
+              "line": 2013
             }
           ]
         }
@@ -372,16 +372,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2432,
+          "line": 2433,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of Maryland adjusted gross income",
-              "line": 2447
+              "line": 2448
             },
             {
               "title": "would add the federally taxable portion if Maryland taxed it",
-              "line": 2453
+              "line": 2454
             }
           ]
         }
@@ -539,12 +539,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2740,
+          "line": 2741,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 2749
+              "line": 2750
             }
           ]
         }
@@ -682,23 +682,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2967,
+          "line": 2968,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 2986
+              "line": 2987
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2993,
+          "line": 2994,
           "note": "wage-only age deduction limb",
           "tests": [
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 3007
+              "line": 3008
             }
           ]
         }
@@ -838,24 +838,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 612,
+          "line": 611,
           "note": null,
           "tests": [
             {
               "title": "prices modeled single and joint filers on the §11-21-4j schedule",
-              "line": 621
+              "line": 620
             },
             {
               "title": "would over-tax on the rejected prior §11-21-4i schedule",
-              "line": 628
+              "line": 627
             },
             {
               "title": "is not a flat 5% rate cut of the prior schedule",
-              "line": 636
+              "line": 635
             },
             {
               "title": "is not what doubled MFJ break points would price at $100,000 joint",
-              "line": 646
+              "line": 645
             }
           ]
         }

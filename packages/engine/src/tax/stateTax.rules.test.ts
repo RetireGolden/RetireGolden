@@ -595,9 +595,8 @@ describeRule('wv-code-11-21-12-social-security-full-modification', {
 //   $100,000 single or joint → $3,782.50 (top band: $1,950.50 + 4.58% × $40,000)
 // Rejected prior §11-21-4i schedule: $222.00 / $3,981.50.
 // Naive 5% haircut on those prior rates (×0.95) lands at $210.90 / $3,782.425 —
-// close to but not equal to the published §11-21-4j rates because the legislature
-// rounded each bracket rate independently. Doubled MFJ bounds at $100,000 joint
-// → $3,057.00.
+// not equal to the published §11-21-4j rates (2.11% / 2.81% / … vs prior × 0.95).
+// Doubled MFJ bounds at $100,000 joint → $3,057.00.
 const WV_RATE_SCENARIOS = [
   input({ state: 'WV', ordinaryIncome: 10_000 }),
   input({ state: 'WV', ordinaryIncome: 100_000 }),
@@ -612,7 +611,7 @@ const WV_RATE_SCENARIOS = [
 describeRule('wv-code-11-21-4j-graduated-income-tax-rate-schedule', {
   readings: {
     accepted: [211, 3782.50, 3782.50],
-    stalePre4iPack: [222, 3981.50, 3981.50],
+    prior4iSchedule: [222, 3981.50, 3981.50],
     naiveFivePercentHaircut: [210.90, 3782.425, 3782.425],
     doubledMfjBracketBounds: [211, 3782.50, 3057],
   },
@@ -629,7 +628,7 @@ describeRule('wv-code-11-21-4j-graduated-income-tax-rate-schedule', {
     const stale = wvPackWithBrackets(WV_STALE_RATES)
     WV_RATE_SCENARIOS.forEach((scenario, index) => {
       expect(computeStateTax(stale, scenario))
-        .toBeCloseTo(readings.stalePre4iPack[index]!, 2)
+        .toBeCloseTo(readings.prior4iSchedule[index]!, 2)
     })
   })
 
@@ -648,10 +647,12 @@ describeRule('wv-code-11-21-4j-graduated-income-tax-rate-schedule', {
       WV_2026_RATES,
       WV_BRACKET_BOUNDS.map((bound) => bound * 2),
     )
-    const joint = WV_RATE_SCENARIOS[2]!
-    expect(computeStateTax(wrongJoint, joint))
-      .toBeCloseTo(readings.doubledMfjBracketBounds[2]!, 2)
-    expect(computeStateTax(wrongJoint, joint))
+    WV_RATE_SCENARIOS.forEach((scenario, index) => {
+      const params = index === 2 ? wrongJoint : pack('WV')
+      expect(computeStateTax(params, scenario))
+        .toBeCloseTo(readings.doubledMfjBracketBounds[index]!, 2)
+    })
+    expect(computeStateTax(wrongJoint, WV_RATE_SCENARIOS[2]!))
       .not.toBeCloseTo(accepted[2]!, 2)
   })
 })
