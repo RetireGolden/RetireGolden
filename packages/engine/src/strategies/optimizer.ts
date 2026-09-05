@@ -253,7 +253,7 @@ export interface OptimizerYear {
     ssBenefits: number
     /** Taxable-SS portion already folded into `ordinaryIncomeBase` (subtracted out when the PWL is active). */
     taxableSsBase: number
-    /** Fixed §86 provisional-income addbacks (tax-exempt interest + foreign exclusions). */
+    /** Generic scalar for the year's fixed §86(b)(2) provisional-income addbacks; buildOptimizerModel sums it verbatim into PI. The production plan→optimizer adapter currently supplies tax-exempt interest plus the §911/§931/§933 foreign exclusions only — omitted addbacks are an adapter/schema gap, not a solver limit. */
     provisionalIncomeAddbacks?: number
   }
   /**
@@ -427,8 +427,8 @@ export interface OptimizerInput {
    * solver sees the phase-out band's marginal-rate spike (each conversion
    * dollar clawing back 6¢ of deduction ⇒ bracket rate × 1.06) instead of
    * ignoring the deduction entirely. The concave full-phase-out cap is omitted
-   * (same treatment and direction as the taxable-SS 85% cap: overstates the
-   * cost of mega-conversions, which the exact ledger refines), and years whose
+   * (overstates cost for cap-crossing conversions, which the exact ledger
+   * refines), and years whose
    * baseline MAGI is already past full phase-out skip the deduction exactly.
    * `buildOptimizerInput` always enables this in production; absent, the v1
    * LP is byte-identical.
@@ -653,9 +653,9 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     // `wt`/`wi` so `ordinaryIncomeBase` excludes them, but the ledger's MAGI
     // counts them, and a high-RMD year can be fully phased out on forced
     // income alone. The concave full-phase-out cap is otherwise omitted — a
-    // conservative overstatement for cap-crossing conversions, like the SS 85%
-    // cap (a hard `srd ≤ base` bound would instead make cap-crossing MAGI
-    // infeasible against the floor constraint, and an exact cap needs a binary).
+    // conservative overstatement for cap-crossing conversions (a hard `srd ≤ base`
+    // bound would instead make cap-crossing MAGI infeasible against the floor
+    // constraint, and an exact cap needs a binary).
     const srdRule = input.seniorDeduction ? y.pack.federalTax.seniorDeduction : null
     const srdEligible = srdRule !== null && y.peopleAged65Plus > 0 && y.year <= srdRule.lastApplicableYear
     // Clawback slope against the household total, not the statutory rate:
@@ -688,12 +688,13 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
     const irmaaVars = irmaa.map((_, k) => `irmaa${t}_${k}`)
 
     // In-solve taxable-SS PWL (Step 3): active when the year carries SS inputs
-    // and the incumbent is not already saturated at the 85% cap (a saturated
-    // year's marginal effect is zero, so the fixed constant is exactly right).
-    // Convex max-affine underestimate of the 0/50/85% phase-in over provisional
-    // income PI = PI0 + x (x = conv + wt + wi + gain-weighted wtax); the 0.85·B
-    // cap is omitted (concave), so past the cap the LP overestimates the
-    // marginal cost — a conservative direction the exact ledger refines.
+    // and the incumbent taxable share is below 84.5% of benefits (an
+    // implementation shortcut, not statutory; above that band the baseline share
+    // is frozen and can understate further inclusion toward the cap). Convex
+    // max-affine proxy for the 0/50/85% phase-in over provisional
+    // income PI = PI0 + x; both the half-benefit plateau and 0.85·B cap are
+    // omitted, so an active PWL can overstate taxable SS — no universal signed
+    // direction on recommendations (see registry record).
     const ssB = y.ssTaxability
     const ssPwlActive =
       ssB !== undefined && ssB.ssBenefits > 1 && ssB.taxableSsBase < 0.845 * ssB.ssBenefits
@@ -739,19 +740,14 @@ export function buildOptimizerModel(input: OptimizerInput): BuiltModel {
         [wi]: 1,
       }
       if (hasTaxable && taxableGainWeight > 0) piVars[wtax] = taxableGainWeight
-      // taxSS ≥ max(0, 0.5·(PI−T1), tier1Cap + 0.85·(PI−T2)) — the convex
-      // phase-in mirroring the ledger's `taxableSocialSecurity`: above T2 the
-      // 50% tier's contribution is capped at min(0.5·B, 0.5·(T2−T1)) and each
-      // marginal dollar adds 0.85 (never 0.5+0.85 — the tiers do not stack at
-      // the margin). Expressed as ≥-constraints (the tax terms are increasing
-      // in taxSS, so minimization pins taxSS to the max). The concave 0.85·B
-      // cap is deliberately NOT modeled: a binary per SS year makes the MILP
-      // intractably slow (measured), and omitting the cap only OVERSTATES the
-      // tax on conversions large enough to blow past it — a conservative
-      // direction. Mega-conversion shapes still reach the recommendation
-      // through the tournament candidates and local search, all priced on the
-      // exact ledger, and saturated-at-the-incumbent years skip the PWL
-      // entirely (their marginal effect is zero, so the constant is exact).
+      // taxSS ≥ max(0, 0.5·(PI−T1), tier1Cap + 0.85·(PI−T2)) — convex max-affine
+      // pieces mirroring the ledger's tier slopes; the half-benefit plateau and
+      // concave 0.85·B cap are deliberately NOT modeled (a binary per SS year
+      // makes the MILP intractably slow). Active PWL can overstate inclusion;
+      // the ≥84.5% skipped branch freezes baseline share and can understate
+      // further inclusion — neither branch is exact, and recommendation quality
+      // has no universal signed direction. Tournament/local search re-prices on
+      // the exact ledger.
       const tier1Cap = Math.min(0.5 * B, 0.5 * (t2 - t1))
       const pieces: { slope: number; constant: number; name: string }[] = [
         { slope: 0.5, constant: 0.5 * (pi0 - t1), name: 'a' },

@@ -135,9 +135,14 @@ models what it used to approximate away:
   taxable-SS phase-in is modeled in-solve as a convex PWL, so the solver sees the *marginal* tax torpedo (each
   conversion dollar dragging 50–85¢ of SS into taxability) instead of the incumbent's average — the missing
   piece the convergence loop alone could not supply, worth ~$19k of exact estate on the SS-torpedo test
-  fixture in a single solve. The concave 0.85×benefit cap is intentionally not modeled (a binary per SS year
-  measured intractably slow); omitting it only overstates the tax on cap-blowing mega-conversions, and those
-  shapes still reach the recommendation through the tournament candidates and local search.
+  fixture in a single solve. That PWL is a disclosed approximation
+  (`irc-86-a-optimizer-taxable-social-security-linearization`; [IRC §86](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim)):
+  it omits both statutory benefit caps (the half-benefit plateau and the 85-percent-of-benefits ceiling),
+  which can overstate modeled taxable benefits, and it freezes a baseline already at or above 84.5% of
+  benefits, which can understate inclusion when additional ordinary income would still raise the statutory
+  amount. The linearized figure is a candidate-model quantity; the exact ledger, convergence loop, and
+  tournament re-price proposed schedules, and that re-pricing does not assign a signed direction to final
+  recommendation quality.
 - **IRMAA two-year lookback (Step 4).** Each premium year's IRMAA surcharge binaries are driven by year
   (t−2)'s MAGI, matching the exact ledger's causality — so a conversion at 63 anticipates the age-65 premium
   in-solve rather than mispricing it.
@@ -148,8 +153,8 @@ models what it used to approximate away:
   the optimizer left ~$6k/person of 12%-bracket headroom unused in 2025–2028 and undercharged conversions in
   the band. Years already past full phase-out at baseline — counting the year's forced RMD/inherited
   distributions, which the LP re-decides as variables but the ledger's MAGI includes — skip it exactly; the
-  concave full-phase-out cap is
-  omitted (conservative overstatement for mega-conversions, same direction as the taxable-SS cap).
+  concave full-phase-out cap is omitted (conservative overstatement for mega-conversions). The taxable-SS
+  proxy is not a one-direction analogue: see Step 3 and `irc-86-a-optimizer-taxable-social-security-linearization`.
 - **Co-optimized SS claim age (Step 5).** `optimizePlanCoOptimizingClaimAge` alternate-minimizes the claim age
   with the conversion optimum: it runs the full convergence-loop + tournament optimize at the current claim and
   at each bounded claim candidate (≤2 streams × 3 canonical ages), then keeps the (claim, schedule) pair with
@@ -338,14 +343,20 @@ Each sharpens the same withdrawal/conversion engine:
   post-ledger re-rank of candidate schedules, not stochastic programming.
 - The MILP objective is still ending after-tax wealth; stochastic and non-estate objective modes are
   tournament ranking policies over exact-ledger evaluations, not a multi-objective solver.
-- Piecewise tax is modeled to the engine's existing "big levers" depth. Federal ordinary brackets, the
-  taxable-SS phase-in, IRMAA tiers (on the two-year MAGI lookback, Step 4), taxable capital-gain realization
-  (Step 2), progressive state brackets (Step 3), and the OBBBA senior deduction with its 6% MAGI phase-out
-  (ground-truth 2026 law sync) are all modeled in-solve. Actionable ACA years add a bounded conversion
-  ceiling, but the compressed solve does not reproduce the full premium/withdrawal fixed point. A single LTCG rate and a single
-  opening basis ratio linearize the taxable stack, and the taxable-SS and senior-deduction PWLs omit their
-  concave caps (conservative for cap-blowing conversions); the exact ledger, convergence loop, and tournament
-  refine all of these. State retirement-income exclusions are left to the exact ledger.
+- Piecewise tax is modeled to the engine's existing "big levers" depth. Federal ordinary brackets
+  (`irc-1-j-2-progressive-ordinary-rate-schedule`) are priced in-solve at the statutory marginal rates
+  conditional on the taxable ordinary income supplied to the model — that pin does not certify section 86,
+  the deduction stack, AMT, or projection indexing. The taxable-SS phase-in
+  (`irc-86-a-optimizer-taxable-social-security-linearization`; [IRC §86](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section86&num=0&edition=prelim))
+  omits the half-benefit plateau and the 85-percent-of-benefits cap and freezes a near-cap baseline, so
+  modeled inclusion can miss in either direction. IRMAA tiers (on the two-year MAGI lookback, Step 4),
+  taxable capital-gain realization (Step 2), progressive state brackets (Step 3), and the OBBBA senior
+  deduction with its 6% MAGI phase-out (ground-truth 2026 law sync) are also modeled in-solve. Actionable ACA
+  years add a bounded conversion ceiling, but the compressed solve does not reproduce the full
+  premium/withdrawal fixed point. A single LTCG rate and a single opening basis ratio linearize the taxable
+  stack; the senior-deduction PWL still omits its concave cap. The exact ledger, convergence loop, and
+  tournament refine the candidate model without implying that a published recommendation must err in one
+  signed direction. State retirement-income exclusions are left to the exact ledger.
 - Inherited traditional accounts are not owner-convertible and are excluded from optimizer conversion
   supply; the exact ledger also refuses to convert them.
 - Permanent-life cash value is not an optimizer drawdown source.
