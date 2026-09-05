@@ -33,15 +33,16 @@
 # `git diff base...head` when GitHub rejects a patch over 20,000 lines;
 # the complete patch then enters the same dense-diff packing above.
 #
-# The lane roster is decided per-repo INSIDE the reusable (keyed off
-# GITHUB_REPOSITORY, frozen at the pinned SHA below). This repo has run
-# x-ai/grok-4.6 + z-ai/glm-5.3-flash since the .github#24 pin; a pin
-# bump does not change those lanes unless it says so. As of .github#32,
-# the separate recall-safe judge that merges them defaults to
-# openai/gpt-5.6-luna. The .github#34 pin expands the requested roster
-# to the other product repos without changing this repo's lanes. On a
-# bump, rewrite the lane and judge notes only when their respective
-# defaults actually change.
+# The roster is selected per repo inside the pinned reusable, keyed by
+# GITHUB_REPOSITORY. On future pin bumps, update these notes when the lane
+# roster or judge defaults change.
+# The standing roster is Grok + GLM with the recall-safe Luna judge. Temporary
+# trial windows are documented in the central README at the same pinned revision;
+# the policy applies their time limits at runtime.
+# Policy and trial dates: https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/README.md
+# The Sep 5 trial adds openai/gpt-6-astra via openai/flex only when policy
+# selection occurs before 2026-09-06T04:00:00Z; at/after that instant only
+# the standing roster applies. This condition is in the pinned central policy.
 
 name: OpenRouter code review
 
@@ -66,9 +67,11 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    # Central independent-review workflow pinned to the .github#35 merge commit
-    # (oversized-diff fallback via action v1.2.7/#20; independent gate unchanged).
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294 # .github#35 (OpenRouter action v1.2.7/#20, oversized diff fallback)
+    # Central independent-review workflow pinned to the .github#36 merge commit.
+    # Action#31 adds per-model routing; existing independent gate is unchanged.
+    # This trial intentionally consumes an unreleased action commit, identified
+    # by the action#31@ reference in the inline comment; v1.3.1 is its preceding release.
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44 # .github#36 (unreleased changes after action v1.3.1; action#31@956b494594d8c7969ec9b355fd11d8e39b3b6161; Astra Flex trial)
     with:
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:

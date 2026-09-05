@@ -5,6 +5,8 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw'
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
+import reviewCaller from '../../.github/workflows/openrouter-code-review.yml?raw'
+import ciRunbook from '../../DOCS/operations/ci-cd-and-deploy.md?raw'
 import {
   authorizeExactHeadPullRequest,
   collectProvenanceReviewRuns,
@@ -21,6 +23,8 @@ import {
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
   terminalSameRepositoryWorkflowRunUrl,
+  TRUSTED_REUSABLE_REVIEW_WORKFLOW,
+  TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
   workflowBlobMatchesDefaultBranch,
 } from '../../.github/scripts/ci-acceleration.mjs'
 import type {
@@ -128,8 +132,8 @@ function trustedRun(overrides: Record<string, unknown> = {}) {
     path: '.github/workflows/openrouter-code-review.yml',
     head_repository: repository,
     referenced_workflows: [{
-      path: 'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
-      sha: 'f6aa157430509b5f6945b4fc2c9fafeeac4a7294',
+      path: TRUSTED_REUSABLE_REVIEW_WORKFLOW,
+      sha: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
     }],
     created_at: '2026-09-04T12:00:00Z',
     run_number: 1,
@@ -203,6 +207,38 @@ function mockGithub(overrides: Record<string, unknown> = {}) {
 }
 
 describe('OpenRouter CI authorization contract', () => {
+  it('keeps the caller and trusted reusable revision synchronized', () => {
+    expect(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA).toMatch(/^[a-f0-9]{40}$/)
+    expect(TRUSTED_REUSABLE_REVIEW_WORKFLOW).toBe(
+      `RetireGolden/.github/.github/workflows/openrouter-code-review.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`,
+    )
+    expect(reviewCaller).toContain(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW}`)
+    for (const source of [reviewCaller, ciRunbook]) {
+      const policyLinks = [...source.matchAll(/https:\/\/github\.com\/RetireGolden\/\.github\/blob\/([a-f0-9]{40})\//g)]
+      expect(policyLinks.length).toBeGreaterThan(0)
+      for (const link of policyLinks) expect(link[1]).toBe(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA)
+    }
+  })
+
+  it('rejects a stale referenced reusable SHA even when its path matches', () => {
+    const stale = trustedRun({
+      referenced_workflows: [{ path: TRUSTED_REUSABLE_REVIEW_WORKFLOW, sha: '0'.repeat(40) }],
+    })
+    expect(reviewRunSkipReason(stale, repository)).toMatch(/trusted reusable OpenRouter workflow/)
+  })
+
+  it('keeps documented producer revisions synchronized with the caller action reference', () => {
+    const callerReferences = [...reviewCaller.matchAll(/action#\d+@([a-f0-9]{40})/g)]
+    expect(callerReferences).toHaveLength(1)
+    const producerSha = callerReferences[0]?.[1]
+    expect(producerSha).toMatch(/^[a-f0-9]{40}$/)
+    for (const source of [helperContent, ciRunbook]) {
+      const references = [...source.matchAll(/openrouter-pr-review-action(?:@|\/(?:blob|tree)\/)([a-f0-9]{40})/g)]
+      expect(references.length).toBeGreaterThan(0)
+      for (const reference of references) expect(reference[1]).toBe(producerSha)
+    }
+  })
+
   it('pins the Azure bootstrap helper blob to the final helper content', () => {
     expect(swaWorkflow).toContain(`const helperPin = '${expectedHelperBlobSha}'`)
     expect(helperContent).not.toContain('gitBlobSha')
@@ -239,7 +275,11 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it.each([
+    // Confirmed against schema.py valid_review_path at the documented producer revision.
     ['normalized dotted path', './packages//engine/./src/example.ts'],
+    ['current directory path normalized to dot', './/.'],
+    ['Python-strip whitespace around a relative path', '\u0085 folder/file.ts \u00a0'],
+    ['BOM is preserved by Python strip', '\uFEFF'],
     ['trailing slash path', 'path/'],
     ['Unicode decimal digit id', 'r۱-۲'],
     ['160-codepoint emoji title and 600-codepoint emoji evidence', {
@@ -262,6 +302,7 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it.each([
+    ['Python whitespace-only file path', { file: '\u0085\u00a0' }],
     ['301-codepoint emoji title', { title: '😀'.repeat(301) }],
     ['617-codepoint emoji evidence', { ev: '🙂'.repeat(617) }],
     ['501-codepoint file path', { file: '📁'.repeat(501) }],
