@@ -91,6 +91,8 @@ These function spans were checked against the source at the linked immutable act
 The path predicate's short span is intentional: normalization contains the validation logic.
 When advancing the action, verify the new source spans as well as the producer revision;
 the local contract test checks revision consistency across the caller, helper comments and this table.
+The SHA checks treat links in this runbook as active pins. Historical full-SHA citations belong in a
+separate history document, or require deliberately narrowing the guard when adding that history here.
 
 For the September 5, 2026 pin update, direct comparison of the pinned Python predicate and the local
 JavaScript predicate passed 4,247 path inputs (separator and dot normalization, Python whitespace,
@@ -107,6 +109,12 @@ select Astra only for RetireGolden and RetireGolden-Pro before `2026-09-06T04:00
 Both Bash policy steps were executed with an injected clock immediately before and exactly at that
 cutoff for seven repository names: all 28 cases passed, including baseline-only selection at expiry.
 That check belongs to the upstream policy rollout; this consumer's tests check pin consistency.
+
+For this September 5 trial, Nathan approved the immutable unreleased action revision, the independent
+external path-comparison evidence, and the date-qualified local cutoff documentation. The comparison
+was run against upstream source, rather than deriving expected results from the local implementation;
+the upstream source links identify that oracle without vendoring it into the consumer. A release tag,
+an exhaustive proof over all strings, and a prose-only commit at expiry are not rollout prerequisites.
 
 - The broker serializes review/Azure completion events for a head, finds the newest eligible skipped Azure
   `pull_request` run before it mutates the PR, rechecks live PR state, adds `run-ci`, rechecks again, then
