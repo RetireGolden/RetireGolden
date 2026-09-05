@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-05T08:43:57.264Z",
-  "recordCount": 431,
-  "urlCount": 319,
+  "generatedAt": "2026-09-05T09:19:33.532Z",
+  "recordCount": 432,
+  "urlCount": 320,
   "fetched": 9,
-  "cached": 310,
-  "entryCount": 1158,
+  "cached": 311,
+  "entryCount": 1159,
   "counts": {
-    "EXACT": 796,
+    "EXACT": 797,
     "PUNCTUATION": 37,
     "PDF-WORD-LEVEL": 212,
     "ELISION-PUNCTUATION": 6,
@@ -7725,6 +7725,16 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section135&num=0&edition=prelim",
       "quoteSha256": "37fc19bcf23760f1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-31-356-20-b-tips-minimum-coupon",
+      "citation": "31 CFR 356.20(b), 87 FR 40438, 40440 (July 7, 2022), amendment 9",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2022-07-07/html/2022-13409.htm",
+      "quoteSha256": "9336154edf0d6508",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

@@ -4,6 +4,59 @@
   "module": "investmentIncomeAndBasis",
   "rules": [
     {
+      "id": "cfr-31-356-20-b-tips-minimum-coupon",
+      "title": "New TIPS issues carry a one-eighth percent minimum coupon when auction yield is below 0.125%",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The supported model applies the floor to interpolated par-yield proxies on synthetic rungs, not to actual Treasury auction award prices or full coupon-setting mechanics, and does not reset coupons on outstanding securities. Annual coupons, linear interpolation, and par-yields-as-spot pricing remain planning-grade conventions.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/ladder/ladderMath.ts",
+          "functions": [
+            {
+              "name": "tipsCouponRatePct",
+              "line": 27
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/ladder/ladderMath.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/ladder/ladderMath.test.ts",
+          "line": 110,
+          "note": null,
+          "tests": [
+            {
+              "title": "floors synthetic rung coupons at the regulatory minimum when interpolated yields are negative",
+              "line": 118
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "31 CFR 356.20(b), 87 FR 40438, 40440 (July 7, 2022), amendment 9",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2022-07-07/html/2022-13409.htm"
+        }
+      ]
+    },
+    {
       "id": "cfr-31-363-52-savings-bond-annual-purchase-limit",
       "title": "Series EE/I book-entry annual purchase principal limit is not modeled",
       "classification": "outOfScope",
@@ -1459,7 +1512,7 @@
           "functions": [
             {
               "name": "LadderRung",
-              "line": 45
+              "line": 50
             }
           ]
         },
@@ -1728,7 +1781,7 @@
           "functions": [
             {
               "name": "ladderRealFlowsAtOffset",
-              "line": 160
+              "line": 165
             }
           ]
         },
@@ -1817,7 +1870,7 @@
           "functions": [
             {
               "name": "ladderRealFlowsAtOffset",
-              "line": 160
+              "line": 165
             }
           ]
         },
@@ -1900,7 +1953,7 @@
           "functions": [
             {
               "name": "LadderRung",
-              "line": 45
+              "line": 50
             }
           ]
         },
@@ -1968,7 +2021,7 @@
           "functions": [
             {
               "name": "LadderRung",
-              "line": 45
+              "line": 50
             }
           ]
         },

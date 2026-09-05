@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 431 |
+| Total rules | 432 |
 | Classification: approximated | 120 |
 | Classification: outOfScope | 75 |
-| Classification: settled | 231 |
+| Classification: settled | 232 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 61 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 353 |
+| Volatility: staticStatute | 354 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 325 |
+| Federal jurisdiction | 326 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -142,7 +142,7 @@ None.
 | insights/detectors/ssClaimMilestone.ts | 2026-08-24 | Re-derives SS entitlement/eligibility (former-spouse gates, family max, payable months) beyond registry gaps for maritalBenefits/nra |
 | internal/ownedNonRothIraAnnualAttemptSettlement.ts | 2026-08-29 | Its one statutory claim - the retired 408(d)(3)(A)(i) same-owner re-check - is enforced upstream in the runtime source series, where the record now pins it; this module itself enforces no rule and so is not named by any record |
 | ladder/bridge.ts | 2026-08-29 | The bridge sizes spending from age 62 to the claim age; the 62-70 worker window is registered under usc-42-402-worker-claim-window-62-to-70 at the claim factor, and this file calls that factor rather than enforcing the window itself |
-| ladder/ladderMath.ts | 2026-08-27 | TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain |
+| ladder/ladderMath.ts | 2026-09-05 | TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); regulatory 0.125% min coupon registered at cfr-31-356-20-b-tips-minimum-coupon; par-yield-as-spot interpolation, annual coupon timing, and par pricing conventions remain |
 | model/migrations.ts | 2026-08-24 | Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records |
 | model/plan.ts | 2026-08-24 | Inherited IRA regime parse rules; spouse J&S RMD gate; 403(b) aggregation; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates |
 | model/planCrossFieldChecks.ts | 2026-09-03 | The cross-field validator, moved verbatim out of the superRefine body in model/plan.ts and unchanged in rule, message, or order; it carries the same residual claims the model/plan.ts entry names for cross-field rules: inherited IRA regime parse rules; spouse J&S RMD gate; SEPP schema; Roth inherited rules; HSA/stateMove/retirement-action eligibility gates. The qualified-annuity start-age bounds it applies come from the latestNonQlacQualifiedAnnuityStartAge and latestQlacAnnuityStartAge helpers that stay in model/plan.ts |
@@ -191,7 +191,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/earlyDistributionsAndSepp.json | 28 |
 | rule-coverage/healthSavingsAccounts.json | 19 |
 | rule-coverage/individualIncomeTax.json | 20 |
-| rule-coverage/investmentIncomeAndBasis.json | 30 |
+| rule-coverage/investmentIncomeAndBasis.json | 31 |
 | rule-coverage/iraBasisAndRollovers.json | 15 |
 | rule-coverage/medicareAndHealthCoverage.json | 18 |
 | rule-coverage/requiredMinimumDistributions.json | 41 |
@@ -208,7 +208,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (431 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (432 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -248,16 +248,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T08:43:57.264Z over 1158 authority entries (9 fetched live, 310 from cache).
+Committed ledger generated at 2026-09-05T09:19:33.532Z over 1159 authority entries (9 fetched live, 311 from cache).
 
-37 serious, 50 advisory, 1071 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 1072 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 63 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 796 |
+| EXACT | ok | 797 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |

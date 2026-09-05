@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 431,
+    "total": 432,
     "byClassification": {
       "approximated": 120,
       "outOfScope": 75,
-      "settled": 231,
+      "settled": 232,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 61,
       "awaitingGuidance": 11,
-      "staticStatute": 353,
+      "staticStatute": 354,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 325,
+      "federal": 326,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -183,8 +183,8 @@
     },
     {
       "path": "ladder/ladderMath.ts",
-      "sweptOn": "2026-08-27",
-      "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); statutory 0.125% min coupon and par-yield pricing conventions remain"
+      "sweptOn": "2026-09-05",
+      "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); regulatory 0.125% min coupon registered at cfr-31-356-20-b-tips-minimum-coupon; par-yield-as-spot interpolation, annual coupon timing, and par pricing conventions remain"
     },
     {
       "path": "model/migrations.ts",
@@ -567,7 +567,7 @@
     {
       "module": "investmentIncomeAndBasis",
       "path": "rule-coverage/investmentIncomeAndBasis.json",
-      "ruleCount": 30
+      "ruleCount": 31
     },
     {
       "module": "iraBasisAndRollovers",
@@ -636,14 +636,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T08:43:57.264Z",
-    "entryCount": 1158,
+    "generatedAt": "2026-09-05T09:19:33.532Z",
+    "entryCount": 1159,
     "fetched": 9,
-    "cached": 310,
+    "cached": 311,
     "counts": {
       "ELISION-EXACT": 63,
       "ELISION-PUNCTUATION": 6,
-      "EXACT": 796,
+      "EXACT": 797,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 212,
       "PUNCTUATION": 37,
