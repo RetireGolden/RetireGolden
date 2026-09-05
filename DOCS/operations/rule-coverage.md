@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 418 |
+| Total rules | 419 |
 | Classification: approximated | 110 |
 | Classification: outOfScope | 73 |
-| Classification: settled | 230 |
+| Classification: settled | 231 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 60 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 341 |
+| Volatility: staticStatute | 342 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 312 |
+| Federal jurisdiction | 313 |
 | State jurisdiction total | 106 |
 
 | State jurisdiction | Count |
@@ -169,7 +169,7 @@ None.
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-09-04 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selection and December 31 complete-pool observation remain locally enforced and sibling pool records name other files |
 | projection/simulate.ts | 2026-09-02 | ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, the thin live-state application adapters for earlier pure coordinators, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly. Those retained responsibilities are the orchestration and cross-year state boundary; substantive annual funding and settlement policy no longer lives inline |
-| rmd/applicableAge.ts | 2026-08-29 | Named by treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy; the born-1959 record's contraryReading now records what the full IRB text of Announcement 2026-7 shows - it defers final regulations amending 1.401(a)(9)-4, -5, and -6 and never mentions paragraph (b)(2)(v) or the 1959 cohort, so no current guidance addresses the contest; residual: the RBD April-1 arm (this module consumes an asserted RBD-status fact) and the 70½/July-1949 cohort tiers pending a pre-SECURE historical-edition record |
+| rmd/applicableAge.ts | 2026-09-04 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest remains on treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959; SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: deriveRbdComparison born-1959 conditional comparison/refusal (the 70½/72 rule excludes 1959; irc-401-a-9-C-v pins only applicableAgeAttainYears; treas-reg-1-401-a-9-2-b-2-v pins params/rmd); year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
 | socialSecurity/maritalBenefits.ts | 2026-08-24 | Eligibility rules (10-yr divorce, 9-mo survivor marriage, age gates, remarriage forfeiture) have no records |
 | socialSecurity/piaFromEarnings.ts | 2026-08-27 | AIME pipeline (age 22–61 window, 5 lowest dropped, top-35 years, AWI indexing) not separately registered; the disability-freeze exclusion and post-entitlement recomputation base window ARE registered as approximations |
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
@@ -195,7 +195,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/investmentIncomeAndBasis.json | 30 |
 | rule-coverage/iraBasisAndRollovers.json | 14 |
 | rule-coverage/medicareAndHealthCoverage.json | 16 |
-| rule-coverage/requiredMinimumDistributions.json | 40 |
+| rule-coverage/requiredMinimumDistributions.json | 41 |
 | rule-coverage/rothAccounts.json | 13 |
 | rule-coverage/socialSecurity.json | 48 |
 | rule-coverage/statesMidwest.json | 29 |
@@ -207,7 +207,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (418 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (419 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -247,16 +247,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-04T23:50:56.180Z over 1076 authority entries (9 fetched live, 300 from cache).
+Committed ledger generated at 2026-09-05T01:05:42.614Z over 1085 authority entries (9 fetched live, 304 from cache).
 
-37 serious, 50 advisory, 989 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 50 advisory, 998 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 63 |
+| ELISION-EXACT | ok | 64 |
 | ELISION-PUNCTUATION | advisory | 6 |
-| EXACT | ok | 714 |
+| EXACT | ok | 722 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 212 |
 | PUNCTUATION | advisory | 37 |

@@ -1,9 +1,112 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRule } from '../rules/describeRule.js'
 import {
   applicableAgeAttainYears,
   deriveRbdComparison,
+  type RbdDerivation,
 } from './applicableAge.js'
+
+/**
+ * Compact death-vs-RBD outcome for the registry fixture. Omits free-text
+ * `detail` so wording churn cannot collapse distinct readings. Counterreadings
+ * remain reachable through the unchanged assertion/refusal path.
+ */
+type RbdOutcome =
+  | { kind: 'resolved'; comparison: 'before-rbd' | 'on-or-after-rbd'; contestedApplicableAge: false }
+  | {
+      kind: 'needs-review'
+      reason: 'birth-date-precision-insufficient' | 'assertion-contradicts-derivation'
+    }
+
+type SeventyHalfCohortVector = {
+  attainYears: {
+    born1948June: number[]
+    born1948July: number[]
+    born1949June: number[]
+    born1949July: number[]
+    born1949YearOnly: number[]
+    born1950: number[]
+  }
+  deathVersusRbd: {
+    june30Death2020AssertedNotStarted: RbdOutcome
+    july1Death2021AssertedNotStarted: RbdOutcome
+    yearOnlyDeath2021AssertedNotStarted: RbdOutcome
+    dec31Death2023AssertedNotStarted: RbdOutcome
+  }
+}
+
+function resolvedRbd(comparison: 'before-rbd' | 'on-or-after-rbd'): RbdOutcome {
+  return { kind: 'resolved', comparison, contestedApplicableAge: false }
+}
+
+const precisionInsufficient: RbdOutcome = {
+  kind: 'needs-review',
+  reason: 'birth-date-precision-insufficient',
+}
+
+const assertionContradictsDerivation: RbdOutcome = {
+  kind: 'needs-review',
+  reason: 'assertion-contradicts-derivation',
+}
+
+function summarizeRbd(result: RbdDerivation): RbdOutcome {
+  if (result.kind === 'resolved') {
+    return {
+      kind: 'resolved',
+      comparison: result.comparison,
+      contestedApplicableAge: result.contestedApplicableAge,
+    }
+  }
+  if (
+    result.reason === 'birth-date-precision-insufficient' ||
+    result.reason === 'assertion-contradicts-derivation'
+  ) {
+    return { kind: 'needs-review', reason: result.reason }
+  }
+  throw new Error(`unexpected needs-review reason in 70½ cohort fixture: ${result.reason}`)
+}
+
+function observeSeventyHalfCohortVector(): SeventyHalfCohortVector {
+  return {
+    attainYears: {
+      born1948June: applicableAgeAttainYears(1948, 6),
+      born1948July: applicableAgeAttainYears(1948, 7),
+      born1949June: applicableAgeAttainYears(1949, 6),
+      born1949July: applicableAgeAttainYears(1949, 7),
+      born1949YearOnly: applicableAgeAttainYears(1949),
+      born1950: applicableAgeAttainYears(1950),
+    },
+    deathVersusRbd: {
+      june30Death2020AssertedNotStarted: summarizeRbd(deriveRbdComparison({
+        ownerBirthYear: 1949,
+        ownerBirthMonth: 6,
+        ownerBirthDay: 30,
+        ownerDeathYear: 2020,
+        decedentHadStartedRmds: false,
+      })),
+      july1Death2021AssertedNotStarted: summarizeRbd(deriveRbdComparison({
+        ownerBirthYear: 1949,
+        ownerBirthMonth: 7,
+        ownerBirthDay: 1,
+        ownerDeathYear: 2021,
+        decedentHadStartedRmds: false,
+      })),
+      yearOnlyDeath2021AssertedNotStarted: summarizeRbd(deriveRbdComparison({
+        ownerBirthYear: 1949,
+        ownerDeathYear: 2021,
+        decedentHadStartedRmds: false,
+      })),
+      dec31Death2023AssertedNotStarted: summarizeRbd(deriveRbdComparison({
+        ownerBirthYear: 1950,
+        ownerBirthMonth: 12,
+        ownerBirthDay: 31,
+        ownerDeathYear: 2023,
+        decedentHadStartedRmds: false,
+      })),
+    },
+  }
+}
 
 describe('applicableAgeAttainYears', () => {
   it('keeps the 70½ cohort and the June/July 1949 boundary distinct', () => {
@@ -21,6 +124,147 @@ describe('applicableAgeAttainYears', () => {
     expect(applicableAgeAttainYears(1959)).toEqual([2032, 2034])
     expect(applicableAgeAttainYears(1960)).toEqual([2035])
     expect(applicableAgeAttainYears(1968)).toEqual([2043])
+  })
+})
+
+// Independent worksheet (not engine output); attainment from former Treas. Reg.
+// 1.401(a)(9)-2 Q&A-3 (T.D. 8987); IRA RBD from former 1.408-8 Q&A-3:
+// 1948-06: 70th birthday June 2018; +6 months → Dec 2018; attain 2018; IRA RBD year 2019.
+// 1948-07: 70th birthday July 2018; +6 months → Jan 2019; attain 2019; IRA RBD year 2020
+//   (retains historical 70½; §114(d) does not move anyone who attained 70½ in 2019).
+// 1949-06-30: born before July 1, 1949 → still 70½; attain Dec 2019 (not after 2019-12-31);
+//   IRA RBD year 2020. Death 2020 in the RBD year, asserted not started → before-rbd (tie-break).
+//   Placing the RBD in the attain year instead of attain year+1 would put it in 2019, so death
+//   2020 would be after the RBD and the false assertion would contradict rather than tie-break.
+// 1949-07-01: SECURE §114 moves age to 72 (would have attained 70½ in Jan 2020 after the
+//   cutoff); attain 2021; IRA RBD year 2022 (not 2020). Death 2021 < 2022 → before-rbd.
+// Year-only 1949: candidates 2019 (70½) and 2021 (age 72). For death 2021 those yield
+//   on-or-after vs before, so precision is refused rather than guessed.
+// 1950-12-31: age-72 cohort (SECURE §114); attain 2022; IRA RBD year 2023. Former 1.408-8
+//   Q&A-3 states April 1 following the calendar year in which the individual attains age
+//   70½; that literal 70½ form governs the 70½ cohort above. For whole-age cohorts the
+//   engine applies the same following-year placement through SECURE §114 and current
+//   1.408-8(b)(1)(i) applicable-age wording (attain applicable age, RBD April 1 of the next
+//   calendar year). Death 2023 in the RBD year, asserted not started → before-rbd
+//   (tie-break). Omitting the +1 for whole-age cohorts only would place RBD 2022, making
+//   death 2023 on-or-after-rbd and contradicting the false assertion.
+// Wrong reading A collapses every 1949 birth onto age 72 (June 30 stays on 70½ under the
+//   statute and the final reg), so June death 2020 stays before-rbd (RBD 2022) without
+//   contradicting the false assertion, and year-only 1949 invents a single side.
+// Wrong reading B keeps July 1949 on 70½ attain-year math
+//   (SECURE never moved the cohort), so July attain becomes 2020 rather than 2021.
+// Wrong reading C treats 1950 as age 73 (attain 2023, RBD 2024) instead of age 72.
+// Wrong reading D omits the IRA following-year +1 for whole-age cohorts only.
+// Wrong reading E omits the following-year +1 for every cohort including 70½.
+describeRule('treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72', {
+  readings: {
+    statutoryJuly1949Boundary: {
+      attainYears: {
+        born1948June: [2018],
+        born1948July: [2019],
+        born1949June: [2019],
+        born1949July: [2021],
+        born1949YearOnly: [2019, 2021],
+        born1950: [2022],
+      },
+      deathVersusRbd: {
+        june30Death2020AssertedNotStarted: resolvedRbd('before-rbd'),
+        july1Death2021AssertedNotStarted: resolvedRbd('before-rbd'),
+        yearOnlyDeath2021AssertedNotStarted: precisionInsufficient,
+        dec31Death2023AssertedNotStarted: resolvedRbd('before-rbd'),
+      },
+    } satisfies SeventyHalfCohortVector,
+    allNineteenFortyNineAsAgeSeventyTwo: {
+      attainYears: {
+        born1948June: [2018],
+        born1948July: [2019],
+        born1949June: [2021],
+        born1949July: [2021],
+        born1949YearOnly: [2021],
+        born1950: [2022],
+      },
+      deathVersusRbd: {
+        june30Death2020AssertedNotStarted: resolvedRbd('before-rbd'),
+        july1Death2021AssertedNotStarted: resolvedRbd('before-rbd'),
+        yearOnlyDeath2021AssertedNotStarted: resolvedRbd('before-rbd'),
+        dec31Death2023AssertedNotStarted: resolvedRbd('before-rbd'),
+      },
+    } satisfies SeventyHalfCohortVector,
+    secureNeverMovedJulyNineteenFortyNine: {
+      attainYears: {
+        born1948June: [2018],
+        born1948July: [2019],
+        born1949June: [2019],
+        born1949July: [2020],
+        born1949YearOnly: [2019, 2020],
+        born1950: [2022],
+      },
+      deathVersusRbd: {
+        june30Death2020AssertedNotStarted: resolvedRbd('before-rbd'),
+        july1Death2021AssertedNotStarted: resolvedRbd('before-rbd'),
+        yearOnlyDeath2021AssertedNotStarted: precisionInsufficient,
+        dec31Death2023AssertedNotStarted: resolvedRbd('before-rbd'),
+      },
+    } satisfies SeventyHalfCohortVector,
+    nineteenFiftyAsAgeSeventyThree: {
+      attainYears: {
+        born1948June: [2018],
+        born1948July: [2019],
+        born1949June: [2019],
+        born1949July: [2021],
+        born1949YearOnly: [2019, 2021],
+        born1950: [2023],
+      },
+      deathVersusRbd: {
+        june30Death2020AssertedNotStarted: resolvedRbd('before-rbd'),
+        july1Death2021AssertedNotStarted: resolvedRbd('before-rbd'),
+        yearOnlyDeath2021AssertedNotStarted: precisionInsufficient,
+        dec31Death2023AssertedNotStarted: resolvedRbd('before-rbd'),
+      },
+    } satisfies SeventyHalfCohortVector,
+    wholeAgeOnlyOmitPlusOne: {
+      attainYears: {
+        born1948June: [2018],
+        born1948July: [2019],
+        born1949June: [2019],
+        born1949July: [2021],
+        born1949YearOnly: [2019, 2021],
+        born1950: [2022],
+      },
+      deathVersusRbd: {
+        june30Death2020AssertedNotStarted: resolvedRbd('before-rbd'),
+        july1Death2021AssertedNotStarted: resolvedRbd('before-rbd'),
+        yearOnlyDeath2021AssertedNotStarted: precisionInsufficient,
+        dec31Death2023AssertedNotStarted: assertionContradictsDerivation,
+      },
+    } satisfies SeventyHalfCohortVector,
+    globalPlusOneOmission: {
+      attainYears: {
+        born1948June: [2018],
+        born1948July: [2019],
+        born1949June: [2019],
+        born1949July: [2021],
+        born1949YearOnly: [2019, 2021],
+        born1950: [2022],
+      },
+      deathVersusRbd: {
+        june30Death2020AssertedNotStarted: assertionContradictsDerivation,
+        july1Death2021AssertedNotStarted: resolvedRbd('before-rbd'),
+        yearOnlyDeath2021AssertedNotStarted: precisionInsufficient,
+        dec31Death2023AssertedNotStarted: assertionContradictsDerivation,
+      },
+    } satisfies SeventyHalfCohortVector,
+  },
+  accepted: 'statutoryJuly1949Boundary',
+}, ({ accepted, readings }) => {
+  it('keeps the June 30 / July 1, 1949 cut, 70½ attain years, IRA RBD-year placement, and age-72 cohort RBD tie-break', () => {
+    const observed = observeSeventyHalfCohortVector()
+    expect(observed).toEqual(accepted)
+    expect(observed).not.toEqual(readings.allNineteenFortyNineAsAgeSeventyTwo)
+    expect(observed).not.toEqual(readings.secureNeverMovedJulyNineteenFortyNine)
+    expect(observed).not.toEqual(readings.nineteenFiftyAsAgeSeventyThree)
+    expect(observed).not.toEqual(readings.wholeAgeOnlyOmitPlusOne)
+    expect(observed).not.toEqual(readings.globalPlusOneOmission)
   })
 })
 
