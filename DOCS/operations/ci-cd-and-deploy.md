@@ -80,7 +80,9 @@ The pinned reusable workflow now treats manual dispatch as a full-PR recheck
 that retains the existing ledger, finding IDs, and rebuttals. It requires both
 file coverage and finding resolutions. With no ledger it seeds an initial
 review. `reset_review: true` explicitly starts a new initial review; leave it
-false for normal recovery. Pushes retain latest-commit verification scope.
+false for ordinary manual rechecks. Caller-pin migrations use the dedicated
+`openrouter-review-recovery.yml` workflow described below, which has no reset
+input. Pushes retain latest-commit verification scope.
 Do not dispatch redundantly over a completed exact-head review.
 
 Agents must paginate reviews, inline comments, and issue comments, and read
@@ -95,10 +97,10 @@ RetireGolden authorization validates decoded markers against that producer, not 
 
 | Contract | Source |
 |----------|--------|
-| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py) |
-| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py). |
-| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py) (including `open_issue_count`) |
-| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py) |
+| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py#L476-L516) |
+| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py#L269-L271) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py#L244-L266); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/schema.py#L26). |
+| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py#L193-L288) (including `open_issue_count`) |
+| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py#L374-L398) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/loop.py#L435-L473) |
 
 These function spans were checked against the source at the linked immutable action revision.
 The path predicate's short span is intentional: normalization contains the validation logic.
@@ -119,8 +121,8 @@ paths, Python-strip whitespace and BOM handling. This finite comparison is migra
 a proof over every possible string.
 
 The temporary Astra Flex lane is owned by the central reusable, not this caller. At the linked immutable
-org revision, its [first-pass condition](https://github.com/RetireGolden/.github/blob/47aa4ad1572f943becd63e0173dbc31e6b945f5d/.github/workflows/openrouter-code-review.yml#L273-L279)
-and [follow-up condition](https://github.com/RetireGolden/.github/blob/47aa4ad1572f943becd63e0173dbc31e6b945f5d/.github/workflows/openrouter-code-review.yml#L704-L709)
+org revision, its [first-pass condition](https://github.com/RetireGolden/.github/blob/47aa4ad1572f943becd63e0173dbc31e6b945f5d/.github/workflows/openrouter-code-review.yml#L283-L289)
+and [follow-up condition](https://github.com/RetireGolden/.github/blob/47aa4ad1572f943becd63e0173dbc31e6b945f5d/.github/workflows/openrouter-code-review.yml#L717-L722)
 select Astra only for RetireGolden and RetireGolden-Pro before `2026-09-06T04:00:00Z`.
 Both Bash policy steps were executed with an injected clock immediately before and exactly at that
 cutoff for seven repository names: all 28 cases passed, including baseline-only selection at expiry.
@@ -178,7 +180,7 @@ unless verification reports `clean`; the action refuses verification without an 
 Normal pull-request review and first-pass gates are unchanged.
 
 The recovery workflow uses the same action producer as the regular caller in the table above. Its
-[`_resolve_loop` guard](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/cli.py)
+[`_resolve_loop` guard](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/481069edae02298d4069f03b24ad1cdc67c5f348/src/or_pr_review/cli.py#L663-L705)
 rejects verify mode without an existing ledger. Recovery fixes the baseline Grok/GLM lanes and Luna
 judge locally, with the existing follow-up
 budget of low effort, 30 tool turns and 600 KB. It changes coverage to full PR and retains prior

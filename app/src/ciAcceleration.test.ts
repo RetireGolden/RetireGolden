@@ -436,6 +436,21 @@ describe('trusted default-branch review verification recovery', () => {
 })
 
 describe('OpenRouter CI authorization contract', () => {
+  it('declares an optional boolean reset with a false default', () => {
+    expect(reviewCaller).toMatch(/      reset_review:\r?\n        description: [^\r\n]+\r?\n        required: false\r?\n        type: boolean\r?\n        default: false/)
+  })
+
+  it.each([
+    [{}, false],
+    [{ reset_review: false }, false],
+    [{ reset_review: true }, true],
+  ])('forwards reset input %j as %s', (inputs, expected) => {
+    const expression = /^      reset_review: \$\{\{ (.+) \}\}$/m.exec(reviewCaller)?.[1]
+    // This boolean-only Actions expression also has JavaScript semantics.
+    expect(expression).toBe('inputs.reset_review || false')
+    expect(runInNewContext(expression!, { inputs })).toBe(expected)
+  })
+
   it('keeps the caller and trusted reusable revision synchronized', () => {
     expect(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA).toMatch(/^[a-f0-9]{40}$/)
     expect(TRUSTED_REUSABLE_REVIEW_WORKFLOW).toBe(
