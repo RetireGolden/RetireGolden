@@ -541,7 +541,7 @@
           "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"
         },
         {
-          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges. West Virginia 2026: §11-21-4j(a) 2.11%–4.58% at $0/$10k/$25k/$40k/$60k (single and MFJ share the table).",
+          "figures": "Brackets, standard deduction, Social Security treatment, and major retirement-income exclusions for all 50 states + DC, from each state revenue department. Maine 2026: basic $15,700/$31,400 plus federal age-65 addition; §5124-C(2) phase-out starts $102,250/$204,550 over $75,000/$150,000 ranges. West Virginia 2026: §11-21-4j(a) 2.11%–4.58% at $0/$10k/$25k/$40k/$60k (single and MFJ share the table). Michigan 2026: ordinary qualifying combined public/private retirement ceiling $67,610 single/MFS / $135,220 MFJ (Guide 446 / RAB 2026-1); qualification, elections, pre-1946 public benefits and return-level allocation remain approximated.",
           "label": "State income tax",
           "publisher": "Tax Foundation / state revenue departments / state legislatures",
           "url": "https://taxfoundation.org/data/all/state/state-income-tax-rates/"

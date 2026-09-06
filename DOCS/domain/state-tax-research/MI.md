@@ -1,14 +1,42 @@
 # Michigan (MI) — state income tax for retirement planning
 
-Tax year: 2025. Researched 2026-06-13.
+Tax year: **2026**. Researched 2026-09-05 (ordinary retirement cap); Social Security
+full exemption previously verified.
+
+> **2026 update (ordinary retirement ceiling, 2026-09-05):** For tax year 2026 and
+> later, MCL 206.30(10)(d) lets a taxpayer deduct retirement or pension benefits
+> under subsection (1)(f), except that amounts deductible under (1)(f)(i) and (ii)
+> combined are subject to the same maximum (1)(f)(iv) allows for that year.
+> Treasury RAB 2026-1 applies that combined public/private maximum regardless of
+> birth year, while preserving unlimited qualifying public benefits for recipients
+> born before 1946. The 2026 Withholding Guide (Form 446) publishes the ordinary
+> post-1945 qualifying maximum as **$67,610** single or married filing separately,
+> or **$135,220** married filing jointly. This is a **combined qualifying-benefit
+> ceiling**, not a universal full exemption of all retirement income.
+>
+> The sole published state pack also stands in for pre-2026 and future projected
+> years under the existing pack fallback. Statutory authority for this ordinary
+> ceiling is **2026+**; using the pack outside 2026 is a stand-in, not validation
+> of the historical 2025 phase-in statute or of a future indexed amount.
+
+**Modeled impact beyond 2026:** The nominal fallback pack means correcting the
+ordinary cap also moves modeled Michigan tax in pre-2026 and future projected
+years without validating those statutes or future indexation. Regression
+comparisons found 36 Michigan-only deltas across 2,448 all-state observations;
+two published example cases each show about **$13,913** lower lifetime taxes and penalties
+(rounded modeled long-horizon deltas, not statutory oracles). Coarse
+qualification, election, pre-1946-public, and return-ceiling residuals remain.
 
 ## Summary
-- Broad individual income tax: **yes** (flat 4.25%)
-- Taxes Social Security benefits: no (fully exempt)
+- Broad individual income tax: **yes** (flat **4.25%**)
+- Taxes Social Security benefits: **no** (fully exempt; separate sibling record
+  `mi-mcl-206-30-f-iii-social-security`)
 - Long-term capital gains: taxed as ordinary income (flat 4.25%)
-- Retirement income (pension, IRA, 401k): large age/birth-year-tiered deduction (2025: ~75% of max, ≈$49,423 per person) phasing to full exemption by 2026
+- Retirement income (pension, IRA, 401k): ordinary **combined qualifying**
+  public/private ceiling **$67,610** single/MFS / **$135,220** MFJ for 2026
+  (`mi-mcl-206-30-retirement-and-ss`); not a blanket full exemption
 
-## Proposed StateTaxParams (2025)
+## Current StateTaxParams (2026)
 - code: "MI"
 - name: "Michigan"
 - hasIncomeTax: true
@@ -17,32 +45,55 @@ Tax year: 2025. Researched 2026-06-13.
 - standardDeduction: { single: 0, marriedFilingJointly: 0 }
 - brackets.single: [ { lowerBound: 0, ratePct: 4.25 } ]
 - brackets.marriedFilingJointly: [ { lowerBound: 0, ratePct: 4.25 } ]
-- retirement: { kind: "capped", capPerPerson: 49423 }
+- retirement: { kind: "capped", capPerPerson: 67610 }
+
+## Historical 2025 (distinct; superseded for TY2026+)
+- Flat rate **4.25%**; personal exemption **$5,800** (not modeled).
+- Under PA 4 of 2023 phase-in, the broad middle tier (born after 1945 and before
+  1967) could deduct up to **75%** of the inflation-adjusted maximum:
+  **$49,423** single / **$98,846** MFJ (75% of $65,897 / $131,794).
+- Keep 2025 figures for historical comparison only; do not treat `$49,423` as the
+  current 2026 ordinary cap.
 
 ## Retirement-income detail
-Michigan taxes income at a flat **4.25%** (2025) with **no** standard deduction
-(it uses a personal exemption, $5,800 for 2025, not modeled). Social Security is
-fully exempt. Under the "Lowering MI Costs Plan" (PA 4 of 2023), Michigan is
-phasing back the pre-2012 retirement-income exemption. For 2025, taxpayers in
-the broad middle tier (born after 1945 and before 1967) may deduct up to **75%**
-of the inflation-adjusted maximum: **$49,423 single / $98,846 MFJ** (75% of
-$65,897 / $131,794). Modeled as `kind: "capped"`, `capPerPerson: 49423`, no age
-gate — the typical retiree qualifies. (Those born before 1946 already get a full
-exemption; the plan reaches full exemption for all by 2026.)
+Michigan taxes income at a flat **4.25%** with **no** modeled standard deduction
+(it uses a personal exemption — **$5,900** for 2026 per Guide 446 — not modeled).
+Social Security is fully exempt.
+
+For **2026**, the ordinary subsection-(10) path deducts **qualifying** retirement
+and pension benefits up to a **combined** public/private return-level ceiling of
+**$67,610** (single/MFS) or **$135,220** (MFJ). Qualifying benefits generally
+include most Form 1099-R payments (defined-benefit pensions, IRAs, and most
+defined-contribution payments); Guide 446 / RAB 2026-1 exclude, among other
+items, certain 457 amounts, employee-contribution-only 401(k) amounts, specified
+403(b) payments, and premature distributions before plan retirement eligibility.
+
+**Exceptions and elections the coarse pack does not express:**
+- Recipients **born before 1946** are not taxed on qualifying **federal or
+  Michigan public** benefits; private qualifying benefits still share the ordinary
+  ceiling for any remaining room.
+- Subsections **(9), (10), and (11)** are elective; public-safety and other special
+  paths exist.
+- The pack encodes one shared `{ kind: "capped", capPerPerson: 67610 }` rule with
+  **no** age/birth gate and **no** `PUBLIC_PENSION_OVERRIDES` split. The engine’s
+  per-living-person `agesAlive` proxy approximates the return-level filing-status
+  ceiling and can diverge for unusual households.
 
 ## Simplifications / not modeled
-- Michigan's deduction is a **three-tiered, birth-year-dependent** system with
-  alternative computations (e.g., the standard age-67 senior exemption against
-  all income). We model only the 2025 75%-of-max middle tier per person; this
-  understates the exclusion for those born before 1946 (full) and overstates it
-  for some who must use a smaller alternative.
-- The exemption fully phases in by tax year 2026 — at the 2026 transcription
-  point this likely becomes `kind: "full"`; flag for re-check.
-- Personal exemption ($5,800/person, 2025) not modeled (standard deduction = 0).
-- Some cities (Detroit, Grand Rapids, etc.) levy a **local income tax**; not
-  modeled.
+- Source qualification vs the application’s coarse retirement bucket.
+- Pre-1946 unlimited qualifying federal/Michigan public benefits above the shared
+  cap; public-safety / surviving-spouse / uncovered-employment facts.
+- Elections among subsections (9), (10), and (11).
+- Personal exemption (**$5,900**/person for 2026 per Guide 446) not modeled
+  (`standardDeduction` remains 0).
+- City/local income taxes (Detroit, Grand Rapids, etc.) are a user flat
+  `localIncomeTaxPct` input, not a full city rule pack.
+- Because the 2026 pack is the first stand-in for pre-2026 years and the last
+  projected fallback, correcting the ordinary cap also changes modeled
+  historical/future years without validating those statutes or future indexation.
 
-## Citations
-- https://www.michigan.gov/taxes/iit/tax-guidance/tax-situations/retirement-and-pension-benefits/2025/2025-tier-iii — 2025 tiered retirement deduction; 75%-of-max for born after 1945/before 1967; max $65,897 single / $131,794 MFJ.
-- https://www.michigan.gov/ors/faqs-for-public-act-4-of-2023---retirement-state-tax-changes — Lowering MI Costs Plan phase-in (65%/75% in 2025 by tier; full by 2026); SS exempt.
-- https://www.michigan.gov/taxes/-/media/Project/Websites/taxes/Forms/SUW/TY2025/446_Withholding-Guide_2025.pdf — 2025 flat 4.25% rate; personal exemption $5,800.
+## Citations (primary)
+- https://www.michigan.gov/taxes/-/media/Project/Websites/taxes/Forms/SUW/TY2026/446_Withholding-Guide_2026.pdf — 2026 ordinary qualifying maximum $67,610 single/MFS / $135,220 MFJ; personal exemption $5,900; qualifying / nonqualifying categories; pre-1946 public exception.
+- https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1 — RAB 2026-1: 2026-and-later combined public/private maximum regardless of birth year; pre-1946 public exception; elective (9)/(10)/(11).
+- https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject — MCL 206.30(10)(d) and (1)(f) retirement / Social Security limbs.
+- Historical 2025 phase-in (not current): https://www.michigan.gov/taxes/iit/tax-guidance/tax-situations/retirement-and-pension-benefits/2025/2025-tier-iii — 2025 75%-of-max middle tier ($49,423 / $98,846).

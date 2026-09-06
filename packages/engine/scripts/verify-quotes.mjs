@@ -111,8 +111,14 @@ const FALLBACK_STATUSES = new Set([401, 403, 406])
  * the cited paths while its perimeter still refuses the transparent identity.
  * www.jct.gov is deliberately NOT here: it runs an interactive challenge and
  * the documented stance — report UNFETCHABLE, never work around it — stands.
+ *
+ * 2026-09-05: www.michigan.gov — robots.txt wildcard group excludes only
+ * /rss/, /podcast/, /emichigan/, /minewswire/; cited Treasury paths RAB
+ * 2026-1 and 2026 Form 446 Guide are not excluded, yet the transparent
+ * identity received 403 on both. Exact host only (not apex michigan.gov or
+ * legislature.mi.gov).
  */
-const FALLBACK_HOSTS = new Set(['www.ssa.gov'])
+const FALLBACK_HOSTS = new Set(['www.ssa.gov', 'www.michigan.gov'])
 
 /**
  * Whether a refused response earns the one disclosed browser-identity retry.

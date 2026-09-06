@@ -212,6 +212,15 @@ fingerprints the TLS client and refuses both identities, so its rows stay
 honestly `UNFETCHABLE`; tn.gov, which refused the transparent identity on
 some paths when the block was first documented, currently serves it again.
 
+2026-09-05: exact host `www.michigan.gov` was admitted after its robots.txt
+wildcard group excluded only `/rss/`, `/podcast/`, `/emichigan/`, and
+`/minewswire/` (neither cited Treasury path — RAB 2026-1 nor the 2026 Form
+446 Guide — is excluded) while the transparent identity still received 403 on
+both. Successful retries disclose `fetchProfile: "browserFallback"` as usual.
+Apex `michigan.gov` and `legislature.mi.gov` stay outside the allowlist; the
+legacy MCL endpoint remains independently `UNFETCHABLE`. Host admission is
+not a quote-fidelity PASS — the filtered verifier must still run.
+
 ## Caveats
 
 - **A failure is not automatically a registry defect.** Confirm against the enrolled text before changing a
