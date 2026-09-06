@@ -14,10 +14,14 @@ import type { FilingStatus } from '../../../params/types.js'
 export type ProjectedFilingStatus = FilingStatus | 'qualifyingSurvivingSpouse'
 
 /**
- * QSS uses the joint tax tables, deduction, and AMT exemption. IRMAA is the
- * exception: SSA's threshold tables group qualifying surviving spouses with
- * single/HOH filers (POMS HI 01101.020), so the Medicare premium calculation
- * maps QSS to `single` instead of using this helper.
+ * For federal law, QSS uses the joint tax tables, standard deduction, and AMT
+ * exemption. State parameter selection reuses this mapping wholesale. Delaware's
+ * `de-pit-est-2026-qss-standard-deduction-joint-mapper` discloses the QSS-to-joint
+ * standard-deduction approximation; other states require jurisdiction-specific
+ * authority before assuming a different mapping. IRMAA is the named
+ * federal exception: SSA's threshold tables group qualifying surviving spouses with
+ * single/HOH filers (POMS HI 01101.020), so the Medicare premium calculation maps
+ * QSS to `single` instead of using this helper.
  */
 export function taxParameterFilingStatus(status: ProjectedFilingStatus): FilingStatus {
   return status === 'single' ? 'single' : 'marriedFilingJointly'

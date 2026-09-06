@@ -377,12 +377,12 @@ export const southAtlanticStateRecords = {
   'de-pit-est-2026-qss-standard-deduction-joint-mapper': {
     title: 'Delaware QSS is routed through the joint standard-deduction row',
     statement:
-      'For a modeled 2026 Delaware qualifying-surviving-spouse year, the engine selects the married-filing-jointly standard-deduction row, producing a $6,500 basic deduction and $9,000 for a nonblind survivor age 65; the 2026 PIT-EST widow(er) figures are $3,250 and $5,750.',
+      'For a modeled Delaware qualifying-surviving-spouse year resolved through the 2026 state parameter pack, the engine selects the married-filing-jointly row: $6,500 basic and $9,000 for one nonblind survivor age 65. Current §1108 and the 2026 Form PIT-EST instructions put a widow(er) on the $3,250 individual row, or $5,750 with one age-65 addition. For projection years after 2026, `stateParamsFor` repeats these amounts only by carrying the latest published pack forward. That is a disclosed frozen-pack product approximation, not verification of a future Delaware form, future legislation, or any other future-year Delaware parameter.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. This record is limited to the 2026 nonblind standard-deduction component and does not settle QSS brackets, itemization, credits, other return lines, earlier years, or a complete Delaware return.',
+      'DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and fixture-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on latest-pack fallback and must be rechecked when a new state pack, form, or amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.',
     jurisdiction: 'state:DE',
     authority: [{
       kind: 'statute',
@@ -405,7 +405,7 @@ export const southAtlanticStateRecords = {
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
-    effectiveThrough: 2026,
+    effectiveThrough: null,
     verifiedOn: '2026-09-06',
     implementedBy: [
       'packages/engine/src/projection/internal/types/tax.ts',

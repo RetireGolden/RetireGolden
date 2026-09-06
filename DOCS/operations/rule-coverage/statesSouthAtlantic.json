@@ -257,12 +257,12 @@
       "title": "Delaware QSS is routed through the joint standard-deduction row",
       "classification": "approximated",
       "errorDirection": "understatesTax",
-      "conventionRationale": "DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. This record is limited to the 2026 nonblind standard-deduction component and does not settle QSS brackets, itemization, credits, other return lines, earlier years, or a complete Delaware return.",
+      "conventionRationale": "DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and fixture-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on latest-pack fallback and must be rechecked when a new state pack, form, or amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.",
       "contraryReading": null,
       "jurisdiction": "state:DE",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
-      "effectiveThrough": 2026,
+      "effectiveThrough": null,
       "verifiedOn": "2026-09-06",
       "dueOn": "2027-09-06",
       "implementedBy": [
@@ -295,7 +295,7 @@
           "functions": [
             {
               "name": "taxParameterFilingStatus",
-              "line": 22
+              "line": 26
             }
           ]
         },

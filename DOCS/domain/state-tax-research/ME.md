@@ -29,9 +29,20 @@ Tax year: 2026. Researched 2026-06-13; standard-deduction correction 2026-09-05.
 > year residency uses the annual fraction before month proration — still the
 > existing month approximation, not statutory apportionment.
 >
+> **§5403 annual indexing:** the basic standard deduction (§5124-C(1-B)) and the
+> phase-out numerator starts (§5124-C(2)) are restated each year under 36 M.R.S.
+> §5403. Subsection (2) requires the assessor, on or about September 15, to
+> multiply the COLA adjustment by the §5124-C(1-B) basic amount; subsection (4)
+> does the same for the numerator dollars in §5124-C(2)(A)–(C). The registry
+> records `mrs-36-5124-c-1-b-decoupled-standard-deduction` and
+> `mrs-36-5124-c-2-standard-deduction-phaseout` cite both limbs and are
+> `annuallyIndexed`. A re-verification pass must open §5403 and the September
+> MRS restatement — not treat the pack figures below as frozen statutory amounts.
+>
 > Source (primary): MRS 2026 rate schedule PDF (rev. May 20, 2026),
 > https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf;
-> MRS 2026 phase-out worksheet (rev. December 2025); 36 M.R.S. §5124-C(1-B) and (2).
+> MRS 2026 phase-out worksheet (rev. December 2025); 36 M.R.S. §5124-C(1-B) and (2);
+> 36 M.R.S. §5403(2) and (4).
 
 ## Summary
 - Broad individual income tax: **yes** (graduated, 5.8%–7.15%, plus surcharge bracket)
@@ -98,13 +109,14 @@ $73.2875 of tax, not the full $2,050 / $146.575.
 - Head-of-household basic amounts and other Form 1040ME lines outside the pack levers are not modeled.
 - Modeled Maine AGI is a proxy: not every §5122 modification is representable in the plan model.
 - Pre-2026 Maine inputs use the sole 2026 state pack as a parameter stand-in; those dollars are not certified historical Maine amounts.
-- Brackets and the Maine basic are CPI-adjusted under Maine law; the engine holds pack-year nominals for the basic ($15,700 / $31,400 published, no COLA reconciliation claimed here) and scales only the borrowed federal age addition with assumed plan inflation, not a statutory COLA oracle. Phase-out starts are pack-year Maine figures and are not federally inflation-scaled.
+- Brackets are annually indexed (September restatement). The Maine basic and the §5124-C(2) phase-out starts are indexed under §5403(2) and §5403(4). The engine holds pack-year nominals transcribed from the published MRS schedule — $15,700 / $31,400 basic and $102,250 / $204,550 phase-out starts for 2026 — and does not auto-reconcile them with each year's statutory restatement. Range widths ($75,000 / $150,000) stay fixed per §5124-C(2). Only the borrowed federal age addition is inflation-scaled with assumed plan inflation, not a statutory COLA oracle.
 - Part-year residency remains month proration of income, deductions, and brackets — not certified statutory nonresident apportionment.
 
 ## Citations
 - https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf — MRS 2026 rate schedules (basic $15,700/$31,400; age/blindness addition $2,050 unmarried / $1,650 married; brackets and surcharge).
 - https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf — MRS 2026 phase-out worksheet (rev. December 2025).
 - https://legislature.maine.gov/statutes/36/title36sec5124-C.html — 36 M.R.S. §5124-C(1-B) basic + IRC 63(c)(3) additional; subsection 2 phase-out.
+- https://legislature.maine.gov/statutes/36/title36sec5403.html — 36 M.R.S. §5403(2) basic standard-deduction indexing; §5403(4) phase-out numerator indexing (September restatement).
 - https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim — IRC 63(c)(3), 63(f)(1).
 - https://www.irs.gov/irb/2025-45_IRB — Rev. Proc. 2025-32 §4.14(3) (2026 age-65 addition amounts).
 - https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/ind_tax_rate_sched_2025.pdf — 2025 schedules (historical).
