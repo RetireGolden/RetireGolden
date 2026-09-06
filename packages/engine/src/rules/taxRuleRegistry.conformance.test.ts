@@ -553,6 +553,11 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   ],
   DE: [
     'delcode.delaware.gov', // Delaware Code Online, Title 30
+    // Verified 2026-09-05. The Division of Revenue's 2026 PIT-EST instructions
+    // carry the operative standard-deduction worksheet figures the deduction
+    // record quotes; this is a deliberate agency-publication admission matching
+    // the Maine/Utah official-worksheet convention, not a verifier fallback.
+    'revenuefiles.delaware.gov',
   ],
   DC: [
     'code.dccouncil.gov', // Council of the District of Columbia, Code of the District of Columbia

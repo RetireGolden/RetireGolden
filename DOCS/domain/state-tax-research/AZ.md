@@ -136,14 +136,16 @@ acquisition date cannot be verified no subtraction is allowed at all.
   before 2012 the correct figure is 100. **Understates tax** on exactly the
   households most likely to hold one. Registered as
   `ars-43-1022-22-long-term-capital-gain-subtraction`.
-- **The $2,100 age-65 exemption is not modeled.** The pack's only age-65 field
-  carries the FEDERAL addition and attaches only to a state whose deduction is
-  the federal one, which Arizona's is not. **Overstates tax** by 2.5% of $2,100
-  per person aged 65 or over — about $53 a year each. Registered as
-  `ars-43-1023-e-age-65-exemption`. Modelling it through the conformity tag was
-  the alternative and is worse: that path imports a different figure under a
-  different statute, indexed every year while Arizona's $2,100 is frozen, so the
-  gap widens in every projected year.
+- **The $2,100 age-65 exemption is not modeled.** The pack's age-65 field
+  (`standardDeductionAge65Addition`) carries either the federal resolver amount
+  for conforming states or a fixed pack-carried statutory deduction addition
+  (Delaware is the type case) — not Arizona's §43-1023(E) exemption, which sits
+  above the deduction line and is not an addition to the standard deduction.
+  **Overstates tax** by 2.5% of $2,100 per person aged 65 or over — about $53 a
+  year each. Registered as `ars-43-1023-e-age-65-exemption`. Modelling it
+  through the conformity tag was the alternative and is worse: that path imports
+  a different figure under a different statute, indexed every year while
+  Arizona's $2,100 is frozen, so the gap widens in every projected year.
 - **The 2026 deduction is Arizona's 2025 figure**, because Arizona has published
   no 2026 amount. §43-1041(H) will raise it, so the frozen figure **overstates
   tax** slightly and by more in each projected year. This is the pack's general

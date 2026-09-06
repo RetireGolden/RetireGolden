@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "DC",
-              "line": 280
+              "line": 288
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -104,7 +104,7 @@
           "functions": [
             {
               "name": "DE",
-              "line": 263
+              "line": 266
             }
           ]
         },
@@ -133,18 +133,18 @@
           "tests": [
             {
               "title": "subtracts Delaware Social Security included in federal AGI",
-              "line": 2103
+              "line": 2105
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2113,
+          "line": 2115,
           "note": "retirement-age limb",
           "tests": [
             {
               "title": "subtracts the $12,500 Delaware retirement cap from age 60",
-              "line": 2129
+              "line": 2131
             }
           ]
         }
@@ -161,6 +161,94 @@
           "kind": "statute",
           "citation": "Del. Code tit. 30, 1106(b)(4)",
           "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        }
+      ]
+    },
+    {
+      "id": "de-code-30-1108-standard-deduction",
+      "title": "Delaware’s standard deduction is $3,250 single and $6,500 joint plus $2,500 per age-65 person",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying surviving spouse years are not certified here: the global tax-status mapper sends QSS to joint parameters, so a survivor receives $6,500 plus $2,500 per age-65 count ($9,000 at age 65) rather than the PIT-EST widow(er) figures of $3,250 and $5,750. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.",
+      "contraryReading": null,
+      "jurisdiction": "state:DE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2000,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "age65StandardDeductionAddition",
+              "line": 383
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "DE",
+              "line": 266
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/delawareStandardDeduction.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/delawareStandardDeduction.rules.test.ts",
+          "line": 81,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts the § 1108 basic and age-65 amounts through the published Delaware pack",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1107",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1108(a)(3)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1108(b)(1)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Delaware Division of Revenue, 2026 Form PIT-EST instructions, line 3",
+          "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf"
         }
       ]
     },
@@ -187,7 +275,7 @@
           "functions": [
             {
               "name": "FL",
-              "line": 297
+              "line": 305
             }
           ]
         },
@@ -270,7 +358,7 @@
           "functions": [
             {
               "name": "GA",
-              "line": 304
+              "line": 312
             }
           ]
         },
@@ -352,7 +440,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 436
+              "line": 444
             }
           ]
         },
@@ -372,16 +460,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2433,
+          "line": 2435,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of Maryland adjusted gross income",
-              "line": 2448
+              "line": 2450
             },
             {
               "title": "would add the federally taxable portion if Maryland taxed it",
-              "line": 2454
+              "line": 2456
             }
           ]
         }
@@ -424,7 +512,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 436
+              "line": 444
             }
           ]
         },
@@ -448,20 +536,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1253,
+          "line": 1255,
           "note": null,
           "tests": [
             {
               "title": "grants a 65-year-old $41,200 of IRA exclusion the statute withholds",
-              "line": 1272
+              "line": 1274
             },
             {
               "title": "reaches the statute once the cap is withheld from the IRA",
-              "line": 1281
+              "line": 1283
             },
             {
               "title": "also withholds the cap at 64, which is the age the statute names",
-              "line": 1289
+              "line": 1291
             }
           ]
         }
@@ -519,7 +607,7 @@
           "functions": [
             {
               "name": "NC",
-              "line": 641
+              "line": 649
             }
           ]
         },
@@ -539,12 +627,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2741,
+          "line": 2743,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 2750
+              "line": 2752
             }
           ]
         }
@@ -582,7 +670,7 @@
           "functions": [
             {
               "name": "states.SC",
-              "line": 736
+              "line": 744
             }
           ]
         },
@@ -606,16 +694,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 327,
+          "line": 328,
           "note": null,
           "tests": [
             {
               "title": "gives a 62-year-old South Carolinian no deduction at all",
-              "line": 343
+              "line": 344
             },
             {
               "title": "reaches the statute’s figure once the lower tier is modelled",
-              "line": 348
+              "line": 349
             }
           ]
         }
@@ -658,7 +746,7 @@
           "functions": [
             {
               "name": "VA",
-              "line": 786
+              "line": 794
             }
           ]
         },
@@ -682,23 +770,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2968,
+          "line": 2970,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 2987
+              "line": 2989
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2994,
+          "line": 2996,
           "note": "wage-only age deduction limb",
           "tests": [
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 3008
+              "line": 3010
             }
           ]
         }
@@ -736,7 +824,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 807
+              "line": 815
             }
           ]
         },
@@ -818,7 +906,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 807
+              "line": 815
             }
           ]
         },

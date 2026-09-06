@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-06T01:23:13.710Z",
-  "recordCount": 434,
-  "urlCount": 328,
+  "generatedAt": "2026-09-06T02:21:03.127Z",
+  "recordCount": 435,
+  "urlCount": 329,
   "fetched": 9,
-  "cached": 319,
-  "entryCount": 1196,
+  "cached": 320,
+  "entryCount": 1200,
   "counts": {
-    "EXACT": 825,
+    "EXACT": 827,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 218,
-    "ELISION-EXACT": 62,
+    "PDF-WORD-LEVEL": 219,
+    "ELISION-EXACT": 63,
     "ELISION-PUNCTUATION": 5,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
@@ -10484,6 +10484,46 @@
       "quoteSha256": "2a37662f94f6fb43",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "de-code-30-1108-standard-deduction",
+      "citation": "Del. Code tit. 30, 1107",
+      "host": "delcode.delaware.gov",
+      "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
+      "quoteSha256": "51e57c04f0332c66",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "de-code-30-1108-standard-deduction",
+      "citation": "Del. Code tit. 30, 1108(a)(3)",
+      "host": "delcode.delaware.gov",
+      "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
+      "quoteSha256": "d5ec8420cdbf9cfc",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "de-code-30-1108-standard-deduction",
+      "citation": "Del. Code tit. 30, 1108(b)(1)",
+      "host": "delcode.delaware.gov",
+      "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
+      "quoteSha256": "e7326f730e547224",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "de-code-30-1108-standard-deduction",
+      "citation": "Delaware Division of Revenue, 2026 Form PIT-EST instructions, line 3",
+      "host": "revenuefiles.delaware.gov",
+      "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf",
+      "quoteSha256": "7fd753d12e0b9520",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {

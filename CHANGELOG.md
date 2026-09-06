@@ -14,6 +14,15 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   attestation from `rule-free` to `partial`: `taxParameterFilingStatus` enforces
   QSS-to-MFJ parameter selection without a direct rule pin or discriminating
   registered fixture (the prior `rule-free` status was incorrect).
+- **Delaware standard deduction (2026 pack):** corrected the DE row from erroneous
+  unenacted HB 89 figures ($5,700 / $11,400) to operative § 1108 basic amounts
+  ($3,250 / $6,500) with a fixed $2,500 per-person age-65 addition. Observed
+  direction on the repaired enforcer: below-65 single and MFJ households can see
+  higher Delaware tax from a smaller deduction; age-65 single moves from a
+  $5,700 to a $5,750 deduction and MFJ with two age-65 filers from $11,400 to
+  $11,500, which can lower tax. No whole-return accuracy claim; QSS mapping,
+  blindness, the 5.5% versus 5.55% bracket band, and other Delaware limbs remain
+  outside this repair.
 - **Maine 2026 standard deduction — age-65 addition and §5124-C(2) phase-out.** Reason: for tax
   years beginning 2026, 36 M.R.S. §5124-C(1-B) keeps Maine’s published basic
   ($15,700 / $31,400) and adopts the IRC §63(c)(3)/§63(f)(1) age additional

@@ -26,7 +26,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 347
+              "line": 355
             }
           ]
         },
@@ -99,7 +99,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 347
+              "line": 355
             }
           ]
         },
@@ -128,16 +128,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 741,
+          "line": 743,
           "note": null,
           "tests": [
             {
               "title": "subtracts nothing from an Indiana base Indiana subtracts $4,000 from",
-              "line": 757
+              "line": 759
             },
             {
               "title": "reaches the statute’s figure only by borrowing a field that then over-deducts under 65",
-              "line": 762
+              "line": 764
             }
           ]
         }
@@ -195,7 +195,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 347
+              "line": 355
             }
           ]
         },
@@ -204,7 +204,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 347
+              "line": 355
             }
           ]
         },
@@ -311,16 +311,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 657,
+          "line": 659,
           "note": null,
           "tests": [
             {
               "title": "gives a 65-year-old CSRS annuitant no adjustment at all",
-              "line": 676
+              "line": 678
             },
             {
               "title": "reaches the statute’s figure only through a cap that cannot also carry the military case",
-              "line": 681
+              "line": 683
             }
           ]
         }
@@ -374,7 +374,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -403,16 +403,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 613,
+          "line": 615,
           "note": null,
           "tests": [
             {
               "title": "charges Indiana tax on a military pension Indiana deducts in full",
-              "line": 631
+              "line": 633
             },
             {
               "title": "reaches the statute’s figure only by exempting every public pension in the state",
-              "line": 636
+              "line": 638
             }
           ]
         }
@@ -455,7 +455,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 347
+              "line": 355
             }
           ]
         },
@@ -536,7 +536,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 347
+              "line": 355
             }
           ]
         },
@@ -554,7 +554,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -565,16 +565,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 702,
+          "line": 704,
           "note": null,
           "tests": [
             {
               "title": "charges an Indiana household no county tax when the caller names no rate",
-              "line": 713
+              "line": 715
             },
             {
               "title": "reaches the statute’s figure the moment a rate is supplied, which is the shape being right",
-              "line": 723
+              "line": 725
             }
           ]
         }
@@ -627,7 +627,7 @@
           "functions": [
             {
               "name": "IL",
-              "line": 341
+              "line": 349
             }
           ]
         },
@@ -703,7 +703,7 @@
           "functions": [
             {
               "name": "IA",
-              "line": 382
+              "line": 390
             }
           ]
         },
@@ -775,7 +775,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -804,12 +804,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2230,
+          "line": 2232,
           "note": null,
           "tests": [
             {
               "title": "pins the overbroad Kansas public-pension override",
-              "line": 2246
+              "line": 2248
             }
           ]
         }
@@ -867,7 +867,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 388
+              "line": 396
             }
           ]
         },
@@ -887,12 +887,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2200,
+          "line": 2202,
           "note": null,
           "tests": [
             {
               "title": "subtracts all post-2023 federally taxable Kansas Social Security",
-              "line": 2216
+              "line": 2218
             }
           ]
         }
@@ -930,7 +930,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 461
+              "line": 469
             }
           ]
         },
@@ -950,16 +950,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2500,
+          "line": 2502,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 2514
+              "line": 2516
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 2519
+              "line": 2521
             }
           ]
         }
@@ -1002,7 +1002,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 461
+              "line": 469
             }
           ]
         },
@@ -1026,12 +1026,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1000,
+          "line": 1002,
           "note": null,
           "tests": [
             {
               "title": "pins the 2026 ordinary combined ceiling while leaving the pre-1946 public exception approximated",
-              "line": 1022
+              "line": 1024
             }
           ]
         }
@@ -1099,7 +1099,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 467
+              "line": 475
             }
           ]
         },
@@ -1119,16 +1119,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1093,
+          "line": 1095,
           "note": null,
           "tests": [
             {
               "title": "leaves the whole federally taxable share in, with no subdivision-26 subtraction",
-              "line": 1110
+              "line": 1112
             },
             {
               "title": "reaches the statute once the simplified subtraction is taken off the base",
-              "line": 1118
+              "line": 1120
             }
           ]
         }
@@ -1181,7 +1181,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 525
+              "line": 533
             }
           ]
         },
@@ -1253,7 +1253,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 649
+              "line": 657
             }
           ]
         },
@@ -1262,7 +1262,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -1340,7 +1340,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -1369,20 +1369,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 129,
+          "line": 130,
           "note": null,
           "tests": [
             {
               "title": "exempts a civil-service pension North Dakota taxes in full",
-              "line": 152
+              "line": 153
             },
             {
               "title": "reaches the statute’s figure once the public bucket stops exempting",
-              "line": 157
+              "line": 158
             },
             {
               "title": "still taxes private retirement income, which is the half the pack gets right",
-              "line": 167
+              "line": 168
             }
           ]
         }
@@ -1431,11 +1431,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 660
+              "line": 668
             },
             {
               "name": "states.ND",
-              "line": 649
+              "line": 657
             }
           ]
         },
@@ -1464,16 +1464,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 181,
+          "line": 182,
           "note": null,
           "tests": [
             {
               "title": "taxes the whole qualified dividend rather than the statute’s 60%",
-              "line": 198
+              "line": 199
             },
             {
               "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
-              "line": 203
+              "line": 204
             }
           ]
         }
@@ -1516,7 +1516,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 660
+              "line": 668
             }
           ]
         },
@@ -1592,7 +1592,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -1672,7 +1672,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 649
+              "line": 657
             }
           ]
         },
@@ -1749,7 +1749,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -1831,7 +1831,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 649
+              "line": 657
             }
           ]
         },
@@ -1840,7 +1840,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -1912,7 +1912,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -1936,20 +1936,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1140,
+          "line": 1142,
           "note": null,
           "tests": [
             {
               "title": "exempts a school-retirement annuity the closed list does not name",
-              "line": 1157
+              "line": 1159
             },
             {
               "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1163
+              "line": 1165
             },
             {
               "title": "reaches the statute once the public override is dropped",
-              "line": 1173
+              "line": 1175
             }
           ]
         }
@@ -1997,7 +1997,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 560
+              "line": 568
             }
           ]
         },
@@ -2017,16 +2017,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2655,
+          "line": 2657,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 2671
+              "line": 2673
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 2677
+              "line": 2679
             }
           ]
         }
@@ -2074,7 +2074,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -2098,23 +2098,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2758,
+          "line": 2760,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 2777
+              "line": 2779
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2784,
+          "line": 2786,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 2798
+              "line": 2800
             }
           ]
         }
@@ -2162,7 +2162,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 750
+              "line": 758
             }
           ]
         },
@@ -2234,7 +2234,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 824
+              "line": 832
             }
           ]
         },
@@ -2254,12 +2254,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3052,
+          "line": 3054,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 3066
+              "line": 3068
             }
           ]
         }
@@ -2302,7 +2302,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 824
+              "line": 832
             }
           ]
         },
@@ -2326,20 +2326,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3073,
+          "line": 3075,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 3097
+              "line": 3099
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 3106
+              "line": 3108
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 3119
+              "line": 3121
             }
           ]
         }

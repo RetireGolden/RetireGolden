@@ -143,6 +143,12 @@ export function computeStateTaxableIncome(
   }
 
   let rawTotal = params.standardDeduction[taxStatus]
+  // Per-person age-65 standard deduction addition, per status. For a federally
+  // tagged state `conformStateStandardDeduction` attaches the IRC 63(c)(3)
+  // amount, already indexed; for a state that publishes a fixed statutory
+  // addition (Delaware) the pack carries the dollar amount directly. Either way
+  // the amount arrives already prorated for part-year residency where that
+  // applied, so all that is left here is the head count.
   if (params.standardDeductionAge65Addition) {
     rawTotal += age65StandardDeductionAddition(
       params.standardDeductionAge65Addition,

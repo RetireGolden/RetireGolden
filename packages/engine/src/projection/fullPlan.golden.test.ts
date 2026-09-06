@@ -295,6 +295,33 @@ describe('full-plan golden fixtures', () => {
     expectMoney(year.balances['cash']!, 109_789)
   })
 
+  it('Delaware fixed age-65 standard deduction reaches full-plan tax', () => {
+    // Independent worksheet (2026, nonblind single standard-deduction case;
+    // modeled component, not a complete Delaware return):
+    // https://delcode.delaware.gov/title30/c011/sc02/index.html
+    // https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf
+    // Federal: 20,000 - 16,100 basic - 2,050 age - 6,000 senior <= 0, so $0.
+    // Delaware taxable base: 20,000 - 3,250 basic - 2,500 age = 14,250.
+    // DE tax = (5,000 - 2,000) * 2.2% + (10,000 - 5,000) * 3.9%
+    //        + (14,250 - 10,000) * 4.8% = 66 + 195 + 204 = $465.
+    // Income is below the separately disputed $25,000 rate band. Blindness,
+    // itemization, personal credits, QSS, and whole-return accuracy remain out.
+    const plan = singlePersonPlan({ dob: '1961-01-01', planningAge: 65, state: 'DE' })
+    plan.accounts = [cashAccount('cash', 100_000)]
+    plan.incomes = [recurringOrdinaryIncome('ordinary', 20_000, 2026)]
+    plan.expenses.baseAnnual = 0
+
+    const result = runPlan(plan, productionTaxCalculator(), 2026)
+    const year = result.years[0]!
+
+    expect(year.year).toBe(2026)
+    expect(year.people).toEqual([
+      { personId: 'p1', ageAttained: 65, alive: true, lifeAge: 65 },
+    ])
+    expectMoney(year.incomes.recurring, 20_000)
+    expectMoney(year.tax, 465)
+  })
+
   it('Michigan qualifying pension uses the 2026 ordinary retirement cap', () => {
     // Independent worksheet (not taken from app output; not a complete MI-1040):
     // Stipulated: actual qualifying private-employer defined-benefit pension paid

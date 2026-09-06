@@ -38,7 +38,10 @@
  * administrative practice rather than a rule of Arizona law, and the tag was
  * additionally attaching an IRC 63(c)(3) age-65 addition Arizona does not
  * grant. Only the deduction is tagged — state BRACKETS stay nominal for every
- * state (see ../index.ts).
+ * state (see ../index.ts). A state that publishes its own fixed statutory age-65
+ * deduction addition may instead carry it in `standardDeductionAge65Addition`
+ * without either conformity tag (Delaware is the first pack-carried case); the
+ * figure stays frozen at the pack value like an untagged basic.
  *
  * State taxable income in the engine starts from gross ordinary income (plus
  * gains, plus the federally taxable SS amount where the state taxes SS), minus
@@ -261,8 +264,13 @@ const rawStateYear2026 = {
       retirement: { kind: 'full' }, // pension/IRA reach full exemption by 2026
     },
     DE: {
+      // 30 Del. C. § 1108(a)(3): $3,250 single / $6,500 MFJ basic standard
+      // deduction; § 1108(b)(1): $2,500 additional per qualifying age-65 filer
+      // (not § 1108(b)(2), which applies only when no joint return). Do NOT
+      // restore HB 89's unenacted $5,700 / $11,400 — see DOCS/domain/state-tax-research/DE.md.
       code: 'DE', name: 'Delaware', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 5700, marriedFilingJointly: 11400 },
+      standardDeduction: { single: 3250, marriedFilingJointly: 6500 },
+      standardDeductionAge65Addition: { single: 2500, marriedFilingJointly: 2500 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 0 }, { lowerBound: 2000, ratePct: 2.2 }, { lowerBound: 5000, ratePct: 3.9 },

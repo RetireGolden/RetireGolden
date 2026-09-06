@@ -26,7 +26,7 @@
           "functions": [
             {
               "name": "AK",
-              "line": 140
+              "line": 143
             }
           ]
         },
@@ -98,7 +98,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 160
+              "line": 163
             }
           ]
         },
@@ -107,7 +107,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -175,7 +175,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 160
+              "line": 163
             }
           ]
         },
@@ -248,7 +248,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -277,16 +277,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 487,
+          "line": 488,
           "note": null,
           "tests": [
             {
               "title": "exempts an ASRS pension Arizona taxes above $2,500",
-              "line": 506
+              "line": 507
             },
             {
               "title": "reaches the statute’s figure only by capping the military exclusion too",
-              "line": 511
+              "line": 512
             }
           ]
         }
@@ -340,7 +340,7 @@
           "functions": [
             {
               "name": "AZ.capitalGainsTaxablePct",
-              "line": 174
+              "line": 177
             }
           ]
         },
@@ -369,16 +369,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 527,
+          "line": 528,
           "note": null,
           "tests": [
             {
               "title": "subtracts a quarter of a pre-2012 gain that Arizona taxes in full",
-              "line": 547
+              "line": 548
             },
             {
               "title": "reaches the statute’s figure only for a household holding nothing bought since 2011",
-              "line": 552
+              "line": 553
             }
           ]
         }
@@ -426,7 +426,7 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             }
           ]
         },
@@ -502,7 +502,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 160
+              "line": 163
             }
           ]
         },
@@ -579,7 +579,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 160
+              "line": 163
             }
           ]
         },
@@ -588,7 +588,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -608,16 +608,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 565,
+          "line": 566,
           "note": null,
           "tests": [
             {
               "title": "gives a 65-year-old Arizonan no exemption at all",
-              "line": 581
+              "line": 582
             },
             {
               "title": "reaches the statute’s figure only by shrinking the input, which is not a fix",
-              "line": 586
+              "line": 587
             }
           ]
         }
@@ -666,7 +666,7 @@
           "functions": [
             {
               "name": "states.AZ",
-              "line": 160
+              "line": 163
             }
           ]
         },
@@ -675,7 +675,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -757,7 +757,7 @@
           "functions": [
             {
               "name": "CA",
-              "line": 216
+              "line": 219
             }
           ]
         },
@@ -822,7 +822,7 @@
           "functions": [
             {
               "name": "CO",
-              "line": 238
+              "line": 241
             }
           ]
         },
@@ -831,7 +831,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -909,7 +909,7 @@
           "functions": [
             {
               "name": "CO",
-              "line": 238
+              "line": 241
             }
           ]
         },
@@ -982,11 +982,11 @@
           "functions": [
             {
               "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 61
+              "line": 64
             },
             {
               "name": "states.HI",
-              "line": 313
+              "line": 321
             }
           ]
         },
@@ -1015,12 +1015,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2147,
+          "line": 2149,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 2162
+              "line": 2164
             }
           ]
         }
@@ -1063,7 +1063,7 @@
           "functions": [
             {
               "name": "ID",
-              "line": 332
+              "line": 340
             }
           ]
         },
@@ -1083,12 +1083,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2173,
+          "line": 2175,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 2189
+              "line": 2191
             }
           ]
         }
@@ -1126,7 +1126,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 549
+              "line": 557
             }
           ]
         },
@@ -1146,27 +1146,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2579,
+          "line": 2581,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 2599
+              "line": 2601
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 2604
+              "line": 2606
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2622,
+          "line": 2624,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 2640
+              "line": 2642
             }
           ]
         }
@@ -1215,7 +1215,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 549
+              "line": 557
             }
           ]
         },
@@ -1224,7 +1224,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -1244,20 +1244,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2535,
+          "line": 2537,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 2554
+              "line": 2556
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 2560
+              "line": 2562
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 2566
+              "line": 2568
             }
           ]
         }
@@ -1316,7 +1316,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 605
+              "line": 613
             }
           ]
         },
@@ -1325,7 +1325,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -1345,12 +1345,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2719,
+          "line": 2721,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 2734
+              "line": 2736
             }
           ]
         }
@@ -1388,7 +1388,7 @@
           "functions": [
             {
               "name": "NV",
-              "line": 575
+              "line": 583
             }
           ]
         },
@@ -1455,7 +1455,7 @@
           "functions": [
             {
               "name": "OR",
-              "line": 703
+              "line": 711
             }
           ]
         },
@@ -1475,12 +1475,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2853,
+          "line": 2855,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 2865
+              "line": 2867
             }
           ]
         }
@@ -1518,7 +1518,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 765
+              "line": 773
             }
           ]
         },
@@ -1538,12 +1538,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2830,
+          "line": 2832,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 2846
+              "line": 2848
             }
           ]
         }
@@ -1586,7 +1586,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 801
+              "line": 809
             }
           ]
         },
@@ -1606,12 +1606,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3015,
+          "line": 3017,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 3034
+              "line": 3036
             }
           ]
         }
@@ -1665,7 +1665,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 801
+              "line": 809
             }
           ]
         },
@@ -1683,7 +1683,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -1733,7 +1733,7 @@
           "functions": [
             {
               "name": "WY",
-              "line": 839
+              "line": 847
             }
           ]
         },
@@ -1742,7 +1742,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }

@@ -24,8 +24,9 @@
  *   - Arizona's 25% gain subtraction reaches only an asset acquired after 2011;
  *     the engine carries no acquisition date.
  *   - Arizona's age-65 relief is a $2,100 per-person exemption above the
- *     deduction line; the pack's only age-65 field is the FEDERAL addition, and
- *     it attaches to conforming states alone.
+ *     deduction line. The pack's age-65 field carries the federal resolver amount
+ *     for conforming states or a fixed pack-carried statutory deduction addition
+ *     (Delaware) — not an exemption slot, and not Arizona's relief.
  *   - Indiana deducts military retirement in full and gives every other public
  *     pension nothing; the North Dakota and Arizona shape again, pointed the
  *     way Arkansas's is.
@@ -584,13 +585,14 @@ describeRule('ars-43-1023-e-age-65-exemption', {
   })
 
   it('reaches the statute’s figure only by shrinking the input, which is not a fix', () => {
-    // There is no field. `standardDeductionAge65Addition` is attached by the
-    // conformity indexer only to a state whose deduction IS the federal one,
-    // and it carries the FEDERAL amount under IRC 63(c)(3) — a different figure
-    // under a different statute, indexed every year while 43-1023(E)'s $2,100
-    // is frozen. So the accepted figure is priced by handing the calculator the
-    // income net of the exemption, which a caller must never do: the same input
-    // feeds the federal calculator, where no such exemption exists.
+    // There is no exemption field. `standardDeductionAge65Addition` is for the
+    // federal age-65 addition (resolver-attached) or a fixed statutory deduction
+    // addition (Delaware), not Arizona's §43-1023(E) exemption above the
+    // deduction line — a different figure under a different statute, indexed every
+    // year on the federal path while 43-1023(E)'s $2,100 is frozen. So the
+    // accepted figure is priced by handing the calculator the income net of the
+    // exemption, which a caller must never do: the same input feeds the federal
+    // calculator, where no such exemption exists.
     const preExempted = input({
       state: 'AZ',
       ordinaryIncome: AZ_AGE65_INCOME - AZ_AGE65_EXEMPTION,
