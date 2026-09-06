@@ -448,20 +448,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1154,
+          "line": 1253,
           "note": null,
           "tests": [
             {
               "title": "grants a 65-year-old $41,200 of IRA exclusion the statute withholds",
-              "line": 1173
+              "line": 1272
             },
             {
               "title": "reaches the statute once the cap is withheld from the IRA",
-              "line": 1182
+              "line": 1281
             },
             {
               "title": "also withholds the cap at 64, which is the age the statute names",
-              "line": 1190
+              "line": 1289
             }
           ]
         }

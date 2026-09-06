@@ -32,6 +32,22 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   not certified (personal exemptions and senior any-income/disability/pension
   subtypes remain unmodeled). The sole state pack also stands in outside 2026
   under the existing fallback; statutory authority is 2026+.
+- **Corrected Michigan 2026 ordinary retirement deduction cap** from the stale
+  2025 phase-in amount **$49,423** to the current ordinary combined qualifying
+  ceiling **$67,610** single/MFS (**$135,220** MFJ) under MCL 206.30(10)(d),
+  Treasury RAB 2026-1, and 2026 Withholding Guide 446. Pack remains one shared
+  capped rule with no age gate and no public/private split. Observed modeled
+  single $60,000 qualifying private-pension case: state tax **$449.5225 → $0**
+  (−$449.5225 = 4.25% × (60,000 − 49,423)). No other state’s intended pack
+  cells change. Because the sole pack also stands in for historical and future
+  projected years, those modeled stand-in years move with the correction; coarse
+  qualification / election / pre-1946-public / return-ceiling residuals remain.
+  An all-state regression comparison found **2,448** observations compared and
+  **36** tax deltas, all in **MI**. Long-horizon example cases *Starting from
+  zero (no head start)* and *Trump account IRA head start* each show modeled
+  lifetime taxes and penalties **−$13,913** and ending investable / net worth /
+  after-tax estate **+$18,641** (rounded); no other cases change. These are
+  observed modeled long-horizon deltas, not independent statutory oracles.
 - Prepared **`@retiregolden/engine` 0.3.1** — a **patch** bump exporting the
   shared `passesModeledOrdinaryWidowRecordGates` helper so modeled ordinary
   widow record gates are not duplicated across callers. **Not yet published.**

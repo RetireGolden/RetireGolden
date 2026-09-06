@@ -209,7 +209,7 @@
     {
       "path": "params/state/data/year2026.ts",
       "sweptOn": "2026-09-05",
-      "note": "Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, and WV personal exemptions / senior any-income / disability / pension-subtype modifications. Not complete law coverage."
+      "note": "Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage."
     },
     {
       "path": "params/state/index.ts",
@@ -647,16 +647,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-05T22:45:54.356Z",
-    "entryCount": 1187,
-    "fetched": 9,
-    "cached": 315,
+    "generatedAt": "2026-09-06T00:59:43.652Z",
+    "entryCount": 1194,
+    "fetched": 13,
+    "cached": 313,
     "counts": {
       "ELISION-EXACT": 62,
       "ELISION-PUNCTUATION": 5,
-      "EXACT": 819,
+      "EXACT": 824,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 215,
+      "PDF-WORD-LEVEL": 217,
       "PUNCTUATION": 42,
       "UNFETCHABLE": 37
     }

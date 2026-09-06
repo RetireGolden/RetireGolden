@@ -294,4 +294,47 @@ describe('full-plan golden fixtures', () => {
     expectMoney(year.surplusInvested, 9_789)
     expectMoney(year.balances['cash']!, 109_789)
   })
+
+  it('Michigan qualifying pension uses the 2026 ordinary retirement cap', () => {
+    // Independent worksheet (not taken from app output; not a complete MI-1040):
+    // Stipulated: actual qualifying private-employer defined-benefit pension paid
+    // after the recipient retired under, and satisfied retirement eligibility in,
+    // the plan. Age 60 is not itself qualification proof.
+    // Single, DOB 1966-01-01, planningAge 60, MI, $5,000/mo private pension,
+    // $100,000 cash, $0 expenses, zero growth/inflation, no SS/gains.
+    // MI retirement (`mi-mcl-206-30-retirement-and-ss`): 60,000 <= 67,610 ordinary
+    // shared cap ⇒ modeled MI taxable base $0 and MI state tax $0. Pack omits the
+    // 2026 personal exemption ($5,900 Guide 446) and does not encode qualification
+    // or (9)/(10)/(11) elections.
+    // Federal (`irc-63-c-2-joint-standard-deduction-doubles` unmarried base;
+    // `irc-1-j-2-progressive-ordinary-rate-schedule` / Rev. Proc. 2025-32):
+    // 60,000 - 16,100 = 43,900 taxable; tax = 1,240 + 12% * 31,500 = 5,020.
+    // Surplus = 60,000 - 5,020 = 54,980 → ending cash 100,000 + 54,980 = 154,980.
+    // YearResult exposes total `tax` only (federal + state).
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 60, state: 'MI' })
+    plan.accounts = [
+      cashAccount('cash', 100_000),
+      {
+        type: 'pension',
+        id: 'private-pension',
+        name: 'Qualifying defined-benefit pension',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        source: 'private',
+        startAge: 60,
+        monthlyAmount: 5_000,
+        colaPct: 0,
+        survivorPct: 0,
+      },
+    ]
+
+    const result = runPlan(plan, productionTaxCalculator(), 2026)
+    const year = result.years[0]!
+
+    expect(year.year).toBe(2026)
+    expectMoney(year.incomes.pension, 60_000)
+    expectMoney(year.tax, 5_020)
+    expectMoney(year.surplusInvested, 54_980)
+    expectMoney(year.balances['cash']!, 154_980)
+  })
 })

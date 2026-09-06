@@ -94,6 +94,12 @@
   The sole pack also stands in outside 2026 under the existing fallback; statutory authority is 2026+, not a
   historical §11-21-4i proof. Personal exemptions and senior any-income/disability/pension-subtype items remain
   unmodeled.
+- Michigan’s 2026 ordinary retirement deduction is a **combined qualifying** public/private ceiling of
+  **$67,610** single/MFS / **$135,220** MFJ (`mi-mcl-206-30-retirement-and-ss`), not a blanket full
+  exemption. The pack carries one shared capped rule; pre-1946 unlimited qualifying federal/Michigan public
+  benefits, source qualification, (9)/(10)/(11) elections, and return-level versus per-person ceiling remain
+  approximated. Social Security stays on the separate settled sibling
+  (`mi-mcl-206-30-f-iii-social-security`).
 - Mid-year state moves prorate state taxable income, deductions, brackets, and retirement caps by months in
   each state segment. Taxable Social Security is computed once on the full-year federal base and then
   apportioned by months.

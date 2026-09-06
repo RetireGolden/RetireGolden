@@ -440,6 +440,9 @@ ordinary + qualified dividends + taxable capital gains where the state includes 
 state taxes it) - private/public retirement exclusions - standard deduction, floored at 0, then bracketed.
 West Virginia’s 2026 brackets are **2.11%–4.58%** on shared single/MFJ bounds under §11-21-4j (SB 392,
 retroactive to January 1, 2026); Social Security is already fully exempt in the pack from 2026.
+Michigan’s 2026 ordinary retirement path is a **$67,610 / $135,220** combined qualifying ceiling (not a
+full exemption); the shared capped pack rule remains a coarse approximation of qualification, elections,
+and the pre-1946 public exception.
 
 Eight jurisdictions - CO, DC, IA, ID, MO, MT, ND, NM - do not publish a standard deduction of their own.
 Their packs carry a copy of the **federal** figure, tagged `standardDeductionConformity: 'federal'` (for CO

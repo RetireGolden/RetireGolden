@@ -981,7 +981,7 @@
     },
     {
       "id": "mi-mcl-206-30-retirement-and-ss",
-      "title": "Michigan's 2026 retirement deduction is not a flat per-person cap",
+      "title": "Michigan's 2026 ordinary retirement deduction is a combined ceiling, not a full exemption",
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "conventionRationale": null,
@@ -990,8 +990,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2026-12-25",
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-01-03",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -1026,16 +1026,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 942,
+          "line": 1000,
           "note": null,
           "tests": [
             {
-              "title": "grants a 50-year-old the $49,423 cap a senior-citizen deduction does not",
-              "line": 962
-            },
-            {
-              "title": "reaches the statute once the cap is withheld from a non-senior",
-              "line": 969
+              "title": "pins the 2026 ordinary combined ceiling while leaving the pre-1946 public exception approximated",
+              "line": 1022
             }
           ]
         }
@@ -1052,6 +1048,31 @@
           "kind": "statute",
           "citation": "Mich. Comp. Laws 206.30(1)(f)(iv)",
           "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1",
+          "url": "https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1, Issue 3",
+          "url": "https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2026 Michigan Income Tax Withholding Guide (Form 446)",
+          "url": "https://www.michigan.gov/taxes/-/media/Project/Websites/taxes/Forms/SUW/TY2026/446_Withholding-Guide_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1, \"Pre-2012 Michigan Tax Treatment of Retirement Distributions\"",
+          "url": "https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1, \"What Are Qualifying Retirement and Pension Benefits?\"",
+          "url": "https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1"
         }
       ]
     },
@@ -1098,16 +1119,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 994,
+          "line": 1093,
           "note": null,
           "tests": [
             {
               "title": "leaves the whole federally taxable share in, with no subdivision-26 subtraction",
-              "line": 1011
+              "line": 1110
             },
             {
               "title": "reaches the statute once the simplified subtraction is taken off the base",
-              "line": 1019
+              "line": 1118
             }
           ]
         }
@@ -1915,20 +1936,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1041,
+          "line": 1140,
           "note": null,
           "tests": [
             {
               "title": "exempts a school-retirement annuity the closed list does not name",
-              "line": 1058
+              "line": 1157
             },
             {
               "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1064
+              "line": 1163
             },
             {
               "title": "reaches the statute once the public override is dropped",
-              "line": 1074
+              "line": 1173
             }
           ]
         }

@@ -147,7 +147,7 @@ None.
 | model/planCrossFieldChecks.ts | 2026-09-05 | qualified-annuity start-age ceilings covered; checkAccountCrossFieldRules still directly enforces uncovered Form 8606 basis placement/exclusion on inherited IRAs, qualified-annuity funding from owned traditional funds, QLAC qualification, and other cross-field gates |
 | model/retirementActionAnnualTaxFacts.ts | 2026-09-05 | IRC 219(f)(3) designated post-year contribution window now covered via persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema; remaining persistence contracts are opening-basis, completeness, finalization, identity, and safe-cent totals |
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
-| params/state/data/year2026.ts | 2026-09-05 | Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, and WV personal exemptions / senior any-income / disability / pension-subtype modifications. Not complete law coverage. |
+| params/state/data/year2026.ts | 2026-09-05 | Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage. |
 | params/state/index.ts | 2026-09-05 | conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-09-04 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; HSA terminal inclusion base delegated to estateHsaIncome.ts (irc-223-f-8-B-estate-predeath-expense-reduction); terminal zero-haircut spouse destination convention (not rollover or treat-as-own adjudication), charity carve-out, default destination, and other class residuals remain |
@@ -250,18 +250,18 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-05T22:45:54.356Z over 1187 authority entries (9 fetched live, 315 from cache).
+Committed ledger generated at 2026-09-06T00:59:43.652Z over 1194 authority entries (13 fetched live, 313 from cache).
 
-37 serious, 54 advisory, 1096 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 54 advisory, 1103 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 62 |
 | ELISION-PUNCTUATION | advisory | 5 |
-| EXACT | ok | 819 |
+| EXACT | ok | 824 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 215 |
+| PDF-WORD-LEVEL | ok | 217 |
 | PUNCTUATION | advisory | 42 |
 | UNFETCHABLE | serious | 37 |
 

@@ -462,7 +462,7 @@ const rawStateYear2026 = {
       code: 'MI', name: 'Michigan', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: { single: [{ lowerBound: 0, ratePct: 4.25 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.25 }] },
-      retirement: { kind: 'capped', capPerPerson: 49423 },
+      retirement: { kind: 'capped', capPerPerson: 67610 },
     },
     MN: {
       code: 'MN', name: 'Minnesota', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,

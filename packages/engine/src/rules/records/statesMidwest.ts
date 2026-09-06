@@ -1102,9 +1102,9 @@ export const midwestStateRecords = {
   },
 
   'mi-mcl-206-30-retirement-and-ss': {
-    title: 'Michigan\'s 2026 retirement deduction is not a flat per-person cap',
+    title: 'Michigan\'s 2026 ordinary retirement deduction is a combined ceiling, not a full exemption',
     statement:
-      'For 2026 a Michigan taxpayer may deduct retirement or pension benefits as provided in MCL 206.30(1)(f), except that public-system amounts under (1)(f)(i) and (ii) combined are capped at the same CPI-adjusted maximum (1)(f)(iv) allows for other retirement or pension benefits paid for life to a senior citizen. That (iv) maximum started at $42,240 single / $84,480 joint in 2007 and is indexed. The pack flattens this into `{ kind: \'capped\', capPerPerson: 49423 }` with no senior-citizen test, no public/private split, and no birth-year election between subsections (9) and (10). Approximated: a senior citizen whose (iv) maximum has indexed past $49,423 is under-excluded, and a non-senior whose (1)(f)(iv) deduction is not available at all is over-excluded. Social Security is a different (1)(f) limb and is registered separately at mi-mcl-206-30-f-iii-social-security.',
+      'For the 2026 tax year MCL 206.30(10)(d) lets a Michigan taxpayer deduct retirement or pension benefits as provided under subsection (1)(f), except that amounts deductible under (1)(f)(i) and (ii) combined are subject to the same maximum (1)(f)(iv) allows for a single return and a joint return for that same tax year. Treasury RAB 2026-1 states that for tax year 2026 and each year thereafter, regardless of year of birth, taxpayers may deduct combined public and private retirement benefits up to the inflation-adjusted private retirement maximum under (1)(f)(iv), and that the inflation-adjusted maximum does not apply to the public retirement benefits of taxpayers born before 1946. The 2026 Withholding Guide (Form 446) publishes that ordinary post-1945 qualifying maximum as $67,610 if single or married filing separately, or $135,220 if married filing jointly, and separately that recipients born before 1946 are not taxed on qualifying public benefits. The “payments are made for life to a senior citizen” phrase in (1)(f)(iv) attaches to the retirement-annuity-policy branch, not to every private pension; private benefits include senior-citizen annuities as one private source, and the 2026 ordinary path is not an automatic full exemption of all retirement income. The pack encoding of that ordinary combined ceiling is `{ kind: \'capped\', capPerPerson: 67610 }` with no birth-year test, no public/private split, and no election among subsections (9), (10), and (11). Approximated both directions: a pre-1946 qualifying federal or Michigan public benefit above $67,610 is under-excluded at the shared cap; a nonqualifying amount placed in the retirement bucket is over-excluded; an unrepresented, more favorable subsection-(9) election can be under-excluded; and the per-person `agesAlive` proxy can over- or under-exclude when it does not match the return-level filing-status ceiling. Social Security is a different (1)(f) limb and is registered separately at mi-mcl-206-30-f-iii-social-security.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -1122,11 +1122,53 @@ export const midwestStateRecords = {
       url: 'https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject',
       quotedText:
         'Beginning on and after January 1, 2007, retirement or pension benefits not deductible under subparagraph (i) or subdivision (e) from any other retirement or pension system or benefits from a retirement annuity policy in which payments are made for life to a senior citizen, to a maximum of $42,240.00 for a single return and $84,480.00 for a joint return. The maximum amounts allowed under this subparagraph shall be reduced by the amount of the deduction for retirement or pension benefits claimed under subparagraph (i) or subdivision (e) and by the amount of a deduction claimed under subdivision (p). For the 2008 tax year and each tax year after 2008, the maximum amounts allowed under this subparagraph shall be adjusted by the percentage increase in the United States Consumer Price Index for the immediately preceding calendar year.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1',
+      url: 'https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1',
+      quotedText:
+        'Tax year 2026 and each year thereafter – regardless of year of birth, taxpayers may deduct combined public and private retirement benefits up to the inflation-adjusted private retirement maximum under subsection (1)(f)(iv) of section 30 of the MITA. The inflation-adjusted maximum does not apply to the public retirement benefits of taxpayers born before 1946.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1, Issue 3',
+      url: 'https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1',
+      quotedText:
+        'Under PA 4, for the final phase-in year of 2026, and each tax year thereafter, subtractions of retirement income from these public sources are limited to the private retirement maximum under subsection 30(1)(f)(iv) of the MITA (except for taxpayers born before 1946, for whom retirement subtractions of public benefits remain unlimited). In applying the private retirement maximum, a taxpayer must combine all deductible public retirement income, whether it is federal, Michigan, or from another state government with a similar or reciprocal deduction, and any private retirement income and then apply the limitation to the combined amounts.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1',
+      url: 'https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1',
+      quotedText:
+        'The provisions of subsections (10) and (11) of Section 30 of the MITA are elective. MCL 206.30(10) and (11). Taxpayers may choose the maximum deduction available under either provision, if applicable, or under subsection (9) (the tiered provisions and standard deduction that went into effect in 2012 under 2011 PA 38 and later amendatory acts).',
+    }, {
+      kind: 'formInstruction',
+      citation: '2026 Michigan Income Tax Withholding Guide (Form 446)',
+      url: 'https://www.michigan.gov/taxes/-/media/Project/Websites/taxes/Forms/SUW/TY2026/446_Withholding-Guide_2026.pdf',
+      quotedText:
+        'For 2026, recipients born after 1945 may generally subtract qualifying retirement and pension benefits up to $67,610 if single or married filing separately, or $135,220 if married and filing a joint return.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2026 Michigan Income Tax Withholding Guide (Form 446)',
+      url: 'https://www.michigan.gov/taxes/-/media/Project/Websites/taxes/Forms/SUW/TY2026/446_Withholding-Guide_2026.pdf',
+      quotedText:
+        'Recipients born before 1946 are not taxed on any qualifying pension and retirement benefits received from public sources, and may subtract qualifying private pension and retirement benefits up to the remaining balance of $67,610 if single or married filing separately, or $135,220 if married and filing a joint return.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1, "Pre-2012 Michigan Tax Treatment of Retirement Distributions"',
+      url: 'https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1',
+      quotedText:
+        'A private retirement benefit maximum applied to qualified distributions generally from individual IRAs, private employer retirement plans, plans for self-employed people, and qualified senior citizen retirement annuities. MCL 206.30(1)(f)(iv).',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Mich. Dept. of Treasury, Revenue Administrative Bulletin 2026-1, "What Are Qualifying Retirement and Pension Benefits?"',
+      url: 'https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1',
+      quotedText:
+        'For Michigan purposes, qualifying retirement benefits include most payments that are reported on a Form 1099-R for federal tax purposes. This includes defined benefit pensions, Individual Retirement Arrangement (IRA) distributions, and most payments from defined contribution plans. The distinction between qualified and nonqualified plans is important because it may allow a recipient to subtract some or all of a distribution that is included in AGI.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',

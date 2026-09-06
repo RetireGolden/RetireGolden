@@ -710,6 +710,13 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   MI: [
     // Bare `legislature.mi.gov`: usable MCL URLs carry `www.legislature.mi.gov`.
     'legislature.mi.gov', // Michigan Legislature, Michigan Compiled Laws
+    // Verified 2026-09-05 by fetching the cited Treasury URLs themselves.
+    // RAB 2026-1 and the 2026 Form 446 Withholding Guide are served from
+    // www.michigan.gov/taxes/...; hostAndPublisherOf folds www. to michigan.gov.
+    // This admits the Department of Treasury materials quoted on the MI
+    // retirement record — not a verify-quotes browser-identity FALLBACK_HOSTS
+    // broadening.
+    'michigan.gov',
   ],
   MN: [
     'revisor.mn.gov', // Office of the Revisor of Statutes, Minnesota Statutes

@@ -926,52 +926,151 @@ describeRule('ms-combined-return-runs-the-schedule-per-spouse', {
 
 // ─── WS4d Batch B approximated fixtures ─────────────────────────────────────
 //
-// Closed-form pack math, the same construction as the PA / NY / SC pins above.
-// The engine was not run. Each `produced` value is the figure
-// `computeStateTax` must return given the shipped pack and the scenario;
+// Accepted readings are independent authority worksheets, not engine oracles.
+// Produced readings are model outputs, not statutory oracles. PA / NY / SC and
+// MI all exercise the shipped pack through computeStateTaxableIncome.
 // PRODUCED_TBD is the slot the orchestrator overwrites if a pin cannot be
-// derived from the calculator's published formula. All five of these could.
+// derived from the calculator's published formula.
 
 const PRODUCED_TBD = -1
 
-const MI_RATE = 0.0425
-const miTax = (taxable: number) => Math.max(0, taxable) * MI_RATE
-const MI_PRIVATE = 80_000
-const MI_PACK_CAP = 49_423
+const MI_2026_ORDINARY_CAP = 67_610
+const MI_2026_JOINT_CAP = 135_220
+const MI_STALE_2025_PHASE_IN_CAP = 49_423
+/** Rejected MFJ reading: one $67,610 return ceiling via capPerPerson × agesAlive. */
+const MI_REJECTED_SINGLE_CEILING_PER_PERSON = MI_2026_ORDINARY_CAP / 2
+
+interface MiRetirementCase {
+  ordinaryIncome: number
+  facts: Partial<TaxYearInput>
+  /** Stipulated pre-1946 unlimited qualifying public (case B only). */
+  stipulatedPre1946PublicException?: boolean
+}
+
+// Each element is a separate 2026 return with no other income, Social Security,
+// gains, U.S. government interest, or deductions. A–C are single filers.
+// A and C: expressly a regular qualifying private-employer defined-benefit
+// pension paid after the recipient actually retired under, and satisfied
+// retirement eligibility in, the plan — not an annuity-policy branch and not
+// proved qualifying by age alone.
+// B: expressly a regular qualifying Michigan public defined-benefit pension
+// paid to a taxpayer born in 1945 (age 81 in 2026), with the unlimited
+// pre-1946 public exception elected. agesAlive is only the engine age proxy.
+// D: MFJ with two age-50 spouses and $160,000 stipulated qualifying private
+// defined-benefit retirement ($80,000 each).
+const MI_RETIREMENT_CASES: readonly MiRetirementCase[] = [
+  { ordinaryIncome: 60_000, facts: { privateRetirementIncome: 60_000, agesAlive: [50] } },
+  {
+    ordinaryIncome: 80_000,
+    facts: { publicPensionIncome: 80_000, agesAlive: [81] },
+    stipulatedPre1946PublicException: true,
+  },
+  { ordinaryIncome: 80_000, facts: { privateRetirementIncome: 80_000, agesAlive: [50] } },
+  {
+    ordinaryIncome: 160_000,
+    facts: {
+      filingStatus: 'marriedFilingJointly',
+      privateRetirementIncome: 160_000,
+      agesAlive: [50, 50],
+    },
+  },
+]
+
+function miRetirementDeductionComponent(
+  params: StateTaxParams,
+  { ordinaryIncome, facts }: MiRetirementCase,
+): number {
+  const scenario = input({
+    state: 'MI',
+    ordinaryIncome,
+    ...facts,
+  })
+  // Michigan's modeled standard deduction is 0. With no other modifications on
+  // these inputs, ordinaryIncome - computeStateTaxableIncome isolates the
+  // retirement exclusion. This is deduction-component evidence only — not full
+  // Michigan return taxable income or liability — because the personal
+  // exemption is omitted from the pack.
+  return ordinaryIncome - computeStateTaxableIncome(params, scenario)
+}
+
+function miRetirementDeductionVector(params: StateTaxParams): number[] {
+  return MI_RETIREMENT_CASES.map((c) => miRetirementDeductionComponent(params, c))
+}
 
 describeRule('mi-mcl-206-30-retirement-and-ss', {
   readings: {
-    // (1)(f)(iv) is "payments are made for life to a senior citizen". Fifty
-    // is not a senior citizen, so the statute allows no private-pension
-    // deduction at all.
-    noDeductionUntilSeniorCitizen: miTax(MI_PRIVATE),
-    // Pack `{ kind: 'capped', capPerPerson: 49423 }` has no minAge and no
-    // senior-citizen test, so the cap is granted at any age.
-    flatFortyNineThousandCapAtAnyAge: miTax(MI_PRIVATE - MI_PACK_CAP),
+    // Independent authority worksheet (Guide 446 / RAB 2026-1), not an engine
+    // oracle: A = min(60000, 67610); B = full pre-1946 qualifying public;
+    // C = min(80000, 67610); D = min(160000, 135220) MFJ joint ceiling.
+    statutoryQualifyingBenefits: [60_000, 80_000, 67_610, MI_2026_JOINT_CAP],
+    // Shipped pack through computeStateTaxableIncome on the shared capped rule
+    // (capPerPerson 67610 × agesAlive.length); not a statutory oracle.
+    correctedCoarseSharedCap: [60_000, 67_610, 67_610, MI_2026_JOINT_CAP],
+    // Same shared-rule path with the 2025 phase-in cap of $49,423.
+    stale2025PhaseInCap: [49_423, 49_423, 49_423, 98_846],
+    // Rejected counterfactual: shared capped rule plus minAge: 65.
+    blanketAge65Gate: [0, 67_610, 0, 0],
+    // Rejected counterfactual: shared kind: 'full' exemption.
+    blanketFullExemption: [60_000, 80_000, 80_000, 160_000],
+    // Rejected counterfactual: MFJ return given one $67,610 ceiling instead of
+    // $135,220 (capPerPerson 33805 × two agesAlive on case D only).
+    rejectedSingleCeilingForJoint: [60_000, 67_610, 67_610, MI_2026_ORDINARY_CAP],
   },
-  accepted: 'noDeductionUntilSeniorCitizen',
-  produced: 'flatFortyNineThousandCapAtAnyAge',
-}, ({ accepted, produced }) => {
-  const scenario = input({
-    state: 'MI',
-    ordinaryIncome: MI_PRIVATE,
-    privateRetirementIncome: MI_PRIVATE,
-    agesAlive: [50],
-  })
+  accepted: 'statutoryQualifyingBenefits',
+  produced: 'correctedCoarseSharedCap',
+}, ({ accepted, produced, readings }) => {
+  it('pins the 2026 ordinary combined ceiling while leaving the pre-1946 public exception approximated', () => {
+    const mi = pack('MI')
+    expect(mi.retirementRuleShared).toBe(true)
 
-  it('grants a 50-year-old the $49,423 cap a senior-citizen deduction does not', () => {
-    expect(computeStateTax(pack('MI'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTax(pack('MI'), scenario)).toBeLessThan(accepted)
-    // Derivation the orchestrator observes: (80000 - 49423) × 4.25% = 1300.5225.
-    expect(produced).not.toBe(PRODUCED_TBD)
-  })
+    // Shipped pack must match the produced vector. A $49,423 pack yields the
+    // stale vector, so this assertion catches a stale-cap regression.
+    // `produced` / `accepted` are reading VALUES, not keys.
+    expect(miRetirementDeductionVector(mi)).toEqual(produced)
 
-  it('reaches the statute once the cap is withheld from a non-senior', () => {
-    const noCap = {
-      ...pack('MI'),
-      retirementPrivate: { kind: 'none' as const },
-    }
-    expect(computeStateTax(noCap, scenario)).toBeCloseTo(accepted, 6)
+    // Accepted path: unlimited for the stipulated pre-1946 public case only;
+    // all other cases use the 2026 ordinary cap. Counterfactuals replace
+    // retirementPrivate because the shared rule path ignores retirementPublic.
+    const acceptedDriven = MI_RETIREMENT_CASES.map((c) =>
+      miRetirementDeductionComponent(
+        {
+          ...mi,
+          retirementPrivate:
+            c.stipulatedPre1946PublicException
+              ? { kind: 'full' as const }
+              : { kind: 'capped' as const, capPerPerson: MI_2026_ORDINARY_CAP },
+        },
+        c,
+      ),
+    )
+    expect(acceptedDriven).toEqual(accepted)
+
+    expect(miRetirementDeductionVector({
+      ...mi,
+      retirementPrivate: { kind: 'capped', capPerPerson: MI_STALE_2025_PHASE_IN_CAP },
+    })).toEqual(readings.stale2025PhaseInCap)
+
+    expect(miRetirementDeductionVector({
+      ...mi,
+      retirementPrivate: { kind: 'capped', capPerPerson: MI_2026_ORDINARY_CAP, minAge: 65 },
+    })).toEqual(readings.blanketAge65Gate)
+
+    expect(miRetirementDeductionVector({
+      ...mi,
+      retirementPrivate: { kind: 'full' },
+    })).toEqual(readings.blanketFullExemption)
+
+    expect(MI_RETIREMENT_CASES.map((c) =>
+      c.facts.filingStatus === 'marriedFilingJointly'
+        ? miRetirementDeductionComponent({
+          ...mi,
+          retirementPrivate: {
+            kind: 'capped',
+            capPerPerson: MI_REJECTED_SINGLE_CEILING_PER_PERSON,
+          },
+        }, c)
+        : miRetirementDeductionComponent(mi, c),
+    )).toEqual(readings.rejectedSingleCeilingForJoint)
   })
 })
 
