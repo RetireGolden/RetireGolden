@@ -103,8 +103,10 @@ export interface TaxRuleAuthority {
  *
  * - `staticStatute` — settled statutory mechanics. Re-verify annually, or when
  *   legislation moves.
- * - `annuallyIndexed` — a dollar figure the IRS restates each year. Re-verify
- *   every autumn against the COLA notice.
+ * - `annuallyIndexed` — a dollar figure the responsible tax authority restates
+ *   each year. `taxRuleDueOn` applies a fixed 120-day recency budget from
+ *   `verifiedOn`; it is not aligned to that authority's publication date. Research
+ *   checks should consult each authority's publication cycle when re-verifying.
  * - `awaitingGuidance` — no controlling authority yet. Highest re-verification
  *   value, because a regulation or publication example would settle it.
  * - `sunsetting` — has a known expiry that must be surfaced before it bites.
@@ -525,8 +527,10 @@ export function taxRulesDueForVerification(
 
 /**
  * How stale a rule may become before it must be re-researched. Rules awaiting
- * guidance move fastest because a single regulation would settle them; indexed
- * figures are checked each autumn against the COLA notice.
+ * guidance move fastest because a single regulation would settle them;
+ * `annuallyIndexed` uses a fixed 120-day budget from `verifiedOn`, not an
+ * authority-aligned publication date — research checks should consult each
+ * authority's publication cycle when re-verifying indexed figures.
  */
 export const DEFAULT_REVERIFICATION_INTERVAL_DAYS: Readonly<Record<TaxRuleVolatility, number>> =
   Object.freeze({

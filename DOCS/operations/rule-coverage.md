@@ -11,17 +11,17 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 435 |
-| Classification: approximated | 121 |
+| Total rules | 436 |
+| Classification: approximated | 122 |
 | Classification: outOfScope | 75 |
 | Classification: settled | 234 |
 | Classification: unsettled | 5 |
-| Volatility: annuallyIndexed | 61 |
+| Volatility: annuallyIndexed | 63 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 357 |
+| Volatility: staticStatute | 356 |
 | Volatility: sunsetting | 6 |
 | Federal jurisdiction | 326 |
-| State jurisdiction total | 109 |
+| State jurisdiction total | 110 |
 
 | State jurisdiction | Count |
 | --- | ---: |
@@ -33,7 +33,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | CO | 2 |
 | CT | 1 |
 | DC | 1 |
-| DE | 2 |
+| DE | 3 |
 | FL | 1 |
 | GA | 1 |
 | HI | 1 |
@@ -147,7 +147,7 @@ None.
 | model/planCrossFieldChecks.ts | 2026-09-05 | qualified-annuity start-age ceilings covered; checkAccountCrossFieldRules still directly enforces uncovered Form 8606 basis placement/exclusion on inherited IRAs, qualified-annuity funding from owned traditional funds, QLAC qualification, and other cross-field gates |
 | model/retirementActionAnnualTaxFacts.ts | 2026-09-05 | IRC 219(f)(3) designated post-year contribution window now covered via persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema; remaining persistence contracts are opening-basis, completeness, finalization, identity, and safe-cent totals |
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
-| params/state/data/year2026.ts | 2026-09-05 | de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; Delaware QSS standard-deduction mapping, the 5.5% versus 5.55% bracket band, blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage. |
+| params/state/data/year2026.ts | 2026-09-05 | de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation. The 5.5% versus 5.55% bracket band, blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage. |
 | params/state/index.ts | 2026-09-05 | conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-09-04 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; HSA terminal inclusion base delegated to estateHsaIncome.ts (irc-223-f-8-B-estate-predeath-expense-reduction); terminal zero-haircut spouse destination convention (not rollover or treat-as-own adjudication), charity carve-out, default destination, and other class residuals remain |
@@ -164,7 +164,7 @@ None.
 | projection/internal/annualQcdExecutionInput.ts | 2026-09-02 | the immutable named-QCD preparation coordinator composes the registered annual prerequisite and physical-staging producers. It owns donor alive/prior-offset evidence assembly, including the same registered 846-calendar-month threshold-year convention, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, and complete owned-IRA Form 8606 pool-capacity inputs. These are evidence, transaction-snapshot, and projection-composition semantics; the underlying QCD eligibility, section 219 offset, RMD coordination, and Form 8606 rules remain in their registered action producers. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies post-forced-distribution balances plus owner RMD/basis/offset state and retains the executor call, all gift debits, basis/RMD character, runtime journaling, warnings, cash-flow writes, settlement, and publication |
 | projection/internal/annualRothConversionExecutionInput.ts | 2026-09-02 | the immutable named Roth-conversion preparation coordinator owns request-keyed alive, annual owner-RMD satisfaction, and aggregated-IRA basis evidence; exact-cent floored source-capacity and half-up destination snapshots; and withdrawal-result narrowing of a provisional linked-group release. It composes the registered conversion eligibility producers and already-attested linked-group assessment rather than introducing a new filing-grade rule. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies live post-RMD and post-ordinary-withdrawal balances plus settled owner RMD/basis facts, and retains the named-conversion executor, every debit and credit, Form 8606 and Roth-basis mutation, runtime/application journaling, warnings, settlement, cash-flow publication, and typed result publication to simulatePlan |
 | projection/internal/annualSocialSecurity.ts | 2026-09-05 | former-spouse marital gates now sit on socialSecurityMaritalEligibility records and maritalBenefits helpers. This caller composes candidate/payable months, COLA, haircut, and streams and is not a caller pin. Other genuine surfaces remain on their existing records |
-| projection/internal/types/tax.ts | 2026-09-05 | one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback remains a declaration-only legacy carrier documenting the shared aggregate without enforcing MAGI composition; residual: taxParameterFilingStatus enforces QSS-to-MFJ parameter selection with no direct rule pin or discriminating registered fixture, and its wholesale reuse by state tax parameter selection needs separate jurisdiction review |
+| projection/internal/types/tax.ts | 2026-09-05 | one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback remains a declaration-only legacy carrier documenting the shared aggregate without enforcing MAGI composition; residual: `taxParameterFilingStatus`'s QSS-to-MFJ selection is pinned for Delaware's standard-deduction approximation at `de-pit-est-2026-qss-standard-deduction-joint-mapper`; wholesale reuse by other state parameter selection remains a jurisdiction-specific residual. |
 | projection/optimizePlan.ts | 2026-09-05 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); ACA MAGI cap and pooled RMD divisor recovery are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection; taxpayer-tax direction has not been established); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
@@ -178,7 +178,7 @@ None.
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
 | tax/federalTax.ts | 2026-09-05 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names; shared foreignExclusionAddback reused for both NIIT §1411(d) and senior §151(d)(5)(C)(iii)(II) MAGI remains a disclosed approximation (irc-1411-d-modified-agi-foreign-exclusion-addback) rather than separate statutory addbacks |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
-| tax/stateTax.ts | 2026-09-05 | de-code-30-1108-standard-deduction names computeStateTaxableIncome and age65StandardDeductionAddition for Delaware single/MFJ basic-plus-age; QSS still maps to joint parameters, and other Delaware return limbs remain outside that record. Existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, non-ME gaps unchanged, and stateParamsFor historical fallback: years before the earliest published pack receive that earliest pack with no validity marker so computeStateTaxYearTotal consumes a current-pack approximation without exposing whether the pack is exact |
+| tax/stateTax.ts | 2026-09-05 | Both de-code-30-1108-standard-deduction and de-pit-est-2026-qss-standard-deduction-joint-mapper name computeStateTaxableIncome in this file and age65StandardDeductionAddition in params/index.ts; the first covers Delaware single/MFJ basic-plus-age, while the second discloses the QSS-to-joint standard-deduction approximation; other Delaware return limbs remain outside those records. Existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, non-ME gaps unchanged, and stateParamsFor historical fallback: years before the earliest published pack receive that earliest pack with no validity marker so computeStateTaxYearTotal consumes a current-pack approximation without exposing whether the pack is exact |
 | testing/flatTax.ts | 2026-08-30 | flat-rate test double injected only by test suites - the sole non-test importers are the deprecated projection/flatTax shim that republishes it on the published subpath and the pack-smoke script that verifies that subpath - so no RetireGolden code path injects it outside tests and the IRC 86 85 percent inclusion it applies never reaches a user-facing number; it is published, at testing/flatTax and through the deprecated projection/flatTax subpath, so an external consumer can call it directly; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
 
 ## Coverage shards
@@ -204,14 +204,14 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/socialSecurityMaritalEligibility.json | 4 |
 | rule-coverage/statesMidwest.json | 29 |
 | rule-coverage/statesNortheast.json | 12 |
-| rule-coverage/statesSouthAtlantic.json | 12 |
+| rule-coverage/statesSouthAtlantic.json | 13 |
 | rule-coverage/statesSouthCentral.json | 33 |
 | rule-coverage/statesWest.json | 23 |
 | rule-coverage/transfersAndUnmodeledRegimes.json | 6 |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (435 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (436 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -251,18 +251,18 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-06T02:21:03.127Z over 1200 authority entries (9 fetched live, 320 from cache).
+Committed ledger generated at 2026-09-06T04:28:53.752Z over 1206 authority entries (9 fetched live, 322 from cache).
 
-37 serious, 54 advisory, 1109 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 56 advisory, 1113 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 63 |
-| ELISION-PUNCTUATION | advisory | 5 |
-| EXACT | ok | 827 |
+| ELISION-EXACT | ok | 64 |
+| ELISION-PUNCTUATION | advisory | 7 |
+| EXACT | ok | 829 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 219 |
+| PDF-WORD-LEVEL | ok | 220 |
 | PUNCTUATION | advisory | 42 |
 | UNFETCHABLE | serious | 37 |
 

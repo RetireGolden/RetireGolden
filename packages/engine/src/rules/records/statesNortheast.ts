@@ -186,11 +186,17 @@ export const northeastStateRecords = {
       url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/2026-05/ind_tax_rate_sched_2026_rev.pdf',
       quotedText:
         'Additional Amount for Age or Blindness: $1,650 if married … $2,050 if unmarried (single or head of household)',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. 5403(2)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5403.html',
+      quotedText:
+        'On or about September 15th of each year as specified in this section, the assessor shall multiply the cost-of-living adjustment for taxable years beginning in the succeeding calendar year by the following: … Standard deductions. In 2025 and each year thereafter, by the dollar amount contained in section 5124-C, subsection 1-B, paragraph A, subparagraph (1)',
     }],
-    volatility: 'staticStatute',
+    volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-05',
+    verifiedOn: '2026-09-06',
     implementedBy: [
       'packages/engine/src/params/state/index.ts',
       'packages/engine/src/tax/stateTax.ts',
@@ -249,11 +255,17 @@ export const northeastStateRecords = {
       url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf',
       quotedText:
         'Multiply line 6 by line 5.…Subtract line 7 from line 6. Enter this amount on your 2026 Estimated Tax Worksheet, line 6a.',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. 5403(4)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5403.html',
+      quotedText:
+        'On or about September 15th of each year as specified in this section, the assessor shall multiply the cost-of-living adjustment for taxable years beginning in the succeeding calendar year by the following: … Individual income tax standard deduction and itemized deduction phase-out. Beginning in 2018 and each year thereafter, by the dollar amount contained in the numerator of the fraction specified in section 5124-C, subsection 2, paragraphs A, B and C',
     }],
-    volatility: 'staticStatute',
+    volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-05',
+    verifiedOn: '2026-09-06',
     implementedBy: [
       'packages/engine/src/tax/stateStandardDeduction.ts',
       'packages/engine/src/params/state/data/year2026.ts',

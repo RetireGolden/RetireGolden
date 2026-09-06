@@ -169,7 +169,7 @@
       "title": "Delaware’s standard deduction is $3,250 single and $6,500 joint plus $2,500 per age-65 person",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying surviving spouse years are not certified here: the global tax-status mapper sends QSS to joint parameters, so a survivor receives $6,500 plus $2,500 per age-65 count ($9,000 at age 65) rather than the PIT-EST widow(er) figures of $3,250 and $5,750. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.",
+      "conventionRationale": "Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying-surviving-spouse years are outside this settled single/MFJ record and are disclosed separately at `de-pit-est-2026-qss-standard-deduction-joint-mapper`. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.",
       "contraryReading": null,
       "jurisdiction": "state:DE",
       "volatility": "staticStatute",
@@ -235,6 +235,99 @@
           "citation": "Del. Code tit. 30, 1107",
           "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
         },
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1108(a)(3)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1108(b)(1)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Delaware Division of Revenue, 2026 Form PIT-EST instructions, line 3",
+          "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf"
+        }
+      ]
+    },
+    {
+      "id": "de-pit-est-2026-qss-standard-deduction-joint-mapper",
+      "title": "Delaware QSS is routed through the joint standard-deduction row",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and fixture-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on latest-pack fallback and must be rechecked when a new state pack, form, or amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.",
+      "contraryReading": null,
+      "jurisdiction": "state:DE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-06",
+      "dueOn": "2027-09-06",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/projection/internal/types/tax.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "age65StandardDeductionAddition",
+              "line": 383
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "DE",
+              "line": 266
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/types/tax.ts",
+          "functions": [
+            {
+              "name": "taxParameterFilingStatus",
+              "line": 26
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/delawareQssStandardDeduction.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/delawareQssStandardDeduction.approximation.test.ts",
+          "line": 46,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the QSS joint-row approximation before and after age 65",
+              "line": 55
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
         {
           "kind": "statute",
           "citation": "Del. Code tit. 30, 1108(a)(3)",

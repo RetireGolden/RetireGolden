@@ -4,6 +4,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Ground-truth dashboard follow-up:** corrected the annual re-verification cadence for Maine's indexed standard deduction and phase-out, registered Delaware's still-unfixed 2026 QSS standard-deduction mapping as an approximation, and scoped the settled NIIT lesser-of record to supplied NII and MAGI inputs. Calculator output is unchanged.
 - Reclassified `irc-1411-d-modified-agi-foreign-exclusion-addback` from
   `settled` to `approximated` / `overstatesTax` for the disclosed extra-housing
   NIIT MAGI case: IRC 1411(d) and 151(d)(5)(C)(iii)(II) define different
