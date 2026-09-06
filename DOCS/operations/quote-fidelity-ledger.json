@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-09-06T04:28:53.752Z",
+  "generatedAt": "2026-09-06T15:42:09.520Z",
   "recordCount": 436,
-  "urlCount": 331,
-  "fetched": 9,
-  "cached": 322,
-  "entryCount": 1206,
+  "urlCount": 334,
+  "fetched": 10,
+  "cached": 324,
+  "entryCount": 1221,
   "counts": {
-    "EXACT": 829,
+    "EXACT": 844,
     "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 220,
-    "ELISION-EXACT": 64,
+    "ELISION-EXACT": 63,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
-    "UNFETCHABLE": 37
+    "UNFETCHABLE": 38
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -6631,6 +6631,17 @@
     },
     {
       "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "42 U.S.C. 415(b)(2)(A)(ii)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/ssact/title02/0215.htm",
+      "quoteSha256": "ec4b9b16cdfafb10",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
       "citation": "42 U.S.C. 415(b)(2)(B)(ii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
@@ -6648,6 +6659,160 @@
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "42 U.S.C. 415(b)(3)(A)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/ssact/title02/0215.htm",
+      "quoteSha256": "9d7e695d91bbd5b8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "42 U.S.C. 415(b)(3)(B)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/ssact/title02/0215.htm",
+      "quoteSha256": "8c7e6acd39cdfb87",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(b)(2)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "8d0947be90af57a3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(d)(1)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "bea76b2b262e4df9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(d)(3)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "57622956167b5ad4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(e)(1)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "af90dcf383630b87",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(e)(1)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "610118f2e2391a31",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(e)(1)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "7c039cb911662fed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(e)(3)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "a900b48a6fab1e62",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(e)(3)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "9a4d477ba1953d2e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(e)(4)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "6532a3bbd5de14db",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(e)(4)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "d78dd820a7af2709",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "20 CFR 404.211(f)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm",
+      "quoteSha256": "1ac326063c01fb08",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
+      "citation": "SSA national average wage index series, 2016–2018",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/oact/COLA/awiseries.html",
+      "quoteSha256": "8940fec9bd7400f4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
     },
     {
       "id": "usc-42-423-c-2-ssdi-five-month-waiting-period",
@@ -10742,8 +10907,8 @@
       "host": "www.tn.gov",
       "url": "https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html",
       "quoteSha256": "2284aa3871cc969d",
-      "verdict": "ELISION-EXACT",
-      "detail": "2 segments, every one a literal substring",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {

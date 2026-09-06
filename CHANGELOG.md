@@ -4,6 +4,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **SSDI freeze evidence correction:** replaced a retirement-index proxy that had been labeled as the statutory disability-freeze oracle with a conditional 2019 disability AIME worksheet, separated the unchanged 2026 engine result into characterization coverage, and clarified that `disability.onsetAge` does not establish DIB eligibility facts. Calculator output is unchanged; disability-aware AIME remains unimplemented.
 - **Ground-truth dashboard follow-up:** corrected the annual re-verification cadence for Maine's indexed standard deduction and phase-out, registered Delaware's still-unfixed 2026 QSS standard-deduction mapping as an approximation, and scoped the settled NIIT lesser-of record to supplied NII and MAGI inputs. Calculator output is unchanged.
 - Reclassified `irc-1411-d-modified-agi-foreign-exclusion-addback` from
   `settled` to `approximated` / `overstatesTax` for the disclosed extra-housing

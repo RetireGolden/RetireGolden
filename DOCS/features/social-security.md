@@ -22,7 +22,7 @@ Each person's Primary Insurance Amount is entered one of two ways (a per-person 
   *assume continued work through a stated age*, so the real PIA is lower if you stop earlier.
 - **Earnings history** — paste `year amount` lines or **import mySSA XML** ([ssaStatementXml.ts](../../packages/planner-ui/src/socialSecurity/ssaStatementXml.ts)).
   The engine computes indexed earnings → **AIME** → **PIA** via the 90/32/15% bend-point formula for the
-  correct eligibility year ([piaFromEarnings.ts](../../packages/engine/src/socialSecurity/piaFromEarnings.ts)).
+  ordinary old-age eligibility year ([piaFromEarnings.ts](../../packages/engine/src/socialSecurity/piaFromEarnings.ts)).
 
 Methodology that matters for accuracy:
 
@@ -183,8 +183,10 @@ PIA persists, with no delayed-retirement credits), and is taxed under the same p
 retirement benefits. An off-by-default `disability` input on the SS stream drives the pure
 `socialSecurity/disability.ts` helper and the `projection/internal/annualSocialSecurity.ts` annual phase;
 `simulatePlan` still owns the annual input/effect wiring, and SGA lives in the parameter pack. Documented
-simplifications / registered gaps: the disability freeze (AIME exclusion; onset exists but is ignored —
-`usc-42-415-b-2-b-disability-freeze-aime-exclusion`), the five-month waiting period
+simplifications / registered gaps: annual `disability.onsetAge` changes the SSDI payment path but does not
+change the earnings helper's ordinary retirement indexing year, computation-year count, or bend points — it
+is a planning assumption, not an SSA disability or insured-status adjudication
+(`usc-42-415-b-2-b-disability-freeze-aime-exclusion`); the five-month waiting period
 (`usc-42-423-c-2-ssdi-five-month-waiting-period`), trial-work / EPE annual approximations
 (`cfr-20-404-1592-trial-work-period`, `cfr-20-404-1592a-extended-period-of-eligibility`), the 24-month
 Medicare wait (note-only), and living-child auxiliaries (`usc-42-402-d-2-ssdi-child-auxiliary`). The
