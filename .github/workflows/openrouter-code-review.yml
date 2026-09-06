@@ -40,7 +40,7 @@
 # openai/gpt-5.6-luna judge. Temporary
 # trial windows are documented in the central README at the same pinned revision;
 # the policy applies their time limits at runtime.
-# Policy and trial dates: https://github.com/RetireGolden/.github/blob/133c4a1a7e48c1e416784f69988d7d42d1866c44/README.md
+# Policy and trial dates: https://github.com/RetireGolden/.github/blob/47aa4ad1572f943becd63e0173dbc31e6b945f5d/README.md
 # The Sep 5 trial adds openai/gpt-6-astra via openai/flex only when policy
 # selection occurs before 2026-09-06T04:00:00Z; at/after that instant only
 # the standing roster applies. This condition is in the pinned central policy.
@@ -56,6 +56,11 @@ on:
         description: PR number to review
         required: true
         type: string
+      reset_review:
+        description: Discard review history and start over (normally leave false)
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -68,12 +73,13 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    # Central independent-review workflow pinned to the .github#36 merge commit.
-    # Action#31 adds per-model routing; existing independent gate is unchanged.
+    # Central independent-review workflow pinned to the .github#37 merge commit.
+    # Action#33 retains review history on full-PR rechecks and links follow-up evidence.
     # This trial intentionally consumes an unreleased action commit, identified
-    # by the action#31@ reference in the inline comment; v1.3.1 is its preceding release.
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@133c4a1a7e48c1e416784f69988d7d42d1866c44 # .github#36 (unreleased changes after action v1.3.1; action#31@956b494594d8c7969ec9b355fd11d8e39b3b6161; Astra Flex trial)
+    # by the action#33@ reference in the inline comment; v1.3.1 is its preceding release.
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@47aa4ad1572f943becd63e0173dbc31e6b945f5d # .github#37 (unreleased changes after action v1.3.1; action#33@481069edae02298d4069f03b24ad1cdc67c5f348; Astra Flex trial)
     with:
+      reset_review: ${{ inputs.reset_review || false }}
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

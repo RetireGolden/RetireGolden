@@ -148,6 +148,16 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
 
 ## Repo-specific
 
+- With this repository's review-continuity workflow pin, an ordinary manual
+  dispatch reviews the full PR **without resetting** existing finding IDs,
+  ledger decisions, or rebuttals. This supersedes the older-pin dispatch
+  behavior described in the shared section. Leave `reset_review` false;
+  set it true only when intentionally discarding review history. Keep the
+  rule against redundant dispatches on an already-reviewed head.
+- Poll all pages of reviews, inline comments, and issue comments. Read every
+  continuation part of a large review, and match the explicit reviewed SHA
+  and bot identity before deciding that a head is reviewed or clean.
+
 - Repository admin: @FlyOverCoderKY.
 - Merge grant: standing, recorded by @FlyOverCoderKY on 2026-09-02 (PR
   #588). The post-push-approval and CLA conditions named in the shared
