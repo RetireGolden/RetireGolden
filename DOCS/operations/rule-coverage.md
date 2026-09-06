@@ -12,9 +12,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Metric | Count |
 | --- | ---: |
 | Total rules | 434 |
-| Classification: approximated | 120 |
+| Classification: approximated | 121 |
 | Classification: outOfScope | 75 |
-| Classification: settled | 234 |
+| Classification: settled | 233 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 61 |
 | Volatility: awaitingGuidance | 11 |
@@ -84,9 +84,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Engine source files | 373 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 56 |
+| partial | 57 |
 | registered | 109 |
-| rule-free | 208 |
+| rule-free | 207 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -104,7 +104,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | model | 4 | 4 | 0 | 0 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 9 | 2 | 5 | 2 | 0 |
-| projection | 103 | 20 | 17 | 66 | 0 |
+| projection | 103 | 21 | 17 | 65 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
 | rules | 49 | 0 | 22 | 27 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -164,6 +164,7 @@ None.
 | projection/internal/annualQcdExecutionInput.ts | 2026-09-02 | the immutable named-QCD preparation coordinator composes the registered annual prerequisite and physical-staging producers. It owns donor alive/prior-offset evidence assembly, including the same registered 846-calendar-month threshold-year convention, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, and complete owned-IRA Form 8606 pool-capacity inputs. These are evidence, transaction-snapshot, and projection-composition semantics; the underlying QCD eligibility, section 219 offset, RMD coordination, and Form 8606 rules remain in their registered action producers. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies post-forced-distribution balances plus owner RMD/basis/offset state and retains the executor call, all gift debits, basis/RMD character, runtime journaling, warnings, cash-flow writes, settlement, and publication |
 | projection/internal/annualRothConversionExecutionInput.ts | 2026-09-02 | the immutable named Roth-conversion preparation coordinator owns request-keyed alive, annual owner-RMD satisfaction, and aggregated-IRA basis evidence; exact-cent floored source-capacity and half-up destination snapshots; and withdrawal-result narrowing of a provisional linked-group release. It composes the registered conversion eligibility producers and already-attested linked-group assessment rather than introducing a new filing-grade rule. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies live post-RMD and post-ordinary-withdrawal balances plus settled owner RMD/basis facts, and retains the named-conversion executor, every debit and credit, Form 8606 and Roth-basis mutation, runtime/application journaling, warnings, settlement, cash-flow publication, and typed result publication to simulatePlan |
 | projection/internal/annualSocialSecurity.ts | 2026-09-05 | former-spouse marital gates now sit on socialSecurityMaritalEligibility records and maritalBenefits helpers. This caller composes candidate/payable months, COLA, haircut, and streams and is not a caller pin. Other genuine surfaces remain on their existing records |
+| projection/internal/types/tax.ts | 2026-09-05 | one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback remains a declaration-only legacy carrier documenting the shared aggregate without enforcing MAGI composition; residual: taxParameterFilingStatus enforces QSS-to-MFJ parameter selection with no direct rule pin or discriminating registered fixture, and its wholesale reuse by state tax parameter selection needs separate jurisdiction review |
 | projection/optimizePlan.ts | 2026-09-05 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); ACA MAGI cap and pooled RMD divisor recovery are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection; taxpayer-tax direction has not been established); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
@@ -175,7 +176,7 @@ None.
 | strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
 | strategies/optimizer.ts | 2026-09-05 | Ordinary-bracket PWL registered (irc-1-j-2-progressive-ordinary-rate-schedule); §86 in-solve linearization registered as approximated (irc-86-a-optimizer-taxable-social-security-linearization); senior-deduction phase-out slope registered (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out) with its omitted cap still outside that record; flat 15% LTCG is registered on projection/optimizePlan.ts (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate). IRMAA uniform threshold indexing and beneficiary-month exposure are registered as approximated (usc-42-1395r-i-5-optimizer-uniform-threshold-indexing; usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure). Residual (non-exhaustive): SSA-44 numerical proxy, projected premium-price scaling, top-tier equality handling, and other unlisted linearizations/constraints (e.g. state-bracket PWL) remain unregistered here; IRMAA MAGI omits the direct §135/§911/§931/§933 without-regard addbacks (ledger-feed gap registered at usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback, not pinned here); the provisional-income scalar affects taxable SS, not the IRMAA MAGI base directly; ACA MAGI cap and RMD floor divisor are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection — headroom restriction and floor distortion proved; taxpayer-tax direction has not been established) |
 | strategies/rothConversion.ts | 2026-08-24 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file |
-| tax/federalTax.ts | 2026-08-26 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names |
+| tax/federalTax.ts | 2026-09-05 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names; shared foreignExclusionAddback reused for both NIIT §1411(d) and senior §151(d)(5)(C)(iii)(II) MAGI remains a disclosed approximation (irc-1411-d-modified-agi-foreign-exclusion-addback) rather than separate statutory addbacks |
 | tax/medicare.ts | 2026-08-27 | Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains |
 | tax/stateTax.ts | 2026-09-05 | existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, non-ME gaps unchanged, and stateParamsFor historical fallback: years before the earliest published pack receive that earliest pack with no validity marker so computeStateTaxYearTotal consumes a current-pack approximation without exposing whether the pack is exact |
 | testing/flatTax.ts | 2026-08-30 | flat-rate test double injected only by test suites - the sole non-test importers are the deprecated projection/flatTax shim that republishes it on the published subpath and the pack-smoke script that verifies that subpath - so no RetireGolden code path injects it outside tests and the IRC 86 85 percent inclusion it applies never reaches a user-facing number; it is published, at testing/flatTax and through the deprecated projection/flatTax subpath, so an external consumer can call it directly; kept partial rather than rule-free so the claim stays visible if the file ever gains a production consumer |
@@ -250,18 +251,18 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-06T00:59:43.652Z over 1194 authority entries (13 fetched live, 313 from cache).
+Committed ledger generated at 2026-09-06T01:23:13.710Z over 1196 authority entries (9 fetched live, 319 from cache).
 
-37 serious, 54 advisory, 1103 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 54 advisory, 1105 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 62 |
 | ELISION-PUNCTUATION | advisory | 5 |
-| EXACT | ok | 824 |
+| EXACT | ok | 825 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 217 |
+| PDF-WORD-LEVEL | ok | 218 |
 | PUNCTUATION | advisory | 42 |
 | UNFETCHABLE | serious | 37 |
 

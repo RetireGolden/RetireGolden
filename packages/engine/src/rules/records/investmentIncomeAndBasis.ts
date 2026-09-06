@@ -594,14 +594,14 @@ export const investmentIncomeAndBasisRecords = {
     ],
   },
   'irc-1411-d-modified-agi-foreign-exclusion-addback': {
-    title: 'Modified adjusted gross income adds back excluded foreign income',
+    title: 'NIIT and senior MAGI use different foreign-exclusion addbacks',
     statement:
-      'Two limits in this engine run off modified adjusted gross income rather than adjusted gross income, and both define it as adjusted gross income increased by income the taxpayer excluded from gross income abroad. Section 1411(d) adds the section 911(a)(1) foreign earned income exclusion, net of the deductions section 911(d)(6) disallows, for the net investment income tax. Section 151(d)(5)(C)(iii)(II) adds any amount excluded under section 911, 931, or 933 for the senior deduction phase-out. Reading modified adjusted gross income as plain adjusted gross income understates the tax and overstates the deduction at the same time.',
-    classification: 'settled',
+      'For NIIT, IRC 1411(d) increases adjusted gross income by the section 911(a)(1) exclusion less the specified deductions or exclusions disallowed under section 911(d)(6). The senior deduction uses the different definition in IRC 151(d)(5)(C)(iii)(II), reaching amounts excluded under sections 911, 931, and 933. The engine reuses one foreign-exclusion aggregate for both computations. Where established amounts include foreign housing in addition to foreign earned income and no allocable deductions, including the housing amount in NIIT MAGI can overstate NIIT. The shared aggregate does not establish separate statutory MAGIs.',
+    classification: 'approximated',
     contraryReading: null,
-    errorDirection: null,
+    errorDirection: 'overstatesTax',
     conventionRationale:
-      'The two definitions are not identical: 1411(d) reaches only section 911 and nets out the deductions 911(d)(6) disallows, while 151(d)(5)(C)(iii)(II) reaches sections 911, 931, and 933 with no netting. The engine carries one excluded-foreign-income figure and applies it to both, which is the broader definition in both places. That same figure already feeds section 86 provisional income, where 86(b)(2)(A) likewise reaches 911, 931, and 933, so splitting the two would mean splitting an input the household reports as one number.',
+      'DISCLOSED APPROXIMATION. TaxYearInput carries one foreignExclusionAddback and computeFederalTax adds it to AGI for both NIIT and the senior deduction. The fixture\'s established $20,000 earned-income and $10,000 housing exclusions have no allocable deductions. At $180,000 AGI and $10,000 included investment income, NIIT should be zero but the engine produces $380 (see sibling irc-1411-a-net-investment-income-tax for the 3.8% lesser-of and $200,000 single threshold). A second coordinate at $70,000 AGI retains the legally correct $4,500 senior deduction (see sibling irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out for the $6,000 / 6% / $75,000 parameters); narrowing the shared input for both rules would instead overstate that deduction. The overstatesTax direction describes the extra-exclusion NIIT approximation on these characterized amounts. The legacy field does not identify separate section 911(a)(1) amounts or their allocable deductions, and this record does not certify a gross/net mapping for other compositions. Schedule 1-A\'s Form 2555 line 45 carrier is already net of line 44; the broad senior definition is not an instruction to add gross amounts or net them twice.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -617,6 +617,18 @@ export const investmentIncomeAndBasisRecords = {
         'For purposes of this clause, the term "modified adjusted gross income" means the adjusted gross income of the taxpayer for the taxable year increased by any amount excluded from gross income under section 911, 931, or 933.',
     }, {
       kind: 'formInstruction',
+      citation: 'Form 2555 (2025), page 3, lines 36 and 42 to 45',
+      url: 'https://www.irs.gov/pub/irs-pdf/f2555.pdf',
+      quotedText:
+        'Housing exclusion. Multiply line 33 by line 35. Enter the result but don\'t enter more than the amount on line 34. Also, complete Part VIII … Foreign earned income exclusion. Enter the smaller of line 40 or line 41. Also, complete Part VIII … Add lines 36 and 42 … Deductions allowed in figuring your adjusted gross income (Form 1040 or 1040-SR, line 11) that are allocable to the excluded income. See instructions and attach computation … Subtract line 44 from line 43. Enter the result here and on Schedule 1 (Form 1040), line 8d.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8960 (2025), Part III, Line 13—MAGI, Section 911',
+      url: 'https://www.irs.gov/instructions/i8960#en_US_2025_publink10004435',
+      quotedText:
+        'If you exclude amounts from income under section 911, to calculate your MAGI, you must increase your AGI by the excess of the amount excluded from income under section 911(a)(1) over the amount of any deductions (taken into account in computing AGI) or exclusions disallowed under section 911(d)(6) for the amount excluded from income under section 911(a)(1).',
+    }, {
+      kind: 'formInstruction',
       citation: 'Schedule 1-A (Form 1040) (2025), Part I, lines 1 to 3',
       url: 'https://www.irs.gov/pub/irs-pdf/f1040s1a.pdf',
       quotedText:
@@ -625,7 +637,7 @@ export const investmentIncomeAndBasisRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-28',
+    verifiedOn: '2026-09-05',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
       'packages/engine/src/tax/federalTax.ts#computeFederalTax',

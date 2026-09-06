@@ -4,9 +4,9 @@
   "registry": {
     "total": 434,
     "byClassification": {
-      "approximated": 120,
+      "approximated": 121,
       "outOfScope": 75,
-      "settled": 234,
+      "settled": 233,
       "unsettled": 5
     },
     "byVolatility": {
@@ -76,9 +76,9 @@
   "attestations": {
     "totalFiles": 373,
     "byStatus": {
-      "partial": 56,
+      "partial": 57,
       "registered": 109,
-      "rule-free": 208,
+      "rule-free": 207,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -292,6 +292,11 @@
       "note": "former-spouse marital gates now sit on socialSecurityMaritalEligibility records and maritalBenefits helpers. This caller composes candidate/payable months, COLA, haircut, and streams and is not a caller pin. Other genuine surfaces remain on their existing records"
     },
     {
+      "path": "projection/internal/types/tax.ts",
+      "sweptOn": "2026-09-05",
+      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback remains a declaration-only legacy carrier documenting the shared aggregate without enforcing MAGI composition; residual: taxParameterFilingStatus enforces QSS-to-MFJ parameter selection with no direct rule pin or discriminating registered fixture, and its wholesale reuse by state tax parameter selection needs separate jurisdiction review"
+    },
+    {
       "path": "projection/optimizePlan.ts",
       "sweptOn": "2026-09-05",
       "note": "Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); ACA MAGI cap and pooled RMD divisor recovery are documented policy/model residuals in DOCS/features/optimizer.md §\"Documented simplifications\" (no registry record or errorDirection; taxpayer-tax direction has not been established); other optimizer linearizations remain unregistered"
@@ -348,8 +353,8 @@
     },
     {
       "path": "tax/federalTax.ts",
-      "sweptOn": "2026-08-26",
-      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names"
+      "sweptOn": "2026-09-05",
+      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names; shared foreignExclusionAddback reused for both NIIT §1411(d) and senior §151(d)(5)(C)(iii)(II) MAGI remains a disclosed approximation (irc-1411-d-modified-agi-foreign-exclusion-addback) rather than separate statutory addbacks"
     },
     {
       "path": "tax/medicare.ts",
@@ -462,9 +467,9 @@
       "directory": "projection",
       "files": 103,
       "byStatus": {
-        "partial": 20,
+        "partial": 21,
         "registered": 17,
-        "rule-free": 66
+        "rule-free": 65
       }
     },
     {
@@ -647,16 +652,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-06T00:59:43.652Z",
-    "entryCount": 1194,
-    "fetched": 13,
-    "cached": 313,
+    "generatedAt": "2026-09-06T01:23:13.710Z",
+    "entryCount": 1196,
+    "fetched": 9,
+    "cached": 319,
     "counts": {
       "ELISION-EXACT": 62,
       "ELISION-PUNCTUATION": 5,
-      "EXACT": 824,
+      "EXACT": 825,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 217,
+      "PDF-WORD-LEVEL": 218,
       "PUNCTUATION": 42,
       "UNFETCHABLE": 37
     }

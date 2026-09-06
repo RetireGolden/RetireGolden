@@ -42,20 +42,20 @@ export interface TaxYearInput {
    */
   taxExemptInterest?: number
   /**
-   * Income excluded from AGI under the foreign and possessions exclusions —
-   * §911 foreign earned income and housing, and §931/§933 possessions income
-   * (American Samoa, Guam, the Northern Marianas, Puerto Rico), which is not
-   * "foreign earned" in the §911 sense but is excluded all the same. The engine
-   * carries one figure for all of them.
-   *
-   * It is not ordinary taxable income and never enters the AGI line, but three
-   * separate definitions reach past AGI to pick it back up: IRC §86 puts it
-   * into Social Security provisional income, §1411(d) and
-   * §151(d)(5)(C)(iii)(II) put it into the modified AGI that prices the NIIT
-   * threshold and the senior-deduction phase-out, and ACA household MAGI
-   * carries it too. Omitting it therefore understates tax and overstates the
-   * senior deduction at once — supply it whenever the household claims any of
-   * those exclusions, not only when Social Security is in play.
+   * Legacy foreign-exclusion aggregate excluded from AGI under §911 foreign
+   * earned income and housing and §931/§933 possessions income (American Samoa,
+   * Guam, the Northern Marianas, Puerto Rico). The engine carries one
+   * nonnegative figure for all of them. It is not ordinary taxable income and
+   * never enters the AGI line. When omitted, `computeFederalTax` defaults to
+   * zero — NIIT can be understated and the senior deduction overstated. Supply
+   * this field whenever the household claims §§911, 931, or 933 exclusions, not
+   * only when Social Security is in play. IRC §86 puts a foreign-exclusion
+   * amount into Social Security provisional income; §1411(d) and
+   * §151(d)(5)(C)(iii)(II) define different modified-AGI addbacks for NIIT
+   * and the senior-deduction phase-out; ACA household MAGI carries a foreign
+   * addback too. This shared field is a disclosed legacy carrier: it does not
+   * certify the separate statutory gross/net mappings those definitions
+   * require. See irc-1411-d-modified-agi-foreign-exclusion-addback.
    */
   foreignExclusionAddback?: number
   /**

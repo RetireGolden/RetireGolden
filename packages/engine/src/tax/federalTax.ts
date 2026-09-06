@@ -8,15 +8,18 @@
  *   2. AGI = ordinary + capital gains + taxable SS. Tax-exempt interest and
  *      income excluded under the §911/§931/§933 foreign and possessions
  *      exclusions affect §86 provisional income without becoming ordinary
- *      income or entering AGI directly. MAGI restores those exclusions
- *      (§1411(d), §151(d)(5)(C)(iii)(II)).
- *   3. Deductions: the greater of the standard deduction (with age-65
- *      additions) or itemized SALT (capped) + mortgage interest + charitable,
- *      plus the OBBBA senior deduction on top of whichever base wins
- *      (2025–2028, per-person 6%-of-MAGI phase-out)
+ *      income or entering AGI directly. One shared foreignExclusionAddback
+ *      approximates the different MAGI addbacks (§1411(d), §151(d)(5)(C)(iii)(II)).
+ *   3. Deductions: assemble an itemized candidate (capped SALT + mortgage
+ *      interest + charitable after the §170 floor), apply the §68 overall
+ *      limitation, then take the greater of that reduced itemized total or the
+ *      standard deduction (with age-65 additions); the OBBBA senior deduction
+ *      rides on top of whichever base wins (2025–2028, per-person 6%-of-MAGI
+ *      phase-out)
  *   4. Ordinary brackets on non-preferential taxable income
  *   5. LTCG/qualified-dividend stacking at 0/15/20% on top of ordinary
- *   6. NIIT 3.8% on investment income over the (unindexed) MAGI threshold
+ *   6. NIIT 3.8% of the lesser of net investment income or the nonnegative
+ *      MAGI excess over the (unindexed) threshold
  *   7. Planning-grade AMT screen: modeled add-backs/preference items (the §63(c)
  *      standard deduction or itemized SALT, plus the §151 senior deduction on
  *      either branch per §56(b)(1)(D)), AMT exemption/phaseout, and
@@ -507,14 +510,14 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   )
   const agiBeforeFloor = agiExcludingSs + taxableSs
   const agi = Math.max(0, agiBeforeFloor) // return-level floor for tax / MAGI / IRMAA
-  // Two limits below run off modified AGI rather than the AGI line, and both
-  // definitions restore income excluded abroad: §1411(d) is AGI "increased by
-  // the excess of (1) the amount excluded from gross income under section
-  // 911(a)(1)" over the deductions §911(d)(6) disallows, and
-  // §151(d)(5)(C)(iii)(II) is AGI "increased by any amount excluded from gross
-  // income under section 911, 931, or 933". The engine carries one
-  // excluded-foreign-income figure and applies the broader definition to both
-  // — the same figure §86(b)(2)(A) already puts into provisional income above.
+  // Two limits below run off modified AGI rather than the AGI line, and the
+  // statutes define different foreign addbacks: §1411(d) restores the
+  // §911(a)(1) exclusion net of §911(d)(6) disallowances, while
+  // §151(d)(5)(C)(iii)(II) restores amounts excluded under §§911, 931, or 933.
+  // The engine still carries one foreignExclusionAddback and adds it to AGI
+  // for both — a disclosed approximation
+  // (irc-1411-d-modified-agi-foreign-exclusion-addback). That same aggregate
+  // is already included in provisional income under §86(b)(2)(A) above.
   const magi = agi + Math.max(0, input.foreignExclusionAddback ?? 0)
 
   const senior = seniorDeductionAmount(pack, year, taxStatus, input.peopleAged65Plus, magi)
