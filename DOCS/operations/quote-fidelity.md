@@ -198,12 +198,20 @@ policy for reading public law and public-domain federal work.
 On exactly that refusal class, and only for hosts admitted to a small
 allowlist (`FALLBACK_HOSTS` in the script - each admitted only after its
 robots.txt was read and found to permit the cited paths), the verifier
-retries once as a mainstream browser. The retry is disclosed, never silent: a
-row verified through it carries `fetchProfile: "browserFallback"` in the
-committed ledger, and the cache meta records the same. The transparent
-identity always goes first because at least one publisher requires it - eCFR
-serves the full regulation only to the compatible-bot shape and a stub to
-browsers. www.jct.gov is deliberately outside the allowlist: it runs an
+retries once as a mainstream browser with `redirect: "error"` so the
+fallback identity cannot be forwarded to a redirected host. Transparent
+attempts still follow redirects and keep honest 200 responses even when the
+final host differs from the cited one; the same-approved-HTTPS-host check
+applies only as a prerequisite to issuing that browser retry, not as a
+restriction on transparent successes. A transparent refusal that landed on
+an excluded host after redirect (for example `legislature.mi.gov`) stays the
+original HTTP refusal with no browser retry. The retry is disclosed, never
+silent: a row verified through it carries `fetchProfile:
+"browserFallback"` in the committed ledger, and the cache meta records the
+same plus a `fetchPolicyVersion` marker so older fallback rows that lacked
+redirect validation are refetched. The transparent identity always goes
+first because at least one publisher requires it - eCFR serves the full
+regulation only to the compatible-bot shape and a stub to browsers. www.jct.gov is deliberately outside the allowlist: it runs an
 interactive challenge, and the stance recorded elsewhere in this document -
 report `UNFETCHABLE`, never work around it - is unchanged.
 

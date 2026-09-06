@@ -1019,20 +1019,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1402,
+          "line": 1433,
           "note": "private-bucket defined-benefit limb",
           "tests": [
             {
               "title": "taxes a private-employer 414(j) pension above the $6,000 private-bucket cap",
-              "line": 1429
+              "line": 1460
             },
             {
               "title": "taxes the whole pension for an under-65 private defined-benefit retiree",
-              "line": 1437
+              "line": 1468
             },
             {
               "title": "reaches the booklet for the private pension once that bucket is full",
-              "line": 1452
+              "line": 1483
             }
           ]
         }
@@ -1172,12 +1172,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1523,
+          "line": 1554,
           "note": null,
           "tests": [
             {
               "title": "charges tax on the exemption dollars every Alabama return subtracts",
-              "line": 1542
+              "line": 1573
             }
           ]
         }
@@ -1367,20 +1367,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1462,
+          "line": 1493,
           "note": null,
           "tests": [
             {
               "title": "grants the $3,000 single maximum where the chart has slid to $2,500",
-              "line": 1484
+              "line": 1515
             },
             {
               "title": "reaches the chart once the pack deduction is replaced with the slid amount",
-              "line": 1492
+              "line": 1523
             },
             {
               "title": "grants the $8,500 joint maximum where the chart row reads $5,000",
-              "line": 1503
+              "line": 1534
             }
           ]
         }
@@ -1568,16 +1568,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1331,
+          "line": 1362,
           "note": null,
           "tests": [
             {
               "title": "pins the held-forward unindexed $12,000 against the CPI-U indexing method",
-              "line": 1359
+              "line": 1390
             },
             {
               "title": "withholds the exemption at 64, which is the age the statute names",
-              "line": 1371
+              "line": 1402
             }
           ]
         }

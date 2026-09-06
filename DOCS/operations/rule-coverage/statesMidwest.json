@@ -1026,12 +1026,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 982,
+          "line": 1000,
           "note": null,
           "tests": [
             {
               "title": "pins the 2026 ordinary combined ceiling while leaving the pre-1946 public exception approximated",
-              "line": 1003
+              "line": 1022
             }
           ]
         }
@@ -1119,16 +1119,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1062,
+          "line": 1093,
           "note": null,
           "tests": [
             {
               "title": "leaves the whole federally taxable share in, with no subdivision-26 subtraction",
-              "line": 1079
+              "line": 1110
             },
             {
               "title": "reaches the statute once the simplified subtraction is taken off the base",
-              "line": 1087
+              "line": 1118
             }
           ]
         }
@@ -1936,20 +1936,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1109,
+          "line": 1140,
           "note": null,
           "tests": [
             {
               "title": "exempts a school-retirement annuity the closed list does not name",
-              "line": 1126
+              "line": 1157
             },
             {
               "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1132
+              "line": 1163
             },
             {
               "title": "reaches the statute once the public override is dropped",
-              "line": 1142
+              "line": 1173
             }
           ]
         }

@@ -250,7 +250,7 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-06T00:03:11.363Z over 1194 authority entries (10 fetched live, 316 from cache).
+Committed ledger generated at 2026-09-06T00:59:43.652Z over 1194 authority entries (13 fetched live, 313 from cache).
 
 37 serious, 54 advisory, 1103 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.

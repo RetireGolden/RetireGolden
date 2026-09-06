@@ -121,6 +121,53 @@ const FALLBACK_STATUSES = new Set([401, 403, 406])
 const FALLBACK_HOSTS = new Set(['www.ssa.gov', 'www.michigan.gov'])
 
 /**
+ * Cache meta marker for the redirect-same-host fetch policy. Browser-fallback
+ * entries written before this version are refetched so an old retry that
+ * followed a redirect off the approved host cannot replay as evidence.
+ */
+export const FETCH_POLICY_VERSION = 'redirect-same-host-v1'
+
+/**
+ * Whether a refused transparent fetch on an allowlisted host may earn the one
+ * disclosed browser retry. The original and final URLs must stay on the same
+ * approved HTTPS host with no scheme downgrade and no embedded credentials.
+ * Honest transparent successes are not gated here — cross-host redirects that
+ * serve 200 stay accepted; this guard only blocks retry when the refusal
+ * happened after leaving the cited host.
+ *
+ * @param {string} originalUrl
+ * @param {string} finalUrl
+ * @returns {{ ok: true } | { ok: false, reason: string }}
+ */
+export function sameApprovedFetchHost(originalUrl, finalUrl) {
+  if (!finalUrl) {
+    return { ok: false, reason: 'redirect response has no final URL' }
+  }
+  try {
+    const original = new URL(originalUrl)
+    const final = new URL(finalUrl)
+    if (original.protocol !== 'https:') {
+      return { ok: false, reason: `source URL must be HTTPS, not ${original.protocol}` }
+    }
+    if (original.username || original.password) {
+      return { ok: false, reason: 'source URL carries credentials' }
+    }
+    if (final.protocol !== 'https:') {
+      return { ok: false, reason: `redirect downgraded scheme to ${final.protocol}` }
+    }
+    if (final.username || final.password) {
+      return { ok: false, reason: 'redirect URL carries credentials' }
+    }
+    if (final.host !== original.host) {
+      return { ok: false, reason: `redirect landed on unapproved host ${final.host}` }
+    }
+    return { ok: true }
+  } catch {
+    return { ok: false, reason: 'malformed URL in redirect check' }
+  }
+}
+
+/**
  * Whether a refused response earns the one disclosed browser-identity retry.
  * Pure so the ladder's gate is testable offline.
  *
@@ -593,10 +640,10 @@ function readCacheMeta(metaPath) {
 
 /**
  * @param {string} url
- * @param {{cacheDir: string, refresh: boolean, delayMs: number}} opts
- * @returns {Promise<{body: Buffer, contentType: string, status: number, fromCache: boolean, fetchProfile: 'transparent' | 'browserFallback', error?: string}>}
+ * @param {{cacheDir: string, refresh: boolean, delayMs: number, fetchImpl?: typeof fetch}} opts
+ * @returns {Promise<{body: Buffer, contentType: string, status: number, finalUrl: string, fromCache: boolean, fetchProfile: 'transparent' | 'browserFallback', error?: string}>}
  */
-async function fetchWithCache(url, opts) {
+export async function fetchWithCache(url, opts) {
   const key = cacheKey(url)
   const bodyPath = join(opts.cacheDir, `${key}.body`)
   const metaPath = join(opts.cacheDir, `${key}.meta.json`)
@@ -637,12 +684,15 @@ async function fetchWithCache(url, opts) {
         // A cached refusal from before a host joined the allowlist would
         // replay the 403 forever and the ladder would never run; a refused
         // status on an allowlisted host is a cache miss, not evidence.
-        !(fallbackEligible(new URL(url).host, meta.status ?? 0) && meta.fetchProfile !== 'browserFallback')
+        !(fallbackEligible(new URL(url).host, meta.status ?? 0) && meta.fetchProfile !== 'browserFallback') &&
+        // Browser-fallback rows cached before redirect validation cannot replay.
+        !(meta.fetchProfile === 'browserFallback' && meta.fetchPolicyVersion !== FETCH_POLICY_VERSION)
       ) {
         return {
           body: cached,
           contentType: meta.contentType ?? '',
           status: meta.status ?? 0,
+          finalUrl: url,
           fromCache: true,
           fetchProfile: meta.fetchProfile === 'browserFallback' ? 'browserFallback' : 'transparent',
         }
@@ -650,15 +700,20 @@ async function fetchWithCache(url, opts) {
     }
   }
   await sleep(opts.delayMs)
+  const fetchImpl = opts.fetchImpl ?? fetch
   let fetchProfile = /** @type {'transparent' | 'browserFallback'} */ ('transparent')
-  let result = await fetchOnce(url, USER_AGENT)
-  if (result.error === undefined && fallbackEligible(new URL(url).host, result.status)) {
-    // The transparent identity was explicitly refused by an allowlisted host.
-    // One disclosed retry as a browser; the retry result is used only if the
-    // host actually serves a document rather than a challenge page — caching a
-    // dressed-up block as a success would later read as a false ABSENT.
+  let result = await fetchOnce(url, USER_AGENT, { redirect: 'follow', fetchImpl })
+  if (
+    result.error === undefined &&
+    fallbackEligible(new URL(url).host, result.status) &&
+    sameApprovedFetchHost(url, result.finalUrl).ok
+  ) {
+    // The transparent identity was explicitly refused by an allowlisted host on
+    // that same host — never after a redirect to a different one. One disclosed
+    // retry as a browser with redirects refused at the fetch layer so the
+    // fallback identity cannot be forwarded to another host.
     await sleep(opts.delayMs)
-    const retried = await fetchOnce(url, BROWSER_FALLBACK_UA)
+    const retried = await fetchOnce(url, BROWSER_FALLBACK_UA, { redirect: 'error', fetchImpl })
     if (
       retried.error === undefined &&
       retried.status >= 200 && retried.status < 300 &&
@@ -679,7 +734,19 @@ async function fetchWithCache(url, opts) {
       writeFileSync(bodyPath, result.body)
       writeFileSync(
         metaPath,
-        `${JSON.stringify({ url, status: result.status, contentType: result.contentType, fetchedAt: new Date().toISOString(), bytes: result.body.length, fetchProfile }, null, 1)}\n`,
+        `${JSON.stringify(
+          {
+            url,
+            status: result.status,
+            contentType: result.contentType,
+            fetchedAt: new Date().toISOString(),
+            bytes: result.body.length,
+            fetchProfile,
+            ...(fetchProfile === 'browserFallback' ? { fetchPolicyVersion: FETCH_POLICY_VERSION } : {}),
+          },
+          null,
+          1,
+        )}\n`,
       )
     } catch (err) {
       warnLocalIo(`could not write the source cache in ${opts.cacheDir}`, err)
@@ -692,14 +759,20 @@ async function fetchWithCache(url, opts) {
  * One fetch attempt under one client identity. Streaming, capped, no caching —
  * the caller owns persistence and the identity ladder.
  *
+ * Transparent attempts follow redirects and preserve the final response URL.
+ * Browser-fallback attempts refuse redirects at the fetch layer.
+ *
  * @param {string} url
  * @param {string} userAgent
- * @returns {Promise<{body: Buffer, contentType: string, status: number, fromCache: false, error?: string}>}
+ * @param {{ redirect?: RequestRedirect, fetchImpl?: typeof fetch }} [opts]
+ * @returns {Promise<{body: Buffer, contentType: string, status: number, finalUrl: string, fromCache: false, error?: string}>}
  */
-async function fetchOnce(url, userAgent) {
+async function fetchOnce(url, userAgent, opts = {}) {
+  const redirect = opts.redirect ?? 'follow'
+  const fetchImpl = opts.fetchImpl ?? fetch
   try {
-    const response = await fetch(url, {
-      redirect: 'follow',
+    const response = await fetchImpl(url, {
+      redirect,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: {
         'user-agent': userAgent,
@@ -707,6 +780,7 @@ async function fetchOnce(url, userAgent) {
         'accept-language': 'en-US,en;q=0.9',
       },
     })
+    const finalUrl = response.url
     // Bounded read, enforced while reading rather than after. An earlier
     // version checked `content-length` and then called `arrayBuffer()`, which
     // is not a bound at all: a server that omits the header, understates it, or
@@ -719,6 +793,7 @@ async function fetchOnce(url, userAgent) {
       body: Buffer.alloc(0),
       contentType,
       status: response.status,
+      finalUrl,
       fromCache: false,
     }
     if (response.body === null) {
@@ -738,9 +813,16 @@ async function fetchOnce(url, userAgent) {
       chunks.push(buf)
     }
     const body = Buffer.concat(chunks)
-    return { body, contentType, status: response.status, fromCache: false }
+    return { body, contentType, status: response.status, finalUrl, fromCache: false }
   } catch (err) {
-    return { body: Buffer.alloc(0), contentType: '', status: 0, fromCache: false, error: String(err) }
+    return {
+      body: Buffer.alloc(0),
+      contentType: '',
+      status: 0,
+      finalUrl: url,
+      fromCache: false,
+      error: String(err),
+    }
   }
 }
 

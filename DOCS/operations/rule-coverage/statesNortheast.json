@@ -139,20 +139,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1278,
+          "line": 1309,
           "note": null,
           "tests": [
             {
               "title": "exempts a noncontributory public pension the statute leaves in",
-              "line": 1297
+              "line": 1328
             },
             {
               "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1306
+              "line": 1337
             },
             {
               "title": "reaches the statute once the public override is dropped",
-              "line": 1316
+              "line": 1347
             }
           ]
         }
@@ -563,20 +563,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1163,
+          "line": 1194,
           "note": null,
           "tests": [
             {
               "title": "grants a $50,000 subtraction to a household over the $150,000 AGI ceiling",
-              "line": 1180
+              "line": 1211
             },
             {
               "title": "reaches the statute once the cap is withheld",
-              "line": 1186
+              "line": 1217
             },
             {
               "title": "under-excludes a single filer below $100,000 of income, in the other direction",
-              "line": 1194
+              "line": 1225
             }
           ]
         }
