@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "DC",
-              "line": 280
+              "line": 281
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -165,6 +165,94 @@
       ]
     },
     {
+      "id": "de-code-30-1108-standard-deduction",
+      "title": "Delaware’s standard deduction is $3,250 single and $6,500 joint plus $2,500 per age-65 person",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. Verification is against the 2026 parameter pack; statutory operative dates reach earlier taxable periods. Qualifying surviving spouse years are not certified here: the global tax-status mapper sends QSS to joint parameters, so a survivor receives $6,500 plus $2,500 per age-65 count ($9,000 at age 65) rather than the PIT-EST widow(er) figures of $3,250 and $5,750. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.",
+      "contraryReading": null,
+      "jurisdiction": "state:DE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-05",
+      "dueOn": "2027-09-05",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "age65StandardDeductionAddition",
+              "line": 383
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "DE",
+              "line": 263
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/delawareStandardDeduction.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/delawareStandardDeduction.rules.test.ts",
+          "line": 81,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts the § 1108 basic and age-65 amounts through the published Delaware pack",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1107",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1108(a)(3)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, 1108(b)(1)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Delaware Division of Revenue, 2026 Form PIT-EST instructions, line 3",
+          "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf"
+        }
+      ]
+    },
+    {
       "id": "fl-const-7-5-a-income-tax-prohibited",
       "title": "No Florida income tax reaches a natural person",
       "classification": "settled",
@@ -187,7 +275,7 @@
           "functions": [
             {
               "name": "FL",
-              "line": 297
+              "line": 298
             }
           ]
         },
@@ -270,7 +358,7 @@
           "functions": [
             {
               "name": "GA",
-              "line": 304
+              "line": 305
             }
           ]
         },
@@ -352,7 +440,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 436
+              "line": 437
             }
           ]
         },
@@ -424,7 +512,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 436
+              "line": 437
             }
           ]
         },
@@ -519,7 +607,7 @@
           "functions": [
             {
               "name": "NC",
-              "line": 641
+              "line": 642
             }
           ]
         },
@@ -582,7 +670,7 @@
           "functions": [
             {
               "name": "states.SC",
-              "line": 736
+              "line": 737
             }
           ]
         },
@@ -658,7 +746,7 @@
           "functions": [
             {
               "name": "VA",
-              "line": 786
+              "line": 787
             }
           ]
         },
@@ -736,7 +824,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 807
+              "line": 808
             }
           ]
         },
@@ -818,7 +906,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 807
+              "line": 808
             }
           ]
         },

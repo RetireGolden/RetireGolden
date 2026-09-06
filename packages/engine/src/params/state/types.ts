@@ -71,11 +71,14 @@ export interface StateTaxParams {
    *
    * Whole-federal basic conformity also implies the federal age-65 additional
    * amount under IRC 63(c)(1)/(3): a state pointing at "the federal standard
-   * deduction" is pointing at that sum. A state that publishes its own basic
-   * amount leaves this flag absent. Maine and South Carolina both decoupled the
-   * basic for 2026; Maine still adopts the federal additional amount through
+   * deduction" is pointing at that sum. See `standardDeductionAge65Addition`
+   * for that federal limb. A state that publishes its own basic amount leaves
+   * this flag absent. Maine and South Carolina both decoupled the basic for
+   * 2026; Maine still adopts the federal additional amount through
    * `standardDeductionAge65AdditionConformity`, which is independent of this
-   * flag. See `standardDeductionAge65Addition`.
+   * flag. A state that publishes its own fixed age addition instead carries it
+   * in the pack without either conformity tag; only a federally tagged value
+   * scales with federal inflation.
    */
   standardDeductionConformity?: 'federal'
   /**
@@ -92,19 +95,22 @@ export interface StateTaxParams {
    */
   standardDeductionAge65AdditionConformity?: 'federal'
   /**
-   * Per-person federal additional standard deduction for age 65 or older (IRC
-   * 63(c)(3), 63(f)(1)), attached by `conformStateStandardDeduction` when the
-   * state borrows that federal additional amount — either because its whole
-   * deduction is federal (`standardDeductionConformity: 'federal'`) or because
-   * it adopts only the additional amount
-   * (`standardDeductionAge65AdditionConformity: 'federal'`).
+   * Per-person additional standard deduction for age 65 or older, multiplied by
+   * `peopleAged65Plus` in `computeStateTaxableIncome`.
    *
-   * NOT part of the published pack data. The resolver attaches it from the
-   * federal pack for the year, scaled by the same inflation factor used for a
-   * borrowed federal basic when that path applies. A raw `stateParamsFor`
-   * result therefore carries neither an indexed borrowed basic nor this field;
-   * conforming before pricing a household-year is the contract, and
-   * `computeStateTaxYearTotal` is where it is met.
+   * Two sources. For a state tagged `standardDeductionConformity: 'federal'` or
+   * `standardDeductionAge65AdditionConformity: 'federal'`,
+   * `conformStateStandardDeduction` attaches the federal IRC 63(c)(3)/63(f)(1)
+   * amount from the federal pack, scaled by the same inflation factor as a
+   * borrowed federal basic when that path applies — a borrowed federal figure,
+   * not editable in the state pack. For a state that publishes its own fixed
+   * statutory addition (Delaware is the type case), the pack carries the
+   * per-status dollar amount directly and no conformity tag is set, so the
+   * figure stays frozen at the pack value. A raw `stateParamsFor` result for a
+   * federally tagged state therefore carries neither an indexed borrowed basic
+   * nor a resolver-attached addition; conforming before pricing a federally
+   * tagged household-year is the contract, and `computeStateTaxYearTotal` is
+   * where it is met.
    *
    * Stored per person rather than pre-multiplied by the household's head count
    * so `prorateParams` can scale it for part-year residency exactly as it scales

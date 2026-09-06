@@ -63,6 +63,9 @@ export function stateParamsFor(code: string, year: number): StateTaxParams | und
  *   Maine is the type case (36 M.R.S. §5124-C(1-B)). The basic is left alone;
  *   only the addition is attached and scaled.
  *
+ * States that publish a fixed statutory age addition of their own carry it in the
+ * pack instead; only a federally tagged value is attached and scaled here.
+ *
  * When neither policy applies, params are returned unchanged. Blindness under
  * 63(f)(2) is not modeled. Nothing else in the pack is touched: not brackets,
  * and not retirement-exclusion caps.

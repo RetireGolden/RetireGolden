@@ -2082,7 +2082,7 @@ describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
 const DE_SS_OTHER_INCOME = 90_000
 const DE_SS_BENEFITS = 40_000
 const DE_FEDERALLY_TAXABLE_SS = 0.85 * DE_SS_BENEFITS
-const DE_DEDUCTION_SINGLE = 5_700
+const DE_DEDUCTION_SINGLE = 3_250 // 30 Del. C. § 1108(a)(3) basic amount (2026 pack)
 
 describeRule('de-code-30-1106-social-security-retirement-subtractions', {
   readings: {

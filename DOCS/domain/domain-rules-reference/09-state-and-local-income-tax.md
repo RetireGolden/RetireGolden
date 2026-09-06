@@ -9,7 +9,9 @@
   `standardDeductionConformity: 'federal'`, and `conformStateStandardDeduction` moves that copy by exactly
   the factor `indexFederalTaxPack` applied to the original, so one engine never holds two values for one statutory
   amount in a projected year (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`). Whole-federal adoption
-  also implies the IRC 63(c)(3) age-65 addition. Nothing else in the pack moves: brackets and retirement-exclusion
+  also implies the IRC 63(c)(3) age-65 addition. A state that publishes its own fixed statutory age addition
+  instead carries it in `standardDeductionAge65Addition` without either conformity tag (Delaware:
+  `de-code-30-1108-standard-deduction`). Nothing else in the pack moves: brackets and retirement-exclusion
   caps are state figures under state law. SC decoupled for 2026 and is deliberately untagged for both basic and
   age-addition conformity. Maine decoupled the basic for 2026 — published **$15,700 / $31,400** without the
   whole-federal tag — but separately tags `standardDeductionAge65AdditionConformity: 'federal'` so only the federal

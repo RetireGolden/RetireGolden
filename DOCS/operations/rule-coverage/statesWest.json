@@ -107,7 +107,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -588,7 +588,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -675,7 +675,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -831,7 +831,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -986,7 +986,7 @@
             },
             {
               "name": "states.HI",
-              "line": 313
+              "line": 314
             }
           ]
         },
@@ -1063,7 +1063,7 @@
           "functions": [
             {
               "name": "ID",
-              "line": 332
+              "line": 333
             }
           ]
         },
@@ -1126,7 +1126,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 549
+              "line": 550
             }
           ]
         },
@@ -1215,7 +1215,7 @@
           "functions": [
             {
               "name": "MT",
-              "line": 549
+              "line": 550
             }
           ]
         },
@@ -1224,7 +1224,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -1316,7 +1316,7 @@
           "functions": [
             {
               "name": "NM",
-              "line": 605
+              "line": 606
             }
           ]
         },
@@ -1325,7 +1325,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -1388,7 +1388,7 @@
           "functions": [
             {
               "name": "NV",
-              "line": 575
+              "line": 576
             }
           ]
         },
@@ -1455,7 +1455,7 @@
           "functions": [
             {
               "name": "OR",
-              "line": 703
+              "line": 704
             }
           ]
         },
@@ -1518,7 +1518,7 @@
           "functions": [
             {
               "name": "UT",
-              "line": 765
+              "line": 766
             }
           ]
         },
@@ -1586,7 +1586,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 801
+              "line": 802
             }
           ]
         },
@@ -1665,7 +1665,7 @@
           "functions": [
             {
               "name": "WA",
-              "line": 801
+              "line": 802
             }
           ]
         },
@@ -1683,7 +1683,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -1733,7 +1733,7 @@
           "functions": [
             {
               "name": "WY",
-              "line": 839
+              "line": 840
             }
           ]
         },
@@ -1742,7 +1742,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }

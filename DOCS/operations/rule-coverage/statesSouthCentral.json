@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -778,7 +778,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -1428,7 +1428,7 @@
           "functions": [
             {
               "name": "KY",
-              "line": 397
+              "line": 398
             }
           ]
         },
@@ -1544,7 +1544,7 @@
           "functions": [
             {
               "name": "states.LA",
-              "line": 403
+              "line": 404
             }
           ]
         },
@@ -1619,7 +1619,7 @@
             },
             {
               "name": "states.LA",
-              "line": 403
+              "line": 404
             }
           ]
         },
@@ -1694,7 +1694,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 484
+              "line": 485
             }
           ]
         },
@@ -1789,7 +1789,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 484
+              "line": 485
             }
           ]
         },
@@ -1866,7 +1866,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 484
+              "line": 485
             }
           ]
         },
@@ -1962,7 +1962,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 484
+              "line": 485
             }
           ]
         },
@@ -1971,7 +1971,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -2063,7 +2063,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 484
+              "line": 485
             }
           ]
         },
@@ -2135,7 +2135,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 484
+              "line": 485
             }
           ]
         },
@@ -2153,7 +2153,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -2227,7 +2227,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 484
+              "line": 485
             }
           ]
         },
@@ -2313,7 +2313,7 @@
           "functions": [
             {
               "name": "OK",
-              "line": 685
+              "line": 686
             }
           ]
         },
@@ -2400,7 +2400,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 755
+              "line": 756
             }
           ]
         },
@@ -2409,7 +2409,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 166
+              "line": 172
             }
           ]
         }
@@ -2472,7 +2472,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 755
+              "line": 756
             }
           ]
         },
@@ -2544,7 +2544,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 760
+              "line": 761
             }
           ]
         },
@@ -2611,7 +2611,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 760
+              "line": 761
             }
           ]
         },

@@ -1283,31 +1283,31 @@
             },
             {
               "name": "DC",
-              "line": 280
+              "line": 281
             },
             {
               "name": "IA",
-              "line": 382
+              "line": 383
             },
             {
               "name": "ID",
-              "line": 332
+              "line": 333
             },
             {
               "name": "MO",
-              "line": 525
+              "line": 526
             },
             {
               "name": "MT",
-              "line": 549
+              "line": 550
             },
             {
               "name": "NM",
-              "line": 605
+              "line": 606
             },
             {
               "name": "states.ND",
-              "line": 649
+              "line": 650
             }
           ]
         },
@@ -1316,7 +1316,7 @@
           "functions": [
             {
               "name": "conformStateStandardDeduction",
-              "line": 74
+              "line": 77
             }
           ]
         },
@@ -1413,11 +1413,11 @@
           "functions": [
             {
               "name": "age65StandardDeductionAddition",
-              "line": 381
+              "line": 383
             },
             {
               "name": "standardDeduction",
-              "line": 389
+              "line": 391
             }
           ]
         },

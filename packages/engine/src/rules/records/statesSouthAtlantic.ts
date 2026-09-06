@@ -323,6 +323,57 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'de-code-30-1108-standard-deduction': {
+    title: 'Delaware’s standard deduction is $3,250 single and $6,500 joint plus $2,500 per age-65 person',
+    statement:
+      'For a nonblind Delaware resident taking the standard deduction on a single or married-filing-jointly return, the basic deduction is $3,250 or $6,500 respectively, with an additional $2,500 for each qualifying taxpayer or spouse age 65 or older.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. Verification is against the 2026 parameter pack; statutory operative dates reach earlier taxable periods. Qualifying surviving spouse years are not certified here: the global tax-status mapper sends QSS to joint parameters, so a survivor receives $6,500 plus $2,500 per age-65 count ($9,000 at age 65) rather than the PIT-EST widow(er) figures of $3,250 and $5,750. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.',
+    jurisdiction: 'state:DE',
+    authority: [{
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, 1107',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'The deduction of a resident individual shall be the standard deduction, unless the individual elects to itemize deductions as provided in § 1109 of this title.',
+    }, {
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, 1108(a)(3)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'For taxable periods beginning after December 31, 1999, the standard deduction of a resident individual shall be $3,250, and the standard deduction of resident spouses shall be $6,500 if they file a joint return and $3,250 each if they file separate returns.',
+    }, {
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, 1108(b)(1)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'The sum of $2,500 shall be added to the standard deduction determined under subsection (a) of this section in each of the following circumstances: … For the taxpayer who has attained the age of 65 before the close of the taxable year;',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Delaware Division of Revenue, 2026 Form PIT-EST instructions, line 3',
+      url: 'https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf',
+      quotedText:
+        '(a) If deductions will be itemized, enter estimated itemized deductions total. If not itemizing, use Standard Deduction ($3,250 single, divorced or widow(er), head of household) ($6,500 if married filing jointly), or ($3,250 if married or entered into a civil union filing separately). (b) Additional Standard Deduction Allowance(s) of $2,500 for taxpayer &/or spouse. If 65 years old or over or blind and filing Standard Deduction.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-05',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/index.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#DE',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/params/index.ts#age65StandardDeductionAddition',
+    ],
+  },
+
   'md-tax-10-207-social-security-exclusion': {
     title: 'Maryland subtracts Social Security and railroad-retirement payments',
     statement:

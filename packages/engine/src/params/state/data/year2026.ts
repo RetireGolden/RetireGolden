@@ -262,7 +262,8 @@ const rawStateYear2026 = {
     },
     DE: {
       code: 'DE', name: 'Delaware', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 5700, marriedFilingJointly: 11400 },
+      standardDeduction: { single: 3250, marriedFilingJointly: 6500 },
+      standardDeductionAge65Addition: { single: 2500, marriedFilingJointly: 2500 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 0 }, { lowerBound: 2000, ratePct: 2.2 }, { lowerBound: 5000, ratePct: 3.9 },

@@ -467,7 +467,9 @@ pack and `phaseOutStandardDeduction` (`mrs-36-5124-c-2-standard-deduction-phaseo
 Maine-AGI proxy rather than certified Form 1040ME AGI. AZ left the whole-federal list on
 2026-08-05: A.R.S. §43-1041(A) sets Arizona's own amounts and (H) borrows only the federal indexation
 *method*, so the pack now carries Arizona's published figure untagged
-(`ars-43-1041-standard-deduction-published-amount`).
+(`ars-43-1041-standard-deduction-published-amount`). A state that publishes its own fixed statutory age
+addition instead carries it in `standardDeductionAge65Addition` without either conformity tag (Delaware:
+`de-code-30-1108-standard-deduction`).
 
 That field never holds a state **personal exemption**, in any pack entry. IN publishes no standard deduction
 at all and subtracts flat per-person exemptions instead - $1,000 per filer, $1,000 per person aged 65+, $1,000
