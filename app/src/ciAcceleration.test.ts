@@ -437,7 +437,7 @@ describe('trusted default-branch review verification recovery', () => {
 
 describe('OpenRouter CI authorization contract', () => {
   it('declares an optional boolean reset with a false default', () => {
-    expect(reviewCaller).toMatch(/      reset_review:\r?\n        description: [^\r\n]+\r?\n        required: false\r?\n        type: boolean\r?\n        default: false/)
+    expect(reviewCaller).toMatch(/ {6}reset_review:\r?\n {8}description: [^\r\n]+\r?\n {8}required: false\r?\n {8}type: boolean\r?\n {8}default: false/)
   })
 
   it.each([
@@ -445,7 +445,7 @@ describe('OpenRouter CI authorization contract', () => {
     [{ reset_review: false }, false],
     [{ reset_review: true }, true],
   ])('forwards reset input %j as %s', (inputs, expected) => {
-    const expression = /^      reset_review: \$\{\{ (.+) \}\}$/m.exec(reviewCaller)?.[1]
+    const expression = /^ {6}reset_review: \$\{\{ (.+) \}\}$/m.exec(reviewCaller)?.[1]
     // This boolean-only Actions expression also has JavaScript semantics.
     expect(expression).toBe('inputs.reset_review || false')
     expect(runInNewContext(expression!, { inputs })).toBe(expected)
