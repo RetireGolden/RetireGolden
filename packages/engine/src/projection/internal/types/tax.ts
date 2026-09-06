@@ -46,13 +46,16 @@ export interface TaxYearInput {
    * earned income and housing and §931/§933 possessions income (American Samoa,
    * Guam, the Northern Marianas, Puerto Rico). The engine carries one
    * nonnegative figure for all of them. It is not ordinary taxable income and
-   * never enters the AGI line. IRC §86 puts a foreign-exclusion amount into
-   * Social Security provisional income; §1411(d) and §151(d)(5)(C)(iii)(II)
-   * define different modified-AGI addbacks for NIIT and the senior-deduction
-   * phase-out; ACA household MAGI carries a foreign addback too. This shared
-   * field is a disclosed legacy carrier: it does not certify the separate
-   * statutory gross/net mappings those definitions require. See
-   * irc-1411-d-modified-agi-foreign-exclusion-addback.
+   * never enters the AGI line. When omitted, `computeFederalTax` defaults to
+   * zero — NIIT can be understated and the senior deduction overstated. Supply
+   * this field whenever the household claims §§911, 931, or 933 exclusions, not
+   * only when Social Security is in play. IRC §86 puts a foreign-exclusion
+   * amount into Social Security provisional income; §1411(d) and
+   * §151(d)(5)(C)(iii)(II) define different modified-AGI addbacks for NIIT
+   * and the senior-deduction phase-out; ACA household MAGI carries a foreign
+   * addback too. This shared field is a disclosed legacy carrier: it does not
+   * certify the separate statutory gross/net mappings those definitions
+   * require. See irc-1411-d-modified-agi-foreign-exclusion-addback.
    */
   foreignExclusionAddback?: number
   /**

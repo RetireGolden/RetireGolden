@@ -68,11 +68,12 @@ State brackets are a separate question and are still held nominal (see `params/s
   phase-out; they may therefore understate tax at high income. The SECURE Act age-cap repeal is honored, but
   IRA/Roth excess-contribution excise is not priced (domain rules §5).
 - **MAGI:** NIIT (§1411(d)) adds only the §911(a)(1) foreign earned-income exclusion net of the
-  §911(d)(6) disallowances; the senior deduction phase-out (§151(d)(5)(C)(iii)(II)) uses the broader
+  §911(d)(6) disallowances; the senior deduction phase-out (§151(d)(5)(C)(iii)(II)) and the
+  high-MAGI SALT phasedown (IRC §164(b)(7)(B)(iv), `irc-164-b-7-B-magi-phasedown`) use the broader
   addback of amounts excluded under §§911, 931, or 933. The engine still carries one
-  `foreignExclusionAddback` and reuses it for both — a disclosed approximation
-  (`irc-1411-d-modified-agi-foreign-exclusion-addback`). The high-MAGI SALT phasedown
-  (`irc-164-b-7-B-magi-phasedown`, not yet wired) is a separate MAGI definition.
+  `foreignExclusionAddback` and reuses it for both NIIT and senior — a disclosed approximation
+  (`irc-1411-d-modified-agi-foreign-exclusion-addback`). The SALT phasedown itself is not yet
+  wired — the cap binds without MAGI reduction today.
 - **NIIT** 3.8% of the lesser of net investment income or the nonnegative MAGI excess over $200k single / $250k MFJ (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the
   Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)).
   Both SEPP methods — required-minimum-distribution and amortization — divide by the IRS **Single Life Table**

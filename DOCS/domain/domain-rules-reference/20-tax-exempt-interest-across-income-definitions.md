@@ -13,7 +13,7 @@ through the §86(b)(2)(B) add-back and each program MAGI only through that progr
 | ACA household MAGI (§36B PTC) | Included | IRC 36B(d)(2)(B)(ii) | `buildAcaHouseholdMagi` in [aca.ts](../../../packages/engine/src/tax/aca.ts) |
 | Medicare IRMAA MAGI | Included (tax-exempt interest); foreign-exclusion addback omitted from lookback feed | 42 U.S.C. 1395r(i)(4)(A)(ii) settled; (A)(i) approximated | realized-MAGI history in [simulate.ts](../../../packages/engine/src/projection/simulate.ts) |
 | NIIT net investment income | Excluded | IRC 1411(c)(1)(A)(i) — never gross income | NII assembly in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) |
-| NIIT MAGI (threshold leg) | Excluded | IRC 1411(d) — §911(a)(1) exclusion less §911(d)(6) disallowances | federal MAGI in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) |
+| NIIT MAGI (threshold leg) | Excluded | IRC 1411(d) — §911(a)(1) exclusion less §911(d)(6) disallowances | same shared foreign field in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) (legacy approximation) |
 | Senior-deduction MAGI phase-out | Excluded | IRC 151(d)(5)(C)(iii)(II) — amounts excluded under §§911/931/933 | same shared foreign field in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) (legacy approximation) |
 | AMT (AMTI) | Excluded as modeled | IRC 57(a)(5) reaches only *specified private-activity-bond* interest; see limitations | AMTI assembly in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) |
 | State taxable income | Not added | State-specific; see limitations | [stateTax.ts](../../../packages/engine/src/tax/stateTax.ts) (still lifts federally taxable SS in states that tax SS) |
