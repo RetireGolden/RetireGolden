@@ -103,8 +103,8 @@ export interface TaxRuleAuthority {
  *
  * - `staticStatute` — settled statutory mechanics. Re-verify annually, or when
  *   legislation moves.
- * - `annuallyIndexed` — a dollar figure the IRS restates each year. Re-verify
- *   every autumn against the COLA notice.
+ * - `annuallyIndexed` — a dollar figure the responsible tax authority restates
+ *   each year. Re-verify on that authority's publication cycle.
  * - `awaitingGuidance` — no controlling authority yet. Highest re-verification
  *   value, because a regulation or publication example would settle it.
  * - `sunsetting` — has a known expiry that must be surfaced before it bites.

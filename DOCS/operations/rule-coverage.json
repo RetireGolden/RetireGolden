@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 435,
+    "total": 436,
     "byClassification": {
-      "approximated": 121,
+      "approximated": 122,
       "outOfScope": 75,
       "settled": 234,
       "unsettled": 5
     },
     "byVolatility": {
-      "annuallyIndexed": 61,
+      "annuallyIndexed": 63,
       "awaitingGuidance": 11,
-      "staticStatute": 357,
+      "staticStatute": 356,
       "sunsetting": 6
     },
     "byJurisdiction": {
@@ -26,7 +26,7 @@
         "CO": 2,
         "CT": 1,
         "DC": 1,
-        "DE": 2,
+        "DE": 3,
         "FL": 1,
         "GA": 1,
         "HI": 1,
@@ -70,7 +70,7 @@
         "WV": 2,
         "WY": 1
       },
-      "stateTotal": 109
+      "stateTotal": 110
     }
   },
   "attestations": {
@@ -209,7 +209,7 @@
     {
       "path": "params/state/data/year2026.ts",
       "sweptOn": "2026-09-05",
-      "note": "de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; Delaware QSS standard-deduction mapping, the 5.5% versus 5.55% bracket band, blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage."
+      "note": "de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation. The 5.5% versus 5.55% bracket band, blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage."
     },
     {
       "path": "params/state/index.ts",
@@ -294,7 +294,7 @@
     {
       "path": "projection/internal/types/tax.ts",
       "sweptOn": "2026-09-05",
-      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback remains a declaration-only legacy carrier documenting the shared aggregate without enforcing MAGI composition; residual: taxParameterFilingStatus enforces QSS-to-MFJ parameter selection with no direct rule pin or discriminating registered fixture, and its wholesale reuse by state tax parameter selection needs separate jurisdiction review"
+      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback remains a declaration-only legacy carrier documenting the shared aggregate without enforcing MAGI composition; residual: `taxParameterFilingStatus`'s QSS-to-MFJ selection is pinned for Delaware's standard-deduction approximation at `de-pit-est-2026-qss-standard-deduction-joint-mapper`; wholesale reuse by other state parameter selection remains a jurisdiction-specific residual."
     },
     {
       "path": "projection/optimizePlan.ts",
@@ -364,7 +364,7 @@
     {
       "path": "tax/stateTax.ts",
       "sweptOn": "2026-09-05",
-      "note": "de-code-30-1108-standard-deduction names computeStateTaxableIncome and age65StandardDeductionAddition for Delaware single/MFJ basic-plus-age; QSS still maps to joint parameters, and other Delaware return limbs remain outside that record. Existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, non-ME gaps unchanged, and stateParamsFor historical fallback: years before the earliest published pack receive that earliest pack with no validity marker so computeStateTaxYearTotal consumes a current-pack approximation without exposing whether the pack is exact"
+      "note": "de-code-30-1108-standard-deduction and de-pit-est-2026-qss-standard-deduction-joint-mapper name computeStateTaxableIncome and age65StandardDeductionAddition for Delaware single/MFJ basic-plus-age and the QSS-to-joint standard-deduction approximation respectively; other Delaware return limbs remain outside those records. Existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, non-ME gaps unchanged, and stateParamsFor historical fallback: years before the earliest published pack receive that earliest pack with no validity marker so computeStateTaxYearTotal consumes a current-pack approximation without exposing whether the pack is exact"
     },
     {
       "path": "testing/flatTax.ts",
@@ -633,7 +633,7 @@
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 12
+      "ruleCount": 13
     },
     {
       "module": "statesSouthCentral",
@@ -652,16 +652,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-06T02:21:03.127Z",
-    "entryCount": 1200,
+    "generatedAt": "2026-09-06T04:28:53.752Z",
+    "entryCount": 1206,
     "fetched": 9,
-    "cached": 320,
+    "cached": 322,
     "counts": {
-      "ELISION-EXACT": 63,
-      "ELISION-PUNCTUATION": 5,
-      "EXACT": 827,
+      "ELISION-EXACT": 64,
+      "ELISION-PUNCTUATION": 7,
+      "EXACT": 829,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 219,
+      "PDF-WORD-LEVEL": 220,
       "PUNCTUATION": 42,
       "UNFETCHABLE": 37
     }

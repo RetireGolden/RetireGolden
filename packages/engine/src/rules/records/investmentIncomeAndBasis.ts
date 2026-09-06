@@ -18,14 +18,20 @@ export const investmentIncomeAndBasisRecords = {
   'irc-1411-a-net-investment-income-tax': {
     title: 'Net investment income tax is the lesser of two amounts',
     statement:
-      'The 3.8 percent tax applies to the lesser of net investment income for the year or the excess of modified adjusted gross income over the threshold amount. A taxpayer with large investment income but modified adjusted gross income barely over the threshold is taxed on the small excess, not on the investment income.',
+      'Given the net investment income and modified adjusted gross income supplied to the calculation, the 3.8 percent tax applies to the lesser of net investment income for the year or the excess of that MAGI over the statutory threshold amount. A taxpayer with large investment income but MAGI barely over the threshold is taxed on the small excess, not on the investment income.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The thresholds are not indexed, so the record is static rather than annually indexed. Modified adjusted gross income is built under 1411(d) rather than read off the adjusted gross income line; see irc-1411-d-modified-agi-foreign-exclusion-addback.',
+      'The thresholds are not indexed, so this lesser-of record is static rather than annually indexed. This record settles only the 3.8 percent lesser-of calculation and fixed threshold selection once net investment income and MAGI are supplied. Construction of statutory IRC 1411(d) MAGI is a separate dependency; RetireGolden\'s shared foreign-exclusion aggregate is classified as approximated in sibling `irc-1411-d-modified-agi-foreign-exclusion-addback`. Effective from 2013 reflects statutory applicability; implementation verification uses the current 2026 parameter pack and does not certify other historical pack values or a complete historical return.',
     jurisdiction: 'federal',
     authority: [{
+      kind: 'statute',
+      citation: 'Pub. L. 111-152, §1402(a)(4)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-111publ152/html/PLAW-111publ152.htm',
+      quotedText:
+        'The amendments made by this subsection shall apply to taxable years beginning after December 31, 2012.',
+    }, {
       kind: 'statute',
       citation: 'IRC 1411(a)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim',
@@ -39,9 +45,9 @@ export const investmentIncomeAndBasisRecords = {
         'For purposes of this chapter, the term "threshold amount" means- (1) in the case of a taxpayer making a joint return under section 6013 or a surviving spouse (as defined in section 2(a)), $250,000, (2) in the case of a married taxpayer (as defined in section 7703) filing a separate return, ½ of the dollar amount determined under paragraph (1), and (3) in any other case, $200,000.',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2026,
+    effectiveFrom: 2013,
     effectiveThrough: null,
-    verifiedOn: '2026-08-29',
+    verifiedOn: '2026-09-05',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/params/data/year2026.ts',

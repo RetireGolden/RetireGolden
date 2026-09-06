@@ -331,7 +331,7 @@ export const southAtlanticStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying surviving spouse years are not certified here: the global tax-status mapper sends QSS to joint parameters, so a survivor receives $6,500 plus $2,500 per age-65 count ($9,000 at age 65) rather than the PIT-EST widow(er) figures of $3,250 and $5,750. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.',
+      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying-surviving-spouse years are outside this settled single/MFJ record and are disclosed separately at `de-pit-est-2026-qss-standard-deduction-joint-mapper`. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.',
     jurisdiction: 'state:DE',
     authority: [{
       kind: 'statute',
@@ -370,6 +370,53 @@ export const southAtlanticStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#DE',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/params/index.ts#age65StandardDeductionAddition',
+    ],
+  },
+
+  'de-pit-est-2026-qss-standard-deduction-joint-mapper': {
+    title: 'Delaware QSS is routed through the joint standard-deduction row',
+    statement:
+      'For a modeled 2026 Delaware qualifying-surviving-spouse year, the engine selects the married-filing-jointly standard-deduction row, producing a $6,500 basic deduction and $9,000 for a nonblind survivor age 65; the 2026 PIT-EST widow(er) figures are $3,250 and $5,750.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. This record is limited to the 2026 nonblind standard-deduction component and does not settle QSS brackets, itemization, credits, other return lines, earlier years, or a complete Delaware return.',
+    jurisdiction: 'state:DE',
+    authority: [{
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, 1108(a)(3)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'For taxable periods beginning after December 31, 1999, the standard deduction of a resident individual shall be $3,250, and the standard deduction of resident spouses shall be $6,500 if they file a joint return and $3,250 each if they file separate returns.',
+    }, {
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, 1108(b)(1)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
+      quotedText:
+        'The sum of $2,500 shall be added to the standard deduction determined under subsection (a) of this section in each of the following circumstances: … For the taxpayer who has attained the age of 65 before the close of the taxable year;',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Delaware Division of Revenue, 2026 Form PIT-EST instructions, line 3',
+      url: 'https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf',
+      quotedText:
+        '(a) If deductions will be itemized, enter estimated itemized deductions total. If not itemizing, use Standard Deduction ($3,250 single, divorced or widow(er), head of household) ($6,500 if married filing jointly), or ($3,250 if married or entered into a civil union filing separately). (b) Additional Standard Deduction Allowance(s) of $2,500 for taxpayer &/or spouse. If 65 years old or over or blind and filing Standard Deduction.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-06',
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/tax.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/params/index.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/tax.ts#taxParameterFilingStatus',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/params/state/data/year2026.ts#DE',
       'packages/engine/src/params/index.ts#age65StandardDeductionAddition',
     ],
   },

@@ -53,7 +53,7 @@ Delaware fully exempts Social Security. Taxpayers **age 60 or older** may exclud
 - Blindness additional standard deduction not modeled (age count only).
 - Personal credits and other credits not modeled.
 - Itemization election (§ 1107 / § 1109) not modeled.
-- **Qualifying surviving spouse:** PIT-EST groups widow(er) with the $3,250 basic amount ($5,750 at age 65 with the $2,500 addition). The engine maps QSS to joint parameters ($6,500 / $9,000 after this repair) — a known approximation, not certified by the deduction record.
+- **Qualifying surviving spouse:** PIT-EST groups widow(er) with the $3,250 basic amount ($5,750 at age 65 with the $2,500 addition). The engine maps QSS to joint parameters ($6,500 / $9,000 in the 2026 pack); that reachable gap is registered as the `approximated` rule `de-pit-est-2026-qss-standard-deduction-joint-mapper`. No runtime correction is included in this registry-only slice.
 
 ## Citations
 - https://delcode.delaware.gov/title30/c011/sc02/index.html — 30 Del. C. §§ 1107–1108 (operative basic and age-65 amounts).

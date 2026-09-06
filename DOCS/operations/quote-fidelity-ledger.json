@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-06T02:21:03.127Z",
-  "recordCount": 435,
-  "urlCount": 329,
+  "generatedAt": "2026-09-06T04:28:53.752Z",
+  "recordCount": 436,
+  "urlCount": 331,
   "fetched": 9,
-  "cached": 320,
-  "entryCount": 1200,
+  "cached": 322,
+  "entryCount": 1206,
   "counts": {
-    "EXACT": 827,
+    "EXACT": 829,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 219,
-    "ELISION-EXACT": 63,
-    "ELISION-PUNCTUATION": 5,
+    "PDF-WORD-LEVEL": 220,
+    "ELISION-EXACT": 64,
+    "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
   },
@@ -7341,6 +7341,16 @@
     },
     {
       "id": "irc-1411-a-net-investment-income-tax",
+      "citation": "Pub. L. 111-152, §1402(a)(4)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/PLAW-111publ152/html/PLAW-111publ152.htm",
+      "quoteSha256": "a55852f91b5a2108",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1411-a-net-investment-income-tax",
       "citation": "IRC 1411(a)(1)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1411&num=0&edition=prelim",
@@ -9060,6 +9070,16 @@
       "diagnosis": null
     },
     {
+      "id": "mrs-36-5124-c-1-b-decoupled-standard-deduction",
+      "citation": "36 M.R.S. 5403(2)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5403.html",
+      "quoteSha256": "40df3522071e5c39",
+      "verdict": "ELISION-PUNCTUATION",
+      "detail": "matches only after: dashes",
+      "diagnosis": null
+    },
+    {
       "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
       "citation": "36 M.R.S. 5124-C(1-B)",
       "host": "legislature.maine.gov",
@@ -9117,6 +9137,16 @@
       "quoteSha256": "0a9d4bcd94311185",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
+      "citation": "36 M.R.S. 5403(4)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5403.html",
+      "quoteSha256": "9ae2cf1bea389124",
+      "verdict": "ELISION-PUNCTUATION",
+      "detail": "matches only after: dashes",
       "diagnosis": null
     },
     {
@@ -10518,6 +10548,36 @@
     },
     {
       "id": "de-code-30-1108-standard-deduction",
+      "citation": "Delaware Division of Revenue, 2026 Form PIT-EST instructions, line 3",
+      "host": "revenuefiles.delaware.gov",
+      "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf",
+      "quoteSha256": "7fd753d12e0b9520",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "de-pit-est-2026-qss-standard-deduction-joint-mapper",
+      "citation": "Del. Code tit. 30, 1108(a)(3)",
+      "host": "delcode.delaware.gov",
+      "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
+      "quoteSha256": "d5ec8420cdbf9cfc",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "de-pit-est-2026-qss-standard-deduction-joint-mapper",
+      "citation": "Del. Code tit. 30, 1108(b)(1)",
+      "host": "delcode.delaware.gov",
+      "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
+      "quoteSha256": "e7326f730e547224",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "de-pit-est-2026-qss-standard-deduction-joint-mapper",
       "citation": "Delaware Division of Revenue, 2026 Form PIT-EST instructions, line 3",
       "host": "revenuefiles.delaware.gov",
       "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf",
