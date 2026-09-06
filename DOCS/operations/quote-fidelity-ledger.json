@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-06T00:59:43.652Z",
+  "generatedAt": "2026-09-06T01:23:13.710Z",
   "recordCount": 434,
-  "urlCount": 326,
-  "fetched": 13,
-  "cached": 313,
-  "entryCount": 1194,
+  "urlCount": 328,
+  "fetched": 9,
+  "cached": 319,
+  "entryCount": 1196,
   "counts": {
-    "EXACT": 824,
+    "EXACT": 825,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 217,
+    "PDF-WORD-LEVEL": 218,
     "ELISION-EXACT": 62,
     "ELISION-PUNCTUATION": 5,
     "PDF-NOT-VERIFIABLE": 7,
@@ -7655,6 +7655,26 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section151&num=0&edition=prelim",
       "quoteSha256": "84b5d9312b6f629d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1411-d-modified-agi-foreign-exclusion-addback",
+      "citation": "Form 2555 (2025), page 3, lines 36 and 42 to 45",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-pdf/f2555.pdf",
+      "quoteSha256": "95db2dce7420eadc",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "5 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1411-d-modified-agi-foreign-exclusion-addback",
+      "citation": "Instructions for Form 8960 (2025), Part III, Line 13—MAGI, Section 911",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/instructions/i8960#en_US_2025_publink10004435",
+      "quoteSha256": "9024d05e3519dd47",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

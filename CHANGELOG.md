@@ -4,6 +4,16 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Reclassified `irc-1411-d-modified-agi-foreign-exclusion-addback` from
+  `settled` to `approximated` / `overstatesTax` for the disclosed extra-housing
+  NIIT MAGI case: IRC 1411(d) and 151(d)(5)(C)(iii)(II) define different
+  foreign addbacks, but `computeFederalTax` still reuses one
+  `foreignExclusionAddback`. Runtime algorithm, schema, and public API are
+  unchanged; separate MAGI modeling remains open. Fixture and nearby docs /
+  comments updated to match. Corrected `projection/internal/types/tax.ts`
+  attestation from `rule-free` to `partial`: `taxParameterFilingStatus` enforces
+  QSS-to-MFJ parameter selection without a direct rule pin or discriminating
+  registered fixture (the prior `rule-free` status was incorrect).
 - **Maine 2026 standard deduction — age-65 addition and §5124-C(2) phase-out.** Reason: for tax
   years beginning 2026, 36 M.R.S. §5124-C(1-B) keeps Maine’s published basic
   ($15,700 / $31,400) and adopts the IRC §63(c)(3)/§63(f)(1) age additional

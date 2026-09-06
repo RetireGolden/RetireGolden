@@ -242,49 +242,82 @@ describe('section 1411 net investment income tax', () => {
 })
 
 describe('modified adjusted gross income', () => {
-  // IRC 1411(d) defines modified AGI for the net investment income tax as AGI
-  // increased by the section 911(a)(1) exclusion, and 151(d)(5)(C)(iii)(II)
-  // defines it for the senior deduction phase-out as AGI increased by amounts
-  // excluded under sections 911, 931, or 933. Reading modified AGI as the AGI
-  // line drops income the household really has, and it moves both numbers in
-  // the taxpayer's favour at once -- less tax and more deduction.
+  // IRC 1411(d) and 151(d)(5)(C)(iii)(II) define different foreign MAGI
+  // addbacks. The engine still reuses one foreignExclusionAddback for both
+  // (disclosed approximation). Discriminating vector: 2026 single, one person
+  // 65+, $10,000 taxable interest already INCLUDED in ordinaryIncome, no SS
+  // or capital gains, inflationScale 1 via input() defaults. Established
+  // $20,000 section 911(a)(1) earned-income exclusion plus $10,000 housing
+  // exclusion; zero allocable deductions. Broad shared input is $30,000;
+  // narrow NIIT-only input is $20,000.
   //
-  // Single, 65+, 100,000 of AGI of which 60,000 is taxable interest, plus
-  // 120,000 of excluded foreign earned income, so modified AGI is 220,000.
-  //   modified AGI: NIIT on min(60,000, 220,000 - 200,000) = 20,000 -> 760;
-  //                 senior 6,000 - 6% x 145,000 -> 0
-  //   AGI alone:    NIIT 0, since 100,000 never reaches the 200,000 threshold;
-  //                 senior 6,000 - 6% x 25,000 = 4,500
+  // Legal worksheet (authority, not engine):
+  //   A at $180,000 AGI: NIIT MAGI $200,000 -> NIIT 0; senior MAGI $210,000 -> 0
+  //   B at $70,000 AGI:  NIIT MAGI $90,000  -> NIIT 0; senior MAGI $100,000
+  //                     -> 6,000 - 6% x 25,000 = 4,500
+  // Broad-for-both produces NIIT 380 at A and senior 4,500 at B.
+  // Narrow-for-both would give NIIT 0 at A and senior 5,100 at B.
+  // Accepted composite = high.narrow.niit + low.broad.seniorDeduction.
   describeRule('irc-1411-d-modified-agi-foreign-exclusion-addback', {
     readings: {
-      agiPlusTheExclusion: { niit: 760, seniorDeduction: 0 },
-      agiAlone: { niit: 0, seniorDeduction: 4_500 },
+      separateStatutoryAddbacks: { niitAt180k: 0, seniorAt70k: 4_500 },
+      broadAggregateForBoth: { niitAt180k: 380, seniorAt70k: 4_500 },
+      narrowEarnedIncomeForBoth: { niitAt180k: 0, seniorAt70k: 5_100 },
     },
-    accepted: 'agiPlusTheExclusion',
-  }, ({ accepted, readings }) => {
-    it('counts excluded foreign earned income against both limits', () => {
-      const d = computeFederalTax(input({
-        ordinaryIncome: 100_000,
-        taxableInterestIncome: 60_000,
+    accepted: 'separateStatutoryAddbacks',
+    produced: 'broadAggregateForBoth',
+  }, ({ accepted, produced, readings }) => {
+    it('discloses extra housing in NIIT while preserving the senior addback', () => {
+      const shared = {
         peopleAged65Plus: 1,
-        foreignExclusionAddback: 120_000,
+        taxableInterestIncome: 10_000,
+      }
+      const highBroad = computeFederalTax(input({
+        ...shared,
+        ordinaryIncome: 180_000,
+        foreignExclusionAddback: 30_000,
+      }))
+      const lowBroad = computeFederalTax(input({
+        ...shared,
+        ordinaryIncome: 70_000,
+        foreignExclusionAddback: 30_000,
+      }))
+      const highNarrow = computeFederalTax(input({
+        ...shared,
+        ordinaryIncome: 180_000,
+        foreignExclusionAddback: 20_000,
+      }))
+      const lowNarrow = computeFederalTax(input({
+        ...shared,
+        ordinaryIncome: 70_000,
+        foreignExclusionAddback: 20_000,
       }))
 
-      // The exclusion never enters AGI; it is added back only for these limits.
-      expect(d.agi).toBeCloseTo(100_000, 6)
-      expect(d.magi).toBeCloseTo(220_000, 6)
+      const broad = {
+        niitAt180k: highBroad.niit,
+        seniorAt70k: lowBroad.seniorDeduction,
+      }
+      const narrow = {
+        niitAt180k: highNarrow.niit,
+        seniorAt70k: lowNarrow.seniorDeduction,
+      }
+      // Separate lawful addbacks modeled by explicit counterfactual calls —
+      // not a claim that production already splits the field.
+      const separate = {
+        niitAt180k: highNarrow.niit,
+        seniorAt70k: lowBroad.seniorDeduction,
+      }
 
-      expect(d.niit).toBeCloseTo(accepted.niit, 6)
-      expect(d.niit).not.toBeCloseTo(readings.agiAlone.niit, 6)
-      expect(d.seniorDeduction).toBeCloseTo(accepted.seniorDeduction, 6)
-      expect(d.seniorDeduction).not.toBeCloseTo(readings.agiAlone.seniorDeduction, 6)
-    })
+      expect(highBroad.agi).toBe(180_000)
+      expect(lowBroad.agi).toBe(70_000)
+      expect(highNarrow.agi).toBe(180_000)
+      expect(lowNarrow.agi).toBe(70_000)
 
-    it('leaves a return with no excluded foreign income at its AGI', () => {
-      const d = computeFederalTax(input({ ordinaryIncome: 100_000, peopleAged65Plus: 1 }))
-
-      expect(d.magi).toBe(d.agi)
-      expect(d.seniorDeduction).toBeCloseTo(readings.agiAlone.seniorDeduction, 6)
+      expect(broad).toEqual(produced)
+      expect(narrow).toEqual(readings.narrowEarnedIncomeForBoth)
+      expect(separate).toEqual(accepted)
+      expect(broad).not.toEqual(accepted)
+      expect(broad).not.toEqual(readings.narrowEarnedIncomeForBoth)
     })
   })
 

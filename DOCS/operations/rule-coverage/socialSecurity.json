@@ -804,7 +804,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 321
+              "line": 324
             }
           ]
         }
@@ -862,7 +862,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 321
+              "line": 324
             }
           ]
         }
@@ -873,12 +873,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1780,
+          "line": 1813,
           "note": null,
           "tests": [
             {
               "title": "counts tax-exempt interest in provisional income",
-              "line": 1784
+              "line": 1817
             }
           ]
         }
@@ -930,7 +930,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 321
+              "line": 324
             }
           ]
         }
