@@ -331,7 +331,7 @@ export const southAtlanticStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. Verification is against the 2026 parameter pack; statutory operative dates reach earlier taxable periods. Qualifying surviving spouse years are not certified here: the global tax-status mapper sends QSS to joint parameters, so a survivor receives $6,500 plus $2,500 per age-65 count ($9,000 at age 65) rather than the PIT-EST widow(er) figures of $3,250 and $5,750. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.',
+      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying surviving spouse years are not certified here: the global tax-status mapper sends QSS to joint parameters, so a survivor receives $6,500 plus $2,500 per age-65 count ($9,000 at age 65) rather than the PIT-EST widow(er) figures of $3,250 and $5,750. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.',
     jurisdiction: 'state:DE',
     authority: [{
       kind: 'statute',
@@ -359,7 +359,7 @@ export const southAtlanticStateRecords = {
         '(a) If deductions will be itemized, enter estimated itemized deductions total. If not itemizing, use Standard Deduction ($3,250 single, divorced or widow(er), head of household) ($6,500 if married filing jointly), or ($3,250 if married or entered into a civil union filing separately). (b) Additional Standard Deduction Allowance(s) of $2,500 for taxpayer &/or spouse. If 65 years old or over or blind and filing Standard Deduction.',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2026,
+    effectiveFrom: 2000,
     effectiveThrough: null,
     verifiedOn: '2026-09-05',
     implementedBy: [

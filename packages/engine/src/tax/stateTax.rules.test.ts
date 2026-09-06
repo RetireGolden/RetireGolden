@@ -2093,11 +2093,13 @@ describeRule('de-code-30-1106-social-security-retirement-subtractions', {
   accepted: 'federallyTaxableSocialSecuritySubtracted',
   note: 'Social Security limb',
 }, ({ accepted, readings }) => {
+  // Age 64 with the helper's default `peopleAged65Plus: 0` isolates the Social
+  // Security subtraction limb; age 70 would contradict that household fact.
   const scenario = input({
     state: 'DE',
     ordinaryIncome: DE_SS_OTHER_INCOME,
     ssBenefits: DE_SS_BENEFITS,
-    agesAlive: [70],
+    agesAlive: [64],
   })
 
   it('subtracts Delaware Social Security included in federal AGI', () => {
