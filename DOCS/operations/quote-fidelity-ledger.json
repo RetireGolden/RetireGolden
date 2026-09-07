@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-07T14:50:00.161Z",
+  "generatedAt": "2026-09-07T20:39:48.198Z",
   "recordCount": 437,
-  "urlCount": 337,
+  "urlCount": 338,
   "fetched": 9,
-  "cached": 328,
-  "entryCount": 1229,
+  "cached": 329,
+  "entryCount": 1237,
   "counts": {
-    "EXACT": 850,
-    "PUNCTUATION": 42,
+    "EXACT": 856,
+    "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 222,
-    "ELISION-EXACT": 64,
+    "ELISION-EXACT": 65,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
@@ -3138,6 +3138,16 @@
       "diagnosis": null
     },
     {
+      "id": "irc-72-t-6-simple-two-year-rate",
+      "citation": "IRC 72(t)(2), lead-in",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
+      "quoteSha256": "65f657e009b49a64",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "irc-72-t-3-B-sepp-separation",
       "citation": "IRC 72(t)(3)(B)",
       "host": "uscode.house.gov",
@@ -3145,6 +3155,16 @@
       "quoteSha256": "57a77d0855cf6267",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-72-t-3-B-sepp-separation",
+      "citation": "IRC 72(e)(5)(D)(ii), (II)-(III)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
+      "quoteSha256": "3f858008c4a3abe8",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -3182,9 +3202,9 @@
       "citation": "IRC 72(t)(4)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "5915ecc135731d9e",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "quoteSha256": "c8a47b9d00116ebd",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: fractions",
       "diagnosis": null
     },
     {
@@ -3338,6 +3358,16 @@
       "diagnosis": null
     },
     {
+      "id": "irc-72-t-5-sepp-participant-scope",
+      "citation": "IRS Notice 2022-6, section 3.02(e)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2022-05_IRB",
+      "quoteSha256": "a4fe0ea94453b63a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "notice-2022-6-3-01-three-permitted-methods",
       "citation": "IRS Notice 2022-6, section 3.01",
       "host": "www.irs.gov",
@@ -3373,6 +3403,26 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
       "quoteSha256": "92596c20eaf90ba0",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "notice-2022-6-3-01-annual-payment-completeness",
+      "citation": "IRS, Substantially Equal Periodic Payments, Q&A 8",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/retirement-plans/substantially-equal-periodic-payments",
+      "quoteSha256": "6ca4006ea138aeec",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "notice-2022-6-3-01-annual-payment-completeness",
+      "citation": "IRS, Substantially Equal Periodic Payments, Q&A 9",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/retirement-plans/substantially-equal-periodic-payments",
+      "quoteSha256": "d4fd49b5eac9670e",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -3423,6 +3473,16 @@
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/irb/2022-05_IRB",
       "quoteSha256": "32d55070741b3cb5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "notice-2022-6-3-02-e-single-account-balance-scope",
+      "citation": "IRC 72(t)(2)(A)(iv)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
+      "quoteSha256": "92596c20eaf90ba0",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -3483,6 +3543,26 @@
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-9",
       "quoteSha256": "33839002c98fe558",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "notice-2022-6-3-02-a-permitted-life-expectancy-tables",
+      "citation": "IRS Notice 2022-6, section 3.02(b)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2022-05_IRB",
+      "quoteSha256": "811d834f70fe1a9d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "notice-2022-6-3-02-a-permitted-life-expectancy-tables",
+      "citation": "IRS Notice 2022-6, section 3.02(b)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2022-05_IRB",
+      "quoteSha256": "aed7cadcc6981485",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -3559,7 +3639,7 @@
     },
     {
       "id": "irc-72-t-2-J-plesa-withdrawal-early-distribution-exception",
-      "citation": "IRS Notice 2024-22, section II.C",
+      "citation": "IRS Notice 2024-22, section II (Background)",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-drop/n-24-22.pdf",
       "quoteSha256": "59f56384d6a132cb",

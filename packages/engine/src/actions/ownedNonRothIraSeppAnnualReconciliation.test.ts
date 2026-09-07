@@ -1463,19 +1463,47 @@ describe('72(t) SEPP registry conformance', () => {
     },
     accepted: 'annualTotalOfEveryDistribution',
   }, ({ accepted, readings }) => {
-    const result = reconcileOwnedNonRothIraSeppAnnualSchedule(
-      buildInput({ amounts: [4_000, 4_000, 4_000] }),
+    const complete = reconcileOwnedNonRothIraSeppAnnualSchedule(
+      buildInput({ amounts: [4_000, 4_000, 4_000], annualAmount: 12_000 }),
+    )
+    const shortfall = reconcileOwnedNonRothIraSeppAnnualSchedule(
+      buildInput({ amounts: [4_000, 4_000], annualAmount: 12_000 }),
+    )
+    const exceeded = reconcileOwnedNonRothIraSeppAnnualSchedule(
+      buildRawInputFromCoverages(canonicalCoverages({
+        amounts: [4_000, 4_000, 4_000, 4_000],
+        dates: ['2030-01-15', '2030-02-15', '2030-03-15', '2030-04-15'],
+      }), 12_000),
     )
 
     it('measures the year by the total of every scheduled distribution', () => {
-      expect(result.status).toBe('reconciled')
-      expect(result.evidence?.reconciledActualGrossAmount).toBe(accepted)
-      expect(result.evidence?.reconciledActualGrossAmount)
+      expect(complete.status).toBe('reconciled')
+      expect(complete.evidence?.reconciledActualGrossAmount).toBe(accepted)
+      expect(complete.evidence?.reconciledActualGrossAmount)
         .not.toBe(readings.onlyOneDistributionCountsPerYear)
     })
 
     it('keeps all three distributions in the one reconciled series', () => {
-      expect(result.evidence?.paymentCount).toBe(3)
+      expect(complete.evidence?.paymentCount).toBe(3)
+    })
+
+    it('classifies a subtotal shortfall as reconciliationIncomplete', () => {
+      // Hand sum: 2 × $40 = $80 against a $120 annual schedule.
+      expect(shortfall.status).toBe('reconciliationIncomplete')
+      expect(issueKinds(shortfall)).toEqual([
+        'terminalScheduledGrossIncomplete',
+        'terminalActualGrossIncomplete',
+      ])
+    })
+
+    it('refuses the payment that would exceed the annual schedule', () => {
+      // Hand sum: 4 × $40 = $160 against a $120 annual schedule.
+      // The fourth raw payment fails local validation before terminal totals
+      // can exceed the schedule; exercise that reachable refusal directly.
+      expect(exceeded.status).toBe('notReconciled')
+      expect(issueKinds(exceeded)).toEqual(['paymentNotLocallyConforming'])
+      expect(paymentIssueKinds(exceeded)).toEqual(['annualScheduledAmountExceeded'])
+      expect(exceeded.evidence).toBeNull()
     })
   })
 

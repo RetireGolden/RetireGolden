@@ -8,6 +8,7 @@ import { cashFlowLineIds } from './annualCashFlowIds.js'
 import {
   assembleYearCashFlow,
   type AnnualCashFlowPassLocals,
+  type AnnualCashFlowPenaltySnapshot,
   type AssembleYearCashFlowInput,
 } from './annualCashFlowCapture.js'
 import { createAnnualCashFlowYearSites } from './annualCashFlowYearSites.js'
@@ -375,6 +376,8 @@ describe('assembleYearCashFlow', () => {
     expect(result.reconciliation.status).toBe('reconciled')
   })
 
+  // Defensive seam: assemble forwards plan-level encoded-segment collisions
+  // without minting a line, so reconciliation must name the segment directly.
   it('fails every assembled year as duplicateLineId when encoded producer segments collide', () => {
     const encoded = encodeURIComponent('\uFFFD')
     const result = assemble({
@@ -386,5 +389,175 @@ describe('assembleYearCashFlow', () => {
       { reasonCode: 'duplicateLineId', lineIds: [encoded] },
     ])
   })
+
+  it.each([
+    {
+      name: 'one known penalty class attributes household remainder',
+      penalties: 150,
+      penaltyLines: [
+        {
+          attribution: 'account',
+          accountId: 'penalty-a',
+          penaltyClass: 'traditionalEarly',
+          amount: 60,
+        },
+        {
+          attribution: 'account',
+          accountId: 'penalty-b',
+          penaltyClass: 'traditionalEarly',
+          amount: 40,
+        },
+      ] satisfies readonly AnnualCashFlowPenaltySnapshot[],
+      funding: 150,
+      expectedStatus: 'reconciled',
+      expectedReasons: [] as string[],
+      expectedDiagnostics: [] as {
+        reasonCode: string
+        lineIds: readonly string[]
+      }[],
+      expectedUses: [
+        {
+          id: 'use:earlyWithdrawalPenalty:account:penalty-a:traditionalEarly',
+          penaltyClass: 'traditionalEarly',
+          requestedPlanDollars: 60,
+          fundedPlanDollars: 60,
+          unfundedPlanDollars: 0,
+        },
+        {
+          id: 'use:earlyWithdrawalPenalty:account:penalty-b:traditionalEarly',
+          penaltyClass: 'traditionalEarly',
+          requestedPlanDollars: 40,
+          fundedPlanDollars: 40,
+          unfundedPlanDollars: 0,
+        },
+        {
+          id: 'use:earlyWithdrawalPenalty:household:traditionalEarly',
+          penaltyClass: 'traditionalEarly',
+          requestedPlanDollars: 50,
+          fundedPlanDollars: 50,
+          unfundedPlanDollars: 0,
+          identities: [],
+        },
+      ],
+    },
+    {
+      name: 'zero known penalty classes refuse remainder identity',
+      penalties: 150,
+      penaltyLines: [],
+      funding: 0,
+      expectedStatus: 'notReconciled',
+      expectedReasons: ['missingRequiredIdentity'],
+      expectedDiagnostics: [
+        { reasonCode: 'missingRequiredIdentity', lineIds: [] },
+      ],
+      expectedUses: [] as {
+        id: string
+        penaltyClass?: string
+        requestedPlanDollars: number
+        fundedPlanDollars: number
+        unfundedPlanDollars: number
+        identities?: readonly unknown[]
+      }[],
+    },
+    {
+      name: 'multiple known penalty classes refuse household remainder',
+      penalties: 150,
+      penaltyLines: [
+        {
+          attribution: 'account',
+          accountId: 'penalty-a',
+          penaltyClass: 'traditionalEarly',
+          amount: 60,
+        },
+        {
+          attribution: 'account',
+          accountId: 'penalty-b',
+          penaltyClass: 'hsaNonMedical',
+          amount: 40,
+        },
+      ] satisfies readonly AnnualCashFlowPenaltySnapshot[],
+      funding: 100,
+      expectedStatus: 'notReconciled',
+      expectedReasons: ['missingRequiredIdentity'],
+      expectedDiagnostics: [
+        { reasonCode: 'missingRequiredIdentity', lineIds: [] },
+      ],
+      expectedUses: [
+        {
+          id: 'use:earlyWithdrawalPenalty:account:penalty-a:traditionalEarly',
+          penaltyClass: 'traditionalEarly',
+          requestedPlanDollars: 60,
+          fundedPlanDollars: 60,
+          unfundedPlanDollars: 0,
+        },
+        {
+          id: 'use:earlyWithdrawalPenalty:account:penalty-b:hsaNonMedical',
+          penaltyClass: 'hsaNonMedical',
+          requestedPlanDollars: 40,
+          fundedPlanDollars: 40,
+          unfundedPlanDollars: 0,
+        },
+      ],
+    },
+  ] as const)(
+    'assembles penalty remainder by known-class cardinality: $name',
+    ({
+      penalties,
+      penaltyLines,
+      funding,
+      expectedStatus,
+      expectedReasons,
+      expectedDiagnostics,
+      expectedUses,
+    }) => {
+      // Defensive assembler: when no single penalty class can name the
+      // household remainder, assemble omits the use line and reports
+      // missingRequiredIdentity with empty lineIds rather than inventing a
+      // class. Reporting worksheet: 150 − (60 + 40) = 50 household remainder
+      // when exactly one class is known; zero/multiple classes must fail closed.
+      const result = assemble({
+        penalties,
+        passLocals: emptyPassLocals({ penaltyLines: [...penaltyLines] }),
+        withdrawalPlanByAccountId: funding > 0
+          ? new Map([['fund-source', funding]])
+          : new Map(),
+        ownerPersonIdByAccountId: new Map([
+          ['penalty-a', 'owner'],
+          ['penalty-b', 'owner'],
+          ['fund-source', 'owner'],
+        ]),
+      })
+
+      const penaltyUses = result.useLines
+        .filter((line) => line.kind === 'earlyWithdrawalPenalty')
+        .map((line) => ({
+          id: line.id,
+          ...(line.penaltyClass === undefined
+            ? {}
+            : { penaltyClass: line.penaltyClass }),
+          requestedPlanDollars: line.requestedPlanDollars,
+          fundedPlanDollars: line.fundedPlanDollars,
+          unfundedPlanDollars: line.unfundedPlanDollars,
+          ...(line.identities.length === 0 ? { identities: [] as const } : {}),
+        }))
+
+      expect(result.reconciliation.cash.differencePlanDollars).toBe(0)
+      expect(result.reconciliation.status).toBe(expectedStatus)
+      for (const reason of expectedReasons) {
+        expect(result.reconciliation.reasonCodes).toContain(reason)
+      }
+      expect(
+        result.reconciliation.diagnostics.filter(
+          (row) => row.reasonCode === 'missingRequiredIdentity',
+        ),
+      ).toEqual(expectedDiagnostics)
+      expect(penaltyUses).toEqual(expectedUses)
+      for (const expected of expectedUses) {
+        if (expected.penaltyClass === undefined) continue
+        const line = result.useLines.find((row) => row.id === expected.id)
+        expect(line?.penaltyClass).toBe(expected.penaltyClass)
+      }
+    },
+  )
 })
 
