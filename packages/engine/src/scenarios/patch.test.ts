@@ -566,6 +566,60 @@ describe('canonical scenario patch documents', () => {
     }
   })
 
+  it('protects annual federal-tax facts from canonical and legacy scenario patches', () => {
+    const base = plan()
+    base.annualFederalTaxFacts = {
+      foreignIncomeAdjustments: [{
+        year: 2026,
+        foreignExclusionAddback: {
+          state: 'known',
+          amount: 600,
+          provenance: {
+            sourceKind: 'foreignExclusionAggregateWorkpaper',
+            acquisition: 'manual',
+          },
+        },
+        niitSection911A1NetAddback: {
+          state: 'known',
+          amount: 600,
+          provenance: {
+            sourceKind: 'form8960Line13AllocationWorksheet',
+            acquisition: 'manual',
+          },
+        },
+      }],
+    }
+
+    const edited = structuredClone(base)
+    edited.annualFederalTaxFacts.foreignIncomeAdjustments[0]!
+      .foreignExclusionAddback.amount = 1_000 as never
+    const canonical = createScenarioPatch(base, edited, metadata)
+    expect(canonical.ok).toBe(false)
+    if (!canonical.ok) {
+      expect(canonical.issues).toContain(
+        'protected field "annualFederalTaxFacts" differs',
+      )
+    }
+
+    const replaced = applyLegacyScenarioPatch(base, {
+      annualFederalTaxFacts: { foreignIncomeAdjustments: [] },
+    })
+    expect(replaced.ok).toBe(true)
+    if (replaced.ok) {
+      expect(replaced.plan.annualFederalTaxFacts).toEqual(base.annualFederalTaxFacts)
+    }
+
+    const injected = applyLegacyScenarioPatch(plan(), {
+      annualFederalTaxFacts: base.annualFederalTaxFacts,
+    })
+    expect(injected.ok).toBe(true)
+    if (injected.ok) {
+      expect(injected.plan.annualFederalTaxFacts).toEqual(
+        plan().annualFederalTaxFacts,
+      )
+    }
+  })
+
   it('reports every protected fact root invalidated by one structural scenario edit', () => {
     const base = plan()
     base.accounts.push(traditionalAccount('ira-1', 10_000, 'person-1'))

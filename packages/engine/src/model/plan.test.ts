@@ -2833,3 +2833,137 @@ describe('inherited-IRA beneficiary facts (WS2)', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 })
+
+describe('annualFederalTaxFacts', () => {
+  it('defaults to an empty container in createEmptyPlan and parse', () => {
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    expect(plan.annualFederalTaxFacts).toEqual({ foreignIncomeAdjustments: [] })
+
+    const parsed = parsePlan(structuredClone(plan))
+    expect(parsed.ok).toBe(true)
+    if (parsed.ok) {
+      expect(parsed.plan.annualFederalTaxFacts).toEqual({
+        foreignIncomeAdjustments: [],
+      })
+    }
+  })
+
+  it('supplies the empty default when annualFederalTaxFacts is omitted from a legacy plan', () => {
+    const raw = JSON.parse(JSON.stringify(validCouplePlan())) as Record<string, unknown>
+    delete raw.annualFederalTaxFacts
+
+    const parsed = parsePlan(raw)
+    expect(parsed.ok).toBe(true)
+    if (parsed.ok) {
+      expect(parsed.plan.annualFederalTaxFacts).toEqual({
+        foreignIncomeAdjustments: [],
+      })
+    }
+  })
+
+  it('round-trips a valid row without imposing broad-versus-NIIT inequality', () => {
+    const plan = validCouplePlan()
+    plan.annualFederalTaxFacts = {
+      foreignIncomeAdjustments: [{
+        year: 2026,
+        foreignExclusionAddback: {
+          state: 'known',
+          amount: 30_000,
+          provenance: {
+            sourceKind: 'foreignExclusionAggregateWorkpaper',
+            acquisition: 'manual',
+          },
+        },
+        niitSection911A1NetAddback: {
+          state: 'known',
+          amount: 20_000,
+          provenance: {
+            sourceKind: 'form8960Line13AllocationWorksheet',
+            acquisition: 'manual',
+          },
+        },
+      }],
+    }
+
+    const parsed = parsePlan(structuredClone(plan))
+    expect(parsed.ok).toBe(true)
+    if (parsed.ok) {
+      expect(parsed.plan.annualFederalTaxFacts).toEqual(plan.annualFederalTaxFacts)
+    }
+  })
+
+  it('rejects malformed rows and duplicate years', () => {
+    const malformed = JSON.parse(JSON.stringify(validCouplePlan())) as Record<string, unknown>
+    malformed.annualFederalTaxFacts = {
+      foreignIncomeAdjustments: [{
+        year: 2026,
+        foreignExclusionAddback: {
+          state: 'known',
+          amount: null,
+          provenance: {
+            sourceKind: 'planningEstimate',
+            acquisition: 'manual',
+          },
+        },
+        niitSection911A1NetAddback: {
+          state: 'known',
+          amount: 20_000,
+          provenance: {
+            sourceKind: 'form8960Line13AllocationWorksheet',
+            acquisition: 'manual',
+          },
+        },
+      }],
+    }
+    expect(parsePlan(malformed).ok).toBe(false)
+
+    const plan = validCouplePlan()
+    plan.annualFederalTaxFacts = {
+      foreignIncomeAdjustments: [
+        {
+          year: 2026,
+          foreignExclusionAddback: {
+            state: 'known',
+            amount: 1,
+            provenance: {
+              sourceKind: 'planningEstimate',
+              acquisition: 'manual',
+            },
+          },
+          niitSection911A1NetAddback: {
+            state: 'known',
+            amount: 2,
+            provenance: {
+              sourceKind: 'planningEstimate',
+              acquisition: 'manual',
+            },
+          },
+        },
+        {
+          year: 2026,
+          foreignExclusionAddback: {
+            state: 'known',
+            amount: 3,
+            provenance: {
+              sourceKind: 'planningEstimate',
+              acquisition: 'manual',
+            },
+          },
+          niitSection911A1NetAddback: {
+            state: 'known',
+            amount: 4,
+            provenance: {
+              sourceKind: 'planningEstimate',
+              acquisition: 'manual',
+            },
+          },
+        },
+      ],
+    }
+    const duplicate = parsePlan(plan)
+    expect(duplicate.ok).toBe(false)
+    if (!duplicate.ok) {
+      expect(duplicate.issues.join('\n')).toContain('duplicate annual federal-tax fact year 2026')
+    }
+  })
+})

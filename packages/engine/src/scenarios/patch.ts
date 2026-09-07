@@ -36,6 +36,7 @@ const editableRoots = [
 const protectedFactFields = [
   'retirementActionEligibilityFacts',
   'retirementActionAnnualTaxFacts',
+  'annualFederalTaxFacts',
 ] as const
 
 const protectedFields = [
@@ -309,6 +310,7 @@ export function applyLegacyScenarioPatch(plan: Plan, patch: LegacyScenarioPatch)
   } else {
     merged['retirementActionAnnualTaxFacts'] = cloneJson(plan.retirementActionAnnualTaxFacts)
   }
+  merged['annualFederalTaxFacts'] = cloneJson(plan.annualFederalTaxFacts)
   merged['scenarios'] = plan.scenarios
   return parsePlan(merged)
 }
@@ -456,7 +458,9 @@ function mutateOperations(
         const conflicts = conflictsFor.map((field) => {
           const message = field === 'retirementActionEligibilityFacts'
             ? 'scenario operations conflict with protected retirement-action eligibility facts'
-            : 'scenario operations conflict with protected retirement-action annual tax facts'
+            : field === 'retirementActionAnnualTaxFacts'
+              ? 'scenario operations conflict with protected retirement-action annual tax facts'
+              : 'scenario operations conflict with protected annual federal-tax facts'
           return {
             kind: 'value' as const,
             path: `/${field}`,

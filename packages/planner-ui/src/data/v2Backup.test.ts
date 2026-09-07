@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { asUsdCents } from '@retiregolden/engine/actions/money'
-import { createEmptyPlan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import {
   ownedNonRothIraAnnualFilingSourceRecord,
   traditionalAccount,
@@ -11,6 +11,74 @@ import { MAX_BACKUP_JSON_CHARS, parseV2Backup, serializeV2Backup } from './v2Bac
 let counter = 0
 const testIds = () => `bk-${++counter}`
 const fixedNow = () => new Date('2026-06-11T00:00:00.000Z')
+
+const POPULATED_ANNUAL_FEDERAL_TAX_FACTS = {
+  foreignIncomeAdjustments: [
+    {
+      year: 2040,
+      foreignExclusionAddback: {
+        state: 'known' as const,
+        amount: 600.125,
+        provenance: {
+          sourceKind: 'foreignExclusionAggregateWorkpaper' as const,
+          acquisition: 'import' as const,
+          sourceLabel: 'PRIVATE-3D-A',
+        },
+      },
+      niitSection911A1NetAddback: {
+        state: 'known' as const,
+        amount: 250.25,
+        provenance: {
+          sourceKind: 'form8960Line13AllocationWorksheet' as const,
+          acquisition: 'import' as const,
+          sourceLabel: ' PRIVATE-3D-B ',
+        },
+      },
+    },
+    {
+      year: 2027,
+      foreignExclusionAddback: {
+        state: 'known' as const,
+        amount: 0,
+        provenance: {
+          sourceKind: 'planningEstimate' as const,
+          acquisition: 'manual' as const,
+          sourceLabel: 'PRIVATE-3D-C',
+        },
+      },
+      niitSection911A1NetAddback: {
+        state: 'notApplicable' as const,
+        amount: null,
+        provenance: {
+          sourceKind: 'taxProfessionalWorkpaper' as const,
+          acquisition: 'import' as const,
+          sourceLabel: 'PRIVATE-3D-D',
+        },
+      },
+    },
+    {
+      year: 2026,
+      foreignExclusionAddback: {
+        state: 'notApplicable' as const,
+        amount: null,
+        provenance: {
+          sourceKind: 'userAttestation' as const,
+          acquisition: 'manual' as const,
+          sourceLabel: 'PRIVATE-3D-E',
+        },
+      },
+      niitSection911A1NetAddback: {
+        state: 'unknown' as const,
+        amount: null,
+        provenance: {
+          sourceKind: 'unresolvedSource' as const,
+          acquisition: 'manual' as const,
+          sourceLabel: 'PRIVATE-3D-F <b>"source"</b>',
+        },
+      },
+    },
+  ],
+}
 
 describe('v2 backup envelope', () => {
   it('round-trips plans through serialize/parse', () => {
@@ -79,6 +147,7 @@ describe('v2 backup envelope', () => {
     })
     const ownerPersonId = plan.household.people[0]!.id
     plan.accounts = [traditionalAccount('ira-1', 10_000, ownerPersonId)]
+    plan.annualFederalTaxFacts = structuredClone(POPULATED_ANNUAL_FEDERAL_TAX_FACTS)
     plan.retirementActionAnnualTaxFacts = {
       ownedNonRothIraAnnualFilingSourceRecords: [
         ownedNonRothIraAnnualFilingSourceRecord(
@@ -88,10 +157,26 @@ describe('v2 backup envelope', () => {
         ),
       ],
     }
+    const federalSnapshot = structuredClone(plan.annualFederalTaxFacts)
+    const iraSnapshot = structuredClone(plan.retirementActionAnnualTaxFacts)
+    const inputSnapshot = structuredClone(plan)
+    const parsedInput = parsePlan(plan)
+    if (!parsedInput.ok) throw new Error(parsedInput.issues.join('; '))
+    expect(parsedInput.plan.annualFederalTaxFacts).toEqual(federalSnapshot)
+    expect(parsedInput.plan.retirementActionAnnualTaxFacts).toEqual(iraSnapshot)
 
-    const result = parseV2Backup(serializeV2Backup([plan], fixedNow))
+    const result = parseV2Backup(serializeV2Backup([parsedInput.plan], fixedNow))
     expect(result.ok).toBe(true)
-    if (result.ok) expect(result.plans).toEqual([plan])
+    if (result.ok) {
+      expect(result.plans).toHaveLength(1)
+      expect(result.plans[0]!.id).toBe(parsedInput.plan.id)
+      expect(result.plans[0]!.annualFederalTaxFacts).toEqual(inputSnapshot.annualFederalTaxFacts)
+      expect(result.plans[0]!.retirementActionAnnualTaxFacts).toEqual(
+        inputSnapshot.retirementActionAnnualTaxFacts,
+      )
+      expect(result.warnings).toHaveLength(0)
+    }
+    expect(plan).toEqual(inputSnapshot)
   })
 
   it('accepts the legacy retirecalc.v2.backup kind from before the rebrand', () => {

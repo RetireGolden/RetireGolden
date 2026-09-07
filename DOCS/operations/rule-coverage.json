@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 373,
+    "totalFiles": 375,
     "byStatus": {
-      "partial": 57,
+      "partial": 58,
       "registered": 109,
-      "rule-free": 207,
+      "rule-free": 208,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -240,6 +240,11 @@
       "path": "projection/internal/annualAggregateRothConversionTargetPlan.ts",
       "sweptOn": "2026-09-02",
       "note": "the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. internal/annualAggregateRothConversionPhase.ts retains source-context construction and lazy current-balance readers, every aggregate conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer inputs, and all live aggregate-conversion commits; simulatePlan supplies the surrounding annual facts and consumes the typed phase result"
+    },
+    {
+      "path": "projection/internal/annualFederalTaxFacts.ts",
+      "sweptOn": "2026-09-06",
+      "note": "pure annual evidence resolver separates the general-federal and section-1411 source-local amounts and classifies missing, unknown and conflict support; phase one returns but does not price from the resolution, so the foreign-addback record remains approximated and no record names this helper until the pricing phase"
     },
     {
       "path": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
@@ -441,9 +446,10 @@
     },
     {
       "directory": "model",
-      "files": 4,
+      "files": 5,
       "byStatus": {
-        "partial": 4
+        "partial": 4,
+        "rule-free": 1
       }
     },
     {
@@ -465,9 +471,9 @@
     },
     {
       "directory": "projection",
-      "files": 103,
+      "files": 104,
       "byStatus": {
-        "partial": 21,
+        "partial": 22,
         "registered": 17,
         "rule-free": 65
       }

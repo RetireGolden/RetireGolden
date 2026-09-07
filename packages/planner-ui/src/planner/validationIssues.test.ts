@@ -135,6 +135,8 @@ describe('sectionOfPath', () => {
     ['insurance.0.premiumEndAge', 'insurance'],
     ['careEvents.0.durationYears', 'insurance'],
     ['incomeFloor.ladders.0.endYear', 'income-floor'],
+    ['annualFederalTaxFacts.foreignIncomeAdjustments.0.year', 'strategy'],
+    ['annualFederalTaxFacts.foreignIncomeAdjustments.0.foreignExclusionAddback.amount', 'strategy'],
     ['schemaVersion', 'unknown'],
   ])('%s → %s', (path, section) => {
     expect(sectionOfPath(path)).toBe(section)
@@ -268,6 +270,29 @@ describe('issuesForSection', () => {
       'schemaVersion',
     ])
     expect(issuesForSection(issues, 'spending').map((i) => i.path)).toEqual(['schemaVersion'])
+  })
+})
+
+describe('annualFederalTaxFacts validation routing', () => {
+  const nestedIssue = 'annualFederalTaxFacts.foreignIncomeAdjustments.0.foreignExclusionAddback.amount: Too small: expected number to be >=0'
+  const rootIssue = 'annualFederalTaxFacts: Invalid input'
+  const planKeyFallbackIssue = 'retirementActionAnnualTaxFacts.ownedNonRothIraAnnualFilingSourceRecords.0.taxYear: Too small: expected number to be >=2000'
+
+  it('routes issue chips to Strategy; no editor exists for this root', () => {
+    expect(sectionsWithIssues([nestedIssue])).toEqual([{ segment: 'strategy', title: 'Strategy' }])
+    expect(parseIssue(nestedIssue).section).toBe('strategy')
+  })
+
+  it('routes the changed annualFederalTaxFacts root through Strategy and plan-key fallback mirrors retirement-action facts', () => {
+    expect(sectionOfPath('annualFederalTaxFacts')).toBe('strategy')
+    expect(sectionOfPath(parseIssue(rootIssue).path)).toBe('strategy')
+    expect(sectionOfPath(parseIssue(planKeyFallbackIssue).path)).toBe('unknown')
+    const parsed = parseIssues([rootIssue, 'household.filingStatus: Invalid option'])
+    expect(issuesForSection(parsed, 'strategy').map((i) => i.path)).toEqual(['annualFederalTaxFacts'])
+    expect(issuesForSection(parsed, 'household').map((i) => i.path)).toEqual(['household.filingStatus'])
+    expect(sectionsWithIssues([rootIssue])).toEqual([{ segment: 'strategy', title: 'Strategy' }])
+    expect(sectionsWithIssues([planKeyFallbackIssue])).toEqual([{ segment: 'strategy', title: 'Strategy' }])
+    expect(sectionsWithIssues([rootIssue, 'household.filingStatus: Invalid option']).map((s) => s.segment)).toEqual(['household', 'strategy'])
   })
 })
 

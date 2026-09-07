@@ -87,6 +87,8 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   'a TIPS ladder must end in or after its first payout year, be purchased before that year, and be funded from cash/taxable/equity-comp savings.',
   // Expenses / goals
   'expenses.requiredAnnual cannot exceed baseAnnual; a one-time goal’s earliestYear/latestYear window must bracket its year; partial funding requires minFundingPct below 100.',
+  'annualFederalTaxFacts.foreignIncomeAdjustments year values must be unique.',
+  'annualFederalTaxFacts known amount values must be finite nonnegative numbers after JSON parsing (non-finite values such as JSON overflow are rejected by parsePlan).',
 ]
 
 /** Non-validating JSON Schema annotation key carrying the constraint list above. */

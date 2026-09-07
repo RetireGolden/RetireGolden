@@ -778,11 +778,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 943
+              "line": 950
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 895
+              "line": 902
             }
           ]
         }
@@ -1963,7 +1963,7 @@
           "functions": [
             {
               "name": "seppElectionSchema",
-              "line": 458
+              "line": 465
             }
           ]
         },

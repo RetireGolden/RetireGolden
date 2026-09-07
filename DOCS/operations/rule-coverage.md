@@ -81,12 +81,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 373 |
+| Engine source files | 375 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
-| partial | 57 |
+| partial | 58 |
 | registered | 109 |
-| rule-free | 207 |
+| rule-free | 208 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -101,10 +101,10 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | internal | 11 | 1 | 3 | 7 | 0 |
 | ladder | 4 | 2 | 0 | 2 | 0 |
 | longevity | 2 | 0 | 1 | 1 | 0 |
-| model | 4 | 4 | 0 | 0 | 0 |
+| model | 5 | 4 | 0 | 1 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
 | params | 9 | 2 | 5 | 2 | 0 |
-| projection | 103 | 21 | 17 | 65 | 0 |
+| projection | 104 | 22 | 17 | 65 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
 | rules | 49 | 0 | 22 | 27 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
@@ -154,6 +154,7 @@ None.
 | projection/internal/annualAcaResultPublication.ts | 2026-09-02 | the pure annual ACA publication coordinator consumes the accepted fixed-point quote and household-MAGI evidence from projection/internal/annualFundingCandidateEvaluation.ts and composes the registered federal-poverty-line producer in tax/aca.ts. It preserves the established evidence contract: ordered support-code deduplication and informational-code treatment, actionable versus gross-premium-fallback readiness, dependent-MAGI inclusion, contract or fallback covered-member publication, applicable-SLCSP folding, FPL and cliff classification, convergence diagnostics, and ordered warning intents. These are result/evidence composition conventions around the registered ACA arithmetic, not a new filing-grade eligibility or premium-tax-credit implementation. The helper mutates no caller-owned value and returns fresh result and warning containers. annualFundingApplicationAndClosePhase retains the active-year gate, recursively detached annual contract/evaluation snapshots, warning-set insertion, downstream optimizer-field consumption, core YearResult publication, and MAGI history |
 | projection/internal/annualAggregateRothConversionPhase.ts | 2026-09-02 | effectful annual aggregate Roth-conversion phase relocated from simulatePlan. It composes the separately attested aggregate target and allocation planners, federal/state tax inputs, ACA sizing evidence, Form 8606 character callbacks, and registered conversion execution rules, then applies the resulting source/destination balances, IRA basis, Roth layers, runtime journal rows, warnings, and optional cash-flow capture in the original order. No calculation or chronology changed; simulatePlan supplies grouped facts, live ledgers, callbacks, and capture sinks and consumes the typed annual result |
 | projection/internal/annualAggregateRothConversionTargetPlan.ts | 2026-09-02 | the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. internal/annualAggregateRothConversionPhase.ts retains source-context construction and lazy current-balance readers, every aggregate conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer inputs, and all live aggregate-conversion commits; simulatePlan supplies the surrounding annual facts and consumes the typed phase result |
+| projection/internal/annualFederalTaxFacts.ts | 2026-09-06 | pure annual evidence resolver separates the general-federal and section-1411 source-local amounts and classifies missing, unknown and conflict support; phase one returns but does not price from the resolution, so the foreign-addback record remains approximated and no record names this helper until the pricing phase |
 | projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts | 2026-09-02 | effectful forced-distribution, QCD, SEPP, inherited-account, and named retirement-action execution phase relocated from simulatePlan. It composes the existing registered RMD/QCD/action planners and executors plus Form 8606 character callbacks, and preserves every balance, basis, obligation, warning, runtime-journal, and optional cash-flow mutation in its original sequence. simulatePlan now supplies explicit grouped facts, live ledgers, callbacks, and capture maps and passes the typed phase result to the following aggregate-conversion phase; no rule calculation or transaction order changed |
 | projection/internal/annualFundingApplicationAndClosePhase.ts | 2026-09-02 | effectful post-action annual funding, application, and close sequence relocated from simulatePlan. It composes the independently attested withdrawal strategy/plan, candidate evaluation, fixed-point, withdrawal character, HECM, ACA and optimizer publication, apply-flow, post-solve growth, retirement-action settlement publication, tax, penalty, and YearResult producers. It preserves their original read/mutation/publication order while owning accepted balance, basis, debt, tax, penalty, warning, runtime-journal, cash-flow, and core YearResult commits; no calculation or chronology changed. The owned-IRA settlement coordinator supplies the attempt-local assumptions and invokes this phase through the explicit callback; simulatePlan supplies the surrounding annual facts and live ledgers, then publishes only the settled result and optional optimizer probe |
 | projection/internal/annualFundingCandidateEvaluation.ts | 2026-09-02 | the pure candidate evaluator composes registered federal capital-loss netting, federal/combined tax calculators, ACA household-MAGI and premium-credit pricing, and the separately attested traditional/HSA/Roth withdrawal-character coordinator. Its bounded HSA-cap refresh, informational ACA support-code filtering, gross-premium candidate handling, and exact ordering of those producers preserve reviewed simulator composition conventions rather than introducing new filing-grade rules. Annual withdrawal-order resolution and account-drain planning belong to projection/internal/annualWithdrawalPlanning.ts; annualFundingApplicationAndClosePhase retains Form 8606 character, immutable annual-context construction, warning insertion, accepted basis mutation, every balance/cash-flow/healthcare commit, and core-result publication |

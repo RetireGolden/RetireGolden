@@ -61,6 +61,7 @@ const SECTION_BY_ROOT: Record<string, IssueSection> = {
   household: 'household',
   assumptions: 'assumptions',
   strategies: 'strategy',
+  annualFederalTaxFacts: 'strategy',
   expenses: 'spending',
   accounts: 'accounts',
   incomes: 'income',
@@ -589,6 +590,7 @@ const SECTION_BY_PLAN_KEY: Record<string, string> = {
   strategies: 'strategy',
   retirementActionEligibilityFacts: 'strategy',
   retirementActionAnnualTaxFacts: 'strategy',
+  annualFederalTaxFacts: 'strategy',
   assumptions: 'assumptions',
   scenarios: 'scenarios',
 }
