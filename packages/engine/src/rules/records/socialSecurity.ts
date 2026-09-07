@@ -37,11 +37,23 @@ export const socialSecurityRecords = {
       url: 'https://www.law.cornell.edu/uscode/text/26/86',
       quotedText:
         'adjusted gross income - (A) determined without regard to this section and sections 85(c), 135, 137, 221, 911, 931, and 933, and (B) increased by the amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(a)(1)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm',
+      quotedText:
+        'Except as provided in paragraph (2), gross income for the taxable year of any taxpayer described in subsection (b) (notwithstanding section 207 of the Social Security Act) includes social security benefits in an amount equal to the lesser of— (A) one-half of the social security benefits received during the taxable year, or (B) one-half of the excess described in subsection (b)(1).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 86(c)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm',
+      quotedText:
+        'For purposes of this section— (1) Base amount The term "base amount" means— (A) except as otherwise provided in this paragraph, $25,000, (B) $32,000 in the case of a joint return, and (C) zero in the case of a taxpayer who— (i) is married as of the close of the taxable year (within the meaning of section 7703) but does not file a joint return for such year, and (ii) does not live apart from his spouse at all times during the taxable year. (2) Adjusted base amount The term "adjusted base amount" means— (A) except as otherwise provided in this paragraph, $34,000, (B) $44,000 in the case of a joint return, and (C) zero in the case of a taxpayer described in paragraph (1)(C).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-07',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
       'packages/engine/src/tax/federalTax.ts#taxableSocialSecurity',
@@ -258,11 +270,17 @@ export const socialSecurityRecords = {
       url: 'https://www.law.cornell.edu/uscode/text/42/402',
       quotedText:
         'such wife\u2019s insurance benefit for each month shall be equal to one-half of the primary insurance amount of her husband (or, in the case of a divorced wife, her former husband) for such month.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(c)(2)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec402.htm',
+      quotedText:
+        'Except as provided in subsection (q), such husband\'s insurance benefit for each month shall be equal to one-half of the primary insurance amount of his wife (or, in the case of a divorced husband, his former wife) for such month.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/insights/detectors/ssClaimMilestone.ts',
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
@@ -801,20 +819,20 @@ export const socialSecurityRecords = {
       quotedText: 'such marriage shall be deemed not to have occurred.',
     }, {
       kind: 'regulation',
-      citation: '20 CFR 404.336(e)',
-      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336',
+      citation: '20 CFR 404.335(e)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335',
       quotedText:
         'You are unmarried, unless for benefits for months after 1983 you meet one of the conditions in paragraphs (e)(1) through (3) of this section:',
     }, {
       kind: 'regulation',
-      citation: '20 CFR 404.336(e)(1)',
-      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336',
+      citation: '20 CFR 404.335(e)(1)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335',
       quotedText: 'You remarried after you became 60 years old.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-26',
+    verifiedOn: '2026-09-07',
     implementedBy: ['packages/engine/src/model/plan.ts'],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
@@ -1040,13 +1058,13 @@ export const socialSecurityRecords = {
         'Under the annual earnings test, we will reduce your monthly benefits (except disability insurance benefits based on the beneficiary\'s disability) by the amount of your excess earnings (as described in § 404.434), for each month in a taxable year (calendar year or fiscal year) in which you are under full retirement age (as defined in § 404.409(a)).',
     }, {
       kind: 'agencyGuidance',
-      citation: 'SSA POMS RS 00615.482, § C.1',
+      citation: 'SSA POMS RS 00615.482, § B.1',
       url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615482',
       quotedText:
         'Grant crediting months in RIB cases for months of: • full or partial work deduction; or • simultaneous RIB-Disability Insurance Benefit (DIB) entitlement.',
     }, {
       kind: 'agencyGuidance',
-      citation: 'SSA POMS RS 00615.482, § C.1 note',
+      citation: 'SSA POMS RS 00615.482, § B.1 note',
       url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615482',
       quotedText:
         'Proration of work deductions has no effect on the adjustment of the reduction factor, as stated under RS 02501.120B.3.',
@@ -1054,7 +1072,7 @@ export const socialSecurityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -1460,11 +1478,17 @@ export const socialSecurityRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
       quotedText:
         "Such child's insurance benefit for each month shall, if the individual on the basis of whose wages and self-employment income the child is entitled to such benefit has not died prior to the end of such month, be equal to one-half of the primary insurance amount of such individual for such month.",
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 403(a)(1)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec403.htm',
+      quotedText:
+        'In the case of an individual whose primary insurance amount has been computed or recomputed under section 415(a)(1) or (4) of this title, or section 415(d) of this title, as in effect after December 1978, the total monthly benefits to which beneficiaries may be entitled under section 402 or 423 of this title for a month on the basis of the wages and self-employment income of such individual shall, except as provided by paragraphs (3) and (6) (but prior to any increases resulting from the application of paragraph (2)(A)(ii)(III) of section 415(i) of this title), be reduced as necessary so as not to exceed— …',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-07',
     implementedBy: ['packages/engine/src/model/plan.ts'],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#householdSchema',
