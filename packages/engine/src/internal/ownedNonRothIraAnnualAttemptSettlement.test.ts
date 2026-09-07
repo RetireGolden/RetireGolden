@@ -37,6 +37,10 @@ vi.mock('./ownedNonRothIraContiguousReplay.js', async (importOriginal) => {
 })
 
 import {
+  runAnnualPassAttemptsWithAdapter,
+  type AnnualPassAttemptDriverAdapter,
+} from './annualPassAttemptDriver.js'
+import {
   captureOwnedNonRothIraAnnualAttemptStateEvidence,
   runOwnedNonRothIraAnnualSettlementAttempts,
   type OwnedNonRothIraAnnualSettlementEffect,
@@ -251,6 +255,64 @@ function mutateAttemptState(
 }
 
 describe('private owned-IRA annual attempt settlement', () => {
+  it('returns attemptLimitExceeded after eight distinct noncommitting probes', () => {
+    interface StubEffect { readonly id: string }
+    interface StubProbeReprobe {
+      readonly status: 'reprobe'
+      readonly observedEffects: readonly StubEffect[]
+    }
+    interface StubProbeCommit {
+      readonly status: 'commit'
+      readonly observedEffects: readonly StubEffect[]
+    }
+    type StubProbeResult = StubProbeReprobe | StubProbeCommit
+    const attemptLimit = 8 // annualPassAttemptDriver.MAX_ANNUAL_PASS_ATTEMPTS
+    const simulatorState = state()
+    const before = stateBytes(simulatorState)
+    let attemptCallbacks = 0
+    const adapter: AnnualPassAttemptDriverAdapter<
+      { token: number },
+      StubEffect,
+      { attempt: number },
+      StubProbeResult,
+      StubProbeCommit,
+      never
+    > = {
+      snapshotStable: () => ({ token: 1 }),
+      validStableContext: () => true,
+      canonicalizeEffects: (effects) => [...effects],
+      effectIdentity: (effects) => effects.map((effect) => effect.id).join('|'),
+      inputMatchesAttempt: () => true,
+      probe: (input) => ({
+        status: 'reprobe',
+        observedEffects: [{ id: `effect-${input.attempt}` }],
+      }),
+      resultBindingMatches: () => true,
+      observedEffects: (result) => result.observedEffects,
+      isCommitResult: (result): result is StubProbeCommit =>
+        result.status === 'commit',
+    }
+
+    const result = runAnnualPassAttemptsWithAdapter({
+      state: simulatorState,
+      stable: { token: 1 },
+      initialAssumedEffects: [],
+      runAttempt: (context) => {
+        attemptCallbacks += 1
+        simulatorState.unassignedCash.write(context.attemptNumber)
+        return { attempt: context.attemptNumber }
+      },
+    }, adapter)
+
+    expect(result).toMatchObject({
+      status: 'rolledBack',
+      reason: 'attemptLimitExceeded',
+      attemptCount: attemptLimit,
+    })
+    expect(attemptCallbacks).toBe(attemptLimit)
+    expect(stateBytes(simulatorState)).toBe(before)
+  })
+
   it('reprobes from the exact checkpoint and queues one carryforward only on exact commit', () => {
     const plan = rmdPlan()
     const canonicalYears = project(plan)

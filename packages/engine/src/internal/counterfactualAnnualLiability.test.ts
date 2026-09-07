@@ -9,6 +9,7 @@ import type {
 import type { YearExpenses } from '../projection/types.js'
 import {
   COUNTERFACTUAL_OMISSION_TAX_INPUT_ID,
+  probeAnnualPassUnderTransaction,
   runCounterfactualAnnualLiability,
   type CounterfactualAnnualLiabilityRead,
   type CounterfactualAnnualLiabilityResult,
@@ -325,6 +326,49 @@ function read(
 }
 
 describe('counterfactual annual liability', () => {
+  it('reads a staging probe before rollback and restores bindings byte-for-byte', () => {
+    const state = bindings()
+    const before = annualPassStateBytes(state)
+
+    const result = probeAnnualPassUnderTransaction({
+      state,
+      runProbe: () => {
+        mutateEverything(state)
+        state.unassignedCash.write(1_000)
+        return { unassignedCash: state.unassignedCash.read() }
+      },
+    })
+
+    expect(result).toMatchObject({
+      status: 'annualPassProbeRead',
+      restoration: 'checkpointRestored',
+      observation: { unassignedCash: 1_000 },
+    })
+    expect(annualPassStateBytes(state)).toBe(before)
+  })
+
+  it('discards a successful staging probe when rollback throws', () => {
+    const state = bindings()
+    state.nextRetirementRuntimeMutationOrdinal = {
+      read: () => 3,
+      write: () => {
+        throw new Error('ordinal restoration refused')
+      },
+    }
+
+    const result = probeAnnualPassUnderTransaction({
+      state,
+      runProbe: () => ({ marker: 'would-have-been-read' }),
+    })
+
+    expect(result).toMatchObject({
+      status: 'annualPassProbeRefused',
+      reason: 'restorationFailed',
+      restoration: 'failed',
+    })
+    expect(result).not.toHaveProperty('observation')
+  })
+
   it('restores every checkpointed binding a counterfactual pass touched', () => {
     const state = bindings()
     const before = annualPassStateBytes(state)

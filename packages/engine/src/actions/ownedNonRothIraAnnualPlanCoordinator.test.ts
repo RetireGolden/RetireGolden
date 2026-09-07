@@ -855,6 +855,22 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
       },
       issue: 'ledgerRunMismatch',
     },
+    {
+      name: 'foreign year-end account',
+      alter: (value: CoordinatePlanOwnedNonRothIraAnnualWithdrawalCandidateInput) => {
+        const first = value.yearEndBalanceEvidence[0]!
+        value.yearEndBalanceEvidence = [
+          ...value.yearEndBalanceEvidence,
+          {
+            ...first,
+            sourceAccountId: asAccountId('foreign-ira'),
+            evidenceId: 'year-end-foreign',
+            upstreamEvidenceId: 'year-end-foreign-upstream',
+          },
+        ]
+      },
+      issue: 'yearEndBalanceEvidenceForeign',
+    },
   ])('fail-closes for $name', ({ alter, issue }) => {
     const value = input()
     alter(value)
