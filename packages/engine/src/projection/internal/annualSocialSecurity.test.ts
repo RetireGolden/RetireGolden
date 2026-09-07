@@ -52,6 +52,7 @@ function call(overrides: Partial<AnnualSocialSecurityInput> = {}) {
     ssHaircutFactor: 1,
     pack: packForYear(2026).pack,
     limitGrowth: 1,
+    currentSpouseContext: false,
     ...overrides,
   })
 }
@@ -289,6 +290,7 @@ describe('annualSocialSecurity — own benefits and publication', () => {
       ssHaircutFactor: 1,
       pack,
       limitGrowth: 1,
+      currentSpouseContext: false,
     })
 
     const first = annualSocialSecurity(input)

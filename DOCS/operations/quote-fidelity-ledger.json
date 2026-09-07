@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-07T07:09:41.353Z",
-  "recordCount": 436,
-  "urlCount": 335,
-  "fetched": 12,
-  "cached": 323,
-  "entryCount": 1225,
+  "generatedAt": "2026-09-07T14:50:00.161Z",
+  "recordCount": 437,
+  "urlCount": 337,
+  "fetched": 9,
+  "cached": 328,
+  "entryCount": 1229,
   "counts": {
-    "EXACT": 846,
+    "EXACT": 850,
     "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 222,
     "ELISION-EXACT": 64,
@@ -5753,6 +5753,46 @@
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/42/402",
       "quoteSha256": "9e6d2e5e1f51e41a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+      "citation": "42 U.S.C. 402(q)(3)(A)-(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "327987faa184ca28",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+      "citation": "42 U.S.C. 402(k)(3)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "f4c5c0de8c59942e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+      "citation": "SSA POMS RS 00615.250, A. Policy",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615250",
+      "quoteSha256": "81bee8ae3b637c56",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+      "citation": "SSA POMS RS 00615.694, A. Policy",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615694",
+      "quoteSha256": "3800d2d38b9661f1",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

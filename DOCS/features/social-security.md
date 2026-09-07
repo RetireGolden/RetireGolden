@@ -64,14 +64,7 @@ Benefits-only analysis separately illustrates survivor switching
 ([maritalBenefits.ts](../../packages/engine/src/socialSecurity/maritalBenefits.ts),
 [survivorSwitching.ts](../../packages/planner-ui/src/socialSecurity/survivorSwitching.ts)):
 
-- **Spousal top-up** while both are alive and claiming: the lower earner receives
-  `max(own, 0.5 × spousePIA × spousal factor)`. The current-spouse auxiliary is capped to the room left
-  under the worker's SSA retirement/survivor family maximum (PIA-based formula with official family-maximum
-  bend points in `ssaWageData.ts`). The plan offers one claim age rather than a restricted
-  current-spouse-only claim — the post-2015 deemed-filing shape in
-  [42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim)
-  (`usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled
-  (`usc-42-402-d-2-child-survivor-benefit`).
+- **Current-spouse dual entitlement** while both are alive: in the guarded ordinary simultaneous early case, the lower earner receives the existing reduced own amount plus the spousal factor applied to the positive unreduced excess, `max(0, 0.5 × workerPIA - ownPIA)`. The current-spouse auxiliary alone is capped to the room left under the worker's SSA retirement/survivor family maximum. The guard uses the planner's MFJ/two-person proxy, exactly one non-disabled Social Security stream per person, an original claimant claim before FRA, and a strict configured worker start date no later than the claimant's. The plan offers one claim age rather than a restricted current-spouse-only claim, consistent with the post-2015 deemed-filing shape in [42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim). MFJ and configured dates do not establish SSA eligibility or an actual entitlement month. Later-worker staggered claims, claimant delayed-own cases, disability, multiple streams, and unavailable historical entitlement facts remain on the disclosed legacy approximation (`usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`, `usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled (`usc-42-402-d-2-child-survivor-benefit`).
 - **Survivor step-up** after the first death: the survivor keeps the larger of their own benefit and the
   deceased's benefit, computed with full precision — the **survivor base is the deceased's actual
   (claim-age-adjusted) benefit** (including delayed credits if the deceased delayed), **RIB-LIM** currently

@@ -1632,6 +1632,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ssHaircutFactor,
       pack,
       limitGrowth,
+      currentSpouseContext:
+        plan.household.filingStatus === 'marriedFilingJointly' && people.length === 2,
     })
     incomes.socialSecurity += socialSecurity.socialSecurity
     for (const write of socialSecurity.withheldMonthWrites) {
