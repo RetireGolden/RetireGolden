@@ -92,8 +92,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2026-12-02",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-01-05",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
@@ -156,6 +156,16 @@
           "kind": "statute",
           "citation": "IRC 223(b)(7)",
           "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(b)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
         }
       ]
     },
@@ -673,8 +683,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/actions/annualHsaPenaltyEvaluation.ts"
       ],
@@ -698,6 +708,16 @@
           "kind": "statute",
           "citation": "IRC 223(f)(4)(B)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(8)(A)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 223(f)(8)(B)(i)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm"
         }
       ]
     },
@@ -775,8 +795,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/strategies/accountEligibility.ts"
       ],
@@ -831,6 +851,11 @@
           "kind": "statute",
           "citation": "IRC 223(f)(4)(A)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8889, line 17b",
+          "url": "https://www.irs.gov/instructions/i8889"
         }
       ]
     },

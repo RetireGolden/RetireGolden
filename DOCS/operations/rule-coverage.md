@@ -237,10 +237,10 @@ The 25 earliest due dates are shown below (441 rules total). Comparing dueOn to 
 | usc-42-1395r-i-5-C-top-irmaa-threshold-frozen | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-403-f-8-earnings-test-exempt-amounts | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-430-b-contribution-and-benefit-base | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| irc-223-b-2-7-projection-coverage-proration-and-medicare | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-415-c-1-annual-additions-lesser-of | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-55-d-exemption-phase-out-rate | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal | annuallyIndexed | 2026-08-04 | 2026-12-02 |
+| rev-proc-2025-25-aca-applicable-percentage-2026 | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 
 ## Manifest contract
 
@@ -252,16 +252,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-07T21:03:05.412Z over 1249 authority entries (10 fetched live, 330 from cache).
+Committed ledger generated at 2026-09-07T22:02:14.743Z over 1256 authority entries (9 fetched live, 331 from cache).
 
-37 serious, 57 advisory, 1155 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 57 advisory, 1162 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 65 |
+| ELISION-EXACT | ok | 67 |
 | ELISION-PUNCTUATION | advisory | 7 |
-| EXACT | ok | 856 |
+| EXACT | ok | 861 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 234 |
 | PUNCTUATION | advisory | 43 |

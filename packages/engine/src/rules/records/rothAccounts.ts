@@ -529,7 +529,7 @@ export const rothAccountRecords = {
         'Subject to subparagraph (B), no contribution shall be accepted to a pension-linked emergency savings account to the extent such contribution would cause the portion of the account balance attributable to participant contributions to exceed the lesser of- (i) $2,500; or (ii) an amount determined by the plan sponsor of the pension-linked emergency savings account. In the case of contributions made in taxable years beginning after December 31, 2024, the Secretary shall adjust the amount under clause (i) at the same time and in the same manner as the adjustment made under section 415(d), except that the base period shall be the calendar quarter beginning July 1, 2023. Any increase under the preceding sentence which is not a multiple of $100 shall be rounded to the next lowest multiple of $100.',
     }, {
       kind: 'irsNotice',
-      citation: 'IRS Notice 2024-22, section II.B',
+      citation: 'IRS Notice 2024-22, section II (Background)',
       url: 'https://www.irs.gov/pub/irs-drop/n-24-22.pdf',
       quotedText:
         'Subject to certain excess contribution rules, section 402A(e)(3)(A) provides that no contribution shall be accepted to a PLESA to the extent such contribution would cause the portion of the account balance attributable to participant contributions to exceed the lesser of (i) $2,500 or (ii) an amount determined by the plan sponsor of the PLESA.',

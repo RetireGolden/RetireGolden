@@ -171,13 +171,13 @@ export const healthSavingsAccountRecords = {
   'irc-223-f-4-B-hsa-death-exception': {
     title: 'Death waives the HSA 20 percent additional tax',
     statement:
-      'The 20 percent additional tax does not apply to a distribution made after the account beneficiary becomes disabled or dies. Not modelled: the engine carries disability evidence but holds no death fact, and death also ends the account HSA status under 223(f)(8), so treating it as merely waiving the 20 percent would understate the event.',
+      'The 20 percent additional tax does not apply to a distribution made after the account beneficiary becomes disabled or dies. Not modelled: the HSA penalty evaluator carries disability evidence but has no death input. If the surviving spouse acquires the beneficiary\'s interest as designated beneficiary, section 223(f)(8)(A) continues the account as that spouse\'s HSA; when that spouse-continuation rule does not apply, section 223(f)(8)(B)(i) ends HSA status at death and supplies a separate inclusion regime. Treating death as merely waiving the 20 percent would therefore fail to represent the post-death account treatment.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
       missingInputFacts: [
       'a death fact in the HSA distribution facts: evaluateAnnualHsaPenalty carries disability evidence and nothing for death',
-      'the section 223(f)(8) loss of HSA account status at death, without which waiving the 20 percent alone would understate the event',
+      'the section 223(f)(8) post-death account disposition: surviving-spouse continuation under (A), or account cessation and the person-or-estate inclusion under (B)(i)',
       ],
     },
     contraryReading: null,
@@ -190,11 +190,23 @@ export const healthSavingsAccountRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
       quotedText:
         'Subparagraph (A) shall not apply if the payment or distribution is made after the account beneficiary becomes disabled within the meaning of section 72(m)(7) or dies.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(f)(8)(A)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      quotedText:
+        'If the account beneficiary\'s surviving spouse acquires such beneficiary\'s interest in a health savings account by reason of being the designated beneficiary of such account at the death of the account beneficiary, such health savings account shall be treated as if the spouse were the account beneficiary.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(f)(8)(B)(i)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
+      quotedText:
+        'If, by reason of the death of the account beneficiary, any person acquires the account beneficiary\'s interest in a health savings account in a case to which subparagraph (A) does not apply— (I) such account shall cease to be a health savings account as of the date of death, and (II) an amount equal to the fair market value of the assets in such account on such date shall be includible if such person is not the estate of such beneficiary, in such person\'s gross income for the taxable year which includes such date, or if such person is the estate of such beneficiary, in such beneficiary\'s gross income for the last taxable year of such beneficiary.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-07',
     implementedBy: ['packages/engine/src/actions/annualHsaPenaltyEvaluation.ts'],
     implementedByFunctions: [
       'packages/engine/src/actions/annualHsaPenaltyEvaluation.ts#evaluateAnnualHsaPenalty',
@@ -340,11 +352,17 @@ export const healthSavingsAccountRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
       quotedText:
         'The tax imposed by this chapter on the account beneficiary for any taxable year in which there is a payment or distribution from a health savings account of such beneficiary which is includible in gross income under paragraph (2) shall be increased by 20 percent of the amount which is so includible.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8889, line 17b',
+      url: 'https://www.irs.gov/instructions/i8889',
+      quotedText:
+        'The additional 20% tax does not apply to distributions made after the account beneficiary: Dies, Becomes disabled or Turns age 65.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-07',
     implementedBy: ['packages/engine/src/strategies/accountEligibility.ts'],
     implementedByFunctions: [
       'packages/engine/src/strategies/accountEligibility.ts#hsaNonQualifiedPenaltyRate',
@@ -372,11 +390,23 @@ export const healthSavingsAccountRecords = {
       url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm',
       quotedText:
         'The limitation under this subsection for any month with respect to an individual shall be zero for the first month such individual is entitled to benefits under title XVIII of the Social Security Act and for each month thereafter.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'The amount allowable as a deduction under subsection (a) to an individual for the taxable year shall not exceed the sum of the monthly limitations for months during such taxable year that the individual is an eligible individual.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 223(b)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim',
+      quotedText:
+        'The monthly limitation for any month is 1/12 of- (A) in the case of an eligible individual who has self-only coverage under a high deductible health plan as of the first day of such month, $2,250.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',

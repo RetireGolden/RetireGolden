@@ -619,7 +619,7 @@ describe('traditional employer-plan penalty prerequisite', () => {
       expect(outcome).not.toBe(readings.preSeparationEmployerSeppExceptionApplies)
     })
 
-    it('provisional SEPP assessment after separation shows the date mutation is the discriminator', () => {
+    it('keeps the employer-plan SEPP assessment provisional when the series begins after separation', () => {
       const value = input({ separationDate: '2029-12-31' })
       value.seppEvidence = currentSepp(value)
 
