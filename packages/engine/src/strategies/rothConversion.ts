@@ -26,7 +26,8 @@ import type { FilingStatus, ParameterPack } from '../params/types.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { indexFederalTaxPack } from '../params/index.js'
 import { acaFederalPovertyLine, type AcaFplRegion } from '../tax/aca.js'
-import { computeFederalTax, type FederalTaxDetail } from '../tax/federalTax.js'
+import * as federalTax from '../tax/federalTax.js'
+import type { FederalTaxDetail } from '../tax/federalTax.js'
 
 export type FillTarget = Extract<Plan['strategies']['rothConversion'], { mode: 'fillToTarget' }>
 
@@ -46,6 +47,17 @@ export interface ConversionSizingInput {
   householdSize: number
   /** Characterized tax-exempt interest for IRMAA/fixed-MAGI sizing; ACA-independent. */
   taxExemptInterest?: number
+  /**
+   * Broad foreign-exclusion addback for federal pricing. When present — including
+   * explicit zero — it overrides the nested ACA compatibility value.
+   */
+  foreignExclusionAddback?: number
+  /**
+   * Narrow §1411(d) net addback for federal pricing. When present — including
+   * explicit zero — it overrides the resolved broad amount. Does not change
+   * IRMAA/fixed-MAGI or ACA cliff sizing metrics.
+   */
+  niitSection911A1NetAddback?: number
   /** Required for ACA-cliff sizing; absent/non-actionable fails closed. */
   aca?: {
     actionable: boolean
@@ -69,6 +81,16 @@ export type SizingResult =
 
 function characterizedTaxExemptInterest(input: ConversionSizingInput): number {
   return input.taxExemptInterest ?? input.aca?.taxExemptInterest ?? 0
+}
+
+function resolvedBroadForeignAddback(input: ConversionSizingInput): number | undefined {
+  if (input.foreignExclusionAddback !== undefined) return input.foreignExclusionAddback
+  return input.aca?.foreignExclusionAddback
+}
+
+function resolvedNiitForeignAddback(input: ConversionSizingInput): number | undefined {
+  if (input.niitSection911A1NetAddback !== undefined) return input.niitSection911A1NetAddback
+  return resolvedBroadForeignAddback(input)
 }
 
 function metricFor(target: FillTarget['target'], detail: FederalTaxDetail, input: ConversionSizingInput): number {
@@ -131,14 +153,15 @@ export function sizeRothConversion(strategy: FillTarget, input: ConversionSizing
   const metricAt = (conversion: number) =>
     metricFor(
       strategy.target,
-      computeFederalTax({
+      federalTax.computeFederalTax({
         year: input.year,
         filingStatus: input.filingStatus,
         ordinaryIncome: input.ordinaryIncomeBase + conversion,
         capitalGains: input.capitalGains,
         qualifiedDividends: input.qualifiedDividends ?? 0,
         taxExemptInterest: characterizedTaxExemptInterest(input),
-        foreignExclusionAddback: input.aca?.foreignExclusionAddback,
+        foreignExclusionAddback: resolvedBroadForeignAddback(input),
+        niitSection911A1NetAddback: resolvedNiitForeignAddback(input),
         ssBenefits: input.ssBenefits,
         peopleAged65Plus: input.peopleAged65Plus,
         itemizedDeductions: input.itemizedDeductions,

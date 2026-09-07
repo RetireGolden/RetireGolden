@@ -8,8 +8,11 @@
  *   2. AGI = ordinary + capital gains + taxable SS. Tax-exempt interest and
  *      income excluded under the §911/§931/§933 foreign and possessions
  *      exclusions affect §86 provisional income without becoming ordinary
- *      income or entering AGI directly. One shared foreignExclusionAddback
- *      approximates the different MAGI addbacks (§1411(d), §151(d)(5)(C)(iii)(II)).
+ *      income or entering AGI directly. `foreignExclusionAddback` is the broad
+ *      amount for §86, §151(d)(5)(C)(iii)(II) senior MAGI, and zero-rate LTCG
+ *      headroom; optional `niitSection911A1NetAddback` is the narrow §1411(d)
+ *      amount for the NIIT threshold leg, defaulting to the broad value when
+ *      omitted.
  *   3. Deductions: assemble an itemized candidate (capped SALT + mortgage
  *      interest + charitable after the §170 floor), apply the §68 overall
  *      limitation, then take the greater of that reduced itemized total or the
@@ -60,7 +63,10 @@ export interface FederalTaxDetail {
   /** Signed AGI before the return-level zero floor; used by ACA household MAGI assembly. */
   agiBeforeFloor: number
   agi: number
+  /** Broad foreign-exclusion addback MAGI (§151 senior deduction and related). */
   magi: number
+  /** Narrow §1411(d) net addback MAGI for the NIIT threshold leg only. */
+  niitMagi: number
   deduction: number
   seniorDeduction: number
   /** True when the itemized total beat the standard deduction this year. */
@@ -510,15 +516,19 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   )
   const agiBeforeFloor = agiExcludingSs + taxableSs
   const agi = Math.max(0, agiBeforeFloor) // return-level floor for tax / MAGI / IRMAA
-  // Two limits below run off modified AGI rather than the AGI line, and the
-  // statutes define different foreign addbacks: §1411(d) restores the
-  // §911(a)(1) exclusion net of §911(d)(6) disallowances, while
-  // §151(d)(5)(C)(iii)(II) restores amounts excluded under §§911, 931, or 933.
-  // The engine still carries one foreignExclusionAddback and adds it to AGI
-  // for both — a disclosed approximation
-  // (irc-1411-d-modified-agi-foreign-exclusion-addback). That same aggregate
-  // is already included in provisional income under §86(b)(2)(A) above.
-  const magi = agi + Math.max(0, input.foreignExclusionAddback ?? 0)
+  // §86(b)(2)(A) provisional income and §151(d)(5)(C)(iii)(II) senior MAGI use
+  // the broad foreign-exclusion addback; §1411(d) NIIT threshold MAGI uses the
+  // optional narrow net addback when supplied. Omission of the narrow member
+  // reuses the broad amount (irc-1411-d-modified-agi-foreign-exclusion-addback).
+  // The calculator accepts characterized inputs; it does not determine exclusion
+  // eligibility or gross/net certification.
+  const broadForeignAddback = Math.max(0, input.foreignExclusionAddback ?? 0)
+  const niitForeignAddback = Math.max(
+    0,
+    input.niitSection911A1NetAddback ?? input.foreignExclusionAddback ?? 0,
+  )
+  const magi = agi + broadForeignAddback
+  const niitMagi = agi + niitForeignAddback
 
   const senior = seniorDeductionAmount(pack, year, taxStatus, input.peopleAged65Plus, magi)
   // The OBBBA senior deduction applies whether you take the standard deduction or
@@ -586,7 +596,7 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
 
   const investmentIncome =
     gains + qualifiedDividends + Math.max(0, input.taxableInterestIncome ?? 0) + Math.max(0, input.ordinaryDividends ?? 0)
-  const niitBase = Math.min(investmentIncome, Math.max(0, magi - pack.niit.magiThreshold[taxStatus]))
+  const niitBase = Math.min(investmentIncome, Math.max(0, niitMagi - pack.niit.magiThreshold[taxStatus]))
   const niit = niitBase * (pack.niit.ratePct / 100)
 
   return {
@@ -596,6 +606,7 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
     agiBeforeFloor,
     agi,
     magi,
+    niitMagi,
     deduction,
     seniorDeduction: senior,
     itemized: useItemized,

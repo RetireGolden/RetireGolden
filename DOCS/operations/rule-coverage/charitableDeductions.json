@@ -152,7 +152,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 134
+              "line": 140
             }
           ]
         }
@@ -310,7 +310,7 @@
           "functions": [
             {
               "name": "charitableAfterFloor",
-              "line": 177
+              "line": 183
             }
           ]
         }
@@ -591,7 +591,7 @@
           "functions": [
             {
               "name": "deduction",
-              "line": 64
+              "line": 70
             }
           ]
         }
@@ -890,7 +890,7 @@
           "functions": [
             {
               "name": "section68Reduction",
-              "line": 216
+              "line": 222
             }
           ]
         }

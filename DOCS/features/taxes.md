@@ -33,8 +33,10 @@ Validation and persistence retain known, not-applicable, and unknown facts; omit
 facts default to an empty list. The annual expense pass resolves these facts internally,
 but tax pricing and published projection results do not yet consume that resolution.
 There is no planner editor for these fields. Supplying them in an imported plan does
-not change taxes or establish recommendation support; the existing foreign-addback
-approximation below remains in force.
+not change taxes or establish recommendation support. The direct calculator can accept
+separate broad and narrow addbacks when a caller supplies them, but the annual projection
+still omits the narrow input and therefore uses the documented broad-value compatibility
+fallback.
 
 Computed each year inside the projection loop. The ledger is **nominal**, so for a year with no published
 parameter pack the annually-indexed federal figures are carried forward at the plan's inflation rate before
@@ -76,13 +78,22 @@ State brackets are a separate question and are still held nominal (see `params/s
   Traditional-IRA deposits are currently treated as pre-tax without the §219(g) active-participant deduction
   phase-out; they may therefore understate tax at high income. The SECURE Act age-cap repeal is honored, but
   IRA/Roth excess-contribution excise is not priced (domain rules §5).
-- **MAGI:** NIIT (§1411(d)) adds only the §911(a)(1) foreign earned-income exclusion net of the
+- **MAGI:** NIIT (§1411(d)) adds only the net §911(a)(1) foreign earned-income exclusion after the
   §911(d)(6) disallowances; the senior deduction phase-out (§151(d)(5)(C)(iii)(II)) and the
   high-MAGI SALT phasedown (IRC §164(b)(7)(B)(iv), `irc-164-b-7-B-magi-phasedown`) use the broader
-  addback of amounts excluded under §§911, 931, or 933. The engine still carries one
-  `foreignExclusionAddback` and reuses it for both NIIT and senior — a disclosed approximation
-  (`irc-1411-d-modified-agi-foreign-exclusion-addback`). The SALT phasedown itself is not yet
-  wired — the cap binds without MAGI reduction today.
+  amounts excluded under §§911, 931, or 933. The direct federal calculator accepts those as separate
+  inputs: `foreignExclusionAddback` remains the broad §86/senior-MAGI carrier, while optional
+  `niitSection911A1NetAddback` feeds only the NIIT threshold leg and the result exposes `niitMagi`.
+  If the narrow input is omitted, the calculator reuses the broad value as the documented compatibility
+  approximation; explicit zero does not fall back. Direct Roth-conversion sizing carries
+  `foreignExclusionAddback` and `niitSection911A1NetAddback` into each `computeFederalTax` call it uses
+  to price a candidate amount, but its sizing metrics read only taxable income, ACA MAGI components, or
+  signed pre-floor AGI plus characterized tax-exempt interest — none of them reads `niit` or `niitMagi`,
+  and no NIIT-aware sizing amount correction is claimed. The annual projection does not yet pass the
+  internally resolved narrow value to tax pricing, so annual planner results continue to use the
+  compatibility path and are not recommendation-ready on this basis
+  (`irc-1411-d-modified-agi-foreign-exclusion-addback`). The SALT phasedown itself is not yet wired —
+  the cap binds without MAGI reduction today.
 - **NIIT** 3.8% of the lesser of net investment income or the nonnegative MAGI excess over $200k single / $250k MFJ (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the
   Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)).
   Both SEPP methods — required-minimum-distribution and amortization — divide by the IRS **Single Life Table**

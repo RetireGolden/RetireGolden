@@ -298,8 +298,8 @@
     },
     {
       "path": "projection/internal/types/tax.ts",
-      "sweptOn": "2026-09-05",
-      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback remains a declaration-only legacy carrier documenting the shared aggregate without enforcing MAGI composition; residual: `taxParameterFilingStatus`'s QSS-to-MFJ selection is pinned for Delaware's standard-deduction approximation at `de-pit-est-2026-qss-standard-deduction-joint-mapper`; wholesale reuse by other state parameter selection remains a jurisdiction-specific residual."
+      "sweptOn": "2026-09-06",
+      "note": "one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback and optional niitSection911A1NetAddback are declaration-only carriers documenting characterized inputs without enforcing MAGI composition or exclusion eligibility; residual: `taxParameterFilingStatus`'s QSS-to-MFJ selection is pinned for Delaware's standard-deduction approximation at `de-pit-est-2026-qss-standard-deduction-joint-mapper`; wholesale reuse by other state parameter selection remains a jurisdiction-specific residual."
     },
     {
       "path": "projection/optimizePlan.ts",
@@ -353,13 +353,13 @@
     },
     {
       "path": "strategies/rothConversion.ts",
-      "sweptOn": "2026-08-24",
-      "note": "Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; no record names this file"
+      "sweptOn": "2026-09-06",
+      "note": "Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; optional top-level broad and narrow foreign-exclusion addbacks transport into federal pricing with ACA-local nested compatibility fallback; sizing metrics unchanged by narrow transport; no record names this file; annual resolver transport remains pending and is not pinned here"
     },
     {
       "path": "tax/federalTax.ts",
-      "sweptOn": "2026-09-05",
-      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names; shared foreignExclusionAddback reused for both NIIT §1411(d) and senior §151(d)(5)(C)(iii)(II) MAGI remains a disclosed approximation (irc-1411-d-modified-agi-foreign-exclusion-addback) rather than separate statutory addbacks"
+      "sweptOn": "2026-09-06",
+      "note": "implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names; foreignExclusionAddback is the broad addback for §86, §151 senior MAGI, and zero-rate LTCG headroom; optional niitSection911A1NetAddback supplies the §1411(d) NIIT threshold leg with omitted-narrow reuse of the broad amount as a disclosed compatibility approximation (irc-1411-d-modified-agi-foreign-exclusion-addback); calculator accepts characterized inputs only and has no annual support policy"
     },
     {
       "path": "tax/medicare.ts",

@@ -46,22 +46,32 @@ export interface TaxYearInput {
    */
   taxExemptInterest?: number
   /**
-   * Legacy foreign-exclusion aggregate excluded from AGI under §911 foreign
-   * earned income and housing and §931/§933 possessions income (American Samoa,
-   * Guam, the Northern Marianas, Puerto Rico). The engine carries one
-   * nonnegative figure for all of them. It is not ordinary taxable income and
-   * never enters the AGI line. When omitted, `computeFederalTax` defaults to
-   * zero — NIIT can be understated and the senior deduction overstated. Supply
-   * this field whenever the household claims §§911, 931, or 933 exclusions, not
-   * only when Social Security is in play. IRC §86 puts a foreign-exclusion
-   * amount into Social Security provisional income; §1411(d) and
-   * §151(d)(5)(C)(iii)(II) define different modified-AGI addbacks for NIIT
-   * and the senior-deduction phase-out; ACA household MAGI carries a foreign
-   * addback too. This shared field is a disclosed legacy carrier: it does not
-   * certify the separate statutory gross/net mappings those definitions
-   * require. See irc-1411-d-modified-agi-foreign-exclusion-addback.
+   * Broad foreign-exclusion addback excluded from AGI under §911 foreign earned
+   * income and housing and §931/§933 possessions income (American Samoa, Guam,
+   * the Northern Marianas, Puerto Rico). The engine carries one nonnegative
+   * figure for all of them. It is not ordinary taxable income and never enters
+   * the AGI line. When omitted, `computeFederalTax` defaults this broad addback
+   * to zero for senior MAGI and Social Security provisional income. The NIIT
+   * addback defaults to zero only when neither this field nor
+   * `niitSection911A1NetAddback` is supplied. Supply this field
+   * whenever the household claims §§911, 931, or 933 exclusions, not only when
+   * Social Security is in play. IRC §86 puts a foreign-exclusion amount into
+   * Social Security provisional income; §151(d)(5)(C)(iii)(II) uses this
+   * broader addback for the senior-deduction phase-out; ACA household MAGI
+   * carries a foreign addback too. This field does not certify eligibility for
+   * exclusions under §§911, 931, or 933 or deductions allocable under
+   * §911(d)(6). See irc-1411-d-modified-agi-foreign-exclusion-addback.
    */
   foreignExclusionAddback?: number
+  /**
+   * Optional §1411(d) net addback: §911(a)(1) excluded earned income less
+   * §911(d)(6) allocable reductions, supplied as a characterized amount for the
+   * NIIT threshold leg only. When omitted, `computeFederalTax` reuses
+   * `foreignExclusionAddback` as a compatibility approximation. An explicit
+   * zero is honored and does not fall back. The calculator accepts the amount;
+   * it does not determine exclusion eligibility or gross/net certification.
+   */
+  niitSection911A1NetAddback?: number
   /**
    * Interest on U.S. government obligations (TIPS ladder coupons + inflation
    * accretion), already included in ordinaryIncome AND taxableInterestIncome.

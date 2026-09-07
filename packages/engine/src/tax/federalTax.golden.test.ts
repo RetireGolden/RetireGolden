@@ -116,12 +116,12 @@ describe('federal tax golden worksheets', () => {
   it('NIIT applies only on investment income above the MAGI threshold', () => {
     // 50,000 gains. At MAGI exactly 200,000 -> no NIIT.
     const at = computeFederalTax(input({ ordinaryIncome: 150_000, capitalGains: 50_000 }))
-    expectMoney(at.magi, 200_000)
+    expectMoney(at.niitMagi, 200_000)
     expectMoney(at.niit, 0)
 
     // One dollar over the threshold -> NIIT base = 1, NIIT = 3.8% * 1 = 0.038.
     const over = computeFederalTax(input({ ordinaryIncome: 150_001, capitalGains: 50_000 }))
-    expectMoney(over.magi, 200_001)
+    expectMoney(over.niitMagi, 200_001)
     expectMoney(over.niit, 0.038)
   })
 
