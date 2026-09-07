@@ -1,7 +1,8 @@
 /**
- * Pins the three approximated AIME earnings-history records: initial-computation
- * base window, annual indexed-earnings penny rounding, and computation-year
- * count with the five-year dropout and 1951 floor.
+ * Pins the four approximated AIME earnings-history records: initial-computation
+ * base window, annual indexed-earnings penny rounding, computation-year
+ * count with the five-year dropout and 1951 floor, and disability-freeze AIME
+ * exclusion.
  *
  * Official AWI figures are frozen from SSA's National Average Wage Index series
  * (https://www.ssa.gov/oact/cola/AWI.html, retrieved 2026-09-04), not imported
@@ -243,5 +244,54 @@ describeRule('usc-42-415-b-2-a-i-computation-years-five-year-dropout', {
     expect([modern, historical]).not.toEqual(accepted)
     expect([modern, historical]).not.toEqual(readings.noFiveYearDropout)
     expect([modern, historical]).not.toEqual(readings.firstFiveCalendarYearsDropped)
+  })
+})
+
+const DISABILITY_EARNINGS_YEARS = Array.from({ length: 33 }, (_, index) => 1986 + index)
+const DISABILITY_INDEXED_2017_CENTS = nearerPennyCents(AWI[2017], AWI[2017], AWI[2017])
+const DISABILITY_2018_NOMINAL_CENTS = Math.round(AWI[2018] * 100)
+const DISABILITY_ACCEPTED_SUM_CENTS = 27 * DISABILITY_INDEXED_2017_CENTS + DISABILITY_2018_NOMINAL_CENTS
+const DISABILITY_WRONG35_SUM_CENTS = 32 * DISABILITY_INDEXED_2017_CENTS + DISABILITY_2018_NOMINAL_CENTS
+const DISABILITY_COMPUTATION_YEARS = 28
+
+// Conditional 2019 DIB benchmark worksheet (42 U.S.C. 415(b)(2)(B)): worker born
+// 1964-06-15; qualifying established period of disability begins in 2019; DIB
+// benchmark/eligibility year 2019 with insured status met no later than onset;
+// first DIB entitlement after June 1980; no prior-DIB continuation, child-care
+// dropout, or higher alternate computation; earnings for 1986–2018 equal each
+// year's published AWI with no later earnings. Only birth date and earnings
+// reach computePiaFromEarnings — the eight facts above are authority-side
+// preconditions, not Plan inputs. The 2017 index makes the 32 AWI-level years
+// through 2017 equal 50,321.89 each; 2018 stays nominal 52,145.80. Thirty-three
+// elapsed years give min(floor(33 / 5), 5) = 5 disability dropout years, 28
+// computation years, and 336 divisor months:
+//   accepted: aimeFromCents(27 × AWI[2017] cents + AWI[2018] cents, 28) = 4_198;
+//   wrong-35: aimeFromCents(32 × AWI[2017] cents + AWI[2018] cents, 35) = 3_958.
+// The retirement-only helper instead uses age-62 eligibility, the 2024 index,
+// and ordinary 35-year selection; the pre-change engine produced 5_487 AIME before this evidence correction.
+describeRule('usc-42-415-b-2-b-disability-freeze-aime-exclusion', {
+  readings: {
+    disabilityBenchmarkAndComputationYears: aimeFromCents(
+      DISABILITY_ACCEPTED_SUM_CENTS,
+      DISABILITY_COMPUTATION_YEARS,
+    ),
+    disabilityIndexButOrdinary35YearDivisor: aimeFromCents(DISABILITY_WRONG35_SUM_CENTS, 35),
+    retirementEligibilityProxy: 5_487,
+  },
+  accepted: 'disabilityBenchmarkAndComputationYears',
+  produced: 'retirementEligibilityProxy',
+  note: 'conditional 2019 DIB benchmark; unit AIME',
+}, ({ accepted, produced, readings }) => {
+  it('uses retirement indexing and 35 years instead of the conditional disability computation', () => {
+    const aime = aimeOf({
+      dobYear: 1964,
+      dobMonth: 6,
+      dobDay: 15,
+      earnings: awiEarnings(DISABILITY_EARNINGS_YEARS),
+      lastEarningsYear: 2025,
+    })
+    expect(aime).toBe(produced)
+    expect(aime).not.toBe(accepted)
+    expect(aime).not.toBe(readings.disabilityIndexButOrdinary35YearDivisor)
   })
 })

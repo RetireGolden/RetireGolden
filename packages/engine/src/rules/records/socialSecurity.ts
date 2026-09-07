@@ -1601,16 +1601,22 @@ export const socialSecurityRecords = {
   },
 
   'usc-42-415-b-2-b-disability-freeze-aime-exclusion': {
-    title: 'A disability freeze excludes disability years from AIME computation',
+    title: 'A disability computation changes AIME indexing and computation years',
     statement:
-      'Benefit-computation and elapsed-year definitions exclude calendar years entirely or partly within a period of disability, so disability zeros do not remain in the AIME divisor. The Plan\'s Social Security stream already carries `disability.onsetAge`, but piaFromEarnings.ts builds the ordinary age-22-through-61 base window, removes only five low years, and never reads that onset when computing AIME, and simulate.ts resolves earnings-derived PIA through that same helper before the projection loop. The engine therefore returns an AIME (and the SSDI benefit derived from it) for an expressible earnings-and-onset input that is lower than the disability-freeze reading when disability years contain zero earnings.',
+      'Under the general AIME rule, the indexing year is the second year before the earliest year the worker reaches 62, becomes disabled, or dies before 62. Elapsed years end with the year before that earliest event, and post-June-1980 DIB generally uses one dropout year per five elapsed years, capped at five and subject to a two-computation-year minimum; for benefits payable after June 1981, a separate child-care dropout may increase the dropout when its requirements are met. Computation-base years wholly within an established period of disability and elapsed years wholly or partly within it are excluded unless counting the disability years produces a higher PIA. `computePiaFromEarnings` accepts no disability facts: it uses the worker\'s age-62 year, the ordinary age-22-through-61 window, and the ordinary five-year/top-35 selection. An earnings-derived PIA can therefore differ from a disability computation even when the Plan carries `disability.onsetAge`.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The fixture uses a 1964 worker with 33 pre-disability earnings years indexed to 69,846 dollars each and seven wholly disabled zero-earnings years from 2019 through 2025, with `disability.onsetAge` 55 (2019 onset). The statutory reading excludes the seven disability years, then applies the ordinary five-year dropout to 33 elapsed years: 28 × 69,846 ÷ (28 × 12), floored, equals an AIME of 5,820. The code has the onset fact but no exclusion pass; it carries two of the seven zeros after its five-year dropout and observably returns an AIME of 5,487 (33 × 69,846 ÷ 420, floored). The simulate-level companion observes the benefit paid from that unfrozen AIME against the freeze-side benefit. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.',
+      'The companion worksheet conditions the accepted value on an established 2019 period of disability, a 2019 DIB benchmark with insured status met no later than onset, first DIB entitlement after June 1980, and no prior-DIB, child-care-dropout, or higher-alternate-computation adjustment. Those are authority-side preconditions, not facts that `disability.onsetAge` proves. With 1986–2018 earnings equal to each year\'s published AWI, 2017 is the indexing year. The 32 earnings years through 2017 become 50,321.89 dollars each; 2018 remains its nominal 52,145.80 dollars. Thirty-three elapsed years yield five disability dropout years and 28 computation years, so the accepted AIME is floor((27 × 50,321.89 + 52,145.80) / 336) = 4,198. A partial implementation that uses the 2017 index but retains an ordinary 35-year divisor gives 3,958. The current retirement-only helper instead uses 2026 age-62 eligibility, the 2024 index, and 35 years and produces the already observed 5,487. The old 5,820 figure was a fixed-2024-index diagnostic, not a statutory reading, and is not retained as the accepted fixture. A wrong Social Security amount changes both taxable benefits and replacement funding, so taxpayer tax can move either way.',
     jurisdiction: 'federal',
     authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(2)(A)(ii)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title02/0215.htm',
+      quotedText:
+        'in the case of an individual who is entitled to disability insurance benefits, by the number of years equal to one-fifth of such individual\u2019s elapsed years (disregarding any resulting fractional part of a year), but not by more than 5 years.',
+    }, {
       kind: 'statute',
       citation: '42 U.S.C. 415(b)(2)(B)(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
@@ -1622,17 +1628,99 @@ export const socialSecurityRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim',
       quotedText:
         'the term "number of elapsed years" means (except as otherwise provided by section 104(j)(2) of the Social Security Amendments of 1972) the number of calendar years after 1950 (or, if later, the year in which the individual attained age 21) and before the year in which the individual died, or, if it occurred earlier (but after 1960), the year in which he attained age 62; except that such term excludes any calendar year any part of which is included in a period of disability.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(3)(A)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title02/0215.htm',
+      quotedText:
+        'Except as provided by subparagraph (B), the wages paid in and self-employment income credited to each of an individual\u2019s computation base years for purposes of the selection therefrom of benefit computation years under paragraph (2) shall be deemed to be equal to the product of\u2014 (i) the wages and self-employment income paid in or credited to such year (as determined without regard to this subparagraph), and (ii) the quotient obtained by dividing\u2014 (I) the national average wage index (as defined in section 209(k)(1)) for the second calendar year preceding the earliest of the year of the individual\u2019s death, eligibility for an old-age insurance benefit, or eligibility for a disability insurance benefit (except that the year in which the individual dies, or becomes eligible, shall not be considered as such year if the individual was entitled to disability insurance benefits for any month in the 12-month period immediately preceding such death or eligibility, but there shall be counted instead the year of the individual\u2019s eligibility for the disability insurance benefit to which he was entitled in such 12-month period), by (II) the national average wage index (as so defined) for the computation base year for which the determination is made.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 415(b)(3)(B)',
+      url: 'https://www.ssa.gov/OP_Home/ssact/title02/0215.htm',
+      quotedText:
+        'Wages paid in or self-employment income credited to an individual\u2019s computation base year which\u2014 (i) occurs after the second calendar year specified in subparagraph (A)(ii)(I), or (ii) is a year treated under subsection (f)(2)(C) as though it were the last year of the period specified in paragraph (2)(B)(ii), shall be available for use in determining an individual\u2019s benefit computation years, but without applying subparagraph (A) of this paragraph.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(b)(2)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'Computation base years do not include years wholly within a period of disability unless your primary insurance amount would be higher by using the disability years. In such situations, we count all the years during the period of disability, even if you had no earnings in some of them.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(d)(1)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'As a general rule, your indexing year is the second year before the earliest of the year you reach age 62, or become disabled or die before age 62.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(d)(3)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'We round the results to the nearer penny. (The quotient for your indexing year is 1.0; this means that your earnings in that year are used in their actual dollar amount; any earnings after your indexing year that may be used in computing your average indexed monthly earnings are also used in their actual dollar amount.)',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(e)(1)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'We count the years beginning with 1951, or (if later) the year you reach age 22, and ending with the earliest of the year before you reach age 62, become disabled, or die.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(e)(1)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'Years wholly or partially within a period of disability (as defined in \u00a7 404.1501(b) of subpart P of this part) are not counted unless your primary insurance amount would be higher. In that case, we count all the years during the period of disability, even though you had no earnings in some of those years.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(e)(1)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'These are your elapsed years. From your elapsed years, we then subtract up to 5 years, the exact number depending on the kind of benefits to which you are entitled. You cannot, under this procedure, have fewer than 2 benefit computation years.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(e)(3)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'Where the worker is first entitled to disability insurance benefits (DIB) after June 1980, there is an exception to the usual 5 year dropout provision explained in paragraph (e)(2) of this section. (For entitlement before July 1980, we use the usual dropout.) We call this exception the disability dropout.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(e)(3)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'We divide the elapsed years by 5 and disregard any fraction. The result, which may not exceed 5, is the number of dropout years. We subtract that number from the number of elapsed years to get the number of benefit computation years, which may not be fewer than 2.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(e)(4)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'For benefits payable after June 1981, the disability dropout might be increased by the child care dropout. If the number of disability dropout years is fewer than 3, we will drop out a benefit computation year for each benefit computation year that the worker meets the child care requirement and had no earnings, until the total of all dropout years is 3.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(e)(4)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'The child care requirement for any year is that the worker must have been living with his or her child (or his or her spouse\'s child) substantially throughout any part of any calendar year that the child was alive and under age 3.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.211(f)',
+      url: 'https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm',
+      quotedText:
+        'After we have indexed your earnings and found your benefit computation years, we compute your average indexed monthly earnings by\u2014 (1) Totalling your indexed earnings in your benefit computation years; (2) Dividing the total by the number of months in your benefit computation years; and (3) Rounding the quotient to the next lower whole dollar. if not already a multiple of $1.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA national average wage index series, 2016–2018',
+      url: 'https://www.ssa.gov/oact/COLA/awiseries.html',
+      quotedText:
+        '2016 48,642.15 1.13% 2017 50,321.89 3.45% 2018 52,145.80 3.62%',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-06',
     implementedBy: [
       'packages/engine/src/socialSecurity/piaFromEarnings.ts',
-      'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings',
     ],
   },

@@ -40,12 +40,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 164,
+          "line": 165,
           "note": "2020 AWI year plus 2023 cents",
           "tests": [
             {
               "title": "floors the indexed 2020 year to a whole dollar and drops AIME from 152 to 151",
-              "line": 174
+              "line": 175
             }
           ]
         }
@@ -118,12 +118,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 211,
+          "line": 212,
           "note": "modern 35-year vs 1951-floor 34-year",
           "tests": [
             {
               "title": "uses 35 computation years even when elapsed years start at the 1951 floor",
-              "line": 231
+              "line": 232
             }
           ]
         }
@@ -200,12 +200,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 120,
+          "line": 121,
           "note": "three cells: age-21, explicit 2024, projected 2024 via throughAge63",
           "tests": [
             {
               "title": "omits age-21 and age-62 pre-entitlement years; three cells pin input clamp and compute loop independently",
-              "line": 138
+              "line": 139
             }
           ]
         }

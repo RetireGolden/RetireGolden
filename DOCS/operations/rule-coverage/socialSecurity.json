@@ -55,7 +55,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 35
+              "line": 41
             }
           ]
         }
@@ -211,7 +211,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 35
+              "line": 41
             }
           ]
         }
@@ -299,7 +299,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 35
+              "line": 41
             }
           ]
         }
@@ -2651,31 +2651,21 @@
     },
     {
       "id": "usc-42-415-b-2-b-disability-freeze-aime-exclusion",
-      "title": "A disability freeze excludes disability years from AIME computation",
+      "title": "A disability computation changes AIME indexing and computation years",
       "classification": "approximated",
       "errorDirection": "bothDirections",
-      "conventionRationale": "The fixture uses a 1964 worker with 33 pre-disability earnings years indexed to 69,846 dollars each and seven wholly disabled zero-earnings years from 2019 through 2025, with `disability.onsetAge` 55 (2019 onset). The statutory reading excludes the seven disability years, then applies the ordinary five-year dropout to 33 elapsed years: 28 × 69,846 ÷ (28 × 12), floored, equals an AIME of 5,820. The code has the onset fact but no exclusion pass; it carries two of the seven zeros after its five-year dropout and observably returns an AIME of 5,487 (33 × 69,846 ÷ 420, floored). The simulate-level companion observes the benefit paid from that unfrozen AIME against the freeze-side benefit. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
+      "conventionRationale": "The companion worksheet conditions the accepted value on an established 2019 period of disability, a 2019 DIB benchmark with insured status met no later than onset, first DIB entitlement after June 1980, and no prior-DIB, child-care-dropout, or higher-alternate-computation adjustment. Those are authority-side preconditions, not facts that `disability.onsetAge` proves. With 1986–2018 earnings equal to each year's published AWI, 2017 is the indexing year. The 32 earnings years through 2017 become 50,321.89 dollars each; 2018 remains its nominal 52,145.80 dollars. Thirty-three elapsed years yield five disability dropout years and 28 computation years, so the accepted AIME is floor((27 × 50,321.89 + 52,145.80) / 336) = 4,198. A partial implementation that uses the 2017 index but retains an ordinary 35-year divisor gives 3,958. The current retirement-only helper instead uses 2026 age-62 eligibility, the 2024 index, and 35 years and produces the already observed 5,487. The old 5,820 figure was a fixed-2024-index diagnostic, not a statutory reading, and is not retained as the accepted fixture. A wrong Social Security amount changes both taxable benefits and replacement funding, so taxpayer tax can move either way.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-06",
+      "dueOn": "2027-09-06",
       "implementedBy": [
-        "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/socialSecurity/piaFromEarnings.ts"
       ],
       "implementations": [
-        {
-          "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
-            {
-              "name": "simulatePlan",
-              "line": 375
-            }
-          ]
-        },
         {
           "path": "packages/engine/src/socialSecurity/piaFromEarnings.ts",
           "functions": [
@@ -2687,28 +2677,17 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/socialSecurity/disability.test.ts"
+        "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/socialSecurity/disability.test.ts",
-          "line": 94,
-          "note": "unit AIME",
+          "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
+          "line": 272,
+          "note": "conditional 2019 DIB benchmark; unit AIME",
           "tests": [
             {
-              "title": "does not exclude seven wholly disabled zero-earnings years from the AIME divisor",
-              "line": 103
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/socialSecurity/disability.test.ts",
-          "line": 118,
-          "note": "simulate with onsetAge",
-          "tests": [
-            {
-              "title": "pays the unfrozen-AIME SSDI benefit even when disability.onsetAge is set",
-              "line": 127
+              "title": "uses retirement indexing and 35 years instead of the conditional disability computation",
+              "line": 285
             }
           ]
         }
@@ -2718,6 +2697,11 @@
       "authorities": [
         {
           "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(2)(A)(ii)",
+          "url": "https://www.ssa.gov/OP_Home/ssact/title02/0215.htm"
+        },
+        {
+          "kind": "statute",
           "citation": "42 U.S.C. 415(b)(2)(B)(ii)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
         },
@@ -2725,6 +2709,56 @@
           "kind": "statute",
           "citation": "42 U.S.C. 415(b)(2)(B)(iii)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(3)(A)",
+          "url": "https://www.ssa.gov/OP_Home/ssact/title02/0215.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 415(b)(3)(B)",
+          "url": "https://www.ssa.gov/OP_Home/ssact/title02/0215.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(b)(2)",
+          "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(d)(1)",
+          "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(d)(3)",
+          "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(e)(1)",
+          "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(e)(3)",
+          "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(e)(4)",
+          "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.211(f)",
+          "url": "https://www.ssa.gov/OP_Home/cfr20/404/404-0211.htm"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA national average wage index series, 2016–2018",
+          "url": "https://www.ssa.gov/oact/COLA/awiseries.html"
         }
       ]
     },
@@ -3096,7 +3130,7 @@
           "functions": [
             {
               "name": "ssdiMonthlyBenefit",
-              "line": 22
+              "line": 28
             }
           ]
         }
@@ -3190,7 +3224,7 @@
           "functions": [
             {
               "name": "inSsdiWindow",
-              "line": 44
+              "line": 50
             }
           ]
         }
@@ -3258,7 +3292,7 @@
           "functions": [
             {
               "name": "inSsdiWindow",
-              "line": 44
+              "line": 50
             }
           ]
         }
