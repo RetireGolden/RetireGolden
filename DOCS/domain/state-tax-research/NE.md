@@ -11,7 +11,7 @@ Tax year: 2025. Researched 2026-06-13.
 
 ## Summary
 - Broad individual income tax: **yes** (graduated, 2.46%–5.20%)
-- Taxes Social Security benefits: no (fully exempt as of tax year 2025)
+- Taxes Social Security benefits: no (fully exempt as of tax year 2024)
 - Long-term capital gains: taxed as ordinary income
 - Retirement income (pension, IRA, 401k): generally taxed (no broad exclusion; military/federal-civil-service/railroad pensions exempt)
 
@@ -39,7 +39,7 @@ Nebraska uses a graduated schedule with four brackets, **2.46%–5.20%** (2025).
 The top 5.20% rate begins at $38,870 (single) / $77,730 (MFJ). Standard
 deduction is $8,600 single / $17,200 MFJ.
 
-**Social Security is fully exempt** beginning with tax year 2025 (taxpayers
+**Social Security is fully exempt** beginning with tax year 2024 (taxpayers
 subtract 100% of the federally taxable SS amount) → `taxesSocialSecurity: false`.
 There is **no broad exclusion** for private pensions, IRAs, or 401(k)
 distributions — they are taxed at ordinary graduated rates → `retirement: { kind:
@@ -59,5 +59,6 @@ the big-levers private-retiree model.)
 ## Citations
 - https://www.incometaxpro.com/tax-rates/nebraska/single.htm — 2025 single brackets ($4,030 / $24,120 / $38,870; 2.46%/3.51%/5.01%/5.20%).
 - https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/drafts/2025_Tax_Calculation_Schedule_Draft.pdf — 2025 MFJ brackets ($8,040 / $48,250 / $77,730).
-- https://blog.turbotax.intuit.com/income-tax-by-state/nebraska-108625/ — standard deduction $8,600 / $17,200; SS fully exempt 2025; private pensions/IRA/401(k) taxable; military/federal/railroad exempt.
+- https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2716 — § 77-2716(14)(a)(iv), 100% of federally included Social Security benefits subtracted for tax years beginning on or after 2024-01-01.
+- https://blog.turbotax.intuit.com/income-tax-by-state/nebraska-108625/ — standard deduction $8,600 / $17,200; private pensions/IRA/401(k) taxable; military/federal/railroad exempt.
 - https://taxfoundation.org/data/all/state/state-income-tax-rates/ — cross-check 2025 rates 2.46%–5.20%.
