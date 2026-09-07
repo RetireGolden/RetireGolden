@@ -239,8 +239,8 @@ The 25 earliest due dates are shown below (436 rules total). Comparing dueOn to 
 | usc-42-403-f-8-earnings-test-exempt-amounts | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-430-b-contribution-and-benefit-base | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-223-b-2-7-projection-coverage-proration-and-medicare | annuallyIndexed | 2026-08-04 | 2026-12-02 |
-| irc-414-v-2-E-super-catch-up-window | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-415-c-1-annual-additions-lesser-of | annuallyIndexed | 2026-08-04 | 2026-12-02 |
+| irc-55-d-exemption-phase-out-rate | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 
 ## Manifest contract
 
