@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan, type Scenario } from '../model/plan.js'
+import type { TaxCalculator } from '../projection/types.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { setAcaYearContract } from '../testing/planFixtures.js'
 import { applyScenarioPatch, compareScenarios, diffScenarioPatch } from './scenarios.js'
@@ -164,7 +165,7 @@ describe('compareScenarios', () => {
     expect(cmp.rows[1]!.successRate!).toBeLessThanOrEqual(cmp.rows[0]!.successRate!)
   })
 
-  it('builds and uses a separate tax calculator for each patched plan', () => {
+  it('builds and uses a separate tax calculator for the base plan and each patched plan', () => {
     const draft = basePlan()
     draft.assumptions.inflationPct = 0
     draft.assumptions.defaultReturnPct = 0
@@ -188,7 +189,7 @@ describe('compareScenarios', () => {
     const plan = validate(draft)
     const createdRates: number[] = []
     const usedRates: number[] = []
-    const calculators = new Array<ReturnType<typeof createFlatTaxCalculator>>()
+    const calculators: TaxCalculator[] = []
     let sharedCalculatorCalls = 0
 
     const cmp = compareScenarios(plan, {
@@ -214,13 +215,14 @@ describe('compareScenarios', () => {
       },
     })
 
-    expect(createdRates).toEqual([0, 10])
+    expect([...createdRates].sort((a, b) => a - b)).toEqual([0, 10])
     expect(calculators).toHaveLength(2)
     expect(calculators[0]).not.toBe(calculators[1])
     expect(usedRates).toContain(0)
     expect(usedRates).toContain(10)
     expect(sharedCalculatorCalls).toBe(0)
     expect(cmp.rows[0]!.summary.lifetimeTaxesAndPenalties).toBe(0)
-    expect(cmp.rows[1]!.summary.lifetimeTaxesAndPenalties).toBeGreaterThan(0)
+    // flatTax double transport: one year of $10,000 ordinary at 10% => $1,000 (not federal/state law).
+    expect(cmp.rows[1]!.summary.lifetimeTaxesAndPenalties).toBe(1000)
   })
 })
