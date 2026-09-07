@@ -1,22 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { HISTORICAL_YEARS, portfolioReturnPct } from './historicalReturns.js'
+import { portfolioReturnPct, type HistoricalYear } from './historicalReturns.js'
 
 /**
- * Hand-worked blend arithmetic on the embedded 1928 row (stocks 43.8%, bonds 0.8%).
- * Validates portfolioReturnPct percent-weight blending only — not Damodaran/Shiller
- * transcription, basis-point historical accuracy, or the full Monte Carlo model.
+ * Synthetic arithmetic inputs — validates portfolioReturnPct percent-weight blending only.
+ * Not historical-data transcription certification or full Monte Carlo model coverage.
  *
- * Worksheet (60% equity): 43.8 × 0.60 + 0.8 × 0.40 = 26.28 + 0.32 = 26.60.
- * Endpoints: 0% equity → bond-only 0.8%; 100% equity → stock-only 43.8%.
+ * Positive: 43.8 × 0.60 + 0.8 × 0.40 = 26.60.
+ * Negative: -43.8 × 0.60 + -2.6 × 0.40 = -26.28 + -1.04 = -27.32.
  */
 describe('portfolioReturnPct blend arithmetic', () => {
-  it('blends the 1928 row at bond-only, stock-only, and 60% equity weights', () => {
-    const year1928 = HISTORICAL_YEARS.find((row) => row.year === 1928)
-    expect(year1928, 'HISTORICAL_YEARS must include year 1928').toBeDefined()
-
-    expect(portfolioReturnPct(year1928!, 0)).toBeCloseTo(0.8, 10)
-    expect(portfolioReturnPct(year1928!, 100)).toBeCloseTo(43.8, 10)
-    expect(portfolioReturnPct(year1928!, 60)).toBeCloseTo(26.6, 10)
+  it('blends synthetic rows at bond-only, stock-only, and 60% equity weights', () => {
+    const cases: { year: HistoricalYear; endpoints: [number, number]; blend60: number }[] = [
+      { year: { year: 9001, stocksPct: 43.8, bondsPct: 0.8, inflationPct: 0 }, endpoints: [0.8, 43.8], blend60: 26.6 },
+      { year: { year: 9002, stocksPct: -43.8, bondsPct: -2.6, inflationPct: 0 }, endpoints: [-2.6, -43.8], blend60: -27.32 },
+    ]
+    for (const { year, endpoints, blend60 } of cases) {
+      expect(portfolioReturnPct(year, 0)).toBeCloseTo(endpoints[0], 10)
+      expect(portfolioReturnPct(year, 100)).toBeCloseTo(endpoints[1], 10)
+      expect(portfolioReturnPct(year, 60)).toBeCloseTo(blend60, 10)
+    }
   })
 })
