@@ -57,9 +57,12 @@ removed the prior income limits) → `taxesSocialSecurity: false`. **Public**
 pensions get a sizable deduction (up to ~$48,000 in 2025), but **private**
 pensions, IRAs, and 401(k) distributions qualify only for the smaller private
 retirement exclusion of up to **$6,000 per person**, phased out above MAGI of
-$25,000 (single) / $32,000 (MFJ). Because the common private-retiree case is the
-$6,000 cap, mapped to `retirement: { kind: "capped", capPerPerson: 6000 }`, no
-age gate.
+$25,000 (single) / $32,000 (MFJ). RSMo § 143.124(1) allows the deduction for
+each taxpayer on the combined return; the pack's `capPerPerson: 6000` uses
+that person-level unit. Current § 143.124(3) and (4) retain the $6,000 cap
+and income phaseout for TY2026; this is not a full private-retirement exemption.
+The pack models this as `retirement: { kind: "capped", capPerPerson: 6000 }`,
+with no age gate.
 
 ## Simplifications / not modeled
 - Public-pension deduction (~$48,000, 2025) not modeled — `capPerPerson: 6000`
@@ -67,9 +70,6 @@ age gate.
 - The $6,000 private exclusion is **income-phased-out** above $25k/$32k MAGI;
   not modeled (the cap is generous for higher-income retirees who would actually
   get less).
-- Current RSMo § 143.124 continues the **$6,000-per-taxpayer** private
-  retirement deduction and its income phaseout for TY2026. Proposals for a full
-  private-retirement exemption are not current law; do not switch to `kind: "full"`.
 - Brackets are inflation-adjusted annually; 2025 thresholds held forward.
 
 ## Citations
