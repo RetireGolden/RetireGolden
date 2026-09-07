@@ -805,6 +805,31 @@ describe('taxStrategyEvaluation', () => {
       ),
     ).toBe(true)
     expect(() => assertTaxStrategyEvaluationLimitations(misclassified)).toThrow()
+
+    const wrongDirection = parseTaxStrategyEvaluation(
+      JSON.parse(
+        JSON.stringify({
+          ...evaluation,
+          limitations: [{
+            ruleId: PAB_AMT_RULE_ID,
+            classification: 'approximated',
+            errorDirection: 'overstatesTax',
+            note: pabAmtLimitation.note,
+          }],
+        }),
+      ),
+    )
+    const wrongDirectionIssues = validateTaxStrategyEvaluationLimitations(wrongDirection)
+    expect(wrongDirectionIssues).toEqual([
+      {
+        path: ['limitations', 0, 'errorDirection'],
+        ruleId: PAB_AMT_RULE_ID,
+        message:
+          `limitation errorDirection "overstatesTax" does not match registry ` +
+          `"understatesTax" for ruleId "${PAB_AMT_RULE_ID}"`,
+      },
+    ])
+    expect(() => assertTaxStrategyEvaluationLimitations(wrongDirection)).toThrow()
   })
 
   it('rejects reason-outcome swaps on evaluation actions and comparison actionRows', () => {

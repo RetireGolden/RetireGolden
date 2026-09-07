@@ -26,6 +26,7 @@ import {
   type PlanCrossFieldContext,
 } from './planCrossFieldChecks.js'
 import type { PlanDocument } from './plan.js'
+import { packForYear } from '../params/index.js'
 import {
   couplePlan,
   recurringOrdinaryIncome,
@@ -275,5 +276,42 @@ describe('checkRothConversionFillToTarget', () => {
     const plan = singlePersonPlan()
     plan.strategies.rothConversion = { mode: 'none' }
     expect(issuesFrom(checkRothConversionFillToTarget, plan)).toEqual([])
+  })
+
+  // N is the published pack's tier count — the same expression the check reads.
+  // This pins the direct validation contract, not statute; plan.conversionWindow.test.ts
+  // independently covers the five-step legal mapping via parsePlan and its
+  // source-vs-pack coherence gate for 42 U.S.C. 1395r(i)(3).
+  it('accepts IRMAA tier endpoints 1 and N and refuses targets outside 1..N', () => {
+    const taxYear = 2026
+    const tierCount = packForYear(taxYear).pack.medicare.irmaaTiers.length
+    const message = `an IRMAA tier target must be a whole number from 1 to ${tierCount}`
+    const expectedIssue = {
+      code: 'custom',
+      path: ['strategies', 'rothConversion', 'targetValue'],
+      message,
+    }
+
+    const withIrmaaTarget = (targetValue: number | null): PlanDocument => {
+      const plan = singlePersonPlan()
+      plan.strategies.rothConversion = {
+        mode: 'fillToTarget',
+        target: 'irmaaTier',
+        targetValue,
+        startYear: taxYear,
+        endYear: taxYear + 5,
+      }
+      return plan
+    }
+
+    for (const validTarget of [1, tierCount]) {
+      expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(validTarget))).toEqual([])
+    }
+
+    for (const invalidTarget of [0, -1, tierCount + 1, 1.5, null] as const) {
+      expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(invalidTarget))).toEqual([
+        expectedIssue,
+      ])
+    }
   })
 })
