@@ -106,7 +106,10 @@ State brackets are a separate question and are still held nominal (see `params/s
   `reason: 'noShortfall'` with `taxYear: 2026` no longer appears — no first-year residual survives. The
   deadline-year excise is exposed only when that calendar year is inside the simulation horizon; a projection
   ending in the first distribution calendar year does not publish the carried remainder or a later excise row, and
-  no public pending-obligation field was added. Correction evidence prices the excise only; the corrective account
+  no public pending-obligation field was added. For a default first-year miss, `rmdShortfallReliefElections`
+  must key the published obligation id with the April-deadline tax year — e.g.
+  `rmdShortfallObligationId(ownedIras, 2026, 2027)` — not the two-argument `…(ownedIras, 2026)` form that
+  resolves to `:tax-2026`. Correction evidence prices the excise only; the corrective account
   movement and its income character remain separate ledger inputs. See [domain rules §6](../domain/domain-rules-reference/06-rmds-secure-20.md).
 - **QCD:** a modeled household QCD's qualified portion is excluded from ordinary income, and the gift counts toward an RMD when one is due. It
   is **not** conditional on an RMD: the pre-RMD window from 70½ (resolved from the birth month at annual

@@ -339,7 +339,7 @@
       "title": "Deferral of the first required minimum distribution to April 1",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attempting the first-year payment in the attainment year—booking only what is actually distributed there—and requires an explicit opt-in for the whole-deferral April 1 path rather than inventing a household preference. The settled claim stops at the default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.",
+      "conventionRationale": "Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attempting the first-year payment in the attainment year—when fully funded, the whole requirement is booked there—and requires an explicit opt-in for the whole-deferral April 1 path rather than inventing a household preference. Capacity-constrained default first-year payment and any unpaid remainder carried to the April 1 deadline year are registered at treas-reg-54-4974-1-f-first-year-rbd-excise-tax, without settling income recognition on that path here. The settled claim stops at the fully funded default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -979,12 +979,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
-          "line": 383,
+          "line": 452,
           "note": "living designated Roth employer-account owner past the ordinary RMD age",
           "tests": [
             {
               "title": "never creates a lifetime §4974 obligation for a living designated Roth account owner",
-              "line": 391
+              "line": 460
             }
           ]
         }
@@ -1047,12 +1047,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
-          "line": 354,
+          "line": 423,
           "note": "living Roth IRA owner past the ordinary RMD age",
           "tests": [
             {
               "title": "never creates a lifetime §4974 obligation for a living Roth IRA owner",
-              "line": 362
+              "line": 431
             }
           ]
         }
@@ -3621,12 +3621,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
-          "line": 172,
+          "line": 239,
           "note": "April 1 excise in the deadline year",
           "tests": [
             {
               "title": "covers explicit deferral, no-option whole/partial miss, and rejects attainment-year excise",
-              "line": 184
+              "line": 251
             }
           ]
         }

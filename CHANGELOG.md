@@ -12,7 +12,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   the same dollars but no longer publishes an attainment-year `noShortfall`
   excise-detail row. Generic §4974 rate/relief fixtures retarget to a 1952 owner
   (age 74, divisor 25.5) so December 31 deadline years stay separate from the
-  first-year rule vector.
+  first-year rule vector. Default first-year misses now publish
+  `rmdShortfallObligationId(ownedIras, 2026, 2027)` — the two-argument
+  `…(ownedIras, 2026)` form keys `:tax-2026` and no longer matches; callers
+  should use the published obligation id or pass the explicit deadline tax year.
 
 - **SSDI freeze evidence correction:** replaced a retirement-index proxy that had been labeled as the statutory disability-freeze oracle with a conditional 2019 disability AIME worksheet, separated the unchanged 2026 engine result into characterization coverage, and clarified that `disability.onsetAge` does not establish DIB eligibility facts. Calculator output is unchanged; disability-aware AIME remains unimplemented.
 - **Ground-truth dashboard follow-up:** corrected the annual re-verification cadence for Maine's indexed standard deduction and phase-out, registered Delaware's still-unfixed 2026 QSS standard-deduction mapping as an approximation, and scoped the settled NIIT lesser-of record to supplied NII and MAGI inputs. Calculator output is unchanged.

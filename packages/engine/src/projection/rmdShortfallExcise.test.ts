@@ -23,7 +23,9 @@ const SECOND_YEAR_AMOUNT = START_BALANCE / 25.5
 const GENERIC_RMD_AMOUNT = START_BALANCE / 25.5
 const PARTIAL_PAYMENT = 8_000
 const WHOLE_MISS_TAX_2027 = FIRST_YEAR_AMOUNT * 0.25
-const PARTIAL_MISS_TAX_2027 = (FIRST_YEAR_AMOUNT - PARTIAL_PAYMENT) * 0.25
+const PARTIAL_MISS_SHORTFALL = FIRST_YEAR_AMOUNT - PARTIAL_PAYMENT
+const PARTIAL_MISS_TAX_2027 = PARTIAL_MISS_SHORTFALL * 0.25
+const PARTIAL_MISS_CORRECTED_TAX = PARTIAL_MISS_SHORTFALL * 0.10
 const REJECTED_FIRST_YEAR_TAX_2026 = FIRST_YEAR_AMOUNT * 0.25
 const GENERIC_WHOLE_MISS_TAX = GENERIC_RMD_AMOUNT * 0.25
 const GENERIC_PARTIAL_MISS_TAX = (GENERIC_RMD_AMOUNT - PARTIAL_PAYMENT) * 0.25
@@ -167,6 +169,71 @@ describe('§4974 integration in the annual ledger', () => {
     }).years[0]!
     expect(granted.penalties).toBe(0)
   })
+
+  it('applies §4974 relief only to the April-deadline obligation id for a default first-year partial miss', () => {
+    // Independent worksheet (IRC §4974(a)), 1953 owner age 73 in 2026:
+    // required = 500,000 / 26.5 = 18,867.924528...
+    // timely distributed in 2026 = 8,000; shortfall = 10,867.924528...
+    const correctId = rmdShortfallObligationId(OWNER_IRAS, 2026, 2027)
+    const oldId = rmdShortfallObligationId(OWNER_IRAS, 2026)
+    const correction = {
+      amount: PARTIAL_MISS_SHORTFALL,
+      receivedOn: '2027-05-01',
+      sourceApplicablePlan: OWNER_IRAS,
+      form5329FiledOn: '2028-04-15',
+      returnReflectsReducedTax: true,
+    }
+
+    const base = run(partialMissPlan(), { horizonEndYear: 2027 })
+    const partial2026 = base.years.find((year) => year.year === 2026)!
+    const partial2027 = base.years.find((year) => year.year === 2027)!
+    expect(partial2026.rmd).toBeCloseTo(PARTIAL_PAYMENT, 8)
+    expect(partial2026.magi).toBeCloseTo(PARTIAL_PAYMENT, 8)
+    expect(partial2026.rmdShortfallExciseTax).toBe(0)
+    expect(partial2027.magi).toBe(0)
+    expect(partial2027.rmdShortfallExciseDetails).toEqual([expect.objectContaining({
+      obligationId: correctId,
+      distributionCalendarYear: 2026,
+      taxYear: 2027,
+      distributedByDeadline: PARTIAL_PAYMENT,
+      shortfall: PARTIAL_MISS_SHORTFALL,
+      rate: 0.25,
+      tax: PARTIAL_MISS_TAX_2027,
+      reason: 'default25Percent',
+    })])
+
+    const corrected = run(partialMissPlan(), {
+      horizonEndYear: 2027,
+      rmdShortfallReliefElections: [{ obligationId: correctId, correctiveDistribution: correction }],
+    }).years.find((year) => year.year === 2027)!
+    expect(corrected.rmdShortfallExciseTax).toBeCloseTo(PARTIAL_MISS_CORRECTED_TAX, 8)
+    expect(corrected.rmdShortfallExciseDetails?.[0]).toMatchObject({
+      rate: 0.10,
+      reason: 'corrected10Percent',
+    })
+    expect(corrected.magi).toBe(0)
+
+    const waived = run(partialMissPlan(), {
+      horizonEndYear: 2027,
+      rmdShortfallReliefElections: [{ obligationId: correctId, discretionaryWaiver: 'granted' }],
+    }).years.find((year) => year.year === 2027)!
+    expect(waived.rmdShortfallExciseTax).toBe(0)
+    expect(waived.rmdShortfallExciseDetails?.[0]).toMatchObject({
+      rate: 0,
+      reason: 'discretionaryWaiverGranted',
+      tax: 0,
+    })
+
+    const mismatched = run(partialMissPlan(), {
+      horizonEndYear: 2027,
+      rmdShortfallReliefElections: [{ obligationId: oldId, correctiveDistribution: correction }],
+    }).years.find((year) => year.year === 2027)!
+    expect(mismatched.rmdShortfallExciseTax).toBeCloseTo(PARTIAL_MISS_TAX_2027, 8)
+    expect(mismatched.rmdShortfallExciseDetails?.[0]).toMatchObject({
+      rate: 0.25,
+      reason: 'default25Percent',
+    })
+  })
 })
 
 describeRule('treas-reg-54-4974-1-f-first-year-rbd-excise-tax', {
@@ -185,6 +252,8 @@ describeRule('treas-reg-54-4974-1-f-first-year-rbd-excise-tax', {
     // Treas. Reg. §54.4974-1(f) / former §54.4974-2 Q&A-6, 1953 owner:
     // first distribution calendar year amount = 500,000 / 26.5 = 18,867.924528...
     // §4974 = 25% of shortfall, imposed in the calendar year containing April 1.
+    // Default, elected, whole, and partial blocks below are scenario coordinates for
+    // one regulation vector — not competing statutory readings.
 
     // Explicit full deferral control: unchanged zero tax in 2026; both amounts in 2027 if unpaid.
     const explicitDeferral = run(wholeMissPlan(2027), {
