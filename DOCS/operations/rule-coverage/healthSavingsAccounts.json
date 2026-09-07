@@ -56,12 +56,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 685,
+          "line": 684,
           "note": null,
           "tests": [
             {
               "title": "reduces realized MAGI and ACA household MAGI by the allowed HSA contribution",
-              "line": 692
+              "line": 691
             }
           ]
         }
@@ -212,12 +212,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 613,
+          "line": 612,
           "note": null,
           "tests": [
             {
-              "title": "reads the 2026 self-only and family limits from the parameter pack",
-              "line": 623
+              "title": "matches the published 2026 self-only and family HSA limits",
+              "line": 622
             }
           ]
         }
@@ -295,12 +295,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 144,
+          "line": 143,
           "note": null,
           "tests": [
             {
               "title": "keeps the catch-up flat while the base limit grows",
-              "line": 148
+              "line": 147
             }
           ]
         }
@@ -363,20 +363,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 190,
+          "line": 189,
           "note": null,
           "tests": [
             {
               "title": "halves the family base between spouses but leaves each catch-up whole",
-              "line": 198
+              "line": 197
             },
             {
               "title": "leaves a one-person household on the undivided self-only limit",
-              "line": 239
+              "line": 238
             },
             {
               "title": "leaves an unmarried two-person household a whole family limit each",
-              "line": 260
+              "line": 259
             }
           ]
         }
@@ -503,16 +503,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts",
-          "line": 490,
+          "line": 519,
           "note": null,
           "tests": [
             {
               "title": "measures a claim against the remainder, not the original amount",
-              "line": 500
+              "line": 529
             },
             {
               "title": "chains the remainder across allocations within the year",
-              "line": 519
+              "line": 548
             }
           ]
         }
@@ -537,7 +537,7 @@
       "title": "An HSA may reimburse the expenses of the beneficiary, spouse, and dependents",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "The reimbursement ledger consumes caller-supplied patient relationship facts. A qualifyingDependent input means a dependent under section 152 as modified by section 223(d)(2)(A); this function does not determine dependency from household, support, residency, or other underlying facts. It requires a nonblank patientRelationshipEvidenceId, binds that identifier to the owner, expense, relationship, and evaluation date, and rejects a self relationship that contradicts the patient identity. That structural evidence binding does not independently verify a spouse or dependent classification. The related-person fixture tests reimbursement conditional on the supplied qualifying relationship, not automatic dependency determination; callers must establish the relationship before submitting the claim.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -575,16 +575,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts",
-          "line": 400,
+          "line": 401,
           "note": null,
           "tests": [
             {
-              "title": "qualifies a distribution reimbursing the spouse of the account owner",
-              "line": 409
+              "title": "qualifies spouse and qualifying-dependent reimbursements",
+              "line": 415
             },
             {
               "title": "refuses a relationship claim that contradicts the patient identity",
-              "line": 420
+              "line": 449
             }
           ]
         }
@@ -1096,16 +1096,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts",
-          "line": 430,
+          "line": 459,
           "note": null,
           "tests": [
             {
               "title": "refuses to reimburse an expense incurred before the HSA existed",
-              "line": 439
+              "line": 468
             },
             {
               "title": "admits the same claim once establishment precedes the expense",
-              "line": 453
+              "line": 482
             }
           ]
         }
@@ -1168,12 +1168,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualHsaReimbursementLedger.test.ts",
-          "line": 470,
+          "line": 499,
           "note": null,
           "tests": [
             {
               "title": "reimburses an expense incurred six tax years earlier",
-              "line": 478
+              "line": 507
             }
           ]
         }
