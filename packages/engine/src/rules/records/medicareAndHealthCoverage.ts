@@ -296,11 +296,17 @@ export const medicareAndHealthCoverageRecords = {
       url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
       quotedText:
         'the individual\u2019s modified adjusted gross income shall be such income determined for the individual\u2019s last taxable year beginning in the second calendar year preceding the year involved.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 1395r(i)(3)(C)(i)(III)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim',
+      quotedText:
+        'Subject to paragraph (5), for years beginning with 2019: … The applicable percentage is: … 35 percent … 50 percent … 65 percent … 80 percent … 85 percent.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/tax/medicare.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -483,9 +489,16 @@ export const medicareAndHealthCoverageRecords = {
         'There shall be allowed as a deduction the expenses paid during the taxable year, not compensated for by insurance or otherwise, for medical care of the taxpayer, his spouse, or a dependent (as defined in section 152, determined without regard to subsections (b)(1), (b)(2), and (d)(1)(B) thereof), to the extent that such expenses exceed 7.5 percent of adjusted gross income.',
     }, {
       kind: 'statute',
-      citation: 'IRC 67(b)(5)',
+      citation: 'IRC 67(b), (b)(5)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim',
-      quotedText: 'the deduction under section 213 (relating to medical, dental, etc., expenses),',
+      quotedText:
+        'For purposes of this section, the term "miscellaneous itemized deductions" means the itemized deductions other than- … (5) the deduction under section 213 (relating to medical, dental, etc., expenses),',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 67(h)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim',
+      quotedText:
+        'Notwithstanding subsection (a), no miscellaneous itemized deduction shall be allowed for any taxable year beginning after December 31, 2017.',
     }, {
       kind: 'statute',
       citation: 'IRC 213(b)',
@@ -520,7 +533,7 @@ export const medicareAndHealthCoverageRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
       'packages/engine/src/model/plan.ts',

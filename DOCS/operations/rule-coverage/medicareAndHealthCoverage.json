@@ -165,8 +165,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/tax/federalTax.ts"
@@ -233,7 +233,12 @@
         },
         {
           "kind": "statute",
-          "citation": "IRC 67(b)(5)",
+          "citation": "IRC 67(b), (b)(5)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 67(h)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim"
         },
         {
@@ -1207,8 +1212,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2026-12-02",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-01-05",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/medicare.ts"
@@ -1261,6 +1266,11 @@
           "kind": "statute",
           "citation": "42 U.S.C. 1395r(i)(4)",
           "url": "https://www.law.cornell.edu/uscode/text/42/1395r"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 1395r(i)(3)(C)(i)(III)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim"
         }
       ]
     },

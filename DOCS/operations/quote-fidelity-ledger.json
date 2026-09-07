@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-07T21:03:05.412Z",
+  "generatedAt": "2026-09-07T22:02:14.743Z",
   "recordCount": 441,
   "urlCount": 340,
-  "fetched": 10,
-  "cached": 330,
-  "entryCount": 1249,
+  "fetched": 9,
+  "cached": 331,
+  "entryCount": 1256,
   "counts": {
-    "EXACT": 856,
+    "EXACT": 861,
     "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 234,
-    "ELISION-EXACT": 65,
+    "ELISION-EXACT": 67,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
@@ -3059,7 +3059,7 @@
     },
     {
       "id": "irc-402A-e-3-A-plesa-participant-contribution-cap",
-      "citation": "IRS Notice 2024-22, section II.B",
+      "citation": "IRS Notice 2024-22, section II (Background)",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-drop/n-24-22.pdf",
       "quoteSha256": "f52564cfc36cd893",
@@ -4918,6 +4918,26 @@
       "diagnosis": null
     },
     {
+      "id": "irc-223-f-4-B-hsa-death-exception",
+      "citation": "IRC 223(f)(8)(A)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm",
+      "quoteSha256": "72fa5f38e7636355",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-223-f-4-B-hsa-death-exception",
+      "citation": "IRC 223(f)(8)(B)(i)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm",
+      "quoteSha256": "4b39addfcbb1937a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "irc-223-f-4-B-hsa-disability-exception",
       "citation": "IRC 223(f)(4)(A)",
       "host": "www.law.cornell.edu",
@@ -5008,6 +5028,16 @@
       "diagnosis": null
     },
     {
+      "id": "irc-223-f-4-C-hsa-age-65-annual-proxy",
+      "citation": "Instructions for Form 8889, line 17b",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/instructions/i8889",
+      "quoteSha256": "a85c6646e8792ed1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "irc-223-b-2-7-projection-coverage-proration-and-medicare",
       "citation": "IRC 223(b)(2)(B)",
       "host": "uscode.house.gov",
@@ -5023,6 +5053,26 @@
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partVII-sec223.htm",
       "quoteSha256": "7f52e8abdc691dd8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-223-b-2-7-projection-coverage-proration-and-medicare",
+      "citation": "IRC 223(b)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim",
+      "quoteSha256": "7fe7e62f1f371a5b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-223-b-2-7-projection-coverage-proration-and-medicare",
+      "citation": "IRC 223(b)(2)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section223&num=0&edition=prelim",
+      "quoteSha256": "6af45b361b71ca0e",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -5408,6 +5458,16 @@
       "diagnosis": null
     },
     {
+      "id": "usc-42-1395r-i-irmaa-applicable-percentage",
+      "citation": "42 U.S.C. 1395r(i)(3)(C)(i)(III)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395r&num=0&edition=prelim",
+      "quoteSha256": "23d43f79e69dbdeb",
+      "verdict": "ELISION-EXACT",
+      "detail": "7 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
       "id": "usc-42-1395r-i-4-b-two-year-magi-lookback",
       "citation": "42 U.S.C. 1395r(i)(4)(B)(i)",
       "host": "www.law.cornell.edu",
@@ -5479,10 +5539,20 @@
     },
     {
       "id": "irc-213-a-medical-expense-deduction",
-      "citation": "IRC 67(b)(5)",
+      "citation": "IRC 67(b), (b)(5)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim",
-      "quoteSha256": "30a1697f4b5b11e6",
+      "quoteSha256": "2a6db1c39ae26fca",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-213-a-medical-expense-deduction",
+      "citation": "IRC 67(h)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section67&num=0&edition=prelim",
+      "quoteSha256": "f11a96ca224cf69e",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
