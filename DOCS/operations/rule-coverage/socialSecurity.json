@@ -55,7 +55,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 35
+              "line": 41
             }
           ]
         }
@@ -211,7 +211,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 35
+              "line": 41
             }
           ]
         }
@@ -299,7 +299,7 @@
           "functions": [
             {
               "name": "ssdiSuspendedBySga",
-              "line": 35
+              "line": 41
             }
           ]
         }
@@ -2682,12 +2682,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 267,
+          "line": 272,
           "note": "conditional 2019 DIB benchmark; unit AIME",
           "tests": [
             {
               "title": "uses retirement indexing and 35 years instead of the conditional disability computation",
-              "line": 277
+              "line": 285
             }
           ]
         }
@@ -3130,7 +3130,7 @@
           "functions": [
             {
               "name": "ssdiMonthlyBenefit",
-              "line": 22
+              "line": 28
             }
           ]
         }
@@ -3224,7 +3224,7 @@
           "functions": [
             {
               "name": "inSsdiWindow",
-              "line": 44
+              "line": 50
             }
           ]
         }
@@ -3292,7 +3292,7 @@
           "functions": [
             {
               "name": "inSsdiWindow",
-              "line": 44
+              "line": 50
             }
           ]
         }
