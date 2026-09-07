@@ -11,7 +11,7 @@ import type { CoverageAttestation } from '../coverageAttestations.js'
 export const decisionsAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
   'decisions/annuitization.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/evaluateCandidate.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
-  'decisions/generators.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'QLAC 85 ceiling registered via treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday; SS_GRID_CLAIM_AGES now registered under usc-42-402-worker-claim-window-62-to-70; the bracket-target list is a search-space choice, not a rule claim' }),
+  'decisions/generators.ts': Object.freeze({ status: 'registered', sweptOn: '2026-09-07', note: 'QLAC 85 ceiling registered via treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday; QLAC younger-than-83 gate and preferred start use the selected traditional account owner via Treas. Reg. 1.408-8(a)(3) IRA-owner substitution; SS_GRID_CLAIM_AGES now registered under usc-42-402-worker-claim-window-62-to-70; the bracket-target list is a search-space choice, not a rule claim' }),
   'decisions/index.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/insightsAdapter.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/objectives.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'bridge filter consumes rmdStartAgeForBirthYear (cohort defect fixed 2026-08-29); registered via irc-401-a-9-C-v-applicable-age naming bridgeYearFilter' }),

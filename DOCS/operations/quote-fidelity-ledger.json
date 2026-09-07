@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-07T22:02:14.743Z",
+  "generatedAt": "2026-09-07T22:59:26.043Z",
   "recordCount": 441,
   "urlCount": 340,
-  "fetched": 9,
-  "cached": 331,
-  "entryCount": 1256,
+  "fetched": 35,
+  "cached": 305,
+  "entryCount": 1258,
   "counts": {
-    "EXACT": 861,
+    "EXACT": 863,
     "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 234,
     "ELISION-EXACT": 67,
@@ -2363,6 +2363,26 @@
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5",
       "quoteSha256": "e977aaffaec84b8a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday",
+      "citation": "Treas. Reg. 1.408-8(a)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.408-8",
+      "quoteSha256": "dfa2e4f3c859331f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-401-a-9-6-q-1-ii-qlac-commences-by-the-85th-birthday",
+      "citation": "Treas. Reg. 1.408-8(a)(3)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.408-8",
+      "quoteSha256": "169d5ef715e87eec",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

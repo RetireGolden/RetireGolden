@@ -4,6 +4,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **QLAC purchase candidate owner age:** `annuityPurchaseGenerator` now gates and sizes the QLAC candidate from the selected traditional account owner's age (Treas. Reg. 1.408-8(a)(3)), not the primary household member. A primary age 84 / spouse-owner age 82 household now emits the candidate at start age 83; the prior primary-age gate had omitted it.
 - Corrected one guarded ordinary simultaneous early current-spouse Social Security shape to combine the claimant's reduced own benefit with the separately reduced positive excess of half the worker PIA over the claimant PIA. The admitted 1964-01-02 pair claiming at 62 changes from $15,600 to $16,080 in the full 2027 row. A claimant's original claim age, strict unclamped DOB-plus-claim-age dates, one non-disabled stream per person, the MFJ/two-person proxy, and worker-start-no-later ordering bound the correction. Delayed-own, later-worker staggered, disability, multiple-stream, and unavailable historical-entitlement cases retain the disclosed legacy behavior.
 - Repaired first-distribution-calendar-year §4974 timing in
   `annualOwnerRmdPlan`: the default path still attempts payment in the

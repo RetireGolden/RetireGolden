@@ -645,7 +645,19 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
     const traditional = plan.accounts
       .filter((a): a is Extract<Account, { type: 'traditional' }> => a.type === 'traditional' && !a.inherited)
       .sort((a, b) => b.balance - a.balance)[0]
-    if (traditional && traditional.balance > 50_000 && currentAge < 83) {
+    const selectedTraditionalAccountOwner = traditional?.ownerPersonId
+      ? plan.household.people.find((p) => p.id === traditional.ownerPersonId)
+      : undefined
+    const ownerAgeAtStartYear = selectedTraditionalAccountOwner
+      ? startYear - dobYear(selectedTraditionalAccountOwner.dob)
+      : null
+    if (
+      traditional &&
+      traditional.balance > 50_000 &&
+      selectedTraditionalAccountOwner &&
+      ownerAgeAtStartYear !== null &&
+      ownerAgeAtStartYear < 83
+    ) {
       // Match the projection's statutory-limit indexing: for a start year past the
       // latest pack the QLAC cap is inflation-projected, so an un-indexed cap would
       // systematically under-shoot "at the cap" (and mis-price the candidate).
@@ -659,7 +671,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
       // 85th birthday is not a QLAC, and `parsePlan` refuses the candidate. The
       // constant is safe for every owner because the regulatory ceiling is 85
       // or, for a December birthday, 86 — see `latestQlacAnnuityStartAge`.
-      const startAge = Math.min(85, Math.max(currentAge + 1, 80))
+      const startAge = Math.min(85, Math.max(ownerAgeAtStartYear + 1, 80))
       // A QLAC bought years before it starts pays a much higher deferred rate.
       const monthly = (premium * QLAC_DEFERRED_PAYOUT_RATE) / 12
       const annuity: Account = {
@@ -668,7 +680,7 @@ export const annuityPurchaseGenerator: CandidateGenerator = {
         id: `annuity-qlac-candidate-${startYear}-${traditional.id}`,
         type: 'annuity',
         name: 'QLAC (candidate)',
-        ownerPersonId: traditional.ownerPersonId ?? primary.id,
+        ownerPersonId: selectedTraditionalAccountOwner.id,
         annualReturnPct: null,
         startAge,
         monthlyAmount: monthly,
