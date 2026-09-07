@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { HISTORICAL_YEARS } from './historicalReturns.js'
-import { buildSpendingSuccessFrontier } from './frontiers.js'
+import { buildRetirementAgeSuccessFrontier, buildSpendingSuccessFrontier } from './frontiers.js'
 import { runHistoricalStressSuites } from './historicalSuites.js'
+import * as sharedPathsModule from './sharedPaths.js'
 import { comparePlansOnSharedMarketPaths } from './sharedPaths.js'
 
 let counter = 0
@@ -35,6 +36,35 @@ function basePlan(): Plan {
     retirementAge: 65,
     longevity: { planningAge: 88, source: 'manual' },
   }
+  plan.assumptions.inflationPct = 2.5
+  plan.assumptions.defaultReturnPct = 5
+  plan.assumptions.heirTaxRatePct = 20
+  plan.expenses.baseAnnual = 48_000
+  plan.accounts = [taxable(650_000)]
+  const parsed = parsePlan(plan)
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  return parsed.plan
+}
+
+function coupleBasePlan(): Plan {
+  const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+  plan.household.filingStatus = 'marriedFilingJointly'
+  plan.household.people[0] = {
+    id: 'p1',
+    name: 'Pat',
+    dob: '1961-06-15',
+    sex: 'average',
+    retirementAge: 65,
+    longevity: { planningAge: 88, source: 'manual' },
+  }
+  plan.household.people.push({
+    id: 'p2',
+    name: 'Robin',
+    dob: '1966-06-15',
+    sex: 'average',
+    retirementAge: 60,
+    longevity: { planningAge: 88, source: 'manual' },
+  })
   plan.assumptions.inflationPct = 2.5
   plan.assumptions.defaultReturnPct = 5
   plan.assumptions.heirTaxRatePct = 20
@@ -123,5 +153,101 @@ describe('historical stress suites', () => {
     }
     const reversed = result.suites.find((suite) => suite.kind === 'reversed')!
     expect(reversed.windows[0]!.marketYears.slice(0, 3)).toEqual([1937, 1936, 1935])
+  })
+})
+
+describe('retirement-age success frontier', () => {
+  const frontierOpts = {
+    startYear: 2026,
+    taxCalculator: noTax,
+    model: { type: 'lognormal', inflationMeanPct: 2.5, returnVolPct: 14 } as const,
+    pathCount: 2,
+    seed: 123,
+  }
+
+  it('maps couple retirement deltas to minimum planned retirement age x, ids, and labels on shared paths', () => {
+    const plan = coupleBasePlan()
+    const originalAges = plan.household.people.map((person) => person.retirementAge)
+    const points = buildRetirementAgeSuccessFrontier(plan, frontierOpts, [-1, 0, 1])
+    expect(points.map((point) => point.x)).toEqual([59, 60, 61])
+    expect(points.map((point) => point.id)).toEqual([
+      'retirement-minus-1',
+      'retirement-plus-0',
+      'retirement-plus-1',
+    ])
+    expect(points.map((point) => point.label)).toEqual([
+      '1y earlier',
+      'Current retirement age',
+      '1y later',
+    ])
+    expect(plan.household.people.map((person) => person.retirementAge)).toEqual(originalAges)
+  })
+
+  it('clamps retirement ages at the 30 and 80 product bounds', () => {
+    const lower = basePlan()
+    lower.household.people[0]!.retirementAge = 30
+    const upper = basePlan()
+    upper.household.people[0]!.retirementAge = 80
+
+    expect(buildRetirementAgeSuccessFrontier(lower, frontierOpts, [-1])[0]!.x).toBe(30)
+    expect(buildRetirementAgeSuccessFrontier(upper, frontierOpts, [1])[0]!.x).toBe(80)
+    expect(lower.household.people[0]!.retirementAge).toBe(30)
+    expect(upper.household.people[0]!.retirementAge).toBe(80)
+
+    const originalCompare = sharedPathsModule.comparePlansOnSharedMarketPaths
+    const observed: Array<Array<number | null>> = []
+    const spy = vi.spyOn(sharedPathsModule, 'comparePlansOnSharedMarketPaths')
+    spy.mockImplementation((variants, opts) => {
+      for (const variant of variants) {
+        observed.push(variant.plan.household.people.map((person) => person.retirementAge))
+      }
+      return originalCompare(variants, opts)
+    })
+
+    const lowerCouple = coupleBasePlan()
+    lowerCouple.household.people[0]!.retirementAge = 35
+    lowerCouple.household.people[1]!.retirementAge = 30
+    const lowerOriginalAges = lowerCouple.household.people.map((person) => person.retirementAge)
+
+    const upperCouple = coupleBasePlan()
+    upperCouple.household.people[0]!.retirementAge = 75
+    upperCouple.household.people[1]!.retirementAge = 80
+    const upperOriginalAges = upperCouple.household.people.map((person) => person.retirementAge)
+
+    try {
+      observed.length = 0
+      expect(buildRetirementAgeSuccessFrontier(lowerCouple, frontierOpts, [-1])[0]!.x).toBe(30)
+      expect(observed).toEqual([[34, 30]])
+      expect(lowerCouple.household.people.map((person) => person.retirementAge)).toEqual(lowerOriginalAges)
+
+      observed.length = 0
+      expect(buildRetirementAgeSuccessFrontier(upperCouple, frontierOpts, [1])[0]!.x).toBe(76)
+      expect(observed).toEqual([[76, 80]])
+      expect(upperCouple.household.people.map((person) => person.retirementAge)).toEqual(upperOriginalAges)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('shifts both household members for each delta through the shared-path comparator', () => {
+    const plan = coupleBasePlan()
+    const observed: Array<Array<number | null>> = []
+    const deltas = [-1, 0, 1] as const
+    const originalCompare = sharedPathsModule.comparePlansOnSharedMarketPaths
+    const spy = vi.spyOn(sharedPathsModule, 'comparePlansOnSharedMarketPaths')
+    spy.mockImplementation((variants, opts) => {
+      for (const variant of variants) {
+        observed.push(variant.plan.household.people.map((person) => person.retirementAge))
+      }
+      return originalCompare(variants, opts)
+    })
+
+    try {
+      const points = buildRetirementAgeSuccessFrontier(plan, frontierOpts, deltas)
+      expect(observed).toEqual([[64, 59], [65, 60], [66, 61]])
+      expect(points).toHaveLength(3)
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

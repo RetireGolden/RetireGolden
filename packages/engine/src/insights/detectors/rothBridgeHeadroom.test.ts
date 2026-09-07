@@ -59,3 +59,86 @@ describe('rothBridgeHeadroom applicable-age cohort boundary', () => {
     })
   })
 })
+
+describe('rothBridgeHeadroom product boundary gates', () => {
+  const birthYear = 1960
+
+  function screen(
+    rows: ReadonlyArray<{ wages: number; tradBalance: number; ageAttained: number }>,
+  ) {
+    const years = rows.map((row) => ({
+      year: birthYear + row.ageAttained,
+      inflationScale: 1,
+      incomes: { wages: row.wages, socialSecurity: 0 },
+      people: [{ personId: 'p1', ageAttained: row.ageAttained, alive: true }],
+      balances: { trad: row.tradBalance },
+    }))
+    const ctx = {
+      plan: {
+        strategies: { rothConversion: { mode: 'none' } },
+        accounts: [{ id: 'trad', type: 'traditional', inherited: false }],
+      },
+      projection: { startYear: years[0]!.year, result: { years } },
+    } as unknown as DetectorContext
+    return rothBridgeHeadroom.screen(ctx)
+  }
+
+  it.each([
+    {
+      label: 'opening trad below 10k blocks even when a later year qualifies',
+      rows: [
+        { ageAttained: 62, wages: 0, tradBalance: 9_999 },
+        { ageAttained: 63, wages: 0, tradBalance: 20_000 },
+      ],
+      expectCard: false,
+    },
+    {
+      label: 'opening at 10k with ineligible wages still allows a later bridge year',
+      rows: [
+        { ageAttained: 62, wages: 10_000, tradBalance: 10_000 },
+        { ageAttained: 63, wages: 9_999, tradBalance: 10_001 },
+      ],
+      expectCard: true,
+      expectPreviewWindow: { startYear: 2023, endYear: 2023 },
+    },
+    {
+      label: 'year trad exactly 10k is not bridge-eligible',
+      rows: [{ ageAttained: 62, wages: 0, tradBalance: 10_000 }],
+      expectCard: false,
+    },
+    {
+      label: 'wages at 10k block bridge despite trad above 10k',
+      rows: [{ ageAttained: 62, wages: 10_000, tradBalance: 10_001 }],
+      expectCard: false,
+    },
+    {
+      label: 'wages below 10k with trad above 10k yields fill-to-12% preview',
+      rows: [{ ageAttained: 62, wages: 9_999, tradBalance: 10_001 }],
+      expectCard: true,
+      expectPreviewWindow: { startYear: 2022, endYear: 2022 },
+    },
+  ])('$label', ({ rows, expectCard, expectPreviewWindow }) => {
+    const card = screen(rows)
+    if (!expectCard) {
+      expect(card).toBeNull()
+      return
+    }
+    expect(card).not.toBeNull()
+    if (expectPreviewWindow) {
+      expect(card!.action).toMatchObject({
+        kind: 'preview-scenario',
+        patch: {
+          strategies: {
+            rothConversion: {
+              mode: 'fillToTarget',
+              target: 'topOfBracket',
+              targetValue: 12,
+              startYear: expectPreviewWindow.startYear,
+              endYear: expectPreviewWindow.endYear,
+            },
+          },
+        },
+      })
+    }
+  })
+})
