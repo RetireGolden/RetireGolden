@@ -250,7 +250,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming on the current-spouse path that the worker has already filed so the spouse is eligible. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.',
+      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and the spouse base remains one-half of worker PIA without worker delayed credits. The guarded ordinary current-spouse composition is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`; excluded current-spouse shapes retain disclosed legacy behavior. MFJ, a two-person household, and the worker\u2019s configured start date are product proxies and do not establish current-spouse eligibility or actual worker entitlement. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -276,6 +276,52 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/socialSecurity/claimFactor.ts#spousalBenefitFactor',
       'packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor',
+    ],
+  },
+  'usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement': {
+    title: 'An ordinary early current-spouse benefit adds reduced own and reduced excess',
+    statement:
+      'For an individual whose first month of wife’s or husband’s benefit at age 62 or older is also a month of old-age entitlement first begun before retirement age, and who is not entitled to disability insurance for the priced month, section 402(q)(3)(B) reduces the combined wife’s or husband’s amount by the paragraph (1) old-age reduction and separately by the reduction applicable to the unreduced wife’s or husband’s excess over the unreduced old-age benefit. Section 402(k)(3)(A) then offsets the reduced old-age benefit against that other benefit without taking the other benefit below zero. The payable total is therefore the reduced old-age benefit plus the separately reduced positive excess.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This record settles component arithmetic only after RetireGolden’s narrow Plan proxy admits the case. The proxy requires marriedFilingJointly with exactly two people; exactly one resolved Social Security stream per person; no disability declaration on either stream; the claimant’s original raw claim age strictly before the claimant’s retirement FRA; strict DOB-plus-raw-claim-age civil dates, with month-end clamping rejected, showing the worker’s configured date no later than the claimant’s; both people alive and both streams payable in the priced period; and a positive half-PIA excess. The helper uses the claimant’s existing actual own monthly amount plus the existing spouse factor applied to max(0, one-half worker PIA minus claimant own PIA). Raw original claim age selects the branch even in later post-FRA projection years; attained age and ARF-credited age do not. A worker configured earlier, including at or after the worker’s FRA, may enter because the spouse base is the worker PIA. MFJ, configured dates, and payable rows are planning proxies, not proof of marriage, application, insured status, prescribed application, or an actual SSA entitlement month. The helper returns null outside the complete guard, leaving staggered later-worker, claimant delayed-own, disability, multiple-stream, clamped-date, and nonpositive-excess shapes on the disclosed legacy paths. POMS RS 00615.694 confirms that delayed-credit composition needs a different sequence and is deliberately excluded.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(3)(A)-(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        '(3)(A) If the first month for which an individual both is entitled to a wife\'s, husband\'s, widow\'s, or widower\'s insurance benefit and has attained age 62 (in the case of a wife\'s or husband\'s insurance benefit) or age 50 (in the case of a widow\'s or widower\'s insurance benefit) is a month for which such individual is also entitled to- (i) an old-age insurance benefit (to which such individual was first entitled for a month before he attains retirement age (as defined in section 416(l) of this title )), or (ii) a disability insurance benefit, then in lieu of any reduction under paragraph (1) (but subject to the succeeding paragraphs of this subsection) such wife\'s, husband\'s, widow\'s, or widower\'s insurance benefit for each month shall be reduced as provided in subparagraph (B), (C), or (D). (B) For any month for which such individual is entitled to an old-age insurance benefit and is not entitled to a disability insurance benefit, such individual\'s wife\'s or husband\'s insurance benefit shall be reduced by the sum of- (i) the amount by which such old-age insurance benefit is reduced under paragraph (1) for such month, and (ii) the amount by which such wife\'s or husband\'s insurance benefit would be reduced under paragraph (1) for such month if it were equal to the excess of such wife\'s or husband\'s insurance benefit (before reduction under this subsection) over such old-age insurance benefit (before reduction under this subsection).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(k)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        '(3)(A) If an individual is entitled to an old-age or disability insurance benefit for any month and to any other monthly insurance benefit for such month, such other insurance benefit for such month, after any reduction under subsection (q), subsection (e)(2) or (f)(2), and any reduction under section 403(a) of this title , shall be reduced, but not below zero, by an amount equal to such old-age or disability insurance benefit (after reduction under such subsection (q)).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.250, A. Policy',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615250',
+      quotedText:
+        'When a person is entitled simultaneously to reduced RIB and a reduced spouse\'s benefit, first reduce the RIB PIA by the RIB reduction factor. Then subtract the RIB PIA from the unreduced spouse\'s benefit, and reduce the excess by the spouse\'s reduction factor. The reduced excess is the amount actually payable as a spouse. Add the reduced spouse\'s benefit to the reduced RIB to determine the full AB benefit. There is no entitlement to a reduced wife\'s (husband\'s) benefit if the wife\'s (husband\'s) own PIA equals or exceeds one-half of the husband\'s (wife\'s) PIA.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.694, A. Policy',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615694',
+      quotedText:
+        'If a beneficiary is entitled to their own RIB with DRCs and to benefits as an auxiliary/survivor, the combined payment amount is computed without consideration of the DRCs. The DRCs are then added to the RIB and that amount is subtracted from the combined payment amount to determine the amount payable as an auxiliary/survivor. See RS 00615.240 for reduced B benefits prior to A benefits.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-06',
+    implementedBy: [
+      'packages/engine/src/socialSecurity/currentSpouseBenefit.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/currentSpouseBenefit.ts#ordinarySimultaneousEarlyCurrentSpouseComponents',
     ],
   },
   'usc-42-402-worker-claim-window-62-to-70': {
@@ -377,11 +423,12 @@ export const socialSecurityRecords = {
   'usc-42-402-r-1-2-deemed-filing-old-age-and-spousal': {
     title: 'Current eligible old-age and current-spouse benefits are deemed filed together',
     statement:
-      'For a current deemed-filing claim, when an individual is eligible for a wife’s or husband’s insurance benefit and entitled to an old-age insurance benefit for a month, section 402(r) deems an application for the spouse benefit; it reciprocally deems an old-age application when the individual is entitled to the spouse benefit, subject to the provision’s stated exceptions. The post-2015 regime applies to individuals who attain age 62 in any calendar year after 2015, so every not-yet-claimed cohort in a 2026-or-later projection is inside it and no grandfathered restricted application survives. The engine represents a current-spouse claimant with one `claimAge` on their Social Security stream and pays the higher of own and spousal amounts at that age, rather than allowing a restricted current-spouse-only claim that leaves the own old-age benefit unclaimed.',
+      'For a current deemed-filing claim, when an individual is eligible for a wife’s or husband’s insurance benefit and entitled to an old-age insurance benefit for a month, section 402(r) deems an application for the spouse benefit; it reciprocally deems an old-age application when the individual is entitled to the spouse benefit, subject to the provision’s stated exceptions. The post-2015 regime applies to individuals who attain age 62 in any calendar year after 2015, so every not-yet-claimed cohort in a 2026-or-later projection is inside it and no grandfathered restricted application survives. The engine represents a current-spouse claimant with one `claimAge` on their Social Security stream rather than allowing a restricted current-spouse-only claim that leaves the own old-age benefit unclaimed. Within the separately registered guarded ordinary simultaneous early branch, that one raw claim age selects the own and spouse components; current-spouse eligibility and excluded pricing shapes remain partial.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'This record owns deemed-filing application coupling and the Plan’s single-claim-age representation; it does not own the dollar composition of dual entitlement. `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement` owns reduced-own-plus-reduced-excess arithmetic only inside its complete ordinary early guard. MFJ, two people, and configured stream dates remain product proxies rather than proof of eligibility, application, or entitlement month, and all excluded shapes retain their separately disclosed partial behavior.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

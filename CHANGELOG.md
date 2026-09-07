@@ -4,6 +4,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- Corrected one guarded ordinary simultaneous early current-spouse Social Security shape to combine the claimant's reduced own benefit with the separately reduced positive excess of half the worker PIA over the claimant PIA. The admitted 1964-01-02 pair claiming at 62 changes from $15,600 to $16,080 in the full 2027 row. A claimant's original claim age, strict unclamped DOB-plus-claim-age dates, one non-disabled stream per person, the MFJ/two-person proxy, and worker-start-no-later ordering bound the correction. Delayed-own, later-worker staggered, disability, multiple-stream, and unavailable historical-entitlement cases retain the disclosed legacy behavior.
 - Repaired first-distribution-calendar-year §4974 timing in
   `annualOwnerRmdPlan`: the default path still attempts payment in the
   attainment year, but any unpaid remainder is carried with a bounded

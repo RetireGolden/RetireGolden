@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 436 |
+| Total rules | 437 |
 | Classification: approximated | 122 |
 | Classification: outOfScope | 75 |
-| Classification: settled | 234 |
+| Classification: settled | 235 |
 | Classification: unsettled | 5 |
 | Volatility: annuallyIndexed | 63 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 356 |
+| Volatility: staticStatute | 357 |
 | Volatility: sunsetting | 6 |
-| Federal jurisdiction | 326 |
+| Federal jurisdiction | 327 |
 | State jurisdiction total | 110 |
 
 | State jurisdiction | Count |
@@ -81,11 +81,11 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 375 |
+| Engine source files | 376 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 58 |
-| registered | 109 |
+| registered | 110 |
 | rule-free | 208 |
 | unswept | 0 |
 
@@ -109,7 +109,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | rules | 49 | 0 | 22 | 27 | 0 |
 | scenarios | 9 | 0 | 0 | 9 | 0 |
 | schema | 9 | 0 | 0 | 9 | 0 |
-| socialSecurity | 10 | 2 | 7 | 1 | 0 |
+| socialSecurity | 11 | 2 | 8 | 1 | 0 |
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
 | tax | 9 | 3 | 5 | 1 | 0 |
@@ -138,7 +138,7 @@ None.
 | actions/rothConversionExecution.ts | 2026-08-29 | ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual |
 | decisions/rothConversionCandidateAdapter.ts | 2026-08-29 | same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered |
 | insights/detectors/missingDataBasis.ts | 2026-08-29 | The detector consumes the shared ROTH_QUALIFIED_AGE constant to scope its suggestion; the qualified-distribution rule itself is registered and enforced at the Roth basis records, which do not name this consumer |
-| insights/detectors/ssClaimMilestone.ts | 2026-09-05 | former-spouse eligibility delegates to registered bestMaritalBenefit; claim-factor, payable-month, and family-max are delegated. Statutory half-PIA numerical base (0.5 * PIA * spousalBenefitFactor) in the current-spouse prior-year comparator is now covered on usc-42-402-b-2-spousal-half-of-pia. Residuals: pre-horizon payable-month reconstruction, gate-stream selection, own/former/current winner ordering and family-maximum composition, enabling-event timing, and missing-PIA fallback |
+| insights/detectors/ssClaimMilestone.ts | 2026-09-06 | the guarded ordinary simultaneous early current-spouse price in the prior-year comparator delegates to the registered currentSpouseBenefit helper with raw stream counts, original claim ages, configured-date facts, and caller-established prior-period alive/payable facts. Former-spouse eligibility delegates to registered bestMaritalBenefit; claim-factor, payable-month, half-PIA, and family-maximum arithmetic remain delegated. Residuals: pre-horizon payable-month and entitlement reconstruction, gate-stream selection, own/former/current winner ordering and family-maximum composition, enabling-event timing, missing-PIA fallback, and all helper-refused current-spouse shapes |
 | internal/ownedNonRothIraAnnualAttemptSettlement.ts | 2026-08-29 | Its one statutory claim - the retired 408(d)(3)(A)(i) same-owner re-check - is enforced upstream in the runtime source series, where the record now pins it; this module itself enforces no rule and so is not named by any record |
 | ladder/bridge.ts | 2026-08-29 | The bridge sizes spending from age 62 to the claim age; the 62-70 worker window is registered under usc-42-402-worker-claim-window-62-to-70 at the claim factor, and this file calls that factor rather than enforcing the window itself |
 | ladder/ladderMath.ts | 2026-09-05 | TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); regulatory 0.125% min coupon registered at cfr-31-356-20-b-tips-minimum-coupon; par-yield-as-spot interpolation, annual coupon timing, and par pricing conventions remain |
@@ -164,13 +164,13 @@ None.
 | projection/internal/annualOwnedNonRothIraSettlementPhase.ts | 2026-09-02 | effectful owned non-Roth IRA annual settlement driver relocated from simulatePlan and now named by the Form 8606 pro-rata measurement-instant record. It composes the separately attested settlement-attempt, counterfactual-liability, linked-withdrawal authorization, and committed-replay publication boundaries behind one explicit annual-pass callback. It owns attempt ordering, rollback authorization, household/owner retry and fallback, counterfactual observation, and optional replay attachment while preserving the original transactional sequence; the remaining control-flow is projection-composition rather than an additional statutory calculation. The funding/application/close callback retains every attempt-local economic commit, and simulatePlan retains the earlier annual phases plus final settled YearResult append and optimizer-probe publication |
 | projection/internal/annualQcdExecutionInput.ts | 2026-09-02 | the immutable named-QCD preparation coordinator composes the registered annual prerequisite and physical-staging producers. It owns donor alive/prior-offset evidence assembly, including the same registered 846-calendar-month threshold-year convention, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, and complete owned-IRA Form 8606 pool-capacity inputs. These are evidence, transaction-snapshot, and projection-composition semantics; the underlying QCD eligibility, section 219 offset, RMD coordination, and Form 8606 rules remain in their registered action producers. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies post-forced-distribution balances plus owner RMD/basis/offset state and retains the executor call, all gift debits, basis/RMD character, runtime journaling, warnings, cash-flow writes, settlement, and publication |
 | projection/internal/annualRothConversionExecutionInput.ts | 2026-09-02 | the immutable named Roth-conversion preparation coordinator owns request-keyed alive, annual owner-RMD satisfaction, and aggregated-IRA basis evidence; exact-cent floored source-capacity and half-up destination snapshots; and withdrawal-result narrowing of a provisional linked-group release. It composes the registered conversion eligibility producers and already-attested linked-group assessment rather than introducing a new filing-grade rule. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies live post-RMD and post-ordinary-withdrawal balances plus settled owner RMD/basis facts, and retains the named-conversion executor, every debit and credit, Form 8606 and Roth-basis mutation, runtime/application journaling, warnings, settlement, cash-flow publication, and typed result publication to simulatePlan |
-| projection/internal/annualSocialSecurity.ts | 2026-09-05 | former-spouse marital gates now sit on socialSecurityMaritalEligibility records and maritalBenefits helpers. This caller composes candidate/payable months, COLA, haircut, and streams and is not a caller pin. Other genuine surfaces remain on their existing records |
+| projection/internal/annualSocialSecurity.ts | 2026-09-06 | guarded ordinary simultaneous early current-spouse component arithmetic delegates to the registered currentSpouseBenefit helper. This caller supplies MFJ context, all-stream counts, selected raw stream facts, alive/payable facts and existing factors, then retains person/stream selection, resolved PIA, candidate ordering, family maximum, COLA, haircut, publication, earnings withholding and ARF bookkeeping. Former-spouse marital gates remain on socialSecurityMaritalEligibility records and maritalBenefits helpers. Other genuine Social Security surfaces remain on their existing records |
 | projection/internal/types/tax.ts | 2026-09-06 | one slice of the projection type surface, split verbatim out of projection/types.ts; foreignExclusionAddback and optional niitSection911A1NetAddback are declaration-only carriers documenting characterized inputs without enforcing MAGI composition or exclusion eligibility; residual: `taxParameterFilingStatus`'s QSS-to-MFJ selection is pinned for Delaware's standard-deduction approximation at `de-pit-est-2026-qss-standard-deduction-joint-mapper`; wholesale reuse by other state parameter selection remains a jurisdiction-specific residual. |
 | projection/optimizePlan.ts | 2026-09-05 | Flat 15% LTCG LP rate registered (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate); ACA MAGI cap and pooled RMD divisor recovery are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection; taxpayer-tax direction has not been established); other optimizer linearizations remain unregistered |
 | projection/optimizerAggregateConversionPromotion.ts | 2026-08-29 | same-owner trim registered under irc-408-d-3-A-i and the distributability predicate under irc-401-k-2-B-i; RMD-first ordering is an upstream snapshot contract enforced at resolveOwnerIraRmdSatisfaction, not here, and stays the residual |
 | projection/ownedIraAnnualPhysicalTransactionInputs.ts | 2026-08-29 | Form 8606 line-7/8 and QCD staging semantics; the input builder carries one combined distribution bucket, so it does not enforce the line-7-versus-8 split; no record |
 | projection/ownedNonRothIraAnnualObservation.ts | 2026-09-05 | ordinary April filing calendar delegated to tax/ordinaryFederalFilingDeadline.ts; owner-wide non-Roth IRA pool selector registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool (ownedIraSourceIds); December 31 measurement and filing-grade completeness/rollover contracts remain residual |
-| projection/simulate.ts | 2026-09-02 | ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, the thin live-state application adapters for earlier pure coordinators, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly. Those retained responsibilities are the orchestration and cross-year state boundary; substantive annual funding and settlement policy no longer lives inline |
+| projection/simulate.ts | 2026-09-06 | ordered annual projection orchestration. It now passes the existing marriedFilingJointly-plus-two-person product-context fact into annualSocialSecurity; the registered currentSpouseBenefit helper remains the sole pin and the context is not proof of SSA eligibility. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, thin live-state application adapters, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly |
 | rmd/applicableAge.ts | 2026-09-05 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest, including deriveRbdComparison's conditional comparison/refusal, is now registered at treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 (adding deriveRbdComparison only; applicableAgeAttainYears sibling listings on treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72, irc-401-a-9-C-v-applicable-age, and treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy unchanged). SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
 | socialSecurity/maritalBenefits.ts | 2026-09-04 | Living-divorced and ordinary-widow eligibility gates, plus half-PIA pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
 | socialSecurity/piaFromEarnings.ts | 2026-09-04 | Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard. |
@@ -200,7 +200,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/medicareAndHealthCoverage.json | 18 |
 | rule-coverage/requiredMinimumDistributions.json | 41 |
 | rule-coverage/rothAccounts.json | 13 |
-| rule-coverage/socialSecurity.json | 48 |
+| rule-coverage/socialSecurity.json | 49 |
 | rule-coverage/socialSecurityEarnings.json | 3 |
 | rule-coverage/socialSecurityMaritalEligibility.json | 4 |
 | rule-coverage/statesMidwest.json | 29 |
@@ -212,7 +212,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (436 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (437 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -252,16 +252,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-07T07:09:41.353Z over 1225 authority entries (12 fetched live, 323 from cache).
+Committed ledger generated at 2026-09-07T14:50:00.161Z over 1229 authority entries (9 fetched live, 328 from cache).
 
-37 serious, 56 advisory, 1132 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 56 advisory, 1136 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 64 |
 | ELISION-PUNCTUATION | advisory | 7 |
-| EXACT | ok | 846 |
+| EXACT | ok | 850 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 222 |
 | PUNCTUATION | advisory | 42 |

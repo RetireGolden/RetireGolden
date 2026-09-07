@@ -10,6 +10,7 @@
 import type { IncomeStream, Person } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import { claimFactor, spousalBenefitFactor, type ClaimAge } from '../../socialSecurity/claimFactor.js'
+import { ordinarySimultaneousEarlyCurrentSpouseComponents } from '../../socialSecurity/currentSpouseBenefit.js'
 import { inSsdiWindow, ssdiMonthlyBenefit, ssdiSuspendedBySga } from '../../socialSecurity/disability.js'
 import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../../socialSecurity/familyMaximum.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
@@ -35,6 +36,7 @@ export interface AnnualSocialSecurityInput {
   readonly ssHaircutFactor: number
   readonly pack: Readonly<ParameterPack>
   readonly limitGrowth: number
+  readonly currentSpouseContext: boolean
 }
 
 export interface AnnualSocialSecurityResult {
@@ -79,6 +81,7 @@ export function annualSocialSecurity(
     ssHaircutFactor,
     pack,
     limitGrowth,
+    currentSpouseContext,
   } = input
   const withheldMonthWrites: { personId: string; value: number }[] = []
   const warningValues: string[] = []
@@ -97,10 +100,12 @@ export function annualSocialSecurity(
 
   const ssOwnByPerson = new Map<string, number>()
   const ssActualMonthlyByPerson = new Map<string, number>()
+  const ssStreamCountByPerson = new Map<string, number>()
   const ssStreamByPerson = new Map<string, {
     pia: number
     claimAge: { years: number; months: number }
     streamId: string
+    disabilityDeclared: boolean
   }>()
   const ssStreamPub = new Map<string, {
     personId: string
@@ -127,12 +132,17 @@ export function annualSocialSecurity(
 
   for (const stream of incomes) {
     if (stream.type !== 'socialSecurity') continue
+    ssStreamCountByPerson.set(
+      stream.personId,
+      (ssStreamCountByPerson.get(stream.personId) ?? 0) + 1,
+    )
     const pia = resolvedPiaByStreamId.get(stream.id)
     if (pia === undefined) continue
     ssStreamByPerson.set(stream.personId, {
       pia,
       claimAge: stream.claimAge,
       streamId: stream.id,
+      disabilityDeclared: stream.disability !== undefined,
     })
     const streamPub = ensureSsStreamPub(stream.id, stream.personId)
     const person = personById.get(stream.personId)!
@@ -236,7 +246,8 @@ export function annualSocialSecurity(
         const { y, m, d } = socialSecurityDobParts(lower.p)
         const lowerFraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(y, m, d)))
         const spousalClaimAge = creditedClaimAgeFor(lower.p, lower.ss.claimAge, lowerState.ageAttained, lowerFraMonths)
-        const rawSpousalMonthly = 0.5 * higher.ss.pia * spousalBenefitFactor(y, m, d, spousalClaimAge)
+        const spousalFactor = spousalBenefitFactor(y, m, d, spousalClaimAge)
+        const rawSpousalMonthly = 0.5 * higher.ss.pia * spousalFactor
 
         const higherDob = socialSecurityDobParts(higher.p)
         const workerActualMonthly =
@@ -256,14 +267,34 @@ export function annualSocialSecurity(
         // The worker-record family maximum caps only the auxiliary excess; the
         // lower earner's own benefit stays on that person's record unchanged.
         const lowerOwnMonthly = ssActualMonthlyByPerson.get(lower.p.id) ?? 0
-        const excessSpousalMonthly = Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
+        const guardedComponents = ordinarySimultaneousEarlyCurrentSpouseComponents({
+          currentSpouseContext,
+          bothAliveInPricedPeriod: lowerState.alive && higherState.alive,
+          spousalPayableMonths,
+          claimantDob: lower.p.dob,
+          workerDob: higher.p.dob,
+          claimantClaimAge: lower.ss.claimAge,
+          workerClaimAge: higher.ss.claimAge,
+          claimantSocialSecurityStreamCount: ssStreamCountByPerson.get(lower.p.id) ?? 0,
+          workerSocialSecurityStreamCount: ssStreamCountByPerson.get(higher.p.id) ?? 0,
+          claimantDisabilityDeclared: lower.ss.disabilityDeclared,
+          workerDisabilityDeclared: higher.ss.disabilityDeclared,
+          ownPiaMonthly: lower.ss.pia,
+          ownActualMonthly: lowerOwnMonthly,
+          workerPiaMonthly: higher.ss.pia,
+          spousalFactor,
+        })
+        const excessSpousalMonthly =
+          guardedComponents?.auxiliaryMonthly ??
+          Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
         const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
           workerPiaMonthly: higher.ss.pia,
           workerActualMonthly,
           workerDob: { year: higherDob.y, month: higherDob.m, day: higherDob.d },
           auxiliaryMonthly: excessSpousalMonthly,
         })
-        const spousalTotalMonthly = lowerOwnMonthly + cappedExcessMonthly
+        const spousalTotalMonthly =
+          (guardedComponents?.ownMonthly ?? lowerOwnMonthly) + cappedExcessMonthly
         const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor
         const own = ssOwnByPerson.get(lower.p.id) ?? 0
         if (spousalAnnual > own) {

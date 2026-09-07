@@ -1043,8 +1043,15 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       <p className="card-hint">
         The actuarial view: expected lifetime benefits weighted by the chance of being alive to receive them (SSA
         mortality), ignoring your portfolio and taxes{' '}
-        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, differences can also reflect eligibility assumptions — not only taxes and portfolio growth.
+        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, differences can also reflect annual timing, how couple benefits are combined, and eligibility assumptions — not only taxes and portfolio growth.
       </p>
+      {personIds.length === 2 ? (
+        <p className="card-hint">
+          For couples, benefits are priced year by year. The lower earner receives the larger of their reduced own
+          benefit or a reduced half of the partner&apos;s PIA (monthly at FRA). That simplified rule can differ from In
+          your plan&apos;s supported early-claim calculation (reduced own plus a separately reduced spousal top-up).
+        </p>
+      ) : null}
       <div className="form-grid" style={{ maxWidth: '22rem' }}>
         <div className="field">
           <span className="field-label-row">

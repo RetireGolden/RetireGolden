@@ -445,6 +445,48 @@ describe('social security', () => {
     })
   })
 
+  // Section 402(q)(3)(B) reduces the unreduced spouse excess separately from
+  // the claimant's own RIB, and section 402(k)(3)(A) leaves reduced own plus
+  // that reduced excess. Both 1964-01-02 claim-age dates are 2026-01-02; the
+  // full 2027 row removes first-year proration. The 2026 worker family maximum
+  // for PIA 4,000 is 6,999.30, leaving 4,199.30 above the worker's 2,800 own
+  // amount, so the 780 auxiliary is not capped.
+  describeRule('usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement', {
+    readings: {
+      reducedOwnPlusReducedExcess: 16_080,
+      maxReducedOwnOrReducedHalfPia: 15_600,
+      reducedOwnPlusReducedHalfPia: 22_320,
+    },
+    accepted: 'reducedOwnPlusReducedExcess',
+  }, ({ accepted, readings }) => {
+    it('adds reduced own and the separately reduced spouse excess in the full year after simultaneous early claims', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Lower', dob: '1964-01-02', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+        { id: 'p2', name: 'Worker', dob: '1964-01-02', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+      ]
+      const lowerStreamId = testIds()
+      plan.incomes = [
+        { type: 'socialSecurity', id: lowerStreamId, personId: 'p1', piaMonthly: 800, earnings: null, claimAge: { years: 62, months: 0 } },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 4_000, earnings: null, claimAge: { years: 62, months: 0 } },
+      ]
+      plan.accounts = [cash(5_000_000)]
+      plan.assumptions.ssCola = { mode: 'fixed', annualPct: 0 }
+      plan.assumptions.ssHaircut = null
+
+      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      const fullYear = result.years.find((year) => year.year === 2027)
+      if (fullYear === undefined) throw new Error('expected full 2027 projection year')
+      const lower = fullYear.socialSecurityStreams?.find((stream) => stream.streamId === lowerStreamId)
+      if (lower === undefined) throw new Error('expected lower current-spouse Social Security stream')
+
+      expect(lower.preWithholdingAnnual).toBeCloseTo(accepted, 6)
+      expect(lower.preWithholdingAnnual).not.toBeCloseTo(readings.maxReducedOwnOrReducedHalfPia, 6)
+      expect(lower.preWithholdingAnnual).not.toBeCloseTo(readings.reducedOwnPlusReducedHalfPia, 6)
+    })
+  })
+
   it('starts at the claim-age year with the claiming factor applied', () => {
     const plan = basePlan()
     plan.incomes = [

@@ -4,6 +4,7 @@ import type { FormerSpouse, Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
 import { annualSocialSecurityPayableMonths } from '../../projection/internal/annualSocialSecurity.js'
 import { claimFactor, spousalBenefitFactor } from '../../socialSecurity/claimFactor.js'
+import { ordinarySimultaneousEarlyCurrentSpouseComponents } from '../../socialSecurity/currentSpouseBenefit.js'
 import { capAuxiliaryForFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
@@ -155,8 +156,16 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   claimantAgePrior: number
   coPersonId: string
   coPersonAgePrior: number
+  bothAliveInPricedPeriod: boolean
 }): number {
-  const { plan, claimantPersonId, claimantAgePrior, coPersonId, coPersonAgePrior } = args
+  const {
+    plan,
+    claimantPersonId,
+    claimantAgePrior,
+    coPersonId,
+    coPersonAgePrior,
+    bothAliveInPricedPeriod,
+  } = args
   const claimant = plan.household.people.find((row) => row.id === claimantPersonId)
   const coPerson = plan.household.people.find((row) => row.id === coPersonId)
   if (claimant === undefined || coPerson === undefined) return 0
@@ -170,6 +179,13 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   const claimantPia = resolveOwnPiaMonthly(claimantStream, claimant)
   const coPia = resolveOwnPiaMonthly(coStream, coPerson)
   if (claimantPia === null || coPia === null) return 0
+
+  const claimantStreamCount = plan.incomes.filter(
+    (income) => income.type === 'socialSecurity' && income.personId === claimantPersonId,
+  ).length
+  const workerStreamCount = plan.incomes.filter(
+    (income) => income.type === 'socialSecurity' && income.personId === coPersonId,
+  ).length
 
   const claimantMonths = annualSocialSecurityPayableMonths(
     claimantAgePrior,
@@ -208,23 +224,48 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     month: higherDobParts.m,
     day: higherDobParts.d,
   }
-  const rawSpousalMonthly =
-    0.5 *
-    higher.pia *
-    spousalBenefitFactor(lowerDob.year, lowerDob.month, lowerDob.day, lower.stream.claimAge)
+  const spousalFactor = spousalBenefitFactor(
+    lowerDob.year,
+    lowerDob.month,
+    lowerDob.day,
+    lower.stream.claimAge,
+  )
+  const rawSpousalMonthly = 0.5 * higher.pia * spousalFactor
   const lowerOwnMonthly = resolveOwnMonthlyRate(plan, lower.person.id, lower.person, lower.age) ?? 0
   const higherOwnMonthly =
     resolveOwnMonthlyRate(plan, higher.person.id, higher.person, higher.age) ??
     higher.pia *
       claimFactor(higherDob.year, higherDob.month, higherDob.day, higher.stream.claimAge)
-  const excessSpousalMonthly = Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
+  const guardedComponents = ordinarySimultaneousEarlyCurrentSpouseComponents({
+    currentSpouseContext:
+      plan.household.filingStatus === 'marriedFilingJointly' &&
+      plan.household.people.length === 2,
+    bothAliveInPricedPeriod,
+    spousalPayableMonths: spousalMonths,
+    claimantDob: lower.person.dob,
+    workerDob: higher.person.dob,
+    claimantClaimAge: lower.stream.claimAge,
+    workerClaimAge: higher.stream.claimAge,
+    claimantSocialSecurityStreamCount: claimantStreamCount,
+    workerSocialSecurityStreamCount: workerStreamCount,
+    claimantDisabilityDeclared: lower.stream.disability !== undefined,
+    workerDisabilityDeclared: higher.stream.disability !== undefined,
+    ownPiaMonthly: lower.pia,
+    ownActualMonthly: lowerOwnMonthly,
+    workerPiaMonthly: higher.pia,
+    spousalFactor,
+  })
+  const excessSpousalMonthly =
+    guardedComponents?.auxiliaryMonthly ??
+    Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
   const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
     workerPiaMonthly: higher.pia,
     workerActualMonthly: higherOwnMonthly,
     workerDob: higherDob,
     auxiliaryMonthly: excessSpousalMonthly,
   })
-  const spousalTotalMonthly = lowerOwnMonthly + cappedExcessMonthly
+  const spousalTotalMonthly =
+    (guardedComponents?.ownMonthly ?? lowerOwnMonthly) + cappedExcessMonthly
   return spousalTotalMonthly * spousalMonths
 }
 
@@ -335,6 +376,9 @@ function formerSpouseWonOverOwnPriorYear(args: {
           claimantAgePrior,
           coPersonId: currentSpouseCompetitor.coPersonId,
           coPersonAgePrior: currentSpouseCompetitor.coPersonAgePrior,
+          // The outer screen admits a living claimant; this competitor exists
+          // only when the household co-person was alive in the prior year.
+          bothAliveInPricedPeriod: true,
         })
 
   const ownAnnual = resolveOwnAnnualSum(plan, personId, claimant, claimantAgePrior)

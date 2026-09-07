@@ -6,11 +6,13 @@ given everything else in the plan* (taxes, IRMAA, ACA, RMDs, portfolio growth) �
 benefit-only question. The pure SS math carried forward from the original app and was extended; the v1
 claiming wizard UI was retired (its `/social-security` route now redirects to the planner).
 
-**Code:** claiming/PIA math in [packages/planner-ui/src/socialSecurity/](../../packages/planner-ui/src/socialSecurity/) (`nra.ts`,
-`benefitFactor.ts`, `piaFromEarnings.ts`, `ssaWageData.ts`, `familyMaximum.ts`, `ssaStatementXml.ts`, `breakEven.ts`,
-`explain.ts`, `maritalBenefits.ts`, `survivorSwitching.ts`, and — since the 2026-07-08 consolidation —
-`claimFactor.ts` and `expectedPv.ts`, formerly `engine/socialsecurity/`); the
-analysis UI in [planner/SsAnalysisPage.tsx](../../packages/planner-ui/src/planner/SsAnalysisPage.tsx) +
+**Code:** claiming/PIA math in [packages/engine/src/socialSecurity/](../../packages/engine/src/socialSecurity/)
+(`nra.ts`, `benefitFactor.ts`, `claimFactor.ts`, `piaFromEarnings.ts`, `ssaWageData.ts`, `maritalBenefits.ts`,
+`currentSpouseBenefit.ts`, `survivorBenefit.ts`, `familyMaximum.ts`, `disability.ts`); educational and import
+modules in [packages/planner-ui/src/socialSecurity/](../../packages/planner-ui/src/socialSecurity/)
+(`ssaStatementXml.ts`, `breakEven.ts`, `explain.ts`, `expectedPv.ts`, `ficaReturn.ts`, `survivorSwitching.ts`,
+`persistedSsGuard.ts`, `ssFormUtils.ts`); the analysis UI in
+[planner/SsAnalysisPage.tsx](../../packages/planner-ui/src/planner/SsAnalysisPage.tsx) +
 [planner/ssAnalysis.ts](../../packages/planner-ui/src/planner/ssAnalysis.ts) and entry in
 [planner/SocialSecuritySection.tsx](../../packages/planner-ui/src/planner/SocialSecuritySection.tsx).
 
@@ -64,14 +66,7 @@ Benefits-only analysis separately illustrates survivor switching
 ([maritalBenefits.ts](../../packages/engine/src/socialSecurity/maritalBenefits.ts),
 [survivorSwitching.ts](../../packages/planner-ui/src/socialSecurity/survivorSwitching.ts)):
 
-- **Spousal top-up** while both are alive and claiming: the lower earner receives
-  `max(own, 0.5 × spousePIA × spousal factor)`. The current-spouse auxiliary is capped to the room left
-  under the worker's SSA retirement/survivor family maximum (PIA-based formula with official family-maximum
-  bend points in `ssaWageData.ts`). The plan offers one claim age rather than a restricted
-  current-spouse-only claim — the post-2015 deemed-filing shape in
-  [42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim)
-  (`usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled
-  (`usc-42-402-d-2-child-survivor-benefit`).
+- **Current-spouse dual entitlement** while both are alive: in the guarded ordinary simultaneous early case, the lower earner receives the existing reduced own amount plus the spousal factor applied to the positive unreduced excess, `max(0, 0.5 × workerPIA - ownPIA)`. The current-spouse auxiliary alone is capped to the room left under the worker's SSA retirement/survivor family maximum. The guard uses the planner's MFJ/two-person proxy, exactly one non-disabled Social Security stream per person, an original claimant claim before FRA, and a strict configured worker start date no later than the claimant's. The plan offers one claim age rather than a restricted current-spouse-only claim, consistent with the post-2015 deemed-filing shape in [42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim). MFJ and configured dates do not establish SSA eligibility or an actual entitlement month. Later-worker staggered claims, claimant delayed-own cases, disability, multiple streams, and unavailable historical entitlement facts remain on the disclosed legacy approximation (`usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`, `usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled (`usc-42-402-d-2-child-survivor-benefit`).
 - **Survivor step-up** after the first death: the survivor keeps the larger of their own benefit and the
   deceased's benefit, computed with full precision — the **survivor base is the deceased's actual
   (claim-age-adjusted) benefit** (including delayed credits if the deceased delayed), **RIB-LIM** currently
@@ -136,18 +131,23 @@ The headline capability. Two complementary views, mirroring the two questions in
   play (delaying to 70 to open low-income years for cheap conversions), and the counter-case (claim early
   so a Roth keeps compounding). No new solver is needed — claim age is a small discrete grid.
 - **"Benefits only" (actuarial view)** — the Open-Social-Security-style lens: expected present value per
-  claim age, each future month weighted by survival probability (SSA period tables, optionally the
+  claim age, each future **year** weighted by survival probability (SSA period tables, optionally the
   longevity multiplier) and discounted at a user-set **real** rate (~long TIPS yield)
   ([socialSecurity/expectedPv.ts](../../packages/planner-ui/src/socialSecurity/expectedPv.ts)). It needs no
-  accounts and serves as the cross-check against Open Social Security. For a currently unmarried household with
-  a living divorced ex on the plan, the ranking floor assumes each ex meets the ex-worker condition from your
-  selected claim age onward—it does not wait for the ex to turn 62—and still applies marriage-length and
-  currently-unmarried gates. The In-your-plan sweep uses its documented calendar-year age-62 approximation, not
-  full SSA entitlement adjudication. A follow-up actuarial floor must vary by availability year, not assume
-  eligibility once at claim year.
+  accounts and serves as the cross-check against Open Social Security. Couples use annual cash flows and a
+  simplified both-alive rule: the lower earner receives max(reduced own benefit, reduced 50% of the higher
+  earner's PIA); after the first death the survivor keeps the larger of the two claimed benefits. That
+  educational model is not ledger-equivalent to the whole-plan engine and can differ from the guarded
+  early-claim own-plus-excess composition. For a currently unmarried household with a living divorced ex on the
+  plan, the ranking floor assumes each ex meets the ex-worker condition from your selected claim age
+  onward—it does not wait for the ex to turn 62—and still applies marriage-length and currently-unmarried
+  gates. The In-your-plan sweep uses its documented calendar-year age-62 approximation, not full SSA
+  entitlement adjudication. A follow-up actuarial floor must vary by availability year, not assume eligibility
+  once at claim year.
 
-When the two views disagree, that gap *is* the insight: how far tax and portfolio effects pull the answer
-away from the actuarially fair claim age.
+When the two views disagree, differences can come from annual timing, couple-benefit composition,
+eligibility assumptions, and tax and portfolio effects; they should not be attributed solely to taxes and
+portfolio.
 
 The Roth & Tax Optimizer can also **co-optimize the claim age jointly with a conversion schedule** — a
 default-off "Also optimize Social Security claim age" toggle on the Optimize tab runs a full optimize per

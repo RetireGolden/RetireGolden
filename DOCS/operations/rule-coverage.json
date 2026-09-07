@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 436,
+    "total": 437,
     "byClassification": {
       "approximated": 122,
       "outOfScope": 75,
-      "settled": 234,
+      "settled": 235,
       "unsettled": 5
     },
     "byVolatility": {
       "annuallyIndexed": 63,
       "awaitingGuidance": 11,
-      "staticStatute": 356,
+      "staticStatute": 357,
       "sunsetting": 6
     },
     "byJurisdiction": {
-      "federal": 326,
+      "federal": 327,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -74,10 +74,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 375,
+    "totalFiles": 376,
     "byStatus": {
       "partial": 58,
-      "registered": 109,
+      "registered": 110,
       "rule-free": 208,
       "unswept": 0
     },
@@ -163,8 +163,8 @@
     },
     {
       "path": "insights/detectors/ssClaimMilestone.ts",
-      "sweptOn": "2026-09-05",
-      "note": "former-spouse eligibility delegates to registered bestMaritalBenefit; claim-factor, payable-month, and family-max are delegated. Statutory half-PIA numerical base (0.5 * PIA * spousalBenefitFactor) in the current-spouse prior-year comparator is now covered on usc-42-402-b-2-spousal-half-of-pia. Residuals: pre-horizon payable-month reconstruction, gate-stream selection, own/former/current winner ordering and family-maximum composition, enabling-event timing, and missing-PIA fallback"
+      "sweptOn": "2026-09-06",
+      "note": "the guarded ordinary simultaneous early current-spouse price in the prior-year comparator delegates to the registered currentSpouseBenefit helper with raw stream counts, original claim ages, configured-date facts, and caller-established prior-period alive/payable facts. Former-spouse eligibility delegates to registered bestMaritalBenefit; claim-factor, payable-month, half-PIA, and family-maximum arithmetic remain delegated. Residuals: pre-horizon payable-month and entitlement reconstruction, gate-stream selection, own/former/current winner ordering and family-maximum composition, enabling-event timing, missing-PIA fallback, and all helper-refused current-spouse shapes"
     },
     {
       "path": "internal/ownedNonRothIraAnnualAttemptSettlement.ts",
@@ -293,8 +293,8 @@
     },
     {
       "path": "projection/internal/annualSocialSecurity.ts",
-      "sweptOn": "2026-09-05",
-      "note": "former-spouse marital gates now sit on socialSecurityMaritalEligibility records and maritalBenefits helpers. This caller composes candidate/payable months, COLA, haircut, and streams and is not a caller pin. Other genuine surfaces remain on their existing records"
+      "sweptOn": "2026-09-06",
+      "note": "guarded ordinary simultaneous early current-spouse component arithmetic delegates to the registered currentSpouseBenefit helper. This caller supplies MFJ context, all-stream counts, selected raw stream facts, alive/payable facts and existing factors, then retains person/stream selection, resolved PIA, candidate ordering, family maximum, COLA, haircut, publication, earnings withholding and ARF bookkeeping. Former-spouse marital gates remain on socialSecurityMaritalEligibility records and maritalBenefits helpers. Other genuine Social Security surfaces remain on their existing records"
     },
     {
       "path": "projection/internal/types/tax.ts",
@@ -323,8 +323,8 @@
     },
     {
       "path": "projection/simulate.ts",
-      "sweptOn": "2026-09-02",
-      "note": "ordered annual projection orchestration. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, the thin live-state application adapters for earlier pure coordinators, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly. Those retained responsibilities are the orchestration and cross-year state boundary; substantive annual funding and settlement policy no longer lives inline"
+      "sweptOn": "2026-09-06",
+      "note": "ordered annual projection orchestration. It now passes the existing marriedFilingJointly-plus-two-person product-context fact into annualSocialSecurity; the registered currentSpouseBenefit helper remains the sole pin and the context is not proof of SSA eligibility. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, thin live-state application adapters, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -510,10 +510,10 @@
     },
     {
       "directory": "socialSecurity",
-      "files": 10,
+      "files": 11,
       "byStatus": {
         "partial": 2,
-        "registered": 7,
+        "registered": 8,
         "rule-free": 1
       }
     },
@@ -614,7 +614,7 @@
     {
       "module": "socialSecurity",
       "path": "rule-coverage/socialSecurity.json",
-      "ruleCount": 48
+      "ruleCount": 49
     },
     {
       "module": "socialSecurityEarnings",
@@ -658,14 +658,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-07T07:09:41.353Z",
-    "entryCount": 1225,
-    "fetched": 12,
-    "cached": 323,
+    "generatedAt": "2026-09-07T14:50:00.161Z",
+    "entryCount": 1229,
+    "fetched": 9,
+    "cached": 328,
     "counts": {
       "ELISION-EXACT": 64,
       "ELISION-PUNCTUATION": 7,
-      "EXACT": 846,
+      "EXACT": 850,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 222,
       "PUNCTUATION": 42,

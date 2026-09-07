@@ -37,7 +37,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -193,7 +193,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -281,7 +281,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -460,7 +460,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -605,7 +605,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -625,12 +625,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 786,
+          "line": 828,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 800
+              "line": 842
             }
           ]
         }
@@ -1106,7 +1106,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -1135,12 +1135,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 721,
+          "line": 763,
           "note": null,
           "tests": [
             {
               "title": "rounds annual withholding to one ARF crediting month per year",
-              "line": 729
+              "line": 771
             }
           ]
         }
@@ -1285,7 +1285,7 @@
       "title": "A spousal benefit is half the PIA and earns no delayed credits",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and models the deemed-filing era only, assuming on the current-spouse path that the worker has already filed so the spouse is eligible. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.",
+      "conventionRationale": "Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and the spouse base remains one-half of worker PIA without worker delayed credits. The guarded ordinary current-spouse composition is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`; excluded current-spouse shapes retain disclosed legacy behavior. MFJ, a two-person household, and the worker’s configured start date are product proxies and do not establish current-spouse eligibility or actual worker entitlement. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1306,7 +1306,7 @@
           "functions": [
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
-              "line": 152
+              "line": 153
             }
           ]
         },
@@ -1315,7 +1315,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -1397,7 +1397,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -1841,7 +1841,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -1861,16 +1861,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 920,
+          "line": 962,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 928
+              "line": 970
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 955
+              "line": 997
             }
           ]
         }
@@ -1985,11 +1985,79 @@
       ]
     },
     {
+      "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+      "title": "An ordinary early current-spouse benefit adds reduced own and reduced excess",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This record settles component arithmetic only after RetireGolden’s narrow Plan proxy admits the case. The proxy requires marriedFilingJointly with exactly two people; exactly one resolved Social Security stream per person; no disability declaration on either stream; the claimant’s original raw claim age strictly before the claimant’s retirement FRA; strict DOB-plus-raw-claim-age civil dates, with month-end clamping rejected, showing the worker’s configured date no later than the claimant’s; both people alive and both streams payable in the priced period; and a positive half-PIA excess. The helper uses the claimant’s existing actual own monthly amount plus the existing spouse factor applied to max(0, one-half worker PIA minus claimant own PIA). Raw original claim age selects the branch even in later post-FRA projection years; attained age and ARF-credited age do not. A worker configured earlier, including at or after the worker’s FRA, may enter because the spouse base is the worker PIA. MFJ, configured dates, and payable rows are planning proxies, not proof of marriage, application, insured status, prescribed application, or an actual SSA entitlement month. The helper returns null outside the complete guard, leaving staggered later-worker, claimant delayed-own, disability, multiple-stream, clamped-date, and nonpositive-excess shapes on the disclosed legacy paths. POMS RS 00615.694 confirms that delayed-credit composition needs a different sequence and is deliberately excluded.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-06",
+      "dueOn": "2027-09-06",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/currentSpouseBenefit.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/currentSpouseBenefit.ts",
+          "functions": [
+            {
+              "name": "ordinarySimultaneousEarlyCurrentSpouseComponents",
+              "line": 65
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.social-security.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.social-security.test.ts",
+          "line": 454,
+          "note": null,
+          "tests": [
+            {
+              "title": "adds reduced own and the separately reduced spouse excess in the full year after simultaneous early claims",
+              "line": 462
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(3)(A)-(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(k)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.250, A. Policy",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615250"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.694, A. Policy",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615694"
+        }
+      ]
+    },
+    {
       "id": "usc-42-402-r-1-2-deemed-filing-old-age-and-spousal",
       "title": "Current eligible old-age and current-spouse benefits are deemed filed together",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "This record owns deemed-filing application coupling and the Plan’s single-claim-age representation; it does not own the dollar composition of dual entitlement. `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement` owns reduced-own-plus-reduced-excess arithmetic only inside its complete ordinary early guard. MFJ, two people, and configured stream dates remain product proxies rather than proof of eligibility, application, or entitlement month, and all excluded shapes retain their separately disclosed partial behavior.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2017,7 +2085,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -2109,7 +2177,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -2310,7 +2378,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -2386,7 +2454,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -2406,12 +2474,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 738,
+          "line": 780,
           "note": "shares the ARF observable",
           "tests": [
             {
               "title": "collapses the charging sequence into the annual ratio",
-              "line": 747
+              "line": 789
             }
           ]
         }
@@ -2459,7 +2527,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -2479,12 +2547,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 562,
+          "line": 604,
           "note": null,
           "tests": [
             {
               "title": "withholds half the excess for a beneficiary under FRA all year",
-              "line": 566
+              "line": 608
             }
           ]
         }
@@ -2537,7 +2605,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -2805,12 +2873,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 899,
+          "line": 941,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 907
+              "line": 949
             }
           ]
         }
@@ -3038,7 +3106,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -3112,7 +3180,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
@@ -3206,7 +3274,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 66
+              "line": 68
             }
           ]
         },
