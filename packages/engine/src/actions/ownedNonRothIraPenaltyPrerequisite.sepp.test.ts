@@ -374,12 +374,16 @@ function manyPaymentInput(
 
 function completeRouteForInput(
   value: Readonly<EvaluateOwnedNonRothIraPenaltyPrerequisitesInput>,
+  options: Readonly<{
+    includeActionIds?: readonly string[]
+    annualScheduledGrossAmount?: number
+  }> = {},
 ): OwnedNonRothIraSeppPenaltyScheduleRouteInput {
   const withoutRoute = evaluateOwnedNonRothIraPenaltyPrerequisites({
     ...value,
     iraSeppScheduleRoutes: [],
   })
-  const coverages = [...withoutRoute.coverage].sort((left, right) =>
+  let coverages = [...withoutRoute.coverage].sort((left, right) =>
     left.evaluationDate < right.evaluationDate
       ? -1
       : left.evaluationDate > right.evaluationDate
@@ -394,10 +398,20 @@ function completeRouteForInput(
                 ? 1
                 : 0,
   )
-  const annualAmount = coverages.reduce(
-    (total, coverage) => total + coverage.executedAmount,
-    0,
-  )
+  if (options.includeActionIds !== undefined) {
+    const include = new Set(
+      options.includeActionIds.map((id) => asActionId(id)),
+    )
+    coverages = coverages.filter((item) => include.has(item.actionId))
+    if (coverages.length !== options.includeActionIds.length) {
+      throw new Error('SEPP route fixture lost a requested payment coverage')
+    }
+  }
+  const annualAmount = options.annualScheduledGrossAmount ??
+    coverages.reduce(
+      (total, coverage) => total + coverage.executedAmount,
+      0,
+    )
   const sourceEvidence: OwnedNonRothIraSeppSourceEvidence = {
     predicate: 'ownedNonRothIraSeppSource',
     sourceAccountId: asAccountId('ira-account'),
@@ -609,6 +623,49 @@ describe('owned IRA SEPP penalty prerequisite integration', () => {
     expect(changedEvaluation.finalEvidenceId).not.toBe(
       baselineEvaluation.finalEvidenceId,
     )
+  })
+
+  it('keeps penalty evaluation pending when inventory includes an extra same-account withdrawal', () => {
+    // Notice 2022-6 §3.02(e): scheduled $120 plus $30 outside the series.
+    // Worksheet: inventory must list both; route pays only the scheduled leg.
+    const scheduled = {
+      actionId: 'action-sepp',
+      allocationId: 'allocation-sepp',
+      date: '2030-06-01',
+      grossAmount: 12_000,
+    }
+    const extra = {
+      actionId: 'action-extra',
+      allocationId: 'allocation-extra',
+      date: '2030-08-01',
+      grossAmount: 3_000,
+    }
+    const value = manyPaymentInput([scheduled, extra])
+    value.iraSeppScheduleRoutes = [completeRouteForInput(value, {
+      includeActionIds: [scheduled.actionId],
+      annualScheduledGrossAmount: 12_000,
+    })]
+
+    const result = evaluateOwnedNonRothIraPenaltyPrerequisites(value)
+    const route = result.iraSeppScheduleReconciliations[0]
+    expect(route?.reconciliation.status).toBe('reconciliationIncomplete')
+    if (route?.reconciliation.status !== 'reconciliationIncomplete') return
+    expect(route.reconciliation.issues.map((issue) => issue.kind)).toContain(
+      'inventoryMemberWithoutPayment',
+    )
+    expect(result.evaluations).toHaveLength(2)
+    expect(result.evaluations.map((item) => item.outcome)).toEqual([
+      'exceptionEvaluationRequired',
+      'exceptionEvaluationRequired',
+    ])
+
+    const control = manyPaymentInput([scheduled])
+    control.iraSeppScheduleRoutes = [completeRouteForInput(control)]
+    const controlResult = evaluateOwnedNonRothIraPenaltyPrerequisites(control)
+    expect(
+      controlResult.iraSeppScheduleReconciliations[0]?.reconciliation.status,
+    ).toBe('reconciled')
+    expect(controlResult.evaluations[0]?.outcome).toBe('iraSeppQualified')
   })
 
   it('keeps every non-successful submitted route pending without negative authority', () => {

@@ -622,6 +622,37 @@ describe('evaluateOwnedNonRothIraPenaltyPrerequisites', () => {
         evaluatedOrdinaryIncomeExposureAmount: readings.bothWaived,
       })
     })
+
+    it('keeps employer taxable treatment while waiving the additional tax', () => {
+      const base = employerIncludiblePortionPenaltyInput()
+      const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite({
+        ...base,
+        separationEvidence: null,
+        disabilityEvidence: {
+          kind: 'disability',
+          disabledPersonId: base.participantPersonId,
+          disabilityQualificationDate: '2030-06-14',
+          evaluationDate: base.evaluationDate,
+          qualifiedOnEvaluationDate: true,
+          disabilityEvidenceId: 'employer-disability-qualified',
+        },
+      })
+
+      expect(result.status).toBe('accepted')
+      if (result.status !== 'accepted') return
+      // Hand sum from §72 character: 100c distribution, 50c after-tax basis → 50c includible.
+      expect(result.evidence).toMatchObject({
+        outcome: 'disabilityQualified',
+        finalPenaltyAmount: 0,
+        characterCoverage: {
+          executedAmount: 100,
+          basisReturnExcludedAmount: 50,
+          taxableTreatmentAmount: 50,
+        },
+      })
+      expect(result.evidence.characterCoverage.taxableTreatmentAmount)
+        .not.toBe(readings.bothWaived)
+    })
   })
 
   it('qualifies disability effective before or exactly on the distribution date', () => {

@@ -579,13 +579,16 @@ describe('traditional employer-plan penalty prerequisite', () => {
   describeRule('irc-72-t-3-B-sepp-separation', {
     // IRC 72(t)(3)(B) reaches 401(a) trusts and 72(e)(5)(D)(ii) contracts —
     // 403(a) annuity plans and 403(b) contracts — and pointedly omits clause
-    // (iii), individual retirement accounts. So an employer-plan SEPP must
-    // begin after separation, while an IRA SEPP may begin during employment.
-    // Applying the IRA rule here would accept an election predating separation.
-    readings: { employerPlanRequiresSeparationFirst: 'refused', iraRuleNoSeparationNeeded: 'accepted' },
-    accepted: 'employerPlanRequiresSeparationFirst',
-  }, () => {
-    it('does not qualify a SEPP election that starts before separation', () => {
+    // (iii), individual retirement accounts. Inconsistent election/separation
+    // evidence fails closed with RangeError; no accepted/refused disposition
+    // is returned on this path.
+    readings: {
+      failClosedRangeErrorOnPreSeparationElection: 'throwsRangeError',
+      seppExceptionDespitePreSeparationElection: 'accepted',
+    },
+    accepted: 'failClosedRangeErrorOnPreSeparationElection',
+  }, ({ accepted, readings }) => {
+    it('throws on a SEPP election that starts before separation', () => {
       const value = input({ separationDate: '2029-12-31' })
       const sepp = currentSepp(value)
       sepp.election.electionStartDate = '2029-12-01'
@@ -593,8 +596,18 @@ describe('traditional employer-plan penalty prerequisite', () => {
 
       // Under the IRA rule this identical election would stand, because
       // 72(t)(3)(B) does not reach individual retirement accounts.
-      expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
-        .toThrow(/election or current-payment identity/)
+      let outcome: typeof accepted
+      try {
+        evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)
+        outcome = readings.seppExceptionDespitePreSeparationElection
+      } catch (error) {
+        expect(error).toBeInstanceOf(RangeError)
+        expect((error as RangeError).message)
+          .toMatch(/election or current-payment identity/)
+        outcome = accepted
+      }
+      expect(outcome).toBe(accepted)
+      expect(outcome).not.toBe(readings.seppExceptionDespitePreSeparationElection)
     })
   })
 
