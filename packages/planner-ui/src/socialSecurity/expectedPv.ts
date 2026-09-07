@@ -16,8 +16,14 @@
  *
  * Simplifications: annual (not monthly) cashflows; claim months ignored
  * (whole-year claim ages, matching the analysis grid); couples assume
- * independent lifetimes; spousal top-up and survivor step-up mirror the
- * projection engine. See DOCS/features/social-security.md.
+ * independent lifetimes. This is an educational actuarial model, not
+ * ledger-equivalent to the projection engine. While both spouses are alive
+ * and both have claimed, the lower earner receives max(reduced own benefit,
+ * reduced 50% of the higher earner's PIA) — a simplified floor that can
+ * differ from the engine's guarded early-claim composition (reduced own plus
+ * a separately reduced positive unreduced excess). After the first death the
+ * survivor keeps the larger of the two claimed benefits (simple max). See
+ * DOCS/features/social-security.md.
  */
 
 import { FEMALE, MALE } from '@retiregolden/engine/longevity/ssaPeriod2022'
