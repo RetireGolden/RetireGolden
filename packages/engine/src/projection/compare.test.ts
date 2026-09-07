@@ -103,6 +103,53 @@ describe('summarizeProjection', () => {
     expect(highSummary.endingAfterTaxEstate).toBeLessThan(lowSummary.endingAfterTaxEstate)
   })
 
+  // Product-compatibility regression: omitted `estateBeneficiary` → destination-label mapping only,
+  // per DOCS/domain/domain-rules-reference/17-guaranteed-income-annuity-purchases.md (Estate beneficiary
+  // destinations). Not beneficiary designation, rollover/treat-as-own, or tax-dollar correctness.
+  it('preserves legacy estate destination labels through simulatePlan and summarizeProjection', () => {
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Alex',
+      dob: '1996-06-15',
+      sex: 'average',
+      retirementAge: 65,
+      longevity: { planningAge: 85, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.accounts = [
+      { type: 'cash', id: 'cash-default', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 10_000, annualContribution: 0 },
+      { type: 'taxable', id: 'taxable-default', name: 'Brokerage', ownerPersonId: 'p1', annualReturnPct: 0, balance: 20_000, costBasis: 20_000, annualContribution: 0 },
+      { type: 'roth', id: 'roth-default', name: 'Roth', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 30_000, annualContribution: 0 },
+      { type: 'equityComp', id: 'equity-default', name: 'RSU', ownerPersonId: 'p1', annualReturnPct: 0, balance: 40_000, costBasis: 40_000, annualContribution: 0, vestingMode: 'final', vestDate: null },
+      { type: 'traditional', id: 'traditional-default', name: 'IRA', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 50_000, annualContribution: 0 },
+      { type: 'hsa', id: 'hsa-omit', name: 'HSA omitted', ownerPersonId: 'p1', annualReturnPct: 0, balance: 60_000, annualContribution: 0 },
+      { type: 'hsa', id: 'hsa-spouse', name: 'HSA spouse', ownerPersonId: 'p1', annualReturnPct: 0, balance: 70_000, annualContribution: 0, beneficiary: 'spouse' },
+      { type: 'hsa', id: 'hsa-non-spouse', name: 'HSA nonSpouse', ownerPersonId: 'p1', annualReturnPct: 0, balance: 80_000, annualContribution: 0, beneficiary: 'nonSpouse' },
+    ]
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const result = simulatePlan(parsed.plan, {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+    const byAccountId = new Map(
+      summarizeProjection(parsed.plan, result).estateBreakdown.map((row) => [row.accountId, row.destination]),
+    )
+    expect(byAccountId.size).toBe(8)
+    expect(byAccountId.get('cash-default')).toBe('spouse')
+    expect(byAccountId.get('taxable-default')).toBe('spouse')
+    expect(byAccountId.get('roth-default')).toBe('spouse')
+    expect(byAccountId.get('equity-default')).toBe('spouse')
+    expect(byAccountId.get('traditional-default')).toBe('nonSpouse')
+    expect(byAccountId.get('hsa-omit')).toBe('spouse')
+    expect(byAccountId.get('hsa-spouse')).toBe('spouse')
+    expect(byAccountId.get('hsa-non-spouse')).toBe('nonSpouse')
+  })
+
   it('derives FIRE metrics from the projection ledger', () => {
     const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
     plan.household.people[0] = {
