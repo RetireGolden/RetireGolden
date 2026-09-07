@@ -873,16 +873,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1942,
+          "line": 1955,
           "note": null,
           "tests": [
             {
               "title": "counts tax-exempt interest in provisional income",
-              "line": 1950
+              "line": 1963
             },
             {
               "title": "includes a foreign exclusion in provisional income without taxing the exclusion itself",
-              "line": 1961
+              "line": 1974
             }
           ]
         }

@@ -678,7 +678,7 @@ describe('section 55 alternative minimum tax', () => {
   // this fixture exists to answer that objection with a number.
   //
   // IRC 55(d)(4)(A)(ii)(I)-(II) substitutes a 1,000,000 joint threshold
-  // and 50 percent of it for an unmarried taxpayer; clause (IV) substitutes
+  // and 50 percent of it for an unmarried taxpayer; subclause (IV) substitutes
   // a 50 percent phase-out rate for 25 percent from 2026. Exemptions are the
   // indexed 2026 pack figures (90,100 single / 140,200 joint) under
   // irc-55-d-exemption-phase-out-rate.
@@ -1930,15 +1930,28 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
     })
   })
 
-  // IRC 86(b)(2)(B) increases modified AGI by tax-exempt interest, so a
-  // municipal bond raises the taxable share of benefits without ever entering
-  // AGI. Reading provisional income as AGI plus half the benefits is the
-  // natural misreading and here it zeroes the inclusion outright.
+  // IRC 86(b)(2) defines modified AGI for provisional income: (A) excludes
+  // the 911/931/933 foreign-income exclusions from the AGI base while still
+  // requiring those amounts in provisional income, and (B) increases MAGI by
+  // tax-exempt interest. Either add-back raises the taxable share of benefits
+  // without the excluded amount or interest itself entering AGI. This fixture
+  // is a broad add-back carrier only — it does not test exclusion eligibility
+  // or any NIIT claim. Reading provisional income as AGI plus half the benefits
+  // is the natural misreading and here it zeroes the inclusion outright.
   //
-  // Single, 24,000 of benefits and 20,000 of tax-exempt interest:
-  //   with the add-back: provisional 20,000 + 12,000 = 32,000, between the
+  // Tax-exempt interest arm — single, 24,000 of benefits and 20,000 of
+  // tax-exempt interest:
+  //   with the (B) add-back: provisional 20,000 + 12,000 = 32,000, between the
   //     25,000 base and the 34,000 adjusted base, so 0.5 x 7,000 = 3,500
   //   without it: provisional 12,000, under the base amount, so nothing
+  //
+  // Foreign exclusion arm — single, 10,000 ordinary, 20,000 of benefits,
+  // 10,000 excluded under 911/931/933 and carried via foreignExclusionAddback:
+  //   with the (A) add-back: provisional 10,000 + 10,000 + 10,000 = 30,000,
+  //     between the 25,000 base and the 34,000 adjusted base,
+  //     so 0.5 x (30,000 - 25,000) = 2,500 taxable SS; AGI 10,000 + 2,500 =
+  //     12,500; the excluded 10,000 itself never enters AGI
+  //   without it: provisional 10,000 + 10,000 = 20,000, under the base amount
   describeRule('irc-86-b-2-provisional-income-modified-agi', {
     readings: {
       statutoryModifiedAgi: { taxExemptInterestCase: 3_500, foreignExclusionCase: 2_500 },
@@ -2006,10 +2019,14 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
     })
   })
 
-  // IRC 67(h) disallows every miscellaneous itemized deduction permanently, so
-  // the absence of any advisory or tax-preparation input is the right answer
-  // rather than a gap. The pre-2018 67(a) two percent floor is the misreading,
-  // and it would let 5,000 of advisory fees through less a 2,000 floor.
+  // IRC 67(h) disallows every miscellaneous itemized deduction permanently. A
+  // direct computeFederalTax call can still carry hostile facts on
+  // itemizedDeductions — 3,000 of advisory fees and 2,000 of tax-preparation
+  // fees — under the names a fix would plausibly use; itemizedTotal reads only
+  // SALT, mortgage interest, and charitable under today's input scope, so the
+  // calculator ignores them and 20,000 SALT alone is still the produced answer.
+  // The pre-2018 67(a) two percent floor is the misreading: 5,000 of fees less
+  // a 2,000 floor on 100,000 AGI would add 3,000 for 23,000 total.
   //
   // Single, 100,000 ordinary, 20,000 of state and local taxes.
   describeRule('irc-67-h-miscellaneous-itemized-permanently-disallowed', {
@@ -2023,12 +2040,18 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
     ) => ({ ...items, ...facts }) as typeof baseItemized
 
     it('offers no channel by which a miscellaneous itemized deduction is allowed', () => {
+      const itemizedWithMiscFees = withExtraFacts(baseItemized, {
+        advisoryFees: 3_000,
+        taxPreparationFees: 2_000,
+      })
+      expect(itemizedWithMiscFees).toMatchObject({
+        advisoryFees: 3_000,
+        taxPreparationFees: 2_000,
+      })
+
       const result = computeFederalTax(input({
         ordinaryIncome: 100_000,
-        itemizedDeductions: withExtraFacts(baseItemized, {
-          advisoryFees: 3_000,
-          taxPreparationFees: 2_000,
-        }),
+        itemizedDeductions: itemizedWithMiscFees,
       }))
 
       expect(result.itemized).toBe(true)
