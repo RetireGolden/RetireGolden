@@ -15,6 +15,10 @@ import {
   type CounterfactualAnnualLiabilityResult,
   type RunCounterfactualAnnualPass,
 } from './counterfactualAnnualLiability.js'
+import {
+  captureSimulatorAnnualPassStateKey,
+  SIMULATOR_ANNUAL_PASS_STATE_KEYS,
+} from './simulatorAnnualPassStateRegistry.js'
 
 /**
  * The counterfactual annual pass, against real checkpoint bindings and a pass
@@ -171,48 +175,22 @@ function bindings(): SimulatorAnnualPassStateBindings {
   }
 }
 
+function perKeyStateBytes(
+  state: SimulatorAnnualPassStateBindings,
+): Record<string, string> {
+  const bytes: Record<string, string> = {}
+  for (const key of SIMULATOR_ANNUAL_PASS_STATE_KEYS) {
+    bytes[key] = JSON.stringify(
+      captureSimulatorAnnualPassStateKey(state, key) ?? null,
+    )
+  }
+  return bytes
+}
+
 function annualPassStateBytes(
   state: SimulatorAnnualPassStateBindings,
 ): string {
-  return JSON.stringify({
-    balances: state.balances.map(({ account, balance, costBasis }) =>
-      ({ id: account.id, balance, costBasis })),
-    retirementRuntimeOccurrences: state.retirementRuntimeOccurrences,
-    retirementRuntimeApplications: state.retirementRuntimeApplications,
-    nextRetirementRuntimeMutationOrdinal:
-      state.nextRetirementRuntimeMutationOrdinal.read(),
-    iraProRata: [...state.iraProRata],
-    iraBasisByOwner: [...state.iraBasisByOwner],
-    rothBasis: [...state.rothBasis],
-    rothAssumedContributionRemaining: [...state.rothAssumedContributionRemaining],
-    rothCounterfactualFreeCoverConsumed: [...state.rothCounterfactualFreeCoverConsumed],
-    propertyValues: [...state.propertyValues],
-    hecmStates: [...state.hecmStates],
-    insuranceCashValues: [...state.insuranceCashValues],
-    allocationTrack: [...state.allocationTrack],
-    seppAmortAmount: [...state.seppAmortAmount],
-    magiHistory: [...state.magiHistory],
-    deferredFirstRmdByApplicablePlan: [
-      ...state.deferredFirstRmdByApplicablePlan,
-    ],
-    namedQcdOffsetConsumedByDonor: [...state.namedQcdOffsetConsumedByDonor],
-    namedQcdOffsetHistoryUnprovable: [...state.namedQcdOffsetHistoryUnprovable],
-    warnings: [...state.warnings],
-    scalars: {
-      unassignedCash: state.unassignedCash.read(),
-      priorYearPortfolioReturnPct: state.priorYearPortfolioReturnPct.read(),
-      capitalLossPool: state.capitalLossPool.read(),
-      hsaReimbursablePool: state.hsaReimbursablePool.read(),
-      depletionYear: state.depletionYear.read(),
-      conversionNontaxable: state.conversionNontaxable.read(),
-      healthcare: state.healthcare.read(),
-      qualifiedMedicalThisYear: state.qualifiedMedicalThisYear.read(),
-      hsaQualifiedCap: state.hsaQualifiedCap.read(),
-      requiredSpendingBase: state.requiredSpendingBase.read(),
-      targetSpendingBase: state.targetSpendingBase.read(),
-    },
-    expenses: state.expenses,
-  })
+  return JSON.stringify(perKeyStateBytes(state))
 }
 
 /** Touch every named container and every scalar the checkpoint covers. */
@@ -329,12 +307,17 @@ describe('counterfactual annual liability', () => {
   it('reads a staging probe before rollback and restores bindings byte-for-byte', () => {
     const state = bindings()
     const before = annualPassStateBytes(state)
+    const beforeKeys = perKeyStateBytes(state)
 
     const result = probeAnnualPassUnderTransaction({
       state,
       runProbe: () => {
         mutateEverything(state)
-        state.unassignedCash.write(1_000)
+        const duringKeys = perKeyStateBytes(state)
+        const unmutated = SIMULATOR_ANNUAL_PASS_STATE_KEYS
+          .filter((key) => duringKeys[key] === beforeKeys[key])
+        expect(unmutated).toEqual([])
+        state.unassignedCash.write(777)
         return { unassignedCash: state.unassignedCash.read() }
       },
     })
@@ -342,8 +325,9 @@ describe('counterfactual annual liability', () => {
     expect(result).toMatchObject({
       status: 'annualPassProbeRead',
       restoration: 'checkpointRestored',
-      observation: { unassignedCash: 1_000 },
+      observation: { unassignedCash: 777 },
     })
+    expect(state.unassignedCash.read()).toBe(1_000)
     expect(annualPassStateBytes(state)).toBe(before)
   })
 

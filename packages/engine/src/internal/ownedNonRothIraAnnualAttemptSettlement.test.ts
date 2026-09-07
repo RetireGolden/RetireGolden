@@ -266,7 +266,9 @@ describe('private owned-IRA annual attempt settlement', () => {
       readonly observedEffects: readonly StubEffect[]
     }
     type StubProbeResult = StubProbeReprobe | StubProbeCommit
-    const attemptLimit = 8 // annualPassAttemptDriver.MAX_ANNUAL_PASS_ATTEMPTS
+    // Intentionally pinned expected behavior: MAX_ANNUAL_PASS_ATTEMPTS is private
+    // to annualPassAttemptDriver; literal 8 is the contract this test asserts.
+    const attemptLimit = 8
     const simulatorState = state()
     const before = stateBytes(simulatorState)
     let attemptCallbacks = 0
