@@ -1,6 +1,6 @@
 # Hawaii (HI) — state income tax for retirement planning
 
-Tax year: 2025. Researched 2026-06-13.
+Tax year: 2026. Researched 2026-06-13; standard deduction corrected 2026-09-07.
 
 ## Summary
 - Broad individual income tax: **yes** (graduated, 1.4%–11.0%, 12 brackets; widened by Act 46, SLH 2024)
@@ -8,13 +8,13 @@ Tax year: 2025. Researched 2026-06-13.
 - Long-term capital gains: preferential — capped at 7.25% (modeled as ordinary; flagged)
 - Retirement income: employer-funded pensions fully exempt; **IRA/401(k) distributions fully taxable**
 
-## Proposed StateTaxParams (2025)
+## Proposed StateTaxParams (2026)
 - code: "HI"
 - name: "Hawaii"
 - hasIncomeTax: true
 - taxesSocialSecurity: false
 - capitalGainsAsOrdinary: true
-- standardDeduction: { single: 4400, marriedFilingJointly: 8800 }
+- standardDeduction: { single: 8000, marriedFilingJointly: 16000 }
 - brackets.single:
   - { lowerBound: 0, ratePct: 1.4 }
   - { lowerBound: 9600, ratePct: 3.2 }
@@ -43,29 +43,29 @@ Tax year: 2025. Researched 2026-06-13.
   - { lowerBound: 650000, ratePct: 11.0 }
 - retirement: { kind: "none" }
 
-## Retirement-income detail
-Hawaii has a 12-bracket graduated tax from 1.4% to 11.0%. Brackets were
-**substantially widened for 2025** by Act 46, SLH 2024 (single 1.4% bracket now
-runs to $9,600; 11% top rate starts at $325,000). MFJ brackets are exactly **2×**
-the single brackets (verified). The 2025 standard deduction is **$4,400 (single) /
-$8,800 (MFJ)** (doubled from $2,200/$4,400 under Act 46).
+## Standard deduction — operative law (2026 phase)
 
-Social Security is fully exempt. Hawaii fully exempts **employer-funded pension**
-distributions (public and private) where the employee did not contribute. However,
-distributions from traditional **IRAs and 401(k)/deferred-compensation** plans are
-treated as a return on individual investment and are **fully taxable**. Because the
-common modern retiree's IRA/401(k) income is taxed, this maps to
-`retirement: { kind: "none" }` (conservative for those with a true non-contributory
-employer pension).
+Haw. Rev. Stat. § 235-2.4(a)(2)(F) sets the standard deduction for taxable years beginning after December 31, 2025 at **$8,000** for an unmarried individual and **$16,000** on a joint return. Limb (F) governs tax years beginning after December 31, 2025 through **2026–2027**; limb (G) applies from taxable years beginning after December 31, 2027 (**2028** onward) with different amounts that are outside this pack.
+
+The [Hawaii DOTAX HRS ch. 235 compilation](https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf) is labeled an unofficial compilation as of December 31, 2025; the operative section and effective-year language are nevertheless explicit. The engine models supported single and married-filing-jointly statuses only; head-of-household, married-filing-separately, and surviving-spouse limbs are outside this record.
+
+### Historical context
+
+Act 46, SLH 2024 doubled the 2025 standard deduction to $4,400 / $8,800 and widened brackets. The 2026 pack previously carried those 2025 amounts; it now reflects the post-2025 (F) phase.
+
+## Retirement-income detail
+Hawaii has a 12-bracket graduated tax from 1.4% to 11.0%. Brackets were **substantially widened for 2025** by Act 46, SLH 2024 (single 1.4% bracket now runs to $9,600; 11% top rate starts at $325,000). MFJ brackets are exactly **2×** the single brackets (verified).
+
+Social Security is fully exempt. Hawaii fully exempts **employer-funded pension** distributions (public and private) where the employee did not contribute. However, distributions from traditional **IRAs and 401(k)/deferred-compensation** plans are treated as a return on individual investment and are **fully taxable**. Because the common modern retiree's IRA/401(k) income is taxed, this maps to `retirement: { kind: "none" }` (conservative for those with a true non-contributory employer pension). The private-pension distinction is **not modeled** in the current pack.
 
 ## Simplifications / not modeled
 - Fully-employer-funded pension exemption not modeled (`none` overstates tax for retirees with a traditional non-contributory pension). The model targets the dominant IRA/401(k) case, which Hawaii taxes.
 - Capital gains: Hawaii caps the long-term capital-gains rate at **7.25%**; we set `capitalGainsAsOrdinary: true`, which overstates tax for high-bracket filers with large gains.
 - Employee-contributed pensions are partially taxable (pro-rata); not modeled.
-- Standard deduction continues to rise in phases through 2031 under Act 46; we hold the 2025 amount.
+- Standard deduction phases after 2027 under § 235-2.4(a)(2)(G) and later limbs; only the 2026–2027 (F) phase is carried.
+- Head-of-household, MFS, and surviving-spouse standard-deduction amounts not modeled.
 
 ## Citations
-- https://learn.valur.com/hawaii-income-tax/ — 2025 single and MFJ brackets (1.4%–11.0%, 12 tiers); MFJ = 2× single.
+- https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf — Haw. Rev. Stat. § 235-2.4(a)(2)(F) (2026–2027 standard deduction phase).
 - https://files.hawaii.gov/tax/news/announce/ann24-03.pdf — Hawaii DOTAX Announcement 2024-03: Act 46 bracket/standard-deduction changes effective 1/1/2025.
 - https://support.taxslayer.com/hc/en-us/articles/360029385331-Is-my-retirement-income-taxable-to-Hawaii — employer pensions exempt; IRA/401(k) taxable; SS exempt.
-- https://taxfoundation.org/data/all/state/state-income-tax-rates/ — Tax Foundation 2025 cross-check (HI 1.4%–11.0%, std deduction $4,400/$8,800).

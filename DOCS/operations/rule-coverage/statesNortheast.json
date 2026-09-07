@@ -195,7 +195,7 @@
           "functions": [
             {
               "name": "states.MA",
-              "line": 463
+              "line": 468
             }
           ]
         },
@@ -215,16 +215,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2470,
+          "line": 2525,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 2484
+              "line": 2539
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 2489
+              "line": 2544
             }
           ]
         }
@@ -268,7 +268,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 417
+              "line": 422
             }
           ]
         },
@@ -384,7 +384,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 417
+              "line": 422
             }
           ]
         },
@@ -477,7 +477,7 @@
           "functions": [
             {
               "name": "NH",
-              "line": 588
+              "line": 593
             }
           ]
         },
@@ -497,16 +497,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2687,
+          "line": 2742,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 2708
+              "line": 2763
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 2713
+              "line": 2768
             }
           ]
         }
@@ -549,7 +549,7 @@
           "functions": [
             {
               "name": "NJ",
-              "line": 594
+              "line": 599
             }
           ]
         },
@@ -639,7 +639,7 @@
           "functions": [
             {
               "name": "states.NY",
-              "line": 628
+              "line": 633
             }
           ]
         },
@@ -720,7 +720,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 726
+              "line": 731
             }
           ]
         },
@@ -792,7 +792,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 726
+              "line": 731
             }
           ]
         },
@@ -850,6 +850,88 @@
       ]
     },
     {
+      "id": "ri-dot-adv-2025-22-2026-deduction-and-rate-schedule",
+      "title": "Rhode Island’s TY2026 standard deduction and bracket thresholds are inflation-adjusted",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "These are annually inflation-adjusted publication amounts for tax year 2026 only; later years require a later advisory. Rhode Island’s Social Security and pension modifications remain disclosed separately at `ri-gen-laws-44-30-12-social-security-and-pension-modification`.",
+      "contraryReading": null,
+      "jurisdiction": "state:RI",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-01-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "RI",
+              "line": 740
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 29
+            },
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2960,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices single and joint filers on the TY2026 deduction and schedule",
+              "line": 2975
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, ADV 2025-22, TY2026 scope",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, ADV 2025-22, standard deduction table",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, ADV 2025-22, TY2026 uniform rate schedule",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, ADV 2025-22, deduction phaseout range",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf"
+        }
+      ]
+    },
+    {
       "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
       "title": "Rhode Island limits Social Security and pension modifications by age, AGI, and year",
       "classification": "approximated",
@@ -872,7 +954,7 @@
           "functions": [
             {
               "name": "RI",
-              "line": 735
+              "line": 740
             }
           ]
         },
@@ -896,34 +978,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2875,
+          "line": 2987,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 2890
+              "line": 3002
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2897,
+          "line": 3009,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 2916
+              "line": 3028
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2923,
+          "line": 3035,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 2943
+              "line": 3055
             }
           ]
         }
@@ -986,7 +1068,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 779
+              "line": 790
             }
           ]
         },
@@ -1006,12 +1088,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2950,
+          "line": 3062,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 2963
+              "line": 3075
             }
           ]
         }

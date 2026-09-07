@@ -268,18 +268,20 @@ const rawStateYear2026 = {
       // deduction; § 1108(b)(1): $2,500 additional per qualifying age-65 filer
       // (not § 1108(b)(2), which applies only when no joint return). Do NOT
       // restore HB 89's unenacted $5,700 / $11,400 — see DOCS/domain/state-tax-research/DE.md.
+      // § 1102(a)(14): 5.55% on taxable income over $25,000 through $60,000.
+      // https://delcode.delaware.gov/title30/c011/sc01/index.html
       code: 'DE', name: 'Delaware', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 3250, marriedFilingJointly: 6500 },
       standardDeductionAge65Addition: { single: 2500, marriedFilingJointly: 2500 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 0 }, { lowerBound: 2000, ratePct: 2.2 }, { lowerBound: 5000, ratePct: 3.9 },
-          { lowerBound: 10000, ratePct: 4.8 }, { lowerBound: 20000, ratePct: 5.2 }, { lowerBound: 25000, ratePct: 5.5 },
+          { lowerBound: 10000, ratePct: 4.8 }, { lowerBound: 20000, ratePct: 5.2 }, { lowerBound: 25000, ratePct: 5.55 },
           { lowerBound: 60000, ratePct: 6.6 },
         ],
         marriedFilingJointly: [
           { lowerBound: 0, ratePct: 0 }, { lowerBound: 2000, ratePct: 2.2 }, { lowerBound: 5000, ratePct: 3.9 },
-          { lowerBound: 10000, ratePct: 4.8 }, { lowerBound: 20000, ratePct: 5.2 }, { lowerBound: 25000, ratePct: 5.5 },
+          { lowerBound: 10000, ratePct: 4.8 }, { lowerBound: 20000, ratePct: 5.2 }, { lowerBound: 25000, ratePct: 5.55 },
           { lowerBound: 60000, ratePct: 6.6 },
         ],
       },
@@ -319,8 +321,11 @@ const rawStateYear2026 = {
       retirement: { kind: 'capped', capPerPerson: 65000, minAge: 65 },
     },
     HI: {
+      // Haw. Rev. Stat. § 235-2.4(a)(2)(F): $8,000 single / $16,000 MFJ for tax
+      // years beginning after 2025 through 2027; phase (G) starts after 2027 and
+      // later phases are unimplemented. https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf
       code: 'HI', name: 'Hawaii', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 4400, marriedFilingJointly: 8800 },
+      standardDeduction: { single: 8000, marriedFilingJointly: 16000 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 1.4 }, { lowerBound: 9600, ratePct: 3.2 }, { lowerBound: 14400, ratePct: 5.5 },
@@ -733,11 +738,14 @@ const rawStateYear2026 = {
       retirement: { kind: 'full', minAge: 60 },
     },
     RI: {
+      // RI Division of Taxation ADV 2025-22 (TY2026): $11,200/$22,400 standard
+      // deduction; uniform schedule thresholds $82,050 and $186,450.
+      // https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf
       code: 'RI', name: 'Rhode Island', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 10900, marriedFilingJointly: 21800 },
+      standardDeduction: { single: 11200, marriedFilingJointly: 22400 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 3.75 }, { lowerBound: 79900, ratePct: 4.75 }, { lowerBound: 181650, ratePct: 5.99 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.75 }, { lowerBound: 79900, ratePct: 4.75 }, { lowerBound: 181650, ratePct: 5.99 }],
+        single: [{ lowerBound: 0, ratePct: 3.75 }, { lowerBound: 82050, ratePct: 4.75 }, { lowerBound: 186450, ratePct: 5.99 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.75 }, { lowerBound: 82050, ratePct: 4.75 }, { lowerBound: 186450, ratePct: 5.99 }],
       },
       retirement: { kind: 'capped', capPerPerson: 20000, minAge: 67 },
     },
@@ -771,9 +779,12 @@ const rawStateYear2026 = {
       brackets: { single: [], marriedFilingJointly: [] }, retirement: { kind: 'none' },
     },
     UT: {
+      // 2026 Utah S.B. 60 enrolled §3 amending Utah Code §59-10-104: 4.45% flat
+      // rate retroactive to taxable years beginning 2026-01-01.
+      // https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf
       code: 'UT', name: 'Utah', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
-      brackets: { single: [{ lowerBound: 0, ratePct: 4.5 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.5 }] },
+      brackets: { single: [{ lowerBound: 0, ratePct: 4.45 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.45 }] },
       retirement: { kind: 'none' },
     },
     VT: {

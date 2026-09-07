@@ -475,6 +475,56 @@ export const northeastStateRecords = {
     ],
   },
 
+  'ri-dot-adv-2025-22-2026-deduction-and-rate-schedule': {
+    title: 'Rhode Island’s TY2026 standard deduction and bracket thresholds are inflation-adjusted',
+    statement:
+      'For tax year 2026, Rhode Island publishes an $11,200 standard deduction for a single return and $22,400 for a married-filing-jointly return, with a uniform three-rate schedule stepping at $82,050 and $186,450 at 3.75%, 4.75%, and 5.99%. Personal exemptions, the standard-deduction phaseout calculation, unsupported filing statuses, and whole-return accuracy are outside this modeled subtotal.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'These are annually inflation-adjusted publication amounts for tax year 2026 only; later years require a later advisory. Rhode Island’s Social Security and pension modifications remain disclosed separately at `ri-gen-laws-44-30-12-social-security-and-pension-modification`.',
+    jurisdiction: 'state:RI',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, ADV 2025-22, TY2026 scope',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf',
+      quotedText:
+        'PROVIDENCE, R.I. – The Rhode Island Division of Taxation today provides the standard deduction amounts, tax bracket ranges, and other key items for Rhode Island Personal Income Tax for tax years beginning on or after January 1, 2026.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, ADV 2025-22, standard deduction table',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf',
+      quotedText:
+        'Rhode Island standard deduction amounts by Tax Year Filing status 2025 2026 Single $10,900 $11,200 Married filing jointly* $21,800 $22,400 Head of household $16,350 $16,800 Married filing separately $10,900 $11,200 *Or qualifying widow or widower.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, ADV 2025-22, TY2026 uniform rate schedule',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf',
+      quotedText:
+        'Uniform tax rate schedule for Tax Year 2026 (Personal Income Tax) Taxable income: Over But not over Pay + percent on excess of the amount over $ 0 $ 82,050 $ -- 3.75% $ 0 82,050 186,450 3,076.88 4.75% 82,050 186,450 8,035.88 5.99% 186,450',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Rhode Island Division of Taxation, ADV 2025-22, deduction phaseout range',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf',
+      quotedText:
+        'Phase-out range for standard deduction, exemption amounts by Tax Year 2025 2026 $254,250 to $283,250 $261,000 to $290,800',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#RI',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'ri-gen-laws-44-30-12-social-security-and-pension-modification': {
     title: 'Rhode Island limits Social Security and pension modifications by age, AGI, and year',
     statement:

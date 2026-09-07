@@ -666,6 +666,43 @@ export const westStateRecords = {
     ],
   },
 
+  'hi-hrs-235-2-4-a-2-f-2026-standard-deduction': {
+    title: 'Hawaii’s TY2026 standard deduction is $8,000 single and $16,000 joint',
+    statement:
+      'For tax year 2026, Hawaii’s standard deduction is $8,000 for an unmarried individual and $16,000 on a joint return. The pack models supported single and married-filing-jointly statuses only; head-of-household, married-filing-separately, and surviving-spouse limbs are outside this record. Personal exemptions, itemization, and whole-return accuracy are also outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2027 (from the §235-2.4(a)(2)(G) phase beginning 2028) are not certified here. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.',
+    jurisdiction: 'state:HI',
+    authority: [{
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. §235-2.4(a)(2)(F)',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText:
+        '(F) For taxable years beginning after December 31, 2025: (i) $16,000 in the case of a joint return as provided by section 235-93 or a surviving spouse (as defined in section 2(a) of the Internal Revenue Code); (ii) $12,000 in the case of a head of household (as defined in section 2(b) of the Internal Revenue Code); (iii) $8,000 in the case of an individual who is not married and who is not a surviving spouse or head of household; or (iv) $8,000 in the case of a married individual filing a separate return;',
+    }, {
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. §235-2.4(a)(2)(G) (next phase)',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText:
+        '(G) For taxable years beginning after December 31, 2027:',
+    }],
+    volatility: 'sunsetting',
+    effectiveFrom: 2026,
+    effectiveThrough: 2027,
+    verifiedOn: '2026-09-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.HI',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
   'hi-hrs-235-7-pension-and-social-security': {
     title: 'Hawaii excludes every pension for past services, not only public pensions',
     statement:
@@ -897,32 +934,81 @@ export const westStateRecords = {
     ],
   },
 
+  'ut-code-59-10-104-2026-individual-rate': {
+    title: 'Utah taxes resident individuals at 4.45% for tax years beginning in 2026',
+    statement:
+      'For taxable years beginning on or after January 1, 2026, Utah imposes a single 4.45 percent rate on a resident individual’s Utah taxable income. The pack carries one flat bracket at that rate for supported single and married-filing-jointly statuses; `bracketTax` applies it to the modeled Utah base before credits. Utah’s taxpayer, Social Security, retirement, and military credits are outside this pre-credit rate record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This record registers only the enacted flat rate on modeled taxable income. The omitted Social Security benefits credit remains disclosed at `ut-code-59-10-114-social-security-tax-credit`. Whole-return accuracy is outside this record.',
+    jurisdiction: 'state:UT',
+    authority: [{
+      kind: 'statute',
+      citation: '2026 Utah S.B. 60, enrolled, §3 (amending Utah Code §59-10-104)',
+      url: 'https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf',
+      quotedText:
+        '(1) A tax is imposed on the state taxable income of a resident individual as provided in this section.',
+    }, {
+      kind: 'statute',
+      citation: '2026 Utah S.B. 60, enrolled, §3 (4.45% rate)',
+      url: 'https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf',
+      quotedText:
+        '(2) For purposes of Subsection (1), for a taxable year, the tax is an amount equal to the … product of: … (a) the resident individual\'s state taxable income for that taxable year; and … (b) 4.45%.',
+    }, {
+      kind: 'statute',
+      citation: '2026 Utah S.B. 60, enrolled, §§4-5',
+      url: 'https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf',
+      quotedText:
+        'Section 4. Effective Date. … This bill takes effect on May 6, 2026. … Section 5. Retrospective operation. … This bill has retrospective operation for a taxable year beginning on or after January 1, … 2026.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#UT',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'ut-code-59-10-114-social-security-tax-credit': {
     title: 'Utah taxes Social Security but offers a separate Social Security benefits credit',
     statement:
-      'Utah publishes a single 4.5% individual income-tax rate. Its Tax Commission TC-40A instructions provide a Social Security Benefits Credit for taxable Social Security included in adjusted gross income: the worksheet multiplies that benefit by 4.5%, then reduces the result by 2.5% of the worksheet\'s income-over-threshold amount above $54,000 for a single filer, $90,000 for a joint filer or qualifying widow(er), and the corresponding $45,000 married-separate threshold. The pack includes the federally taxable Social Security share but models no credit, so it overstates tax on a qualifying return; Utah\'s separate retirement and military credits are also outside this state-tax base model.',
+      'Effective January 1, 2026, Utah permits a claimant receiving a Social Security benefit to claim a nonrefundable credit equal to the percentage in §59-10-104(2) multiplied by the benefit included in state taxable income. The credit is reduced by 2.5 cents for each dollar of modified adjusted gross income above $54,000 for a single return or $90,000 for a joint return. S.B. 60 makes the referenced §59-10-104(2) rate 4.45 percent for tax years beginning in 2026. The pack includes the federally taxable Social Security share but models no credit, so it overstates tax in the registered below-threshold fixture. Other filing statuses and Utah\'s separate retirement and military credits are outside this record.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale: null,
     jurisdiction: 'state:UT',
     authority: [{
-      kind: 'stateAgencyPublication',
-      citation: 'Utah State Tax Commission, 2025 TC-40A Supplemental Schedule Instructions, Social Security Benefits Credit (UCA §59-10-1042)',
-      url: 'https://incometax.utah.gov/tc-40a/',
+      kind: 'statute',
+      citation: 'Utah Code §59-10-1042(2), effective Jan. 1, 2026',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1042_2026010120250507.pdf',
       quotedText:
-        '(AH) Social Security Benefits Credit (UCA §59-10-1042) You may qualify for this credit if you (or your spouse, if filing jointly) received taxable Social Security retirement, disability or survivor benefits. Complete the Social Security Credit Worksheet, below, to calculate this credit. You may only claim this credit for Social Security benefits included in adjusted gross income on this return. You may not claim this credit if you (or your spouse, if filing jointly) claim the Retirement Credit (code 18). Social Security Credit Worksheet Calculation Steps Amount For yourself (and/or your spouse), enter the amount from federal form 1040 or 1040-SR, line 6b; or 1040-NR, Schedule NEC, line 8 1 _________ Did you report Native American Income (code 77) or Railroad Retirement Income (code 78) as a subtraction from income on TC-40, Schedule A, Part 2? If yes, enter any Social Security benefit included in those amounts. If no, enter “0” 2 _________ Line 1 minus line 2 3 _________ Multiply line 3 by 0.045 4 _________ Enter the amount from TC-40, line 9 (Utah taxable income/loss) 5 _________ Enter municipal bond interest from TC-40, Schedule A, Part 1, code 57 6 _________ Line 5 minus line 6 7 _________ Enter tax exempt interest from federal form 1040, 1040-SR or 1040-NR, line 2a 8 _________ Add lines 7 and 8 9 _________ Enter: a. Married filing separately: $45,000 b. Married filing federal return 1040-NR: $45,000 c. Married filing joint: $90,000 d. Single: $54,000 e. Qualifying surviving spouse or head of household: $90,000 10 _________ Line 9 minus line 10 (not less than zero) 11 _________ Multiply line 11 by 0.025 12 _________ Social Security Benefits Credit: Line 4 minus line 12 (not less than zero) 13 _________ If claiming this credit, enter the total amount on TC-40A, Part 3, using code AH. Note: You may not carry forward or back any credit that is more than your tax liability.',
+        '(2) Except as provided in Section 59-10-1002.2 and Subsections (3) and (4), each claimant on a return that receives a social security benefit may claim a nonrefundable tax credit against taxes otherwise due under this part equal to the product of: (a) the percentage listed in Subsection 59-10-104(2); and (b) the claimant\'s social security benefit that is included in the claimant\'s state taxable income for the taxable year.',
     }, {
-      kind: 'stateAgencyPublication',
-      citation: 'Utah State Tax Commission, Tax Rates (2025)',
-      url: 'https://incometax.utah.gov/file-pay/tax-rates/',
+      kind: 'statute',
+      citation: 'Utah Code §59-10-1042(4), effective Jan. 1, 2026',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1042_2026010120250507.pdf',
       quotedText:
-        'Multiply line 9 by 4.5 percent (.045). If the result is zero or less, enter “0.” Utah has a single tax rate for all income levels, as follows: Date Range Tax Rate January 1, 2025 – current 4.5% or .045',
+        '(4) The tax credit allowed by Subsection (2) claimed on a return filed under this part shall be reduced by $.025 for each dollar by which modified adjusted gross income for purposes of the return exceeds: (a) for a return filed under this chapter that is allowed a married filing separately status, $45,000; (b) for a return filed under this chapter that is allowed a single filing status, $54,000; (c) for a return filed under this chapter that is allowed a head of household filing status, $90,000; or (d) for a return filed under this chapter that is allowed a joint filing status, $90,000.',
+    }, {
+      kind: 'statute',
+      citation: '2026 Utah S.B. 60, enrolled, §3 (referenced rate)',
+      url: 'https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf',
+      quotedText:
+        '(2) For purposes of Subsection (1), for a taxable year, the tax is an amount equal to the … product of: … (a) the resident individual\'s state taxable income for that taxable year; and … (b) 4.45%.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',

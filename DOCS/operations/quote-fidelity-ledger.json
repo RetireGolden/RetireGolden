@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-07T20:39:48.198Z",
-  "recordCount": 437,
-  "urlCount": 338,
-  "fetched": 9,
-  "cached": 329,
-  "entryCount": 1237,
+  "generatedAt": "2026-09-07T21:03:05.412Z",
+  "recordCount": 441,
+  "urlCount": 340,
+  "fetched": 10,
+  "cached": 330,
+  "entryCount": 1249,
   "counts": {
     "EXACT": 856,
     "PUNCTUATION": 43,
-    "PDF-WORD-LEVEL": 222,
+    "PDF-WORD-LEVEL": 234,
     "ELISION-EXACT": 65,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
@@ -9595,6 +9595,46 @@
       "diagnosis": null
     },
     {
+      "id": "ri-dot-adv-2025-22-2026-deduction-and-rate-schedule",
+      "citation": "Rhode Island Division of Taxation, ADV 2025-22, TY2026 scope",
+      "host": "tax.ri.gov",
+      "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf",
+      "quoteSha256": "ef303ef9a562f3df",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-dot-adv-2025-22-2026-deduction-and-rate-schedule",
+      "citation": "Rhode Island Division of Taxation, ADV 2025-22, standard deduction table",
+      "host": "tax.ri.gov",
+      "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf",
+      "quoteSha256": "69ff76f0e7bc29b2",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-dot-adv-2025-22-2026-deduction-and-rate-schedule",
+      "citation": "Rhode Island Division of Taxation, ADV 2025-22, TY2026 uniform rate schedule",
+      "host": "tax.ri.gov",
+      "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf",
+      "quoteSha256": "1a2c25eeaa13001a",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-dot-adv-2025-22-2026-deduction-and-rate-schedule",
+      "citation": "Rhode Island Division of Taxation, ADV 2025-22, deduction phaseout range",
+      "host": "tax.ri.gov",
+      "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-11/ADV_2025_22_Inflation_Adjustments.pdf",
+      "quoteSha256": "b61e8ea86d780655",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "ri-gen-laws-44-30-12-social-security-and-pension-modification",
       "citation": "R.I. Gen. Laws §44-30-1(a)",
       "host": "webserver.rilegislature.gov",
@@ -10837,6 +10877,26 @@
       "host": "delcode.delaware.gov",
       "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
       "quoteSha256": "2a37662f94f6fb43",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "de-code-30-1102-a-14-rate-schedule",
+      "citation": "Del. Code tit. 30, §1102(a)(14) (effective period)",
+      "host": "delcode.delaware.gov",
+      "url": "https://delcode.delaware.gov/title30/c011/sc01/index.html",
+      "quoteSha256": "d0dd74d106228607",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "de-code-30-1102-a-14-rate-schedule",
+      "citation": "Del. Code tit. 30, §1102(a)(14) (5.55% band)",
+      "host": "delcode.delaware.gov",
+      "url": "https://delcode.delaware.gov/title30/c011/sc01/index.html",
+      "quoteSha256": "9f998af396b29b3d",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -12252,6 +12312,26 @@
       "diagnosis": null
     },
     {
+      "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
+      "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(F)",
+      "host": "files.hawaii.gov",
+      "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf",
+      "quoteSha256": "0fd278f828b071aa",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
+      "citation": "Haw. Rev. Stat. §235-2.4(a)(2)(G) (next phase)",
+      "host": "files.hawaii.gov",
+      "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf",
+      "quoteSha256": "691406d79e17bcf1",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "hi-hrs-235-7-pension-and-social-security",
       "citation": "Haw. Rev. Stat. 235-7(a)(2)",
       "host": "files.hawaii.gov",
@@ -12382,23 +12462,63 @@
       "diagnosis": null
     },
     {
-      "id": "ut-code-59-10-114-social-security-tax-credit",
-      "citation": "Utah State Tax Commission, 2025 TC-40A Supplemental Schedule Instructions, Social Security Benefits Credit (UCA §59-10-1042)",
-      "host": "incometax.utah.gov",
-      "url": "https://incometax.utah.gov/tc-40a/",
-      "quoteSha256": "8429c518f648a874",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "id": "ut-code-59-10-104-2026-individual-rate",
+      "citation": "2026 Utah S.B. 60, enrolled, §3 (amending Utah Code §59-10-104)",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf",
+      "quoteSha256": "0aa56f935f05097f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-104-2026-individual-rate",
+      "citation": "2026 Utah S.B. 60, enrolled, §3 (4.45% rate)",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf",
+      "quoteSha256": "27878fa0c826afc7",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-104-2026-individual-rate",
+      "citation": "2026 Utah S.B. 60, enrolled, §§4-5",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf",
+      "quoteSha256": "c6da1ab1dc82bba6",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "5 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
       "id": "ut-code-59-10-114-social-security-tax-credit",
-      "citation": "Utah State Tax Commission, Tax Rates (2025)",
-      "host": "incometax.utah.gov",
-      "url": "https://incometax.utah.gov/file-pay/tax-rates/",
-      "quoteSha256": "8b71dbecb859e92d",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "citation": "Utah Code §59-10-1042(2), effective Jan. 1, 2026",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1042_2026010120250507.pdf",
+      "quoteSha256": "991f8a732bf94081",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-114-social-security-tax-credit",
+      "citation": "Utah Code §59-10-1042(4), effective Jan. 1, 2026",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1042_2026010120250507.pdf",
+      "quoteSha256": "e5c12e5acf856338",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-114-social-security-tax-credit",
+      "citation": "2026 Utah S.B. 60, enrolled, §3 (referenced rate)",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf",
+      "quoteSha256": "27878fa0c826afc7",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {

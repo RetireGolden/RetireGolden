@@ -26,7 +26,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 355
+              "line": 360
             }
           ]
         },
@@ -99,7 +99,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 355
+              "line": 360
             }
           ]
         },
@@ -195,7 +195,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 355
+              "line": 360
             }
           ]
         },
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 355
+              "line": 360
             }
           ]
         },
@@ -455,7 +455,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 355
+              "line": 360
             }
           ]
         },
@@ -536,7 +536,7 @@
           "functions": [
             {
               "name": "IN",
-              "line": 355
+              "line": 360
             }
           ]
         },
@@ -627,7 +627,7 @@
           "functions": [
             {
               "name": "IL",
-              "line": 349
+              "line": 354
             }
           ]
         },
@@ -703,7 +703,7 @@
           "functions": [
             {
               "name": "IA",
-              "line": 390
+              "line": 395
             }
           ]
         },
@@ -804,12 +804,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2232,
+          "line": 2287,
           "note": null,
           "tests": [
             {
               "title": "pins the overbroad Kansas public-pension override",
-              "line": 2248
+              "line": 2303
             }
           ]
         }
@@ -867,7 +867,7 @@
           "functions": [
             {
               "name": "states.KS",
-              "line": 396
+              "line": 401
             }
           ]
         },
@@ -887,12 +887,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2202,
+          "line": 2257,
           "note": null,
           "tests": [
             {
               "title": "subtracts all post-2023 federally taxable Kansas Social Security",
-              "line": 2218
+              "line": 2273
             }
           ]
         }
@@ -930,7 +930,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 469
+              "line": 474
             }
           ]
         },
@@ -950,16 +950,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2502,
+          "line": 2557,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 2516
+              "line": 2571
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 2521
+              "line": 2576
             }
           ]
         }
@@ -1002,7 +1002,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 469
+              "line": 474
             }
           ]
         },
@@ -1099,7 +1099,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 475
+              "line": 480
             }
           ]
         },
@@ -1181,7 +1181,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 533
+              "line": 538
             }
           ]
         },
@@ -1253,7 +1253,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 657
+              "line": 662
             }
           ]
         },
@@ -1431,11 +1431,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 668
+              "line": 673
             },
             {
               "name": "states.ND",
-              "line": 657
+              "line": 662
             }
           ]
         },
@@ -1516,7 +1516,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 668
+              "line": 673
             }
           ]
         },
@@ -1672,7 +1672,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 657
+              "line": 662
             }
           ]
         },
@@ -1831,7 +1831,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 657
+              "line": 662
             }
           ]
         },
@@ -1997,7 +1997,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 568
+              "line": 573
             }
           ]
         },
@@ -2017,16 +2017,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2657,
+          "line": 2712,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 2673
+              "line": 2728
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 2679
+              "line": 2734
             }
           ]
         }
@@ -2098,23 +2098,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2760,
+          "line": 2815,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 2779
+              "line": 2834
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2786,
+          "line": 2841,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 2800
+              "line": 2855
             }
           ]
         }
@@ -2162,7 +2162,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 758
+              "line": 766
             }
           ]
         },
@@ -2234,7 +2234,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 832
+              "line": 843
             }
           ]
         },
@@ -2254,12 +2254,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3054,
+          "line": 3166,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 3068
+              "line": 3180
             }
           ]
         }
@@ -2302,7 +2302,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 832
+              "line": 843
             }
           ]
         },
@@ -2326,20 +2326,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3075,
+          "line": 3187,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 3099
+              "line": 3211
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 3108
+              "line": 3220
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 3121
+              "line": 3233
             }
           ]
         }

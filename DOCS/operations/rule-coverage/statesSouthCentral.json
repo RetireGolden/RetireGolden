@@ -789,16 +789,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3199,
+          "line": 3311,
           "note": null,
           "tests": [
             {
               "title": "prices Alabama single brackets rather than the joint schedule",
-              "line": 3215
+              "line": 3327
             },
             {
               "title": "prices the joint schedule on a joint return, distinct from the single breaks",
-              "line": 3222
+              "line": 3334
             }
           ]
         }
@@ -875,20 +875,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3237,
+          "line": 3349,
           "note": "unsettled: operative text unsourced",
           "tests": [
             {
               "title": "implements the encoded $6,000 convention and discriminates the competing readings",
-              "line": 3263
+              "line": 3375
             },
             {
               "title": "reaches the no-exclusion reading once the cap is withheld",
-              "line": 3272
+              "line": 3384
             },
             {
               "title": "reaches the research 2026 reading under a doubled cap",
-              "line": 3280
+              "line": 3392
             }
           ]
         }
@@ -1104,12 +1104,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3169,
+          "line": 3281,
           "note": null,
           "tests": [
             {
               "title": "keeps a taxable IRA distribution in the Alabama base",
-              "line": 3185
+              "line": 3297
             }
           ]
         }
@@ -1304,12 +1304,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3141,
+          "line": 3253,
           "note": null,
           "tests": [
             {
               "title": "omits federally taxable Social Security from the Alabama base",
-              "line": 3158
+              "line": 3270
             }
           ]
         }
@@ -1428,7 +1428,7 @@
           "functions": [
             {
               "name": "KY",
-              "line": 405
+              "line": 410
             }
           ]
         },
@@ -1452,46 +1452,46 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2278,
+          "line": 2333,
           "note": "Social Security limb",
           "tests": [
             {
               "title": "keeps Social Security out of Kentucky adjusted gross income",
-              "line": 2294
+              "line": 2349
             },
             {
               "title": "would pull the federally taxable share in if Kentucky taxed it",
-              "line": 2300
+              "line": 2355
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2309,
+          "line": 2364,
           "note": "retirement-distribution limb",
           "tests": [
             {
               "title": "excludes $31,110 of a private IRA distribution with no age gate",
-              "line": 2328
+              "line": 2383
             },
             {
               "title": "would charge more if private retirement were left in the base",
-              "line": 2334
+              "line": 2389
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2345,
+          "line": 2400,
           "note": "flat-rate limb",
           "tests": [
             {
               "title": "taxes net income at three and one-half percent for 2026",
-              "line": 2360
+              "line": 2415
             },
             {
               "title": "would charge more at the former four percent rate",
-              "line": 2364
+              "line": 2419
             }
           ]
         }
@@ -1544,7 +1544,7 @@
           "functions": [
             {
               "name": "states.LA",
-              "line": 411
+              "line": 416
             }
           ]
         },
@@ -1619,7 +1619,7 @@
             },
             {
               "name": "states.LA",
-              "line": 411
+              "line": 416
             }
           ]
         },
@@ -1643,20 +1643,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2386,
+          "line": 2441,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of the Louisiana base",
-              "line": 2400
+              "line": 2455
             },
             {
               "title": "would pull the federally taxable share in if Louisiana taxed it",
-              "line": 2406
+              "line": 2461
             },
             {
               "title": "also exempts a United States Government retirement annuity in the public bucket",
-              "line": 2412
+              "line": 2467
             }
           ]
         }
@@ -1694,7 +1694,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 492
+              "line": 497
             }
           ]
         },
@@ -1789,7 +1789,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 492
+              "line": 497
             }
           ]
         },
@@ -1866,7 +1866,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 492
+              "line": 497
             }
           ]
         },
@@ -1962,7 +1962,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 492
+              "line": 497
             }
           ]
         },
@@ -2063,7 +2063,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 492
+              "line": 497
             }
           ]
         },
@@ -2135,7 +2135,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 492
+              "line": 497
             }
           ]
         },
@@ -2227,7 +2227,7 @@
           "functions": [
             {
               "name": "MS",
-              "line": 492
+              "line": 497
             }
           ]
         },
@@ -2313,7 +2313,7 @@
           "functions": [
             {
               "name": "OK",
-              "line": 693
+              "line": 698
             }
           ]
         },
@@ -2337,12 +2337,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2807,
+          "line": 2862,
           "note": "military-retirement exception to the common cap",
           "tests": [
             {
               "title": "pins the military exception the generic retirement bucket cannot express",
-              "line": 2825
+              "line": 2880
             }
           ]
         }
@@ -2400,7 +2400,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 763
+              "line": 771
             }
           ]
         },
@@ -2472,7 +2472,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 763
+              "line": 771
             }
           ]
         },
@@ -2544,7 +2544,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 768
+              "line": 776
             }
           ]
         },
@@ -2611,7 +2611,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 768
+              "line": 776
             }
           ]
         },

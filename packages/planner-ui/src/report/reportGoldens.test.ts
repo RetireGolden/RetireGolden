@@ -18,8 +18,11 @@
  * were updated to match packages/engine/src/params/provenance.ts (Maine 2026
  * basic/age/phase-out appendix text; West Virginia 2026 §11-21-4j rate range
  * and Michigan ordinary retirement ceiling folded into the all-states group).
- * Report calculation values are unchanged;
- * state law oracle coverage lives in engine goldens and DOCS/domain.
+ * 2026-09-07: Delaware, Hawaii, Rhode Island, and Utah 2026 parameter
+ * provenance wording updated in engine records and DOCS; report calculation
+ * values unchanged in these examples — numeric state correction oracles live
+ * in engine fixtures. State law oracle coverage lives in engine goldens and
+ * DOCS/domain.
  */
 import { describe, expect, it } from 'vitest'
 

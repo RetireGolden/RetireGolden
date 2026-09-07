@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "DC",
-              "line": 288
+              "line": 290
             }
           ]
         },
@@ -82,6 +82,74 @@
       ]
     },
     {
+      "id": "de-code-30-1102-a-14-rate-schedule",
+      "title": "Delaware assigns 5.55% to taxable income over $25,000 through $60,000",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This record registers only the statutory rate schedule on modeled taxable income. Delaware’s basic standard deduction is registered separately at `de-code-30-1108-standard-deduction`. Qualifying-surviving-spouse routing, blindness, retirement subtractions, and credits are outside this record.",
+      "contraryReading": null,
+      "jurisdiction": "state:DE",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2014,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "DE",
+              "line": 266
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 29
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2087,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices single and joint filers on the §1102(a)(14) band schedule",
+              "line": 2098
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, §1102(a)(14) (effective period)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc01/index.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Del. Code tit. 30, §1102(a)(14) (5.55% band)",
+          "url": "https://delcode.delaware.gov/title30/c011/sc01/index.html"
+        }
+      ]
+    },
+    {
       "id": "de-code-30-1106-social-security-retirement-subtractions",
       "title": "Delaware subtracts federally taxable Social Security and up to $12,500 of retirement income at age 60",
       "classification": "settled",
@@ -128,23 +196,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2087,
+          "line": 2113,
           "note": "Social Security limb",
           "tests": [
             {
               "title": "subtracts Delaware Social Security included in federal AGI",
-              "line": 2105
+              "line": 2131
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2115,
+          "line": 2141,
           "note": "retirement-age limb",
           "tests": [
             {
               "title": "subtracts the $12,500 Delaware retirement cap from age 60",
-              "line": 2131
+              "line": 2157
             }
           ]
         }
@@ -169,7 +237,7 @@
       "title": "Delaware’s standard deduction is $3,250 single and $6,500 joint plus $2,500 per age-65 person",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying-surviving-spouse years are outside this settled single/MFJ record and are disclosed separately at `de-pit-est-2026-qss-standard-deduction-joint-mapper`. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.",
+      "conventionRationale": "Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying-surviving-spouse years are outside this settled single/MFJ record and are disclosed separately at `de-pit-est-2026-qss-standard-deduction-joint-mapper`. The § 1102 rate schedule is registered separately at `de-code-30-1102-a-14-rate-schedule`.",
       "contraryReading": null,
       "jurisdiction": "state:DE",
       "volatility": "staticStatute",
@@ -368,7 +436,7 @@
           "functions": [
             {
               "name": "FL",
-              "line": 305
+              "line": 307
             }
           ]
         },
@@ -451,7 +519,7 @@
           "functions": [
             {
               "name": "GA",
-              "line": 312
+              "line": 314
             }
           ]
         },
@@ -533,7 +601,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 444
+              "line": 449
             }
           ]
         },
@@ -553,16 +621,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2435,
+          "line": 2490,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of Maryland adjusted gross income",
-              "line": 2450
+              "line": 2505
             },
             {
               "title": "would add the federally taxable portion if Maryland taxed it",
-              "line": 2456
+              "line": 2511
             }
           ]
         }
@@ -605,7 +673,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 444
+              "line": 449
             }
           ]
         },
@@ -700,7 +768,7 @@
           "functions": [
             {
               "name": "NC",
-              "line": 649
+              "line": 654
             }
           ]
         },
@@ -720,12 +788,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2743,
+          "line": 2798,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 2752
+              "line": 2807
             }
           ]
         }
@@ -763,7 +831,7 @@
           "functions": [
             {
               "name": "states.SC",
-              "line": 744
+              "line": 752
             }
           ]
         },
@@ -839,7 +907,7 @@
           "functions": [
             {
               "name": "VA",
-              "line": 794
+              "line": 805
             }
           ]
         },
@@ -863,23 +931,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2970,
+          "line": 3082,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 2989
+              "line": 3101
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2996,
+          "line": 3108,
           "note": "wage-only age deduction limb",
           "tests": [
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 3010
+              "line": 3122
             }
           ]
         }
@@ -917,7 +985,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 815
+              "line": 826
             }
           ]
         },
@@ -999,7 +1067,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 815
+              "line": 826
             }
           ]
         },

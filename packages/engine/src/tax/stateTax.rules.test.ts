@@ -2079,6 +2079,32 @@ describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
   })
 })
 
+const DE_RATE_SCENARIOS = [
+  input({ state: 'DE', ordinaryIncome: 33_250 }),
+  input({ state: 'DE', filingStatus: 'marriedFilingJointly', ordinaryIncome: 36_500 }),
+] as const
+
+describeRule('de-code-30-1102-a-14-rate-schedule', {
+  readings: {
+    fivePointFiveFivePercentOnTheTwentyFiveToSixtyThousandSlice: [1_278.5, 1_278.5],
+    fivePointFivePercentOnThatSlice: [1_276, 1_276],
+  },
+  accepted: 'fivePointFiveFivePercentOnTheTwentyFiveToSixtyThousandSlice',
+}, ({ accepted, readings }) => {
+  // Independent worksheet at exactly $30,000 modeled taxable income:
+  // 3,000×2.2% + 5,000×3.9% + 10,000×4.8% + 5,000×5.2% + 5,000×5.55% = 1,278.50.
+  // Ordinary income uses current § 1108 basic deductions: $33,250 − $3,250 and
+  // $36,500 − $6,500.
+  it('prices single and joint filers on the §1102(a)(14) band schedule', () => {
+    DE_RATE_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTaxableIncome(pack('DE'), scenario)).toBe(30_000)
+      expect(computeStateTax(pack('DE'), scenario)).toBeCloseTo(accepted[index]!, 2)
+      expect(computeStateTax(pack('DE'), scenario))
+        .not.toBeCloseTo(readings.fivePointFivePercentOnThatSlice[index]!, 2)
+    })
+  })
+})
+
 const DE_SS_OTHER_INCOME = 90_000
 const DE_SS_BENEFITS = 40_000
 const DE_FEDERALLY_TAXABLE_SS = 0.85 * DE_SS_BENEFITS
@@ -2140,6 +2166,35 @@ describeRule('de-code-30-1106-social-security-retirement-subtractions', {
   })
 })
 
+const HI_STD_SCENARIOS = [
+  input({ state: 'HI', ordinaryIncome: 10_000 }),
+  input({ state: 'HI', filingStatus: 'marriedFilingJointly', ordinaryIncome: 20_000 }),
+] as const
+
+describeRule('hi-hrs-235-2-4-a-2-f-2026-standard-deduction', {
+  readings: {
+    ty2026StandardDeductionTax: [28, 56],
+    stalePackDeductionTax: [78.4, 156.8],
+  },
+  accepted: 'ty2026StandardDeductionTax',
+}, ({ accepted, readings }) => {
+  // HRS §235-2.4(a)(2)(F): $8,000 single / $16,000 joint leaves $2,000 / $4,000
+  // taxable at the unchanged 1.4% first bracket => $28 / $56 modeled tax.
+  const acceptedTaxable = [2_000, 4_000]
+  const staleTaxable = [5_600, 11_200]
+
+  it('deducts the TY2026 standard deduction before the first bracket', () => {
+    HI_STD_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTaxableIncome(pack('HI'), scenario)).toBeCloseTo(acceptedTaxable[index]!, 6)
+      expect(computeStateTax(pack('HI'), scenario)).toBeCloseTo(accepted[index]!, 2)
+      expect(computeStateTaxableIncome(pack('HI'), scenario))
+        .not.toBeCloseTo(staleTaxable[index]!, 6)
+      expect(computeStateTax(pack('HI'), scenario))
+        .not.toBeCloseTo(readings.stalePackDeductionTax[index]!, 2)
+    })
+  })
+})
+
 // HRS 235-7(a)(3) reaches a private pension for past services. The source
 // reading has no remaining income at all; the pack’s private bucket leaves its
 // $40,000 in the base. The Plan has no field separating that pension from an
@@ -2149,7 +2204,7 @@ const HI_PRIVATE_PENSION = 40_000
 describeRule('hi-hrs-235-7-pension-and-social-security', {
   readings: {
     privatePensionForPastServicesExcludedFromTheBase: 0,
-    packTaxesEveryPrivateRetirementBucketDollar: 35_600,
+    packTaxesEveryPrivateRetirementBucketDollar: 32_000,
   },
   accepted: 'privatePensionForPastServicesExcludedFromTheBase',
   produced: 'packTaxesEveryPrivateRetirementBucketDollar',
@@ -2829,26 +2884,51 @@ describeRule('ok-stat-68-2358-retirement-and-social-security', {
   })
 })
 
+const UT_RATE_SCENARIOS = [
+  input({ state: 'UT', ordinaryIncome: 20_000 }),
+  input({ state: 'UT', filingStatus: 'marriedFilingJointly', ordinaryIncome: 20_000 }),
+] as const
+
+describeRule('ut-code-59-10-104-2026-individual-rate', {
+  readings: {
+    fourPointFourFivePercentFlatRate: [890, 890],
+    fourPointFivePercentPackRate: [900, 900],
+  },
+  accepted: 'fourPointFourFivePercentFlatRate',
+}, ({ accepted, readings }) => {
+  // Enrolled 2026 S.B. 60: $20,000 × 4.45% = $890 modeled pre-credit tax.
+  it('applies the enacted 4.45% flat rate to ordinary income', () => {
+    UT_RATE_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTax(pack('UT'), scenario)).toBeCloseTo(accepted[index]!, 2)
+      expect(computeStateTax(pack('UT'), scenario))
+        .not.toBeCloseTo(readings.fourPointFivePercentPackRate[index]!, 2)
+    })
+  })
+})
+
 describeRule('ut-code-59-10-114-social-security-tax-credit', {
   readings: {
-    // The credit cancels the Utah tax on the federally taxable Social
-    // Security share, leaving the ordinary-income tax: 48,100 x 4.5% -
-    // 18,100 x 4.5% = 1,350.
-    sourceAppliesTheSocialSecurityBenefitsCredit: (30_000 + 18_100) * 0.045 - 18_100 * 0.045,
-    packOmitsTheSocialSecurityBenefitsCredit: 2_164.5,
+    // §59-10-1042(2): credit = benefit × §59-10-104(2) rate; §1042(4) adds no
+    // reduction below the $54,000 single threshold. Source tax after credit:
+    // 30,000 × 4.45% = 1,335. Pack omits the credit and taxes the full modeled
+    // base including federally taxable Social Security: 48,100 × 4.45% = 2,140.45.
+    sourceAppliesTheSocialSecurityBenefitsCredit: (30_000 + 18_100) * 0.0445 - 18_100 * 0.0445,
+    packOmitsTheSocialSecurityBenefitsCredit: 2_140.45,
   },
   accepted: 'sourceAppliesTheSocialSecurityBenefitsCredit',
   produced: 'packOmitsTheSocialSecurityBenefitsCredit',
 }, ({ accepted, produced }) => {
   // At $30,000 of other income and $40,000 of benefits, federal section 86
   // makes $18,100 taxable. Utah's single-filer AGI threshold is $54,000, so
-  // the 2.5% reduction is zero and the credit is 18,100 x 4.5% = 814.50.
+  // the 2.5% reduction is zero and the credit is 18,100 × 4.45% = 805.45
+  // before the ordinary-income tax of 30,000 × 4.45% = 1,335. The pack reports
+  // the unmodeled-credit subtotal 48,100 × 4.45% = 2,140.45 instead.
   const scenario = input({ state: 'UT', ordinaryIncome: 30_000, ssBenefits: 40_000 })
 
   it('pins the unmodeled Utah Social Security benefits credit', () => {
     const taxable = computeStateTax(pack('UT'), scenario)
-    expect(taxable).toBe(produced)
-    expect(taxable).not.toBe(accepted)
+    expect(taxable).toBeCloseTo(produced, 2)
+    expect(taxable).not.toBeCloseTo(accepted, 2)
   })
 })
 
@@ -2872,10 +2952,42 @@ describeRule('or-stat-316-054-social-security-exclusion', {
   })
 })
 
+const RI_PARAM_SCENARIOS = [
+  input({ state: 'RI', ordinaryIncome: 220_000 }),
+  input({ state: 'RI', filingStatus: 'marriedFilingJointly', ordinaryIncome: 220_000 }),
+] as const
+
+describeRule('ri-dot-adv-2025-22-2026-deduction-and-rate-schedule', {
+  readings: {
+    adv2026DeductionAndBreakpoints: [9_374.64, 8_703.76],
+    staleTy2025Pack: [9_473.63, 8_820.72],
+  },
+  accepted: 'adv2026DeductionAndBreakpoints',
+}, ({ accepted, readings }) => {
+  // ADV 2025-22 TY2026: $11,200 / $22,400 deductions and $82,050 / $186,450
+  // thresholds. $220,000 ordinary income is below the $261,000 deduction
+  // phase-out start. Single worksheet: 82,050×3.75% + 104,400×4.75% +
+  // 22,350×5.99% = 9,374.64. MFJ uses the same thresholds with an $11,150
+  // top slice => 8,703.76.
+  const acceptedTaxable = [208_800, 197_600]
+  const staleTaxable = [209_100, 198_200]
+
+  it('prices single and joint filers on the TY2026 deduction and schedule', () => {
+    RI_PARAM_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTaxableIncome(pack('RI'), scenario)).toBeCloseTo(acceptedTaxable[index]!, 6)
+      expect(computeStateTax(pack('RI'), scenario)).toBeCloseTo(accepted[index]!, 2)
+      expect(computeStateTaxableIncome(pack('RI'), scenario))
+        .not.toBeCloseTo(staleTaxable[index]!, 6)
+      expect(computeStateTax(pack('RI'), scenario))
+        .not.toBeCloseTo(readings.staleTy2025Pack[index]!, 2)
+    })
+  })
+})
+
 describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
   readings: {
-    sourceExcludesSocialSecurityBelowTheThreshold: 30_000 - 10_900,
-    packIncludesTheTaxableShareForEveryFiler: 37_200,
+    sourceExcludesSocialSecurityBelowTheThreshold: 30_000 - 11_200,
+    packIncludesTheTaxableShareForEveryFiler: 36_900,
   },
   accepted: 'sourceExcludesSocialSecurityBelowTheThreshold',
   produced: 'packIncludesTheTaxableShareForEveryFiler',
@@ -2883,7 +2995,7 @@ describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
 }, ({ accepted, produced }) => {
   // Federal AGI is below RI's $80,000 single threshold, so the source removes
   // the entire federally taxable Social Security amount; the pack still adds
-  // its computed 18,100 federal share (30,000 + 18,100 - 10,900 = 37,200)
+  // its computed 18,100 federal share (30,000 + 18,100 - 11,200 = 36,900)
   // because `taxesSocialSecurity` is true.
   const scenario = input({ state: 'RI', ordinaryIncome: 30_000, ssBenefits: 40_000, agesAlive: [70] })
 
@@ -2896,8 +3008,8 @@ describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
 
 describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
   readings: {
-    sourceAllowsTheCurrentFiftyThousandDollarCeiling: 10_000 + 60_000 - 50_000 - 10_900,
-    packAppliesTheTwentyThousandDollarCeiling: 39_100,
+    sourceAllowsTheCurrentFiftyThousandDollarCeiling: 10_000 + 60_000 - 50_000 - 11_200,
+    packAppliesTheTwentyThousandDollarCeiling: 38_800,
   },
   accepted: 'sourceAllowsTheCurrentFiftyThousandDollarCeiling',
   produced: 'packAppliesTheTwentyThousandDollarCeiling',
@@ -2905,7 +3017,7 @@ describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
 }, ({ accepted, produced }) => {
   // Federal AGI is $70,000, below the $80,000 single threshold, so the 2025+
   // $50,000 source ceiling is reachable and differs from the pack's $20,000;
-  // the rejected pack reading is 70,000 - 20,000 - 10,900 = 39,100.
+  // the rejected pack reading is 70,000 - 20,000 - 11,200 = 38,800.
   const scenario = input({
     state: 'RI',
     ordinaryIncome: 70_000,
@@ -2922,8 +3034,8 @@ describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
 
 describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
   readings: {
-    sourceDeniesThePensionModificationAboveTheAGIThreshold: 210_000 - 10_900,
-    packStillAppliesTheAgeSixtySevenCap: 179_100,
+    sourceDeniesThePensionModificationAboveTheAGIThreshold: 210_000 - 11_200,
+    packStillAppliesTheAgeSixtySevenCap: 178_800,
   },
   accepted: 'sourceDeniesThePensionModificationAboveTheAGIThreshold',
   produced: 'packStillAppliesTheAgeSixtySevenCap',
@@ -2932,7 +3044,7 @@ describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
   // The $210,000 ordinary total includes the $60,000 pension, so federal AGI
   // is above RI's $80,000 threshold: the source allows no modification while
   // the pack still subtracts its age-67 $20,000 cap (210,000 - 20,000 -
-  // 10,900 = 179,100).
+  // 11,200 = 178,800).
   const scenario = input({
     state: 'RI',
     ordinaryIncome: 210_000,

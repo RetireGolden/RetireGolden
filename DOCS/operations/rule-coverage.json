@@ -2,18 +2,18 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 437,
+    "total": 441,
     "byClassification": {
       "approximated": 122,
       "outOfScope": 75,
-      "settled": 235,
+      "settled": 239,
       "unsettled": 5
     },
     "byVolatility": {
-      "annuallyIndexed": 63,
+      "annuallyIndexed": 64,
       "awaitingGuidance": 11,
-      "staticStatute": 357,
-      "sunsetting": 6
+      "staticStatute": 359,
+      "sunsetting": 7
     },
     "byJurisdiction": {
       "federal": 327,
@@ -26,10 +26,10 @@
         "CO": 2,
         "CT": 1,
         "DC": 1,
-        "DE": 3,
+        "DE": 4,
         "FL": 1,
         "GA": 1,
-        "HI": 1,
+        "HI": 2,
         "IA": 1,
         "ID": 1,
         "IL": 1,
@@ -57,12 +57,12 @@
         "OK": 1,
         "OR": 1,
         "PA": 2,
-        "RI": 1,
+        "RI": 2,
         "SC": 1,
         "SD": 1,
         "TN": 2,
         "TX": 2,
-        "UT": 1,
+        "UT": 2,
         "VA": 1,
         "VT": 1,
         "WA": 2,
@@ -70,7 +70,7 @@
         "WV": 2,
         "WY": 1
       },
-      "stateTotal": 110
+      "stateTotal": 114
     }
   },
   "attestations": {
@@ -208,8 +208,8 @@
     },
     {
       "path": "params/state/data/year2026.ts",
-      "sweptOn": "2026-09-05",
-      "note": "de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation. The 5.5% versus 5.55% bracket band, blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage."
+      "sweptOn": "2026-09-07",
+      "note": "de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation; de-code-30-1102-a-14-rate-schedule names the Delaware 5.55% bracket cell and bracketTax; hi-hrs-235-2-4-a-2-f-2026-standard-deduction names the Hawaii TY2026 single/MFJ deduction cell and taxable-income enforcer; ri-dot-adv-2025-22-2026-deduction-and-rate-schedule names the Rhode Island TY2026 single/MFJ deduction and bracket cells plus their taxable-income and bracket enforcers; ut-code-59-10-104-2026-individual-rate names the Utah TY2026 4.45% rate cell and bracketTax. Blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage."
     },
     {
       "path": "params/state/index.ts",
@@ -634,12 +634,12 @@
     {
       "module": "statesNortheast",
       "path": "rule-coverage/statesNortheast.json",
-      "ruleCount": 12
+      "ruleCount": 13
     },
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 13
+      "ruleCount": 14
     },
     {
       "module": "statesSouthCentral",
@@ -649,7 +649,7 @@
     {
       "module": "statesWest",
       "path": "rule-coverage/statesWest.json",
-      "ruleCount": 23
+      "ruleCount": 25
     },
     {
       "module": "transfersAndUnmodeledRegimes",
@@ -658,16 +658,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-07T20:39:48.198Z",
-    "entryCount": 1237,
-    "fetched": 9,
-    "cached": 329,
+    "generatedAt": "2026-09-07T21:03:05.412Z",
+    "entryCount": 1249,
+    "fetched": 10,
+    "cached": 330,
     "counts": {
       "ELISION-EXACT": 65,
       "ELISION-PUNCTUATION": 7,
       "EXACT": 856,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 222,
+      "PDF-WORD-LEVEL": 234,
       "PUNCTUATION": 43,
       "UNFETCHABLE": 37
     }

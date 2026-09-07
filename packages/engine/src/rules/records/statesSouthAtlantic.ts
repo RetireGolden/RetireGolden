@@ -323,6 +323,43 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'de-code-30-1102-a-14-rate-schedule': {
+    title: 'Delaware assigns 5.55% to taxable income over $25,000 through $60,000',
+    statement:
+      'For taxable years after 2013, Delaware’s graduated rate schedule assigns 5.55 percent to the slice of taxable income over $25,000 but not over $60,000. The pack carries the shared bracket thresholds and rates for single and married filing jointly; `bracketTax` applies them to modeled Delaware taxable income after the standard deduction. Personal credits, exemptions, itemization, and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This record registers only the statutory rate schedule on modeled taxable income. Delaware’s basic standard deduction is registered separately at `de-code-30-1108-standard-deduction`. Qualifying-surviving-spouse routing, blindness, retirement subtractions, and credits are outside this record.',
+    jurisdiction: 'state:DE',
+    authority: [{
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, §1102(a)(14) (effective period)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc01/index.html',
+      quotedText:
+        '(14) For taxable years beginning after December 31, 2013, the amount of tax shall be determined as follows:',
+    }, {
+      kind: 'statute',
+      citation: 'Del. Code tit. 30, §1102(a)(14) (5.55% band)',
+      url: 'https://delcode.delaware.gov/title30/c011/sc01/index.html',
+      quotedText:
+        '5.55% of taxable income in excess of $25,000 but not in excess of $60,000; and',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2014,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#DE',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'de-code-30-1108-standard-deduction': {
     title: 'Delaware’s standard deduction is $3,250 single and $6,500 joint plus $2,500 per age-65 person',
     statement:
@@ -331,7 +368,7 @@ export const southAtlanticStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying-surviving-spouse years are outside this settled single/MFJ record and are disclosed separately at `de-pit-est-2026-qss-standard-deduction-joint-mapper`. The separate 5.5% versus 5.55% bracket discrepancy remains outside this deduction record.',
+      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying-surviving-spouse years are outside this settled single/MFJ record and are disclosed separately at `de-pit-est-2026-qss-standard-deduction-joint-mapper`. The § 1102 rate schedule is registered separately at `de-code-30-1102-a-14-rate-schedule`.',
     jurisdiction: 'state:DE',
     authority: [{
       kind: 'statute',

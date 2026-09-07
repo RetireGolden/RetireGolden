@@ -660,6 +660,9 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // Rhode Island publishes the statutes from this webserver subdomain; the
     // host is listed exactly because only a leading `www.` is normalized.
     'webserver.rilegislature.gov',
+    // Verified 2026-09-07: Division of Taxation ADV 2025-22 publishes TY2026
+    // deductions and the uniform rate schedule in its official PDF.
+    'tax.ri.gov',
   ],
   UT: [
     // Verified 2026-08-27 against the staged Utah State Tax Commission pages.
@@ -669,6 +672,9 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // BLOCKED-SOURCE: the staged incometax.utah.gov Social Security-credit URL
     // is a 404 page; the TC-40A page is the operative credit source.
     'incometax.utah.gov',
+    // Verified 2026-09-07: enrolled S.B. 60 and the dated §59-10-1042 PDF
+    // contain operative text, unlike the earlier script-rendered HTML shell.
+    'le.utah.gov',
   ],
   VA: [
     // Verified 2026-08-27 against the staged Virginia Code page.
