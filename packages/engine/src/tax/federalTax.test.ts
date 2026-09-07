@@ -191,20 +191,6 @@ describe('Social Security taxation (provisional income)', () => {
     expect(d.agi).toBeCloseTo(23_500, 6)
   })
 
-  it('includes a foreign exclusion in provisional income without taxing the exclusion itself', () => {
-    const d = computeFederalTax(
-      input({
-        ordinaryIncome: 10_000,
-        ssBenefits: 20_000,
-        foreignExclusionAddback: 10_000,
-      }),
-    )
-    // Provisional income is 30,000, so $2,500 of SS becomes taxable. The
-    // excluded $10,000 itself never enters AGI.
-    expect(d.taxableSocialSecurity).toBeCloseTo(2_500, 6)
-    expect(d.agi).toBeCloseTo(12_500, 6)
-  })
-
   it('preserves signed pre-floor AGI without changing ordinary tax behavior', () => {
     const d = computeFederalTax(input({ capitalGains: -3_000 }))
     expect(d.agiBeforeFloor).toBe(-3_000)
@@ -691,18 +677,44 @@ describe('section 55 alternative minimum tax', () => {
   // checking the unamended text of 55(d) will conclude the pack is wrong, so
   // this fixture exists to answer that objection with a number.
   //
+  // IRC 55(d)(4)(A)(ii)(I)-(II) substitutes a 1,000,000 joint threshold
+  // and 50 percent of it for an unmarried taxpayer; subclause (IV) substitutes
+  // a 50 percent phase-out rate for 25 percent from 2026. Exemptions are the
+  // indexed 2026 pack figures (90,100 single / 140,200 joint) under
+  // irc-55-d-exemption-phase-out-rate.
+  //
   // Single filer, AMTI 600,000 -- 100,000 over the 500,000 threshold:
   //   at 50 percent: 90,100 - 50,000 = 40,100
   //   at 25 percent: 90,100 - 25,000 = 65,100
+  //
+  // MFJ, AMTI 1,100,000 -- 100,000 over the 1,000,000 threshold:
+  //   at 50 percent: 140,200 - 50,000 = 90,200
+  //   at 25 percent: 140,200 - 25,000 = 115,200
+  //
+  // The unmodified 112,500 single / 150,000 joint thresholds make both
+  // fixture exemptions negative, so the section 55(d)(2) floor produces 0.
   describeRule('irc-55-d-exemption-phase-out-rate', {
-    readings: { fiftyPercentPerDollar: 40_100, twentyFivePercentPerDollar: 65_100 },
-    accepted: 'fiftyPercentPerDollar',
+    readings: {
+      current2026Substitutions: { single: 40_100, marriedFilingJointly: 90_200 },
+      rateStillTwentyFivePercent: { single: 65_100, marriedFilingJointly: 115_200 },
+      unmodified112500And150000Thresholds: { single: 0, marriedFilingJointly: 0 },
+    },
+    accepted: 'current2026Substitutions',
   }, ({ accepted, readings }) => {
     it('reduces the exemption by fifty cents per dollar above the threshold', () => {
-      const result = computeFederalTax(input({ ordinaryIncome: 600_000 }))
+      const single = computeFederalTax(input({ ordinaryIncome: 600_000 }))
+      const mfj = computeFederalTax(input({
+        filingStatus: 'marriedFilingJointly',
+        ordinaryIncome: 1_100_000,
+      }))
 
-      expect(result.amtExemption).toBe(accepted)
-      expect(result.amtExemption).not.toBe(readings.twentyFivePercentPerDollar)
+      expect(single.amtExemption).toBe(accepted.single)
+      expect(single.amtExemption).not.toBe(readings.rateStillTwentyFivePercent.single)
+      expect(single.amtExemption).not.toBe(readings.unmodified112500And150000Thresholds.single)
+
+      expect(mfj.amtExemption).toBe(accepted.marriedFilingJointly)
+      expect(mfj.amtExemption).not.toBe(readings.rateStillTwentyFivePercent.marriedFilingJointly)
+      expect(mfj.amtExemption).not.toBe(readings.unmodified112500And150000Thresholds.marriedFilingJointly)
     })
   })
 })
@@ -1918,18 +1930,35 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
     })
   })
 
-  // IRC 86(b)(2)(B) increases modified AGI by tax-exempt interest, so a
-  // municipal bond raises the taxable share of benefits without ever entering
-  // AGI. Reading provisional income as AGI plus half the benefits is the
-  // natural misreading and here it zeroes the inclusion outright.
+  // IRC 86(b)(2) defines modified AGI for provisional income: (A) excludes
+  // the 911/931/933 foreign-income exclusions from the AGI base while still
+  // requiring those amounts in provisional income, and (B) increases MAGI by
+  // tax-exempt interest. Either add-back raises the taxable share of benefits
+  // without the excluded amount or interest itself entering AGI. This fixture
+  // is a broad add-back carrier only — it does not test exclusion eligibility
+  // or any NIIT claim. Reading provisional income as AGI plus half the benefits
+  // is the natural misreading and here it zeroes the inclusion outright.
   //
-  // Single, 24,000 of benefits and 20,000 of tax-exempt interest:
-  //   with the add-back: provisional 20,000 + 12,000 = 32,000, between the
+  // Tax-exempt interest arm — single, 24,000 of benefits and 20,000 of
+  // tax-exempt interest:
+  //   with the (B) add-back: provisional 20,000 + 12,000 = 32,000, between the
   //     25,000 base and the 34,000 adjusted base, so 0.5 x 7,000 = 3,500
   //   without it: provisional 12,000, under the base amount, so nothing
+  //
+  // Foreign exclusion arm — single, 10,000 ordinary, 20,000 of benefits,
+  // 10,000 excluded under 911/931/933 and carried via foreignExclusionAddback:
+  //   with the (A) add-back: provisional 10,000 + 10,000 + 10,000 = 30,000,
+  //     between the 25,000 base and the 34,000 adjusted base,
+  //     so 0.5 x (30,000 - 25,000) = 2,500 taxable SS; AGI 10,000 + 2,500 =
+  //     12,500; the excluded 10,000 itself never enters AGI
+  //   without it: provisional 10,000 + 10,000 = 20,000, under the base amount
   describeRule('irc-86-b-2-provisional-income-modified-agi', {
-    readings: { taxExemptInterestAddedBack: 3_500, agiPlusHalfBenefitsOnly: 0 },
-    accepted: 'taxExemptInterestAddedBack',
+    readings: {
+      statutoryModifiedAgi: { taxExemptInterestCase: 3_500, foreignExclusionCase: 2_500 },
+      foreignExclusionOmitted: { taxExemptInterestCase: 3_500, foreignExclusionCase: 0 },
+      agiPlusHalfBenefitsOnly: { taxExemptInterestCase: 0, foreignExclusionCase: 0 },
+    },
+    accepted: 'statutoryModifiedAgi',
   }, ({ accepted, readings }) => {
     it('counts tax-exempt interest in provisional income', () => {
       const result = computeFederalTax(input({
@@ -1937,9 +1966,22 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
         taxExemptInterest: 20_000,
       }))
 
-      expect(result.taxableSocialSecurity).toBeCloseTo(accepted, 6)
-      expect(result.taxableSocialSecurity).not.toBeCloseTo(readings.agiPlusHalfBenefitsOnly, 6)
+      expect(result.taxableSocialSecurity).toBeCloseTo(accepted.taxExemptInterestCase, 6)
+      expect(result.taxableSocialSecurity).not.toBeCloseTo(readings.agiPlusHalfBenefitsOnly.taxExemptInterestCase, 6)
       expect(result.agi).toBe(3_500) // the interest itself never enters AGI
+    })
+
+    it('includes a foreign exclusion in provisional income without taxing the exclusion itself', () => {
+      const result = computeFederalTax(input({
+        ordinaryIncome: 10_000,
+        ssBenefits: 20_000,
+        foreignExclusionAddback: 10_000,
+      }))
+      // Provisional income is 30,000, so $2,500 of SS becomes taxable. The
+      // excluded $10,000 itself never enters AGI.
+      expect(result.taxableSocialSecurity).toBeCloseTo(accepted.foreignExclusionCase, 6)
+      expect(result.taxableSocialSecurity).not.toBeCloseTo(readings.foreignExclusionOmitted.foreignExclusionCase, 6)
+      expect(result.agi).toBeCloseTo(12_500, 6)
     })
   })
 
@@ -1977,20 +2019,39 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
     })
   })
 
-  // IRC 67(h) disallows every miscellaneous itemized deduction permanently, so
-  // the absence of any advisory or tax-preparation input is the right answer
-  // rather than a gap. The pre-2018 67(a) two percent floor is the misreading,
-  // and it would let 5,000 of advisory fees through less a 2,000 floor.
+  // IRC 67(h) disallows every miscellaneous itemized deduction permanently. A
+  // direct computeFederalTax call can still carry hostile facts on
+  // itemizedDeductions — 3,000 of advisory fees and 2,000 of tax-preparation
+  // fees — under the names a fix would plausibly use; itemizedTotal reads only
+  // SALT, mortgage interest, and charitable under today's input scope, so the
+  // calculator ignores them and 20,000 SALT alone is still the produced answer.
+  // The pre-2018 67(a) two percent floor is the misreading: 5,000 of fees less
+  // a 2,000 floor on 100,000 AGI would add 3,000 for 23,000 total.
   //
   // Single, 100,000 ordinary, 20,000 of state and local taxes.
   describeRule('irc-67-h-miscellaneous-itemized-permanently-disallowed', {
     readings: { permanentlyDisallowed: 20_000, twoPercentFloorStillApplies: 23_000 },
     accepted: 'permanentlyDisallowed',
   }, ({ accepted, readings }) => {
+    const baseItemized = { stateAndLocalTaxes: 20_000, mortgageInterest: 0, charitable: 0 }
+    const withExtraFacts = (
+      items: typeof baseItemized,
+      facts: Readonly<Record<string, number>>,
+    ) => ({ ...items, ...facts }) as typeof baseItemized
+
     it('offers no channel by which a miscellaneous itemized deduction is allowed', () => {
+      const itemizedWithMiscFees = withExtraFacts(baseItemized, {
+        advisoryFees: 3_000,
+        taxPreparationFees: 2_000,
+      })
+      expect(itemizedWithMiscFees).toMatchObject({
+        advisoryFees: 3_000,
+        taxPreparationFees: 2_000,
+      })
+
       const result = computeFederalTax(input({
         ordinaryIncome: 100_000,
-        itemizedDeductions: { stateAndLocalTaxes: 20_000, mortgageInterest: 0, charitable: 0 },
+        itemizedDeductions: itemizedWithMiscFees,
       }))
 
       expect(result.itemized).toBe(true)
@@ -2134,14 +2195,29 @@ describe('indexed federal figures in a stand-in year', () => {
   // gives 24,800 / 100,800 / 211,400 and a 32,200 deduction.
   //
   // 132,200 of wages, single, nobody 65+:
-  //   indexed        taxable 100,000 -> 10%x24,800 + 12%x75,200        = 11,504
+  //   all indexed    taxable 100,000 -> 10%x24,800 + 12%x75,200        = 11,504
   //   nothing moves  taxable 116,100 -> 1,240 + 4,560 + 12,166 + 2,496 = 20,462
-  //   brackets only  taxable 116,100 -> 2,480 + 9,120 + 3,366          = 14,966
+  //   deduction frozen taxable 116,100 -> 2,480 + 9,120 + 3,366          = 14,966
   // The third reading is the one worth naming: indexing the tables while
   // leaving the deduction behind is the half-fix, and it still overstates.
+  //
+  // IRC 1(j)(5)(C) indexes the maximum zero-rate and maximum 15-percent
+  // amounts on the same footing as the rate tables.
+  //
+  // 32,200 of wages (exactly the indexed deduction) plus 150,000 of long-term
+  // gain, single:
+  //   all indexed              0% to 98,900, then 15% on 51,100  = 7,665.00
+  //   breakpoint frozen only   0% to 49,450, then 15% on 100,550 = 15,082.50
+  //   deduction frozen only    1,610 ordinary + 10,080 gain       = 11,690.00
+  //   nothing moves            1,684 ordinary + 17,497.50         = 19,181.50
   describeRule('irc-1-j-3-B-rate-tables-adjusted-each-year', {
-    readings: { statute: 11_504, frozenAtThePackYear: 20_462, tablesOnlyDeductionFrozen: 14_966 },
-    accepted: 'statute',
+    readings: {
+      allIndexed: { ordinaryScenario: 11_504, capitalGainScenario: 7_665 },
+      everythingFrozen: { ordinaryScenario: 20_462, capitalGainScenario: 19_181.5 },
+      deductionFrozenOnly: { ordinaryScenario: 14_966, capitalGainScenario: 11_690 },
+      capitalGainBreakpointsFrozenOnly: { ordinaryScenario: 11_504, capitalGainScenario: 15_082.5 },
+    },
+    accepted: 'allIndexed',
   }, ({ accepted, readings }) => {
     it('prices nominal wages on the rate tables prescribed for that year', () => {
       const d = computeFederalTax(input({
@@ -2153,9 +2229,9 @@ describe('indexed federal figures in a stand-in year', () => {
       expect(d.usesStandInPack).toBe(true)
       expect(d.deduction).toBeCloseTo(32_200, 6)
       expect(d.taxableIncome).toBeCloseTo(100_000, 6)
-      expect(d.ordinaryTax).toBeCloseTo(accepted, 6)
-      expect(d.ordinaryTax).not.toBeCloseTo(readings.frozenAtThePackYear, 6)
-      expect(d.ordinaryTax).not.toBeCloseTo(readings.tablesOnlyDeductionFrozen, 6)
+      expect(d.ordinaryTax).toBeCloseTo(accepted.ordinaryScenario, 6)
+      expect(d.ordinaryTax).not.toBeCloseTo(readings.everythingFrozen.ordinaryScenario, 6)
+      expect(d.ordinaryTax).not.toBeCloseTo(readings.deductionFrozenOnly.ordinaryScenario, 6)
     })
 
     it('leaves a published year exactly as published', () => {
@@ -2164,21 +2240,9 @@ describe('indexed federal figures in a stand-in year', () => {
       // that reading IS the statute.
       const d = computeFederalTax(input({ year: 2026, ordinaryIncome: 132_200 }))
       expect(d.usesStandInPack).toBe(false)
-      expect(d.ordinaryTax).toBeCloseTo(readings.frozenAtThePackYear, 6)
+      expect(d.ordinaryTax).toBeCloseTo(readings.everythingFrozen.ordinaryScenario, 6)
     })
-  })
 
-  // IRC 1(j)(5)(C) indexes the maximum zero-rate and maximum 15-percent amounts
-  // on the same footing as the rate tables. 32,200 of wages (exactly the
-  // indexed deduction) plus 150,000 of long-term gain, single:
-  //   indexed        0% to 98,900, then 15% on 51,100              = 7,665.00
-  //   breakpoint     0% to 49,450, then 15% on 100,550             = 15,082.50
-  //     frozen (deduction still indexed)
-  //   nothing moves  16,100 deduction -> 1,684 ordinary + 17,497.50 = 19,181.50
-  describeRule('irc-1-h-capital-gain-stacked-on-ordinary', {
-    readings: { statute: 7_665, breakpointFrozen: 15_082.5, nothingIndexed: 19_181.5 },
-    accepted: 'statute',
-  }, ({ accepted, readings }) => {
     it('starts the 15% layer at the breakpoint prescribed for that year', () => {
       const d = computeFederalTax(input({
         year: PROJECTED_YEAR,
@@ -2188,9 +2252,9 @@ describe('indexed federal figures in a stand-in year', () => {
       }))
 
       expect(d.ordinaryTaxable).toBeCloseTo(0, 6)
-      expect(d.totalTax).toBeCloseTo(accepted, 6)
-      expect(d.totalTax).not.toBeCloseTo(readings.breakpointFrozen, 6)
-      expect(d.totalTax).not.toBeCloseTo(readings.nothingIndexed, 6)
+      expect(d.totalTax).toBeCloseTo(accepted.capitalGainScenario, 6)
+      expect(d.totalTax).not.toBeCloseTo(readings.capitalGainBreakpointsFrozenOnly.capitalGainScenario, 6)
+      expect(d.totalTax).not.toBeCloseTo(readings.everythingFrozen.capitalGainScenario, 6)
     })
   })
 
