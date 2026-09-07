@@ -40,12 +40,14 @@ export interface SimulatorAnnualPassAllocationTrackState {
   weights: number[]
 }
 
-/** A first-distribution-calendar-year RMD elected into the following RBD year. */
+/** A first-distribution-calendar-year amount carried to the following April 1 deadline. */
 export interface SimulatorAnnualPassDeferredFirstRmd {
   applicablePlan: RmdApplicablePlan
   distributionCalendarYear: number
   dueYear: number
   requiredAmount: number
+  /** Bounded attainment-year credit after IRA/403(b) sweeps; zero for an explicit whole-payment deferral. */
+  distributedBeforeDueYear: number
 }
 
 /** A named read/write adapter for a mutable simulator local. */

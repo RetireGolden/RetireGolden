@@ -400,6 +400,7 @@ function mutateAll(value: SimulatorAnnualPassStateBindings): void {
     distributionCalendarYear: 2029,
     dueYear: 2030,
     requiredAmount: 1,
+    distributedBeforeDueYear: 0,
   })
   value.warnings.add('x')
   for (const scalar of [

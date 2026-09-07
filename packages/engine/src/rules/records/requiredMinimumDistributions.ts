@@ -633,12 +633,12 @@ export const requiredMinimumDistributionRecords = {
   'irc-401-a-9-C-i-first-year-april-1-deferral': {
     title: 'Deferral of the first required minimum distribution to April 1',
     statement:
-      'The distribution for the first distribution calendar year may be paid as late as April 1 of the following year. The engine offers an opt-in `rmdFirstYearDeferrals` election. This record settles only the pinned paths: (1) the default books the first-year amount (distribution and ordinary-income recognition) entirely in the attainment year; (2) when the election is set for that distribution calendar year and applicable plan and the taxpayer takes no IRA distribution or QCD in the attainment year, the amount is held until the following year and booked there beside that year’s separately required RMD. When an elected deferral coincides with an attainment-year IRA distribution or QCD, the engine’s handling is registered separately at irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions. Receipt-year income recognition for a clean elected deferral is registered at irc-402-a-employer-plan-distribution-receipt-year-taxability.',
+      'The distribution for the first distribution calendar year may be paid as late as April 1 of the following year. The engine offers an opt-in `rmdFirstYearDeferrals` election. This record settles only the pinned paths: (1) the default attempts the first-year payment in the attainment year and books there only the amount actually distributed (distribution and ordinary-income recognition); (2) when the election is set for that distribution calendar year and applicable plan and the taxpayer takes no IRA distribution or QCD in the attainment year, the amount is held until the following year and booked there beside that year’s separately required RMD. When an elected deferral coincides with an attainment-year IRA distribution or QCD, the engine’s handling is registered separately at irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions. Receipt-year income recognition for a clean elected deferral is registered at irc-402-a-employer-plan-distribution-receipt-year-taxability.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attainment-year booking and requires an explicit opt-in for the April 1 path rather than inventing a household preference. The settled claim stops at the default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.',
+      'Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attempting the first-year payment in the attainment year—booking only what is actually distributed there—and requires an explicit opt-in for the whole-deferral April 1 path rather than inventing a household preference. The settled claim stops at the default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -964,7 +964,7 @@ export const requiredMinimumDistributionRecords = {
   'irc-4974-rmd-shortfall-excise-tax': {
     title: 'Excise tax on a required minimum distribution shortfall',
     statement:
-      'A payee who takes less than the required minimum distribution by its statutory deadline owes an excise tax of 25 percent of the shortfall, not of the whole required amount when part was paid. Ten percent applies only if the whole shortfall is distributed from the same applicable plan or legally aggregable plan group and a return reflecting the reduced tax is filed inside the correction window, which ends at the earliest of notice-of-deficiency mailing, assessment, or the end of the second taxable year beginning after the tax year. A reasonable-error waiver request does not set the tax to zero; an explicit modeled grant does. For tax years beginning in 2025 or later, the final regulation supplies only two automatic-waiver fact patterns: an eligible designated beneficiary whose owner died before the required beginning date and who defaulted to life expectancy without an affirmative election then timely elects the 10-year rule, and a beneficiary who timely corrects the decedent’s year-of-death miss. A first-year amount deferred to April 1 creates no excise in the attainment year; a miss is taxed in the RBD year alongside any separate current-year shortfall. If a balance remains after a 5-year or 10-year emptying deadline, the entire remaining benefit is required in that deadline year and every subsequent year. The engine prices each computed applicable-plan shortfall on the year row’s penalties channel, defaults to 25 percent, and exposes explicit correction and waiver evidence seams. The tax remains outside tax, AGI and MAGI; corrective-distribution evidence prices relief only and never fabricates the separate account movement or its income character.',
+      'A payee who takes less than the required minimum distribution by its statutory deadline owes an excise tax of 25 percent of the shortfall, not of the whole required amount when part was paid. Ten percent applies only if the whole shortfall is distributed from the same applicable plan or legally aggregable plan group and a return reflecting the reduced tax is filed inside the correction window, which ends at the earliest of notice-of-deficiency mailing, assessment, or the end of the second taxable year beginning after the tax year. A reasonable-error waiver request does not set the tax to zero; an explicit modeled grant does. For tax years beginning in 2025 or later, the final regulation supplies only two automatic-waiver fact patterns: an eligible designated beneficiary whose owner died before the required beginning date and who defaulted to life expectancy without an affirmative election then timely elects the 10-year rule, and a beneficiary who timely corrects the decedent’s year-of-death miss. For taxable years before 2025, former Treas. Reg. §54.4974-2 Q&A-6 assigns an unpaid first-distribution-calendar-year amount to the calendar year containing its April 1 deadline; for taxable years beginning in 2025 or later, Treas. Reg. §54.4974-1(f) applies the same rule. The first distribution calendar year therefore has no excise for that unpaid amount; any amount still unpaid by April 1 is taxed in the year containing the deadline alongside that year\'s separate required minimum distribution. If a balance remains after a 5-year or 10-year emptying deadline, the entire remaining benefit is required in that deadline year and every subsequent year. The engine prices each computed applicable-plan shortfall on the year row’s penalties channel, defaults to 25 percent, and exposes explicit correction and waiver evidence seams. The tax remains outside tax, AGI and MAGI; corrective-distribution evidence prices relief only and never fabricates the separate account movement or its income character.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1003,10 +1003,22 @@ export const requiredMinimumDistributionRecords = {
         'If there is any remaining benefit with respect to an employee (or IRA owner) after the calendar year in which the entire remaining benefit is required to be distributed, the required minimum distribution for each calendar year subsequent to that calendar year is the entire remaining benefit.',
     }, {
       kind: 'regulation',
-      citation: 'Treas. Reg. 54.4974-1(h)',
-      url: 'https://www.law.cornell.edu/cfr/text/26/54.4974-1',
+      citation: 'Treas. Reg. 54.4974-1(f)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
       quotedText:
-        'This section applies for taxable years beginning on or after January 1, 2025.',
+        'If the amount not paid is an amount required to be paid by April 1 of a calendar year that includes the employee\'s required beginning date, the missed distribution is a required minimum distribution for the previous calendar year (that is, for the employee\'s or the individual\'s first distribution calendar year as determined in accordance with § 1.401(a)(9)-5(a)(2)(ii)). However, the excise tax under section 4974 is calculated with respect to the calendar year that includes the last day by which the amount is required to be distributed (that is, the calendar year that includes the employee\'s or individual\'s required beginning date) even though the preceding calendar year is the calendar year for which the amount is required to be distributed. There is also a required minimum distribution for the calendar year that includes the employee\'s or individual\'s required beginning date, and that distribution is also required to be made during the calendar year that includes the employee\'s or individual\'s required beginning date.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(h)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'This section applies for taxable years beginning on or after January 1, 2025. For earlier taxable years, the rules of 26 CFR 54.4974-2 (as it appeared in the April 1, 2023, edition of 26 CFR part 54) apply.',
+    }, {
+      kind: 'regulation',
+      citation: 'Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition',
+      url: 'https://www.govinfo.gov/content/pkg/CFR-2023-title26-vol19/pdf/CFR-2023-title26-vol19-sec54-4974-2.pdf',
+      quotedText:
+        'In the case in which the amount not paid is an amount required to be paid by April 1 of a calendar year, such amount is a required minimum distribution for the previous calendar year, i.e., for the employee’s or the individual’s first distribution calendar year. However, the excise tax under section 4974 is imposed for the calendar year containing the last day by which the amount is required to be distributed, i.e., the calendar year containing the employee’s or individual’s required beginning date, even though the preceding calendar year is the calendar year for which the amount is required to be distributed. There is also a required minimum distribution for the calendar year which contains the employee’s or individual’s required beginning date. Such distribution is also required to be made during the calendar year which contains the employee’s or individual’s required beginning date.',
     }, {
       kind: 'formInstruction',
       citation: '2025 Instructions for Form 5329, Part IX',
@@ -1017,7 +1029,7 @@ export const requiredMinimumDistributionRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2023,
     effectiveThrough: null,
-    verifiedOn: '2026-08-21',
+    verifiedOn: '2026-09-06',
     implementedBy: [
       'packages/engine/src/rmd/rmdApplicablePlanForAccount.ts',
       'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
@@ -1694,9 +1706,9 @@ export const requiredMinimumDistributionRecords = {
   },
 
   'treas-reg-54-4974-1-f-first-year-rbd-excise-tax': {
-    title: 'Deferred first-year RMD shortfall is taxed in the RBD year',
+    title: 'First-year RMD shortfall is taxed in the year containing its April 1 deadline',
     statement:
-      'A first distribution-calendar-year RMD deferred to April 1 remains the preceding calendar year\'s RMD, but a shortfall is subject to §4974 in the calendar year containing the April 1 deadline. The separately due RMD for that RBD year remains its own required distribution.',
+      'An unpaid first-distribution-calendar-year RMD remains that preceding calendar year\'s required minimum distribution, but §4974 applies to any amount still unpaid at the April 1 deadline in the calendar year containing that deadline. That calendar year also has its own separate required minimum distribution. Former Treas. Reg. §54.4974-2 Q&A-6 supplies this rule for taxable years before 2025; current Treas. Reg. §54.4974-1(f) supplies it for taxable years beginning in 2025 or later.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1708,20 +1720,28 @@ export const requiredMinimumDistributionRecords = {
       url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
       quotedText:
         'If the amount not paid is an amount required to be paid by April 1 of a calendar year that includes the employee\'s required beginning date, the missed distribution is a required minimum distribution for the previous calendar year (that is, for the employee\'s or the individual\'s first distribution calendar year as determined in accordance with § 1.401(a)(9)-5(a)(2)(ii)). However, the excise tax under section 4974 is calculated with respect to the calendar year that includes the last day by which the amount is required to be distributed (that is, the calendar year that includes the employee\'s or individual\'s required beginning date) even though the preceding calendar year is the calendar year for which the amount is required to be distributed. There is also a required minimum distribution for the calendar year that includes the employee\'s or individual\'s required beginning date, and that distribution is also required to be made during the calendar year that includes the employee\'s or individual\'s required beginning date.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(h)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'This section applies for taxable years beginning on or after January 1, 2025. For earlier taxable years, the rules of 26 CFR 54.4974-2 (as it appeared in the April 1, 2023, edition of 26 CFR part 54) apply.',
+    }, {
+      kind: 'regulation',
+      citation: 'Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition',
+      url: 'https://www.govinfo.gov/content/pkg/CFR-2023-title26-vol19/pdf/CFR-2023-title26-vol19-sec54-4974-2.pdf',
+      quotedText:
+        'In the case in which the amount not paid is an amount required to be paid by April 1 of a calendar year, such amount is a required minimum distribution for the previous calendar year, i.e., for the employee’s or the individual’s first distribution calendar year. However, the excise tax under section 4974 is imposed for the calendar year containing the last day by which the amount is required to be distributed, i.e., the calendar year containing the employee’s or individual’s required beginning date, even though the preceding calendar year is the calendar year for which the amount is required to be distributed. There is also a required minimum distribution for the calendar year which contains the employee’s or individual’s required beginning date. Such distribution is also required to be made during the calendar year which contains the employee’s or individual’s required beginning date.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-25',
+    verifiedOn: '2026-09-06',
     implementedBy: [
       'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts',
-      'packages/engine/src/rmd/rmdShortfallExcise.ts',
-      'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan',
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
-      'packages/engine/src/rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise',
     ],
   },
 

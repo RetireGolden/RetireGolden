@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-09-06T15:42:09.520Z",
+  "generatedAt": "2026-09-07T07:09:41.353Z",
   "recordCount": 436,
-  "urlCount": 334,
-  "fetched": 10,
-  "cached": 324,
-  "entryCount": 1221,
+  "urlCount": 335,
+  "fetched": 12,
+  "cached": 323,
+  "entryCount": 1225,
   "counts": {
-    "EXACT": 844,
+    "EXACT": 846,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 220,
-    "ELISION-EXACT": 63,
+    "PDF-WORD-LEVEL": 222,
+    "ELISION-EXACT": 64,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
-    "UNFETCHABLE": 38
+    "UNFETCHABLE": 37
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -2229,12 +2229,32 @@
     },
     {
       "id": "irc-4974-rmd-shortfall-excise-tax",
-      "citation": "Treas. Reg. 54.4974-1(h)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/cfr/text/26/54.4974-1",
-      "quoteSha256": "b3aea81d0189a3fc",
+      "citation": "Treas. Reg. 54.4974-1(f)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1",
+      "quoteSha256": "a4e3ff8af52c741c",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-4974-rmd-shortfall-excise-tax",
+      "citation": "Treas. Reg. 54.4974-1(h)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1",
+      "quoteSha256": "e65d2f7aa61a879c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-4974-rmd-shortfall-excise-tax",
+      "citation": "Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/CFR-2023-title26-vol19/pdf/CFR-2023-title26-vol19-sec54-4974-2.pdf",
+      "quoteSha256": "6cd716806b38ebb4",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -2655,6 +2675,26 @@
       "quoteSha256": "a4e3ff8af52c741c",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-54-4974-1-f-first-year-rbd-excise-tax",
+      "citation": "Treas. Reg. 54.4974-1(h)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1",
+      "quoteSha256": "e65d2f7aa61a879c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-54-4974-1-f-first-year-rbd-excise-tax",
+      "citation": "Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/CFR-2023-title26-vol19/pdf/CFR-2023-title26-vol19-sec54-4974-2.pdf",
+      "quoteSha256": "6cd716806b38ebb4",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -10907,8 +10947,8 @@
       "host": "www.tn.gov",
       "url": "https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html",
       "quoteSha256": "2284aa3871cc969d",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -12406,6 +12446,18 @@
       "citation": "Treas. Reg. 1.401(a)(9)-5(d)(2)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
+    },
+    {
+      "id": "irc-4974-rmd-shortfall-excise-tax",
+      "citation": "Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition",
+      "host": "www.govinfo.gov",
+      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
+    },
+    {
+      "id": "treas-reg-54-4974-1-f-first-year-rbd-excise-tax",
+      "citation": "Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition",
+      "host": "www.govinfo.gov",
+      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "irc-72-t-2-A-i-age-59-half-annual-proxy",

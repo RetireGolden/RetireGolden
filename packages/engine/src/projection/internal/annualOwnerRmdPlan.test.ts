@@ -93,6 +93,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
       distributionCalendarYear: 2025,
       dueYear: YEAR,
       requiredAmount: 10_000,
+      distributedBeforeDueYear: 4_000,
     }]])
     const current = requiredMinimumDistribution(
       pack,
@@ -111,7 +112,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
       deferredFirstRmdByApplicablePlan: deferred,
     })
 
-    expect(result.rmdTakeByAccount.get('ira')).toBe(10_000 + current)
+    expect(result.rmdTakeByAccount.get('ira')).toBe(6_000 + current)
     expect(result.rmdShortfallObligations).toHaveLength(2)
     expect(result.rmdShortfallObligations[0]).toMatchObject({
       distributionCalendarYear: 2025,
@@ -178,6 +179,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
           distributionCalendarYear: YEAR,
           dueYear: YEAR + 1,
           requiredAmount: firstRmd,
+          distributedBeforeDueYear: 0,
         },
       },
       {
@@ -188,6 +190,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
           distributionCalendarYear: YEAR,
           dueYear: YEAR + 1,
           requiredAmount: firstRmd + secondRmd,
+          distributedBeforeDueYear: 0,
         },
       },
       {
@@ -198,6 +201,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
           distributionCalendarYear: YEAR,
           dueYear: YEAR + 1,
           requiredAmount: leftAssociated,
+          distributedBeforeDueYear: 0,
         },
       },
     ])
@@ -218,12 +222,14 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
       distributionCalendarYear: YEAR - 1,
       dueYear: YEAR,
       requiredAmount: 1,
+      distributedBeforeDueYear: 0,
     }
     const untouchedValue = {
       applicablePlan: untouchedPlan,
       distributionCalendarYear: YEAR,
       dueYear: YEAR + 1,
       requiredAmount: 2,
+      distributedBeforeDueYear: 0,
     }
     const deferred = new Map([
       [key, deferredValue],
@@ -259,6 +265,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
         distributionCalendarYear: YEAR,
         dueYear: YEAR + 1,
         requiredAmount: currentRmd,
+        distributedBeforeDueYear: 0,
       },
     })
     if (setOperation.kind !== 'set') throw new Error('expected a set operation')

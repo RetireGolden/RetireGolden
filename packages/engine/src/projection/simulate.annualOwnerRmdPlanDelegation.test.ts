@@ -47,6 +47,7 @@ vi.mock('./internal/annualOwnerRmdPlan.js', async (importOriginal) =>
         distributionCalendarYear: 2026,
         dueYear: 2027,
         requiredAmount: 123_456,
+        distributedBeforeDueYear: 0,
       }
       const hostileTake = {
         valueOf: () => {
@@ -179,6 +180,7 @@ describe('simulatePlan delegates annual owner-RMD planning', () => {
         distributionCalendarYear: 2026,
         dueYear: 2027,
         requiredAmount: 123_456,
+        distributedBeforeDueYear: 0,
       }]])
     }
 
