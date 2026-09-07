@@ -396,12 +396,12 @@ describe('evaluateAnnualHsaReimbursementLedger', () => {
 })
 
 // Every reading below was derived from the authority before the implementation
-// was consulted, and each complete vector predicts different numbers under the
-// same facts.
+// was consulted, and each complete vector predicts different results across the
+// same fixed pair of scenario inputs.
 describeRule('irc-223-d-2-A-qualified-expense-related-persons', {
   // Allocation B is a distribution from person B's HSA. IRC 223(d)(2)(A)
   // reaches the beneficiary, that beneficiary's spouse, and dependents. The
-  // own-expenses-only reading rejects both related-person claims; the narrower
+  // own-expenses-only reading rejects both related-person claims; the
   // dependents-nonqualifying reading admits the spouse but rejects a dependent.
   readings: {
     statute: { spouse: 5_000, qualifyingDependent: 5_000 },
@@ -410,19 +410,16 @@ describeRule('irc-223-d-2-A-qualified-expense-related-persons', {
   },
   accepted: 'statute',
 }, ({ accepted, readings }) => {
-  it('qualifies a distribution reimbursing the spouse of the account owner', () => {
-    const entry = evaluated().entries[1]!
+  // These scenario inputs supply established qualifying relationships; the ledger
+  // binds their evidence IDs but does not determine section 152 dependency.
+  it('qualifies spouse and qualifying-dependent reimbursements', () => {
+    const spouseEntry = evaluated().entries[1]!
 
-    expect(entry.distributionOwnerPersonId).toBe(personB)
-    expect(entry.consumptions[0]!.patientPersonId).toBe(personA)
-    expect(entry.consumptions[0]!.patientRelationshipToDistributionOwner).toBe('spouse')
-    expect(entry.qualifiedMedicalAmount).toBe(accepted.spouse)
-    expect(entry.qualifiedMedicalAmount)
-      .not.toBe(readings.rejectedOwnExpensesOnly.spouse)
-    expect(entry.nonqualifiedAmount).toBe(0)
-  })
+    expect(spouseEntry.distributionOwnerPersonId).toBe(personB)
+    expect(spouseEntry.consumptions[0]!.patientPersonId).toBe(personA)
+    expect(spouseEntry.consumptions[0]!.patientRelationshipToDistributionOwner).toBe('spouse')
+    expect(spouseEntry.nonqualifiedAmount).toBe(0)
 
-  it('qualifies a distribution reimbursing a dependent of the account owner', () => {
     const value = fixture()
     const dependentPatient = asPersonId('person-c')
     Object.assign(value.scope.expenses[0]!, { patientPersonId: dependentPatient })
@@ -432,16 +429,21 @@ describeRule('irc-223-d-2-A-qualified-expense-related-persons', {
       patientRelationshipEvidenceId: 'relationship-b-dependent',
     })
     bindOpeningState(value)
-    const entry = evaluated(value).entries[0]!
+    const dependentEntry = evaluated(value).entries[0]!
 
-    expect(entry.distributionOwnerPersonId).toBe(personB)
-    expect(entry.consumptions[0]!.patientPersonId).toBe(dependentPatient)
-    expect(entry.consumptions[0]!.patientRelationshipToDistributionOwner)
+    expect(dependentEntry.distributionOwnerPersonId).toBe(personB)
+    expect(dependentEntry.consumptions[0]!.patientPersonId).toBe(dependentPatient)
+    expect(dependentEntry.consumptions[0]!.patientRelationshipToDistributionOwner)
       .toBe('qualifyingDependent')
-    expect(entry.qualifiedMedicalAmount).toBe(accepted.qualifyingDependent)
-    expect(entry.qualifiedMedicalAmount)
-      .not.toBe(readings.rejectedDependentsNonqualifying.qualifyingDependent)
-    expect(entry.nonqualifiedAmount).toBe(0)
+    expect(dependentEntry.nonqualifiedAmount).toBe(0)
+
+    const observed = {
+      spouse: spouseEntry.qualifiedMedicalAmount,
+      qualifyingDependent: dependentEntry.qualifiedMedicalAmount,
+    }
+    expect(observed).toEqual(accepted)
+    expect(observed).not.toEqual(readings.rejectedOwnExpensesOnly)
+    expect(observed).not.toEqual(readings.rejectedDependentsNonqualifying)
   })
 
   it('refuses a relationship claim that contradicts the patient identity', () => {

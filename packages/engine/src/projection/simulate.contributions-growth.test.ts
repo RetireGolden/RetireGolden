@@ -619,7 +619,7 @@ describe('contributions', () => {
     },
     accepted: 'revProc2026',
   }, ({ accepted, readings }) => {
-    it('reads the 2026 self-only and family limits from the parameter pack', () => {
+    it('matches the published 2026 self-only and family HSA limits', () => {
       const selfOnly = basePlan()
       selfOnly.household.people[0]! = {
         ...selfOnly.household.people[0]!,

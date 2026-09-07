@@ -396,7 +396,8 @@ export const healthSavingsAccountRecords = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'The reimbursement ledger consumes caller-supplied patient relationship facts. A qualifyingDependent input means a dependent under section 152 as modified by section 223(d)(2)(A); this function does not determine dependency from household, support, residency, or other underlying facts. It requires a nonblank patientRelationshipEvidenceId, binds that identifier to the owner, expense, relationship, and evaluation date, and rejects a self relationship that contradicts the patient identity. That structural evidence binding does not independently verify a spouse or dependent classification. The related-person fixture tests reimbursement conditional on the supplied qualifying relationship, not automatic dependency determination; callers must establish the relationship before submitting the claim.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
