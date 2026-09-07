@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
-import { year2026 } from '../params/data/year2026.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
@@ -614,7 +613,7 @@ describe('contributions', () => {
     readings: {
       revProc2026: {
         selfOnly: 4_400,
-        family: year2026.contributionLimits.hsaFamily,
+        family: 8_750,
       },
       unadjustedStatutoryAmounts: { selfOnly: 2_250, family: 4_500 },
     },
