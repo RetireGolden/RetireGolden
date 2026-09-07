@@ -26,6 +26,7 @@ import {
   type PlanCrossFieldContext,
 } from './planCrossFieldChecks.js'
 import type { PlanDocument } from './plan.js'
+import { packForYear } from '../params/index.js'
 import {
   couplePlan,
   recurringOrdinaryIncome,
@@ -275,5 +276,41 @@ describe('checkRothConversionFillToTarget', () => {
     const plan = singlePersonPlan()
     plan.strategies.rothConversion = { mode: 'none' }
     expect(issuesFrom(checkRothConversionFillToTarget, plan)).toEqual([])
+  })
+
+  it('refuses an IRMAA tier above N or fractional and accepts a whole tier within 1..N', () => {
+    const taxYear = 2026
+    const tierCount = packForYear(taxYear).pack.medicare.irmaaTiers.length
+    const message = `an IRMAA tier target must be a whole number from 1 to ${tierCount}`
+
+    const withIrmaaTarget = (targetValue: number | null): PlanDocument => {
+      const plan = singlePersonPlan()
+      plan.strategies.rothConversion = {
+        mode: 'fillToTarget',
+        target: 'irmaaTier',
+        targetValue,
+        startYear: taxYear,
+        endYear: taxYear + 5,
+      }
+      return plan
+    }
+
+    expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(1))).toEqual([])
+
+    expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(tierCount + 1))).toEqual([
+      {
+        code: 'custom',
+        path: ['strategies', 'rothConversion', 'targetValue'],
+        message,
+      },
+    ])
+
+    expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(1.5))).toEqual([
+      {
+        code: 'custom',
+        path: ['strategies', 'rothConversion', 'targetValue'],
+        message,
+      },
+    ])
   })
 })
