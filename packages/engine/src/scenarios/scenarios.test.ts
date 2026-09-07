@@ -163,4 +163,64 @@ describe('compareScenarios', () => {
     expect(cmp.rows[1]!.successRate).not.toBeNull()
     expect(cmp.rows[1]!.successRate!).toBeLessThanOrEqual(cmp.rows[0]!.successRate!)
   })
+
+  it('builds and uses a separate tax calculator for each patched plan', () => {
+    const draft = basePlan()
+    draft.assumptions.inflationPct = 0
+    draft.assumptions.defaultReturnPct = 0
+    draft.assumptions.stateEffectiveTaxPct = 0
+    draft.expenses.baseAnnual = 0
+    draft.incomes = [{
+      type: 'recurring',
+      id: 'taxable-income',
+      label: 'Taxable income',
+      annualAmount: 10_000,
+      startYear: 2026,
+      endYear: 2026,
+      inflationAdjusted: false,
+      taxTreatment: 'ordinary',
+    }]
+    draft.scenarios = [{
+      id: 'ten-percent',
+      name: '10% test-double rate',
+      patch: { assumptions: { stateEffectiveTaxPct: 10 } },
+    }]
+    const plan = validate(draft)
+    const createdRates: number[] = []
+    const usedRates: number[] = []
+    const calculators = new Array<ReturnType<typeof createFlatTaxCalculator>>()
+    let sharedCalculatorCalls = 0
+
+    const cmp = compareScenarios(plan, {
+      startYear: 2026,
+      taxCalculator: {
+        compute() {
+          sharedCalculatorCalls += 1
+          return 0
+        },
+      },
+      taxCalculatorForPlan(rowPlan) {
+        const rate = rowPlan.assumptions.stateEffectiveTaxPct
+        const delegate = createFlatTaxCalculator(rate)
+        const calculator = {
+          compute(input: Parameters<typeof delegate.compute>[0]) {
+            usedRates.push(rate)
+            return delegate.compute(input)
+          },
+        }
+        createdRates.push(rate)
+        calculators.push(calculator)
+        return calculator
+      },
+    })
+
+    expect(createdRates).toEqual([0, 10])
+    expect(calculators).toHaveLength(2)
+    expect(calculators[0]).not.toBe(calculators[1])
+    expect(usedRates).toContain(0)
+    expect(usedRates).toContain(10)
+    expect(sharedCalculatorCalls).toBe(0)
+    expect(cmp.rows[0]!.summary.lifetimeTaxesAndPenalties).toBe(0)
+    expect(cmp.rows[1]!.summary.lifetimeTaxesAndPenalties).toBeGreaterThan(0)
+  })
 })
