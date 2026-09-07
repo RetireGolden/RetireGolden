@@ -117,8 +117,8 @@ paste it into receives all of it under your own account and that provider's term
 ## The plan object
 
 A plan is the complete household model: `household` (people, filing status, state, moves),
-`accounts`, `insurance`, `careEvents`, `incomes`, `expenses`, `strategies`, `assumptions`, and
-`scenarios`. The single source of truth for every field is the Zod schema in
+`accounts`, `insurance`, `careEvents`, `incomes`, `expenses`, `strategies`, `assumptions`,
+`annualFederalTaxFacts`, and `scenarios`. The single source of truth for every field is the Zod schema in
 [`packages/engine/src/model/plan.ts`](../../packages/engine/src/model/plan.ts) — the same schema validates
 IndexedDB reads, JSON imports, and migration output, so there is no separate (drifting) file spec.
 Field-level semantics are documented inline on the schema as doc comments.
@@ -140,6 +140,17 @@ state. A v3 → v4 migration does not invent this evidence and strips a
 same-named root smuggled into an older document. Because the records bind the
 Plan ID, any copy/import operation that re-keys a plan discards them; an import
 that preserves Plan identity preserves them exactly.
+
+Plan v5 also adds the **required** `annualFederalTaxFacts` root. It defaults to
+`{ foreignIncomeAdjustments: [] }` when omitted from a legacy document. The root
+stores optional, year-keyed foreign-income MAGI evidence separate from the
+shared calculator addback; it is protected from scenario patches the same way as
+`retirementActionEligibilityFacts` and `retirementActionAnnualTaxFacts`, and it
+is **not** Plan-ID-bound. A re-keyed import therefore preserves
+`annualFederalTaxFacts` exactly while still discarding
+`retirementActionAnnualTaxFacts` owned non-Roth IRA filing sources that bind the
+old Plan ID. These facts have no planner editor and do not affect current tax
+pricing.
 
 Plan v5 adds the **required** `inflationAdjusted` boolean to a one-time income
 stream, the election a recurring stream always carried. True reads `amount` as
@@ -185,8 +196,10 @@ See [Monte Carlo and scenarios](monte-carlo-and-scenarios.md#scenarios).
 5. **Round trip preserves identity-bound facts only with identity.** Export → import restores each
    plan's content byte-for-byte when its Plan ID is preserved, apart from `origin: "user"` (library
    demos become yours). A plan whose `id` collides with an existing plan (or a reserved `example:*`
-   id) is re-keyed to a fresh ID, scenario patches are rebound, and Plan-ID-bound authoritative
-   annual tax facts are discarded rather than silently relabeled as evidence for another Plan.
+   id) is re-keyed to a fresh ID, scenario patches are rebound, and Plan-ID-bound
+   `retirementActionAnnualTaxFacts` owned non-Roth IRA filing sources are discarded rather than
+   silently relabeled as evidence for another Plan. `annualFederalTaxFacts` is not Plan-ID-bound and
+   is preserved through re-key.
 6. **Unknown fields are dropped, not errors.** Hand-added or third-party keys the schema doesn't
    know are stripped during validation. Round-tripping a file through the app keeps everything the
    schema defines and only that.

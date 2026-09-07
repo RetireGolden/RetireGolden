@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { packForYear } from '../../params/index.js'
 import type { ParameterPack } from '../../params/types.js'
+import { acaLegacyForeignExclusionSourceKind } from '../../model/annualFederalTaxFacts.js'
+import type { AcaYearContract } from '../../model/plan.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import type { PersonYearState } from '../types.js'
+import { resolveAnnualFederalTaxFacts } from './annualFederalTaxFacts.js'
 import { annualHealthcareExpenses } from './annualHealthcareExpenses.js'
 
 function run(
@@ -53,7 +56,7 @@ function run(
   })
 }
 
-function acaContract(monthly: number) {
+function acaContract(monthly: number): AcaYearContract {
   return {
     year: 2026,
     fplRegion: 'contiguous' as const,
@@ -272,6 +275,85 @@ describe('annualHealthcareExpenses', () => {
 
     expect(result.acaGeneralTaxCompatibilityEligible).toBe(true)
     expect(result.acaActive).toBe(true)
+  })
+
+  it('preserves foreign-exclusion-addback-unknown at the ACA producer when addback is unknown', () => {
+    const plan = singlePersonPlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    const contract = acaContract(120)
+    contract.foreignExclusionAddback = { state: 'unknown', amount: null }
+    plan.expenses.healthcare.acaYears = [contract]
+    const result = run(plan)
+
+    expect(result.acaGeneralTaxCompatibilityEligible).toBe(true)
+    expect(result.acaInitialSupportCodes).toContain('foreign-exclusion-addback-unknown')
+
+    const resolution = resolveAnnualFederalTaxFacts({
+      annualFederalTaxFacts: { foreignIncomeAdjustments: [] },
+      year: 2026,
+      acaContract: result.acaContract,
+      acaGeneralTaxCompatibilityEligible: result.acaGeneralTaxCompatibilityEligible,
+    })
+    expect(resolution.broad.rawGeneralState).toBe('missing')
+    expect(resolution.broad.rawAcaCompatibilityState).toBe('unknown')
+    expect(resolution.broad.generalFederalAmount).toBe(0)
+    expect(resolution.broad.broadTreatment).toBe('legacyZeroFallback')
+    expect(resolution.broad.broadSupport).toBe('approximate')
+    expect(result.acaInitialSupportCodes).toContain('foreign-exclusion-addback-unknown')
+  })
+
+  it('keeps compatibility eligibility when structural ACA support codes are present', () => {
+    const plan = singlePersonPlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    const contract = acaContract(120)
+    contract.foreignExclusionAddback = { state: 'known', amount: 5_000 }
+    contract.taxFamilyMembers.push({
+      personId: 'extra-spouse',
+      relationship: 'spouse',
+      requiredToFile: 'required',
+      magi: 0,
+    })
+    plan.expenses.healthcare.acaYears = [contract]
+    const structural = run(plan)
+
+    expect(structural.acaGeneralTaxCompatibilityEligible).toBe(true)
+    expect(structural.acaInitialSupportCodes).toContain('tax-family-structure-unsupported')
+
+    const structuralResolution = resolveAnnualFederalTaxFacts({
+      annualFederalTaxFacts: { foreignIncomeAdjustments: [] },
+      year: 2026,
+      acaContract: structural.acaContract,
+      acaGeneralTaxCompatibilityEligible: structural.acaGeneralTaxCompatibilityEligible,
+    })
+    expect(structuralResolution.broad.generalFederalAmount).toBe(5_000)
+    expect(structuralResolution.broad.broadSupport).toBe('characterized')
+    expect(structuralResolution.broad.sources).toEqual([{
+      role: 'aca',
+      sourceKind: acaLegacyForeignExclusionSourceKind,
+      quality: 'legacyContract',
+    }])
+    expect(structural.acaInitialSupportCodes).toContain('tax-family-structure-unsupported')
+
+    const duplicate = singlePersonPlan()
+    duplicate.expenses.healthcare.applyAcaCredit = true
+    const duplicateContract = acaContract(120)
+    duplicateContract.foreignExclusionAddback = { state: 'known', amount: 5_000 }
+    duplicateContract.coveredMembers.push({ ...duplicateContract.coveredMembers[0]! })
+    duplicate.expenses.healthcare.acaYears = [duplicateContract]
+
+    const duplicateResult = run(duplicate)
+    expect(duplicateResult.acaGeneralTaxCompatibilityEligible).toBe(true)
+    expect(duplicateResult.acaInitialSupportCodes).toContain('covered-member-duplicate')
+
+    const duplicateResolution = resolveAnnualFederalTaxFacts({
+      annualFederalTaxFacts: { foreignIncomeAdjustments: [] },
+      year: 2026,
+      acaContract: duplicateResult.acaContract,
+      acaGeneralTaxCompatibilityEligible: duplicateResult.acaGeneralTaxCompatibilityEligible,
+    })
+    expect(duplicateResolution.broad.generalFederalAmount).toBe(5_000)
+    expect(duplicateResolution.broad.broadSupport).toBe('characterized')
+    expect(duplicateResult.acaInitialSupportCodes).toContain('covered-member-duplicate')
   })
 
   it('marks dormant, duplicate, mismatched, zero-gross, and legacy-fallback paths ineligible', () => {

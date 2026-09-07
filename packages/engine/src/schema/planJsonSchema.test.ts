@@ -815,8 +815,62 @@ describe('planJsonSchema — annualFederalTaxFacts', () => {
     expect(PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS).toEqual(
       expect.arrayContaining([
         'annualFederalTaxFacts.foreignIncomeAdjustments year values must be unique.',
+        'annualFederalTaxFacts known amount values must be finite nonnegative numbers after JSON parsing (non-finite values such as JSON overflow are rejected by parsePlan).',
       ]),
     )
+  })
+
+  it.each(['foreignExclusionAddback', 'niitSection911A1NetAddback'] as const)(
+    'repository Ajv accepts non-finite %s amount that parsePlan rejects',
+    (field) => {
+      const overflow = JSON.parse('1e999')
+      const plan = planWithAnnualFacts({
+        foreignIncomeAdjustments: [
+          adjustmentRow({
+            [field]: {
+              state: 'known',
+              amount: overflow,
+              provenance: field === 'foreignExclusionAddback' ? broadProvenance : niitProvenance,
+            },
+          }),
+        ],
+      })
+      expect(overflow).toBe(Number.POSITIVE_INFINITY)
+      expect(validate(plan)).toBe(true)
+      expect(validate.errors ?? []).toEqual([])
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(false)
+      if (!parsed.ok) {
+        expect(parsed.issues.join('\n')).toMatch(/finite|Infinity|amount/i)
+      }
+    },
+  )
+
+  it.each([
+    [
+      'foreignExclusionAddback',
+      '/annualFederalTaxFacts/foreignIncomeAdjustments/0/foreignExclusionAddback/amount',
+    ],
+    [
+      'niitSection911A1NetAddback',
+      '/annualFederalTaxFacts/foreignIncomeAdjustments/0/niitSection911A1NetAddback/amount',
+    ],
+  ] as const)('strictNumbers Ajv rejects non-finite %s amount', (field, amountPath) => {
+    const strictValidate = new Ajv2020({ allErrors: true, strict: false, strictNumbers: true }).compile(planJsonSchema)
+    const overflow = JSON.parse('1e999')
+    const plan = planWithAnnualFacts({
+      foreignIncomeAdjustments: [
+        adjustmentRow({
+          [field]: {
+            state: 'known',
+            amount: overflow,
+            provenance: field === 'foreignExclusionAddback' ? broadProvenance : niitProvenance,
+          },
+        }),
+      ],
+    })
+    expect(strictValidate(plan)).toBe(false)
+    expect(strictValidate.errors?.some((error) => error.instancePath === amountPath)).toBe(true)
   })
 
   it('accepts duplicate annual years structurally but parsePlan rejects them', () => {

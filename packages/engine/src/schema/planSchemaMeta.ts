@@ -88,6 +88,7 @@ export const PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS: readonly string[] = [
   // Expenses / goals
   'expenses.requiredAnnual cannot exceed baseAnnual; a one-time goal’s earliestYear/latestYear window must bracket its year; partial funding requires minFundingPct below 100.',
   'annualFederalTaxFacts.foreignIncomeAdjustments year values must be unique.',
+  'annualFederalTaxFacts known amount values must be finite nonnegative numbers after JSON parsing (non-finite values such as JSON overflow are rejected by parsePlan).',
 ]
 
 /** Non-validating JSON Schema annotation key carrying the constraint list above. */

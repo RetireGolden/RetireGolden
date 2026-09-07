@@ -6,6 +6,50 @@ pricing or published results. This schema addition does not close
 `irc-1411-d-modified-agi-foreign-exclusion-addback`; the calculator's shared-addback
 approximation remains unchanged. See [Taxes](../../features/taxes.md#federal-engine).
 
+### Annual federal-tax facts — phase-one product policy
+
+The resolver records routing and evidence only; it does not calculate statutory
+exclusions or change current tax pricing. Populated annual facts currently leave
+published projection results unchanged.
+
+The following broad-evidence cases make the compatibility policy explicit:
+
+| Situation | Resolved broad amounts | Broad support and retained evidence |
+|---|---|---|
+| General `unknown` or `missing`; eligible ACA `known` or `notApplicable` | ACA amount, or zero for `notApplicable` | `characterized`; source quality `legacyContract`; raw general state retained |
+| General `missing`; eligible ACA `unknown` | Zero | `approximate` / `legacyZeroFallback`; raw ACA `unknown` retained; no determinate source entry; ACA producer retains `foreign-exclusion-addback-unknown` |
+| General `unknown`; no determinate eligible ACA source | Zero | `nonActionable` / `explicitUnknownFallback`; raw states retained |
+| Determinate general and eligible ACA amounts disagree | General amount in `generalFederalAmount`; ACA amount in `acaHouseholdMagiAmount` | `nonActionable`; `broad-determinate-source-conflict`; both raw states, amounts, and sources retained |
+
+NIIT `known` uses its supplied amount, including zero; `notApplicable` uses zero.
+Both have `characterized` NIIT support, with source quality retained. NIIT
+`unknown` or `missing` instead uses `max(0, generalFederalAmount)`, including in
+a broad conflict; it never reads `acaHouseholdMagiAmount` directly. The raw NIIT
+state remains visible. `unknown` has `explicitUnknownFallback` / `nonActionable`
+support; `missing` has `legacyBroadFallback` or `legacyZeroFallback` / `approximate`
+support. Both fallback states retain `niit-fallback-used-general-broad`; the
+year-level result also retains any broad conflict code.
+
+Year-level `federalTaxSupport` is the worse of broad and NIIT support. NIIT numeric
+continuity from broad carries no directional guarantee; consumers must gate on support.
+
+**ACA general-tax compatibility eligibility** is independent of structural PTC support
+codes only. All four conditions must hold:
+
+1. `healthcare.applyAcaCredit === true` (dormant when false)
+2. Exactly one `acaYears` contract for the year (duplicate contracts or legacy premium
+   fallback without a contract → ineligible)
+3. That contract passes the runtime example-input comparison (mismatch → ineligible)
+4. Gross enrollment premium from that contract is greater than zero (zero gross →
+   ineligible)
+
+Structural codes such as `tax-family-structure-unsupported` or
+`covered-member-duplicate` affect ACA/PTC readiness separately and do not flip
+compatibility eligibility when the four conditions hold. `acaActive` reflects gross
+premium presence under `applyAcaCredit`; it is not the compatibility predicate. A
+characterized broad leaf from a compatible contract does not certify the full ACA/PTC
+contract.
+
 Seven rates: 10/12/22/24/32/35/37%. 2026 thresholds (taxable income):
 
 | Rate | Single | Married filing jointly |

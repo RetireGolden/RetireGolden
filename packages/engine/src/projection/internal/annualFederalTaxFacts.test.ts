@@ -29,6 +29,27 @@ function niitKnown(amount: number) {
   }
 }
 
+const unresolvedProvenance = {
+  sourceKind: 'unresolvedSource' as const,
+  acquisition: 'manual' as const,
+}
+
+function broadUnknown() {
+  return {
+    state: 'unknown' as const,
+    amount: null,
+    provenance: unresolvedProvenance,
+  }
+}
+
+function niitUnknown() {
+  return {
+    state: 'unknown' as const,
+    amount: null,
+    provenance: unresolvedProvenance,
+  }
+}
+
 function acaContractBase() {
   return {
     year: 2026,
@@ -70,6 +91,13 @@ function acaContractNotApplicable(): AcaYearContract {
   })
 }
 
+function acaContractUnknown(): AcaYearContract {
+  return acaYearContractSchema.parse({
+    ...acaContractBase(),
+    foreignExclusionAddback: { state: 'unknown', amount: null },
+  })
+}
+
 function resolve(
   facts: AnnualFederalTaxFacts,
   options: {
@@ -87,7 +115,9 @@ function resolve(
 }
 
 describe('resolveAnnualFederalTaxFacts', () => {
-  it('resolves separate statutory broad and NIIT amounts and the allocation control', () => {
+  it('routes supplied broad and NIIT values independently per phase-one product policy', () => {
+    // Public policy: 01-federal-income-tax-2026.md — phase-one routing only, not a
+    // statutory oracle. Each leg keeps its own supplied amount when characterized.
     const separate = resolve({
       foreignIncomeAdjustments: [{
         year: 2026,
@@ -101,7 +131,7 @@ describe('resolveAnnualFederalTaxFacts', () => {
     expect(separate.niit.resolvedAmount).toBe(20_000)
     expect(separate.niit.niitSupportCodes).toEqual([])
 
-    const allocation = resolve({
+    const narrowerNiit = resolve({
       foreignIncomeAdjustments: [{
         year: 2026,
         foreignExclusionAddback: broadKnown(30_000),
@@ -109,7 +139,8 @@ describe('resolveAnnualFederalTaxFacts', () => {
       }],
     })
 
-    expect(allocation.niit.resolvedAmount).toBe(15_000)
+    expect(narrowerNiit.broad.generalFederalAmount).toBe(30_000)
+    expect(narrowerNiit.niit.resolvedAmount).toBe(15_000)
   })
 
   it('uses missing and unknown fallbacks without reading ACA directly', () => {
@@ -148,6 +179,103 @@ describe('resolveAnnualFederalTaxFacts', () => {
     expect(unknown.niit.resolvedAmount).toBe(0)
     expect(unknown.niit.niitSupport).toBe('nonActionable')
     expect(unknown.federalTaxSupport).toBe('nonActionable')
+  })
+
+  it('selects eligible ACA when general is unknown and retains raw general state', () => {
+    const fromAcaKnown = resolve({
+      foreignIncomeAdjustments: [{
+        year: 2026,
+        foreignExclusionAddback: broadUnknown(),
+        niitSection911A1NetAddback: niitKnown(0),
+      }],
+    }, {
+      acaContract: acaContract(8_000),
+      acaGeneralTaxCompatibilityEligible: true,
+    })
+    expect(fromAcaKnown.broad.rawGeneralState).toBe('unknown')
+    expect(fromAcaKnown.broad.broadTreatment).toBe('activeAcaKnown')
+    expect(fromAcaKnown.broad.generalFederalAmount).toBe(8_000)
+    expect(fromAcaKnown.broad.broadSupport).toBe('characterized')
+    expect(fromAcaKnown.broad.sources).toEqual([{
+      role: 'aca',
+      sourceKind: acaLegacyForeignExclusionSourceKind,
+      quality: 'legacyContract',
+    }])
+
+    const fromAcaNotApplicable = resolve({
+      foreignIncomeAdjustments: [{
+        year: 2026,
+        foreignExclusionAddback: broadUnknown(),
+        niitSection911A1NetAddback: niitKnown(0),
+      }],
+    }, {
+      acaContract: acaContractNotApplicable(),
+      acaGeneralTaxCompatibilityEligible: true,
+    })
+    expect(fromAcaNotApplicable.broad.rawGeneralState).toBe('unknown')
+    expect(fromAcaNotApplicable.broad.broadTreatment).toBe('activeAcaNotApplicable')
+    expect(fromAcaNotApplicable.broad.generalFederalAmount).toBe(0)
+    expect(fromAcaNotApplicable.broad.broadSupport).toBe('characterized')
+
+    const worseYearSupport = resolve({
+      foreignIncomeAdjustments: [{
+        year: 2026,
+        foreignExclusionAddback: broadUnknown(),
+        niitSection911A1NetAddback: niitUnknown(),
+      }],
+    }, {
+      acaContract: acaContract(8_000),
+      acaGeneralTaxCompatibilityEligible: true,
+    })
+    expect(worseYearSupport.broad.broadSupport).toBe('characterized')
+    expect(worseYearSupport.niit.niitSupport).toBe('nonActionable')
+    expect(worseYearSupport.federalTaxSupport).toBe('nonActionable')
+  })
+
+  it('approximates zero when general is missing and eligible ACA addback is unknown', () => {
+    const resolution = resolve(emptyFacts, {
+      acaContract: acaContractUnknown(),
+      acaGeneralTaxCompatibilityEligible: true,
+    })
+    expect(resolution.broad.rawGeneralState).toBe('missing')
+    expect(resolution.broad.rawAcaCompatibilityState).toBe('unknown')
+    expect(resolution.broad.generalFederalAmount).toBe(0)
+    expect(resolution.broad.broadTreatment).toBe('legacyZeroFallback')
+    expect(resolution.broad.broadSupport).toBe('approximate')
+    expect(resolution.broad.sources).toEqual([])
+  })
+
+  it('uses explicitUnknownFallback when general is unknown and eligible ACA addback is unknown', () => {
+    const resolution = resolve({
+      foreignIncomeAdjustments: [{
+        year: 2026,
+        foreignExclusionAddback: broadUnknown(),
+        niitSection911A1NetAddback: niitKnown(0),
+      }],
+    }, {
+      acaContract: acaContractUnknown(),
+      acaGeneralTaxCompatibilityEligible: true,
+    })
+    expect(resolution.broad.rawGeneralState).toBe('unknown')
+    expect(resolution.broad.rawAcaCompatibilityState).toBe('unknown')
+    expect(resolution.broad.generalFederalAmount).toBe(0)
+    expect(resolution.broad.broadTreatment).toBe('explicitUnknownFallback')
+    expect(resolution.broad.broadSupport).toBe('nonActionable')
+    expect(resolution.federalTaxSupport).toBe('nonActionable')
+  })
+
+  it('copies a positive broad amount into NIIT unknown fallback as nonActionable continuity', () => {
+    const resolution = resolve({
+      foreignIncomeAdjustments: [{
+        year: 2026,
+        foreignExclusionAddback: broadKnown(12_000),
+        niitSection911A1NetAddback: niitUnknown(),
+      }],
+    })
+    expect(resolution.niit.resolvedAmount).toBe(12_000)
+    expect(resolution.niit.niitTreatment).toBe('explicitUnknownFallback')
+    expect(resolution.niit.niitSupport).toBe('nonActionable')
+    expect(resolution.niit.niitSupportCodes).toEqual(['niit-fallback-used-general-broad'])
   })
 
   it('uses eligible ACA known or notApplicable when general is missing', () => {
@@ -198,12 +326,13 @@ describe('resolveAnnualFederalTaxFacts', () => {
     ])
   })
 
-  it('keeps G=600, A=1000 source-local conflict with NIIT fallback 600', () => {
+  it('keeps G=600, A=1000 source-local conflict with explicit NIIT unknown fallback 600', () => {
     const conflict = resolve({
       foreignIncomeAdjustments: [{
         year: 2026,
         foreignExclusionAddback: broadKnown(600),
-      } as AnnualFederalTaxFacts['foreignIncomeAdjustments'][number]],
+        niitSection911A1NetAddback: niitUnknown(),
+      }],
     }, {
       acaContract: acaContract(1_000),
       acaGeneralTaxCompatibilityEligible: true,
@@ -213,10 +342,10 @@ describe('resolveAnnualFederalTaxFacts', () => {
     expect(conflict.broad.acaHouseholdMagiAmount).toBe(1_000)
     expect(conflict.broad.broadTreatment).toBe('generalAndAcaConflictSourceLocal')
     expect(conflict.broad.broadSupport).toBe('nonActionable')
-    expect(conflict.niit.rawState).toBe('missing')
+    expect(conflict.niit.rawState).toBe('unknown')
     expect(conflict.niit.resolvedAmount).toBe(600)
-    expect(conflict.niit.niitTreatment).toBe('legacyBroadFallback')
-    expect(conflict.niit.niitSupport).toBe('approximate')
+    expect(conflict.niit.niitTreatment).toBe('explicitUnknownFallback')
+    expect(conflict.niit.niitSupport).toBe('nonActionable')
     expect(conflict.federalTaxSupport).toBe('nonActionable')
     expect(conflict.federalTaxSupportCodes).toEqual([
       'broad-determinate-source-conflict',
