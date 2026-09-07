@@ -476,6 +476,7 @@ retroactive to January 1, 2026); Social Security is already fully exempt in the 
 Michigan’s 2026 ordinary retirement path is a **$67,610 / $135,220** combined qualifying ceiling (not a
 full exemption); the shared capped pack rule remains a coarse approximation of qualification, elections,
 and the pre-1946 public exception.
+
 **2026 parameter corrections (DE, HI, RI, UT):** Delaware §1102(a)(14) 5.55%
 (`de-code-30-1102-a-14-rate-schedule`, [DE.md](../domain/state-tax-research/DE.md)), Hawaii
 §235-2.4(a)(2)(F) $8,000/$16,000 through tax years beginning after 2025

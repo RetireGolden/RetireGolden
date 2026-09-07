@@ -45,7 +45,7 @@ Tax year: 2026. Researched 2026-06-13; standard deduction corrected 2026-09-07.
 
 ## Standard deduction — operative law (2026 phase)
 
-Haw. Rev. Stat. § 235-2.4(a)(2)(F) sets the standard deduction for taxable years beginning after December 31, 2025 at **$8,000** for an unmarried individual and **$16,000** on a joint return. The same subsection continues through tax years beginning after December 31, 2027 under limb (G); the pack models only the (F) phase effective for **2026–2027** and does not carry later scheduled increases.
+Haw. Rev. Stat. § 235-2.4(a)(2)(F) sets the standard deduction for taxable years beginning after December 31, 2025 at **$8,000** for an unmarried individual and **$16,000** on a joint return. Limb (F) governs tax years beginning after December 31, 2025 through **2026–2027**; limb (G) applies from taxable years beginning after December 31, 2027 (**2028** onward) with different amounts that are outside this pack.
 
 The [Hawaii DOTAX HRS ch. 235 compilation](https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf) is labeled an unofficial compilation as of December 31, 2025; the operative section and effective-year language are nevertheless explicit. The engine models supported single and married-filing-jointly statuses only; head-of-household, married-filing-separately, and surviving-spouse limbs are outside this record.
 

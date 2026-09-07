@@ -963,7 +963,7 @@
       "title": "Hawaii’s TY2026 standard deduction is $8,000 single and $16,000 joint",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2026 are not certified here. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.",
+      "conventionRationale": "The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2027 (from the §235-2.4(a)(2)(G) phase beginning 2028) are not certified here. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.",
       "contraryReading": null,
       "jurisdiction": "state:HI",
       "volatility": "sunsetting",

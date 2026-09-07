@@ -674,7 +674,7 @@ export const westStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2026 are not certified here. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.',
+      'The Hawaii Department of Taxation’s unofficial HRS compilation labels itself as of 2025-12-31; the operative subsection and effective-year language are nevertheless explicit. Later phased increases under Act 46 beyond tax year 2027 (from the §235-2.4(a)(2)(G) phase beginning 2028) are not certified here. Hawaii’s private-pension approximation remains registered separately at `hi-hrs-235-7-pension-and-social-security`.',
     jurisdiction: 'state:HI',
     authority: [{
       kind: 'statute',
