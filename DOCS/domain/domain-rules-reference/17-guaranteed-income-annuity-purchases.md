@@ -39,8 +39,13 @@ and after-tax estate.
   does not estimate spouse later distribution taxes; actual inherited-IRA/action paths apply their own explicit facts),
   `nonSpouse` (pre-tax classes — traditional and non-spouse HSA — taxed at the class's heir rate; Roth,
   taxable stepped-up at death, and cash pass untaxed), or `charity` (`charityPct` passes to charity fully
-  untaxed, the remainder following the non-spouse rules). Absent the field, the legacy flat treatment applies.
-  The HSA's older `beneficiary` field remains a spouse/non-spouse shorthand; when both are present,
+  untaxed, the remainder following the non-spouse rules). Absent `estateBeneficiary`, legacy **destination-label**
+  defaults apply for terminal-valuation compatibility only — not proof of actual beneficiary designation,
+  rollover/treat-as-own eligibility, or legal estate-tax handling: **traditional** → `nonSpouse`; **cash**,
+  **taxable**, **Roth**, and **equityComp** (product convention, not separate statutory authority) →
+  spouse-equivalent. Regression fixture (labels only):
+  [compare.test.ts](../../../packages/engine/src/projection/compare.test.ts). The HSA's older `beneficiary`
+  field remains a spouse/non-spouse shorthand; when both are present,
   `estateBeneficiary` wins. Omitting that shorthand is a legacy convention mapped to the spouse-equivalent
   default, not a statutory designation. The HSA non-spouse haircut is the terminal-inclusion approximation
   in §16 (`irc-223-f-8-B-estate-predeath-expense-reduction`), not a claim that every death is a fully

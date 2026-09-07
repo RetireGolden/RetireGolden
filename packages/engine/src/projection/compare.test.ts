@@ -103,13 +103,10 @@ describe('summarizeProjection', () => {
     expect(highSummary.endingAfterTaxEstate).toBeLessThan(lowSummary.endingAfterTaxEstate)
   })
 
-  // Product-convention fixture (code-043): legacy terminal-valuation destination
-  // defaults per DOCS/domain/domain-rules-reference/17-guaranteed-income-annuity-purchases.md
-  // and plan.ts estateBeneficiarySchema / HSA beneficiary notes — not legally designated
-  // beneficiaries, rollover/treat-as-own eligibility, or statutory estate-tax handling.
-  // The flat-haircut compatibility contract in compare.ts maps omitted traditional to
-  // nonSpouse and other balance accounts (incl. omitted-HSA spouse-equivalent) to spouse.
-  it('maps legacy estate destination defaults through simulatePlan and summarizeProjection', () => {
+  // Product-compatibility regression: omitted `estateBeneficiary` → destination-label mapping only,
+  // per DOCS/domain/domain-rules-reference/17-guaranteed-income-annuity-purchases.md (Estate beneficiary
+  // destinations). Not beneficiary designation, rollover/treat-as-own, or tax-dollar correctness.
+  it('preserves legacy estate destination labels through simulatePlan and summarizeProjection', () => {
     const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
     plan.household.people[0] = {
       id: 'p1',
