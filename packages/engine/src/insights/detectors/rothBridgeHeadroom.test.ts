@@ -99,6 +99,7 @@ describe('rothBridgeHeadroom product boundary gates', () => {
         { ageAttained: 63, wages: 9_999, tradBalance: 10_001 },
       ],
       expectCard: true,
+      expectPreviewWindow: { startYear: 2023, endYear: 2023 },
     },
     {
       label: 'year trad exactly 10k is not bridge-eligible',
@@ -114,16 +115,16 @@ describe('rothBridgeHeadroom product boundary gates', () => {
       label: 'wages below 10k with trad above 10k yields fill-to-12% preview',
       rows: [{ ageAttained: 62, wages: 9_999, tradBalance: 10_001 }],
       expectCard: true,
-      expectPatch: true,
+      expectPreviewWindow: { startYear: 2022, endYear: 2022 },
     },
-  ])('$label', ({ rows, expectCard, expectPatch }) => {
+  ])('$label', ({ rows, expectCard, expectPreviewWindow }) => {
     const card = screen(rows)
     if (!expectCard) {
       expect(card).toBeNull()
       return
     }
     expect(card).not.toBeNull()
-    if (expectPatch) {
+    if (expectPreviewWindow) {
       expect(card!.action).toMatchObject({
         kind: 'preview-scenario',
         patch: {
@@ -132,6 +133,8 @@ describe('rothBridgeHeadroom product boundary gates', () => {
               mode: 'fillToTarget',
               target: 'topOfBracket',
               targetValue: 12,
+              startYear: expectPreviewWindow.startYear,
+              endYear: expectPreviewWindow.endYear,
             },
           },
         },

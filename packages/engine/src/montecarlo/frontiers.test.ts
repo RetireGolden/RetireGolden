@@ -54,7 +54,7 @@ function coupleBasePlan(): Plan {
     name: 'Pat',
     dob: '1961-06-15',
     sex: 'average',
-    retirementAge: 60,
+    retirementAge: 65,
     longevity: { planningAge: 88, source: 'manual' },
   }
   plan.household.people.push({
@@ -62,7 +62,7 @@ function coupleBasePlan(): Plan {
     name: 'Robin',
     dob: '1966-06-15',
     sex: 'average',
-    retirementAge: 65,
+    retirementAge: 60,
     longevity: { planningAge: 88, source: 'manual' },
   })
   plan.assumptions.inflationPct = 2.5
@@ -165,7 +165,7 @@ describe('retirement-age success frontier', () => {
     seed: 123,
   }
 
-  it('maps couple retirement deltas to younger-person x, ids, and labels on shared paths', () => {
+  it('maps couple retirement deltas to minimum planned retirement age x, ids, and labels on shared paths', () => {
     const plan = coupleBasePlan()
     const originalAges = plan.household.people.map((person) => person.retirementAge)
     const points = buildRetirementAgeSuccessFrontier(plan, frontierOpts, [-1, 0, 1])
@@ -193,6 +193,40 @@ describe('retirement-age success frontier', () => {
     expect(buildRetirementAgeSuccessFrontier(upper, frontierOpts, [1])[0]!.x).toBe(80)
     expect(lower.household.people[0]!.retirementAge).toBe(30)
     expect(upper.household.people[0]!.retirementAge).toBe(80)
+
+    const originalCompare = sharedPathsModule.comparePlansOnSharedMarketPaths
+    const observed: Array<Array<number | null>> = []
+    const spy = vi.spyOn(sharedPathsModule, 'comparePlansOnSharedMarketPaths')
+    spy.mockImplementation((variants, opts) => {
+      for (const variant of variants) {
+        observed.push(variant.plan.household.people.map((person) => person.retirementAge))
+      }
+      return originalCompare(variants, opts)
+    })
+
+    const lowerCouple = coupleBasePlan()
+    lowerCouple.household.people[0]!.retirementAge = 35
+    lowerCouple.household.people[1]!.retirementAge = 30
+    const lowerOriginalAges = lowerCouple.household.people.map((person) => person.retirementAge)
+
+    const upperCouple = coupleBasePlan()
+    upperCouple.household.people[0]!.retirementAge = 75
+    upperCouple.household.people[1]!.retirementAge = 80
+    const upperOriginalAges = upperCouple.household.people.map((person) => person.retirementAge)
+
+    try {
+      observed.length = 0
+      expect(buildRetirementAgeSuccessFrontier(lowerCouple, frontierOpts, [-1])[0]!.x).toBe(30)
+      expect(observed).toEqual([[34, 30]])
+      expect(lowerCouple.household.people.map((person) => person.retirementAge)).toEqual(lowerOriginalAges)
+
+      observed.length = 0
+      expect(buildRetirementAgeSuccessFrontier(upperCouple, frontierOpts, [1])[0]!.x).toBe(76)
+      expect(observed).toEqual([[76, 80]])
+      expect(upperCouple.household.people.map((person) => person.retirementAge)).toEqual(upperOriginalAges)
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('shifts both household members for each delta through the shared-path comparator', () => {
@@ -210,7 +244,7 @@ describe('retirement-age success frontier', () => {
 
     try {
       const points = buildRetirementAgeSuccessFrontier(plan, frontierOpts, deltas)
-      expect(observed).toEqual([[59, 64], [60, 65], [61, 66]])
+      expect(observed).toEqual([[64, 59], [65, 60], [66, 61]])
       expect(points).toHaveLength(3)
     } finally {
       spy.mockRestore()
