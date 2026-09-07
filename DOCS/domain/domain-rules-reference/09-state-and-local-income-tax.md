@@ -96,6 +96,15 @@
   The sole pack also stands in outside 2026 under the existing fallback; statutory authority is 2026+, not a
   historical §11-21-4i proof. Personal exemptions and senior any-income/disability/pension-subtype items remain
   unmodeled.
+- **2026 parameter corrections (DE, HI, RI, UT):** four registry records now carry TY2026 figures transcribed
+  from primary sources — Delaware §1102(a)(14) 5.55% (`de-code-30-1102-a-14-rate-schedule`,
+  [DE.md](../state-tax-research/DE.md)), Hawaii §235-2.4(a)(2)(F) $8,000/$16,000 through tax years beginning
+  after 2025 (`hi-hrs-235-2-4-a-2-f-2026-standard-deduction`, [HI.md](../state-tax-research/HI.md); the
+  §235-2.4(a)(2)(G) phase from 2028 is not carried), Rhode Island ADV 2025-22 TY2026 deduction and schedule
+  (`ri-dot-adv-2025-22-2026-deduction-and-rate-schedule`, [RI.md](../state-tax-research/RI.md); re-read ADV
+  each autumn), and Utah S.B. 60 / §59-10-104 4.45% (`ut-code-59-10-104-2026-individual-rate`,
+  [UT.md](../state-tax-research/UT.md)). State-only plan fixtures pin the modeled subtotal; whole-return
+  accuracy is not claimed.
 - Michigan’s 2026 ordinary retirement deduction is a **combined qualifying** public/private ceiling of
   **$67,610** single/MFS / **$135,220** MFJ (`mi-mcl-206-30-retirement-and-ss`), not a blanket full
   exemption. The pack carries one shared capped rule; pre-1946 unlimited qualifying federal/Michigan public

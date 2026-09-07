@@ -1,6 +1,6 @@
 # Delaware (DE) — state income tax for retirement planning
 
-Tax year: 2026. Researched 2026-09-05 (standard deduction corrected); prior pack 2026-06-13.
+Tax year: 2026. Researched 2026-09-05 (standard deduction corrected); rate schedule corrected 2026-09-07.
 
 ## Summary
 - Broad individual income tax: **yes** (graduated, 0%–6.6%; same bracket thresholds for single and MFJ)
@@ -23,7 +23,7 @@ Tax year: 2026. Researched 2026-09-05 (standard deduction corrected); prior pack
   - { lowerBound: 5000, ratePct: 3.9 }
   - { lowerBound: 10000, ratePct: 4.8 }
   - { lowerBound: 20000, ratePct: 5.2 }
-  - { lowerBound: 25000, ratePct: 5.5 }
+  - { lowerBound: 25000, ratePct: 5.55 }
   - { lowerBound: 60000, ratePct: 6.6 }
 - retirement: { kind: "capped", capPerPerson: 12500, minAge: 60 }
 
@@ -37,9 +37,9 @@ The [2026 Form PIT-EST instructions](https://revenuefiles.delaware.gov/2025/PITF
 
 An earlier pack and this note once cited **$5,700 / $11,400** while referencing the [Justia mirror](https://law.justia.com/codes/delaware/title-30/chapter-11/subchapter-ii/section-1108/) of § 1108; that mirror now displays **$3,250 / $6,500** under § 1108(a)(3). The mistaken amounts match **House Bill 89** ([BillDetail/130098](https://www.legis.delaware.gov/BillDetail/130098)), which proposed those figures for tax years after 2023 but was **never enacted** (status: “Out of Committee 5/2/23” with no chapter law or effective date). Operative law remains **$3,250 / $6,500** per the official Code and 2026 PIT-EST instructions.
 
-## Bracket rate note (separate defect)
+## Bracket rate schedule — operative law
 
-The 2026 PIT-EST instructions print **5.55%** for the $25,000–$60,000 band; the modeled pack still carries **5.5%**. That discrepancy is disclosed separately and is outside the standard-deduction repair.
+30 Del. C. § 1102(a)(14) applies for taxable years beginning after December 31, 2013 and assigns **5.55%** to taxable income over **$25,000** through **$60,000**. Adjacent bands remain 0%, 2.2%, 3.9%, 4.8%, 5.2%, and 6.6%. The 2026 PIT-EST rate table prints the same 5.55% band. The 2026 pack now carries 5.55% (corrected from an earlier 5.5% rounding).
 
 ## Retirement-income detail
 
@@ -53,11 +53,10 @@ Delaware fully exempts Social Security. Taxpayers **age 60 or older** may exclud
 - Blindness additional standard deduction not modeled (age count only).
 - Personal credits and other credits not modeled.
 - Itemization election (§ 1107 / § 1109) not modeled.
-- **Qualifying surviving spouse:** PIT-EST groups widow(er) with the $3,250 basic amount ($5,750 at age 65 with the $2,500 addition). The engine maps QSS to joint parameters ($6,500 / $9,000 in the 2026 pack); that reachable gap is registered as the `approximated` rule `de-pit-est-2026-qss-standard-deduction-joint-mapper`. No runtime correction is included in this registry-only slice.
+- **Qualifying surviving spouse:** PIT-EST groups widow(er) with the $3,250 basic amount ($5,750 at age 65 with the $2,500 addition). The engine maps QSS to joint parameters ($6,500 / $9,000 in the 2026 pack); that reachable gap is registered as the `approximated` rule `de-pit-est-2026-qss-standard-deduction-joint-mapper`.
 
 ## Citations
 - https://delcode.delaware.gov/title30/c011/sc02/index.html — 30 Del. C. §§ 1107–1108 (operative basic and age-65 amounts).
-- https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf — Delaware Division of Revenue, 2026 PIT-EST instructions, line 3.
+- https://delcode.delaware.gov/title30/c011/sc01/index.html — 30 Del. C. § 1102(a)(14) (5.55% $25,000–$60,000 band).
+- https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf — Delaware Division of Revenue, 2026 PIT-EST instructions, line 3 and rate table.
 - https://www.legis.delaware.gov/BillDetail/130098 — HB 89 (unenacted source of erroneous $5,700 / $11,400).
-- https://www.incometaxpro.com/tax-rates/delaware.htm — bracket structure cross-check.
-- https://taxfoundation.org/data/all/state/state-income-tax-rates/ — Tax Foundation cross-check.

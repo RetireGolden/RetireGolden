@@ -11,17 +11,17 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 437 |
+| Total rules | 441 |
 | Classification: approximated | 122 |
 | Classification: outOfScope | 75 |
-| Classification: settled | 235 |
+| Classification: settled | 239 |
 | Classification: unsettled | 5 |
-| Volatility: annuallyIndexed | 63 |
+| Volatility: annuallyIndexed | 64 |
 | Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 357 |
-| Volatility: sunsetting | 6 |
+| Volatility: staticStatute | 359 |
+| Volatility: sunsetting | 7 |
 | Federal jurisdiction | 327 |
-| State jurisdiction total | 110 |
+| State jurisdiction total | 114 |
 
 | State jurisdiction | Count |
 | --- | ---: |
@@ -33,10 +33,10 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | CO | 2 |
 | CT | 1 |
 | DC | 1 |
-| DE | 3 |
+| DE | 4 |
 | FL | 1 |
 | GA | 1 |
-| HI | 1 |
+| HI | 2 |
 | IA | 1 |
 | ID | 1 |
 | IL | 1 |
@@ -64,12 +64,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | OK | 1 |
 | OR | 1 |
 | PA | 2 |
-| RI | 1 |
+| RI | 2 |
 | SC | 1 |
 | SD | 1 |
 | TN | 2 |
 | TX | 2 |
-| UT | 1 |
+| UT | 2 |
 | VA | 1 |
 | VT | 1 |
 | WA | 2 |
@@ -147,7 +147,7 @@ None.
 | model/planCrossFieldChecks.ts | 2026-09-05 | qualified-annuity start-age ceilings covered; checkAccountCrossFieldRules still directly enforces uncovered Form 8606 basis placement/exclusion on inherited IRAs, qualified-annuity funding from owned traditional funds, QLAC qualification, and other cross-field gates |
 | model/retirementActionAnnualTaxFacts.ts | 2026-09-05 | IRC 219(f)(3) designated post-year contribution window now covered via persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema; remaining persistence contracts are opening-basis, completeness, finalization, identity, and safe-cent totals |
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
-| params/state/data/year2026.ts | 2026-09-05 | de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation. The 5.5% versus 5.55% bracket band, blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage. |
+| params/state/data/year2026.ts | 2026-09-07 | de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation; de-code-30-1102-a-14-rate-schedule names the Delaware 5.55% bracket cell and bracketTax; hi-hrs-235-2-4-a-2-f-2026-standard-deduction names the Hawaii TY2026 single/MFJ deduction cell and taxable-income enforcer; ri-dot-adv-2025-22-2026-deduction-and-rate-schedule names the Rhode Island TY2026 single/MFJ deduction and bracket cells plus their taxable-income and bracket enforcers; ut-code-59-10-104-2026-individual-rate names the Utah TY2026 4.45% rate cell and bracketTax. Blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage. |
 | params/state/index.ts | 2026-09-05 | conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-09-04 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; HSA terminal inclusion base delegated to estateHsaIncome.ts (irc-223-f-8-B-estate-predeath-expense-reduction); terminal zero-haircut spouse destination convention (not rollover or treat-as-own adjudication), charity carve-out, default destination, and other class residuals remain |
@@ -204,15 +204,15 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/socialSecurityEarnings.json | 3 |
 | rule-coverage/socialSecurityMaritalEligibility.json | 4 |
 | rule-coverage/statesMidwest.json | 29 |
-| rule-coverage/statesNortheast.json | 12 |
-| rule-coverage/statesSouthAtlantic.json | 13 |
+| rule-coverage/statesNortheast.json | 13 |
+| rule-coverage/statesSouthAtlantic.json | 14 |
 | rule-coverage/statesSouthCentral.json | 33 |
-| rule-coverage/statesWest.json | 23 |
+| rule-coverage/statesWest.json | 25 |
 | rule-coverage/transfersAndUnmodeledRegimes.json | 6 |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (437 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (441 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -252,9 +252,9 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-07T20:39:48.198Z over 1237 authority entries (9 fetched live, 329 from cache).
+Committed ledger generated at 2026-09-07T21:03:05.412Z over 1249 authority entries (10 fetched live, 330 from cache).
 
-37 serious, 57 advisory, 1143 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 57 advisory, 1155 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
@@ -263,7 +263,7 @@ not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fideli
 | ELISION-PUNCTUATION | advisory | 7 |
 | EXACT | ok | 856 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 222 |
+| PDF-WORD-LEVEL | ok | 234 |
 | PUNCTUATION | advisory | 43 |
 | UNFETCHABLE | serious | 37 |
 

@@ -38,8 +38,23 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   higher Delaware tax from a smaller deduction; age-65 single moves from a
   $5,700 to a $5,750 deduction and MFJ with two age-65 filers from $11,400 to
   $11,500, which can lower tax. No whole-return accuracy claim; QSS mapping,
-  blindness, the 5.5% versus 5.55% bracket band, and other Delaware limbs remain
-  outside this repair.
+  blindness, and other Delaware limbs outside the deduction repair remain
+  approximated or unmodeled.
+- **Four-state 2026 parameter corrections (DE, HI, RI, UT):** aligned the 2026
+  state pack with primary sources for Delaware's §1102(a)(14) 5.55% band
+  ($25,000–$60,000), Hawaii's §235-2.4(a)(2)(F) standard deduction ($8,000 /
+  $16,000 for tax years beginning after 2025 through 2027), Rhode Island ADV
+  2025-22 TY2026 deduction ($11,200 / $22,400) and uniform schedule thresholds
+  ($82,050 / $186,450), and Utah enrolled S.B. 60 / §59-10-104 flat rate
+  (4.45%). Changes modeled subtotals only; no whole-return, credit, pension, or
+  QSS closure claim. Primary worksheets and engine output agree on representative
+  fixtures: DE $33,250/$36,500 ordinary income → tax 1,276 → 1,278.50; HI
+  $10,000/$20,000 income → tax 78.40/156.80 → 28/56; RI $220,000 income
+  single/MFJ → tax 9,473.63/8,820.72 → 9,374.64/8,703.76; UT $20,000 income →
+  tax 900 → 890. Residual scope unchanged: HI employer-pension distinction,
+  RI income-tested SS/retirement modifications, Utah §59-10-1042 Social Security
+  credit and other credits, and unsupported filing statuses remain unmodeled or
+  approximated.
 - **Maine 2026 standard deduction — age-65 addition and §5124-C(2) phase-out.** Reason: for tax
   years beginning 2026, 36 M.R.S. §5124-C(1-B) keeps Maine’s published basic
   ($15,700 / $31,400) and adopts the IRC §63(c)(3)/§63(f)(1) age additional
