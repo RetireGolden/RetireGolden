@@ -236,12 +236,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 268,
+          "line": 271,
           "note": null,
           "tests": [
             {
               "title": "forces an employer-plan distribution from a participant still seven years from retiring",
-              "line": 278
+              "line": 281
             }
           ]
         }
@@ -304,12 +304,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 194,
+          "line": 197,
           "note": "elected deferral with attainment-year IRA income",
           "tests": [
             {
               "title": "defers the full first-year amount even after an attainment-year IRA draw",
-              "line": 216
+              "line": 219
             }
           ]
         }
@@ -339,7 +339,7 @@
       "title": "Deferral of the first required minimum distribution to April 1",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attainment-year booking and requires an explicit opt-in for the April 1 path rather than inventing a household preference. The settled claim stops at the default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.",
+      "conventionRationale": "Paying in the attainment year is always permitted under Treas. Reg. 1.401(a)(9)-5(a)(3); the remaining engineering choice is only the default when no election is supplied. The engine defaults to attempting the first-year payment in the attainment year—when fully funded, the whole requirement is booked there—and requires an explicit opt-in for the whole-deferral April 1 path rather than inventing a household preference. Capacity-constrained default first-year payment and any unpaid remainder carried to the April 1 deadline year are registered at treas-reg-54-4974-1-f-first-year-rbd-excise-tax, without settling income recognition on that path here. The settled claim stops at the fully funded default and the clean elected path; an intervening attainment-year distribution is not part of either fixture.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -387,27 +387,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 70,
+          "line": 73,
           "note": "default books attainment-year without election",
           "tests": [
             {
               "title": "books the first-year amount in the attainment year when no deferral is elected",
-              "line": 84
+              "line": 87
             },
             {
               "title": "leaves the following year carrying one distribution rather than two under the default",
-              "line": 92
+              "line": 95
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 112,
+          "line": 115,
           "note": "clean elected owned-IRA April 1 deferral",
           "tests": [
             {
               "title": "holds the owned-IRA first-year amount until the following receipt year when elected",
-              "line": 130
+              "line": 133
             }
           ]
         }
@@ -613,16 +613,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 361,
+          "line": 364,
           "note": null,
           "tests": [
             {
               "title": "empties an eligible designated beneficiary's account in the tenth year",
-              "line": 377
+              "line": 380
             },
             {
               "title": "requires nothing inside the window that the life-expectancy rule would require",
-              "line": 388
+              "line": 391
             }
           ]
         }
@@ -979,12 +979,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
-          "line": 298,
+          "line": 452,
           "note": "living designated Roth employer-account owner past the ordinary RMD age",
           "tests": [
             {
               "title": "never creates a lifetime §4974 obligation for a living designated Roth account owner",
-              "line": 306
+              "line": 460
             }
           ]
         }
@@ -1047,12 +1047,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
-          "line": 269,
+          "line": 423,
           "note": "living Roth IRA owner past the ordinary RMD age",
           "tests": [
             {
               "title": "never creates a lifetime §4974 obligation for a living Roth IRA owner",
-              "line": 277
+              "line": 431
             }
           ]
         }
@@ -1078,8 +1078,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2023,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-21",
-      "dueOn": "2027-08-21",
+      "verifiedOn": "2026-09-06",
+      "dueOn": "2027-09-06",
       "implementedBy": [
         "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
@@ -1182,12 +1182,12 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 417,
+          "line": 420,
           "note": null,
           "tests": [
             {
               "title": "charges 25 percent when the whole required amount goes undistributed",
-              "line": 424
+              "line": 427
             }
           ]
         }
@@ -1222,8 +1222,18 @@
         },
         {
           "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(f)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        },
+        {
+          "kind": "regulation",
           "citation": "Treas. Reg. 54.4974-1(h)",
-          "url": "https://www.law.cornell.edu/cfr/text/26/54.4974-1"
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition",
+          "url": "https://www.govinfo.gov/content/pkg/CFR-2023-title26-vol19/pdf/CFR-2023-title26-vol19-sec54-4974-2.pdf"
         },
         {
           "kind": "formInstruction",
@@ -1773,12 +1783,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 316,
+          "line": 319,
           "note": null,
           "tests": [
             {
               "title": "divides by the beneficiary expectancy where the employee expectancy is the greater",
-              "line": 324
+              "line": 327
             }
           ]
         }
@@ -3328,16 +3338,16 @@
         },
         {
           "path": "packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts",
-          "line": 482,
+          "line": 485,
           "note": null,
           "tests": [
             {
               "title": "distributes nothing where the required amount rounds to zero cents",
-              "line": 503
+              "line": 506
             },
             {
               "title": "leaves the residue inert rather than working it down year by year",
-              "line": 522
+              "line": 525
             }
           ]
         }
@@ -3580,7 +3590,7 @@
     },
     {
       "id": "treas-reg-54-4974-1-f-first-year-rbd-excise-tax",
-      "title": "Deferred first-year RMD shortfall is taxed in the RBD year",
+      "title": "First-year RMD shortfall is taxed in the year containing its April 1 deadline",
       "classification": "settled",
       "errorDirection": null,
       "conventionRationale": null,
@@ -3589,12 +3599,10 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-25",
-      "dueOn": "2027-08-25",
+      "verifiedOn": "2026-09-06",
+      "dueOn": "2027-09-06",
       "implementedBy": [
-        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
-        "packages/engine/src/projection/simulate.ts",
-        "packages/engine/src/rmd/rmdShortfallExcise.ts"
+        "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts"
       ],
       "implementations": [
         {
@@ -3605,24 +3613,6 @@
               "line": 84
             }
           ]
-        },
-        {
-          "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
-            {
-              "name": "simulatePlan",
-              "line": 375
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/rmd/rmdShortfallExcise.ts",
-          "functions": [
-            {
-              "name": "computeRmdShortfallExcise",
-              "line": 311
-            }
-          ]
         }
       ],
       "fixtureFiles": [
@@ -3631,12 +3621,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/rmdShortfallExcise.test.ts",
-          "line": 132,
-          "note": "April 1 excise in the RBD year",
+          "line": 239,
+          "note": "April 1 excise in the deadline year",
           "tests": [
             {
-              "title": "books a missed deferred first amount in the RBD year beside the separate current RMD",
-              "line": 146
+              "title": "covers explicit deferral, no-option whole/partial miss, and rejects attainment-year excise",
+              "line": 251
             }
           ]
         }
@@ -3648,6 +3638,16 @@
           "kind": "regulation",
           "citation": "Treas. Reg. 54.4974-1(f)",
           "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(h)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition",
+          "url": "https://www.govinfo.gov/content/pkg/CFR-2023-title26-vol19/pdf/CFR-2023-title26-vol19-sec54-4974-2.pdf"
         }
       ]
     },

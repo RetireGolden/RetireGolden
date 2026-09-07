@@ -53,6 +53,9 @@ const START_BALANCE = 500_000
 const UNIFORM_LIFETIME_AT_73 = 26.5
 /** The whole first distribution calendar year's required amount. */
 const FIRST_YEAR_AMOUNT = START_BALANCE / UNIFORM_LIFETIME_AT_73
+/** Born 1952: 2026 is a December 31 deadline year (divisor 25.5 at age 74). */
+const GENERIC_EXCISE_OWNER_DOB = '1952-01-01'
+const GENERIC_EXCISE_RMD_AMOUNT = START_BALANCE / 25.5
 
 // --- 1. First-year April 1 deferral -----------------------------------------
 
@@ -416,13 +419,13 @@ const SHORTFALL_EXCISE_RATE = 0.25
 
 describeRule('irc-4974-rmd-shortfall-excise-tax', {
   readings: {
-    statuteImposes25PercentOfTheShortfall: FIRST_YEAR_AMOUNT * SHORTFALL_EXCISE_RATE,
+    statuteImposes25PercentOfTheShortfall: GENERIC_EXCISE_RMD_AMOUNT * SHORTFALL_EXCISE_RATE,
     rejectedZeroPenaltyReading: 0,
   },
   accepted: 'statuteImposes25PercentOfTheShortfall',
 }, ({ accepted, readings }) => {
   it('charges 25 percent when the whole required amount goes undistributed', () => {
-    const plan = singlePersonPlan({ dob: OWNER_DOB, planningAge: OWNER_PLANNING_AGE })
+    const plan = singlePersonPlan({ dob: GENERIC_EXCISE_OWNER_DOB, planningAge: OWNER_PLANNING_AGE })
     const annuity: Account = {
       type: 'annuity',
       id: 'qualified-annuity',
@@ -430,9 +433,9 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
       ownerPersonId: 'p1',
       annualReturnPct: 0,
       // `monthlyAmount` is 0, so the contract never pays whatever this says. 74
-      // rather than a deferred age because a qualified purchase that is not a
-      // QLAC may not defer past the owner's required beginning date, which for
-      // this 1953 birth is the year they turn 74.
+      // is the latest permissible start for a qualified purchase that is not a
+      // QLAC for this 1952-born owner (required beginning date April 1 after
+      // the year they attain age 73).
       startAge: 74,
       monthlyAmount: 0,
       colaPct: 0,
@@ -450,7 +453,7 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
     expect(first.year).toBe(2026)
     // A real shortfall: the required amount was fixed at the start-of-year
     // balance, and not a dollar of it came out.
-    expect(FIRST_YEAR_AMOUNT).toBeGreaterThan(0)
+    expect(GENERIC_EXCISE_RMD_AMOUNT).toBeGreaterThan(0)
     expect(first.rmd).toBe(0)
 
     expect(first.penalties).toBeCloseTo(accepted, 6)

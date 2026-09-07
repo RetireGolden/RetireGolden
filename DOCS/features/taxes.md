@@ -97,12 +97,20 @@ State brackets are a separate question and are still held nominal (see `params/s
   the otherwise-applicable rate; only a modeled grant or, for 2025-and-later tax years, one of the final
   regulation's two automatic-waiver fact patterns reaches zero
   (`treas-reg-54-4974-1-g-2-edb-ten-year-election-automatic-waiver`,
-  `treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver`). An opt-in first-year deferral holds the
-  attainment-year amount until April 1: no excise
-  is charged before that date, and a miss lands in the RBD year beside any separate current-year miss
-  (`treas-reg-54-4974-1-f-first-year-rbd-excise-tax`). Correction
-  evidence prices the excise only; the corrective account movement and its income character remain separate ledger
-  inputs. See [domain rules §6](../domain/domain-rules-reference/06-rmds-secure-20.md).
+  `treas-reg-54-4974-1-g-3-year-of-death-automatic-waiver`). The default first distribution calendar year
+  attempts payment in the attainment year; any unpaid remainder has no §4974 tax there and is taxed in the
+  calendar year containing its April 1 deadline beside that year's separate current-year miss. An opt-in
+  first-year deferral instead holds the whole amount until April 1 with zero attainment-year credit
+  (`treas-reg-54-4974-1-f-first-year-rbd-excise-tax`). When the default path fully funds the first-year
+  requirement, money outputs are unchanged but the public excise-detail row that previously carried
+  `reason: 'noShortfall'` with `taxYear: 2026` no longer appears — no first-year residual survives. The
+  deadline-year excise is exposed only when that calendar year is inside the simulation horizon; a projection
+  ending in the first distribution calendar year does not publish the carried remainder or a later excise row, and
+  no public pending-obligation field was added. For a default first-year miss, `rmdShortfallReliefElections`
+  must key the published obligation id with the April-deadline tax year — e.g.
+  `rmdShortfallObligationId(ownedIras, 2026, 2027)` — not the two-argument `…(ownedIras, 2026)` form that
+  resolves to `:tax-2026`. Correction evidence prices the excise only; the corrective account
+  movement and its income character remain separate ledger inputs. See [domain rules §6](../domain/domain-rules-reference/06-rmds-secure-20.md).
 - **QCD:** a modeled household QCD's qualified portion is excluded from ordinary income, and the gift counts toward an RMD when one is due. It
   is **not** conditional on an RMD: the pre-RMD window from 70½ (resolved from the birth month at annual
   granularity — attained 71, or attained 70 with a January–June birth month) to the applicable RMD age is open,

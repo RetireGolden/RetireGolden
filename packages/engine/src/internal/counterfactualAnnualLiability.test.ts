@@ -150,6 +150,7 @@ function bindings(): SimulatorAnnualPassStateBindings {
       distributionCalendarYear: 2025,
       dueYear: 2026,
       requiredAmount: 4_000,
+      distributedBeforeDueYear: 0,
     }]]),
     namedQcdOffsetConsumedByDonor: new Map([['p1', 1_200]]),
     namedQcdOffsetHistoryUnprovable: new Set(['p2']),

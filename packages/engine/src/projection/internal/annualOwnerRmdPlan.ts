@@ -104,6 +104,7 @@ export function annualOwnerRmdPlan(
   const rmdObligationByAccount = new Map<string, number>()
   const currentRmdRequiredByApplicablePlan = new Map<string, number>()
   const currentRmdDistributedByApplicablePlan = new Map<string, number>()
+  const firstYearRequiredByApplicablePlan = new Map<string, number>()
   const applicablePlanByKey = new Map<string, RmdApplicablePlan>()
   const unmetAggregableRmdByApplicablePlan = new Map<string, number>()
   const iraRmdRequiredByOwner = new Map<string, number>()
@@ -116,7 +117,7 @@ export function annualOwnerRmdPlan(
   // Map insertion order is observable and intentionally preserved.
   for (const [planKey, deferred] of deferredShadow) {
     if (deferred.dueYear !== year) continue
-    let distributedByDeadline = 0
+    let distributedByDeadline = deferred.distributedBeforeDueYear
     for (const state of balances) {
       if (distributedByDeadline >= deferred.requiredAmount - epsilon) break
       if (state.account.type !== 'traditional') continue
@@ -193,6 +194,7 @@ export function annualOwnerRmdPlan(
         distributionCalendarYear: year,
         dueYear: year + 1,
         requiredAmount: (existing?.requiredAmount ?? 0) + rmd,
+        distributedBeforeDueYear: 0,
       }
       deferredShadow.set(applicablePlanKey, value)
       deferredFirstRmdOperations.push({
@@ -210,9 +212,12 @@ export function annualOwnerRmdPlan(
       continue
     }
     rmdObligationByAccount.set(state.account.id, rmd)
-    currentRmdRequiredByApplicablePlan.set(
+    const requiredByApplicablePlan = firstDistributionCalendarYear
+      ? firstYearRequiredByApplicablePlan
+      : currentRmdRequiredByApplicablePlan
+    requiredByApplicablePlan.set(
       applicablePlanKey,
-      (currentRmdRequiredByApplicablePlan.get(applicablePlanKey) ?? 0) + rmd,
+      (requiredByApplicablePlan.get(applicablePlanKey) ?? 0) + rmd,
     )
     if (applicablePlan.kind === 'ownedTraditionalIras') {
       iraRmdRequiredByOwner.set(ownerId, (iraRmdRequiredByOwner.get(ownerId) ?? 0) + rmd)
@@ -267,6 +272,28 @@ export function annualOwnerRmdPlan(
         (iraRmdUnsatisfiedByOwner.get(applicablePlan.payeePersonId) ?? 0) + remaining,
       )
     }
+  }
+
+  for (const [applicablePlanKey, requiredAmount] of firstYearRequiredByApplicablePlan) {
+    const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
+    const distributedBeforeDueYear = Math.min(
+      requiredAmount,
+      currentRmdDistributedByApplicablePlan.get(applicablePlanKey) ?? 0,
+    )
+    if (requiredAmount - distributedBeforeDueYear <= epsilon) continue
+    const value: SimulatorAnnualPassDeferredFirstRmd = {
+      applicablePlan,
+      distributionCalendarYear: year,
+      dueYear: year + 1,
+      requiredAmount,
+      distributedBeforeDueYear,
+    }
+    deferredShadow.set(applicablePlanKey, value)
+    deferredFirstRmdOperations.push({
+      kind: 'set',
+      applicablePlanKey,
+      value,
+    })
   }
 
   for (const [applicablePlanKey, requiredAmount] of currentRmdRequiredByApplicablePlan) {

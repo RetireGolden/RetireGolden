@@ -116,12 +116,10 @@ describe('simulatePlan owner RMD duplicate account IDs', () => {
       amountPlanDollars: duplicateObligation + distinctObligation,
       identities: [{ entityKind: 'requiredDistributionPool', personId: 'p1' }],
     })])
-    expect(year.rmdShortfallExciseDetails).toEqual([expect.objectContaining({
-      requiredAmount: duplicateObligation + distinctObligation,
-      distributedByDeadline: duplicateObligation + distinctObligation,
-      shortfall: 0,
-      tax: 0,
-    })])
+    // A fully funded first distribution calendar year publishes no §4974 detail
+    // in the attainment year; the excise deadline is April 1 of the next year.
+    expect(year.rmdShortfallExciseTax).toBe(0)
+    expect(year.rmdShortfallExciseDetails).toEqual([])
     expect(year.cashFlow?.reconciliation).toMatchObject({
       status: 'reconciled',
       cash: { differencePlanDollars: 0 },

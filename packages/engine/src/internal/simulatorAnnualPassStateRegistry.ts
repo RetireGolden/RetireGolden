@@ -101,6 +101,7 @@ function cloneDeferredFirstRmd(
     distributionCalendarYear: value.distributionCalendarYear,
     dueYear: value.dueYear,
     requiredAmount: value.requiredAmount,
+    distributedBeforeDueYear: value.distributedBeforeDueYear,
   }
 }
 

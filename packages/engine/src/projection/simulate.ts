@@ -210,10 +210,10 @@ export interface SimulateOptions {
    */
   captureAnnualCashFlow?: boolean
   /**
-   * Opt-in first-RMD deferrals. The distribution-calendar-year amount is held
-   * until April 1 of the following year; default projections continue to take
-   * it in the attainment year. A missed April 1 amount is taxed under §4974 in
-   * the following (RBD) year, never in the attainment year.
+   * Opt-in first-RMD deferrals. The distribution-calendar-year amount is held until April 1
+   * of the following year; default projections attempt it in the attainment year and carry
+   * any unpaid remainder — with its bounded attainment-year credit — to the April 1 deadline
+   * year for §4974; a missed April 1 amount is taxed in the following (RBD) year, never in the attainment year.
    */
   rmdFirstYearDeferrals?: readonly Readonly<{
     distributionCalendarYear: number

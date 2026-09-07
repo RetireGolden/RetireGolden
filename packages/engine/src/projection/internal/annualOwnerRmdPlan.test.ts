@@ -93,6 +93,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
       distributionCalendarYear: 2025,
       dueYear: YEAR,
       requiredAmount: 10_000,
+      distributedBeforeDueYear: 4_000,
     }]])
     const current = requiredMinimumDistribution(
       pack,
@@ -111,7 +112,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
       deferredFirstRmdByApplicablePlan: deferred,
     })
 
-    expect(result.rmdTakeByAccount.get('ira')).toBe(10_000 + current)
+    expect(result.rmdTakeByAccount.get('ira')).toBe(6_000 + current)
     expect(result.rmdShortfallObligations).toHaveLength(2)
     expect(result.rmdShortfallObligations[0]).toMatchObject({
       distributionCalendarYear: 2025,
@@ -178,6 +179,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
           distributionCalendarYear: YEAR,
           dueYear: YEAR + 1,
           requiredAmount: firstRmd,
+          distributedBeforeDueYear: 0,
         },
       },
       {
@@ -188,6 +190,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
           distributionCalendarYear: YEAR,
           dueYear: YEAR + 1,
           requiredAmount: firstRmd + secondRmd,
+          distributedBeforeDueYear: 0,
         },
       },
       {
@@ -198,6 +201,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
           distributionCalendarYear: YEAR,
           dueYear: YEAR + 1,
           requiredAmount: leftAssociated,
+          distributedBeforeDueYear: 0,
         },
       },
     ])
@@ -218,12 +222,14 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
       distributionCalendarYear: YEAR - 1,
       dueYear: YEAR,
       requiredAmount: 1,
+      distributedBeforeDueYear: 0,
     }
     const untouchedValue = {
       applicablePlan: untouchedPlan,
       distributionCalendarYear: YEAR,
       dueYear: YEAR + 1,
       requiredAmount: 2,
+      distributedBeforeDueYear: 0,
     }
     const deferred = new Map([
       [key, deferredValue],
@@ -259,6 +265,7 @@ describe('annualOwnerRmdPlan — deferral state machine', () => {
         distributionCalendarYear: YEAR,
         dueYear: YEAR + 1,
         requiredAmount: currentRmd,
+        distributedBeforeDueYear: 0,
       },
     })
     if (setOperation.kind !== 'set') throw new Error('expected a set operation')
@@ -307,6 +314,45 @@ describe('annualOwnerRmdPlan — aggregation and ordering', () => {
     expect(result.rmdTakeByAccount.get('duplicate')).toBe(318_000 / 26.5)
     logical[0]!.balance -= result.rmdTakeByAccount.get('duplicate')!
     expect(physical.map((state) => state.balance)).toEqual([255_000, 51_000])
+  })
+
+  it('records default first-year carry credit including sweep dollars from a partial aggregable pool', () => {
+    const owner = person('1953-01-01')
+    const applicablePlan = ownedPlan(owner.id)
+    const applicablePlanKey = rmdApplicablePlanKey(applicablePlan)
+    // Pub. 590-B Uniform Lifetime Table divisor at age 73 is 26.5.
+    const totalRequirement = 265_000 / 26.5 + 26_500 / 26.5
+    const directTake = 26_500 / 26.5
+    const sweepTake = 4_000
+    const totalCredit = directTake + sweepTake
+
+    const result = call({
+      balances: [ira('first', 0), ira('second', 5_000)],
+      startOfYearBalance: new Map([
+        ['first', 265_000],
+        ['second', 26_500],
+      ]),
+      people: [owner],
+      personById: new Map([[owner.id, owner]]),
+      stateOf: () => ({ personId: owner.id, ageAttained: 73, alive: true }),
+    })
+
+    expect([...result.rmdTakeByAccount]).toEqual([['second', totalCredit]])
+    expect(result.deferredFirstRmdOperations).toEqual([
+      {
+        kind: 'set',
+        applicablePlanKey,
+        value: {
+          applicablePlan,
+          distributionCalendarYear: YEAR,
+          dueYear: YEAR + 1,
+          requiredAmount: totalRequirement,
+          distributedBeforeDueYear: totalCredit,
+        },
+      },
+    ])
+    expect(result.iraRmdRequiredByOwner.get(owner.id)).toBe(totalRequirement)
+    expect(result.iraRmdUnsatisfiedByOwner.get(owner.id)).toBe(totalRequirement - totalCredit)
   })
 
   it('sweeps an empty owned IRA requirement into the next IRA in plan order', () => {

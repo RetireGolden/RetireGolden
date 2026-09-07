@@ -112,6 +112,7 @@ function state(plan?: Readonly<Plan>): SimulatorAnnualPassStateBindings {
       distributionCalendarYear: TAX_YEAR - 1,
       dueYear: TAX_YEAR,
       requiredAmount: 4_000,
+      distributedBeforeDueYear: 0,
     }]]),
     namedQcdOffsetConsumedByDonor: new Map(),
     namedQcdOffsetHistoryUnprovable: new Set(),

@@ -26,11 +26,7 @@
   create a fresh §4974 shortfall each year. Sources: [26 U.S.C. §4974](https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleD-chap43-sec4974.htm),
   [Treas. Reg. §54.4974-1 / T.D. 10001](https://www.govinfo.gov/content/pkg/FR-2024-07-19/pdf/2024-14542.pdf), and
   [2025 Form 5329 instructions](https://www.irs.gov/pub/irs-pdf/i5329.pdf).
-- **First-year April 1 split.** A first distribution-calendar-year amount elected for April 1 of the following
-  year has no §4974 tax in the attainment year because its deadline has not passed. If April 1 is missed, the
-  excise is imposed in the RBD year on that deferred amount; that year's separate December 31 RMD can create a
-  second shortfall. The tax year is therefore the year containing the due date, not always the year whose balance
-  and divisor produced the amount (`treas-reg-54-4974-1-f-first-year-rbd-excise-tax`).
+- **First-year April 1 split.** The default projection attempts the first distribution-calendar-year amount in the attainment year. Any unpaid remainder keeps the April 1 deadline and has no §4974 tax in the attainment year; the excise is imposed in the calendar year containing that deadline on the residual shortfall when that year is inside the simulation horizon. A projection ending in the first distribution calendar year does not publish the carried remainder or a later excise row, and no public pending-obligation field was added. An opt-in `rmdFirstYearDeferrals` election instead holds the whole amount until April 1 with zero attainment-year credit. That deadline year also has its own separate December 31 RMD, which can create a second shortfall. The tax year is therefore the year containing the due date, not always the year whose balance and divisor produced the amount (`treas-reg-54-4974-1-f-first-year-rbd-excise-tax`).
 - **Aggregation and the unmet-amount sweep.** An IRA's RMD is calculated separately per account, but the sum may
   be taken from any one or more of the owner's IRAs — so an IRA too small to cover its own calculated amount
   leaves a shortfall the owner's other IRAs must still distribute rather than extinguishing it. The ledger sweeps

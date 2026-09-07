@@ -19,9 +19,9 @@ import {
 } from './simulate.test-support.js'
 
 describe('healthcare and penalties', () => {
-  // Independent worksheet: first-year RMD = 500,000 / 26.5; the qualified
-  // annuity leaves 8,000 timely distributed, so the §4974 excise is
-  // (500,000 / 26.5 - 8,000) × 25%. IRC 275(a)(6) leaves federal AGI at
+  // Independent worksheet: 1952 owner age 74 in 2026, RMD = 500,000 / 25.5;
+  // the qualified annuity leaves 8,000 timely distributed, so the §4974 excise is
+  // (500,000 / 25.5 - 8,000) × 25%. IRC 275(a)(6) leaves federal AGI at
   // 8,000; deducting the chapter 43 tax would instead reduce it by that excise.
   // Taxable income is zero after the standard and age/senior deductions — still
   // not 8,000 minus the excise.
@@ -33,9 +33,9 @@ describe('healthcare and penalties', () => {
         magi: 8_000,
       },
       rejectedExciseDeductionReducesFederalBase: {
-        agi: 8_000 - (500_000 / 26.5 - 8_000) * 0.25,
+        agi: 8_000 - (500_000 / 25.5 - 8_000) * 0.25,
         taxableIncome: 0,
-        magi: 8_000 - (500_000 / 26.5 - 8_000) * 0.25,
+        magi: 8_000 - (500_000 / 25.5 - 8_000) * 0.25,
       },
     },
     accepted: 'chapter43ExciseDoesNotReduceFederalBase',
@@ -43,7 +43,7 @@ describe('healthcare and penalties', () => {
   }, ({ accepted, readings }) => {
     it('keeps a chapter 43 RMD-shortfall excise out of the income-tax base', () => {
       const plan = basePlan()
-      plan.household.people[0]!.dob = '1953-06-15'
+      plan.household.people[0]!.dob = '1952-06-15'
       plan.household.people[0]!.retirementAge = null
       const sourceEmployerPlan = traditional(500_000)
       plan.accounts = [
@@ -73,7 +73,7 @@ describe('healthcare and penalties', () => {
         horizonEndYear: 2026,
         taxCalculator: createFederalTaxCalculator(),
       }).years[0]!
-      const excise = (500_000 / 26.5 - 8_000) * 0.25
+      const excise = (500_000 / 25.5 - 8_000) * 0.25
       const observed = {
         agi: year.advisoryFederalTax!.detail.agi,
         taxableIncome: year.advisoryFederalTax!.detail.taxableIncome,

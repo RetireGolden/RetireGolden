@@ -1,58 +1,62 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-owner-rmd",
-  "why": "Measured reach for the pure annual owner-RMD planner and its grouped logical-account callsite. Block X exercises ordered first-year deferral state, April-1 priority, current owner calculations, IRA and 403(b) sweeps, isolated employer plans, joint-life spouse selection, dead-owner exclusion, residual shortfalls, and a compatible duplicate physical pair that reaches the seam as one 318,000 logical account and produces one 12,000 RMD. Focused tests separately pin repeated-id rejection, impossible hostile result ordering via valueOf(), container freshness, and annual-pass rollback.",
+  "why": "Measured reach for the pure annual owner-RMD planner and its grouped logical-account callsite. Block X exercises ordered first-year deferral state, April-1 priority, current owner calculations, default first-year attempt routing with credited residual carry, IRA and 403(b) sweeps, isolated employer plans, joint-life spouse selection, dead-owner exclusion, residual shortfalls, and a compatible duplicate physical pair that reaches the seam as one 318,000 logical account and produces one 12,000 RMD. Focused tests separately pin repeated-id rejection, impossible hostile result ordering via valueOf(), container freshness, and annual-pass rollback.",
   "entries": [
     {
       "id": "A.april1",
       "label": "due first-year obligation consumes logical capacity before current-year amounts and queues deletion",
       "file": "projection/internal/annualOwnerRmdPlan.ts",
       "lines": [
-        115,
-        154
+        116,
+        155
       ],
       "anchors": [
         {
-          "line": 117,
+          "line": 118,
           "text": "for (const [planKey, deferred] of deferredShadow) {"
         },
         {
-          "line": 130,
+          "line": 131,
           "text": "const take = Math.min(capacity, deferred.requiredAmount - distributedByDeadline)"
         },
         {
-          "line": 153,
+          "line": 154,
           "text": "deferredFirstRmdOperations.push({ kind: 'delete', applicablePlanKey: planKey })"
         }
       ]
     },
     {
       "id": "B.current",
-      "label": "one current RMD calculation per logical id and ordered cumulative first-year deferral writes",
+      "label": "one current RMD calculation per logical id, default first-year attempt routing, and ordered cumulative deferral-election writes",
       "file": "projection/internal/annualOwnerRmdPlan.ts",
       "lines": [
-        156,
-        239
+        157,
+        244
       ],
       "anchors": [
         {
-          "line": 157,
+          "line": 158,
           "text": "for (const state of balances) {"
         },
         {
-          "line": 171,
+          "line": 172,
           "text": "const ownerDobYear = socialSecurityDobParts(owner).y"
         },
         {
-          "line": 195,
+          "line": 196,
           "text": "requiredAmount: (existing?.requiredAmount ?? 0) + rmd,"
         },
         {
-          "line": 220,
+          "line": 215,
+          "text": "const requiredByApplicablePlan = firstDistributionCalendarYear"
+        },
+        {
+          "line": 225,
           "text": "const alreadyTaken = rmdTakeByAccount.get(state.account.id) ?? 0"
         },
         {
-          "line": 234,
+          "line": 239,
           "text": "unmetAggregableRmdByApplicablePlan.set("
         }
       ],
@@ -63,21 +67,56 @@
       "label": "same-owner IRA and explicit 403(b) logical-account sweep",
       "file": "projection/internal/annualOwnerRmdPlan.ts",
       "lines": [
-        241,
-        270
+        246,
+        275
       ],
       "anchors": [
         {
-          "line": 242,
+          "line": 247,
           "text": "for (const [applicablePlanKey, unmet] of unmetAggregableRmdByApplicablePlan) {"
         },
         {
-          "line": 256,
+          "line": 261,
           "text": "const swept = Math.min(capacity, remaining)"
         },
         {
-          "line": 264,
+          "line": 269,
           "text": "if (remaining > epsilon && applicablePlan.kind === 'ownedTraditionalIras') {"
+        }
+      ]
+    },
+    {
+      "id": "C.default-firstyear-credited-residual",
+      "label": "default first-year attempt credits partial distribution into deferred cross-year carry",
+      "file": "projection/internal/annualOwnerRmdPlan.ts",
+      "lines": [
+        277,
+        297
+      ],
+      "anchors": [
+        {
+          "line": 277,
+          "text": "for (const [applicablePlanKey, requiredAmount] of firstYearRequiredByApplicablePlan) {"
+        },
+        {
+          "line": 279,
+          "text": "const distributedBeforeDueYear = Math.min("
+        },
+        {
+          "line": 283,
+          "text": "if (requiredAmount - distributedBeforeDueYear <= epsilon) continue"
+        },
+        {
+          "line": 284,
+          "text": "const value: SimulatorAnnualPassDeferredFirstRmd = {"
+        },
+        {
+          "line": 291,
+          "text": "deferredShadow.set(applicablePlanKey, value)"
+        },
+        {
+          "line": 292,
+          "text": "deferredFirstRmdOperations.push({"
         }
       ]
     },
@@ -86,24 +125,24 @@
       "label": "current-year plan obligations and fresh result containers",
       "file": "projection/internal/annualOwnerRmdPlan.ts",
       "lines": [
-        272,
-        295
+        299,
+        322
       ],
       "anchors": [
         {
-          "line": 272,
+          "line": 299,
           "text": "for (const [applicablePlanKey, requiredAmount] of currentRmdRequiredByApplicablePlan) {"
         },
         {
-          "line": 282,
+          "line": 309,
           "text": "distributedByDeadline:"
         },
         {
-          "line": 287,
+          "line": 314,
           "text": "return {"
         },
         {
-          "line": 294,
+          "line": 321,
           "text": "deferredFirstRmdOperations,"
         }
       ]

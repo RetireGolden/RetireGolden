@@ -208,6 +208,7 @@ function fixture(): {
         distributionCalendarYear: 2029,
         dueYear: 2030,
         requiredAmount: 12_500,
+        distributedBeforeDueYear: 3_250,
       }],
       ['["employer-plan","employer"]', {
         applicablePlan: {
@@ -217,6 +218,7 @@ function fixture(): {
         distributionCalendarYear: 2028,
         dueYear: 2029,
         requiredAmount: 4_500,
+        distributedBeforeDueYear: 900,
       }],
     ]),
     namedQcdOffsetConsumedByDonor: new Map([
@@ -395,6 +397,7 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
     payeePersonId: string
   }).payeePersonId = 'mutated-owner'
   deferredFirstRmd.requiredAmount = 503
+  deferredFirstRmd.distributedBeforeDueYear = 505
   bindings.deferredFirstRmdByApplicablePlan
     .delete('["employer-plan","employer"]')
   bindings.deferredFirstRmdByApplicablePlan.set('["added"]', {
@@ -402,6 +405,7 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
     distributionCalendarYear: 2030,
     dueYear: 2031,
     requiredAmount: 504,
+    distributedBeforeDueYear: 506,
   })
   bindings.namedQcdOffsetConsumedByDonor.set('donor', 1_900)
   bindings.namedQcdOffsetConsumedByDonor.delete('deleted-donor')
