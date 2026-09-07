@@ -138,12 +138,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 727,
+          "line": 744,
           "note": null,
           "tests": [
             {
               "title": "moves modeled preferential gain into the 20 percent layer above the second breakpoint",
-              "line": 731
+              "line": 748
             }
           ]
         }
@@ -286,12 +286,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1883,
+          "line": 1902,
           "note": null,
           "tests": [
             {
               "title": "runs qualified dividends through the preferential stack",
-              "line": 1887
+              "line": 1906
             }
           ]
         }
@@ -359,23 +359,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 703,
+          "line": 720,
           "note": null,
           "tests": [
             {
               "title": "measures the preferential bands from the top of ordinary income",
-              "line": 707
+              "line": 724
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2158,
+          "line": 2178,
           "note": null,
           "tests": [
             {
               "title": "starts the 15% layer at the breakpoint prescribed for that year",
-              "line": 2162
+              "line": 2182
             }
           ]
         }
@@ -427,23 +427,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 801,
+          "line": 820,
           "note": "zero-percent layer dollar",
           "tests": [
             {
               "title": "prices a zero-layer marginal dollar at 15 percent inside the linearized solve",
-              "line": 807
+              "line": 826
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 857,
+          "line": 876,
           "note": "twenty-percent layer dollar",
           "tests": [
             {
               "title": "prices a twenty-percent-layer marginal dollar at 15 percent inside the linearized solve",
-              "line": 863
+              "line": 882
             }
           ]
         }
@@ -511,12 +511,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1061,
+          "line": 1080,
           "note": null,
           "tests": [
             {
               "title": "keeps original basis on a post-death taxable sale while the estate metric assumes step-up",
-              "line": 1070
+              "line": 1089
             }
           ]
         }
@@ -589,16 +589,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 463,
+          "line": 480,
           "note": null,
           "tests": [
             {
               "title": "keeps municipal-bond interest out of federal AGI and taxable income by direct inclusion",
-              "line": 470
+              "line": 487
             },
             {
               "title": "raises AGI only by the taxable-Social-Security increment when munis enter provisional income",
-              "line": 487
+              "line": 504
             }
           ]
         }
@@ -666,12 +666,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 956,
+          "line": 975,
           "note": null,
           "tests": [
             {
               "title": "deducts a realized taxable-sale loss without a replacement-purchase fact",
-              "line": 970
+              "line": 989
             }
           ]
         }
@@ -900,12 +900,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 522,
+          "line": 539,
           "note": null,
           "tests": [
             {
               "title": "deducts only the annual cap and carries the rest forward",
-              "line": 526
+              "line": 543
             }
           ]
         }
@@ -953,12 +953,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 635,
+          "line": 652,
           "note": null,
           "tests": [
             {
               "title": "burns the annual allowance from the pool even when ordinary income is zero",
-              "line": 640
+              "line": 657
             }
           ]
         }
@@ -1031,12 +1031,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 605,
+          "line": 622,
           "note": null,
           "tests": [
             {
               "title": "threads the unabsorbed pool through simulatePlan into year-two capital-gains tax",
-              "line": 609
+              "line": 626
             }
           ]
         }
@@ -1184,7 +1184,7 @@
       "title": "Net investment income tax is the lesser of two amounts",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "The thresholds are not indexed, so this lesser-of record is static rather than annually indexed. This record settles only the 3.8 percent lesser-of calculation and fixed threshold selection once net investment income and MAGI are supplied. Construction of statutory IRC 1411(d) MAGI is a separate dependency; RetireGolden's shared foreign-exclusion aggregate is classified as approximated in sibling `irc-1411-d-modified-agi-foreign-exclusion-addback`. Effective from 2013 reflects statutory applicability; implementation verification uses the current 2026 parameter pack and does not certify other historical pack values or a complete historical return.",
+      "conventionRationale": "The thresholds are not indexed, so this lesser-of record is static rather than annually indexed. This record settles only the 3.8 percent lesser-of calculation and fixed threshold selection once net investment income and MAGI are supplied. Construction of statutory IRC 1411(d) MAGI is a separate dependency on sibling `irc-1411-d-modified-agi-foreign-exclusion-addback` (classification approximated): the direct calculator accepts an optional narrow field for the NIIT threshold leg and reuses the broad amount as a compatibility approximation only when that narrow field is omitted; the broad field alone feeds senior MAGI. Effective from 2013 reflects statutory applicability; implementation verification uses the current 2026 parameter pack and does not certify other historical pack values or a complete historical return.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1285,12 +1285,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2056,
+          "line": 2075,
           "note": null,
           "tests": [
             {
               "title": "leaves plan distributions out of net investment income but not out of modified AGI",
-              "line": 2060
+              "line": 2079
             }
           ]
         }
@@ -1343,12 +1343,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 267,
+          "line": 263,
           "note": null,
           "tests": [
             {
               "title": "separates broad senior MAGI from narrow NIIT MAGI at computeFederalTax",
-              "line": 276
+              "line": 272
             }
           ]
         }
@@ -1416,12 +1416,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 434,
+          "line": 451,
           "note": null,
           "tests": [
             {
               "title": "keeps tax-exempt interest out of investment income and out of the threshold leg",
-              "line": 438
+              "line": 455
             }
           ]
         }
@@ -1821,12 +1821,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2318,
+          "line": 2338,
           "note": "2027 positive indexation is a phantom OID character",
           "tests": [
             {
               "title": "records positive inflation accretion as OID in the cash-flow ledger",
-              "line": 2326
+              "line": 2346
             }
           ]
         }
@@ -1919,12 +1919,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2386,
+          "line": 2406,
           "note": "paired positive-inflation then deflation path; 2027 non-maturity",
           "tests": [
             {
               "title": "pins the engine output while distinguishing the deflation reading",
-              "line": 2395
+              "line": 2415
             }
           ]
         }

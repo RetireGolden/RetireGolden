@@ -304,6 +304,31 @@ describe('sizeRothConversion', () => {
       }
     })
 
+    it('transports narrow without top-level or nested ACA broad addback', () => {
+      const spy = vi.spyOn(federalTaxModule, 'computeFederalTax')
+      const sizing = input({
+        ordinaryIncomeBase: 50_000,
+        niitSection911A1NetAddback: 20_000,
+        aca: undefined,
+      })
+      const withoutNarrow = sizeRothConversion(
+        fill('irmaaTier', 1),
+        input({ ordinaryIncomeBase: 50_000, aca: undefined }),
+      )
+      expect(withoutNarrow.ok).toBe(true)
+      spy.mockClear()
+
+      const withNarrow = sizeRothConversion(fill('irmaaTier', 1), sizing)
+      expect(withNarrow.ok).toBe(true)
+      if (!withoutNarrow.ok || !withNarrow.ok) return
+      expect(withNarrow.amount).toBeCloseTo(withoutNarrow.amount, 1)
+      expect(spy.mock.calls.length).toBeGreaterThan(0)
+      for (const [callInput] of spy.mock.calls) {
+        expect(callInput.foreignExclusionAddback).toBeUndefined()
+        expect(callInput.niitSection911A1NetAddback).toBe(20_000)
+      }
+    })
+
     it('propagates a distinct narrow addback without changing the sizing metric', () => {
       const spy = vi.spyOn(federalTaxModule, 'computeFederalTax')
       const sizing = input({

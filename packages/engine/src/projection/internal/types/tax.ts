@@ -50,8 +50,10 @@ export interface TaxYearInput {
    * income and housing and §931/§933 possessions income (American Samoa, Guam,
    * the Northern Marianas, Puerto Rico). The engine carries one nonnegative
    * figure for all of them. It is not ordinary taxable income and never enters
-   * the AGI line. When omitted, `computeFederalTax` defaults to zero — NIIT can
-   * be understated and the senior deduction overstated. Supply this field
+   * the AGI line. When omitted, `computeFederalTax` defaults this broad addback
+   * to zero for senior MAGI and Social Security provisional income. The NIIT
+   * addback defaults to zero only when neither this field nor
+   * `niitSection911A1NetAddback` is supplied. Supply this field
    * whenever the household claims §§911, 931, or 933 exclusions, not only when
    * Social Security is in play. IRC §86 puts a foreign-exclusion amount into
    * Social Security provisional income; §151(d)(5)(C)(iii)(II) uses this

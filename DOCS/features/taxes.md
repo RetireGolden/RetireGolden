@@ -85,9 +85,13 @@ State brackets are a separate question and are still held nominal (see `params/s
   inputs: `foreignExclusionAddback` remains the broad §86/senior-MAGI carrier, while optional
   `niitSection911A1NetAddback` feeds only the NIIT threshold leg and the result exposes `niitMagi`.
   If the narrow input is omitted, the calculator reuses the broad value as the documented compatibility
-  approximation; explicit zero does not fall back. Direct Roth-conversion tax sizing preserves the same
-  distinction. The annual projection does not yet pass the internally resolved narrow value to tax
-  pricing, so annual planner results continue to use the compatibility path and are not recommendation-ready on this basis
+  approximation; explicit zero does not fall back. Direct Roth-conversion sizing carries
+  `foreignExclusionAddback` and `niitSection911A1NetAddback` into each `computeFederalTax` call it uses
+  to price a candidate amount, but its sizing metrics read only taxable income, ACA MAGI components, or
+  signed pre-floor AGI plus characterized tax-exempt interest — none of them reads `niit` or `niitMagi`,
+  and no NIIT-aware sizing amount correction is claimed. The annual projection does not yet pass the
+  internally resolved narrow value to tax pricing, so annual planner results continue to use the
+  compatibility path and are not recommendation-ready on this basis
   (`irc-1411-d-modified-agi-foreign-exclusion-addback`). The SALT phasedown itself is not yet wired —
   the cap binds without MAGI reduction today.
 - **NIIT** 3.8% of the lesser of net investment income or the nonnegative MAGI excess over $200k single / $250k MFJ (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the

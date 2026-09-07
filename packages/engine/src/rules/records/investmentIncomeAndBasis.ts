@@ -23,7 +23,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The thresholds are not indexed, so this lesser-of record is static rather than annually indexed. This record settles only the 3.8 percent lesser-of calculation and fixed threshold selection once net investment income and MAGI are supplied. Construction of statutory IRC 1411(d) MAGI is a separate dependency; RetireGolden\'s shared foreign-exclusion aggregate is classified as approximated in sibling `irc-1411-d-modified-agi-foreign-exclusion-addback`. Effective from 2013 reflects statutory applicability; implementation verification uses the current 2026 parameter pack and does not certify other historical pack values or a complete historical return.',
+      'The thresholds are not indexed, so this lesser-of record is static rather than annually indexed. This record settles only the 3.8 percent lesser-of calculation and fixed threshold selection once net investment income and MAGI are supplied. Construction of statutory IRC 1411(d) MAGI is a separate dependency on sibling `irc-1411-d-modified-agi-foreign-exclusion-addback` (classification approximated): the direct calculator accepts an optional narrow field for the NIIT threshold leg and reuses the broad amount as a compatibility approximation only when that narrow field is omitted; the broad field alone feeds senior MAGI. Effective from 2013 reflects statutory applicability; implementation verification uses the current 2026 parameter pack and does not certify other historical pack values or a complete historical return.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

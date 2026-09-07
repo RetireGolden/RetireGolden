@@ -260,10 +260,6 @@ describe('modified adjusted gross income', () => {
   //   $20,000 section 911(a)(1) excluded earned income - $5,000 section 911(d)(6)
   //   allocable reduction -> NIIT MAGI $200,000 and NIIT 0; gross $20,000 as the
   //   NIIT amount gives NIIT MAGI $205,000 and NIIT $190.
-  function withNiitNetAddback(partial: Partial<TaxYearInput>): TaxYearInput {
-    return input(partial)
-  }
-
   describeRule('irc-1411-d-modified-agi-foreign-exclusion-addback', {
     readings: {
       acceptedCharacterized: { niit: 0, seniorDeduction: 4_500 },
@@ -281,29 +277,29 @@ describe('modified adjusted gross income', () => {
       const broadForeignExclusionAddback = 30_000
       const narrowNiitNetAddback = 20_000
 
-      const highAccepted = computeFederalTax(withNiitNetAddback({
+      const highAccepted = computeFederalTax(input({
         ...shared,
         ordinaryIncome: 180_000,
         foreignExclusionAddback: broadForeignExclusionAddback,
         niitSection911A1NetAddback: narrowNiitNetAddback,
       }))
-      const lowAccepted = computeFederalTax(withNiitNetAddback({
+      const lowAccepted = computeFederalTax(input({
         ...shared,
         ordinaryIncome: 70_000,
         foreignExclusionAddback: broadForeignExclusionAddback,
         niitSection911A1NetAddback: narrowNiitNetAddback,
       }))
-      const highProduced = computeFederalTax(withNiitNetAddback({
+      const highProduced = computeFederalTax(input({
         ...shared,
         ordinaryIncome: 180_000,
         foreignExclusionAddback: broadForeignExclusionAddback,
       }))
-      const lowProduced = computeFederalTax(withNiitNetAddback({
+      const lowProduced = computeFederalTax(input({
         ...shared,
         ordinaryIncome: 70_000,
         foreignExclusionAddback: broadForeignExclusionAddback,
       }))
-      const lowWrongNarrowForBoth = computeFederalTax(withNiitNetAddback({
+      const lowWrongNarrowForBoth = computeFederalTax(input({
         ...shared,
         ordinaryIncome: 70_000,
         foreignExclusionAddback: narrowNiitNetAddback,
@@ -345,13 +341,13 @@ describe('modified adjusted gross income', () => {
 
       expect(netNiitAddback).toBe(15_000)
 
-      const allocationAccepted = computeFederalTax(withNiitNetAddback({
+      const allocationAccepted = computeFederalTax(input({
         ordinaryIncome: 185_000,
         taxableInterestIncome: 10_000,
         foreignExclusionAddback: section911A1ExcludedEarnedIncome,
         niitSection911A1NetAddback: netNiitAddback,
       }))
-      const allocationWrongGrossNiit = computeFederalTax(withNiitNetAddback({
+      const allocationWrongGrossNiit = computeFederalTax(input({
         ordinaryIncome: 185_000,
         taxableInterestIncome: 10_000,
         foreignExclusionAddback: section911A1ExcludedEarnedIncome,
@@ -388,6 +384,27 @@ describe('modified adjusted gross income', () => {
       expect(d.magi).toBe(210_000)
       expect(d.niitMagi).toBe(180_000)
       expect(d.niit).toBe(0)
+    })
+
+    // Field-presence contract only: positive narrow without broad. Worksheet from
+    // IRC 1411(d) and sibling irc-1411-d-modified-agi-foreign-exclusion-addback
+    // (same $20,000 narrow / $10,000 investment-income setup as the describeRule
+    // vector, but broad omitted). AGI $190,000 with $10,000 included interest;
+    // narrow $20,000 -> senior/broad MAGI $190,000, NIIT MAGI $210,000, NIIT
+    // $380. Does not certify full exclusion eligibility or gross/net mapping.
+    it('accepts positive narrow addback without broad and without silent broad default', () => {
+      const narrowOnly = {
+        ordinaryIncome: 190_000,
+        taxableInterestIncome: 10_000,
+        niitSection911A1NetAddback: 20_000,
+      }
+      const narrowOnlyInput = input(narrowOnly)
+      expect(narrowOnlyInput.foreignExclusionAddback).toBeUndefined()
+      const d = computeFederalTax(narrowOnlyInput)
+      expect(d.agi).toBe(190_000)
+      expect(d.magi).toBe(190_000)
+      expect(d.niitMagi).toBe(210_000)
+      expect(d.niit).toBe(380)
     })
 
     // Unsaturated §86 control: ordinary 0, benefits 20k, broad addback 30k.
@@ -772,6 +789,7 @@ describe('capital gains stacking', () => {
   it('applies NIIT over the MAGI threshold', () => {
     const d = computeFederalTax(input({ ordinaryIncome: 150_000, capitalGains: 100_000 }))
     expect(d.magi).toBe(250_000)
+    expect(d.niitMagi).toBe(250_000)
     expect(d.niit).toBeCloseTo(1_900, 6) // 3.8% × min(100k, 50k over 200k)
     expect(d.capitalGainsTax).toBeCloseTo(15_000, 6) // all gains in the 15% layer
     expect(d.ordinaryTax).toBeCloseTo(24_734, 6)
@@ -789,6 +807,7 @@ describe('capital gains stacking', () => {
       }),
     )
     expect(d.magi).toBe(300_000)
+    expect(d.niitMagi).toBe(300_000)
     expect(d.niit).toBeCloseTo(65_000 * 0.038, 6)
   })
 })
@@ -2063,7 +2082,8 @@ describe('registered rules: rate schedules, deductions, AMT, NIIT', () => {
         taxableInterestIncome: 20_000,
       }))
 
-      expect(result.magi).toBe(270_000) // the distribution still lifts the MAGI leg
+      expect(result.magi).toBe(270_000)
+      expect(result.niitMagi).toBe(270_000) // the distribution still lifts the NIIT threshold leg
       expect(result.niit).toBeCloseTo(accepted, 6)
       expect(result.niit).not.toBeCloseTo(readings.distributionIsInvestmentIncome, 6)
     })
