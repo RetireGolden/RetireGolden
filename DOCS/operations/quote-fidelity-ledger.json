@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-07T19:59:44.874Z",
+  "generatedAt": "2026-09-07T20:39:48.198Z",
   "recordCount": 437,
   "urlCount": 338,
   "fetched": 9,
   "cached": 329,
   "entryCount": 1237,
   "counts": {
-    "EXACT": 857,
+    "EXACT": 856,
     "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 222,
-    "ELISION-EXACT": 64,
+    "ELISION-EXACT": 65,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
@@ -3159,12 +3159,12 @@
     },
     {
       "id": "irc-72-t-3-B-sepp-separation",
-      "citation": "IRC 72(e)(5)(D)(ii)(II)-(III)",
+      "citation": "IRC 72(e)(5)(D)(ii), (II)-(III)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "e98f9201d9d12be4",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "quoteSha256": "3f858008c4a3abe8",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -3202,7 +3202,7 @@
       "citation": "IRC 72(t)(4)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "1288a9983116b0ae",
+      "quoteSha256": "c8a47b9d00116ebd",
       "verdict": "PUNCTUATION",
       "detail": "matches only after: fractions",
       "diagnosis": null
@@ -12577,12 +12577,6 @@
       "id": "treas-reg-54-4974-1-f-first-year-rbd-excise-tax",
       "citation": "Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition",
       "host": "www.govinfo.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
-      "id": "irc-72-t-4-sepp-modification-recapture",
-      "citation": "IRC 72(t)(4)(A)",
-      "host": "uscode.house.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {

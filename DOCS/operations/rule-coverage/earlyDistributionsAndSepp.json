@@ -163,20 +163,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/actions/traditionalEmployerPlanPenaltyPrerequisite.test.ts",
-          "line": 1151,
+          "line": 1182,
           "note": null,
           "tests": [
             {
               "title": "refuses the age-50 claim rather than adjudicating it",
-              "line": 1177
+              "line": 1208
             },
             {
               "title": "does not quietly substitute age 50 into the Rule of 55 assessment",
-              "line": 1188
+              "line": 1219
             },
             {
               "title": "accepts the age-55 separation it does model, so the refusal is the age-50 substitution",
-              "line": 1202
+              "line": 1233
             }
           ]
         }
@@ -849,8 +849,12 @@
           "note": null,
           "tests": [
             {
-              "title": "throws on a SEPP election that starts before separation",
-              "line": 591
+              "title": "does not apply the employer-plan SEPP exception when the series starts before separation",
+              "line": 611
+            },
+            {
+              "title": "provisional SEPP assessment after separation shows the date mutation is the discriminator",
+              "line": 622
             }
           ]
         }
@@ -865,7 +869,7 @@
         },
         {
           "kind": "statute",
-          "citation": "IRC 72(e)(5)(D)(ii)(II)-(III)",
+          "citation": "IRC 72(e)(5)(D)(ii), (II)-(III)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim"
         }
       ]
@@ -1334,7 +1338,7 @@
           "functions": [
             {
               "name": "seppAnnualAmount",
-              "line": 72
+              "line": 73
             }
           ]
         }
@@ -1357,20 +1361,20 @@
         },
         {
           "path": "packages/engine/src/strategies/sepp.test.ts",
-          "line": 196,
+          "line": 199,
           "note": null,
           "tests": [
             {
               "title": "amortizes the balance at the permitted rate over the permitted divisor",
-              "line": 221
+              "line": 224
             },
             {
               "title": "is not the straight-line figure the rmd method produces in its first year",
-              "line": 225
+              "line": 228
             },
             {
               "title": "does not amortize over a divisor the notice never permitted",
-              "line": 234
+              "line": 237
             }
           ]
         }
@@ -1508,7 +1512,7 @@
           "functions": [
             {
               "name": "seppAnnualAmount",
-              "line": 72
+              "line": 73
             }
           ]
         }
@@ -1547,15 +1551,15 @@
           "tests": [
             {
               "title": "pays the Single Life figure, which EXCEEDS the Uniform Lifetime figure",
-              "line": 162
+              "line": 165
             },
             {
               "title": "reads the other permitted table off the same pack, so neither figure is a guess",
-              "line": 171
+              "line": 174
             },
             {
               "title": "holds the same direction at every age both tables publish a row for",
-              "line": 178
+              "line": 181
             }
           ]
         }
@@ -1602,7 +1606,7 @@
           "functions": [
             {
               "name": "SEPP_AMORTIZATION_RATE_PCT",
-              "line": 54
+              "line": 55
             }
           ]
         }
@@ -1613,20 +1617,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/sepp.test.ts",
-          "line": 242,
+          "line": 245,
           "note": null,
           "tests": [
             {
               "title": "uses the 5% floor of the ceiling, which no rate environment can breach",
-              "line": 256
+              "line": 259
             },
             {
               "title": "prices the series above what the superseded 120% ceiling would allow",
-              "line": 262
+              "line": 265
             },
             {
               "title": "defaults to the ceiling floor rather than requiring a rate argument",
-              "line": 272
+              "line": 275
             }
           ]
         }
@@ -2019,7 +2023,7 @@
           "functions": [
             {
               "name": "seppAnnualAmount",
-              "line": 72
+              "line": 73
             }
           ]
         }

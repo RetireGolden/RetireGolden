@@ -106,10 +106,10 @@ export const earlyDistributionAndSeppRecords = {
         'Paragraph (2)(A)(iv) shall not apply to any amount paid from a trust described in section 401(a) which is exempt from tax under section 501(a) or from a contract described in section 72(e)(5)(D)(ii) unless the series of payments begins after the employee separates from service.',
     }, {
       kind: 'statute',
-      citation: 'IRC 72(e)(5)(D)(ii)(II)-(III)',
+      citation: 'IRC 72(e)(5)(D)(ii), (II)-(III)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        '(II) purchased as part of a plan described in section 403(a), (III) described in section 403(b), or',
+        '(ii) from a contract- … (II) purchased as part of a plan described in section 403(a), (III) described in section 403(b), or',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -207,7 +207,7 @@ export const earlyDistributionAndSeppRecords = {
       citation: 'IRC 72(t)(4)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'If- (i) paragraph (1) does not apply to a distribution by reason of paragraph (2)(A)(iv), and (ii) the series of payments under such paragraph are subsequently modified (other than by reason of death or disability or a distribution to which paragraph (10) applies)- (I) before the close of the 5-year period beginning with the date of the first payment and after the employee attains age 59 1/2, or (II) before the employee attains age 59 1/2, the taxpayer’s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
+        'If- (i) paragraph (1) does not apply to a distribution by reason of paragraph (2)(A)(iv), and (ii) the series of payments under such paragraph are subsequently modified (other than by reason of death or disability or a distribution to which paragraph (10) applies)- (I) before the close of the 5-year period beginning with the date of the first payment and after the employee attains age 59 1/2, or (II) before the employee attains age 59 1/2, the taxpayer\'s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

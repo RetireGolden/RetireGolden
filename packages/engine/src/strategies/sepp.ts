@@ -23,22 +23,23 @@
  *
  * The life-expectancy divisor is the Single Life Table of Treas. Reg.
  * 1.401(a)(9)-9(b), carried in the parameter pack. Notice 2022-6 section
- * 3.02(a) permits exactly three tables — the Uniform Lifetime Table in its
- * Appendix A, that Single Life Table, and the Joint and Last Survivor Table of
- * 1.401(a)(9)-9(d) — and Single Life is the one the notice itself falls back
- * to when no beneficiary is named. Section 3.02(b) lets the Joint and Last
- * Survivor Table be used only against "the actual designated beneficiary of the
- * employee with respect to the account", and closes by saying that where there
- * is no designated beneficiary in a year, the Single Life Table is used for that
- * distribution year. The election modelled here carries no beneficiary, so
- * Single Life is the table.
+ * 3.02(a) permits exactly three tables for both supported methods — the Uniform
+ * Lifetime Table in its Appendix A, that Single Life Table, and the Joint and
+ * Last Survivor Table of 1.401(a)(9)-9(d). Section 3.02(b) requires the Joint
+ * and Last Survivor Table to use the actual designated beneficiary, and under
+ * the required minimum distribution method selects Single Life when no
+ * designated beneficiary exists in a future year. The election modelled here
+ * carries no beneficiary; the engine uses Single Life for both supported methods
+ * as an explicit convention among the permitted tables. The RMD method divides
+ * balance by that expectancy each year; fixed amortization uses the same table
+ * entry as the term in its interest-bearing annuity formula, degenerating to
+ * division only when the rate is zero.
  *
- * Note which way that cuts. The payment is the balance over the divisor, and
- * Single Life is the SHORTEST of the three at every age (17.2 years at 72,
- * against 27.4 in the notice's Uniform Lifetime Table), so this choice sizes the
- * LARGEST payment any permitted table would allow, not the smallest. Sizing
- * from the Uniform Lifetime Table instead would be equally permitted and would
- * shrink every payment.
+ * Note which way that cuts. Single Life is the SHORTEST of the three at every
+ * age (17.2 years at 72, against 27.4 in the notice's Uniform Lifetime Table),
+ * so this convention sizes the LARGEST payment any permitted table would allow,
+ * not the smallest. Sizing from the Uniform Lifetime Table instead would be
+ * permitted for fixed amortization and would shrink every payment.
  *
  * All three are unisex, which is why nothing here takes a sex: an SSA period
  * table indexed by sex is not among them, and the divisor it produces is not a

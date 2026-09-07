@@ -146,11 +146,14 @@ describeRule('notice-2022-6-3-02-a-permitted-life-expectancy-tables', {
   //
   // Single Life is the accepted reading because section 3.02(b) confines the
   // Joint and Last Survivor Table to an actual designated beneficiary of the
-  // account and leaves Single Life as the table for a distribution year with
-  // none, and the election modelled here carries no beneficiary. It is NOT
-  // accepted as a safety choice: nothing about it is conservative, and a
-  // fixture that let the reversed rationale stand would be pinning a sentence
-  // the arithmetic contradicts.
+  // account and, under the required minimum distribution method only, leaves
+  // Single Life as the table for a distribution year with none. Uniform
+  // Lifetime remains legally permitted for fixed amortization. The engine uses
+  // Single Life for both methods as an explicit convention; the election
+  // modelled here carries no beneficiary. It is NOT accepted as a safety
+  // choice: nothing about it is conservative, and a fixture that let the
+  // reversed rationale stand would be pinning a sentence the arithmetic
+  // contradicts.
   readings: {
     singleLifeShortestTableSizesTheLargestPermittedPayment: 29_069.77,
     uniformLifetimeLongestTableWouldSizeTheSmallestPermittedPayment: 18_248.18,

@@ -96,8 +96,10 @@ State brackets are a separate question and are still held nominal (see `params/s
   the cap binds without MAGI reduction today.
 - **NIIT** 3.8% of the lesser of net investment income or the nonnegative MAGI excess over $200k single / $250k MFJ (unindexed). **Early-withdrawal penalty** 10% pre-59½, with the
   Rule-of-55 / 72(t) **SEPP** exceptions ([strategies/sepp.ts](../../packages/engine/src/strategies/sepp.ts)).
-  Both SEPP methods — required-minimum-distribution and amortization — divide by the IRS **Single Life Table**
-  from the parameter pack, which is unisex and fixed by regulation, so nothing in the SEPP path takes a sex; a
+  Both SEPP methods consume the IRS **Single Life Table** from the parameter pack as an engine convention among
+  the tables Notice 2022-6 permits: the required-minimum-distribution method divides balance by that expectancy,
+  and fixed amortization uses the same expectancy as the term in its interest-bearing annuity formula. The table
+  is unisex and fixed by regulation, so nothing in the SEPP path takes a sex; a
   SEPP on an employer plan additionally requires separation from service, proved in the annual ledger from the
   owner's plan retirement age (domain rules §11).
 - **RMD-shortfall excise:** the annual ledger prices IRC §4974 at 25% of each applicable plan's computed

@@ -578,37 +578,68 @@ describe('traditional employer-plan penalty prerequisite', () => {
 
   describeRule('irc-72-t-3-B-sepp-separation', {
     // IRC 72(t)(3)(B) reaches 401(a) trusts and 72(e)(5)(D)(ii) contracts —
-    // 403(a) annuity plans and 403(b) contracts — and pointedly omits clause
-    // (iii), individual retirement accounts. Inconsistent election/separation
-    // evidence fails closed with RangeError; no accepted/refused disposition
-    // is returned on this path.
+    // including uppercase child clauses (II) 403(a) and (III) 403(b) under the
+    // shared "(ii) from a contract-" head — while pointedly omitting lowercase
+    // sibling clause 72(e)(5)(D)(iii), individual retirement accounts and
+    // individual retirement annuities. Under the IRA rule the identical election
+    // would stand, because 72(t)(3)(B) does not reach individual retirement
+    // accounts.
     readings: {
-      failClosedRangeErrorOnPreSeparationElection: 'throwsRangeError',
-      seppExceptionDespitePreSeparationElection: 'accepted',
+      preSeparationEmployerSeppExceptionDoesNotApply: 'exceptionDoesNotApply',
+      preSeparationEmployerSeppExceptionApplies: 'exceptionApplies',
     },
-    accepted: 'failClosedRangeErrorOnPreSeparationElection',
+    accepted: 'preSeparationEmployerSeppExceptionDoesNotApply',
   }, ({ accepted, readings }) => {
-    it('throws on a SEPP election that starts before separation', () => {
+    function observedSeppExceptionOutcome(
+      value: EvaluateTraditionalEmployerPlanPenaltyPrerequisiteInput,
+    ): 'exceptionApplies' | 'exceptionDoesNotApply' {
+      try {
+        const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)
+        const disposition = result.evidence.seppAssessment?.disposition
+        if (disposition === 'provisional') return 'exceptionApplies'
+        if (disposition === 'refused') return 'exceptionDoesNotApply'
+        throw new Error('evaluator returned without an explicit SEPP assessment disposition')
+      } catch (error) {
+        if (
+          error instanceof RangeError
+          && /election or current-payment identity/.test(error.message)
+        ) return 'exceptionDoesNotApply'
+        throw error
+      }
+    }
+
+    it('does not apply the employer-plan SEPP exception when the series starts before separation', () => {
       const value = input({ separationDate: '2029-12-31' })
       const sepp = currentSepp(value)
       sepp.election.electionStartDate = '2029-12-01'
       value.seppEvidence = sepp
 
-      // Under the IRA rule this identical election would stand, because
-      // 72(t)(3)(B) does not reach individual retirement accounts.
-      let outcome: typeof accepted
-      try {
-        evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)
-        outcome = readings.seppExceptionDespitePreSeparationElection
-      } catch (error) {
-        expect(error).toBeInstanceOf(RangeError)
-        expect((error as RangeError).message)
-          .toMatch(/election or current-payment identity/)
-        outcome = accepted
-      }
+      const outcome = observedSeppExceptionOutcome(value)
       expect(outcome).toBe(accepted)
-      expect(outcome).not.toBe(readings.seppExceptionDespitePreSeparationElection)
+      expect(outcome).not.toBe(readings.preSeparationEmployerSeppExceptionApplies)
     })
+
+    it('provisional SEPP assessment after separation shows the date mutation is the discriminator', () => {
+      const value = input({ separationDate: '2029-12-31' })
+      value.seppEvidence = currentSepp(value)
+
+      const result = evaluateTraditionalEmployerPlanPenaltyPrerequisite(value)
+      expect(result.status).toBe('unsupported')
+      if (result.status !== 'unsupported') throw new Error('expected provisional SEPP result')
+      expect(result.evidence.seppAssessment?.disposition).toBe('provisional')
+    })
+  })
+
+  it('engineering characterization: pre-separation employer SEPP election throws RangeError', () => {
+    const value = input({ separationDate: '2029-12-31' })
+    const sepp = currentSepp(value)
+    sepp.election.electionStartDate = '2029-12-01'
+    value.seppEvidence = sepp
+
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
+      .toThrow(RangeError)
+    expect(() => evaluateTraditionalEmployerPlanPenaltyPrerequisite(value))
+      .toThrow(/election or current-payment identity/)
   })
 
   it('rejects collisions among immutable SEPP election, distribution, and state IDs', () => {

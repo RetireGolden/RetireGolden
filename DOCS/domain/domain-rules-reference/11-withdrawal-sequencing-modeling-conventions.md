@@ -11,10 +11,13 @@
   keeps one layer per named conversion action in array order, so same-year conversions are not aggregated
   taxable-portion-first; that second registered approximation can also understate the additional tax
   (`irc-408A-d-4-B-same-year-conversion-aggregation`).
-- **SEPP (72(t)) divisors and scope.** Both supported methods — required-minimum-distribution and amortization —
-  divide by the **IRS Single Life Table** carried in the parameter pack (Treas. Reg. 1.401(a)(9)-9(b) Table 1,
-  unisex and fixed by regulation rather than indexed), which is why nothing in the SEPP path takes a sex; the
-  sex-dependent SSA period table is now used only by the Monte Carlo longevity model
+- **SEPP (72(t)) divisors and scope.** Both supported methods consume the **IRS Single Life Table** carried in the
+  parameter pack (Treas. Reg. 1.401(a)(9)-9(b) Table 1, unisex and fixed by regulation rather than indexed) as an
+  engine convention among the tables Notice 2022-6 permits: required-minimum-distribution divides balance by that
+  expectancy; fixed amortization uses the same expectancy as the term in its interest-bearing annuity formula.
+  Notice 2022-6 section 3.02(b) selects Single Life for a beneficiary-free year only under the RMD method; the
+  fixed-amortization choice is a convention. Nothing in the SEPP path takes a sex; the sex-dependent SSA period
+  table is now used only by the Monte Carlo longevity model
   (`notice-2022-6-3-02-a-permitted-life-expectancy-tables`). Fixed annuitization is not a projection method. A SEPP
   on an **employer plan** requires separation from service under 72(t)(3)(B) — the series must begin strictly
   after separation. The evidence layer requires an explicit separation date and refuses without one; the annual
