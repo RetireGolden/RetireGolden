@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { packForYear } from '../params/index.js'
+import * as federalTaxModule from '../tax/federalTax.js'
 import { computeFederalTax } from '../tax/federalTax.js'
 import { sizeRothConversion, type ConversionSizingInput, type FillTarget } from './rothConversion.js'
 
@@ -230,5 +231,140 @@ describe('sizeRothConversion', () => {
     expect(sizeRothConversion(fill('topOfBracket', 37), input())).toEqual({ ok: false, reason: 'bad_target' })
     expect(sizeRothConversion(fill('irmaaTier', 9), input())).toEqual({ ok: false, reason: 'bad_target' })
     expect(sizeRothConversion(fill('fixedMagi', null), input())).toEqual({ ok: false, reason: 'bad_target' })
+  })
+
+  describe('foreign-exclusion addback transport into federal pricing', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('prefers top-level broad over a different nested ACA value', () => {
+      const spy = vi.spyOn(federalTaxModule, 'computeFederalTax')
+      const sizing = input({
+        ordinaryIncomeBase: 50_000,
+        foreignExclusionAddback: 5_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 0,
+          taxExemptInterest: 0,
+          foreignExclusionAddback: 20_000,
+        },
+      })
+      sizeRothConversion(fill('irmaaTier', 1), sizing)
+      expect(spy).toHaveBeenCalled()
+      for (const [callInput] of spy.mock.calls) {
+        expect(callInput.foreignExclusionAddback).toBe(5_000)
+        expect(callInput.niitSection911A1NetAddback).toBe(5_000)
+      }
+    })
+
+    it('honors explicit top-level narrow zero without falling back to broad', () => {
+      const spy = vi.spyOn(federalTaxModule, 'computeFederalTax')
+      const sizing = input({
+        ordinaryIncomeBase: 50_000,
+        foreignExclusionAddback: 10_000,
+        niitSection911A1NetAddback: 0,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 0,
+          taxExemptInterest: 0,
+          foreignExclusionAddback: 10_000,
+        },
+      })
+      sizeRothConversion(fill('irmaaTier', 1), sizing)
+      expect(spy).toHaveBeenCalled()
+      for (const [callInput] of spy.mock.calls) {
+        expect(callInput.foreignExclusionAddback).toBe(10_000)
+        expect(callInput.niitSection911A1NetAddback).toBe(0)
+      }
+    })
+
+    it('falls back to nested ACA broad when top-level broad is omitted', () => {
+      const spy = vi.spyOn(federalTaxModule, 'computeFederalTax')
+      const sizing = input({
+        ordinaryIncomeBase: 50_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 0,
+          taxExemptInterest: 0,
+          foreignExclusionAddback: 12_000,
+        },
+      })
+      sizeRothConversion(fill('irmaaTier', 1), sizing)
+      expect(spy).toHaveBeenCalled()
+      for (const [callInput] of spy.mock.calls) {
+        expect(callInput.foreignExclusionAddback).toBe(12_000)
+        expect(callInput.niitSection911A1NetAddback).toBe(12_000)
+      }
+    })
+
+    it('propagates a distinct narrow addback without changing the sizing metric', () => {
+      const spy = vi.spyOn(federalTaxModule, 'computeFederalTax')
+      const sizing = input({
+        ordinaryIncomeBase: 50_000,
+        foreignExclusionAddback: 30_000,
+        niitSection911A1NetAddback: 20_000,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 0,
+          taxExemptInterest: 0,
+          foreignExclusionAddback: 30_000,
+        },
+      })
+      const withoutNarrow = sizeRothConversion(
+        fill('irmaaTier', 1),
+        input({
+          ordinaryIncomeBase: 50_000,
+          foreignExclusionAddback: 30_000,
+          aca: sizing.aca,
+        }),
+      )
+      expect(withoutNarrow.ok).toBe(true)
+      spy.mockClear()
+
+      const withNarrow = sizeRothConversion(fill('irmaaTier', 1), sizing)
+      expect(withNarrow.ok).toBe(true)
+      if (!withoutNarrow.ok || !withNarrow.ok) return
+      // IRMAA/fixed MAGI omit the foreign addback; NIIT input transport is orthogonal.
+      expect(withNarrow.amount).toBeCloseTo(withoutNarrow.amount, 1)
+      expect(spy.mock.calls.length).toBeGreaterThan(0)
+      for (const [callInput] of spy.mock.calls) {
+        expect(callInput.foreignExclusionAddback).toBe(30_000)
+        expect(callInput.niitSection911A1NetAddback).toBe(20_000)
+      }
+    })
+
+    it('keeps ACA-local addbacks on the ACA cliff metric', () => {
+      const spy = vi.spyOn(federalTaxModule, 'computeFederalTax')
+      const sizing = input({
+        foreignExclusionAddback: 0,
+        niitSection911A1NetAddback: 0,
+        aca: {
+          actionable: true,
+          taxFamilySize: 1,
+          fplRegion: 'contiguous',
+          fixedMagiAddbacks: 7_000,
+          taxExemptInterest: 3_000,
+          foreignExclusionAddback: 7_000,
+        },
+      })
+      const r = sizeRothConversion(fill('acaCliff', null), sizing)
+      expect(r.ok).toBe(true)
+      if (!r.ok) return
+      expect(r.amount).toBeCloseTo(15_650 * 4 - 10_000, 1)
+      expect(spy).toHaveBeenCalled()
+      for (const [callInput] of spy.mock.calls) {
+        expect(callInput.foreignExclusionAddback).toBe(0)
+        expect(callInput.niitSection911A1NetAddback).toBe(0)
+      }
+    })
   })
 })

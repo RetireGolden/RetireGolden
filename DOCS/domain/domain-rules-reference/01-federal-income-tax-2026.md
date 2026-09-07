@@ -2,9 +2,13 @@
 
 The optional `annualFederalTaxFacts` Plan field stores separate foreign-income
 adjustments and provenance by year. Its internal resolver does not yet feed tax
-pricing or published results. This schema addition does not close
-`irc-1411-d-modified-agi-foreign-exclusion-addback`; the calculator's shared-addback
-approximation remains unchanged. See [Taxes](../../features/taxes.md#federal-engine).
+pricing or published results. The direct calculator now accepts broad
+`foreignExclusionAddback` and optional narrow `niitSection911A1NetAddback` inputs;
+when the narrow input is omitted, it reuses the broad value as a compatibility
+approximation and exposes `niitMagi` separately. Because the annual projection does
+not yet transport the resolved narrow value, this delivery does not close
+`irc-1411-d-modified-agi-foreign-exclusion-addback` for annual planner results.
+See [Taxes](../../features/taxes.md#federal-engine).
 
 ### Annual federal-tax facts — phase-one product policy
 

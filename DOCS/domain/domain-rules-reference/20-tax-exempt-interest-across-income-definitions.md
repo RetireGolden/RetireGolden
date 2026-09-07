@@ -13,8 +13,8 @@ through the §86(b)(2)(B) add-back and each program MAGI only through that progr
 | ACA household MAGI (§36B PTC) | Included | IRC 36B(d)(2)(B)(ii) | `buildAcaHouseholdMagi` in [aca.ts](../../../packages/engine/src/tax/aca.ts) |
 | Medicare IRMAA MAGI | Included (tax-exempt interest); foreign-exclusion addback omitted from lookback feed | 42 U.S.C. 1395r(i)(4)(A)(ii) settled; (A)(i) approximated | realized-MAGI history in [simulate.ts](../../../packages/engine/src/projection/simulate.ts) |
 | NIIT net investment income | Excluded | IRC 1411(c)(1)(A)(i) — never gross income | NII assembly in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) |
-| NIIT MAGI (threshold leg) | Excluded | IRC 1411(d) — §911(a)(1) exclusion less §911(d)(6) disallowances | same shared foreign field in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) (legacy approximation) |
-| Senior-deduction MAGI phase-out | Excluded | IRC 151(d)(5)(C)(iii)(II) — amounts excluded under §§911/931/933 | same shared foreign field in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) (legacy approximation) |
+| NIIT MAGI (threshold leg) | Excluded | IRC 1411(d) — §911(a)(1) exclusion less §911(d)(6) disallowances | optional narrow `niitSection911A1NetAddback` in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts); omission reuses the broad value as a compatibility approximation, and annual projection transport remains pending |
+| Senior-deduction MAGI phase-out | Excluded | IRC 151(d)(5)(C)(iii)(II) — amounts excluded under §§911/931/933 | broad `foreignExclusionAddback` in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) |
 | AMT (AMTI) | Excluded as modeled | IRC 57(a)(5) reaches only *specified private-activity-bond* interest; see limitations | AMTI assembly in [federalTax.ts](../../../packages/engine/src/tax/federalTax.ts) |
 | State taxable income | Not added | State-specific; see limitations | [stateTax.ts](../../../packages/engine/src/tax/stateTax.ts) (still lifts federally taxable SS in states that tax SS) |
 
@@ -38,11 +38,7 @@ through the §86(b)(2)(B) add-back and each program MAGI only through that progr
   income already add the plan’s foreign-exclusion amount; `magiHistory` that supplies IRMAA does not.
   Understates IRMAA MAGI / premiums — registry record
   `usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback`.
-- **NIIT and senior foreign addbacks are different statutes sharing one legacy input.** IRC 1411(d)
-  reaches only the net §911(a)(1) amount; IRC 151(d)(5)(C)(iii)(II) reaches §§911/931/933. The engine
-  still adds one `foreignExclusionAddback` to AGI for both — a bounded disclosed approximation
-  (`irc-1411-d-modified-agi-foreign-exclusion-addback`). Tax-exempt interest’s direct treatment in the
-  matrix above is unchanged; Social Security feedback under §86 remains a separate path.
+- **NIIT and senior foreign addbacks are different statutes and the direct calculator now accepts separate inputs.** IRC 1411(d) reaches only the net §911(a)(1) amount; IRC 151(d)(5)(C)(iii)(II) reaches §§911/931/933. `foreignExclusionAddback` remains the broad §86/senior-MAGI carrier and optional `niitSection911A1NetAddback` feeds only NIIT MAGI. Omission of the narrow input deliberately reuses the broad value for compatibility, so the current annual projection remains approximate until separate resolution and transport are activated. The calculator accepts supplied characterization; it does not determine exclusion eligibility or §911(d)(6) allocation. Tax-exempt interest treatment and Social Security feedback under §86 are unchanged.
 
 The machine-readable half of this matrix lives in the rule registry:
 `irc-103-a-state-local-bond-interest-exclusion`, `irc-36B-d-2-B-aca-household-magi-composition`,

@@ -127,7 +127,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 371
+              "line": 377
             }
           ]
         }
@@ -138,12 +138,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 629,
+          "line": 727,
           "note": null,
           "tests": [
             {
               "title": "moves modeled preferential gain into the 20 percent layer above the second breakpoint",
-              "line": 633
+              "line": 731
             }
           ]
         }
@@ -271,11 +271,11 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 371
+              "line": 377
             },
             {
               "name": "computeFederalTax",
-              "line": 480
+              "line": 486
             }
           ]
         }
@@ -286,12 +286,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1785,
+          "line": 1883,
           "note": null,
           "tests": [
             {
               "title": "runs qualified dividends through the preferential stack",
-              "line": 1789
+              "line": 1887
             }
           ]
         }
@@ -348,7 +348,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 371
+              "line": 377
             }
           ]
         }
@@ -359,23 +359,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 605,
+          "line": 703,
           "note": null,
           "tests": [
             {
               "title": "measures the preferential bands from the top of ordinary income",
-              "line": 609
+              "line": 707
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2060,
+          "line": 2158,
           "note": null,
           "tests": [
             {
               "title": "starts the 15% layer at the breakpoint prescribed for that year",
-              "line": 2064
+              "line": 2162
             }
           ]
         }
@@ -427,23 +427,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 703,
+          "line": 801,
           "note": "zero-percent layer dollar",
           "tests": [
             {
               "title": "prices a zero-layer marginal dollar at 15 percent inside the linearized solve",
-              "line": 709
+              "line": 807
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 759,
+          "line": 857,
           "note": "twenty-percent layer dollar",
           "tests": [
             {
               "title": "prices a twenty-percent-layer marginal dollar at 15 percent inside the linearized solve",
-              "line": 765
+              "line": 863
             }
           ]
         }
@@ -511,12 +511,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 963,
+          "line": 1061,
           "note": null,
           "tests": [
             {
               "title": "keeps original basis on a post-death taxable sale while the estate metric assumes step-up",
-              "line": 972
+              "line": 1070
             }
           ]
         }
@@ -578,7 +578,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 480
+              "line": 486
             }
           ]
         }
@@ -589,16 +589,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 365,
+          "line": 463,
           "note": null,
           "tests": [
             {
               "title": "keeps municipal-bond interest out of federal AGI and taxable income by direct inclusion",
-              "line": 372
+              "line": 470
             },
             {
               "title": "raises AGI only by the taxable-Social-Security increment when munis enter provisional income",
-              "line": 389
+              "line": 487
             }
           ]
         }
@@ -655,7 +655,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 453
+              "line": 459
             }
           ]
         }
@@ -666,12 +666,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 858,
+          "line": 956,
           "note": null,
           "tests": [
             {
               "title": "deducts a realized taxable-sale loss without a replacement-purchase fact",
-              "line": 872
+              "line": 970
             }
           ]
         }
@@ -889,7 +889,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 453
+              "line": 459
             }
           ]
         }
@@ -900,12 +900,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 424,
+          "line": 522,
           "note": null,
           "tests": [
             {
               "title": "deducts only the annual cap and carries the rest forward",
-              "line": 428
+              "line": 526
             }
           ]
         }
@@ -942,7 +942,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 453
+              "line": 459
             }
           ]
         }
@@ -953,12 +953,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 537,
+          "line": 635,
           "note": null,
           "tests": [
             {
               "title": "burns the annual allowance from the pool even when ordinary income is zero",
-              "line": 542
+              "line": 640
             }
           ]
         }
@@ -1020,7 +1020,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 453
+              "line": 459
             }
           ]
         }
@@ -1031,12 +1031,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 507,
+          "line": 605,
           "note": null,
           "tests": [
             {
               "title": "threads the unabsorbed pool through simulatePlan into year-two capital-gains tax",
-              "line": 511
+              "line": 609
             }
           ]
         }
@@ -1083,7 +1083,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 480
+              "line": 486
             }
           ]
         }
@@ -1211,7 +1211,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 480
+              "line": 486
             }
           ]
         }
@@ -1274,7 +1274,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 480
+              "line": 486
             }
           ]
         }
@@ -1285,12 +1285,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1958,
+          "line": 2056,
           "note": null,
           "tests": [
             {
               "title": "leaves plan distributions out of net investment income but not out of modified AGI",
-              "line": 1962
+              "line": 2060
             }
           ]
         }
@@ -1315,7 +1315,7 @@
       "title": "NIIT and senior MAGI use different foreign-exclusion addbacks",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
-      "conventionRationale": "DISCLOSED APPROXIMATION. TaxYearInput carries one foreignExclusionAddback and computeFederalTax adds it to AGI for both NIIT and the senior deduction. The fixture's established $20,000 earned-income and $10,000 housing exclusions have no allocable deductions. At $180,000 AGI and $10,000 included investment income, NIIT should be zero but the engine produces $380 (see sibling irc-1411-a-net-investment-income-tax for the 3.8% lesser-of and $200,000 single threshold). A second coordinate at $70,000 AGI retains the legally correct $4,500 senior deduction (see sibling irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out for the $6,000 / 6% / $75,000 parameters); narrowing the shared input for both rules would instead overstate that deduction. The overstatesTax direction describes the extra-exclusion NIIT approximation on these characterized amounts. The legacy field does not identify separate section 911(a)(1) amounts or their allocable deductions, and this record does not certify a gross/net mapping for other compositions. Schedule 1-A's Form 2555 line 45 carrier is already net of line 44; the broad senior definition is not an instruction to add gross amounts or net them twice.",
+      "conventionRationale": "DISCLOSED APPROXIMATION. TaxYearInput carries a broad foreignExclusionAddback for section 151 senior MAGI and an optional niitSection911A1NetAddback for the NIIT threshold leg; omission of the narrow member reuses the broad amount. The fixture's established $20,000 earned-income and $10,000 housing exclusions have no allocable deductions, so the broad amount is $30,000 and the narrow NIIT net addback is $20,000. At $180,000 AGI and $10,000 included investment income, omitting the narrow input overstates NIIT by $380 (see sibling irc-1411-a-net-investment-income-tax for the 3.8% lesser-of and $200,000 single threshold). At $70,000 AGI the broad addback preserves the legally correct $4,500 senior deduction (see sibling irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out for the $6,000 / 6% / $75,000 parameters); supplying the narrow amount for both rules would instead overstate that deduction to $5,100. The overstatesTax direction applies only to this characterized extra-housing omitted-narrow fallback; unknown, missing, or conflicting annual evidence does not establish a direction. The calculator accepts characterized amounts as inputs and does not determine exclusion eligibility or section 911(d)(6) allocation; this record does not certify a gross/net mapping for other compositions. Schedule 1-A's Form 2555 line 45 carrier is already net of line 44; the broad senior definition is not an instruction to add gross amounts or net them twice.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1332,7 +1332,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 480
+              "line": 486
             }
           ]
         }
@@ -1343,12 +1343,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 261,
+          "line": 267,
           "note": null,
           "tests": [
             {
-              "title": "discloses extra housing in NIIT while preserving the senior addback",
-              "line": 270
+              "title": "separates broad senior MAGI from narrow NIIT MAGI at computeFederalTax",
+              "line": 276
             }
           ]
         }
@@ -1405,7 +1405,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 480
+              "line": 486
             }
           ]
         }
@@ -1416,12 +1416,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 336,
+          "line": 434,
           "note": null,
           "tests": [
             {
               "title": "keeps tax-exempt interest out of investment income and out of the threshold leg",
-              "line": 340
+              "line": 438
             }
           ]
         }
@@ -1821,12 +1821,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2220,
+          "line": 2318,
           "note": "2027 positive indexation is a phantom OID character",
           "tests": [
             {
               "title": "records positive inflation accretion as OID in the cash-flow ledger",
-              "line": 2228
+              "line": 2326
             }
           ]
         }
@@ -1919,12 +1919,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2288,
+          "line": 2386,
           "note": "paired positive-inflation then deflation path; 2027 non-maturity",
           "tests": [
             {
               "title": "pins the engine output while distinguishing the deflation reading",
-              "line": 2297
+              "line": 2395
             }
           ]
         }
