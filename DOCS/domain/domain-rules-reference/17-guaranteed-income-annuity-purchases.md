@@ -59,11 +59,16 @@ and after-tax estate.
 - **Survivor reserve target.** `strategies.survivorReserveTarget` (today's dollars) is a hard constraint on
   the `protect-survivor-liquidity` objective: a candidate whose survivor-year investable balance (deflated to
   today's dollars) falls below the target is disqualified with a readable violation. Absent = no floor.
-- **Annuity purchase candidates.** The decision engine's `annuityPurchaseGenerator` proposes up to three
+- **Annuity purchase candidates.** The decision engine's `annuityPurchaseGenerator` proposes up to four
   bounded candidates — a cover-the-floor SPIA (cash/taxable-funded, 25% of the largest liquid balance, capped
-  at $250k), a QLAC at the statutory cap (traditional-funded, deferred start at 80–85), and a no-purchase
-  alternative — each priced on the exact ledger so the liquidity ↓ / durability ↑ / estate Δ trade-off is
-  visible.
+  at $250k), a laddered SPIA alternative (same premium in three dated tranches), a QLAC at the statutory cap
+  (traditional-funded, owner-based product preferred start 80–83), and — when the plan already has a purchase —
+  a no-purchase alternative — each priced on the exact ledger so the liquidity ↓ / durability ↑ / estate Δ
+  trade-off is visible. The QLAC candidate uses the selected traditional account owner's resolved age and
+  identity for its younger-than-83 product gate and `min(85, max(ownerAge + 1, 80))` preferred start
+  (80–83 for admitted ages; the formula's 85 is a backstop behind that gate). Treas. Reg. 1.408-8(a)(3)
+  governs IRA-owner substitution for the legal commencement rules; the distinct legal deadline remains the
+  first day of the month after the owner's 85th birthday.
 
 **Documented simplifications:** users enter annuity quotes (no pricing/rate tables); no variable/indexed
 annuity products; estate/inheritance tax, probate, trusts, and legal-planning precision are out of scope.
