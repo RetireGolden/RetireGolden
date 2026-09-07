@@ -119,7 +119,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         },
@@ -184,7 +184,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         },
@@ -272,7 +272,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         },
@@ -357,7 +357,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         }
@@ -592,11 +592,11 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             },
             {
               "name": "wagesIncomeSchema",
-              "line": 1531
+              "line": 1538
             }
           ]
         },
@@ -682,7 +682,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         }
@@ -873,12 +873,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1813,
+          "line": 1903,
           "note": null,
           "tests": [
             {
               "title": "counts tax-exempt interest in provisional income",
-              "line": 1817
+              "line": 1907
             }
           ]
         }
@@ -987,7 +987,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         }
@@ -1489,7 +1489,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         }
@@ -1533,7 +1533,7 @@
           "functions": [
             {
               "name": "householdSchema",
-              "line": 203
+              "line": 210
             }
           ]
         }
@@ -1572,7 +1572,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         }
@@ -1631,7 +1631,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         }
@@ -1796,7 +1796,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         }
@@ -2008,7 +2008,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         },
@@ -2100,7 +2100,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         },
@@ -3029,7 +3029,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         },
@@ -3283,7 +3283,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1582
+              "line": 1589
             }
           ]
         },

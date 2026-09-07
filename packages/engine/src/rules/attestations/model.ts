@@ -13,4 +13,9 @@ export const modelAttestations: Readonly<Record<string, CoverageAttestation>> = 
   'model/plan.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-05', note: 'latestNonQlacQualifiedAnnuityStartAge and latestQlacAnnuityStartAge helpers covered; inherited/election contradiction checks are law-sensitive mirrored validation with missing-fact/year-granular limits; 403(b)/spouse/SEPP carriers are not calculators' }),
   'model/planCrossFieldChecks.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-05', note: 'qualified-annuity start-age ceilings covered; checkAccountCrossFieldRules still directly enforces uncovered Form 8606 basis placement/exclusion on inherited IRAs, qualified-annuity funding from owned traditional funds, QLAC qualification, and other cross-field gates' }),
   'model/retirementActionAnnualTaxFacts.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-05', note: 'IRC 219(f)(3) designated post-year contribution window now covered via persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema; remaining persistence contracts are opening-basis, completeness, finalization, identity, and safe-cent totals' }),
+  'model/annualFederalTaxFacts.ts': Object.freeze({
+    status: 'rule-free',
+    sweptOn: '2026-09-06',
+    note: 'strict persistence/provenance schema and source-quality labels for user-supplied annual facts; validates shape, ranges and duplicate years but computes no statutory amount, tax, entitlement or action',
+  }),
 })

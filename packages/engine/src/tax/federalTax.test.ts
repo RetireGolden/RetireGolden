@@ -267,7 +267,7 @@ describe('modified adjusted gross income', () => {
     accepted: 'separateStatutoryAddbacks',
     produced: 'broadAggregateForBoth',
   }, ({ accepted, produced, readings }) => {
-    it('discloses extra housing in NIIT while preserving the senior addback', () => {
+    it('discloses extra housing in NIIT while preserving the senior addback', async () => {
       const shared = {
         peopleAged65Plus: 1,
         taxableInterestIncome: 10_000,
@@ -318,6 +318,96 @@ describe('modified adjusted gross income', () => {
       expect(separate).toEqual(accepted)
       expect(broad).not.toEqual(accepted)
       expect(broad).not.toEqual(readings.narrowEarnedIncomeForBoth)
+
+      // Annual resolver sub-vector (authority worksheet, not calculator output):
+      //   separate statutory inputs: broad 30,000 / NIIT 20,000
+      //   wrong broad-for-both: 30,000 / 30,000
+      //   wrong narrow-for-both: 20,000 / 20,000
+      //   allocation control: 20,000 §911(a)(1) less 5,000 §911(d)(6) -> 15,000 final NIIT
+      const acceptedGeneralFederalAmount = 30_000
+      const acceptedNiitAmount = 20_000
+      const wrongBroadForBothGeneral = 30_000
+      const wrongBroadForBothNiit = 30_000
+      const wrongNarrowForBothGeneral = 20_000
+      const wrongNarrowForBothNiit = 20_000
+      const section911A1ExcludedEarnedIncome = 20_000
+      const allocableSection911D6Reduction = 5_000
+      const finalKnownNiitAmount = 15_000
+
+      expect([acceptedGeneralFederalAmount, acceptedNiitAmount]).not.toEqual([
+        wrongBroadForBothGeneral,
+        wrongBroadForBothNiit,
+      ])
+      expect([acceptedGeneralFederalAmount, acceptedNiitAmount]).not.toEqual([
+        wrongNarrowForBothGeneral,
+        wrongNarrowForBothNiit,
+      ])
+      expect(
+        section911A1ExcludedEarnedIncome - allocableSection911D6Reduction,
+      ).toBe(finalKnownNiitAmount)
+
+      const broad30000 = {
+        state: 'known' as const,
+        amount: 30_000,
+        provenance: {
+          sourceKind: 'foreignExclusionAggregateWorkpaper' as const,
+          acquisition: 'manual' as const,
+        },
+      }
+      const narrow20000 = {
+        state: 'known' as const,
+        amount: 20_000,
+        provenance: {
+          sourceKind: 'form8960Line13AllocationWorksheet' as const,
+          acquisition: 'manual' as const,
+        },
+      }
+      const narrow15000 = {
+        state: 'known' as const,
+        amount: finalKnownNiitAmount,
+        provenance: {
+          sourceKind: 'form8960Line13AllocationWorksheet' as const,
+          acquisition: 'manual' as const,
+        },
+      }
+
+      const { resolveAnnualFederalTaxFacts } = await import(
+        '../projection/internal/annualFederalTaxFacts.js'
+      )
+
+      const taxYear = 2026
+      const separateResolution = resolveAnnualFederalTaxFacts({
+        annualFederalTaxFacts: {
+          foreignIncomeAdjustments: [{
+            year: taxYear,
+            foreignExclusionAddback: broad30000,
+            niitSection911A1NetAddback: narrow20000,
+          }],
+        },
+        year: taxYear,
+        acaContract: undefined,
+        acaGeneralTaxCompatibilityEligible: false,
+      })
+
+      expect(separateResolution.broad.generalFederalAmount).toBe(
+        acceptedGeneralFederalAmount,
+      )
+      expect(separateResolution.niit.resolvedAmount).toBe(acceptedNiitAmount)
+
+      const allocationResolution = resolveAnnualFederalTaxFacts({
+        annualFederalTaxFacts: {
+          foreignIncomeAdjustments: [{
+            year: taxYear,
+            foreignExclusionAddback: broad30000,
+            niitSection911A1NetAddback: narrow15000,
+          }],
+        },
+        year: taxYear,
+        acaContract: undefined,
+        acaGeneralTaxCompatibilityEligible: false,
+      })
+
+      expect(allocationResolution.niit.resolvedAmount).toBe(finalKnownNiitAmount)
     })
   })
 

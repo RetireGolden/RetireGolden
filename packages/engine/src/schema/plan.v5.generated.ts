@@ -5876,6 +5876,471 @@ export const planJsonSchema: JsonSchemaDocument = {
       ],
       "additionalProperties": false
     },
+    "annualFederalTaxFacts": {
+      "default": {
+        "foreignIncomeAdjustments": []
+      },
+      "type": "object",
+      "properties": {
+        "foreignIncomeAdjustments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "year": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2200
+              },
+              "foreignExclusionAddback": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "const": "known"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "provenance": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "foreignExclusionAggregateWorkpaper"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "taxProfessionalWorkpaper"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "planningEstimate"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "amount",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "const": "notApplicable"
+                      },
+                      "amount": {
+                        "type": "null"
+                      },
+                      "provenance": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "userAttestation"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "taxProfessionalWorkpaper"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "amount",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "const": "unknown"
+                      },
+                      "amount": {
+                        "type": "null"
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "sourceKind": {
+                            "type": "string",
+                            "const": "unresolvedSource"
+                          },
+                          "acquisition": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "import"
+                            ]
+                          },
+                          "sourceLabel": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "sourceKind",
+                          "acquisition"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "amount",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "niitSection911A1NetAddback": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "const": "known"
+                      },
+                      "amount": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "provenance": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "form8960Line13AllocationWorksheet"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "taxProfessionalWorkpaper"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "planningEstimate"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "amount",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "const": "notApplicable"
+                      },
+                      "amount": {
+                        "type": "null"
+                      },
+                      "provenance": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "userAttestation"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "sourceKind": {
+                                "type": "string",
+                                "const": "taxProfessionalWorkpaper"
+                              },
+                              "acquisition": {
+                                "type": "string",
+                                "enum": [
+                                  "manual",
+                                  "import"
+                                ]
+                              },
+                              "sourceLabel": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "sourceKind",
+                              "acquisition"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "amount",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "type": "string",
+                        "const": "unknown"
+                      },
+                      "amount": {
+                        "type": "null"
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "sourceKind": {
+                            "type": "string",
+                            "const": "unresolvedSource"
+                          },
+                          "acquisition": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "import"
+                            ]
+                          },
+                          "sourceLabel": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "sourceKind",
+                          "acquisition"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "amount",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "required": [
+              "year",
+              "foreignExclusionAddback",
+              "niitSection911A1NetAddback"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "foreignIncomeAdjustments"
+      ],
+      "additionalProperties": false
+    },
     "scenarios": {
       "type": "array",
       "items": {
@@ -5966,6 +6431,7 @@ export const planJsonSchema: JsonSchemaDocument = {
     "a pension lump-sum election requires a lump-sum offer and must roll over into an existing owned (non-inherited) traditional account; its election year cannot precede the calendar year in the plan’s updatedAtIso stamp.",
     "premiumEndAge is required when premiumMode is 'untilAge'; a permanent-life policy with cashValueMode 'schedule' requires a cashValueSchedule.",
     "a TIPS ladder must end in or after its first payout year, be purchased before that year, and be funded from cash/taxable/equity-comp savings.",
-    "expenses.requiredAnnual cannot exceed baseAnnual; a one-time goal’s earliestYear/latestYear window must bracket its year; partial funding requires minFundingPct below 100."
+    "expenses.requiredAnnual cannot exceed baseAnnual; a one-time goal’s earliestYear/latestYear window must bracket its year; partial funding requires minFundingPct below 100.",
+    "annualFederalTaxFacts.foreignIncomeAdjustments year values must be unique."
   ]
 }

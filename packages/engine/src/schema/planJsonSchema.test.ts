@@ -744,6 +744,105 @@ describe('planJsonSchema — rejects invalid plans with a pointed path', () => {
   })
 })
 
+describe('planJsonSchema — annualFederalTaxFacts', () => {
+  const broadProvenance = { sourceKind: 'planningEstimate', acquisition: 'manual' }
+  const niitProvenance = { sourceKind: 'planningEstimate', acquisition: 'manual' }
+
+  function planWithAnnualFacts(facts: Record<string, unknown>): Record<string, unknown> {
+    const plan = accept(tradHeavyPlan(), 'tradHeavyPlan') as unknown as Record<string, unknown>
+    return { ...plan, annualFederalTaxFacts: facts }
+  }
+
+  function adjustmentRow(
+    overrides: {
+      foreignExclusionAddback?: Record<string, unknown>
+      niitSection911A1NetAddback?: Record<string, unknown>
+      year?: number
+    } = {},
+  ): Record<string, unknown> {
+    return {
+      year: overrides.year ?? 2026,
+      foreignExclusionAddback: overrides.foreignExclusionAddback ?? {
+        state: 'known',
+        amount: 1,
+        provenance: broadProvenance,
+      },
+      niitSection911A1NetAddback: overrides.niitSection911A1NetAddback ?? {
+        state: 'known',
+        amount: 2,
+        provenance: niitProvenance,
+      },
+    }
+  }
+
+  it.each([
+    [
+      'foreignExclusionAddback',
+      '/annualFederalTaxFacts/foreignIncomeAdjustments/0/foreignExclusionAddback/amount',
+    ],
+    [
+      'niitSection911A1NetAddback',
+      '/annualFederalTaxFacts/foreignIncomeAdjustments/0/niitSection911A1NetAddback/amount',
+    ],
+  ] as const)('rejects a negative known %s amount', (field, amountPath) => {
+    const plan = planWithAnnualFacts({
+      foreignIncomeAdjustments: [
+        adjustmentRow({
+          [field]: { state: 'known', amount: -1, provenance: field === 'foreignExclusionAddback' ? broadProvenance : niitProvenance },
+        }),
+      ],
+    })
+    expect(validate(plan)).toBe(false)
+    expect(validate.errors?.some((error) => error.instancePath === amountPath)).toBe(true)
+  })
+
+  it.each(['foreignExclusionAddback', 'niitSection911A1NetAddback'] as const)(
+    'accepts zero as a known %s amount',
+    (field) => {
+      const plan = planWithAnnualFacts({
+        foreignIncomeAdjustments: [
+          adjustmentRow({
+            [field]: { state: 'known', amount: 0, provenance: field === 'foreignExclusionAddback' ? broadProvenance : niitProvenance },
+          }),
+        ],
+      })
+      expect(validate(plan)).toBe(true)
+      expect(validate.errors ?? []).toEqual([])
+    },
+  )
+
+  it('catalogs unique annual years for foreignIncomeAdjustments', () => {
+    expect(PLAN_SCHEMA_UNREPRESENTABLE_CONSTRAINTS).toEqual(
+      expect.arrayContaining([
+        'annualFederalTaxFacts.foreignIncomeAdjustments year values must be unique.',
+      ]),
+    )
+  })
+
+  it('accepts duplicate annual years structurally but parsePlan rejects them', () => {
+    const plan = planWithAnnualFacts({
+      foreignIncomeAdjustments: [
+        adjustmentRow({
+          foreignExclusionAddback: { state: 'known', amount: 1, provenance: broadProvenance },
+          niitSection911A1NetAddback: { state: 'known', amount: 2, provenance: niitProvenance },
+        }),
+        adjustmentRow({
+          year: 2026,
+          foreignExclusionAddback: { state: 'known', amount: 3, provenance: broadProvenance },
+          niitSection911A1NetAddback: { state: 'known', amount: 4, provenance: niitProvenance },
+        }),
+      ],
+    })
+    expect(validate(plan)).toBe(true)
+    expect(validate.errors ?? []).toEqual([])
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.issues.join('\n')).toContain('duplicate annual federal-tax fact year 2026')
+    }
+  })
+})
+
 describe('planJsonSchema — structural, not a full validator', () => {
   it('accepts a document that parsePlan rejects (a dropped refinement)', () => {
     // Allocation weights must sum to 100% — a refinement JSON Schema can't

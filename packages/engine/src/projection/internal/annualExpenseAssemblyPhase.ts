@@ -60,6 +60,10 @@ import {
   type AnnualHealthcareExpensesResult,
   type IrmaaLookbackMagiSource,
 } from './annualHealthcareExpenses.js'
+import {
+  resolveAnnualFederalTaxFacts,
+  type AnnualFederalTaxFactsResolution,
+} from './annualFederalTaxFacts.js'
 import { annualInsurancePremiumRows } from './annualInsurancePremiumRows.js'
 import { annualLifestyleLayers } from './annualLifestyleLayers.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
@@ -153,6 +157,8 @@ export interface AnnualExpenseAssemblyPhaseResult {
   readonly acaSlcspBenchmarkPremiums: AnnualHealthcareExpensesResult['acaSlcspBenchmarkPremiums']
   readonly acaGrossEnrollmentPremium: AnnualHealthcareExpensesResult['acaGrossEnrollmentPremium']
   readonly acaActive: AnnualHealthcareExpensesResult['acaActive']
+  readonly acaGeneralTaxCompatibilityEligible: AnnualHealthcareExpensesResult['acaGeneralTaxCompatibilityEligible']
+  readonly annualFederalTaxFactsResolution: AnnualFederalTaxFactsResolution
   readonly healthcareExcludingAcaEnrollment: AnnualHealthcareExpensesResult['healthcareExcludingAcaEnrollment']
   readonly healthcareExcludingMarketplacePremium: AnnualHealthcareExpensesResult['healthcareExcludingMarketplacePremium']
   readonly acaInitialSupportCodes: AnnualHealthcareExpensesResult['acaInitialSupportCodes']
@@ -303,6 +309,14 @@ export function annualExpenseAssemblyPhase(
   const acaGrossEnrollmentPremium =
     healthcarePlan.acaGrossEnrollmentPremium
   const acaActive = healthcarePlan.acaActive
+  const acaGeneralTaxCompatibilityEligible =
+    healthcarePlan.acaGeneralTaxCompatibilityEligible
+  const annualFederalTaxFactsResolution = resolveAnnualFederalTaxFacts({
+    annualFederalTaxFacts: plan.annualFederalTaxFacts,
+    year,
+    acaContract,
+    acaGeneralTaxCompatibilityEligible,
+  })
   const healthcareExcludingAcaEnrollment =
     healthcarePlan.healthcareExcludingAcaEnrollment
   const healthcareExcludingMarketplacePremium =
@@ -505,6 +519,8 @@ export function annualExpenseAssemblyPhase(
     acaSlcspBenchmarkPremiums,
     acaGrossEnrollmentPremium,
     acaActive,
+    acaGeneralTaxCompatibilityEligible,
+    annualFederalTaxFactsResolution,
     healthcareExcludingAcaEnrollment,
     healthcareExcludingMarketplacePremium,
     acaInitialSupportCodes,

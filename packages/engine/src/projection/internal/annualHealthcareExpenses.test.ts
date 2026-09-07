@@ -263,4 +263,51 @@ describe('annualHealthcareExpenses', () => {
     expect(result.acaEnrollmentPremiums[0]).toBe(10_000_000_000_000_002)
     expect(result.acaGrossEnrollmentPremium).toBe(10_000_000_000_000_002)
   })
+
+  it('marks one ordinary matching positive-premium contract as ACA general-tax compatible', () => {
+    const plan = singlePersonPlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    plan.expenses.healthcare.acaYears = [acaContract(120)]
+    const result = run(plan)
+
+    expect(result.acaGeneralTaxCompatibilityEligible).toBe(true)
+    expect(result.acaActive).toBe(true)
+  })
+
+  it('marks dormant, duplicate, mismatched, zero-gross, and legacy-fallback paths ineligible', () => {
+    const dormant = singlePersonPlan()
+    dormant.expenses.healthcare.applyAcaCredit = false
+    dormant.expenses.healthcare.acaYears = [acaContract(120)]
+    expect(run(dormant).acaGeneralTaxCompatibilityEligible).toBe(false)
+
+    const duplicate = singlePersonPlan()
+    duplicate.expenses.healthcare.applyAcaCredit = true
+    duplicate.expenses.healthcare.acaYears = [acaContract(120), acaContract(90)]
+    expect(run(duplicate).acaGeneralTaxCompatibilityEligible).toBe(false)
+
+    const mismatched = singlePersonPlan()
+    mismatched.exampleSourceId = 'example-mismatch'
+    mismatched.expenses.healthcare.applyAcaCredit = true
+    mismatched.expenses.healthcare.acaYears = [acaContract(120)]
+    expect(run(mismatched).acaGeneralTaxCompatibilityEligible).toBe(false)
+
+    const zeroGross = singlePersonPlan()
+    zeroGross.expenses.healthcare.applyAcaCredit = true
+    zeroGross.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+    zeroGross.expenses.healthcare.acaYears = [{
+      ...acaContract(0),
+      coveredMembers: [{
+        personId: 'p1',
+        enrollmentPremiumByMonth: new Array<number>(12).fill(0),
+        slcspBenchmarkPremiumByMonth: new Array<number>(12).fill(0),
+      }],
+    }]
+    expect(run(zeroGross).acaGeneralTaxCompatibilityEligible).toBe(false)
+
+    const legacyFallback = singlePersonPlan()
+    legacyFallback.expenses.healthcare.applyAcaCredit = true
+    legacyFallback.expenses.healthcare.pre65MonthlyPremiumPerPerson = 100
+    expect(run(legacyFallback).acaGeneralTaxCompatibilityEligible).toBe(false)
+    expect(run(legacyFallback).acaActive).toBe(true)
+  })
 })

@@ -1,5 +1,11 @@
 ## 1. Federal income tax (2026)
 
+The optional `annualFederalTaxFacts` Plan field stores separate foreign-income
+adjustments and provenance by year. Its internal resolver does not yet feed tax
+pricing or published results. This schema addition does not close
+`irc-1411-d-modified-agi-foreign-exclusion-addback`; the calculator's shared-addback
+approximation remains unchanged. See [Taxes](../../features/taxes.md#federal-engine).
+
 Seven rates: 10/12/22/24/32/35/37%. 2026 thresholds (taxable income):
 
 | Rate | Single | Married filing jointly |

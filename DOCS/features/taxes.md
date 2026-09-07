@@ -27,6 +27,15 @@ The projection runs federal and state as two calculators over one income input
 
 ## Federal engine
 
+The Plan accepts optional, year-keyed `annualFederalTaxFacts.foreignIncomeAdjustments`
+with separate general-federal and NIIT amounts and explicit source provenance.
+Validation and persistence retain known, not-applicable, and unknown facts; omitted
+facts default to an empty list. The annual expense pass resolves these facts internally,
+but tax pricing and published projection results do not yet consume that resolution.
+There is no planner editor for these fields. Supplying them in an imported plan does
+not change taxes or establish recommendation support; the existing foreign-addback
+approximation below remains in force.
+
 Computed each year inside the projection loop. The ledger is **nominal**, so for a year with no published
 parameter pack the annually-indexed federal figures are carried forward at the plan's inflation rate before
 income meets them (`indexFederalTaxPack`): rate-bracket bounds (IRC 1(j)(3)(B)), the standard deduction and

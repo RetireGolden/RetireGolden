@@ -16,8 +16,15 @@ import { rmdStartAgeForBirthYear } from '../params/index.js'
 import { parseCivilIsoDate } from '../actions/civilDate.js'
 import { usdCentsSchema } from '../actions/money.js'
 import { retirementActionAnnualTaxFactsSchema } from './retirementActionAnnualTaxFacts.js'
+import { annualFederalTaxFactsSchema } from './annualFederalTaxFacts.js'
 import { runPlanCrossFieldChecks } from './planCrossFieldChecks.js'
 export type { RetirementActionAnnualTaxFacts } from './retirementActionAnnualTaxFacts.js'
+export type {
+  AnnualFederalTaxFacts,
+  AnnualForeignIncomeAdjustment,
+  BroadAnnualAmount,
+  NiitAnnualAmount,
+} from './annualFederalTaxFacts.js'
 
 export const CURRENT_PLAN_SCHEMA_VERSION = 5
 
@@ -2274,6 +2281,10 @@ const planObjectSchema = z
     retirementActionEligibilityFacts: retirementActionEligibilityFactsSchema.optional(),
     /** Authoritative real-world annual tax sources; never inferred from projection fields. */
     retirementActionAnnualTaxFacts: retirementActionAnnualTaxFactsSchema.optional(),
+    /** Year-keyed foreign-income adjustments for general federal and NIIT MAGI evidence. */
+    annualFederalTaxFacts: annualFederalTaxFactsSchema.default({
+      foreignIncomeAdjustments: [],
+    }),
     scenarios: z.array(scenarioSchema),
   })
 export type PlanDocument = z.infer<typeof planObjectSchema>
@@ -2432,6 +2443,7 @@ export function createEmptyPlan(opts: CreatePlanOptions = {}): Plan {
       heirTaxRatePct: 25,
       safeWithdrawalRatePct: 4,
     },
+    annualFederalTaxFacts: { foreignIncomeAdjustments: [] },
     scenarios: [],
   }
 }

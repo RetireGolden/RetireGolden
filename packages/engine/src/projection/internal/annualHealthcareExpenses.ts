@@ -31,6 +31,7 @@ export interface AnnualHealthcareExpensesResult {
   readonly acaSlcspBenchmarkPremiums: number[]
   readonly acaGrossEnrollmentPremium: number
   readonly acaActive: boolean
+  readonly acaGeneralTaxCompatibilityEligible: boolean
   readonly healthcareExcludingAcaEnrollment: number
   readonly healthcareExcludingMarketplacePremium: number
   readonly acaInitialSupportCodes: AcaSupportCode[]
@@ -266,6 +267,11 @@ export function annualHealthcareExpenses(
     0,
   )
   const acaActive = hc.applyAcaCredit && acaGrossEnrollmentPremium > 0
+  const acaGeneralTaxCompatibilityEligible =
+    hc.applyAcaCredit &&
+    acaContract !== undefined &&
+    !exampleContractInputMismatch &&
+    acaGrossEnrollmentPremium > 0
   // Begin at gross premium. Only the caller's exact tax/withdrawal fixed point
   // may replace this with a supported economic net premium.
   healthcare += acaGrossEnrollmentPremium
@@ -443,6 +449,7 @@ export function annualHealthcareExpenses(
     acaSlcspBenchmarkPremiums,
     acaGrossEnrollmentPremium,
     acaActive,
+    acaGeneralTaxCompatibilityEligible,
     healthcareExcludingAcaEnrollment,
     healthcareExcludingMarketplacePremium,
     acaInitialSupportCodes,
