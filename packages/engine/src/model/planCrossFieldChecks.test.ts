@@ -278,10 +278,19 @@ describe('checkRothConversionFillToTarget', () => {
     expect(issuesFrom(checkRothConversionFillToTarget, plan)).toEqual([])
   })
 
-  it('refuses an IRMAA tier above N or fractional and accepts a whole tier within 1..N', () => {
+  // N is the published pack's tier count — the same expression the check reads.
+  // This pins the direct validation contract, not statute; plan.conversionWindow.test.ts
+  // independently covers the five-step legal mapping via parsePlan and its
+  // source-vs-pack coherence gate for 42 U.S.C. 1395r(i)(3).
+  it('accepts IRMAA tier endpoints 1 and N and refuses targets outside 1..N', () => {
     const taxYear = 2026
     const tierCount = packForYear(taxYear).pack.medicare.irmaaTiers.length
     const message = `an IRMAA tier target must be a whole number from 1 to ${tierCount}`
+    const expectedIssue = {
+      code: 'custom',
+      path: ['strategies', 'rothConversion', 'targetValue'],
+      message,
+    }
 
     const withIrmaaTarget = (targetValue: number | null): PlanDocument => {
       const plan = singlePersonPlan()
@@ -295,22 +304,14 @@ describe('checkRothConversionFillToTarget', () => {
       return plan
     }
 
-    expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(1))).toEqual([])
+    for (const validTarget of [1, tierCount]) {
+      expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(validTarget))).toEqual([])
+    }
 
-    expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(tierCount + 1))).toEqual([
-      {
-        code: 'custom',
-        path: ['strategies', 'rothConversion', 'targetValue'],
-        message,
-      },
-    ])
-
-    expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(1.5))).toEqual([
-      {
-        code: 'custom',
-        path: ['strategies', 'rothConversion', 'targetValue'],
-        message,
-      },
-    ])
+    for (const invalidTarget of [0, -1, tierCount + 1, 1.5, null] as const) {
+      expect(issuesFrom(checkRothConversionFillToTarget, withIrmaaTarget(invalidTarget))).toEqual([
+        expectedIssue,
+      ])
+    }
   })
 })

@@ -306,8 +306,12 @@ describe('taxOpportunityView', () => {
     const targetYear = proposalResult.years[0]!
     // Pub 915 / IRC §86 worksheet (single): provisional 30_000 + 0.5×40_000 = 50_000
     // → taxable SS 4_500 + 0.85×(50_000 − 34_000) = 18_100. A 1_000 ordinary probe
-    // raises provisional to 51_000 → taxable SS 18_950 (+850). Extra taxable income
-    // 1_850 × 12% = 222 → effective probe rate 22.2% vs statutory 12%.
+    // raises provisional to 51_000 → taxable SS 18_950 (+850). AGI 48_100 → 49_950;
+    // 2026 single standard deduction $16_100 (01-federal-income-tax-2026.md line 69;
+    // IRS source line 85);
+    // ordinary taxable $32_000 → $33_850, both inside the 12% interval $12_400..$50_400
+    // (Rev. Proc. 2025-32 §4.01 Table 3 / irc-1-j-2-progressive-ordinary-rate-schedule).
+    // Extra taxable income 1_850 × 12% = 222; 222 / 1_000 = 22.2% vs statutory 12%.
     const input: TaxYearInput = {
       year: targetYear.year,
       filingStatus: 'single',
@@ -323,6 +327,7 @@ describe('taxOpportunityView', () => {
       ordinaryIncome: input.ordinaryIncome + EFFECTIVE_MARGINAL_RATE_PROBE_DOLLARS,
     })
     expect(probedDetail.taxableSocialSecurity).toBeCloseTo(18_950, 0)
+    expect(probedDetail.totalTax - detail.totalTax).toBeCloseTo(222, 2)
 
     const view = buildTaxOpportunityView({
       evaluation,
