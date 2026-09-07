@@ -13,11 +13,11 @@ export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
-export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '0f9d01c23a4893798f3c14ea0e1232a49163b73d'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'e7137764270ff5fc3b441b827e36908b6aec9464'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
-  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@47aa4ad1572f943becd63e0173dbc31e6b945f5d'
-export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '47aa4ad1572f943becd63e0173dbc31e6b945f5d'
-/** Primary ledger producer: openrouter-pr-review-action@481069edae02298d4069f03b24ad1cdc67c5f348. */
+  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@8dfc658b4dbf4502aabb3d4f4387854991952c8d'
+export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '8dfc658b4dbf4502aabb3d4f4387854991952c8d'
+/** Primary ledger producer: openrouter-pr-review-action@588955bd9e54909ac39a4729e9e3409b68ed400f. */
 const LEDGER_FINDING_ID_RE = /^r\p{Decimal_Number}{1,3}-\p{Decimal_Number}{1,3}$/u
 // Mirrors Python str.strip(); U+FEFF (BOM) is not whitespace there (schema.py valid_review_path).
 const PYTHON_STRIP_RE = /^[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+|[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+$/gu
@@ -108,7 +108,7 @@ function trustedLedger(body, { repository, pullNumber, headSha, workflowRunUrls 
   const payload = marker && decodeLedgerPayload(marker[1])
 
   const verdict = /^\*\*Verdict:\*\* `(clean|issues)`$/.exec(lines[3] ?? '')?.[1]
-  // Producer: openrouter-pr-review-action@481069edae02298d4069f03b24ad1cdc67c5f348
+  // Producer: openrouter-pr-review-action@588955bd9e54909ac39a4729e9e3409b68ed400f
   // apply_round drops fixed entries; clean means zero open findings (_decode_finding shape).
   const cleanFindings =
     Array.isArray(payload?.findings) &&

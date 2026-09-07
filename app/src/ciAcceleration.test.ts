@@ -269,7 +269,7 @@ describe('trusted default-branch review verification recovery', () => {
     expect(recoveryWorkflow).toContain("if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(recoveryWorkflow).toContain("if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(recoveryWorkflow).toContain('Dispatch recovery from the default branch.')
-    expect(recoveryWorkflow).toContain('uses: FlyOverCoderKY/openrouter-pr-review-action@481069edae02298d4069f03b24ad1cdc67c5f348')
+    expect(recoveryWorkflow).toContain('uses: FlyOverCoderKY/openrouter-pr-review-action@588955bd9e54909ac39a4729e9e3409b68ed400f')
     expect(recoveryWorkflow).toContain('effort: low')
     expect(recoveryWorkflow).toContain("max_tool_turns: '30'")
     expect(recoveryWorkflow).toContain("max_diff_kb: '600'")
