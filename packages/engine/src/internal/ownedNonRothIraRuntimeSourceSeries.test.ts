@@ -323,6 +323,142 @@ describe('private owned-IRA runtime source-series validation', () => {
       .toMatchObject({ status: 'ownedNonRothIraRuntimeSourceSeriesBlocked', issues: [{ kind: 'applicationOrderInvalid' }] })
   })
 
+  it('rejects a forged conversion sourced from an inherited Plan IRA', () => {
+    const plan = singlePersonPlan({ planningAge: 60 })
+    plan.id = 'inherited-conversion-forged'
+    const ownedId = 'ira-owned'
+    const inheritedId = 'ira-inherited'
+    const owned = traditional(ownedId, 10_000)
+    const inherited = traditional(inheritedId, 10_000)
+    if (inherited.type !== 'traditional') throw new Error('expected traditional IRA')
+    plan.accounts = [
+      owned,
+      {
+        ...inherited,
+        inherited: {
+          ownerDeathYear: 2020,
+          decedentHadStartedRmds: true,
+        },
+      },
+      roth('roth'),
+    ]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: TAX_YEAR, amount: 1_000 }],
+    }
+    const controlYears = copy(project(plan))
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, controlYears,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesComplete',
+    })
+    const controlOccurrences = controlYears[0]!
+      .retirementRuntimeSource!.runtimeOccurrences
+    const controlApplications = controlYears[0]!
+      .retirementRuntimeApplicationSource!.applications
+    const conversionIndex = controlOccurrences.findIndex((occurrence) =>
+      occurrence.kind === 'legacyRothConversion' &&
+      occurrence.sourceAccountId === ownedId)
+    const debitIndex = controlApplications.findIndex((application) =>
+      application.applicationKind === 'debit' &&
+      application.simulatorPhase === 'legacyRothConversion' &&
+      application.sourceAccountId === ownedId)
+    expect(conversionIndex).toBeGreaterThanOrEqual(0)
+    expect(debitIndex).toBeGreaterThanOrEqual(0)
+    expect(controlOccurrences[conversionIndex]!.ownerPersonId).toBe('p1')
+    expect(controlApplications[debitIndex]!.ownerPersonId).toBe('p1')
+
+    const years = copy(controlYears)
+    const occurrences = years[0]!.retirementRuntimeSource!.runtimeOccurrences
+    const applications = years[0]!.retirementRuntimeApplicationSource!.applications
+    const ownedOccurrence = occurrences[conversionIndex]!
+    const ownedDebit = applications[debitIndex]!
+    const originalKey = ownedOccurrence.producerOccurrenceKey
+    const tuple = JSON.parse(originalKey) as unknown[]
+    const replacement = JSON.stringify([tuple[0], inheritedId, tuple[2]])
+    const mutableOccurrence = ownedOccurrence as {
+      producerOccurrenceKey: string
+      sourceAccountId: string
+    }
+    mutableOccurrence.producerOccurrenceKey = replacement
+    mutableOccurrence.sourceAccountId = inheritedId
+    const mutableDebit = ownedDebit as {
+      producerOccurrenceKey: string
+      sourceAccountId: string
+    }
+    mutableDebit.producerOccurrenceKey = replacement
+    mutableDebit.sourceAccountId = inheritedId
+    const aggregate = applications.find((application) =>
+      application.applicationKind === 'aggregateRothDestinationCredit')
+    if (aggregate?.applicationKind !== 'aggregateRothDestinationCredit') {
+      throw new Error('expected aggregate conversion credit')
+    }
+    ;(aggregate as unknown as { producerOccurrenceKeys: string[] })
+      .producerOccurrenceKeys = aggregate.producerOccurrenceKeys.map((key) =>
+        key === originalKey ? replacement : key)
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'sourceIdentityInvalid' }],
+      })
+  })
+
+  it('refuses a conversion debit recorded ahead of the RMD that preceded it', () => {
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
+    plan.id = 'conversion-before-rmd-forged'
+    plan.accounts = [traditional('ira', 265_000), roth('roth')]
+    plan.strategies.rothConversion = {
+      mode: 'manual',
+      conversions: [{ year: TAX_YEAR, amount: 255_000 }],
+    }
+    const controlYears = copy(project(plan))
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(
+      plan, TAX_YEAR, controlYears,
+    )).toMatchObject({
+      status: 'ownedNonRothIraRuntimeSourceSeriesComplete',
+    })
+    type MutableDebit = {
+      simulatorPhase?: string
+      mutationOrdinal: number
+      sourceBalanceBeforePlanDollars: number | null
+      sourceBalanceAfterPlanDollars: number | null
+      appliedAmountPlanDollars?: number
+    }
+    const controlApplications = controlYears[0]!
+      .retirementRuntimeApplicationSource!.applications as unknown as MutableDebit[]
+    const rmdIndex = controlApplications
+      .findIndex((entry) => entry.simulatorPhase === 'ownerRmdDistribution')
+    const conversionIndex = controlApplications
+      .findIndex((entry) => entry.simulatorPhase === 'legacyRothConversion')
+    expect(rmdIndex).toBeGreaterThanOrEqual(0)
+    expect(conversionIndex).toBe(rmdIndex + 1)
+
+    const years = copy(controlYears)
+    const applications = years[0]!.retirementRuntimeApplicationSource!
+      .applications as unknown as MutableDebit[]
+    const opening = applications[rmdIndex]!.sourceBalanceBeforePlanDollars!
+    applications.splice(
+      rmdIndex,
+      2,
+      applications[conversionIndex]!,
+      applications[rmdIndex]!,
+    )
+    let running = opening
+    for (const entry of applications.slice(rmdIndex, rmdIndex + 2)) {
+      entry.sourceBalanceBeforePlanDollars = running
+      running -= entry.appliedAmountPlanDollars!
+      entry.sourceBalanceAfterPlanDollars = running
+    }
+    applications.forEach((entry, index) => { entry.mutationOrdinal = index + 1 })
+
+    expect(validateOwnedNonRothIraRuntimeSourceSeries(plan, TAX_YEAR, years))
+      .toMatchObject({
+        status: 'ownedNonRothIraRuntimeSourceSeriesBlocked',
+        issues: [{ kind: 'applicationOrderInvalid', taxYear: TAX_YEAR }],
+      })
+  })
+
   it('requires canonical producer-key serialization', () => {
     const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 90 })
     plan.id = 'canonical-key'

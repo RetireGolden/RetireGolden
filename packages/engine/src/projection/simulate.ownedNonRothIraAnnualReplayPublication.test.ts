@@ -7,13 +7,158 @@ import {
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
+import { committedOwnedNonRothIraAnnualReplayPublication } from
+  '../internal/ownedNonRothIraAnnualReplayPublication.js'
+import { runOwnedNonRothIraAnnualSettlementAttempts } from
+  '../internal/ownedNonRothIraAnnualAttemptSettlement.js'
+import type { SimulatorAnnualPassStateBindings, SimulatorAnnualPassValueBinding } from
+  '../projection/annualPassTransaction.js'
 import { replayOwnedNonRothIraContiguousYears } from
   '../internal/ownedNonRothIraContiguousReplay.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
-import type { YearResult } from './types.js'
+import type { YearExpenses, YearResult } from './types.js'
 
 const TAX_YEAR = 2026
+
+// No public annual-pass settlement fixture helper exists; this block mirrors the
+// private settlement test's required SimulatorAnnualPassStateBindings shape.
+function binding<T>(initial: T): SimulatorAnnualPassValueBinding<T> {
+  let value = initial
+  return {
+    read: () => value,
+    write: (next) => { value = next },
+  }
+}
+
+function settlementExpenses(): YearExpenses {
+  return {
+    baseSpending: 0,
+    oneTimeGoals: 0,
+    debtService: 0,
+    propertyCosts: 0,
+    healthcare: 0,
+    insurancePremiums: 0,
+    careCost: 0,
+    ltcBenefit: 0,
+    requiredSpending: 0,
+    targetSpending: 0,
+    idealSpending: 0,
+    excessSpending: 0,
+    intendedSpending: 0,
+    guardrailFactor: 1,
+    total: 0,
+  }
+}
+
+function settlementState(plan: Plan): SimulatorAnnualPassStateBindings {
+  return {
+    balances: plan.accounts.flatMap((account) =>
+      'balance' in account && typeof account.balance === 'number'
+        ? [{
+            account: { id: account.id },
+            balance: account.balance,
+            costBasis: 'costBasis' in account &&
+              typeof account.costBasis === 'number'
+              ? account.costBasis
+              : 0,
+          }]
+        : []),
+    retirementRuntimeOccurrences: [],
+    retirementRuntimeApplications: [],
+    nextRetirementRuntimeMutationOrdinal: binding(1),
+    iraProRata: new Map(),
+    iraBasisByOwner: new Map(),
+    rothBasis: new Map(),
+    rothAssumedContributionRemaining: new Map(),
+    rothCounterfactualFreeCoverConsumed: new Map(),
+    propertyValues: new Map(),
+    hecmStates: new Map(),
+    insuranceCashValues: new Map(),
+    allocationTrack: new Map(),
+    seppAmortAmount: new Map(),
+    magiHistory: new Map(),
+    deferredFirstRmdByApplicablePlan: new Map([['["owned-iras","p1"]', {
+      applicablePlan: { kind: 'ownedTraditionalIras', payeePersonId: 'p1' },
+      distributionCalendarYear: TAX_YEAR - 1,
+      dueYear: TAX_YEAR,
+      requiredAmount: 4_000,
+      distributedBeforeDueYear: 0,
+    }]]),
+    namedQcdOffsetConsumedByDonor: new Map(),
+    namedQcdOffsetHistoryUnprovable: new Set(),
+    warnings: new Set(['baseline']),
+    unassignedCash: binding(0),
+    priorYearPortfolioReturnPct: binding(0),
+    capitalLossPool: binding(0),
+    hsaReimbursablePool: binding(0),
+    depletionYear: binding<number | null>(null),
+    conversionNontaxable: binding(0),
+    healthcare: binding(0),
+    qualifiedMedicalThisYear: binding(0),
+    hsaQualifiedCap: binding(0),
+    requiredSpendingBase: binding(0),
+    targetSpendingBase: binding(0),
+    expenses: settlementExpenses(),
+  }
+}
+
+function cloneYears(years: readonly Readonly<YearResult>[]): YearResult[] {
+  return structuredClone(years) as YearResult[]
+}
+
+function mutateSettlementAttemptState(
+  simulatorState: SimulatorAnnualPassStateBindings,
+  years: readonly Readonly<YearResult>[],
+): void {
+  if (years.length !== 1) throw new Error('settlement helper requires one year')
+  const year = years[0]!
+  simulatorState.retirementRuntimeOccurrences.push(
+    ...year.retirementRuntimeSource!.runtimeOccurrences.map((value) => ({
+      ...value,
+    })),
+  )
+  simulatorState.retirementRuntimeApplications.push(
+    ...year.retirementRuntimeApplicationSource!.applications.map((value) =>
+      structuredClone(value)),
+  )
+  simulatorState.nextRetirementRuntimeMutationOrdinal.write(
+    year.retirementRuntimeApplicationSource!.applications.length + 1,
+  )
+  for (const record of simulatorState.balances) {
+    record.balance = year.balances[record.account.id]!
+  }
+}
+
+function committedSettlementPair(plan: Plan): {
+  settlement: Extract<
+    ReturnType<typeof runOwnedNonRothIraAnnualSettlementAttempts>,
+    { status: 'committed' }
+  >
+  yearResult: YearResult
+} {
+  const years = simulatePlan(validatePlan(plan), {
+    startYear: TAX_YEAR,
+    horizonEndYear: TAX_YEAR,
+    taxCalculator: createFlatTaxCalculator(0),
+  }).years
+  const simulatorState = settlementState(plan)
+  const result = runOwnedNonRothIraAnnualSettlementAttempts({
+    state: simulatorState,
+    plan,
+    projectionStartTaxYear: TAX_YEAR,
+    initialAssumedEffects: [],
+    runAttempt: () => {
+      const attemptYears = cloneYears(years)
+      mutateSettlementAttemptState(simulatorState, attemptYears)
+      return attemptYears
+    },
+  })
+  if (result.status !== 'committed') {
+    throw new Error(`expected committed settlement, received ${result.status}`)
+  }
+  return { settlement: result, yearResult: years[0]! }
+}
 
 function ira(
   id: string,
@@ -270,5 +415,36 @@ describe('simulator committed owned non-Roth IRA annual replay publication', () 
       taxYear: TAX_YEAR,
     })
     expect(years[1]!).not.toHaveProperty('ownedNonRothIraAnnualReplay')
+  })
+
+  it('refuses publication when the committed settlement and yearResult disagree', () => {
+    const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 76 })
+    plan.id = 'publication-join'
+    plan.accounts = [ira('ira', 100_000, 20_000)]
+    const { settlement, yearResult } = committedSettlementPair(plan)
+    const control = committedOwnedNonRothIraAnnualReplayPublication(
+      settlement,
+      yearResult,
+    )
+
+    expect(control).not.toBeNull()
+    expect(committedOwnedNonRothIraAnnualReplayPublication(
+      settlement,
+      { ...yearResult, year: yearResult.year + 1 },
+    )).toBeNull()
+    expect(committedOwnedNonRothIraAnnualReplayPublication(
+      settlement,
+      { ...yearResult, year: yearResult.year - 1 },
+    )).toBeNull()
+    expect(committedOwnedNonRothIraAnnualReplayPublication(
+      {
+        ...settlement,
+        pendingSettlement: {
+          ...settlement.pendingSettlement,
+          endTaxYear: yearResult.year + 1,
+        },
+      },
+      yearResult,
+    )).toBeNull()
   })
 })
