@@ -16,6 +16,8 @@ import {
   evaluateBudget,
   parseLandingScripts,
   parsePrecacheUrls,
+  parseStaticRelativeImports,
+  workerEntryImporters,
 } from './bundleBudget.mjs'
 
 const KIB = 1024
@@ -151,6 +153,43 @@ describe('evaluateBudget — oversize', () => {
     const text = failureText(evaluateBudget(build))
     expect(text).toContain('landing critical path')
     expect(text).toContain('PWA precache')
+  })
+})
+
+describe('worker entry import cycle (#672)', () => {
+  it('parses static relative imports from a Rolldown ES chunk', () => {
+    expect(
+      parseStaticRelativeImports(
+        'import{k as oe}from"./planner.worker-BI4wolyi.js";import{c as e}from"./annualProjectionKernels-C_n9Ox4w.js";',
+      ),
+    ).toEqual(['planner.worker-BI4wolyi.js', 'annualProjectionKernels-C_n9Ox4w.js'])
+  })
+
+  it('reports isolated coordinator chunks that import the worker entry', () => {
+    const result = workerEntryImporters([
+      { name: 'planner.worker-aaa.js', source: 'import{t as n}from"./annualProjectionFundingClose-bbb.js";' },
+      {
+        name: 'annualProjectionFundingClose-bbb.js',
+        source: 'import{k as oe}from"./planner.worker-aaa.js";const d=oe;',
+      },
+      { name: 'annualProjectionKernels-ccc.js', source: 'export const x=1;' },
+    ])
+    expect(result.workerNames).toEqual(['planner.worker-aaa.js'])
+    expect(result.importers).toEqual(['annualProjectionFundingClose-bbb.js'])
+  })
+
+  it('is clean when only the worker entry imports its split chunks', () => {
+    const result = workerEntryImporters([
+      { name: 'planner.worker-aaa.js', source: 'import{t as n}from"./annualProjectionKernels-ccc.js";' },
+      { name: 'annualProjectionKernels-ccc.js', source: 'export const x=1;' },
+    ])
+    expect(result.importers).toEqual([])
+  })
+
+  it('fails closed when the worker entry is missing', () => {
+    const result = workerEntryImporters([{ name: 'annualProjectionKernels-ccc.js', source: 'export const x=1;' }])
+    expect(result.workerNames).toEqual([])
+    expect(result.importers).toBeNull()
   })
 })
 

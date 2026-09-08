@@ -108,6 +108,22 @@ const annualProjectionCodeSplitting = {
   ],
 } satisfies ViteCodeSplitting
 
+// The worker graph cannot use the two isolated coordinator groups above.
+// Those files (`includeDependenciesRecursively: false`) keep their remaining
+// value imports in the worker entry, then import the entry — a circular ES
+// module graph. Production minifies one of those live bindings to `oe` and
+// TDZ-crashes on first spawn: "Cannot access 'oe' before initialization"
+// (#672, Design QA on /plan/:id/spending-solver). Kernels and publications
+// stay split: they do not import the worker entry.
+const workerAnnualProjectionCodeSplitting = {
+  groups: [
+    {
+      name: annualProjectionCoordinatorChunk,
+      includeDependenciesRecursively: true,
+    },
+  ],
+} satisfies ViteCodeSplitting
+
 // Paths the service worker must fetch instead of answering with the app shell.
 // Mirrors `navigationFallback.exclude` in public/staticwebapp.config.json — the
 // host applies that list to 404s only, but workbox's navigateFallback answers
@@ -144,11 +160,13 @@ export default defineConfig({
   },
   worker: {
     // The sole worker is already spawned as `type: 'module'`. ES output lets
-    // its graph share the same deliberate static split as the app build.
+    // kernels and publications stay small static chunks, matching the app
+    // graph. Isolated funding/settlement coordinators stay in the worker
+    // entry — see workerAnnualProjectionCodeSplitting.
     format: 'es',
     rolldownOptions: {
       output: {
-        codeSplitting: annualProjectionCodeSplitting,
+        codeSplitting: workerAnnualProjectionCodeSplitting,
       },
     },
   },

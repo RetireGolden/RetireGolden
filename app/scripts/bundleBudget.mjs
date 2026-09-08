@@ -152,6 +152,40 @@ export function parseLandingScripts(html) {
  * a workbox output change, which must fail the gate rather than quietly drop
  * the precache row. An empty array is likewise a caller-side failure.
  */
+/**
+ * Static `from "./chunk.js"` specifiers in a Rolldown ES chunk.
+ *
+ * Used to detect a worker-graph cycle: an isolated coordinator chunk that
+ * imports the worker entry (which imported that coordinator) TDZ-crashes
+ * production on first spawn (#672).
+ */
+export function parseStaticRelativeImports(source) {
+  return [...source.matchAll(/\bfrom\s*["'](\.\/[^"']+)["']/g)].map((m) => m[1].replace(/^\.\//, ''))
+}
+
+const WORKER_ENTRY_NAME = /^planner\.worker-[^/]*\.js$/
+
+/**
+ * Chunks other than the worker entry that statically import it.
+ *
+ * `chunks` is `{ name, source }[]`. Returns `{ workerNames, importers }`.
+ * `importers: null` means the worker entry itself was missing — fail closed;
+ * the single-worker budget already requires exactly one entry, and a cycle
+ * check with no entry has not actually checked the graph.
+ */
+export function workerEntryImporters(chunks) {
+  const workerNames = chunks.filter((chunk) => WORKER_ENTRY_NAME.test(chunk.name)).map((chunk) => chunk.name)
+  if (workerNames.length === 0) return { workerNames, importers: null }
+  const workerSet = new Set(workerNames)
+  const importers = []
+  for (const chunk of chunks) {
+    if (workerSet.has(chunk.name)) continue
+    const imports = parseStaticRelativeImports(chunk.source)
+    if (imports.some((name) => workerSet.has(name))) importers.push(chunk.name)
+  }
+  return { workerNames, importers }
+}
+
 export function parsePrecacheUrls(swSource) {
   const start = swSource.indexOf('precacheAndRoute([')
   if (start === -1) return null

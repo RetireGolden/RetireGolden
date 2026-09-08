@@ -81,13 +81,21 @@ asserted a second time, from the outside, by planner-ui's
 published tarball must emit exactly one worker chunk.
 
 The worker is emitted as an ES-module graph because its one spawn site already uses
-`{ type: 'module' }`. That lets selected, high-contract annual phase coordinators remain small static
-chunks in both the app and worker graphs instead of forcing their explicit contracts back into either
-already-tight entry. Publication coordinators and the pure annual calculation kernels have distinct chunk
-names so their measured ownership remains visible. The final funding/year-close and owned-IRA settlement
-coordinators also have their own explicit-only chunks: they are effectful orchestration boundaries rather
-than pure kernels, and excluding their dependency graphs prevents extraction-only file moves from
-inflating the shared `useProjection` chunk.
+`{ type: 'module' }`. Publication coordinators and the pure annual calculation kernels stay small
+static chunks in both the app and worker graphs so their measured ownership remains visible. The
+final funding/year-close and owned-IRA settlement coordinators have explicit-only chunks **in the
+app graph only**: they are effectful orchestration boundaries rather than pure kernels, and
+excluding their dependency graphs prevents extraction-only file moves from inflating the shared
+`useProjection` chunk.
+
+The worker graph cannot isolate those two coordinators. With
+`includeDependenciesRecursively: false`, their remaining value imports land in the worker entry,
+and the coordinator chunks then import the entry — a circular ES module graph. Production
+minifies one of those live bindings to `oe` and TDZ-crashes on first spawn
+(`Cannot access 'oe' before initialization`; #672, the spending-solver surface). The worker
+therefore keeps those coordinators in the entry and only splits kernels and publications. The
+bundle-budget CLI fails the build if any other `dist/assets` chunk statically imports
+`planner.worker-*.js`.
 Those chunks stay precached; the split changes
 parsing and chunk ownership, not the offline guarantee or the one-worker-entry invariant.
 
