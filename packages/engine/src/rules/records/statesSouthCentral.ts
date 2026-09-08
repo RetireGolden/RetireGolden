@@ -703,7 +703,7 @@ export const southCentralStateRecords = {
   'ms-27-7-5-rate-ramp': {
     title: 'Mississippi’s zero band and its legislated rate ramp',
     statement:
-      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. That zero band is two clauses rather than one — 27-7-5(1)(a)(i)6 removed the tax on the first $5,000 from 2022 and (1)(b)(i) removed it on $5,000 to $10,000 from 2023 — and the pack models the pair as a 0% bracket below $10,000. The rate above the band is 4.4% for 2025, 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030. For later years, the quoted clause holds 3% except as otherwise provided in Section 2; the quoted closing sentence self-repeals the individual income tax if later reductions eliminate the tax. The pack holds 4% for both filing statuses. The next four refreshes each have a published figure waiting, so carrying this one forward is wrong by construction.',
+      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. The pack models that zero band as a 0% bracket below $10,000. The rate above the band is 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030. For later years, the quoted clause holds 3% except as otherwise provided in Section 2; the quoted closing sentence self-repeals the individual income tax if later reductions eliminate the tax. The pack holds 4% for both filing statuses. The next four refreshes each have a published figure waiting, so carrying this one forward is wrong by construction.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1587,7 +1587,7 @@ export const southCentralStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-28',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/tax/stateTax.ts',

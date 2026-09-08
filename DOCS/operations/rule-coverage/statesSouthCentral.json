@@ -789,16 +789,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3378,
+          "line": 3384,
           "note": null,
           "tests": [
             {
               "title": "prices Alabama single brackets rather than the joint schedule",
-              "line": 3394
+              "line": 3400
             },
             {
               "title": "prices the joint schedule on a joint return, distinct from the single breaks",
-              "line": 3401
+              "line": 3407
             }
           ]
         }
@@ -875,20 +875,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3416,
+          "line": 3422,
           "note": "settled: enacted and form authority support $6,000 per taxpayer at age 65",
           "tests": [
             {
               "title": "implements the enacted $6,000 reading and discriminates source-error counterfactuals",
-              "line": 3438
+              "line": 3452
+            },
+            {
+              "title": "withholds the exclusion below age 65",
+              "line": 3461
+            },
+            {
+              "title": "doubles the cap on a joint return when both spouses are 65",
+              "line": 3473
+            },
+            {
+              "title": "grants only one $6,000 cap when one spouse is below 65",
+              "line": 3487
             },
             {
               "title": "reaches the no-exclusion counterfactual once the cap is withheld",
-              "line": 3447
+              "line": 3501
             },
             {
               "title": "reaches the doubled-cap counterfactual under a doubled cap",
-              "line": 3455
+              "line": 3509
+            },
+            {
+              "title": "reaches the no-age-gate counterfactual once minAge is dropped",
+              "line": 3517
             }
           ]
         }
@@ -1119,12 +1135,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3348,
+          "line": 3354,
           "note": null,
           "tests": [
             {
               "title": "keeps a taxable IRA distribution in the Alabama base",
-              "line": 3364
+              "line": 3370
             }
           ]
         }
@@ -1319,12 +1335,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3320,
+          "line": 3326,
           "note": null,
           "tests": [
             {
               "title": "omits federally taxable Social Security from the Alabama base",
-              "line": 3337
+              "line": 3343
             }
           ]
         }
@@ -1350,8 +1366,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-28",
-      "dueOn": "2027-08-28",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -2328,7 +2344,7 @@
           "functions": [
             {
               "name": "OK",
-              "line": 698
+              "line": 695
             }
           ]
         },
@@ -2415,7 +2431,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 771
+              "line": 768
             }
           ]
         },
@@ -2487,7 +2503,7 @@
           "functions": [
             {
               "name": "TN",
-              "line": 771
+              "line": 768
             }
           ]
         },
@@ -2559,7 +2575,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 776
+              "line": 773
             }
           ]
         },
@@ -2626,7 +2642,7 @@
           "functions": [
             {
               "name": "TX",
-              "line": 776
+              "line": 773
             }
           ]
         },

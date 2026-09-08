@@ -3315,7 +3315,13 @@ const alSingleTax = (taxable: number) => bandedTax(
   [[0, 500, 2], [500, 3000, 4], [3000, Infinity, 5]],
   taxable,
 )
+const alMfjTax = (taxable: number) => bandedTax(
+  [[0, 1000, 2], [1000, 6000, 4], [6000, Infinity, 5]],
+  taxable,
+)
 const AL_DEDUCTION_SINGLE = 3_000
+const AL_DEDUCTION_JOINT = 8_500
+const AL_RETIREMENT_INCOME = 40_000
 
 describeRule('al-form40-social-security-exclusion', {
   readings: {
@@ -3424,14 +3430,22 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
     // Source-error counterfactual: double the enacted per-taxpayer cap.
     // Taxable 40,000 − 12,000 − 3,000 = 25,000 → tax 1,210.
     doubledCapCounterfactual: alSingleTax(25_000),
+    // MFJ both 65: $6,000 per taxpayer → taxable 19,500 → tax 895.
+    bothSixtyFiveTwelveThousandMfj: alMfjTax(
+      AL_RETIREMENT_INCOME - 12_000 - AL_DEDUCTION_JOINT,
+    ),
+    // MFJ one 65 / household $6,000 cap counterfactual: taxable 25,500 → tax 1,195.
+    oneSixtyFiveSixThousandMfj: alMfjTax(
+      AL_RETIREMENT_INCOME - 6_000 - AL_DEDUCTION_JOINT,
+    ),
   },
   accepted: 'encodedSixThousandAtSixtyFive',
   note: 'settled: enacted and form authority support $6,000 per taxpayer at age 65',
 }, ({ accepted, readings }) => {
   const scenario = input({
     state: 'AL',
-    ordinaryIncome: 40_000,
-    privateRetirementIncome: 40_000,
+    ordinaryIncome: AL_RETIREMENT_INCOME,
+    privateRetirementIncome: AL_RETIREMENT_INCOME,
     agesAlive: [70],
   })
 
@@ -3442,6 +3456,46 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
     expect(readings.doubledCapCounterfactual).toBeCloseTo(1210, 6)
     expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.noAgeExclusionCounterfactual, 6)
     expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.doubledCapCounterfactual, 6)
+  })
+
+  it('withholds the exclusion below age 65', () => {
+    const at64 = input({
+      state: 'AL',
+      ordinaryIncome: AL_RETIREMENT_INCOME,
+      privateRetirementIncome: AL_RETIREMENT_INCOME,
+      agesAlive: [64],
+    })
+    expect(computeStateTax(pack('AL'), at64))
+      .toBeCloseTo(readings.noAgeExclusionCounterfactual, 6)
+    expect(computeStateTax(pack('AL'), at64)).not.toBeCloseTo(accepted, 6)
+  })
+
+  it('doubles the cap on a joint return when both spouses are 65', () => {
+    const both65 = input({
+      state: 'AL',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: AL_RETIREMENT_INCOME,
+      privateRetirementIncome: AL_RETIREMENT_INCOME,
+      agesAlive: [65, 65],
+    })
+    expect(computeStateTax(pack('AL'), both65))
+      .toBeCloseTo(readings.bothSixtyFiveTwelveThousandMfj, 6)
+    expect(computeStateTax(pack('AL'), both65))
+      .not.toBeCloseTo(readings.oneSixtyFiveSixThousandMfj, 6)
+  })
+
+  it('grants only one $6,000 cap when one spouse is below 65', () => {
+    const oneEligible = input({
+      state: 'AL',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: AL_RETIREMENT_INCOME,
+      privateRetirementIncome: AL_RETIREMENT_INCOME,
+      agesAlive: [65, 64],
+    })
+    expect(computeStateTax(pack('AL'), oneEligible))
+      .toBeCloseTo(readings.oneSixtyFiveSixThousandMfj, 6)
+    expect(computeStateTax(pack('AL'), oneEligible))
+      .not.toBeCloseTo(readings.bothSixtyFiveTwelveThousandMfj, 6)
   })
 
   it('reaches the no-exclusion counterfactual once the cap is withheld', () => {
@@ -3458,6 +3512,22 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
       retirementPrivate: { kind: 'capped' as const, capPerPerson: 12_000, minAge: 65 },
     }
     expect(computeStateTax(doubled, scenario)).toBeCloseTo(readings.doubledCapCounterfactual, 6)
+  })
+
+  it('reaches the no-age-gate counterfactual once minAge is dropped', () => {
+    const noAgeGate = {
+      ...pack('AL'),
+      retirementPrivate: { kind: 'capped' as const, capPerPerson: 6_000 },
+    }
+    const at64 = input({
+      state: 'AL',
+      ordinaryIncome: AL_RETIREMENT_INCOME,
+      privateRetirementIncome: AL_RETIREMENT_INCOME,
+      agesAlive: [64],
+    })
+    expect(computeStateTax(noAgeGate, at64)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(noAgeGate, at64))
+      .not.toBeCloseTo(readings.noAgeExclusionCounterfactual, 6)
   })
 })
 

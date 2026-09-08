@@ -477,7 +477,7 @@
           "functions": [
             {
               "name": "NH",
-              "line": 593
+              "line": 590
             }
           ]
         },
@@ -549,7 +549,7 @@
           "functions": [
             {
               "name": "NJ",
-              "line": 599
+              "line": 596
             }
           ]
         },
@@ -639,7 +639,7 @@
           "functions": [
             {
               "name": "states.NY",
-              "line": 633
+              "line": 630
             }
           ]
         },
@@ -720,7 +720,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 731
+              "line": 728
             }
           ]
         },
@@ -792,7 +792,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 731
+              "line": 728
             }
           ]
         },
@@ -872,7 +872,7 @@
           "functions": [
             {
               "name": "RI",
-              "line": 740
+              "line": 737
             }
           ]
         },
@@ -954,7 +954,7 @@
           "functions": [
             {
               "name": "RI",
-              "line": 740
+              "line": 737
             }
           ]
         },
@@ -1068,7 +1068,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 790
+              "line": 787
             }
           ]
         },

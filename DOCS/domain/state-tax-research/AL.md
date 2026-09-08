@@ -50,5 +50,5 @@ maximums per the Tax Foundation cross-check.
 - https://www.revenue.alabama.gov/faqs/how-much-is-the-alabama-standard-deduction/ — standard deduction.
 - https://taxfoundation.org/data/all/state/state-income-tax-rates/ — 2025 AL brackets, standard deduction ($3,000/$8,500), SS exempt cross-check.
 - https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf — enrolled 2026 H.B. 341, § 40-18-19(a)(13): first $6,000 of taxable retirement income, for individual taxpayers age 65+.
-- https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf — 2025 Schedule RS: each taxpayer age 65+ is eligible for up to $6,000, capped by retirement income taxable to Alabama.
+- https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf — 2025 Schedule RS: each taxpayer is eligible for up to $6,000, bounded by retirement income taxable to Alabama.
 - https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf — 2025 Form 40 booklet: Federal Social Security benefits and qualifying defined-benefit retirement payments are listed as income not reported; other pension and IRA distributions use Schedule RS.

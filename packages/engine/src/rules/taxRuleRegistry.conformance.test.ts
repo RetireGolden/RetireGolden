@@ -492,11 +492,12 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // Alabama Legislature ALISON (`alison.legislature.state.al.us`) and, from
     // 2026-08-28, the staged Form 40 booklet PDF and the Department of Revenue
     // individual-income-tax page. Alabama's Code host does not supply
-    // quote-verifiable operative text for these limbs; the enrolled act on
-    // ALISON and the Department's own booklet and agency page are deliberately
-    // admitted as the primary publishers — the same form-instruction /
-    // agency-publication boundary used for Georgia, Oklahoma, and Utah where
-    // script-rendered code pages cannot carry the quote.
+    // quote-verifiable operative text for these limbs. ALISON is admitted as
+    // the enrolled-act publisher — the Arkansas pattern — not as a form-
+    // instruction substitute. The Department's booklet and agency page are
+    // admitted under the same form-instruction / agency-publication boundary
+    // used for Georgia, Oklahoma, and Utah where script-rendered code pages
+    // cannot carry the quote.
     //
     // Enrolled acts: `.../files/pdf/SearchableInstruments/<session>/<bill>-enr.pdf`
     'alison.legislature.state.al.us', // Alabama Legislature ALISON: enrolled acts
