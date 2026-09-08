@@ -2,9 +2,9 @@
  * Canonical owned-IRA post-candidate classification input for unit tests.
  *
  * Shared by `ownedNonRothIraAnnualPostCandidateEvidence.test.ts` and the
- * `irc-219-f-3-prior-year-contribution-window` describeRule block in
- * `ownedNonRothIraAnnualFilingEvidence.test.ts`. Test-only support; not
- * published for external consumers.
+ * `irc-6072-a-7503-ordinary-federal-filing-deadline` describeRule block in
+ * `ordinaryFederalFilingDeadline.test.ts`. The `*.test-support.ts` suffix
+ * excludes this module from `tsconfig.build.json`, so it is not published.
  */
 
 import type { Plan } from '../model/plan.js'
@@ -24,12 +24,13 @@ import {
 } from '../actions/ownedNonRothIraMovementCandidate.js'
 import { deriveActionStructuralId } from '../actions/structuralId.js'
 import type { BuildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput } from '../actions/ownedNonRothIraAnnualPostCandidateEvidence.js'
+import { ordinaryFederalFilingDeadline } from '../tax/ordinaryFederalFilingDeadline.js'
 
 export const owner = asPersonId('p1')
 export const siblingOwner = asPersonId('p2')
 export const planId = asPlanId('post-candidate-plan')
 export const requestedIra = asAccountId('ira-requested')
-export const siblingIra = asAccountId('ira-unrequested')
+export const siblingIra = asAccountId('ira-sibling')
 export const employer = asAccountId('employer-plan')
 export const inherited = asAccountId('inherited-ira')
 
@@ -57,7 +58,7 @@ export type MutableInput = MutableObject<
   >
 }
 
-function plan(): Plan {
+function plan(taxYear: number): Plan {
   const value = singlePersonPlan({ dob: '1950-01-01', planningAge: 100 })
   value.id = planId
   value.accounts = [
@@ -73,7 +74,7 @@ function plan(): Plan {
       kind: 'ira',
       balance: 400,
       annualContribution: 0,
-      inherited: { ownerDeathYear: 2028, decedentHadStartedRmds: true },
+      inherited: { ownerDeathYear: taxYear - 2, decedentHadStartedRmds: true },
     },
   ]
   value.retirementActionEligibilityFacts = {
@@ -97,8 +98,8 @@ function plan(): Plan {
   value.strategies.retirementActions = [{
     actionId: asActionId('withdrawal'),
     kind: 'ordinaryWithdrawal',
-    year: 2030,
-    executionDate: '2030-06-15',
+    year: taxYear,
+    executionDate: `${taxYear}-06-15`,
     executionSequence: 10,
     requestedAmount: asPositiveUsdCents(10_000),
     provenance: { source: 'manual' },
@@ -117,33 +118,38 @@ export function yearEnd(
   sourceAccountId: typeof requestedIra,
   amount: number,
   suffix: string,
+  taxYear = 2030,
 ) {
   return {
     predicate: 'ownedNonRothIraForm8606ApplicableTaxYearEndBalance' as const,
     planId,
     ownerPersonId: owner,
     sourceAccountId,
-    taxYear: 2030,
-    ledgerRunId: 'ledger-2030',
+    taxYear,
+    ledgerRunId: `ledger-${taxYear}`,
     ledgerPhase: 'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate' as const,
-    asOfDate: '2030-12-31',
+    asOfDate: `${taxYear}-12-31`,
     yearEndApplicableBalanceAmount: asUsdCents(amount),
     evidenceId: `year-end-${suffix}`,
     upstreamEvidenceId: `year-end-${suffix}-upstream`,
   }
 }
 
-export function base(opening = 10_000): MutableInput {
-  const valuePlan = plan()
+export function base(opening = 10_000, taxYear = 2030): MutableInput {
+  const valuePlan = plan(taxYear)
+  const ledgerRunId = `ledger-${taxYear}`
+  const filingYear = taxYear + 1
+  const supportedOrdinaryDeadline = ordinaryFederalFilingDeadline(taxYear)
+  const deadlineDate = supportedOrdinaryDeadline ?? `${filingYear}-04-15`
   const inventoryInput = {
     plan: valuePlan,
-    taxYear: 2030,
+    taxYear,
     runtimeRecords: [],
     runtimeInventoryAttestation: {
       predicate: 'completeAnnualRetirementPhysicalEventInventory' as const,
       planId,
-      taxYear: 2030,
-      ledgerRunId: 'ledger-2030',
+      taxYear,
+      ledgerRunId,
       inventoryStatus: 'completeIncludingExplicitEmpty' as const,
       resolvedEventIds: [],
       unresolvedActivityIds: [],
@@ -158,7 +164,7 @@ export function base(opening = 10_000): MutableInput {
   if (request.kind !== 'ordinaryWithdrawal') throw new Error('fixture action drift')
   const movementInput: StageOwnedNonRothIraOrdinaryWithdrawalMovementsInput = {
     ownerPersonId: owner,
-    taxYear: 2030,
+    taxYear,
     requests: [request],
     openingBalances: [{ accountId: requestedIra, openingBalance: asUsdCents(opening) }],
     sourceEvidence: [{
@@ -189,8 +195,8 @@ export function base(opening = 10_000): MutableInput {
       predicate: 'completePlanOwnedNonRothIraPostCandidateSnapshot',
       planId,
       ownerPersonId: owner,
-      taxYear: 2030,
-      ledgerRunId: 'ledger-2030',
+      taxYear,
+      ledgerRunId,
       inventoryEvidenceId: builtInventory.inventoryEvidenceId,
       movementCandidateId: candidate.movementCandidateId,
       applicationStatus: 'canonicalMovementCandidateAppliedExactlyOnce',
@@ -215,8 +221,8 @@ export function base(opening = 10_000): MutableInput {
         upstreamEvidenceId: `candidate-balance-${balance.sourceAccountId}-upstream`,
       })),
       yearEndApplicableBalances: [
-        yearEnd(requestedIra, 0, 'requested'),
-        yearEnd(siblingIra, 20_000, 'sibling'),
+        yearEnd(requestedIra, 0, 'requested', taxYear),
+        yearEnd(siblingIra, 20_000, 'sibling', taxYear),
       ],
       evidenceId: 'post-candidate-snapshot',
       upstreamEvidenceId: 'post-candidate-snapshot-upstream',
@@ -225,8 +231,8 @@ export function base(opening = 10_000): MutableInput {
       predicate: 'completePlanOwnedNonRothIraAnnualBasisRecord',
       planId,
       ownerPersonId: owner,
-      taxYear: 2030,
-      ledgerRunId: 'ledger-2030',
+      taxYear,
+      ledgerRunId,
       recordStatus: 'openingBasisAndExplicitZeroRolloverFactsComplete',
       openingBasisAmount: asUsdCents(4_000),
       outstandingRolloverAmount: 0,
@@ -238,16 +244,16 @@ export function base(opening = 10_000): MutableInput {
       predicate: 'completePlanOwnedNonRothIraPostYearNondeductibleContributionWindow',
       planId,
       ownerPersonId: owner,
-      taxYear: 2030,
-      ledgerRunId: 'ledger-2030',
+      taxYear,
+      ledgerRunId,
       inventoryStatus: 'completeIncludingExplicitEmpty',
       deadlineEvidence: {
         predicate: 'federalIraContributionDeadlineForTaxYear',
-        designatedTaxYear: 2030,
+        designatedTaxYear: taxYear,
         deadlineStatus: 'authoritativeFederalDeadlineEstablished',
         deadlineKind: 'ordinaryFederalFilingDeadlineExcludingDisasterRelief',
         calendarAdjustmentStatus: 'weekendAndDistrictOfColumbiaHolidayAdjustmentApplied',
-        deadlineDate: '2031-04-15',
+        deadlineDate,
         evidenceId: 'contribution-deadline',
         upstreamEvidenceId: 'contribution-deadline-upstream',
       },
@@ -256,8 +262,8 @@ export function base(opening = 10_000): MutableInput {
         planId,
         ownerPersonId: owner,
         sourceAccountId: siblingIra,
-        designatedTaxYear: 2030,
-        contributionDate: '2031-02-01',
+        designatedTaxYear: taxYear,
+        contributionDate: `${filingYear}-02-01`,
         nondeductibleContributionAmount: asPositiveUsdCents(2_500),
         evidenceId: 'post-year-contribution-evidence',
         upstreamEvidenceId: 'post-year-contribution-upstream',
@@ -269,8 +275,8 @@ export function base(opening = 10_000): MutableInput {
   return structuredClone(result) as unknown as MutableInput
 }
 
-export function clone(): MutableInput {
-  return structuredClone(base())
+export function clone(opening = 10_000, taxYear = 2030): MutableInput {
+  return structuredClone(base(opening, taxYear))
 }
 
 export function refreshInventoryAndCandidate(value: MutableInput): void {

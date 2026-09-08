@@ -16,9 +16,6 @@ import {
   type BuildPlanOwnedNonRothIraAnnualFilingEvidenceInput,
   type PlanOwnedNonRothIraAnnualFilingSourceRecord,
 } from './ownedNonRothIraAnnualFilingEvidence.js'
-import { buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput } from './ownedNonRothIraAnnualPostCandidateEvidence.js'
-import { clone as postCandidateWorksheet } from '../testing/ownedNonRothIraPostCandidateFixture.js'
-import { ordinaryFederalFilingDeadline } from '../tax/ordinaryFederalFilingDeadline.js'
 import * as structuralId from './structuralId.js'
 import type { Plan } from '../model/plan.js'
 import { persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema } from '../model/retirementActionAnnualTaxFacts.js'
@@ -770,15 +767,8 @@ describeRule('irc-219-f-3-prior-year-contribution-window', {
   // excludes extensions, so the record is refused. The reading that extensions
   // carry the contribution window admits it at its full 250,000 cents.
   readings: {
-    statute: {
-      extensionDispute: 'postYearContributionInvalid',
-      postCandidateExact: 'postCandidateClassificationInputBuilt',
-      postCandidateWrongDate: 'contributionWindowIncomplete',
-    },
-    rejectedExtensionsCarryTheWindow: {
-      extensionDispute: 250_000,
-      postCandidateWrongDate: 'postCandidateClassificationInputBuilt',
-    },
+    statute: 'postYearContributionInvalid',
+    rejectedExtensionsCarryTheWindow: 250_000,
   },
   accepted: 'statute',
 }, ({ accepted, readings }) => {
@@ -790,7 +780,7 @@ describeRule('irc-219-f-3-prior-year-contribution-window', {
     // `issueKinds` also asserts the contribution window comes back null, so the
     // 250,000 the rejected reading would have admitted on this date reaches no
     // year's basis at all.
-    expect(issueKinds(value)).toContain(accepted.extensionDispute)
+    expect(issueKinds(value)).toContain(accepted)
 
     const persisted =
       persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema.safeParse(source)
@@ -811,42 +801,10 @@ describeRule('irc-219-f-3-prior-year-contribution-window', {
     // between the two readings.
     expect(window.contributions[0]!.contributionDate).toBe('2031-02-01')
     expect(window.contributions[0]!.nondeductibleContributionAmount)
-      .toBe(readings.rejectedExtensionsCarryTheWindow.extensionDispute)
+      .toBe(readings.rejectedExtensionsCarryTheWindow)
     expect(
       persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema.safeParse(sourceRecord())
         .success,
     ).toBe(true)
-  })
-
-  it('accepts the post-candidate builder when the evidenced deadline exact-matches the ordinary federal calendar', () => {
-    // Primary-law calendar worksheet: tax year 2030 ordinary deadline is
-    // April 15, 2031 (Tuesday); District of Columbia Emancipation Day is
-    // April 16, 2031 (Wednesday); no weekend or DC-holiday adjustment applies.
-    const ordinaryDeadline = '2031-04-15'
-    const worksheet = postCandidateWorksheet()
-    worksheet.postYearContributionWindow.deadlineEvidence.deadlineDate = ordinaryDeadline
-    worksheet.postYearContributionWindow.contributions = [{
-      ...worksheet.postYearContributionWindow.contributions[0]!,
-      contributionDate: ordinaryDeadline,
-    }]
-    expect(
-      buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(worksheet).status,
-    ).toBe(accepted.postCandidateExact)
-    expect(ordinaryFederalFilingDeadline(2030)).toBe(ordinaryDeadline)
-  })
-
-  it('refuses the post-candidate builder when the evidenced deadline is in-band but not the exact ordinary date', () => {
-    const worksheet = postCandidateWorksheet()
-    worksheet.postYearContributionWindow.deadlineEvidence.deadlineDate = '2031-04-18'
-    worksheet.postYearContributionWindow.contributions = [{
-      ...worksheet.postYearContributionWindow.contributions[0]!,
-      contributionDate: '2031-04-18',
-    }]
-    const result = buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(worksheet)
-    expect(result.status).toBe(accepted.postCandidateWrongDate)
-    expect(result.status).not.toBe(readings.rejectedExtensionsCarryTheWindow.postCandidateWrongDate)
-    if (result.status === 'contributionWindowIncomplete') {
-      expect(result.issues.map((entry) => entry.kind)).toContain('contributionWindowIncomplete')
-    }
   })
 })

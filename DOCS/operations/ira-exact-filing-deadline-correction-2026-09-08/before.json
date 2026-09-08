@@ -2,7 +2,6 @@
   "kind": "rule-020-F1-before-after-observation",
   "observedAt": "2026-09-08T12:44:05.336Z",
   "head": "bad69a8404e95b00882f9fcdd205e4a3c3b72fb2",
-  "worktree": "C:\\Users\\Nathan\\source\\repos\\RetireGolden\\.worktrees\\audit-ira-exact-filing-deadline-20260908",
   "canonicalFixtureSource": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.test.ts#base",
   "runtimeEntryPoint": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
   "sourceHashesSha256": {
@@ -21,8 +20,8 @@
             "id": "post-candidate-plan",
             "name": "Test plan",
             "origin": "user",
-            "createdAtIso": "2026-01-01T00:00:00.000Z",
-            "updatedAtIso": "2026-01-01T00:00:00.000Z",
+            "createdAtIso": "2026-01-01T00:00:00Z",
+            "updatedAtIso": "2026-01-01T00:00:00Z",
             "household": {
               "filingStatus": "single",
               "hasQualifyingDependent": false,
@@ -461,8 +460,8 @@
             "id": "post-candidate-plan",
             "name": "Test plan",
             "origin": "user",
-            "createdAtIso": "2026-01-01T00:00:00.000Z",
-            "updatedAtIso": "2026-01-01T00:00:00.000Z",
+            "createdAtIso": "2026-01-01T00:00:00Z",
+            "updatedAtIso": "2026-01-01T00:00:00Z",
             "household": {
               "filingStatus": "single",
               "hasQualifyingDependent": false,

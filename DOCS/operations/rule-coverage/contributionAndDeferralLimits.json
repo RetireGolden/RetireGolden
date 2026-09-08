@@ -406,24 +406,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.test.ts",
-          "line": 766,
+          "line": 763,
           "note": null,
           "tests": [
             {
               "title": "refuses a prior-year contribution made after the unextended deadline",
-              "line": 785
+              "line": 775
             },
             {
               "title": "counts a contribution made inside the window toward that year basis",
-              "line": 804
-            },
-            {
-              "title": "accepts the post-candidate builder when the evidenced deadline exact-matches the ordinary federal calendar",
-              "line": 821
-            },
-            {
-              "title": "refuses the post-candidate builder when the evidenced deadline is in-band but not the exact ordinary date",
-              "line": 838
+              "line": 794
             }
           ]
         }
@@ -2659,16 +2651,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/ordinaryFederalFilingDeadline.test.ts",
-          "line": 8,
+          "line": 10,
           "note": null,
           "tests": [
             {
               "title": "moves the 2027 tax-year deadline past the Monday-observed Emancipation Day",
-              "line": 21
+              "line": 23
             },
             {
               "title": "covers an ordinary weekday, Friday-observed Saturday holiday, Monday holiday, and the 2006 floor",
-              "line": 27
+              "line": 29
+            },
+            {
+              "title": "drives the post-candidate builder on the 2027 tax-year adjusted deadline",
+              "line": 38
             }
           ]
         }

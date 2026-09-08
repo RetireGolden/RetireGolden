@@ -733,13 +733,21 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
   const parsedDeadline =
     deadlineDate === '' ? null : parseCivilIsoDate(deadlineDate)
   const expectedOrdinaryDeadline = ordinaryFederalFilingDeadline(taxYear)
-  if (
-    parsedDeadline === null ||
-    formatCivilDate(parsedDeadline) !== deadlineDate ||
-    expectedOrdinaryDeadline === null ||
-    deadlineDate !== expectedOrdinaryDeadline
-  ) {
-    contributionIssues.push(issue('contributionWindowIncomplete', 'The evidenced ordinary federal IRA deadline must exact-match the supported federal calendar for the tax year, excluding disaster relief'))
+  if (parsedDeadline === null || formatCivilDate(parsedDeadline) !== deadlineDate) {
+    contributionIssues.push(issue(
+      'contributionWindowIncomplete',
+      'The evidenced ordinary federal IRA deadline must be a valid canonical civil date',
+    ))
+  } else if (expectedOrdinaryDeadline === null) {
+    contributionIssues.push(issue(
+      'contributionWindowIncomplete',
+      'The evidenced ordinary federal IRA deadline cannot be validated because the ordinary federal filing calendar is supported only for tax years 2006 through 9998, excluding disaster relief',
+    ))
+  } else if (deadlineDate !== expectedOrdinaryDeadline) {
+    contributionIssues.push(issue(
+      'contributionWindowIncomplete',
+      'The evidenced ordinary federal IRA deadline must exact-match the supported federal calendar for the tax year, excluding disaster relief',
+    ))
   }
   const contributionIds = new Set<string>()
   const contributions = [...contribution.contributions].sort((left, right) =>

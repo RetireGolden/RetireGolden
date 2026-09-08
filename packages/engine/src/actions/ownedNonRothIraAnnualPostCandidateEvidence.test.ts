@@ -25,7 +25,7 @@ import {
   siblingIra,
   siblingOwner,
   yearEnd,
-} from '../testing/ownedNonRothIraPostCandidateFixture.js'
+} from '../testing/ownedNonRothIraPostCandidateFixture.test-support.js'
 import { traditionalAccount } from '../testing/planFixtures.js'
 
 function reverseKeys<T extends object>(value: T): T {
@@ -236,6 +236,8 @@ describe('buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput', () =>
     expect(status(malformedContributionDate)).toBe('contributionWindowIncomplete')
 
     const adjustedApril18 = clone()
+    // Primary-law calendar worksheet: tax year 2030 ordinary deadline is
+    // April 15, 2031 (Tuesday); April 18 is in-band but not the exact date.
     adjustedApril18.postYearContributionWindow.deadlineEvidence = {
       ...adjustedApril18.postYearContributionWindow.deadlineEvidence,
       deadlineDate: '2031-04-18',
@@ -245,6 +247,26 @@ describe('buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput', () =>
       contributionDate: '2031-04-18',
     }]
     expect(status(adjustedApril18)).toBe('contributionWindowIncomplete')
+
+    const preSupportedCalendarYear = base(10_000, 2005)
+    preSupportedCalendarYear.postYearContributionWindow.deadlineEvidence = {
+      ...preSupportedCalendarYear.postYearContributionWindow.deadlineEvidence,
+      deadlineDate: '2006-04-17',
+    }
+    preSupportedCalendarYear.postYearContributionWindow.contributions = [{
+      ...preSupportedCalendarYear.postYearContributionWindow.contributions[0]!,
+      contributionDate: '2006-02-01',
+    }]
+    const unsupportedCalendar =
+      buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
+        preSupportedCalendarYear,
+      )
+    expect(unsupportedCalendar.status).toBe('contributionWindowIncomplete')
+    if (unsupportedCalendar.status === 'contributionWindowIncomplete') {
+      expect(unsupportedCalendar.issues.some((entry) =>
+        entry.detail.includes('2006 through 9998'),
+      )).toBe(true)
+    }
 
     const wrongDeadlineKind = clone()
     wrongDeadlineKind.postYearContributionWindow.deadlineEvidence = {

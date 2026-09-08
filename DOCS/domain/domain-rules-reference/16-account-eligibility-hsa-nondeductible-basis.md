@@ -203,14 +203,15 @@ additive with a no-op default, so plans saved before it stay byte-identical.
   snapshot must reproduce every allocation application and candidate balance and must include December
   31 Form 8606 applicable balances for every owned non-inherited traditional/SEP/SIMPLE IRA sibling,
   including unrequested and zero-balance members; employer, inherited, duplicate, and foreign members
-  fail closed. A separately complete following-year nondeductible-contribution window supplies Form 8606
-  lines 1 and 4 through an authoritative ordinary April 15-18 federal deadline (excluding disaster
-  relief); records must be positive exact cents, while no activity uses the explicit-empty arm. The
-  ordinary nationwide April calendar itself is registered under
-  `irc-6072-a-7503-ordinary-federal-filing-deadline` (IRC 6072(a), IRC 7503, Notice 2011-17; Announcement
-  2007-16 for the supported tax-year 2006 floor), enforced by
-  `tax/ordinaryFederalFilingDeadline.ts#ordinaryFederalFilingDeadline`, and covers only that calendar —
-  not extensions, disaster relief, state-office holidays, or taxpayer-specific deadline adjudication.
+  fail closed.   A separately complete following-year nondeductible-contribution window supplies Form 8606
+  lines 1 and 4 through the exact ordinary federal filing deadline for the designated tax year,
+  as computed by the supported nationwide calendar for tax years 2006 through 9998 (disaster relief
+  excluded); records must be positive exact cents, while no activity uses the explicit-empty arm. That
+  ordinary calendar is registered under `irc-6072-a-7503-ordinary-federal-filing-deadline` (IRC
+  6072(a), IRC 7503, Notice 2011-17; Announcement 2007-16 for the supported tax-year 2006 floor),
+  enforced by `tax/ordinaryFederalFilingDeadline.ts#ordinaryFederalFilingDeadline`, and covers only
+  that calendar — not extensions, disaster relief, state-office holidays, or taxpayer-specific
+  deadline adjudication.
   The IRC 219(f)(3) designated post-year contribution window — made on account of the prior taxable year
   and not later than the unextended return due date — is independently enforced by
   `model/retirementActionAnnualTaxFacts.ts#persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema`
