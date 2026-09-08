@@ -482,6 +482,7 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
     expect(rule('.app-shell', indexCss)).toMatch(/container-name:\s*app-shell/)
     expect(indexCss).toMatch(/@container app-shell \(max-width: 52rem\)/)
     expect(indexCss).toMatch(/@container app-shell \(max-width: 52rem\) \{[\s\S]*?\.nav \{[\s\S]*?flex-wrap:\s*nowrap/)
+    expect(indexCss).toMatch(/@container app-shell \(max-width: 52rem\) \{[\s\S]*?\.theme-switcher-button \{[\s\S]*?min-width:\s*3\.8rem/)
   })
 
   it('the rail strip shows a scroll cue, snaps to chips, separates groups, and scrolls itself to the active chip (#439)', () => {
