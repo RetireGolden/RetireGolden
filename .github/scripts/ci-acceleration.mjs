@@ -15,13 +15,13 @@ export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '2267d4086bdd760a6c2d6f60717f3fb63aea1fbc'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
-  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@388872e9c44158075742f3f7795b161f88e524dd'
-export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '388872e9c44158075742f3f7795b161f88e524dd'
+  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@3d92f63176b55e5ade2dbe4a081c21ad249826ea'
+export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '3d92f63176b55e5ade2dbe4a081c21ad249826ea'
 export const TRUSTED_PROFILE_CONSUMER_OWNER = 'RetireGolden'
 export const TRUSTED_PROFILE_CONSUMER_REPO = '.github'
 export const TRUSTED_PROFILE_CONSUMER_PATH = 'scripts/profile_consumer.mjs'
 export const PROFILE_CONSUMER_MAX_BYTES = 128 * 1024
-/** Primary ledger producer: openrouter-pr-review-action@2eb560ca23346c4387828b4b9763698702094210. */
+/** Primary ledger producer: openrouter-pr-review-action@188cd5557765c858a37c1da78960cd353bcbcd60. */
 const LEDGER_FINDING_ID_RE = /^r\p{Decimal_Number}{1,3}-\p{Decimal_Number}{1,3}$/u
 // Mirrors Python str.strip(); U+FEFF (BOM) is not whitespace there (schema.py valid_review_path).
 const PYTHON_STRIP_RE = /^[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+|[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+$/gu
@@ -112,7 +112,7 @@ function trustedLedger(body, { repository, pullNumber, headSha, workflowRunUrls 
   const payload = marker && decodeLedgerPayload(marker[1])
 
   const verdict = /^\*\*Verdict:\*\* `(clean|issues)`$/.exec(lines[3] ?? '')?.[1]
-  // Producer: openrouter-pr-review-action@2eb560ca23346c4387828b4b9763698702094210
+  // Producer: openrouter-pr-review-action@188cd5557765c858a37c1da78960cd353bcbcd60
   // apply_round drops fixed entries; clean means zero open findings (_decode_finding shape).
   const cleanFindings =
     Array.isArray(payload?.findings) &&

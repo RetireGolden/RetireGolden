@@ -20,7 +20,7 @@ permissions:
 jobs:
   # The shared CI validator authenticates this exact calling job id.
   complete:
-    uses: RetireGolden/.github/.github/workflows/openrouter-profile-completion.yml@388872e9c44158075742f3f7795b161f88e524dd # .github#43
+    uses: RetireGolden/.github/.github/workflows/openrouter-profile-completion.yml@3d92f63176b55e5ade2dbe4a081c21ad249826ea # .github#44
     with:
       pr_number: ${{ inputs.pr_number || '' }}
       source_run_id: ${{ github.event.workflow_run.id && format('{0}', github.event.workflow_run.id) || '' }}

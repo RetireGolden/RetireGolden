@@ -35,8 +35,8 @@
 #
 # Standard: required Grok 4.6 + optional GLM 5.3 Flash; Luna judge.
 # Deep adds required Astra Flex; effort and limits follow the selected profile.
-# Shared configuration: https://github.com/RetireGolden/.github/blob/388872e9c44158075742f3f7795b161f88e524dd/.github/workflows/openrouter-code-review.yml
-# Policy reference: https://github.com/RetireGolden/.github/blob/388872e9c44158075742f3f7795b161f88e524dd/README.md
+# Shared configuration: https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/.github/workflows/openrouter-code-review.yml
+# Policy reference: https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/README.md
 
 name: OpenRouter code review
 run-name: "${{ format('OpenRouter PR #{0}: {1}', github.event.pull_request.number || inputs.pr_number, inputs.review_level || 'auto') }}"
@@ -74,7 +74,7 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@388872e9c44158075742f3f7795b161f88e524dd # .github#43; action#38@2eb560ca23346c4387828b4b9763698702094210 (trusted profiles and request gates)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@3d92f63176b55e5ade2dbe4a081c21ad249826ea # .github#44; action#39@188cd5557765c858a37c1da78960cd353bcbcd60 (trusted profiles and request gates)
     with:
       review_policy: base
       review_profiles_enabled: true
