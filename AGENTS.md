@@ -160,8 +160,9 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
 
 - Repository admin: @FlyOverCoderKY.
 - Merge grant: standing, recorded by @FlyOverCoderKY on 2026-09-02 (PR
-  #588). The post-push-approval and CLA conditions named in the shared
-  Merging section both exist here, so admin bypass applies.
+  #588). Nathan's 2026-09-08 local rule restricts administrative override to
+  an agent-authored CLA restriction. This supersedes the broader bypass
+  language in the shared section; post-push approval must actually be met.
 - The required-check list and the thread and approval rules below were
   read from the live ruleset on 2026-09-03 with
   `gh api repos/RetireGolden/RetireGolden/rules/branches/main`. Re-run it
@@ -192,7 +193,16 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   A clean successful recovery, `run-ci`, and an exact-head Azure rerun
   are still required before merge. See the CI/CD runbook for provenance checks.
 - `main` also requires every review thread resolved and a post-push approval
-  by someone other than the pusher. Resolve the threads yourself; the
-  post-push approval is the rule the admin bypass clears for agent-authored
-  PRs. CLA currently passes for the admin's own commits, so it is not what
-  the bypass is for here.
+  by someone other than the pusher. Resolve the threads yourself and obtain
+  the qualifying approval; never use the administrative override to bypass
+  it. CLA currently passes for the admin's own commits.
+
+
+### Current review profile workflow
+
+- The caller now enables organization profiles. Earlier `reset_review: true` guidance applies only to legacy callers; profile reviews require `false` and retain findings.
+- Use `review_level: deep` on a default-branch manual dispatch to request extra review; `cancel` cancels only a manual pending request. A fresh deep request needs its own successful required lanes, even if this head already has an older clean deep review.
+- An intentional deep request on an already reviewed head is an exception to the shared rule against redundant same-head dispatches. Wait for that request's required lanes and current profile proof before treating the head as review-clean or authorizing CI.
+- Check `OpenRouter profile completion` and the `openrouter-profile` status for the current head in addition to the existing review and CI requirements. The profile gate rechecks current base policy. A missing/failed required lane or pending deep request is not clean.
+- Profile evidence is bounded to PRs younger than 25 days. For older work, open a replacement PR; do not bypass the profile gate or delete request evidence.
+- Recovery now forwards to the normal trusted review workflow on `main`. Wait for that review and its profile completion; the forwarding run does not publish a review itself. The existing caller-pin migration procedure applies until this revision is on `main`.

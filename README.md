@@ -80,10 +80,12 @@ for them all. Forks never authorize or deploy; the broker does not automatically
 
 [`.github/workflows/openrouter-ci-broker.yml`](.github/workflows/openrouter-ci-broker.yml)
 
-Runs on completed OpenRouter reviews and completed Azure CI runs from the default branch only. It checks
-the live, same-repository PR head, decoded bot-authored clean ledger, and head/default caller-blob equality
-through GitHub APIs. It first identifies an eligible skipped Azure run, then adds `run-ci` and reruns that
-specific run, serializing competing completion events by head. It never checks out or executes PR code.
+Runs from trusted default-branch code when an OpenRouter review, profile completion, or Azure CI run
+completes. One repository-wide lock serializes decisions, and each wake-up inspects all open PRs so
+coalesced pending events cannot lose a ready PR. For each PR, it checks the live same-repository head,
+decoded bot-authored clean ledger, matching caller blobs, and current profile proof through GitHub APIs.
+It identifies an eligible skipped Azure run, then adds `run-ci` and reruns that specific run. It never
+checks out or executes PR code.
 
 **Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **24** in CI (the workspaces require Node >=24.15.0). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
 
@@ -137,7 +139,7 @@ Cutover requires this ordered operation: first merge the pinned OpenRouter actio
 
 [`.github/workflows/openrouter-review-recovery.yml`](.github/workflows/openrouter-review-recovery.yml)
 
-For caller-pin migrations with an existing review ledger, dispatch this workflow from the default branch after other reviews finish. It verifies the full PR while retaining previous review decisions. CI accepts it only after checking the registered workflow identity and pinned workflow contents; a clean result still requires `run-ci` and a successful exact-head Azure run. See the [recovery procedure](DOCS/operations/ci-cd-and-deploy.md).
+For caller-pin migrations with an existing review ledger, dispatch this workflow from the default branch after other reviews finish. It forwards to the normal review workflow on the default branch, preserving previous findings. Follow the resulting OpenRouter code review and profile completion runs; completion of the forwarding workflow is not a review verdict. A clean profile proof and successful exact-head Azure run remain required. See the [recovery procedure](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Engine package release
 
@@ -171,5 +173,16 @@ remain in [AGENTS.md](AGENTS.md)):
 
 Branch-targeted guidance applies after merge to the target branch; new or moved
 source files are still reviewed. Offline policy lint and explain semantics follow the
-[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/docs/review-policy.md).
+[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/4fe6e668c9352b3f2a65254c4900d6443b5279e2/docs/review-policy.md).
 The pinned shared OpenRouter caller enables `review_policy: base`.
+
+
+## Review profiles and CI proof
+
+The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/eac44d1fba1e89760ebf0a1b7826a119e1b6ba79/README.md). Code uses required Grok plus optional GLM; deep adds required Astra Flex. This preserves the standing baseline; `REVIEW.md` cannot name arbitrary models or remove required lanes.
+
+From Actions → **OpenRouter code review**, dispatch from `main` with a PR number and `review_level: auto`, `deep`, or `cancel`. Deep requests require repository write/maintain/admin permission, retain existing findings, and stay pending across retries and pushes until their own required review succeeds. Cancel removes a manual pending request; it cannot lower a policy requirement. Leave `reset_review` false.
+
+**OpenRouter profile completion** checks the exact PR head, effective current policy, required lanes, and accepted requests. The `openrouter-profile` status supplements the existing first-pass gate and repository CI. A successful review workflow alone does not establish a clean or complete review. The CI broker also checks the trusted completion proof before requesting expensive CI.
+
+Profile artifacts retain 30 days (requests 90 days), and the gate accepts PRs younger than 25 days. Open a replacement PR for older work. Missing evidence fails closed. An automatic policy refresh is requested at most once per head/configuration; use a manual rerun if that request fails. Maintainer labels and automatic path escalation are not enabled in this rollout.

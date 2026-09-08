@@ -13,11 +13,15 @@ export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
-export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'b87e3a222e3111ae41cd9948f6b9956febd47bc7'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'd47c88244be67f2939582f82fc023e49c2f2f6c3'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
-  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a6a690b82fa76bbda4334b87dd179551534d183b'
-export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'a6a690b82fa76bbda4334b87dd179551534d183b'
-/** Primary ledger producer: openrouter-pr-review-action@93cc91130605bc17cb583c5a5e899591773e048c. */
+  'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@eac44d1fba1e89760ebf0a1b7826a119e1b6ba79'
+export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'eac44d1fba1e89760ebf0a1b7826a119e1b6ba79'
+export const TRUSTED_PROFILE_CONSUMER_OWNER = 'RetireGolden'
+export const TRUSTED_PROFILE_CONSUMER_REPO = '.github'
+export const TRUSTED_PROFILE_CONSUMER_PATH = 'scripts/profile_consumer.mjs'
+export const PROFILE_CONSUMER_MAX_BYTES = 128 * 1024
+/** Primary ledger producer: openrouter-pr-review-action@4fe6e668c9352b3f2a65254c4900d6443b5279e2. */
 const LEDGER_FINDING_ID_RE = /^r\p{Decimal_Number}{1,3}-\p{Decimal_Number}{1,3}$/u
 // Mirrors Python str.strip(); U+FEFF (BOM) is not whitespace there (schema.py valid_review_path).
 const PYTHON_STRIP_RE = /^[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+|[\t-\r\u001C-\u0020\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+$/gu
@@ -108,7 +112,7 @@ function trustedLedger(body, { repository, pullNumber, headSha, workflowRunUrls 
   const payload = marker && decodeLedgerPayload(marker[1])
 
   const verdict = /^\*\*Verdict:\*\* `(clean|issues)`$/.exec(lines[3] ?? '')?.[1]
-  // Producer: openrouter-pr-review-action@93cc91130605bc17cb583c5a5e899591773e048c
+  // Producer: openrouter-pr-review-action@4fe6e668c9352b3f2a65254c4900d6443b5279e2
   // apply_round drops fixed entries; clean means zero open findings (_decode_finding shape).
   const cleanFindings =
     Array.isArray(payload?.findings) &&
@@ -438,14 +442,123 @@ export async function collectProvenanceReviewRuns(github, {
   return { provenanceReviewRuns, defaultCaller, error: undefined }
 }
 
-export async function authorizeExactHeadPullRequest(github, core, {
+function safeProfileConsumerFailureReason(error) {
+  const reason =
+    error instanceof Error && error.message ? error.message : 'profile consumer load failed'
+  return reason.replace(/[\r\n]/g, ' ').slice(0, 500)
+}
+
+async function loadTrustedProfileConsumer(github) {
+  let response
+  try {
+    response = await github.rest.repos.getContent({
+      owner: TRUSTED_PROFILE_CONSUMER_OWNER,
+      repo: TRUSTED_PROFILE_CONSUMER_REPO,
+      path: TRUSTED_PROFILE_CONSUMER_PATH,
+      ref: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
+  })
+  } catch {
+    throw new Error('cannot load trusted profile consumer')
+  }
+
+  const file = response?.data
+  if (Array.isArray(file) || file?.type !== 'file' || typeof file.content !== 'string') {
+    throw new Error('trusted profile consumer response is not a file')
+  }
+
+  const normalized = file.content.replace(/\n/g, '')
+    if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(normalized)) {
+    throw new Error('trusted profile consumer content is not valid base64')
+  }
+
+  let source
+  try {
+    source = Buffer.from(normalized, 'base64')
+    if (Buffer.from(source).toString('base64') !== normalized) {
+      throw new Error('invalid base64')
+    }
+  } catch {
+    throw new Error('trusted profile consumer content is not valid base64')
+  }
+  if (source.byteLength > PROFILE_CONSUMER_MAX_BYTES) {
+    throw new Error('trusted profile consumer exceeds size bound')
+  }
+
+  const module = await import(`data:text/javascript;base64,${source.toString('base64')}`)
+  if (
+    typeof module.authorizeProfileReceipt !== 'function' ||
+    typeof module.completionPullRequests !== 'function'
+  ) {
+    throw new Error('trusted profile consumer is missing required exports')
+  }
+  return module
+}
+
+export async function authorizeReviewProfile(
+  github,
+  { owner, repo, repository, defaultBranch, headSha, pullNumber, review, reviewRun },
+) {
+  try {
+    const consumer = await loadTrustedProfileConsumer(github)
+    const result = await consumer.authorizeProfileReceipt(github, {
+      owner,
+      repo,
+      repository,
+      defaultBranch,
+      orgWorkflowSha: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
+      headSha,
+      pullNumber,
+      review,
+      reviewRun,
+    })
+    return {
+      authorized: result?.authorized === true,
+      reason:
+        typeof result?.reason === 'string' && result.reason
+          ? result.reason.replace(/[\r\n]/g, ' ').slice(0, 500)
+          : 'profile review authorization failed',
+    }
+  } catch (error) {
+    return {
+      authorized: false,
+      reason: safeProfileConsumerFailureReason(error),
+    }
+  }
+}
+
+export async function profileCompletionPullRequests(
+  github,
+  { owner, repo, repository, defaultBranch, run },
+) {
+  try {
+    const consumer = await loadTrustedProfileConsumer(github)
+    const pullNumbers = await consumer.completionPullRequests(github, {
+      owner,
+      repo,
+      repository,
+      defaultBranch,
+      orgWorkflowSha: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
+      run,
+    })
+    if (!Array.isArray(pullNumbers)) return []
+    return pullNumbers.filter((value) => Number.isInteger(value) && value > 0)
+  } catch {
+    return []
+  }
+}
+
+export async function authorizeExactHeadPullRequest(
+  github,
+  core,
+  {
   owner,
   repo,
   repository,
   defaultBranch,
   eventPr,
   runAttempt,
-}) {
+},
+) {
   const eventHasRunCi = (eventPr.labels ?? []).some((entry) => entry.name === 'run-ci')
   const eventRequested = isCiRequested({ runAttempt, hasRunCiLabel: eventHasRunCi })
   const expectedHeadSha = eventPr.head?.sha
@@ -515,16 +628,35 @@ export async function authorizeExactHeadPullRequest(github, core, {
   }
 
   const authoritativeRunUrl = workflowRunUrl(owner, repo, authoritativeReviewRun.id)
-  if (!findTrustedCleanReview(reviews, {
+  const trustedCleanReview = findTrustedCleanReview(reviews, {
     repository,
     pullNumber: pr.number,
     headSha: expectedHeadSha,
     workflowRunUrl: authoritativeRunUrl,
-  })) {
+  })
+  if (!trustedCleanReview) {
     return {
       authorized: false,
       failJob: ciRequested,
       reason: 'latest exact current-head OpenRouter bot review is not a clean authoritative ledger',
+    }
+  }
+
+  const profileAuthorization = await authorizeReviewProfile(github, {
+    owner,
+    repo,
+    repository,
+    defaultBranch,
+    headSha: expectedHeadSha,
+    pullNumber: pr.number,
+    review: trustedCleanReview,
+    reviewRun: authoritativeReviewRun,
+  })
+  if (!profileAuthorization.authorized) {
+    return {
+      authorized: false,
+      failJob: ciRequested,
+      reason: profileAuthorization.reason,
     }
   }
 
