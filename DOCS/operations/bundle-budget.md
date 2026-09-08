@@ -97,8 +97,10 @@ surfaces: How much can I spend? and Roth & Tax Optimizer). The worker
 therefore keeps those coordinators in the entry and only splits kernels and publications. The
 bundle-budget CLI fails the build if any other `dist/assets` chunk statically imports
 `planner.worker-*.js`.
-Those chunks stay precached; the split changes
-parsing and chunk ownership, not the offline guarantee or the one-worker-entry invariant.
+
+The kernel, publication, and (in the app graph) coordinator chunks stay
+precached; the split changes parsing and chunk ownership, not the offline
+guarantee or the one-worker-entry invariant.
 
 The groups match those engine modules by **exact bare filename**
 (`ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME`, `ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME`,

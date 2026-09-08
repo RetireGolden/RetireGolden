@@ -139,8 +139,7 @@ if (result.failures.length > 0) {
   for (const failure of result.failures) console.log(`  - ${failure}`)
 } else {
   console.log('bundle budget OK')
-}
-
-if (workerGraph.importers !== null && workerGraph.importers.length === 0) {
-  console.log('worker graph: no isolated chunk imports the worker entry')
+  if (workerGraph.importers !== null && workerGraph.importers.length === 0) {
+    console.log('worker graph: no isolated chunk imports the worker entry')
+  }
 }

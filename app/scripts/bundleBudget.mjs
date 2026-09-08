@@ -146,24 +146,25 @@ export function parseLandingScripts(html) {
 }
 
 /**
- * The URLs workbox lists in the generated service worker's precache manifest.
- *
- * Returns `null` when the `precacheAndRoute([...])` call cannot be found —
- * a workbox output change, which must fail the gate rather than quietly drop
- * the precache row. An empty array is likewise a caller-side failure.
- */
-/**
- * Static `from "./chunk.js"` specifiers in a Rolldown ES chunk.
+ * Static relative import specifiers in a Rolldown ES chunk: `from "./chunk.js"`
+ * and side-effect `import "./chunk.js"`. Dynamic `import()` is not scanned —
+ * it does not create the module-init cycle that TDZ-crashed production.
  *
  * Used to detect a worker-graph cycle: an isolated coordinator chunk that
  * imports the worker entry (which imported that coordinator) TDZ-crashes
  * production on first spawn (#672, both Optimize-rail worker channels).
  */
 export function parseStaticRelativeImports(source) {
-  return [...source.matchAll(/\bfrom\s*["'](\.\/[^"']+)["']/g)].map((m) => m[1].replace(/^\.\//, ''))
+  const named = [...source.matchAll(/\bfrom\s*["'](\.\/[^"']+)["']/g)].map((m) => m[1])
+  const sideEffect = [...source.matchAll(/\bimport\s*["'](\.\/[^"']+)["']/g)].map((m) => m[1])
+  return [...named, ...sideEffect].map((spec) => spec.replace(/^\.\//, ''))
 }
 
-const WORKER_ENTRY_NAME = /^planner\.worker-[^/]*\.js$/
+const workerEntryBudget = CHUNK_BUDGETS.find((budget) => budget.label === 'planner Web Worker')
+if (workerEntryBudget === undefined) {
+  throw new Error('bundleBudget.mjs: missing CHUNK_BUDGETS row labeled "planner Web Worker"')
+}
+const WORKER_ENTRY_NAME = workerEntryBudget.match
 
 /**
  * Chunks other than the worker entry that statically import it.
@@ -186,6 +187,13 @@ export function workerEntryImporters(chunks) {
   return { workerNames, importers }
 }
 
+/**
+ * The URLs workbox lists in the generated service worker's precache manifest.
+ *
+ * Returns `null` when the `precacheAndRoute([...])` call cannot be found —
+ * a workbox output change, which must fail the gate rather than quietly drop
+ * the precache row. An empty array is likewise a caller-side failure.
+ */
 export function parsePrecacheUrls(swSource) {
   const start = swSource.indexOf('precacheAndRoute([')
   if (start === -1) return null

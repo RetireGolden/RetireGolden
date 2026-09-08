@@ -6,9 +6,13 @@
  * and now carries a false assurance. So most of what is asserted here is that
  * a *missing measurement* fails, not just an oversized one.
  */
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import {
+  CHUNK_BUDGETS,
   DEFAULT_CHUNK_KIB,
   ENTRY_KIB,
   LANDING_PATH_KIB,
@@ -163,6 +167,9 @@ describe('worker entry import cycle (#672, both Optimize-rail channels)', () => 
         'import{k as oe}from"./planner.worker-BI4wolyi.js";import{c as e}from"./annualProjectionKernels-C_n9Ox4w.js";',
       ),
     ).toEqual(['planner.worker-BI4wolyi.js', 'annualProjectionKernels-C_n9Ox4w.js'])
+    expect(
+      parseStaticRelativeImports('import"./planner.worker-aaa.js";export const x=1;'),
+    ).toEqual(['planner.worker-aaa.js'])
   })
 
   it('reports isolated coordinator chunks that import the worker entry', () => {
@@ -178,6 +185,14 @@ describe('worker entry import cycle (#672, both Optimize-rail channels)', () => 
     expect(result.importers).toEqual(['annualProjectionFundingClose-bbb.js'])
   })
 
+  it('reports a side-effect-only static import of the worker entry', () => {
+    const result = workerEntryImporters([
+      { name: 'planner.worker-aaa.js', source: 'export const k=1;' },
+      { name: 'annualProjectionFundingClose-bbb.js', source: 'import"./planner.worker-aaa.js";' },
+    ])
+    expect(result.importers).toEqual(['annualProjectionFundingClose-bbb.js'])
+  })
+
   it('is clean when only the worker entry imports its split chunks', () => {
     const result = workerEntryImporters([
       { name: 'planner.worker-aaa.js', source: 'import{t as n}from"./annualProjectionKernels-ccc.js";' },
@@ -190,6 +205,22 @@ describe('worker entry import cycle (#672, both Optimize-rail channels)', () => 
     const result = workerEntryImporters([{ name: 'annualProjectionKernels-ccc.js', source: 'export const x=1;' }])
     expect(result.workerNames).toEqual([])
     expect(result.importers).toBeNull()
+  })
+
+  it('uses the planner Web Worker budget pattern for the cycle check', () => {
+    const budget = CHUNK_BUDGETS.find((row) => row.label === 'planner Web Worker')
+    expect(budget, 'CHUNK_BUDGETS must keep a planner Web Worker row').toBeTruthy()
+    expect(budget.match.test('planner.worker-aaa.js')).toBe(true)
+    expect(workerEntryImporters([{ name: 'planner.worker-aaa.js', source: '' }]).workerNames).toEqual([
+      'planner.worker-aaa.js',
+    ])
+  })
+
+  it('keeps parsePrecacheUrls JSDoc on that export', () => {
+    const text = readFileSync(fileURLToPath(new URL('./bundleBudget.mjs', import.meta.url)), 'utf8')
+    expect(text).toMatch(
+      /quietly drop\n \* the precache row[\s\S]{0,80}export function parsePrecacheUrls/,
+    )
   })
 })
 

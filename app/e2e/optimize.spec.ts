@@ -3,15 +3,16 @@ import { expect, test } from '@playwright/test'
 import { openExamplePlan } from './helpers'
 
 /**
- * Browser coverage for the optimizer, which unit tests cannot reach: it
- * loads the ~3.4 MB HiGHS wasm inside a module worker
- * (packages/planner-ui/src/workers/planner.worker.ts) with its own Rolldown
- * codeSplitting config, so a Vite/Rolldown bump can break the worker bundle
- * while lint, unit tests, and pack-smoke all stay green. Mirrors the
- * Monte Carlo pattern in smoke.spec.ts. The same worker graph TDZ that
- * crashed How much can I spend? (#672) also crashed this route as
- * "Optimizer error: Cannot access 'oe' before initialization" and left
- * Download recommendation report disabled after retry.
+ * Browser smoke for the optimizer, which unit tests cannot reach: it loads
+ * the ~3.4 MB HiGHS wasm inside a module worker
+ * (packages/planner-ui/src/workers/planner.worker.ts). A Vite/Rolldown bump
+ * can break that spawn while lint, unit tests, and pack-smoke stay green.
+ * Mirrors the Monte Carlo pattern in smoke.spec.ts.
+ *
+ * This spec runs against Vite's dev server, like the rest of app/e2e — it
+ * does not load the production Rolldown worker graph that #672 crashed on
+ * (Optimizer error / disabled Download recommendation report after retry).
+ * The production pin is the bundle-budget cycle check over dist/assets.
  */
 test.describe('Optimize', () => {
   test('runs the solver for an example plan and renders a completed recommendation', async ({ page }) => {

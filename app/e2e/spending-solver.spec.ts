@@ -3,13 +3,15 @@ import { expect, test } from '@playwright/test'
 import { openExamplePlan } from './helpers'
 
 /**
- * Browser coverage for the sustainable-spending solver, which unit tests
- * cannot reach: it loads the shared planner module worker
- * (packages/planner-ui/src/workers/planner.worker.ts) with its own Rolldown
- * codeSplitting config. Isolating the funding/settlement coordinators in
- * that graph created a circular chunk import whose production TDZ read as
- * "Cannot access 'oe' before initialization" (#672). Same worker as
- * Roth & Tax Optimizer (optimize.spec.ts); both routes auto-run on mount.
+ * Browser smoke for the sustainable-spending solver: open an example, visit
+ * How much can I spend?, require a completed answer (or the announced empty
+ * well) and no Solver-error chrome. Unit tests cannot reach the worker spawn.
+ * Same shared worker as Roth & Tax Optimizer (optimize.spec.ts).
+ *
+ * This spec runs against Vite's dev server, like the rest of app/e2e — it
+ * does not load the production Rolldown worker graph that #672 crashed on.
+ * The production pin is the bundle-budget cycle check over dist/assets
+ * (`workerEntryImporters` in app/scripts/bundleBudget.mjs).
  */
 test.describe('Spending solver', () => {
   test('runs the solver for an example plan and renders a completed answer', async ({ page }) => {
