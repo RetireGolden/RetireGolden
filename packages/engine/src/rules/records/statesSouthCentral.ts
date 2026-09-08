@@ -703,7 +703,7 @@ export const southCentralStateRecords = {
   'ms-27-7-5-rate-ramp': {
     title: 'Mississippi’s zero band and its legislated rate ramp',
     statement:
-      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. That zero band is two clauses rather than one — 27-7-5(1)(a)(i)6 removed the tax on the first $5,000 from 2022 and (1)(b)(i) removed it on $5,000 to $10,000 from 2023 — and the pack models the pair as a 0% bracket below $10,000. The rate above the band is 4.4% for 2025, 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030 and after, with a further revenue-triggered reduction of 0.2 to 0.3 of a point a year from 2031 under 27-7-5.1, and a self-repeal of the individual income tax entirely if the rate ever reaches zero. The pack holds 4% for both filing statuses. The next four refreshes each have a published figure waiting, so carrying this one forward is wrong by construction.',
+      'Mississippi levies no tax on the first $10,000 of an individual’s taxable income and a single flat rate above it. That zero band is two clauses rather than one — 27-7-5(1)(a)(i)6 removed the tax on the first $5,000 from 2022 and (1)(b)(i) removed it on $5,000 to $10,000 from 2023 — and the pack models the pair as a 0% bracket below $10,000. The rate above the band is 4.4% for 2025, 4% for 2026, 3.75% for 2027, 3.5% for 2028, 3.25% for 2029 and 3% for 2030. For later years, the quoted clause holds 3% except as otherwise provided in Section 2; the quoted closing sentence self-repeals the individual income tax if later reductions eliminate the tax. The pack holds 4% for both filing statuses. The next four refreshes each have a published figure waiting, so carrying this one forward is wrong by construction.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1256,9 +1256,10 @@ export const southCentralStateRecords = {
   },
 
   // ---------------------------------------------------------------------------
-  // Alabama — 2026-08-28. Staged 2025 Form 40 booklet (25f40bk.pdf) and AL DOR
-  // individual-income-tax page. The pack's `$6,000` age-65 retirement cap has
-  // no operative text in those staged sources (BLOCKED-SOURCE on that limb).
+  // Alabama — staged 2025 Form 40 booklet and Schedule RS, the AL DOR
+  // individual-income-tax page, and enrolled 2026 H.B. 341. The enrolled text
+  // and Schedule RS establish the $6,000 age-65 retirement cap; exact age
+  // measurement and mixed-source ordering remain outside it.
   // ---------------------------------------------------------------------------
 
   'al-form40-social-security-exclusion': {
@@ -1498,17 +1499,33 @@ export const southCentralStateRecords = {
   },
 
   'al-form40-age-65-retirement-exclusion-cap': {
-    title: 'Alabama\'s age-65 retirement exclusion: the pack\'s $6,000 private-bucket cap has no staged operative text',
+    title: 'Alabama\'s age-65 retirement exclusion is $6,000 for each qualifying taxpayer',
     statement:
-      'The pack encodes `retirementPrivate: { kind: \'capped\', capPerPerson: 6000, minAge: 65 }` — the private bucket only; the public bucket carries its own full override. The staged Form 40 booklet establishes that non-exempt pensions and IRA distributions are taxable but carries no operative text for an age-65 dollar exclusion, and the repo\'s research corpus describes a $6,000-per-person age-65 exclusion of defined-contribution retirement income for 2025 rising to $12,000 for 2026 — a description this registry cannot quote as authority. Unsettled: the encoded $6,000, the research corpus\'s larger 2026 amount, and the staged instructions\' silence are recorded side by side; no reading is presented as settled until a quotable primary is staged.',
-    classification: 'unsettled',
-    contraryReading:
-      'If the research corpus\'s 2026 parameter is operative — $12,000 per person at age 65 — the pack\'s $6,000 understates the exclusion and overstates Alabama tax; if no exclusion exists, the pack understates tax by the granted cap.',
+      'Ala. Code § 40-18-19(a)(13), as retained by 2026 H.B. 341, excludes the first $6,000 of taxable retirement income beginning January 1, 2023 and limits the exemption to individual taxpayers age 65 or older. Schedule RS separately says each taxpayer is eligible for up to $6,000, not exceeding retirement income taxable to Alabama. The pack encodes `retirementPrivate: { kind: \'capped\', capPerPerson: 6000, minAge: 65 }`; the public bucket carries its separate full override. Settled for the $6,000 amount, the individual age-65 threshold, and the per-taxpayer cap carrier. The cited text does not state the exact date on which age 65 is measured or prescribe an ordering rule for mixed taxable distributions. Those questions, and the separate defined-benefit/public-bucket approximation, remain outside this settled record.',
+    classification: 'settled',
+    contraryReading: null,
     errorDirection: null,
-    conventionRationale:
-      'BLOCKED-SOURCE: the $6,000 age-65 exclusion\'s operative text is not in the staged booklet; quote pends a staged primary',
+    conventionRationale: null,
     jurisdiction: 'state:AL',
     authority: [{
+      kind: 'statute',
+      citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount',
+      url: 'https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf',
+      quotedText:
+        'Beginning January 1, 2023, the first six thousand dollars ($6,000) of taxable retirement income.',
+    }, {
+      kind: 'statute',
+      citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — age restriction',
+      url: 'https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf',
+      quotedText:
+        'This exemption may only be claimed by individual taxpayers who are 65 years of age or older.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40, Schedule RS — retirement income exclusion',
+      url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf',
+      quotedText:
+        'each taxpayer is eligible up to $6,000 not to exceed the Retirement Income Taxable to Alabama',
+    }, {
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
@@ -1521,10 +1538,10 @@ export const southCentralStateRecords = {
       quotedText:
         'Complete Schedule RS to report fully or partially taxable pensions, annuities, IRA distributions (include SEP, Keogh, 401(k)(2), 403(b) distributions), other distributions and retirement distribution(s) exempt from Alabama Income.',
     }],
-    volatility: 'awaitingGuidance',
+    volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-28',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
@@ -1541,7 +1558,7 @@ export const southCentralStateRecords = {
   'al-form40-standard-deduction-agi-slide': {
     title: 'Alabama\'s standard deduction slides down with AGI; the pack holds the maxima flat',
     statement:
-      'The Form 40 booklet requires a standard-deduction claimant to use the page-9 chart, which reduces the deduction as Alabama adjusted gross income rises — for a single filer from $3,000 at AGI $0–$12,999 down to $2,500 at AGI $17,750 and above, and for joint filers from $8,500 at AGI $0–$25,999 down to $5,000 at AGI $35,500 and above. Approximated: the pack\'s `standardDeduction: { single: 3000, marriedFilingJointly: 8500 }` grants those maxima at every income, understating tax wherever the chart has already slid. The chart-row quotes verify against the staged booklet copy; the live PDF\'s chart region defeats the fetch-time extractor, so the fidelity ledger carries them as PDF-NOT-VERIFIABLE rather than confirmed — the documented undetermined class.',
+      'The Form 40 booklet requires a standard-deduction claimant to use the page-9 chart, which reduces the deduction as Alabama adjusted gross income rises — for a single filer from $3,000 at AGI $0–$25,999 down to $2,500 at AGI $35,500 and above, and for joint filers from $8,500 at AGI $0–$25,999 down to $5,000 at AGI $35,500 and above. Approximated: the pack\'s `standardDeduction: { single: 3000, marriedFilingJointly: 8500 }` grants those maxima at every income, understating tax wherever the chart has already slid. The chart-row quotes verify against the staged booklet copy; the live PDF\'s chart region defeats the fetch-time extractor, so the fidelity ledger carries them as PDF-NOT-VERIFIABLE rather than confirmed — the documented undetermined class.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
@@ -1558,7 +1575,7 @@ export const southCentralStateRecords = {
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
-        '$ 0 – $12,999 … $3,000 … $17,750 and above … $2,500',
+        '$ 0 – $25,999 … $3,000 … $35,500 and above … $2,500',
     }, {
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Married Filing Joint column',
