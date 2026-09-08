@@ -63,7 +63,8 @@ on:
         default: false
 
 permissions:
-  actions: read
+  # Required by the final notification job; model review jobs retain Actions read.
+  actions: write
   contents: read
   pull-requests: write
   # The central reusable publishes the stable required-gate commit status.

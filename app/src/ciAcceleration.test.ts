@@ -609,7 +609,7 @@ describe('OpenRouter CI authorization contract', () => {
     expect(profileCompletionCaller).toMatch(/^ {2}complete:\r?\n {4}if: /m)
     expect(profileCompletionCaller).toContain("if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(profileCompletionCaller).toContain(`openrouter-profile-completion.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`)
-    expect(profileCompletionCaller).toContain("source_run_id: ${{ github.event.workflow_run.id && format('{0}', github.event.workflow_run.id) || '' }}")
+    expect(profileCompletionCaller).toContain("source_run_id: ${{ inputs.source_run_id || (github.event.workflow_run.id && format('{0}', github.event.workflow_run.id)) || '' }}")
     expect(profileCompletionCaller).toContain('actions: write')
     expect(profileCompletionCaller).toContain('statuses: write')
     expect(profileCompletionCaller).not.toContain('steps:')

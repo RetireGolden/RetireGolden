@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-GitHub Actions builds production on pushes to `main`; the Azure preview workflow listens for opened, synchronized, reopened, and closed PR events. Semgrep runs on pushes to `main` and PRs targeting `main`, while ZAP runs only for an authorized same-repository PR preview after deploy. OpenRouter review runs on its pull-request events or manual dispatch, and its trusted broker is a `workflow_run` consumer (not a PR-activity workflow). The resolve gate covers manifest-touching PRs and weekly runs; Grok Build is manual emergency-only; Owl parity is manual; both package releases also have their version-tag triggers (`engine-v*` and `planner-ui-v*`). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+GitHub Actions builds production on pushes to `main`; the Azure preview workflow listens for opened, synchronized, reopened, and closed PR events. Semgrep runs on pushes to `main` and PRs targeting `main`, while ZAP runs only for an authorized same-repository PR preview after deploy. OpenRouter review runs on its pull-request events or manual dispatch, and its trusted broker accepts completion events and explicit default-branch delivery recovery. The resolve gate covers manifest-touching PRs and weekly runs; Grok Build is manual emergency-only; Owl parity is manual; both package releases also have their version-tag triggers (`engine-v*` and `planner-ui-v*`). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -193,3 +193,17 @@ From Actions → **OpenRouter code review**, dispatch from `main` with a PR numb
 **OpenRouter profile completion** checks the exact PR head, effective current policy, required lanes, and accepted requests. The `openrouter-profile` status supplements the existing first-pass gate and repository CI. A successful review workflow alone does not establish a clean or complete review. The CI broker also checks the trusted completion proof before requesting expensive CI.
 
 Profile artifacts retain 30 days (requests 90 days), and the gate accepts PRs younger than 25 days. Open a replacement PR for older work. Missing evidence fails closed. An automatic policy refresh is requested at most once per head/configuration; use a manual rerun if that request fails. Maintainer labels and automatic path escalation are not enabled in this rollout.
+
+Dispatch **OpenRouter profile completion** from the default branch; selecting a
+feature branch intentionally skips its trusted proof job. Bot-dispatched reviews
+explicitly wake this workflow because GitHub suppresses their downstream
+`workflow_run` events. The optional `source_run_id` identifies a completed review
+run to inspect; the receiver still checks its provenance and current evidence.
+If notification delivery fails, retry profile completion with that run ID on
+`main` instead of paying for another review.
+
+The CI broker also accepts a default-branch manual dispatch with the completed
+**profile-completion** run ID as `source_run_id`. It waits for completion and
+rechecks the clean review and profile proof before adding `run-ci` or rerunning
+CI. Notification failure does not invalidate the completed review; missing proof
+still blocks CI. These delivery waits do not shorten model review time.

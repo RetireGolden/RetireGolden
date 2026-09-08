@@ -3,6 +3,12 @@
 name: OpenRouter CI broker
 
 on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Completed profile-completion run requesting a CI sweep
+        required: true
+        type: string
   workflow_run:
     # Filter on the workflow YAML name; API run.name/display_title use run-name.
     # Verified live: Pro review34246675752 (OpenRouter PR #304: auto) triggered
@@ -25,6 +31,7 @@ permissions:
 
 jobs:
   authorize-and-rerun:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -34,7 +41,41 @@ jobs:
           script: |
             const { owner, repo } = context.repo
             const defaultBranch = context.payload.repository.default_branch
-            const trigger = context.payload.workflow_run
+            let trigger = context.payload.workflow_run
+            if (context.eventName === 'workflow_dispatch') {
+              if (context.ref !== `refs/heads/${defaultBranch}`) throw new Error('Dispatch CI broker from the default branch')
+              const raw = context.payload.inputs?.source_run_id || ''
+              const sourceId = Number(raw)
+              if (!/^[1-9][0-9]*$/.test(raw) || !Number.isSafeInteger(sourceId) || sourceId === context.runId) {
+                throw new Error('A different positive source_run_id is required')
+              }
+              // The notifier is the source run's final job. Wait until that run is
+              // terminal before the proof consumer checks its status and artifacts.
+              const deadline = Date.now() + 90000
+              while (Date.now() < deadline) {
+                const response = await github.rest.actions.getWorkflowRun({
+                  owner, repo, run_id: sourceId,
+                  request: { timeout: Math.max(1, Math.min(10000, deadline - Date.now())) },
+                })
+                trigger = response.data
+                if (trigger?.id !== sourceId || trigger?.path !== '.github/workflows/openrouter-profile-completion.yml') {
+                  throw new Error('Explicit broker wake must identify profile completion')
+                }
+                if (trigger.status === 'completed') break
+                if (!['queued', 'in_progress', 'waiting', 'pending', 'requested'].includes(trigger.status)) {
+                  throw new Error('Invalid completion source status')
+                }
+                await new Promise(resolve => setTimeout(resolve, Math.max(0, Math.min(2000, deadline - Date.now()))))
+              }
+              if (trigger?.status !== 'completed') throw new Error('Completion source is still active; rerun the broker after it finishes')
+              const { data: sourceWorkflow } = await github.rest.actions.getWorkflow({
+                owner, repo, workflow_id: 'openrouter-profile-completion.yml', request: { timeout: 10000 },
+              })
+              if (!Number.isSafeInteger(trigger.workflow_id) || trigger.workflow_id !== sourceWorkflow.id ||
+                  sourceWorkflow.path !== trigger.path || sourceWorkflow.state !== 'active') {
+                throw new Error('Explicit broker wake has untrusted workflow identity')
+              }
+            }
             const triggerPaths = new Set([
               '.github/workflows/openrouter-code-review.yml',
               '.github/workflows/openrouter-profile-completion.yml',

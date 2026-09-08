@@ -148,6 +148,23 @@ output confirm clean-ledger acceptance and open-finding rejection in both CI con
 
 #### Review profiles and profile completion
 
+Bot-dispatched reviews use an explicit default-branch notification because GitHub
+suppresses their downstream `workflow_run` events. The profile caller accepts
+`source_run_id`, waits briefly for that review run to finish, and independently
+validates its provenance and current receipts. A bot-dispatched profile run then
+explicitly wakes the CI broker, which still rechecks the exact-head clean ledger
+and trusted proof. Only the final notification job requests Actions write access;
+model review jobs retain Actions read access.
+
+If a delivery job fails, use `gh workflow run openrouter-profile-completion.yml
+--ref main -f source_run_id=<completed-review-run>` to retry proof delivery. If
+proof already completed but the broker did not wake, use `gh workflow run
+openrouter-ci-broker.yml --ref main -f source_run_id=<completed-profile-run>`.
+Do not repeat the paid review just to deliver a notification. The source ID is a
+wake-up hint, never CI authorization; missing evidence still blocks CI. Manual
+proof and broker dispatches from feature branches intentionally skip their jobs.
+
+
 [`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) forwards to the
 org reusable at `05c616eae68252214effb03d8422e2ec56667fc7`. Reviews publish both the v1 ledger
 marker and a v1 plan receipt (`<!-- openrouter-review-plan:v1:… -->`) that records the effective

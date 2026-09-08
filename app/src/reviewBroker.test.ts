@@ -32,6 +32,15 @@ export function hasActiveOrRealAzureWork(runs) { return runs.some(run => run.sta
 export function hasOnlySkippedExpensiveAzureJobs() { return true; }
 `;
 
+type DispatchOptions = {
+  sourceId?: string;
+  ref?: string;
+  states?: string[];
+  path?: string;
+  workflowId?: number;
+  registeredState?: string;
+};
+
 function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = false } = {}) {
   const reruns: number[] = [];
   const labels = new Set<number>();
@@ -73,7 +82,7 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
       },
       actions: {
         getWorkflow: ({ workflow_id }: { workflow_id: string }) => ({
-          data: { id: 123, path: `.github/workflows/${workflow_id}` },
+          data: { id: 123, path: `.github/workflows/${workflow_id}`, state: 'active' },
         }),
         listWorkflowRuns: listRuns,
         listJobsForWorkflowRun: listJobs,
@@ -112,15 +121,41 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
       throw new Error('unexpected pagination');
     },
   };
-  const run = async (name = 'OpenRouter profile completion', workflowId = 123, path = '.github/workflows/openrouter-profile-completion.yml') => {
+  const run = async (name = 'OpenRouter profile completion', workflowId = 123, path = '.github/workflows/openrouter-profile-completion.yml', dispatch?: DispatchOptions) => {
+    let now = 0;
+    let sourceReads = 0;
+    const actions = {
+      ...github.rest.actions,
+      getWorkflow: (input: { workflow_id: string }) => ({
+        data: { ...github.rest.actions.getWorkflow(input).data, state: dispatch?.registeredState ?? 'active' },
+      }),
+      getWorkflowRun: () => {
+        expect(reruns).toEqual([]);
+        expect([...labels]).toEqual([]);
+        expect(profileChecks).toEqual([]);
+        const states = dispatch?.states ?? ['completed'];
+        return { data: {
+          id: 42, workflow_id: dispatch?.workflowId ?? 123,
+          path: dispatch?.path ?? '.github/workflows/openrouter-profile-completion.yml',
+          status: states[Math.min(sourceReads++, states.length - 1)],
+        } };
+      },
+    };
+
     await runInNewContext(
       `(async () => {${script}\n})()`,
       {
-        github,
+        github: { ...github, rest: { ...github.rest, actions } },
+        Date: { now: () => now },
+        setTimeout: (resolve: () => void, delay: number) => { now += delay; resolve(); },
         context: {
           repo: { owner: 'RetireGolden', repo: 'fixture' },
+          eventName: dispatch ? 'workflow_dispatch' : 'workflow_run',
+          ref: dispatch?.ref ?? 'refs/heads/main',
+          runId: 43,
           payload: {
             repository: { default_branch: 'main' },
+            inputs: dispatch ? { source_run_id: dispatch.sourceId ?? '42' } : undefined,
             workflow_run: { name, path, workflow_id: workflowId, head_sha: 'f'.repeat(40) },
           },
         },
@@ -133,7 +168,8 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
       { importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER },
     );
   };
-  return { run, reruns, labels, profileChecks, reviewReads, failures, warnings, sweeps: () => sweeps };
+  const runDispatch = (options: DispatchOptions = {}) => run(undefined, undefined, undefined, options);
+  return { run, runDispatch, reruns, labels, profileChecks, reviewReads, failures, warnings, sweeps: () => sweeps };
 }
 
 describe('broker queue and open-PR sweep', () => {
@@ -196,5 +232,37 @@ describe('broker queue and open-PR sweep', () => {
     expect(state.reruns).toEqual([2]);
     expect(state.failures).toEqual(['CI authorization failed for 1 PR(s)']);
     expect(state.warnings).toEqual(['CI authorization could not complete for PR #1 (HTTP 503)']);
+  });
+});
+
+
+describe('explicit completion dispatch', () => {
+  it('waits for the notifying run to finish before rechecking proofs and changing CI', async () => {
+    const state = fixture();
+    await state.runDispatch({ states: ['in_progress', 'completed'] });
+    expect(state.profileChecks).toEqual([1, 2]);
+    expect(state.reruns).toEqual([1, 2]);
+  });
+
+  it('does not turn a source run ID into CI authorization', async () => {
+    const state = fixture({ denied: 1 });
+    await state.runDispatch();
+    expect(state.profileChecks).toEqual([1, 2]);
+    expect([...state.labels]).toEqual([2]);
+    expect(state.reruns).toEqual([2]);
+  });
+
+  it.each<DispatchOptions>([
+    { sourceId: '0' }, { sourceId: '43' }, { sourceId: '1e2' },
+    { sourceId: '9007199254740993' }, { ref: 'refs/heads/feature' },
+    { path: '.github/workflows/release.yml' }, { workflowId: 999 },
+    { registeredState: 'disabled_manually' }, { states: ['mystery'] },
+    { states: ['in_progress'] },
+  ])('rejects invalid or unfinished sources before CI mutations: %j', async (options) => {
+    const state = fixture();
+    await expect(state.runDispatch(options)).rejects.toThrow();
+    expect(state.profileChecks).toEqual([]);
+    expect([...state.labels]).toEqual([]);
+    expect(state.reruns).toEqual([]);
   });
 });
