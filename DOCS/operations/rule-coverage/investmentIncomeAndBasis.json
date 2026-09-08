@@ -179,8 +179,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/propertySale.ts"
@@ -618,8 +618,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
@@ -696,8 +696,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/insights/detectors/missingDataBasis.ts",
         "packages/engine/src/projection/simulate.ts",
@@ -809,8 +809,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/propertySale.ts"
@@ -1602,14 +1602,14 @@
       "title": "Savings-bond interest is deferred until redemption, maturity, or disposition unless elected",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "The absence surface spans model/plan.ts, projection/internal/distributedTaxableYieldRows.ts, and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield; distributedTaxableYieldRows prices it for the current year, and simulate.ts immediately adds the returned interest to ordinary income. None of those surfaces identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.",
+      "conventionRationale": "The absence surface spans model/plan.ts, projection/internal/distributedTaxableYieldRows.ts, and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield; distributedTaxableYieldRows prices it for the current year, and simulate.ts immediately adds the returned interest to ordinary income. None of those surfaces identifies a savings bond, a redemption/disposition/final-maturity event or date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/distributedTaxableYieldRows.ts",
@@ -1721,8 +1721,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/actions/taxableWithdrawalCharacter.ts",
         "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts"

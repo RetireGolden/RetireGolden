@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-08T18:08:44.551Z",
+  "generatedAt": "2026-09-08T19:35:35.642Z",
   "recordCount": 444,
   "urlCount": 352,
   "fetched": 0,
   "cached": 352,
-  "entryCount": 1299,
+  "entryCount": 1300,
   "counts": {
-    "EXACT": 923,
+    "EXACT": 924,
     "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 245,
     "ELISION-EXACT": 72,
@@ -8169,7 +8169,7 @@
       "citation": "IRC 121(b)(2) chapeau",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim",
-      "quoteSha256": "c8884a8f0f31a447",
+      "quoteSha256": "f740757aee7d8ffd",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -8469,7 +8469,7 @@
       "citation": "IRC 454(c)(1)-(2)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim",
-      "quoteSha256": "76b493fa49b8db06",
+      "quoteSha256": "0b5bcae06cd6d50e",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -9046,6 +9046,16 @@
     },
     {
       "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
+      "citation": "IRC 55(d)(4)(A), post-2017 substitutions",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
+      "quoteSha256": "d8724290c35fcd79",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
       "citation": "IRC 55(d)(4)(B)(i)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
@@ -9079,7 +9089,7 @@
       "citation": "IRC 55(d)(3)(B)(i)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
-      "quoteSha256": "61a740ab1856d59f",
+      "quoteSha256": "0d6561e2750a1fdd",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -9099,7 +9109,7 @@
       "citation": "IRC 55(b)(1)(A)(i)-(ii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
-      "quoteSha256": "0e6062736a559343",
+      "quoteSha256": "3adf2edb4370e6e9",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

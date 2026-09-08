@@ -510,7 +510,7 @@ export const individualIncomeTaxRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The same reasoning reaches the other annually adjusted figures the federal engine reads, each under its own provision: the basic standard deduction under 63(c)(7)(B)(ii), the age-65 addition under 63(c)(4) (which indexes the dollar amounts in subsection (f)), the maximum zero-rate and maximum 15-percent capital gain amounts under 1(j)(5)(C), and the AMT exemption and phase-out threshold, which are current post-2017 amounts under 55(d)(4)(A) indexed under 55(d)(4)(B), and the 26/28-percent threshold, which is the 55(b)(1)(A) amount indexed by 55(d)(3)(A)/(B)(i); both AMT adjustment paths round increased amounts to the nearest $100 under their respective clauses. Their base years differ -- 2016, 2017, 2024, 2025, 2011 -- and so do their rounding steps, but none of that survives into the projection: the pack figure has already absorbed every adjustment through the pack year, so carrying it forward is one multiplication for all of them. Two approximations remain and are deliberate. The index is the plan assumed general inflation rather than the C-CPI-U of 1(f)(3), and the statutory rounding to a multiple of 50 or 100 dollars is not reproduced -- the same two liberties limitScale already takes with the contribution limits. What must not be swept along are the figures with no indexing provision at all: the section 86 provisional-income thresholds, the section 1411 thresholds, the section 121 exclusion, the section 1211(b) ordinary offset and the section 151(d)(5)(C) senior deduction are unindexed by design, and the SALT cap follows the explicit 164(b)(7) schedule rather than an index. Scaling any of those would be the mirror-image defect.',
+      'The same reasoning reaches the other annually adjusted figures the federal engine reads, each under its own provision: the basic standard deduction under 63(c)(7)(B)(ii), the age-65 addition under 63(c)(4) (which indexes the dollar amounts in subsection (f)), the maximum zero-rate and maximum 15-percent capital gain amounts under 1(j)(5)(C), and the AMT exemption and phase-out threshold, which are current post-2017 amounts under 55(d)(4)(A) indexed under 55(d)(4)(B), and the 26/28-percent threshold, which is the 55(b)(1)(A) amount indexed by 55(d)(3)(A)/(B)(i); both AMT adjustment paths round increased amounts to the nearest $100 under their respective clauses. Their substituted calendar years differ -- 1987 and 1997 for the age-65 addition under 63(c)(4), 2011 for the AMT 26/28-percent threshold under 55(d)(3)(A), 2017 for the bracket and zero/15/20 capital-gain amounts under 1(j)(3)(B) and 1(j)(5)(C) and for the AMT exemption under 55(d)(4)(B)(i), 2024 for the basic standard deduction under 63(c)(7)(B)(ii), and 2025 for the AMT phase-out threshold under 55(d)(4)(B)(i) -- and so do their rounding steps, but none of that survives into the projection: the pack figure has already absorbed every adjustment through the pack year, so carrying it forward is one multiplication for all of them. Two approximations remain and are deliberate. The index is the plan assumed general inflation rather than the C-CPI-U of 1(f)(3), and the statutory rounding to a multiple of 50 or 100 dollars is not reproduced -- the same two liberties limitScale already takes with the contribution limits. What must not be swept along are the figures with no indexing provision at all: the section 86 provisional-income thresholds, the section 1411 thresholds, the section 121 exclusion, the section 1211(b) ordinary offset and the section 151(d)(5)(C) senior deduction are unindexed by design, and the SALT cap follows the explicit 164(b)(7) schedule rather than an index. Scaling any of those would be the mirror-image defect.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -530,6 +530,12 @@ export const individualIncomeTaxRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
       quotedText:
         'In the case of a taxable year beginning after 2025, the $23,625 and $15,750 amounts in subparagraph (A) shall each be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting "2024" for "2016" in subparagraph (A)(ii) thereof.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(d)(4)(A), post-2017 substitutions',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        'In the case of any taxable year beginning after December 31, 2017- (i) paragraph (1) shall be applied- (I) by substituting "$109,400" for "$78,750" in subparagraph (A), and (II) by substituting "$70,300" for "$50,600" in subparagraph (B), (ii) paragraph (2) shall be applied- (I) by substituting "$1,000,000" for "$150,000" in subparagraph (A), (II) by substituting "50 percent of the dollar amount applicable under subparagraph (A)" for "$112,500" in subparagraph (B), (III) in the case of a taxpayer described in paragraph (1)(D), without regard to the substitution under subclause (I), and (IV) by substituting "50 percent" for "25 percent", and (iii) subsection (j) of section 59 shall not apply.',
     }, {
       kind: 'statute',
       citation: 'IRC 55(d)(4)(B)(i)',
@@ -553,7 +559,7 @@ export const individualIncomeTaxRecords = {
       citation: 'IRC 55(d)(3)(B)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
       quotedText:
-        'The amounts described in this subparagraph are- (i) each of the dollar amounts contained in subsection (b)(1)(A),',
+        '(i) each of the dollar amounts contained in subsection (b)(1)(A), …',
     }, {
       kind: 'statute',
       citation: 'IRC 55(d)(4)(B)(iii)',
@@ -565,7 +571,7 @@ export const individualIncomeTaxRecords = {
       citation: 'IRC 55(b)(1)(A)(i)-(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
       quotedText:
-        '26 percent of so much of the taxable excess as does not exceed $175,000, plus (ii) 28 percent of so much of the taxable excess as exceeds $175,000.',
+        'The tentative minimum tax for the taxable year is the sum of- (i) 26 percent of so much of the taxable excess as does not exceed $175,000, plus (ii) 28 percent of so much of the taxable excess as exceeds $175,000.',
     }, {
       kind: 'statute',
       citation: 'IRC 55(d)(3)(C)',
@@ -576,7 +582,7 @@ export const individualIncomeTaxRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-29',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/params/indexingScale.ts',

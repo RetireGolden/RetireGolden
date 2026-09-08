@@ -322,7 +322,7 @@ export const investmentIncomeAndBasisRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts',
       'packages/engine/src/tax/federalTax.ts',
@@ -541,7 +541,7 @@ export const investmentIncomeAndBasisRecords = {
       citation: 'IRC 121(b)(2) chapeau',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim',
       quotedText:
-        'In the case of a husband and wife who make a joint return for the taxable year of the sale or exchange of the property-',
+        'In the case of a husband and wife who make a joint return for the taxable year of the sale or exchange of the property- …',
     }, {
       kind: 'statute',
       citation: 'IRC 121(b)(2)(A)',
@@ -558,7 +558,7 @@ export const investmentIncomeAndBasisRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/tax/propertySale.ts',
       'packages/engine/src/params/data/year2026.ts',
@@ -781,7 +781,7 @@ export const investmentIncomeAndBasisRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/tax/propertySale.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -840,7 +840,7 @@ export const investmentIncomeAndBasisRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/tax/propertySale.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -856,7 +856,7 @@ export const investmentIncomeAndBasisRecords = {
   'treas-reg-1-1012-1-c-lot-basis-and-holding-period': {
     title: 'Taxable-account basis and holding period are properties of a lot',
     statement:
-      'Where shares bought on different dates or at different prices are sold and the taxpayer does not adequately identify the lot, the sale is charged against the earliest lot acquired, and that lot fixes both the basis and the holding period; the average basis method reaches only the stock the regulation names, chiefly regulated investment company shares and dividend reinvestment plan holdings. Not modelled: the engine holds one cost-basis figure and one fair market value for the whole account and recovers basis in the ratio of the two, which is account-level average cost, and it emits a single realized gain or loss carrying no holding period at all. Two errors follow. The basis recovered on a partial sale is wrong in either direction depending on which lots a first-in-first-out or specific-identification seller would actually have sold. More seriously, nothing separates long-term from short-term, so gain belonging in the preferential rate schedule and gain taxed as ordinary income are reported as one number, which understates tax on a short-term sale and overstates it on a long-term one.',
+      'Where shares bought on different dates or at different prices are sold and the taxpayer does not adequately identify the lot, the sale is charged against the earliest lot acquired, and that lot fixes both the basis and the holding period; the average basis method reaches only regulated investment company shares and qualifying dividend reinvestment plan holdings the regulation names. Not modelled: the engine holds one cost-basis figure and one fair market value for the whole account and recovers basis in the ratio of the two, which is account-level average cost, and it emits a single realized gain or loss carrying no holding period at all. Two errors follow. The basis recovered on a partial sale is wrong in either direction depending on which lots a first-in-first-out or specific-identification seller would actually have sold. More seriously, nothing separates long-term from short-term, so gain belonging in the preferential rate schedule and gain taxed as ordinary income are reported as one number, which understates tax on a short-term sale and overstates it on a long-term one.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -885,7 +885,7 @@ export const investmentIncomeAndBasisRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/actions/taxableWithdrawalCharacter.ts',
       'packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts',
@@ -939,14 +939,14 @@ export const investmentIncomeAndBasisRecords = {
       shape: 'inexpressibleInput',
       missingInputFacts: [
       'a savings-bond instrument and its redemption price increases',
-      'the final redemption or final maturity date',
+      'the redemption, disposition, or final-maturity event and its date',
       'a section 454(a) election to include the increase currently',
       ],
     },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The absence surface spans model/plan.ts, projection/internal/distributedTaxableYieldRows.ts, and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield; distributedTaxableYieldRows prices it for the current year, and simulate.ts immediately adds the returned interest to ordinary income. None of those surfaces identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.',
+      'The absence surface spans model/plan.ts, projection/internal/distributedTaxableYieldRows.ts, and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield; distributedTaxableYieldRows prices it for the current year, and simulate.ts immediately adds the returned interest to ordinary income. None of those surfaces identifies a savings bond, a redemption/disposition/final-maturity event or date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -959,7 +959,7 @@ export const investmentIncomeAndBasisRecords = {
       citation: 'IRC 454(c)(1)-(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
       quotedText:
-        'In the case of a taxpayer who- (1) holds a series E United States savings bond at the date of maturity, and (2) pursuant to regulations prescribed under chapter 31 of title 31 (A) retains his investment in such series E bond in an obligation of the United States, other than a current income obligation, or (B) exchanges such series E bond for another nontransferable obligation of the United States in an exchange upon which gain or loss is not recognized because of section 1037 (or so much of section 1031 as relates to section 1037),',
+        'In the case of a taxpayer who- (1) holds a series E United States savings bond at the date of maturity, and (2) pursuant to regulations prescribed under chapter 31 of title 31 (A) retains his investment in such series E bond in an obligation of the United States, other than a current income obligation, or (B) exchanges such series E bond for another nontransferable obligation of the United States in an exchange upon which gain or loss is not recognized because of section 1037 (or so much of section 1031 as relates to section 1037), the increase in redemption value (to the extent not previously includible in gross income) in excess of the amount paid for such series E bond shall be includible in gross income in the taxable year in which the obligation is finally redeemed or in the taxable year of final maturity, whichever is earlier.',
     }, {
       kind: 'regulation',
       citation: '26 CFR 1.454-1(a)(1)',
@@ -970,7 +970,7 @@ export const investmentIncomeAndBasisRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-08',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts',

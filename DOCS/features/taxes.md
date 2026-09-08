@@ -41,8 +41,7 @@ fallback.
 Computed each year inside the projection loop. The ledger is **nominal**, so for a year with no published
 parameter pack the annually-indexed federal figures are carried forward at the plan's inflation rate before
 income meets them (`indexFederalTaxPack`): rate-bracket bounds (IRC 1(j)(3)(B)), the standard deduction and
-age-65 addition (63(c)(7)(B)(ii), 63(c)(4)), the 15%/20% capital-gain breakpoints (1(j)(5)(C)), and the AMT
-exemption, phase-out threshold and 28%-rate threshold (55(d)(4)(B), 55(d)(3)(B)). The statutory rounding
+age-65 addition (63(c)(7)(B)(ii), 63(c)(4)), the 15%/20% capital-gain breakpoints (1(j)(5)(C)), the AMT exemption and phase-out threshold (55(d)(4)(A), indexed by 55(d)(4)(B)), and the 26/28-percent AMT breakpoint (55(b)(1)(A), indexed by 55(d)(3)(A) and 55(d)(3)(B)(i)). The statutory rounding
 steps and the C-CPI-U basis are not reproduced — the same two approximations `limitScale` makes for the
 contribution limits. Figures with **no** indexing provision are deliberately left flat and creep by design:
 the §86 provisional-income tiers, the §1411 NIIT thresholds, the §121 exclusion, the §1211(b) $3,000 offset
