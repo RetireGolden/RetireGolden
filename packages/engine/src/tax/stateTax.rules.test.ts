@@ -2907,44 +2907,52 @@ describeRule('oh-rev-code-5747-01-social-security-and-public-pension', {
 
 describeRule('oh-rev-code-5747-01-social-security-and-public-pension', {
   readings: {
-    sourceAppliesTheTwoHundredDollarRetirementCredit: (50_000 - 26_050) * 0.0275 - 200,
-    packOmitsTheRetirementCredit: 658.625,
+    sourceAppliesTheTwoHundredDollarRetirementCredit: 332 + (50_000 - 26_050) * 0.0275 - 200,
+    packOmitsTheRetirementCredit: 332 + (50_000 - 26_050) * 0.0275,
   },
   accepted: 'sourceAppliesTheTwoHundredDollarRetirementCredit',
   produced: 'packOmitsTheRetirementCredit',
   note: 'retirement-income credit limb',
 }, ({ accepted, produced }) => {
   // Section 5747.055(B) gives $200 when retirement income exceeds $8,000 and
-  // modified AGI is below $100,000. The pack computes the pre-credit $658.625
-  // Ohio tax and has no credit channel.
+  // modified AGI is below $100,000. The pack computes pre-credit gross tax
+  // ($990.625 at this income) and has no credit channel.
   const scenario = input({ state: 'OH', ordinaryIncome: 50_000, privateRetirementIncome: 10_000 })
 
   it('pins the omitted Ohio retirement-income credit', () => {
     const tax = computeStateTax(pack('OH'), scenario)
     expect(tax).toBe(produced)
     expect(tax).not.toBe(accepted)
+    expect(accepted).toBe(790.625)
+    expect(produced).toBe(990.625)
   })
 })
 
+const OH_NONBUSINESS_BOUNDARY = [
+  { income: 26_050, tax: 0 },
+  { income: 26_051, tax: 332.0275 },
+  { income: 50_000, tax: 990.625 },
+] as const
+
 describeRule('oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule', {
   readings: {
-    // §5747.02(A)(3)(c): $332 + 2.75% × ($50,000 − $26,050) = $990.625.
-    enactedThreeThirtyTwoPlusMarginal: 332 + (50_000 - 26_050) * 0.0275,
-    // Pack brackets omit the $332 cumulative base at $26,050.
-    packMarginalOnlyNoBase: 658.625,
+    enactedThreeThirtyTwoPlusMarginal: OH_NONBUSINESS_BOUNDARY.map(({ tax }) => tax),
+    packMarginalOnlyNoBase: [0, 0.0275, 658.625],
   },
   accepted: 'enactedThreeThirtyTwoPlusMarginal',
-  produced: 'packMarginalOnlyNoBase',
-}, ({ accepted, produced }) => {
-  // Main observation on base a7f4c07: computeStateTax(pack('OH'), B=$50,000)
-  // yields $658.625 for both supported filing statuses. The statutory reading
-  // is pinned from the primary packet, not from the engine.
-  const scenario = input({ state: 'OH', ordinaryIncome: 50_000 })
-
-  it('pins the omitted $332 cumulative base on the TY2026 nonbusiness schedule', () => {
-    expect(computeStateTax(pack('OH'), scenario)).toBe(produced)
-    expect(computeStateTax(pack('OH'), scenario)).not.toBe(accepted)
-    expect(accepted).toBe(990.625)
+}, ({ accepted, readings }) => {
+  // §5747.02(A)(3)(c): $332 + 2.75% × (B − $26,050). At B=$50,000 → $990.625.
+  // The rejected no-base vector is the pre-fix runtime on base a7f4c07.
+  it('prices the TY2026 nonbusiness schedule at the statutory breakpoints', () => {
+    for (const status of ['single', 'marriedFilingJointly'] as const) {
+      OH_NONBUSINESS_BOUNDARY.forEach(({ income }, index) => {
+        const tax = computeStateTax(pack('OH'), input({ filingStatus: status, ordinaryIncome: income }))
+        expect(tax).toBeCloseTo(accepted[index]!, 6)
+        if (index > 0) {
+          expect(tax).not.toBeCloseTo(readings.packMarginalOnlyNoBase[index]!, 6)
+        }
+      })
+    }
   })
 })
 

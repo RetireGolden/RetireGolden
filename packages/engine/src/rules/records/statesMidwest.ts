@@ -1428,14 +1428,15 @@ export const midwestStateRecords = {
   },
 
   'oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule': {
-    title: 'Ohio TY2026 nonbusiness tax carries a $332 cumulative base above $26,050 that the pack omits',
+    title: 'Ohio TY2026 nonbusiness tax carries a $332 cumulative base above $26,050',
     statement:
-      'For taxable years beginning in 2026 and thereafter, Ohio Rev. Code §5747.02(A)(3) imposes no tax when the individual nonbusiness balance B — Ohio adjusted gross income minus taxable business income and applicable taxpayer, spouse, and dependent exemptions — is at most $26,050, and §5747.02(A)(3)(c) sets tax at $332.00 plus 2.75% of the amount in excess of $26,050. Division (A)(3) supplies one schedule for individuals without a filing-status branch; single and married filing jointly therefore share the breakpoint, base, and rate. The enacted Legislative Service Commission H.B. 96 tax Greenbook independently confirms TY2026 uses that single bracket and that H.B. 96 suspends inflation indexing for TY2025 and TY2026, so the TY2026 threshold remains $26,050. Approximated: the pack\'s OH brackets carry a 0% band to $26,050 and 2.75% above it but omit the $332 cumulative base at the threshold, so bracketTax charges only the marginal excess above $26,050. At every B above $26,050 the engine understates gross nonbusiness tax before credits by exactly $332. Taxable business income under (A)(4), exemptions that reduce B, retirement and senior credits, municipal tax, and whole-return liability remain outside this record. The captured Ohio Department of Taxation 2026 IT 1040 ES worksheet prints the prior-year $342 / 2.75% / 3.125% table and conflicts with enacted law; that administrative artifact is disclosed here but does not support the $332 formula and has not been reconciled.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'understatesTax',
+      'For taxable years beginning in 2026 and thereafter, Ohio Rev. Code §5747.02(A)(3) imposes no tax when the individual nonbusiness balance B — Ohio adjusted gross income minus taxable business income and applicable taxpayer, spouse, and dependent exemptions — is at most $26,050, and §5747.02(A)(3)(c) sets tax at $332.00 plus 2.75% of the amount in excess of $26,050. Division (A)(3) supplies one schedule for individuals without a filing-status branch; single and married filing jointly therefore share the breakpoint, base, and rate. The enacted Legislative Service Commission H.B. 96 tax Greenbook independently confirms TY2026 uses that single bracket and that H.B. 96 suspends inflation indexing for TY2025 and TY2026, so the TY2026 threshold remains $26,050. Settled for this narrow pre-credit schedule only: the OH pack carries the 0% band to $26,050 and the 2.75% band with baseTax $332, and bracketTax plus prorateParams enforce the cumulative base at the threshold. Taxable business income under (A)(4), exemptions that reduce B, retirement and senior credits, municipal tax, and whole-return liability remain outside this record. The captured Ohio Department of Taxation 2026 IT 1040 ES worksheet prints the prior-year $342 / 2.75% / 3.125% table and conflicts with enacted law; that administrative artifact is disclosed here but does not support the $332 formula and has not been reconciled.',
+    classification: 'settled',
+    contraryReading:
+      'The captured 2026 IT 1040 ES estimated-payment worksheet reproduces the 2025 schedule ($342 plus 2.75% of excess over $26,050, then $2,394.32 plus 3.125% above $100,000) and conflicts directly with the current enacted §5747.02(A)(3)(c) and the LSC enacted-budget Greenbook.',
+    errorDirection: null,
     conventionRationale:
-      'The captured 2026 IT 1040 ES estimated-payment worksheet reproduces the 2025 schedule ($342 plus 2.75% of excess over $26,050, then $2,394.32 plus 3.125% above $100,000) and conflicts directly with the current enacted §5747.02(A)(3)(c) and the LSC enacted-budget Greenbook. For the legal TY2026 nonbusiness schedule the current statute plus enacted analysis controls the supported reading; the worksheet is preserved as an explicit contrary administrative artifact, not as support for the pack omission.',
+      'For the legal TY2026 nonbusiness schedule the current statute plus enacted analysis controls the supported reading; the worksheet is preserved as an explicit contrary administrative artifact, not as support for the pack.',
     jurisdiction: 'state:OH',
     authority: [{
       kind: 'statute',
@@ -1473,6 +1474,7 @@ export const midwestStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#OH',
       'packages/engine/src/tax/stateTax.ts#bracketTax',
+      'packages/engine/src/tax/stateTax.ts#prorateParams',
     ],
   },
 

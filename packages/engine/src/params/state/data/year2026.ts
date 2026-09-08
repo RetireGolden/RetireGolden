@@ -687,8 +687,8 @@ const rawStateYear2026 = {
       code: 'OH', name: 'Ohio', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75 }],
+        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75, baseTax: 332 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75, baseTax: 332 }],
       },
       retirement: { kind: 'none' },
     },

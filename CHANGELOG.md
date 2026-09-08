@@ -4,6 +4,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Ohio TY2026 nonbusiness tax base:** corrected gross nonbusiness tax above
+  $26,050 by restoring the enacted §5747.02(A)(3)(c) $332 cumulative base before
+  credits on the same individual schedule for supported single and MFJ filing
+  statuses (`oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule`).
+  Exemptions, retirement and senior credits, business income, municipal tax, and
+  whole-return accuracy remain outside this correction. The conflicting official
+  2026 IT 1040 ES worksheet table is disclosed but not followed.
+
 - **MFJ IRA spousal compensation ceiling:** corrected the living MFJ IRA pass so equal and higher
   earners cannot exceed their own wages under IRC 219(b)(1) while the strictly lesser spouse may
   still use section 219(c) combined-compensation room; the shared household pool still conserves total

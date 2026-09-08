@@ -29,10 +29,16 @@ import { phaseOutStandardDeduction } from './stateStandardDeduction.js'
 function bracketTax(brackets: StateTaxBracket[], taxable: number): number {
   let tax = 0
   for (let i = 0; i < brackets.length; i++) {
-    const lower = brackets[i]!.lowerBound
+    const bracket = brackets[i]!
+    const lower = bracket.lowerBound
     const upper = i + 1 < brackets.length ? brackets[i + 1]!.lowerBound : Infinity
     if (taxable <= lower) break
-    tax += (Math.min(taxable, upper) - lower) * (brackets[i]!.ratePct / 100)
+    const marginal = (Math.min(taxable, upper) - lower) * (bracket.ratePct / 100)
+    if (bracket.baseTax !== undefined) {
+      tax = bracket.baseTax + marginal
+    } else {
+      tax += marginal
+    }
   }
   return tax
 }
@@ -234,8 +240,16 @@ function prorateParams(params: StateTaxParams, scale: number): StateTaxParams {
           },
         }),
     brackets: {
-      single: params.brackets.single.map((b) => ({ ...b, lowerBound: b.lowerBound * scale })),
-      marriedFilingJointly: params.brackets.marriedFilingJointly.map((b) => ({ ...b, lowerBound: b.lowerBound * scale })),
+      single: params.brackets.single.map((b) => ({
+        ...b,
+        lowerBound: b.lowerBound * scale,
+        ...(b.baseTax === undefined ? {} : { baseTax: b.baseTax * scale }),
+      })),
+      marriedFilingJointly: params.brackets.marriedFilingJointly.map((b) => ({
+        ...b,
+        lowerBound: b.lowerBound * scale,
+        ...(b.baseTax === undefined ? {} : { baseTax: b.baseTax * scale }),
+      })),
     },
     retirementPrivate: scaleExclusion(params.retirementPrivate, scale),
     retirementPublic: scaleExclusion(params.retirementPublic, scale),
