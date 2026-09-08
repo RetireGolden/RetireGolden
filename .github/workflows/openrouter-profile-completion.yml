@@ -2,6 +2,9 @@
 name: OpenRouter profile completion
 on:
   workflow_run:
+    # Filter on the workflow YAML name; API run.name/display_title use run-name.
+    # Verified live: Pro review34246675752 (OpenRouter PR #304: auto) triggered
+    # completion34247027718 with event=workflow_run and SOURCE_RUN_ID=34246675752.
     workflows: [OpenRouter code review]
     types: [completed]
   push:
