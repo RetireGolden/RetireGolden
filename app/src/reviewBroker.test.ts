@@ -129,13 +129,16 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
       getWorkflow: (input: { workflow_id: string }) => ({
         data: { ...github.rest.actions.getWorkflow(input).data, state: dispatch?.registeredState ?? 'active' },
       }),
-      getWorkflowRun: () => {
+      getWorkflowRun: (input: { owner: string; repo: string; run_id: number; request: { timeout: number } }) => {
+        expect(input).toMatchObject({ owner: 'RetireGolden', repo: 'fixture', run_id: Number(dispatch?.sourceId ?? '42') });
+        expect(input.request.timeout).toBeGreaterThan(0);
+        expect(input.request.timeout).toBeLessThanOrEqual(10000);
         expect(reruns).toEqual([]);
         expect([...labels]).toEqual([]);
         expect(profileChecks).toEqual([]);
         const states = dispatch?.states ?? ['completed'];
         return { data: {
-          id: 42, workflow_id: dispatch?.workflowId ?? 123,
+          id: Number(dispatch?.sourceId ?? '42'), workflow_id: dispatch?.workflowId ?? 123,
           path: dispatch?.path ?? '.github/workflows/openrouter-profile-completion.yml',
           status: states[Math.min(sourceReads++, states.length - 1)],
         } };
@@ -156,7 +159,7 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
           payload: {
             repository: { default_branch: 'main' },
             inputs: dispatch ? { source_run_id: dispatch.sourceId ?? '42' } : undefined,
-            workflow_run: { name, path, workflow_id: workflowId, head_sha: 'f'.repeat(40) },
+            workflow_run: dispatch ? undefined : { name, path, workflow_id: workflowId, head_sha: 'f'.repeat(40) },
           },
         },
         core: {
@@ -237,9 +240,14 @@ describe('broker queue and open-PR sweep', () => {
 
 
 describe('explicit completion dispatch', () => {
+  it('exposes the required dispatch input and default-branch job gate in the workflow', () => {
+    expect(workflow).toMatch(/on:\n {2}workflow_dispatch:\n {4}inputs:\n {6}source_run_id:\n {8}description: [^\n]+\n {8}required: true\n {8}type: string\n/);
+    expect(workflow).toContain("  authorize-and-rerun:\n    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)");
+  });
+
   it('waits for the notifying run to finish before rechecking proofs and changing CI', async () => {
     const state = fixture();
-    await state.runDispatch({ states: ['in_progress', 'completed'] });
+    await state.runDispatch({ sourceId: '84', states: ['in_progress', 'completed'] });
     expect(state.profileChecks).toEqual([1, 2]);
     expect(state.reruns).toEqual([1, 2]);
   });
@@ -252,15 +260,20 @@ describe('explicit completion dispatch', () => {
     expect(state.reruns).toEqual([2]);
   });
 
-  it.each<DispatchOptions>([
-    { sourceId: '0' }, { sourceId: '43' }, { sourceId: '1e2' },
-    { sourceId: '9007199254740993' }, { ref: 'refs/heads/feature' },
-    { path: '.github/workflows/release.yml' }, { workflowId: 999 },
-    { registeredState: 'disabled_manually' }, { states: ['mystery'] },
-    { states: ['in_progress'] },
+  it.each<DispatchOptions & { error: string }>([
+    { sourceId: '0', error: 'A different positive source_run_id is required' },
+    { sourceId: '43', error: 'A different positive source_run_id is required' },
+    { sourceId: '1e2', error: 'A different positive source_run_id is required' },
+    { sourceId: '9007199254740993', error: 'A different positive source_run_id is required' },
+    { ref: 'refs/heads/feature', error: 'Dispatch CI broker from the default branch' },
+    { path: '.github/workflows/release.yml', error: 'Explicit broker wake must identify profile completion' },
+    { workflowId: 999, error: 'Explicit broker wake has untrusted workflow identity' },
+    { registeredState: 'disabled_manually', error: 'Explicit broker wake has untrusted workflow identity' },
+    { states: ['mystery'], error: 'Invalid completion source status' },
+    { states: ['in_progress'], error: 'Completion source is still active; rerun the broker after it finishes' },
   ])('rejects invalid or unfinished sources before CI mutations: %j', async (options) => {
     const state = fixture();
-    await expect(state.runDispatch(options)).rejects.toThrow();
+    await expect(state.runDispatch(options)).rejects.toThrow(options.error);
     expect(state.profileChecks).toEqual([]);
     expect([...state.labels]).toEqual([]);
     expect(state.reruns).toEqual([]);

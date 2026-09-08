@@ -207,3 +207,19 @@ The CI broker also accepts a default-branch manual dispatch with the completed
 rechecks the clean review and profile proof before adding `run-ci` or rerunning
 CI. Notification failure does not invalidate the completed review; missing proof
 still blocks CI. These delivery waits do not shorten model review time.
+
+The broker polls a notifying profile run for up to 90 seconds within its
+ten-minute job limit. The notification job depends on completed planning,
+proof and publication jobs; the wait covers only notification/API/runner cleanup,
+not the multi-PR proof work. If that tail still exceeds 90 seconds, the broker
+fails visibly with the source-run recovery instruction. Retry its dispatch after
+the source finishes; do not rerun the model panel.
+
+The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/a0687591466b56f5435cf89ff0d65917bb703c7c/.github/workflows/openrouter-code-review.yml#L169)
+sets `actions: read` as its default, inherited by both model-review jobs. Its
+notification job explicitly overrides that default with `actions: write`.
+GitHub's [token-triggering documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
+lists `workflow_dispatch` and `repository_dispatch` as the unconditional
+exceptions; it does not list `workflow_run`. The observed recovery review
+[RetireGolden run 34255246099](https://github.com/RetireGolden/RetireGolden/actions/runs/34255246099)
+was bot-dispatched and completed without downstream profile or broker runs.
