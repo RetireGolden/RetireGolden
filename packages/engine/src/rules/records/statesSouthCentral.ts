@@ -1511,8 +1511,9 @@ export const southCentralStateRecords = {
       kind: 'statute',
       citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount',
       url: 'https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf',
+      // Ellipsis elides spelled-out amount across numbered PDF lines; parenthesized ($6,000) kept.
       quotedText:
-        'Beginning January 1, 2023, the first six thousand dollars ($6,000) of taxable retirement income.',
+        'Beginning January 1, 2023, the first … ($6,000) of taxable retirement income.',
     }, {
       kind: 'statute',
       citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — age restriction',
