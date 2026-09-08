@@ -56,16 +56,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2101,
+          "line": 2188,
           "note": null,
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 2128
+              "line": 2215
             },
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 2141
+              "line": 2228
             }
           ]
         }
@@ -208,16 +208,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2591,
+          "line": 2678,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 2605
+              "line": 2692
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 2610
+              "line": 2697
             }
           ]
         }
@@ -234,6 +234,98 @@
           "kind": "statute",
           "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)",
           "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+        }
+      ]
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "title": "Maine’s 2026 nonmilitary pension deduction maximum is $49,824 before offset and phaseout",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The July 2026 MRS Form 1040ES-ME instructions publish the exact 2026 maximum; the parameter refresh aligned the flat cap to $49,824. The statutory limbs in §5122(2)(M-2) and (M-3) still bound what the flat cap omits. This record settles only that published TY2026 maximum and the lesser-of-benefits-included-in-federal-AGI limb for the nonmilitary deduction before offset and phaseout. It does not certify plan qualification under M-2, military separation under M-2(1)(b), the gross Social Security/RRB reduction, the M-3 AGI phaseout, personal exemption, blindness, unsupported filing statuses, historical or future years, or whole Form 1040ME accuracy. A fixture taxable income here is modeled pack taxable income after the flat cap, not Form 1040ME taxable income. The gross-benefit offset remains unmodeled, so the with-offset fixture stays discriminating.",
+      "contraryReading": null,
+      "jurisdiction": "state:ME",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-01-06",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "ME",
+              "line": 422
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 47
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 931,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the current flat cap against gross Social Security offset the pack still omits",
+              "line": 979
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Maine Revenue Services, 2026 Form 1040ES-ME Instructions, revised July 2026, worksheet line 2 note",
+          "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Maine Revenue Services, 2026 Form 1040ES-ME Instructions, revised July 2026, pension maximum basis",
+          "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "36 M.R.S. §5122(2)(M-2)(1)(a)",
+          "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "36 M.R.S. §5122(2)(M-2)(1)(b)",
+          "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "36 M.R.S. §5122(2)(M-2)(2)(d)(iv)",
+          "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "36 M.R.S. §5122(2)(M-3)",
+          "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html"
         }
       ]
     },
@@ -490,16 +582,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2808,
+          "line": 2895,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 2829
+              "line": 2916
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 2834
+              "line": 2921
             }
           ]
         }
@@ -889,12 +981,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3145,
+          "line": 3232,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 3160
+              "line": 3247
             }
           ]
         }
@@ -971,34 +1063,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3172,
+          "line": 3259,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 3187
+              "line": 3274
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3194,
+          "line": 3281,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 3213
+              "line": 3300
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3220,
+          "line": 3307,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 3240
+              "line": 3327
             }
           ]
         }
@@ -1081,20 +1173,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3273,
+          "line": 3360,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 3298
+              "line": 3385
             },
             {
               "title": "pins the single mid-band proportional Social Security exclusion",
-              "line": 3307
+              "line": 3394
             },
             {
               "title": "pins the joint mid-band proportional Social Security exclusion",
-              "line": 3313
+              "line": 3400
             }
           ]
         }

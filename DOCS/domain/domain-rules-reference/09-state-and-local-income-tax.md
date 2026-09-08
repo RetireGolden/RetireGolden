@@ -122,6 +122,13 @@
   benefits, source qualification, (9)/(10)/(11) elections, and return-level versus per-person ceiling remain
   approximated. Social Security stays on the separate settled sibling
   (`mi-mcl-206-30-f-iii-social-security`).
+- Maine’s 2026 pension-income deduction maximum is **$49,824** per person before the §5122(2)(M-2)(1)(a)
+  gross Social Security/Railroad Retirement reduction and the M-3 federal-AGI phaseout
+  (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`, [ME.md](../state-tax-research/ME.md); [MRS 2026 Form
+  1040ES-ME Instructions, revised July 2026](https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf)).
+  The flat pack cap does not verify plan qualification, separate military retirement, subtract gross
+  SS/RRB, or apply M-3; personal exemption, modeled Maine-AGI proxy limits, and whole Form 1040ME accuracy
+  remain outside this bounded claim.
 - Mid-year state moves prorate state taxable income, deductions, brackets, cumulative
   band base amounts, and retirement caps by months in each state segment. Taxable
   Social Security is computed once on the full-year federal base and then apportioned

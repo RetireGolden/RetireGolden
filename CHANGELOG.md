@@ -4,6 +4,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Maine TY2026 pension cap:** corrected `states.ME.retirement.capPerPerson` from
+  $48,216 to $49,824 per MRS July 2026 Form 1040ES-ME instructions
+  (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`). Gross Social Security and
+  Railroad Retirement offset, military separation, plan qualification, and M-3
+  federal-AGI phaseout remain outside this correction.
+
 - **Owned-IRA post-candidate contribution deadline:** the post-candidate
   classification builder now refuses evidenced ordinary deadlines that are
   canonical but not the exact `ordinaryFederalFilingDeadline` date for the tax

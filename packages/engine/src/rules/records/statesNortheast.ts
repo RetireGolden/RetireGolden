@@ -276,6 +276,68 @@ export const northeastStateRecords = {
     ],
   },
 
+  'me-mrs-36-5122-2-m2-m3-2026-pension-deduction': {
+    title: 'Maine’s 2026 nonmilitary pension deduction maximum is $49,824 before offset and phaseout',
+    statement:
+      'For tax year 2026, Maine\'s nonmilitary pension deduction amount is $49,824 before the statutory Social Security and Railroad Retirement reduction and the federal-adjusted-gross-income phaseout in §5122(2)(M-3), and the deductible amount may not exceed qualifying retirement-plan benefits included in federal adjusted gross income. Approximated: the pack models retirement as one flat per-person cap at the published maximum and cannot classify every eligible distribution, subtract gross Social Security or Railroad Retirement from the nonmilitary maximum, apply the separate full military deduction, or enforce the M-3 phaseout — so it can misstate tax in either direction outside an isolated below-phaseout primary recipient with at least the cap of qualifying nonmilitary retirement income and no Social Security or Railroad Retirement.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The July 2026 MRS Form 1040ES-ME instructions publish the exact 2026 maximum; the parameter refresh aligned the flat cap to $49,824. The statutory limbs in §5122(2)(M-2) and (M-3) still bound what the flat cap omits. This record settles only that published TY2026 maximum and the lesser-of-benefits-included-in-federal-AGI limb for the nonmilitary deduction before offset and phaseout. It does not certify plan qualification under M-2, military separation under M-2(1)(b), the gross Social Security/RRB reduction, the M-3 AGI phaseout, personal exemption, blindness, unsupported filing statuses, historical or future years, or whole Form 1040ME accuracy. A fixture taxable income here is modeled pack taxable income after the flat cap, not Form 1040ME taxable income. The gross-benefit offset remains unmodeled, so the with-offset fixture stays discriminating.',
+    jurisdiction: 'state:ME',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Maine Revenue Services, 2026 Form 1040ES-ME Instructions, revised July 2026, worksheet line 2 note',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf',
+      quotedText:
+        'Note that the maximum pension income deduction is increased to $49,824 for tax year 2026.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Maine Revenue Services, 2026 Form 1040ES-ME Instructions, revised July 2026, pension maximum basis',
+      url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf',
+      quotedText:
+        'The maximum pension income deduction is equal to the annual social security benefit for an individual at the retirement age, as defined in 42 USC § 416(l), as of January 1, 2026.',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. §5122(2)(M-2)(1)(a)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5122.html',
+      quotedText:
+        'Excluding military retirement plan benefits, an amount that is the lesser of: (i) The aggregate of retirement plan benefits under employee retirement plans or individual retirement accounts included in the individual’s federal adjusted gross income; and (ii) The pension deduction amount reduced by the total amount of the individual’s social security benefits and railroad retirement benefits paid by the United States, but not less than $0; and',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. §5122(2)(M-2)(1)(b)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5122.html',
+      quotedText:
+        'An amount equal to the aggregate of retirement benefits under military retirement plans included in the individual’s federal adjusted gross income; and',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. §5122(2)(M-2)(2)(d)(iv)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5122.html',
+      quotedText:
+        'For tax years beginning on or after January 1, 2024, the maximum annual benefit that an individual eligible to retire at the retirement age, as defined in 42 United States Code, Section 416(l), as of January 1st of the tax year may receive under the federal Social Security Act and amendments to that Act as of June 28, 2023.',
+    }, {
+      kind: 'statute',
+      citation: '36 M.R.S. §5122(2)(M-3)',
+      url: 'https://legislature.maine.gov/statutes/36/title36sec5122.html',
+      quotedText:
+        'For tax years beginning on or after January 1, 2025, the amount in paragraph M-2, subparagraph (1), division (a) must be reduced by an amount equal to the total amount in paragraph M-2, subparagraph (1), division (a) multiplied by a fraction, the numerator of which is the taxpayer\'s federal adjusted gross income less the applicable amount, except that the numerator may not be less than zero, and the denominator of which is $50,000 in the case of a married individual filing a separate return and $100,000 in all other filing cases.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-08',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#ME',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
+  },
+
   'ct-cgs-12-701-20-b-social-security-retirement': {
     title: 'Connecticut’s Social Security and pension subtractions are income-tested',
     statement:

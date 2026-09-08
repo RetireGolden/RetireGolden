@@ -271,6 +271,53 @@ describe('full-plan golden fixtures', () => {
     expectMoney(year.incomes.recurring, 139_750)
   })
 
+  it('Maine TY2026 pension cap reaches the full-plan tax ledger', () => {
+    // Independent worksheet (MRS 2026 Form 1040ES-ME Instructions rev. July 2026,
+    // https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf;
+    // 36 M.R.S. §5122(2)(M-2)). privateRetirementIncome stands in for a qualifying
+    // nonmilitary pension; the schema cannot verify that premise. Single, age 60,
+    // ME, $60,000 private pension plus $20,000 other ordinary, $100,000 cash,
+    // $0 expenses, zero growth/inflation, no SS/gains/withdrawals.
+    // Maine modeled component only — personal exemption and whole Form 1040ME
+    // accuracy remain unmodeled:
+    // taxable 80,000 − 49,824 − 15,700 = 14,476; state tax 14,476 × 5.8% = 839.608.
+    // Federal (Rev. Proc. 2025-32, section 4.01, Table 3,
+    // https://www.irs.gov/pub/irs-drop/rp-25-32.pdf;
+    // 2026 unmarried thresholds $12,400 / $50,400 / $105,700):
+    // 80,000 − 16,100 = 63,900 taxable;
+    // tax = 1,240 + 12% × (50,400 − 12,400) + 22% × (63,900 − 50,400) = 8,770.
+    // YearResult `tax` is federal + state (no separate stateTax field).
+    const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 60, state: 'ME' })
+    plan.accounts = [
+      cashAccount('cash', 100_000),
+      {
+        type: 'pension',
+        id: 'private-pension',
+        name: 'Qualifying defined-benefit pension',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        source: 'private',
+        startAge: 60,
+        monthlyAmount: 5_000,
+        colaPct: 0,
+        survivorPct: 0,
+      },
+    ]
+    plan.incomes = [recurringOrdinaryIncome('ordinary', 20_000, 2026)]
+    plan.expenses.baseAnnual = 0
+
+    const result = runPlan(plan, productionTaxCalculator(), 2026)
+    const year = result.years[0]!
+
+    const federalTax = 8_770
+    const stateTax = 839.608
+
+    expect(year.year).toBe(2026)
+    expectMoney(year.incomes.pension, 60_000)
+    expectMoney(year.incomes.recurring, 20_000)
+    expectMoney(year.tax, federalTax + stateTax)
+  })
+
   it('Plan J: full-plan tax applies West Virginia §11-21-4j to the modeled $10,000 state-tax base', () => {
     // Independent worksheet (§11-21-4j(a); not taken from app output):
     // Model-component integration on the engine WV pack taxable base — not a full IT-140 liability.

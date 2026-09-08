@@ -923,6 +923,93 @@ describeRule('mrs-36-5124-c-1-b-decoupled-standard-deduction', {
   })
 })
 
+const ME_PENSION_ORDINARY = 80_000
+const ME_PENSION_PRIVATE = 60_000
+const ME_PENSION_BASIC_SINGLE = 15_700
+const ME_PENSION_2026_MAX = 49_824
+
+describeRule('me-mrs-36-5122-2-m2-m3-2026-pension-deduction', {
+  readings: {
+    statutoryNonmilitaryMaximumBeforeOffsetAndPhaseout: {
+      qualifyingNonmilitaryNoOffsetBelowPhaseout:
+        ME_PENSION_ORDINARY - ME_PENSION_2026_MAX - ME_PENSION_BASIC_SINGLE,
+      qualifyingNonmilitaryWithGrossSocialSecurityOffsetBelowPhaseout:
+        ME_PENSION_ORDINARY - (ME_PENSION_2026_MAX - 20_000) - ME_PENSION_BASIC_SINGLE,
+    },
+    currentFlatCapPerPersonIgnoringSocialSecurityOffset: {
+      qualifyingNonmilitaryNoOffsetBelowPhaseout:
+        ME_PENSION_ORDINARY - ME_PENSION_2026_MAX - ME_PENSION_BASIC_SINGLE,
+      qualifyingNonmilitaryWithGrossSocialSecurityOffsetBelowPhaseout:
+        ME_PENSION_ORDINARY - ME_PENSION_2026_MAX - ME_PENSION_BASIC_SINGLE,
+    },
+  },
+  accepted: 'statutoryNonmilitaryMaximumBeforeOffsetAndPhaseout',
+  produced: 'currentFlatCapPerPersonIgnoringSocialSecurityOffset',
+}, ({ accepted, produced, readings }) => {
+  type MainePensionCaseKey =
+    | 'qualifyingNonmilitaryNoOffsetBelowPhaseout'
+    | 'qualifyingNonmilitaryWithGrossSocialSecurityOffsetBelowPhaseout'
+  type MainePensionVector = Record<MainePensionCaseKey, number>
+
+  const ME_PENSION_CASES: ReadonlyArray<{
+    key: MainePensionCaseKey
+    ssBenefits: number
+  }> = [
+    { key: 'qualifyingNonmilitaryNoOffsetBelowPhaseout', ssBenefits: 0 },
+    { key: 'qualifyingNonmilitaryWithGrossSocialSecurityOffsetBelowPhaseout', ssBenefits: 20_000 },
+  ]
+
+  function pensionScenario(ssBenefits: number): TaxYearInput {
+    return input({
+      state: 'ME',
+      ordinaryIncome: ME_PENSION_ORDINARY,
+      privateRetirementIncome: ME_PENSION_PRIVATE,
+      ssBenefits,
+      agesAlive: [60],
+    })
+  }
+
+  function expectTaxableVector(expected: MainePensionVector): void {
+    for (const c of ME_PENSION_CASES) {
+      expect(computeStateTaxableIncome(pack('ME'), pensionScenario(c.ssBenefits)))
+        .toBe(expected[c.key])
+    }
+  }
+
+  it('pins the current flat cap against gross Social Security offset the pack still omits', () => {
+    // Independent worksheet (MRS 2026 Form 1040ES-ME Instructions rev. July 2026,
+    // https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf;
+    // 36 M.R.S. §5122(2)(M-2) and (M-3)). privateRetirementIncome stands in for a
+    // qualifying nonmilitary primary-recipient pension in this bounded worksheet;
+    // the schema cannot verify that premise. Maine AGI below §5124-C(2) phase-out;
+    // Maine omits federally taxable Social Security from its base. No-offset:
+    // 80,000 − 49,824 − 15,700 = 14,476. With $20,000 gross Social Security the
+    // statutory nonmilitary amount is 49,824 − 20,000 = 29,824, so 80,000 −
+    // 29,824 − 15,700 = 34,476; the current flat cap ignores the offset and
+    // still subtracts 49,824, yielding 14,476. Federal AGI is $97,000 after the
+    // IRC 86 taxable share, below Maine's $102,250 standard-deduction phase-out start.
+    const meCap = { kind: 'capped' as const, capPerPerson: ME_PENSION_2026_MAX }
+    const me = pack('ME')
+    expect(me.retirementPrivate).toEqual(meCap)
+    expect(me.retirementPublic).toEqual(meCap)
+    expect(me.retirementRuleShared).toBe(true)
+    expectTaxableVector(produced)
+    for (const c of ME_PENSION_CASES) {
+      const taxable = computeStateTaxableIncome(pack('ME'), pensionScenario(c.ssBenefits))
+      expect(taxable).toBe(produced[c.key])
+      if (c.key === 'qualifyingNonmilitaryNoOffsetBelowPhaseout') {
+        expect(taxable).toBe(accepted[c.key])
+      } else {
+        expect(taxable).not.toBe(accepted[c.key])
+      }
+    }
+    expect(readings.currentFlatCapPerPersonIgnoringSocialSecurityOffset.qualifyingNonmilitaryNoOffsetBelowPhaseout)
+      .toBe(readings.currentFlatCapPerPersonIgnoringSocialSecurityOffset.qualifyingNonmilitaryWithGrossSocialSecurityOffsetBelowPhaseout)
+    expect(readings.statutoryNonmilitaryMaximumBeforeOffsetAndPhaseout.qualifyingNonmilitaryNoOffsetBelowPhaseout)
+      .not.toBe(readings.statutoryNonmilitaryMaximumBeforeOffsetAndPhaseout.qualifyingNonmilitaryWithGrossSocialSecurityOffsetBelowPhaseout)
+  })
+})
+
 // ─── The rest of the seven no-individual-income-tax states ───────────────────
 //
 // Same outward shape as the Nevada, Texas and Florida fixtures above — the pack

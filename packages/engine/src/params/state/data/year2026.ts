@@ -444,7 +444,7 @@ const rawStateYear2026 = {
           { lowerBound: 1500000, ratePct: 9.15 },
         ],
       },
-      retirement: { kind: 'capped', capPerPerson: 48216 },
+      retirement: { kind: 'capped', capPerPerson: 49824 },
     },
     MD: {
       code: 'MD', name: 'Maryland', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
