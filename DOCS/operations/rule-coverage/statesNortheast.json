@@ -896,12 +896,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3057,
+          "line": 3091,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 3072
+              "line": 3106
             }
           ]
         }
@@ -978,34 +978,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3084,
+          "line": 3118,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 3099
+              "line": 3133
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3106,
+          "line": 3140,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 3125
+              "line": 3159
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3132,
+          "line": 3166,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 3152
+              "line": 3186
             }
           ]
         }
@@ -1088,12 +1088,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3159,
+          "line": 3193,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 3172
+              "line": 3206
             }
           ]
         }

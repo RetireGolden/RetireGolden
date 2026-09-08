@@ -931,23 +931,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3179,
+          "line": 3213,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 3198
+              "line": 3232
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3205,
+          "line": 3239,
           "note": "wage-only age deduction limb",
           "tests": [
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 3219
+              "line": 3253
             }
           ]
         }

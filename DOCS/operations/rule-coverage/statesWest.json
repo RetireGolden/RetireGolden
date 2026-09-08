@@ -1606,12 +1606,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3032,
+          "line": 3066,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 3044
+              "line": 3078
             }
           ]
         }
@@ -1669,12 +1669,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2989,
+          "line": 3023,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 2997
+              "line": 3031
             }
           ]
         }
@@ -1742,12 +1742,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3006,
+          "line": 3040,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 3025
+              "line": 3059
             }
           ]
         }
@@ -1815,12 +1815,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3226,
+          "line": 3260,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 3245
+              "line": 3279
             }
           ]
         }

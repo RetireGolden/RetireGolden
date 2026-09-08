@@ -789,16 +789,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3414,
+          "line": 3448,
           "note": null,
           "tests": [
             {
               "title": "prices Alabama single brackets rather than the joint schedule",
-              "line": 3430
+              "line": 3464
             },
             {
               "title": "prices the joint schedule on a joint return, distinct from the single breaks",
-              "line": 3437
+              "line": 3471
             }
           ]
         }
@@ -875,36 +875,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3452,
+          "line": 3486,
           "note": "settled: enacted and form authority support $6,000 per taxpayer at age 65",
           "tests": [
             {
               "title": "implements the enacted $6,000 reading and discriminates source-error counterfactuals",
-              "line": 3482
+              "line": 3516
             },
             {
               "title": "withholds the exclusion below age 65",
-              "line": 3491
+              "line": 3525
             },
             {
               "title": "doubles the cap on a joint return when both spouses are 65",
-              "line": 3503
+              "line": 3537
             },
             {
               "title": "grants only one $6,000 cap when one spouse is below 65",
-              "line": 3517
+              "line": 3551
             },
             {
               "title": "reaches the no-exclusion counterfactual once the cap is withheld",
-              "line": 3531
+              "line": 3565
             },
             {
               "title": "reaches the doubled-cap counterfactual under a doubled cap",
-              "line": 3539
+              "line": 3573
             },
             {
               "title": "reaches the no-age-gate counterfactual once minAge is dropped",
-              "line": 3547
+              "line": 3581
             }
           ]
         }
@@ -1135,12 +1135,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3384,
+          "line": 3418,
           "note": null,
           "tests": [
             {
               "title": "keeps a taxable IRA distribution in the Alabama base",
-              "line": 3400
+              "line": 3434
             }
           ]
         }
@@ -1335,12 +1335,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3356,
+          "line": 3390,
           "note": null,
           "tests": [
             {
               "title": "omits federally taxable Social Security from the Alabama base",
-              "line": 3373
+              "line": 3407
             }
           ]
         }
@@ -2368,12 +2368,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2959,
+          "line": 2993,
           "note": "military-retirement exception to the common cap",
           "tests": [
             {
               "title": "pins the military exception the generic retirement bucket cannot express",
-              "line": 2977
+              "line": 3011
             }
           ]
         }

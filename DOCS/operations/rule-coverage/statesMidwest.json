@@ -2275,12 +2275,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2937,
+          "line": 2952,
           "note": null,
           "tests": [
             {
               "title": "prices the TY2026 nonbusiness schedule at the statutory breakpoints",
-              "line": 2946
+              "line": 2963
+            },
+            {
+              "title": "rejects the IT 1040 ES upper band and baseTax add-on semantics via hybridWorksheetUpperBandOnEnactedLowerBand",
+              "line": 2975
             }
           ]
         }
@@ -2425,12 +2429,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3263,
+          "line": 3297,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 3277
+              "line": 3311
             }
           ]
         }
@@ -2497,20 +2501,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3284,
+          "line": 3318,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 3308
+              "line": 3342
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 3317
+              "line": 3351
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 3330
+              "line": 3364
             }
           ]
         }

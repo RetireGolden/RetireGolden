@@ -597,6 +597,7 @@ describe('Ohio TY2026 nonbusiness cumulative base (§5747.02(A)(3)(c))', () => {
     { income: 26_050, tax: 0 },
     { income: 26_051, tax: 332.0275 },
     { income: 50_000, tax: 990.625 },
+    { income: 150_000, tax: 3740.625 },
   ] as const
 
   it('prices the statutory breakpoint vector for single and MFJ', () => {
