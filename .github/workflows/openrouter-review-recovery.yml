@@ -48,7 +48,7 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner, repo, workflow_id: 'openrouter-code-review.yml',
               ref: repository.default_branch,
-              inputs: { pr_number: String(pr.number), review_level: 'auto', reset_review: 'false' },
+              inputs: { pr_number: String(pr.number), review_level: 'auto' },
             })
             core.info(`Dispatched the normal profile review for PR #${pr.number}; follow OpenRouter code review and profile completion.`)
   reject-other-branches:

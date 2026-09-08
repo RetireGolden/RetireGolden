@@ -13,7 +13,7 @@ export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
-export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = 'd47c88244be67f2939582f82fc023e49c2f2f6c3'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '2994bbebe3133193aee890cd628f3c1a2c2b0a93'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
   'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@eac44d1fba1e89760ebf0a1b7826a119e1b6ba79'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'eac44d1fba1e89760ebf0a1b7826a119e1b6ba79'
@@ -456,7 +456,7 @@ async function loadTrustedProfileConsumer(github) {
       repo: TRUSTED_PROFILE_CONSUMER_REPO,
       path: TRUSTED_PROFILE_CONSUMER_PATH,
       ref: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
-  })
+    })
   } catch {
     throw new Error('cannot load trusted profile consumer')
   }
@@ -467,7 +467,7 @@ async function loadTrustedProfileConsumer(github) {
   }
 
   const normalized = file.content.replace(/\n/g, '')
-    if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(normalized)) {
+  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(normalized)) {
     throw new Error('trusted profile consumer content is not valid base64')
   }
 
@@ -485,10 +485,7 @@ async function loadTrustedProfileConsumer(github) {
   }
 
   const module = await import(`data:text/javascript;base64,${source.toString('base64')}`)
-  if (
-    typeof module.authorizeProfileReceipt !== 'function' ||
-    typeof module.completionPullRequests !== 'function'
-  ) {
+  if (typeof module.authorizeProfileReceipt !== 'function') {
     throw new Error('trusted profile consumer is missing required exports')
   }
   return module
@@ -523,27 +520,6 @@ export async function authorizeReviewProfile(
       authorized: false,
       reason: safeProfileConsumerFailureReason(error),
     }
-  }
-}
-
-export async function profileCompletionPullRequests(
-  github,
-  { owner, repo, repository, defaultBranch, run },
-) {
-  try {
-    const consumer = await loadTrustedProfileConsumer(github)
-    const pullNumbers = await consumer.completionPullRequests(github, {
-      owner,
-      repo,
-      repository,
-      defaultBranch,
-      orgWorkflowSha: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
-      run,
-    })
-    if (!Array.isArray(pullNumbers)) return []
-    return pullNumbers.filter((value) => Number.isInteger(value) && value > 0)
-  } catch {
-    return []
   }
 }
 

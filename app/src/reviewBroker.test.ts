@@ -32,10 +32,11 @@ export function hasActiveOrRealAzureWork(runs) { return runs.some(run => run.sta
 export function hasOnlySkippedExpensiveAzureJobs() { return true; }
 `;
 
-function fixture({ denied = 0, broken = 0 } = {}) {
+function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = false } = {}) {
   const reruns: number[] = [];
   const labels = new Set<number>();
   const profileChecks: number[] = [];
+  const reviewReads: number[] = [];
   const failures: string[] = [];
   const listPulls = async () => {};
   const listReviews = async () => {};
@@ -81,18 +82,22 @@ function fixture({ denied = 0, broken = 0 } = {}) {
         },
       },
     },
-    paginate: (endpoint: unknown, input: { head_sha?: string }) => {
+    paginate: (endpoint: unknown, input: { head_sha?: string; pull_number?: number }) => {
       if (endpoint === listPulls) return [{ number: 1 }, { number: 2 }];
-      if (endpoint === listReviews) return [{ body: 'clean fixture' }];
+      if (endpoint === listReviews) {
+        reviewReads.push(input.pull_number!);
+        return [{ body: 'clean fixture' }];
+      }
       if (endpoint === listJobs) return [];
       if (endpoint === listRuns) {
+        if (missingCi) return [];
         const id = Number(input.head_sha![0]);
         return [
           {
             id,
             head_sha: input.head_sha,
             status: reruns.includes(id) ? 'queued' : 'completed',
-            run_attempt: 1,
+            run_attempt: completedCi ? 2 : 1,
           },
         ];
       }
@@ -120,7 +125,7 @@ function fixture({ denied = 0, broken = 0 } = {}) {
       { importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER },
     );
   };
-  return { run, reruns, labels, profileChecks, failures };
+  return { run, reruns, labels, profileChecks, reviewReads, failures };
 }
 
 describe('broker queue and open-PR sweep', () => {
@@ -139,7 +144,21 @@ describe('broker queue and open-PR sweep', () => {
     await state.run('OpenRouter code review');
     await state.run('CI');
     expect(state.reruns).toEqual([1, 2]);
+    expect(state.profileChecks).toEqual([1, 2]);
+    expect(state.reviewReads).toEqual([1, 2]);
   });
+
+  it.each([{ completedCi: true }, { missingCi: true }])(
+    'skips review proofs when Azure has no eligible rerun: %j',
+    async (options) => {
+      const state = fixture(options);
+      await state.run();
+      expect(state.profileChecks).toEqual([]);
+      expect(state.reviewReads).toEqual([]);
+      expect(state.reruns).toEqual([]);
+      expect([...state.labels]).toEqual([]);
+    },
+  );
 
   it('checks each profile before mutating labels or rerunning', async () => {
     const state = fixture({ denied: 1 });

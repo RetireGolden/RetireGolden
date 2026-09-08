@@ -154,7 +154,8 @@ replacement PR for older work.
 
 The broker serializes OpenRouter review, profile completion, and Azure completion events across
 the repository. Each wake-up inspects all open PRs, so coalesced pending events cannot drop a
-ready PR. After an exact-head clean ledger and successful profile proof, it adds `run-ci` and reruns
+ready PR. It checks Azure run eligibility first, skipping review/provenance API calls for PRs
+with active or already-executed CI, or without an eligible skipped run. After an exact-head clean ledger and successful profile proof, it adds `run-ci` and reruns
 the skipped Azure workflow. It also reacts to profile completion alone when the review proof already
 holds. Manual review dispatches and profile-completion reruns are broker inputs; the broker does
 not initiate recovery forwarding. This rollout supplements the existing first-pass gate with

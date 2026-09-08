@@ -161,7 +161,7 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
 
 - Repository admin: @FlyOverCoderKY.
 - Merge grant: standing, recorded by @FlyOverCoderKY on 2026-09-02 (PR
-  #588). Nathan's 2026-09-08 local rule restricts administrative override to
+  #588). In this repository, administrative override is permitted only for
   an agent-authored CLA restriction. This supersedes the broader bypass
   language in the shared section; post-push approval must actually be met.
 - The required-check list and the thread and approval rules below were

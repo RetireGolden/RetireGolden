@@ -43,7 +43,7 @@ jobs:
             const { owner, repo } = context.repo
             const repository = context.payload.repository
             const defaultBranch = repository.default_branch
-            const helperPin = '1dede77c94ce4b99136e7eb15df7de6fdd74adbc'
+            const helperPin = '25cb36d2e77afa987c1ea7cfbd74acb1fa9e3960'
             const importHelper = async (content) => {
               if (typeof content !== 'string') throw new Error('trusted CI helper has invalid content')
               const helper = await import(`data:text/javascript;base64,${content.replace(/\s/g, '')}`)

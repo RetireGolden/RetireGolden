@@ -108,14 +108,6 @@ export interface ProfileReviewAuthorizationResult {
   readonly reason: string
 }
 
-export interface ProfileCompletionPullRequestsInput {
-  readonly owner: string
-  readonly repo: string
-  readonly repository: RepositoryRef
-  readonly defaultBranch: string
-  readonly run: WorkflowRun
-}
-
 export interface GetContentRequest {
   readonly owner: string
   readonly repo: string
@@ -291,10 +283,6 @@ export function authorizeReviewProfile(
   github: GitHubLike,
   input: ProfileReviewAuthorizationInput,
 ): Promise<ProfileReviewAuthorizationResult>
-export function profileCompletionPullRequests(
-  github: GitHubLike,
-  input: ProfileCompletionPullRequestsInput,
-): Promise<number[]>
 export function isExpensiveAzureJob(job: AzureJob): boolean
 export function hasOnlySkippedExpensiveAzureJobs(jobs: readonly AzureJob[]): boolean
 export function hasActiveOrRealAzureWork(

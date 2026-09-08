@@ -56,6 +56,35 @@ jobs:
                 return core.info(`skip: broker does not auto-rerun Dependabot PR #${pr.number}`)
               }
 
+              // Avoid review/provenance API work unless CI actually needs a rerun.
+              const azureRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                owner,
+                repo,
+                workflow_id: 'azure-static-web-apps-retiregolden.yml',
+                event: 'pull_request',
+                head_sha: expectedHeadSha,
+                per_page: 100,
+              })
+              const currentHeadRuns = azureRuns.filter((run) =>
+                run.head_sha === expectedHeadSha && !helper.azureRunSkipReason(run),
+              )
+              const jobLists = new Map()
+              for (const run of currentHeadRuns) {
+                if (run.status !== 'completed') continue
+                const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                  owner, repo, run_id: run.id, per_page: 100,
+                })
+                jobLists.set(run.id, jobs)
+              }
+              if (helper.hasActiveOrRealAzureWork(currentHeadRuns, jobLists)) {
+                return core.info(`skip: Azure CI is active or has real expensive work for PR #${pr.number} at ${expectedHeadSha}`)
+              }
+              const eligible = currentHeadRuns
+                .filter((run) => run.status === 'completed' && run.run_attempt === 1 &&
+                  helper.hasOnlySkippedExpensiveAzureJobs(jobLists.get(run.id) ?? []))
+                .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0]
+              if (!eligible) return core.info(`skip: no completed all-expensive-skipped Azure run for PR #${pr.number} at ${expectedHeadSha}`)
+
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
                 owner, repo, pull_number: pr.number, per_page: 100,
               })
@@ -92,34 +121,6 @@ jobs:
                 review: cleanReview, reviewRun: authoritativeReviewRun,
               })
               if (!profile.authorized) return core.info(`skip: ${profile.reason}`)
-
-              const azureRuns = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                owner,
-                repo,
-                workflow_id: 'azure-static-web-apps-retiregolden.yml',
-                event: 'pull_request',
-                head_sha: expectedHeadSha,
-                per_page: 100,
-              })
-              const currentHeadRuns = azureRuns.filter((run) =>
-                run.head_sha === expectedHeadSha && !helper.azureRunSkipReason(run),
-              )
-              const jobLists = new Map()
-              for (const run of currentHeadRuns) {
-                if (run.status !== 'completed') continue
-                const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-                  owner, repo, run_id: run.id, per_page: 100,
-                })
-                jobLists.set(run.id, jobs)
-              }
-              if (helper.hasActiveOrRealAzureWork(currentHeadRuns, jobLists)) {
-                return core.info(`skip: Azure CI is active or has real expensive work for PR #${pr.number} at ${expectedHeadSha}`)
-              }
-              const eligible = currentHeadRuns
-                .filter((run) => run.status === 'completed' && run.run_attempt === 1 &&
-                  helper.hasOnlySkippedExpensiveAzureJobs(jobLists.get(run.id) ?? []))
-                .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0]
-              if (!eligible) return core.info(`skip: no completed all-expensive-skipped Azure run for PR #${pr.number} at ${expectedHeadSha}`)
 
               const { data: finalPr } = await github.rest.pulls.get({ owner, repo, pull_number: pr.number })
               const finalReason = helper.pullRequestSkipReason(finalPr, context.payload.repository, expectedHeadSha)

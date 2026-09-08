@@ -25,7 +25,6 @@ import {
   ledgerWorkflowRunUrlsFromReview,
   newestWorkflowRun,
   parseWorkflowRunIdFromUrl,
-  profileCompletionPullRequests,
   pullRequestSkipReason,
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
@@ -138,10 +137,6 @@ const profileConsumerFixture = [
   '  }',
   '  return { authorized: true, reason: "fixture profile authorized" }',
   '}',
-  'export async function completionPullRequests(_github, input) {',
-  '  if (input.orgWorkflowSha !== "eac44d1fba1e89760ebf0a1b7826a119e1b6ba79") throw new Error("missing or wrong org pin");',
-  '  return [620]',
-  '}',
 ].join('\n')
 
 function profileConsumerContent(content = profileConsumerFixture) {
@@ -219,8 +214,8 @@ function mockGithub(overrides: Record<string, unknown> = {}) {
           return _args.ref === 'main' ? defaultCaller : headCaller
         }
         if (_args.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
-            return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
-          }
+          return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+        }
         throw new Error(`unexpected getContent path ${_args.path}`)
       },
     },
@@ -334,7 +329,7 @@ describe('trusted default-branch review verification recovery', () => {
     expect(recoveryWorkflow).toContain("workflow_id: 'openrouter-code-review.yml'")
     expect(recoveryWorkflow).toContain('ref: repository.default_branch')
     expect(recoveryWorkflow).toContain("review_level: 'auto'")
-    expect(recoveryWorkflow).toContain("reset_review: 'false'")
+    expect(recoveryWorkflow).not.toContain('reset_review:')
     expect(recoveryWorkflow).toContain("if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(recoveryWorkflow).toContain("if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(recoveryWorkflow).toContain('Dispatch recovery from the default branch.')
@@ -422,7 +417,7 @@ describe('trusted default-branch review verification recovery', () => {
             repo: 'RetireGolden',
             workflow_id: 'openrouter-code-review.yml',
             ref: 'main',
-            inputs: { pr_number: '643', review_level: 'auto', reset_review: 'false' },
+            inputs: { pr_number: '643', review_level: 'auto' },
           },
         ])
       } else {
@@ -904,13 +899,11 @@ describe('OpenRouter CI authorization contract', () => {
               return { data: profileConsumerContent() }
             }
             if (request.path === '.github/workflows/openrouter-code-review.yml') {
-              return request.ref === 'main'
-                ? { data: { type: 'file', sha: 'default-blob' } }
-                : { data: { type: 'file', sha: 'default-blob' } }
+              return { data: { type: 'file', sha: 'default-blob' } }
             }
             if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
-            return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
-          }
+              return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+            }
             throw new Error(`unexpected getContent path ${request.path}`)
           },
         },
@@ -1365,8 +1358,8 @@ describe('OpenRouter CI authorization contract', () => {
               return { data: { type: 'file', sha: 'default-blob' } }
             }
             if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
-            return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
-          }
+              return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+            }
             throw new Error(`unexpected getContent path ${request.path}`)
           },
         },
@@ -1391,8 +1384,8 @@ describe('OpenRouter CI authorization contract', () => {
               return { data: { type: 'file', sha: 'default-blob' } }
             }
             if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
-            return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
-          }
+              return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+            }
             throw new Error(`unexpected getContent path ${request.path}`)
           },
         },
@@ -1415,8 +1408,8 @@ describe('OpenRouter CI authorization contract', () => {
               return { data: { type: 'file', sha: 'default-blob' } }
             }
             if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
-            return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
-          }
+              return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+            }
             throw new Error(`unexpected getContent path ${request.path}`)
           },
         },
@@ -1455,45 +1448,6 @@ describe('OpenRouter CI authorization contract', () => {
     const result = await authorize(github, 2)
     expect(result).toMatchObject({ authorized: false, failJob: true })
     expect(result.reason).toMatch(/clean authoritative ledger/)
-  })
-
-  it('forwards the org workflow SHA into profile completion discovery', async () => {
-    const profileConsumerReads: GetContentRequest[] = []
-    const github = mockGithub({
-      rest: {
-        repos: {
-          getContent: async (request: GetContentRequest) => {
-            if (isTrustedProfileConsumerRequest(request)) {
-              profileConsumerReads.push(request)
-              return { data: profileConsumerContent() }
-            }
-            if (request.path === '.github/workflows/openrouter-code-review.yml') {
-              return { data: { type: 'file', sha: 'default-blob' } }
-            }
-            if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
-            return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
-          }
-            throw new Error(`unexpected getContent path ${request.path}`)
-          },
-        },
-      },
-    })
-    const numbers = await profileCompletionPullRequests(github, {
-      owner: 'RetireGolden',
-      repo: 'RetireGolden',
-      repository,
-      defaultBranch: 'main',
-      run: trustedRun(),
-    })
-    expect(numbers).toEqual([pullNumber])
-    expect(profileConsumerReads).toEqual([
-      {
-        owner: TRUSTED_PROFILE_CONSUMER_OWNER,
-        repo: TRUSTED_PROFILE_CONSUMER_REPO,
-        path: TRUSTED_PROFILE_CONSUMER_PATH,
-        ref: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
-      },
-    ])
   })
 
   it('exposes authorizeReviewProfile as a standalone wrapper', async () => {
