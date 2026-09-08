@@ -63,7 +63,7 @@ jobs:
           persist-credentials: false
       - name: Verify the existing review ledger
         id: review
-        uses: FlyOverCoderKY/openrouter-pr-review-action@481069edae02298d4069f03b24ad1cdc67c5f348 # action PR33
+        uses: FlyOverCoderKY/openrouter-pr-review-action@93cc91130605bc17cb583c5a5e899591773e048c # action PR35 (includes transport repair)
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         with:
@@ -72,6 +72,7 @@ jobs:
           head_sha: ${{ steps.pr.outputs.head }}
           models: x-ai/grok-4.6,z-ai/glm-5.3-flash
           judge_model: openai/gpt-5.6-luna
+          review_policy: base
           review_mode: verify
           # Full coverage avoids trusting the prior ledger to omit earlier commits
           # and supports recovery when the latest ledger already names this head.

@@ -158,3 +158,18 @@ RetireGolden is free and open-source software licensed under the **[GNU Affero G
 ## Documentation
 
 Product specs, architecture, domain rules, standards, maintenance schedule, and a sequential changelog live in **[DOCS/README.md](DOCS/README.md)** (and the root `CHANGELOG.md`).
+
+## Review guidance
+
+Per-area review contracts (additive context for automated review; merge and CI rules
+remain in [AGENTS.md](AGENTS.md)):
+
+- [REVIEW.md](REVIEW.md) — shared scope and evidence standards
+- [packages/engine/REVIEW.md](packages/engine/REVIEW.md)
+- [packages/planner-ui/REVIEW.md](packages/planner-ui/REVIEW.md)
+- [app/REVIEW.md](app/REVIEW.md)
+
+Branch-targeted guidance applies after merge to the target branch; new or moved
+source files are still reviewed. Offline policy lint and explain semantics follow the
+[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/docs/review-policy.md).
+The pinned shared OpenRouter caller enables `review_policy: base`.
